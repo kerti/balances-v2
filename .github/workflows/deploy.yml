@@ -34,6 +34,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy to ${{ needs.route.outputs.env }}
-        run: flyctl deploy --app "balances-${{ needs.route.outputs.env }}" --remote-only
+        # APP_VERSION/DEPLOY_ENV are baked into the SPA bundle for the footer
+        # (issue #75); the Dockerfile web stage reads them as VITE_ vars.
+        run: |
+          flyctl deploy --app "balances-${{ needs.route.outputs.env }}" --remote-only \
+            --build-arg APP_VERSION="${{ github.ref_name }}" \
+            --build-arg DEPLOY_ENV="${{ needs.route.outputs.env }}"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

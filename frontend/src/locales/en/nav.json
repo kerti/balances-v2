@@ -16,5 +16,15 @@
   "gold": "Gold",
   "income": "Income",
   "tags": "Tags",
-  "settings": "Settings"
+  "settings": "Settings",
+  "footer": {
+    "deploy": {
+      "preview": "Preview",
+      "demo": "Demo",
+      "production": "Production",
+      "local": "Local"
+    },
+    "sourceCode": "Source code on GitHub",
+    "website": "Maintainer website"
+  }
 }

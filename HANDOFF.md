@@ -68,6 +68,8 @@ DNS-only with Fly-managed TLS.
 - **Security & CI** — CodeQL SAST + govulncheck + Dependabot; path-gated CI with a `ci-gate`
   aggregator giving one stable status for future branch protection. Coverage thresholds
   informational until alpha. **Reassess deferred security items before alpha** (`docs/ci-tooling.md`).
+- **Sidebar footer** (#75) — app version + deploy-env chip + GitHub/maintainer links; version & env
+  baked into the SPA bundle at build via `deploy.yml --build-arg` → Dockerfile `ARG` → Vite `VITE_*`.
 
 ## What's next
 

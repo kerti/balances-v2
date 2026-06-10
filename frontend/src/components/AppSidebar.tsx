@@ -1,8 +1,10 @@
 import { Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { Globe } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -16,6 +18,13 @@ import {
 } from '@/components/ui/sidebar'
 import { routes } from '@/lib/routes'
 import { AppLogo } from '@/components/AppLogo'
+import { GitHubMark } from '@/components/icons/GitHubMark'
+import {
+  APP_VERSION,
+  DEPLOY_ENV,
+  MAINTAINER_URL,
+  REPO_URL,
+} from '@/lib/appInfo'
 
 // `labelKey` indexes into the `nav` namespace catalog rather than carrying the
 // EN string inline — keeps the structural NAV array translation-agnostic.
@@ -132,6 +141,45 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <div className="flex flex-col gap-2 px-2 py-1 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between gap-2">
+            <span data-testid="app-version" className="font-mono">
+              {APP_VERSION}
+            </span>
+            <span
+              data-testid="deploy-env"
+              className="rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
+            >
+              {t(`footer.deploy.${DEPLOY_ENV}`)}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <a
+              href={REPO_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={t('footer.sourceCode')}
+              title={t('footer.sourceCode')}
+              data-testid="footer-link-github"
+              className="transition-colors hover:text-foreground"
+            >
+              <GitHubMark className="h-4 w-4" />
+            </a>
+            <a
+              href={MAINTAINER_URL}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-label={t('footer.website')}
+              title={t('footer.website')}
+              data-testid="footer-link-website"
+              className="transition-colors hover:text-foreground"
+            >
+              <Globe className="h-4 w-4" />
+            </a>
+          </div>
+        </div>
+      </SidebarFooter>
     </Sidebar>
   )
 }

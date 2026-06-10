@@ -7,6 +7,13 @@
 # ---- web (SPA) ----
 FROM node:22 AS web
 WORKDIR /web
+# App identity baked into the bundle (issue #75). The deploy workflow passes the
+# release tag and target env as build args; Vite picks up VITE_*-prefixed vars
+# from the environment at `npm run build`. Local builds use the defaults.
+ARG APP_VERSION=dev
+ARG DEPLOY_ENV=local
+ENV VITE_APP_VERSION=$APP_VERSION
+ENV VITE_DEPLOY_ENV=$DEPLOY_ENV
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./

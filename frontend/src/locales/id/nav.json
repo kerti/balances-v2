@@ -16,5 +16,15 @@
   "gold": "Emas",
   "income": "Pemasukan",
   "tags": "Tag",
-  "settings": "Pengaturan"
+  "settings": "Pengaturan",
+  "footer": {
+    "deploy": {
+      "preview": "Pratinjau",
+      "demo": "Demo",
+      "production": "Produksi",
+      "local": "Lokal"
+    },
+    "sourceCode": "Kode sumber di GitHub",
+    "website": "Situs web pengelola"
+  }
 }
