@@ -30,9 +30,9 @@ func findMonth(t *testing.T, reports []monthlyReportData, m time.Time) monthlyRe
 	return monthlyReportData{}
 }
 
-func contains(ids []uuid.UUID, id uuid.UUID) bool {
-	for _, x := range ids {
-		if x == id {
+func contains(stale []stalePosition, id uuid.UUID) bool {
+	for _, x := range stale {
+		if x.ID == id {
 			return true
 		}
 	}

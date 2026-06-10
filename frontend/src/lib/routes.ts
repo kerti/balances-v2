@@ -52,3 +52,49 @@ export const routes = {
 
   settings: '/settings',
 } as const
+
+// positionDetail resolves a position's detail-page path from the (group,
+// subtype) pair the report carries for stale positions (#50). Returns null for
+// any pair without a detail page (none today) so callers render a plain label
+// instead of a dead link. The subtype strings are the engine's wire values
+// (matching the DB subtype columns), not display labels.
+export function positionDetail(
+  group: string,
+  subtype: string,
+  id: string,
+): string | null {
+  switch (group) {
+    case 'asset':
+      switch (subtype) {
+        case 'bank_account':
+          return routes.bankAccount(id)
+        case 'property':
+          return routes.property(id)
+        case 'vehicle':
+          return routes.vehicle(id)
+      }
+      return null
+    case 'liability':
+      if (subtype === 'personal' || subtype === 'institutional') {
+        return routes.liability(subtype, id)
+      }
+      return null
+    case 'receivable':
+      return routes.receivable(id)
+    case 'investment':
+      switch (subtype) {
+        case 'stock':
+          return routes.stock(id)
+        case 'mutual_fund':
+          return routes.mutualFund(id)
+        case 'bond':
+          return routes.bond(id)
+        case 'time_deposit':
+          return routes.timeDeposit(id)
+        case 'gold':
+          return routes.goldItem(id)
+      }
+      return null
+  }
+  return null
+}

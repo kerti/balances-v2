@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { ChevronDown } from 'lucide-react'
 import {
   Card,
   CardContent,
@@ -15,6 +17,7 @@ import { useFxRates } from '@/hooks/useFxRates'
 import { useSession } from '@/hooks/useSession'
 import { formatCurrency, formatNumber, formatYearMonth } from '@/lib/format'
 import { preferredName } from '@/lib/names'
+import { positionDetail } from '@/lib/routes'
 import {
   availableDisplayCurrencies,
   resolveDisplayRate,
@@ -242,7 +245,6 @@ function HeadlineCard({
   rates: FxRate[]
 }) {
   const { t } = useTranslation('dashboard')
-  const staleCount = selected.stale_positions.length
   return (
     <Card>
       <CardContent className="space-y-3 pt-6">
@@ -261,17 +263,99 @@ function HeadlineCard({
         {secondary && (
           <SecondaryAmount selected={selected} currency={secondary} rates={rates} />
         )}
-        {staleCount > 0 && (
-          <p className="text-sm text-amber-600">
-            {t('headline.stalePositions', {
-              count: staleCount,
-              when: formatYearMonth(selected.year_month),
-            })}
-          </p>
-        )}
+        <StalePositions selected={selected} />
         <MissingFxWarning selected={selected} />
       </CardContent>
     </Card>
+  )
+}
+
+// StalePositions surfaces the carried-forward warning as an expandable list
+// (#50): the amber summary line is a toggle; opening it reveals each position
+// that needs a fresh snapshot, with a deep-link to its detail page. Collapsed by
+// default so it doesn't clutter the headline. The button row stays even when the
+// list is empty-of-links — every stale position has a route today, but unknown
+// (group, subtype) pairs degrade to a plain, non-clickable label.
+function StalePositions({ selected }: { selected: MonthlyReport }) {
+  const { t } = useTranslation('dashboard')
+  const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
+  const stale = selected.stale_positions
+  if (stale.length === 0) return null
+  // Pre-#50 cached reports stored stale_positions as bare UUID strings. The
+  // staleness watermark is data-driven, so a deployed report keeps that old
+  // shape until an input changes or the user rebuilds — guard against it so we
+  // degrade to the plain (non-expandable) warning line instead of rendering
+  // rows with undefined name/group. Self-heals on the next regeneration.
+  const enriched = stale.every(
+    (p) => typeof (p as unknown) === 'object' && p !== null,
+  )
+  if (!enriched) {
+    return (
+      <p data-testid="dashboard-stale" className="text-sm text-amber-600">
+        {t('headline.stalePositions', {
+          count: stale.length,
+          when: formatYearMonth(selected.year_month),
+        })}
+      </p>
+    )
+  }
+  return (
+    <div data-testid="dashboard-stale" className="text-sm text-amber-600">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        data-testid="dashboard-stale-toggle"
+        className="flex items-center gap-1 text-left hover:underline"
+      >
+        <ChevronDown
+          className={`size-4 shrink-0 transition-transform ${open ? '' : '-rotate-90'}`}
+          aria-hidden
+        />
+        <span>
+          {t('headline.stalePositions', {
+            count: stale.length,
+            when: formatYearMonth(selected.year_month),
+          })}
+        </span>
+      </button>
+      {open && (
+        <ul className="mt-2 space-y-1 pl-5">
+          {stale.map((p) => {
+            const href = positionDetail(p.group, p.subtype, p.position_id)
+            const label = (
+              <>
+                <span className="font-medium">{p.name}</span>
+                <span className="text-muted-foreground">
+                  {' · '}
+                  {t(`stale.group.${p.group}`)}
+                  {' · '}
+                  {t('stale.lastRecorded', {
+                    when: formatYearMonth(p.last_month),
+                  })}
+                </span>
+              </>
+            )
+            return (
+              <li key={p.position_id} data-testid="dashboard-stale-item">
+                {href ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate(href)}
+                    className="text-left hover:underline"
+                  >
+                    {label}
+                  </button>
+                ) : (
+                  <span>{label}</span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
   )
 }
 

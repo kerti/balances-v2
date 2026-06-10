@@ -543,9 +543,20 @@ export type MonthlyReport = {
   asset_value_change: string | null // property + vehicle non-cash mark change
   derived_living_expenses: string | null // signed cash-spending residual
   user_breakdowns: Record<string, UserBreakdown> // keyed by user_id and "joint"
-  stale_positions: string[]
+  stale_positions: StalePosition[] // positions carried forward this month (#50)
   fx_rates_used: Record<string, string> // currency -> rate applied this month
   missing_fx: MissingFx[] // positions/flows excluded for want of a rate
+}
+
+// StalePosition is one position whose value this month was carried forward from
+// an earlier snapshot rather than recorded fresh. group+subtype resolve the
+// detail-page route; last_month is when the carried snapshot was recorded.
+export type StalePosition = {
+  position_id: string
+  name: string
+  group: 'asset' | 'liability' | 'receivable' | 'investment'
+  subtype: string
+  last_month: string // ISO datetime, day always = 01
 }
 
 export type MissingFx = {

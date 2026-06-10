@@ -67,12 +67,24 @@ func TestMonthlyReportRepo(t *testing.T) {
 			t.Errorf("Feb nw_total (carry-forward): got %s, want 100", feb.NwTotal)
 		}
 
-		var stale []uuid.UUID
+		var stale []struct {
+			PositionID uuid.UUID `json:"position_id"`
+			Name       string    `json:"name"`
+			Group      string    `json:"group"`
+			Subtype    string    `json:"subtype"`
+			LastMonth  time.Time `json:"last_month"`
+		}
 		if err := json.Unmarshal(feb.StalePositions, &stale); err != nil {
 			t.Fatalf("unmarshal stale_positions: %v", err)
 		}
-		if len(stale) != 1 || stale[0] != acct {
+		if len(stale) != 1 || stale[0].PositionID != acct {
 			t.Errorf("Feb stale_positions: got %v, want [%s]", stale, acct)
+		}
+		// The drill-down payload (#50): label + route metadata + the month the
+		// carried-forward snapshot was actually recorded (January).
+		if s := stale[0]; s.Name != "Acct" || s.Group != "asset" || s.Subtype != "bank_account" ||
+			!s.LastMonth.Equal(ymUTC(2026, time.January)) {
+			t.Errorf("Feb stale_positions[0]: got %+v, want name=Acct group=asset subtype=bank_account lastMonth=Jan", s)
 		}
 
 		var bd map[string]struct {

@@ -33,12 +33,29 @@ const (
 	groupInvestment
 )
 
+// String is the wire name for the group, used by the stale-position payload so
+// the frontend can resolve a position's detail-page route (#50).
+func (g positionGroup) String() string {
+	switch g {
+	case groupAsset:
+		return "asset"
+	case groupLiability:
+		return "liability"
+	case groupReceivable:
+		return "receivable"
+	case groupInvestment:
+		return "investment"
+	}
+	return ""
+}
+
 // reportPosition is the lifecycle + ownership + subtype metadata the engine
 // needs. terminatedAt nil => active (migration 00012's biconditional CHECK).
 // subtype distinguishes property/vehicle from bank_account (asset value change)
 // and carries the investment subtype (per-subtype return).
 type reportPosition struct {
 	id            uuid.UUID
+	name          string // display_name, surfaced in the stale-position drill-down (#50)
 	group         positionGroup
 	subtype       string
 	ownershipType string // "sole" | "joint"
@@ -165,6 +182,19 @@ type missingFxEntry struct {
 	Currency   string     `json:"currency"`
 }
 
+// stalePosition is one position whose value in a month was carried forward from
+// an earlier snapshot rather than recorded fresh (#50). It carries enough for
+// the dashboard to label the position and deep-link to its detail page:
+// group+subtype map to a route, name is the display label, and lastMonth is the
+// month the carried-forward snapshot was actually recorded.
+type stalePosition struct {
+	ID        uuid.UUID `json:"position_id"`
+	Name      string    `json:"name"`
+	Group     string    `json:"group"`
+	Subtype   string    `json:"subtype"`
+	LastMonth time.Time `json:"last_month"`
+}
+
 // monthlyReportData is one generated month, pre-serialisation. Income-statement
 // pointers are nil on the first-month baseline (ADR-0006).
 type monthlyReportData struct {
@@ -179,7 +209,7 @@ type monthlyReportData struct {
 	assetValueChange *decimal.Decimal         // nil on baseline
 	livingExpenses   *decimal.Decimal         // nil on baseline
 	userBreakdowns   map[string]userBreakdown
-	stalePositions   []uuid.UUID
+	stalePositions   []stalePosition
 	missingFx        []missingFxEntry
 	fxRatesUsed      map[string]decimal.Decimal
 	missingSeen      map[string]bool // dedup helper, not serialised
@@ -426,7 +456,7 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		m := monthlyReportData{
 			yearMonth:      monthFromIndex(idx),
 			userBreakdowns: make(map[string]userBreakdown, len(in.members)+1),
-			stalePositions: []uuid.UUID{},
+			stalePositions: []stalePosition{},
 			missingFx:      []missingFxEntry{},
 			fxRatesUsed:    make(map[string]decimal.Decimal),
 			missingSeen:    make(map[string]bool),
@@ -475,7 +505,13 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			}
 			m.recordRate(fx, carried.currency, rate)
 			if carried.idx < idx {
-				m.stalePositions = append(m.stalePositions, p.id)
+				m.stalePositions = append(m.stalePositions, stalePosition{
+					ID:        p.id,
+					Name:      p.name,
+					Group:     p.group.String(),
+					Subtype:   p.subtype,
+					LastMonth: monthFromIndex(carried.idx),
+				})
 			}
 			switch p.group {
 			case groupAsset:

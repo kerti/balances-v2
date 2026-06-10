@@ -19,6 +19,15 @@
     "stalePositions_one": "⚠ {{count}} position carried forward — record {{when}} snapshot to keep this up to date.",
     "stalePositions_other": "⚠ {{count}} positions carried forward — record {{when}} snapshots to keep this up to date."
   },
+  "stale": {
+    "lastRecorded": "last recorded {{when}}",
+    "group": {
+      "asset": "asset",
+      "liability": "liability",
+      "receivable": "receivable",
+      "investment": "investment"
+    }
+  },
   "missingFx": {
     "positions_one": "{{count}} position",
     "positions_other": "{{count}} positions",

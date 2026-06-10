@@ -338,7 +338,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, a := range assets {
 		in.positions = append(in.positions, reportPosition{
-			id: a.ID, group: groupAsset, subtype: a.Subtype, ownershipType: a.OwnershipType,
+			id: a.ID, name: a.DisplayName, group: groupAsset, subtype: a.Subtype, ownershipType: a.OwnershipType,
 			soleOwnerID: a.SoleOwnerUserID, terminatedAt: a.TerminatedAt,
 		})
 	}
@@ -348,7 +348,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, l := range liabilities {
 		in.positions = append(in.positions, reportPosition{
-			id: l.ID, group: groupLiability, ownershipType: l.OwnershipType,
+			id: l.ID, name: l.DisplayName, group: groupLiability, subtype: l.Subtype, ownershipType: l.OwnershipType,
 			soleOwnerID: l.SoleOwnerUserID, terminatedAt: l.TerminatedAt,
 		})
 	}
@@ -358,7 +358,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, rc := range receivables {
 		in.positions = append(in.positions, reportPosition{
-			id: rc.ID, group: groupReceivable, ownershipType: rc.OwnershipType,
+			id: rc.ID, name: rc.DisplayName, group: groupReceivable, ownershipType: rc.OwnershipType,
 			soleOwnerID: rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt,
 		})
 	}
@@ -368,7 +368,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, i := range investments {
 		p := reportPosition{
-			id: i.ID, group: groupInvestment, subtype: i.Subtype, ownershipType: i.OwnershipType,
+			id: i.ID, name: i.DisplayName, group: groupInvestment, subtype: i.Subtype, ownershipType: i.OwnershipType,
 			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt,
 			rolledFrom: i.RolledFromInvestmentID,
 		}

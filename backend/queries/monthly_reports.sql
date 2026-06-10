@@ -115,18 +115,21 @@ SELECT COALESCE(GREATEST(
 -- engine needs only terminated_at for month-granular lifecycle suppression
 -- plus ownership for the per-user / Joint breakdown.
 
+-- display_name + subtype let the report name unrecorded positions in the
+-- dashboard drill-down (issue #50): the stale-position list carries enough to
+-- render a label and deep-link to the position's detail page.
 -- name: ListAssetsForReport :many
-SELECT id, subtype, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListLiabilitiesForReport :many
-SELECT id, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListReceivablesForReport :many
-SELECT id, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, ownership_type, sole_owner_user_id, terminated_at
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL;
 
@@ -135,7 +138,7 @@ WHERE household_id = $1 AND deleted_at IS NULL;
 -- the placement-month snapshot 0→principal reads as pure return. td.principal /
 -- td.placement_date are NULL for non-TD subtypes.
 -- name: ListInvestmentsForReport :many
-SELECT i.id, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
+SELECT i.id, i.display_name, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
        i.native_currency, i.rolled_from_investment_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date
 FROM investments i

@@ -73,6 +73,9 @@ DNS-only with Fly-managed TLS.
 - **Toast feedback for buttonless autosaves** (#54, ADR-0032) — sonner `<Toaster>` at root;
   Tag-dropdown / Language / Appearance selects confirm via accent toast (errors stay destructive,
   optimistic value rolls back on failure).
+- **Unrecorded-position drill-down** (#50) — dashboard's carried-forward warning is now an
+  expandable list; each row names the position (label · group · last-recorded month) and deep-links
+  to its detail page. `stale_positions` now carries name/group/subtype/last_month, not bare UUIDs.
 
 ## What's next
 

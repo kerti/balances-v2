@@ -127,13 +127,14 @@ func (q *Queries) ListAssetSnapshotsForReport(ctx context.Context, householdID u
 
 const listAssetsForReport = `-- name: ListAssetsForReport :many
 
-SELECT id, subtype, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL
 `
 
 type ListAssetsForReportRow struct {
 	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
 	Subtype         string     `json:"subtype"`
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
@@ -144,6 +145,9 @@ type ListAssetsForReportRow struct {
 // terminated_at NULL => active (biconditional CHECK, migration 00012); the
 // engine needs only terminated_at for month-granular lifecycle suppression
 // plus ownership for the per-user / Joint breakdown.
+// display_name + subtype let the report name unrecorded positions in the
+// dashboard drill-down (issue #50): the stale-position list carries enough to
+// render a label and deep-link to the position's detail page.
 func (q *Queries) ListAssetsForReport(ctx context.Context, householdID uuid.UUID) ([]ListAssetsForReportRow, error) {
 	rows, err := q.db.Query(ctx, listAssetsForReport, householdID)
 	if err != nil {
@@ -155,6 +159,7 @@ func (q *Queries) ListAssetsForReport(ctx context.Context, householdID uuid.UUID
 		var i ListAssetsForReportRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.DisplayName,
 			&i.Subtype,
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
@@ -347,7 +352,7 @@ func (q *Queries) ListInvestmentTransactionsForReport(ctx context.Context, house
 }
 
 const listInvestmentsForReport = `-- name: ListInvestmentsForReport :many
-SELECT i.id, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
+SELECT i.id, i.display_name, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
        i.native_currency, i.rolled_from_investment_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date
 FROM investments i
@@ -357,6 +362,7 @@ WHERE i.household_id = $1 AND i.deleted_at IS NULL
 
 type ListInvestmentsForReportRow struct {
 	ID                     uuid.UUID        `json:"id"`
+	DisplayName            string           `json:"display_name"`
 	Subtype                string           `json:"subtype"`
 	OwnershipType          string           `json:"ownership_type"`
 	SoleOwnerUserID        *uuid.UUID       `json:"sole_owner_user_id"`
@@ -382,6 +388,7 @@ func (q *Queries) ListInvestmentsForReport(ctx context.Context, householdID uuid
 		var i ListInvestmentsForReportRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.DisplayName,
 			&i.Subtype,
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
@@ -402,13 +409,15 @@ func (q *Queries) ListInvestmentsForReport(ctx context.Context, householdID uuid
 }
 
 const listLiabilitiesForReport = `-- name: ListLiabilitiesForReport :many
-SELECT id, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL
 `
 
 type ListLiabilitiesForReportRow struct {
 	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
+	Subtype         string     `json:"subtype"`
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	TerminatedAt    *time.Time `json:"terminated_at"`
@@ -425,6 +434,8 @@ func (q *Queries) ListLiabilitiesForReport(ctx context.Context, householdID uuid
 		var i ListLiabilitiesForReportRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.DisplayName,
+			&i.Subtype,
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.TerminatedAt,
@@ -588,13 +599,14 @@ func (q *Queries) ListReceivableSnapshotsForReport(ctx context.Context, househol
 }
 
 const listReceivablesForReport = `-- name: ListReceivablesForReport :many
-SELECT id, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, ownership_type, sole_owner_user_id, terminated_at
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL
 `
 
 type ListReceivablesForReportRow struct {
 	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	TerminatedAt    *time.Time `json:"terminated_at"`
@@ -611,6 +623,7 @@ func (q *Queries) ListReceivablesForReport(ctx context.Context, householdID uuid
 		var i ListReceivablesForReportRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.DisplayName,
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.TerminatedAt,
