@@ -19,11 +19,11 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 are complete; **M6 (v1 polish) is nearly closed.** CI is green. **`v0.6.0-alpha.1` is
-DEPLOYED** to the `preview` environment (`https://preview.<personal-domain>`) via the tag-driven
-pipeline (ADR-0029/0030/0031). Single-origin: one Fly app (region `sin`) serves the SPA + `/api`;
-Neon Postgres (preview branch), Resend mail, Google OAuth (Testing mode). Custom domain on Cloudflare
-DNS-only with Fly-managed TLS.
+M1–M5 are complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.2` is
+the latest DEPLOYED** release (two batched alphas cut so far: alpha.1 then alpha.2) on the `preview`
+environment (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031).
+Single-origin: one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch),
+Resend mail, Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
 
 - **M1–M3** — walking skeleton, Google OAuth + invites, first vertical slice (bank-account asset
   with snapshots), all tenancy-tested.
@@ -36,54 +36,23 @@ DNS-only with Fly-managed TLS.
 - **M5** — materialized monthly net-worth report + dashboard (net-worth headline,
   comprehensive-income lines, side-by-side currency display, Q15c).
 
-**M6 shipped** (detail in the matching closed issue / the alpha release notes):
-
-- **Importer & owner UX** — xlsx snapshot importer (all 10 groups + 5 investment subtypes); self-set
-  `users.nickname`; Google profile-picture avatar (`users.picture_url`); list-screen polish swept
-  across all 10 groups.
-- **Routing & nav** — React Router migration + shadcn Sidebar shell (ADR-0025); fixes mobile tab
-  overflow.
-- **Internationalization (EN+ID)** — full `t()` sweep across every screen, issues #5–#11 (chrome,
-  dashboard, bank-accounts template, properties/vehicles, liabilities/receivables, income,
-  investments); e2e locale pin #12; bundled-resource i18next init; canonical `docs/glossary-id.md`.
-- **Backend error-code envelope** (ADR-0027, issue #13) — `{code, args}` wire shape, `internal/httperr`
-  + `internal/errs`; frontend envelope sweep with `errors:code.*` catalogs.
-- **Investment analytics** — cost-basis + unrealised P/L headlines and time graphs, cross-subtype
-  `/investments` dashboard, continuous month-walk graphs, closed-position handling (issues #14, #18,
-  #21, #22, #24); backend `cost_basis` on ListItems + `GET /api/investments/time-series`.
-- **Investment correctness** — capital excluded at entry and exit; truthful 0-value close snapshots;
-  maturity/rollover return-continuity; rollover helper + successor linking (issues #16, #17, #25,
-  #27, #29, #61). ADR-0008/0009 amended.
-- **Valuations & taxonomy** — gold marked at buyback price (#19); mutual-fund `fund_type` enum (#20);
-  property/vehicle revaluation-rate helper (rename → `annual_appreciation_rate`).
-- **Guidance & approachability** — driver.js guided help tours on all detail screens (#23) + e2e
-  (#26); built-in instruction copy EN+ID.
-- **UX polish** — date 4-digit-year caps (#15); month-picker popover; position-control buttons (#31);
-  fee cash→quantity helper (Q12); faster dev-server restart (#30).
-- **Theming & brand** — per-user theme switcher (#33); logo / brand mark (`docs/brand/`).
-- **User-defined position Tags** (ADR-0028, issue #28) — household-scoped grouping label, ≤1 per
-  position; `PUT /api/tags/assignments` + `GET /api/tags/breakdown`; Settings card + `/tags` report.
-- **Migration baseline** (ADR-0031) — 25 incremental migrations squashed to one `00001_baseline.sql`;
-  existing DBs' goose markers collapsed in place after a zero-drift check.
-- **Security & CI** — CodeQL SAST + govulncheck + Dependabot; path-gated CI with a `ci-gate`
-  aggregator giving one stable status for future branch protection. Coverage thresholds
-  informational until alpha. **Reassess deferred security items before alpha** (`docs/ci-tooling.md`).
-- **Sidebar footer** (#75) — app version + deploy-env chip + GitHub/maintainer links; version & env
-  baked into the SPA bundle at build via `deploy.yml --build-arg` → Dockerfile `ARG` → Vite `VITE_*`.
-- **Toast feedback for buttonless autosaves** (#54, ADR-0032) — sonner `<Toaster>` at root;
-  Tag-dropdown / Language / Appearance selects confirm via accent toast (errors stay destructive,
-  optimistic value rolls back on failure).
-- **Unrecorded-position drill-down** (#50) — dashboard's carried-forward warning is now an
-  expandable list; each row names the position (label · group · last-recorded month) and deep-links
-  to its detail page. `stale_positions` now carries name/group/subtype/last_month, not bare UUIDs.
+- **M6** — v1 polish + approachability, shipped across alpha.1/alpha.2. Themes: xlsx importer + owner
+  UX; React Router + shadcn Sidebar (ADR-0025); EN+ID i18n (#5–#12, `docs/glossary-id.md`); error-code
+  envelope (ADR-0027); investment analytics + correctness (ADR-0008/0009 amended); valuations/taxonomy;
+  driver.js help tours; per-user theming + brand; position Tags (ADR-0028); migration baseline
+  (ADR-0031); CodeQL/govulncheck/Dependabot + path-gated CI; sidebar footer; autosave toasts
+  (ADR-0032); unrecorded-position drill-down. Per-item detail lives in the closed issues + the
+  alpha.1/alpha.2 GitHub Release notes (ADR-0029).
 
 ## What's next
 
 Alpha is deployed; M6 effectively closes with it. Open work, in rough priority:
 
-- **Alpha bug fixes** (dogfood targets) — #53 (tag assign not reflected), #56 (maturity snapshot not
-  instant), #58 (maturity-date edit doesn't update termination) are the recommended alpha blockers;
-  #57 (edit snapshot month-year) is a fast-follow. Fix via branch → PR → squash-merge.
+- **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) and #58 (maturity-date
+  edit doesn't update termination) are the open alpha blockers; #76 (snapshot month integrity —
+  keep `year_month` immutable, educate delete-and-redo + validate `as_of_date`, reframes the
+  closed #57) is the fast-follow. #53 (tag assign not reflected) shipped. Fix via branch → PR →
+  squash-merge.
 - **PDF export** of monthly reports (Q22) — still open.
 - **Hardening / follow-ups** — bump `actions/checkout` (Node 20 deprecation), add an HSTS header,
   wire the `cloudflared` dev-tunnel (`make dev-tunnel`), document DB backup/restore (Neon branch +
