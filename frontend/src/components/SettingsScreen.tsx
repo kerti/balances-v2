@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -203,12 +204,25 @@ function LanguageCard() {
 
   if (!me) return null
 
+  // Buttonless autosave (issue #54, ADR-0032): the select mutates on change
+  // with no Save button, so a toast confirms the write. Optimistically switch
+  // the UI; on PATCH failure roll the language back and surface the error.
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const next = e.target.value as Locale
-    // Optimistically switch the UI; the PATCH persists the choice. If the
-    // PATCH fails, the next page load (or a manual re-select) will reconcile.
+    const previous = locale as Locale
     void setLocale(next)
-    updateMe.mutate({ locale: next })
+    updateMe.mutate(
+      { locale: next },
+      {
+        // Resolve the confirmation in the newly-chosen language (`lng: next`),
+        // not whatever i18next has finished switching to when the PATCH lands.
+        onSuccess: () => toast.success(t('language.saved', { lng: next })),
+        onError: (err) => {
+          void setLocale(previous)
+          toast.error(errorMessage(err))
+        },
+      },
+    )
   }
 
   return (
@@ -237,11 +251,6 @@ function LanguageCard() {
             </select>
           </div>
         </div>
-        {updateMe.isError && (
-          <p className="text-sm text-destructive">
-            {errorMessage(updateMe.error)}
-          </p>
-        )}
       </CardContent>
     </Card>
   )
@@ -260,10 +269,22 @@ function ThemeCard() {
 
   if (!me) return null
 
+  // Buttonless autosave (issue #54, ADR-0032): toast confirms the write; on
+  // PATCH failure roll the theme back to its previous value.
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
     const next = e.target.value as Theme
+    const previous = theme
     setTheme(next)
-    updateMe.mutate({ theme: next })
+    updateMe.mutate(
+      { theme: next },
+      {
+        onSuccess: () => toast.success(t('theme.saved')),
+        onError: (err) => {
+          setTheme(previous)
+          toast.error(errorMessage(err))
+        },
+      },
+    )
   }
 
   return (
@@ -292,11 +313,6 @@ function ThemeCard() {
             </select>
           </div>
         </div>
-        {updateMe.isError && (
-          <p className="text-sm text-destructive">
-            {errorMessage(updateMe.error)}
-          </p>
-        )}
       </CardContent>
     </Card>
   )

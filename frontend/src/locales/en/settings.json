@@ -9,14 +9,16 @@
   "language": {
     "title": "Language",
     "description": "The language used for menus, labels, and date / number formatting.",
-    "label": "Language"
+    "label": "Language",
+    "saved": "Language updated"
   },
   "theme": {
     "title": "Appearance",
     "description": "Choose a light or dark colour scheme. Your choice follows you across devices.",
     "label": "Theme",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "saved": "Appearance updated"
   },
   "currency": {
     "title": "Currency",

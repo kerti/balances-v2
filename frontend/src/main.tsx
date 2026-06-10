@@ -10,6 +10,7 @@ import './index.css'
 import App from './App.tsx'
 import i18n from './i18n'
 import { ThemeProvider } from './theme/ThemeProvider'
+import { Toaster } from './components/ui/sonner'
 
 // Any successful write may change a monthly-report input — a snapshot,
 // transaction, income event, position metadata/lifecycle, or FX rate. Reports
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')!).render(
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <App />
+          <Toaster />
         </QueryClientProvider>
       </ThemeProvider>
     </I18nextProvider>

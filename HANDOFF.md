@@ -70,6 +70,9 @@ DNS-only with Fly-managed TLS.
   informational until alpha. **Reassess deferred security items before alpha** (`docs/ci-tooling.md`).
 - **Sidebar footer** (#75) — app version + deploy-env chip + GitHub/maintainer links; version & env
   baked into the SPA bundle at build via `deploy.yml --build-arg` → Dockerfile `ARG` → Vite `VITE_*`.
+- **Toast feedback for buttonless autosaves** (#54, ADR-0032) — sonner `<Toaster>` at root;
+  Tag-dropdown / Language / Appearance selects confirm via accent toast (errors stay destructive,
+  optimistic value rolls back on failure).
 
 ## What's next
 

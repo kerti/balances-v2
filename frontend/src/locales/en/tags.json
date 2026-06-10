@@ -1,7 +1,8 @@
 {
   "field": {
     "label": "Tag",
-    "none": "No tag"
+    "none": "No tag",
+    "saved": "Tag updated"
   },
   "manage": {
     "title": "Tags",

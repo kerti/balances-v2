@@ -9,14 +9,16 @@
   "language": {
     "title": "Bahasa",
     "description": "Bahasa yang dipakai untuk menu, label, dan format tanggal / angka.",
-    "label": "Bahasa"
+    "label": "Bahasa",
+    "saved": "Bahasa diperbarui"
   },
   "theme": {
     "title": "Tampilan",
     "description": "Pilih skema warna terang atau gelap. Pilihan Anda mengikuti di semua perangkat.",
     "label": "Tema",
     "light": "Terang",
-    "dark": "Gelap"
+    "dark": "Gelap",
+    "saved": "Tampilan diperbarui"
   },
   "currency": {
     "title": "Mata Uang",
