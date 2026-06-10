@@ -1,9 +1,8 @@
-# Keep the build context small + secret-free. Only backend/ is needed to build.
+# Keep the build context small + secret-free. backend/ and frontend/ are both
+# needed (single-origin image builds the SPA too); exclude their build outputs.
 .git
 .github
-frontend
 docs
-node_modules
 .scratch
 *.log
 *.md
@@ -11,3 +10,6 @@ node_modules
 .env.example
 .DS_Store
 backend/bin
+frontend/node_modules
+frontend/dist
+node_modules

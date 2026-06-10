@@ -2,6 +2,9 @@ package httpserver
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -93,5 +96,31 @@ func (s *Server) buildRouter() chi.Router {
 		s.tagsH.Mount(r)
 	})
 
+	// Single-origin production: serve the built SPA from WEB_DIR alongside /api
+	// (ADR-0030). /api and /healthz are matched above, so this catch-all only sees
+	// frontend paths. Unset in dev (Vite serves the SPA and proxies /api here).
+	if s.cfg.WebDir != "" {
+		r.Handle("/*", spaHandler(s.cfg.WebDir))
+	}
+
 	return r
+}
+
+// spaHandler serves static files from dir, falling back to index.html for any
+// path without a matching file so client-side routes (ADR-0025) resolve on a
+// refresh or deep link. The within-dir prefix check guards against path
+// traversal; misses fall through to index.html rather than leaking the error.
+func spaHandler(dir string) http.HandlerFunc {
+	root := filepath.Clean(dir)
+	fileServer := http.FileServer(http.Dir(root))
+	index := filepath.Join(root, "index.html")
+	return func(w http.ResponseWriter, r *http.Request) {
+		full := filepath.Join(root, filepath.Clean("/"+r.URL.Path))
+		if info, err := os.Stat(full); err == nil && !info.IsDir() &&
+			strings.HasPrefix(full, root+string(os.PathSeparator)) {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, index)
+	}
 }

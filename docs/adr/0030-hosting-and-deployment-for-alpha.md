@@ -1,7 +1,7 @@
 # Hosting and deployment for alpha
 
 This ADR closes the hosting question deferred in [[adr-0013]]. For alpha the stack runs on
-**managed free/near-free tiers**: the React SPA on **Cloudflare Pages**, the Go API on **Fly.io**,
+**managed free/near-free tiers**: the React SPA **served by the Go app** on **Fly.io**,
 PostgreSQL on **Neon**, and mail on **Resend** (already chosen in [[adr-0020]]). Deployment is
 **tag-driven** off the release tags from [[adr-0029]]. Only **one environment is deployed at the
 start — `preview`**; the developer's own machine serves as `dev` via a Cloudflare Tunnel, and
@@ -48,8 +48,10 @@ is a subdomain + DB + Fly app + OAuth client + secrets + mail config to maintain
 
 ### Targets
 
-- **SPA → Cloudflare Pages.** Free, trivial custom subdomains, built-in per-PR preview deploys.
-  Built with `vite build`, deployed via `wrangler pages deploy frontend/dist`.
+- **SPA → served by the Go app (single image).** The frontend is built (`vite build`) into the same
+  Docker image and served by the Go binary alongside `/api` — one origin, one deploy, no separate
+  static host. Cloudflare can sit *in front* at demo/production for CDN/WAF (see the single-origin
+  section); it is not needed for `preview`.
 - **Go API → Fly.io.** Deploys the ADR-0013 Docker image directly. Chosen over Koyeb specifically
   for **`release_command`**, which runs `goose up` pre-rollout and **blocks the deploy if the
   migration fails** — the deciding factor for a DB-backed app. Pay-as-you-go per-machine billing
@@ -62,24 +64,29 @@ is a subdomain + DB + Fly app + OAuth client + secrets + mail config to maintain
 - **Mail → Resend.** Already adopted in [[adr-0020]]; Mailpit remains local-dev only, so every
   non-local env needs a real SMTP/API path. Resend's free tier covers alpha volume.
 
-### Single origin per environment (SPA + API behind one Cloudflare hostname)
+### Single origin: the Go app serves the SPA and `/api`
 
-Each environment is served from **one hostname** (e.g. `preview.<domain>`). Cloudflare routes
-`/api/*` to the Fly app and everything else to the Pages SPA. The backend already mounts every route
-under `r.Route("/api", …)` (`internal/httpserver/server.go`; plus a top-level `/healthz` used only by
-Fly's internal check), so the path passes through **unchanged** — `/api/tags` stays `/api/tags`,
-never `/api/api/...` (path-preserving proxy, no rewrite). The `/api` prefix is the routing
-discriminator.
+Each environment is **one origin** — one Fly app serves both the built SPA and the API. The backend
+mounts the API under `r.Route("/api", …)` (`internal/httpserver/server.go`, plus a top-level
+`/healthz`); when `WEB_DIR` is set it also serves the static SPA from that directory, falling back to
+`index.html` for client-side routes ([[adr-0025]]). In dev `WEB_DIR` is unset — Vite serves the SPA
+and proxies `/api` to the backend.
 
-This is deliberate, not cosmetic. Auth is **server-side session cookies** ([[adr-0017]]). Split
-origins (a Pages domain + a separate Fly domain) would force `SameSite=None; Secure` cross-site
-cookies, which Safari ITP and Chrome's third-party-cookie phase-out drop — silently breaking login.
-Single origin keeps the session cookie **first-party**, sidestepping that entirely. The SPA history
-fallback ([[adr-0025]]) applies only to the non-`/api` paths Cloudflare routes to Pages, so it never
-collides with the API.
+This is deliberate, not cosmetic. Auth is **server-side session cookies** ([[adr-0017]]); the session
+cookie is **host-only** (no `Domain`), `HttpOnly`, `Secure` in prod, `SameSite=Lax`. A single origin
+keeps it **first-party** — a split SPA-host / API-host layout would force `SameSite=None; Secure`
+cross-site cookies, which Safari ITP and Chrome's third-party-cookie phase-out drop, silently
+breaking login. One origin sidesteps that at every tier and keeps the domain swappable (host-only
+cookie + env-driven URLs, no rebuild).
 
-Per-env cookie/config: `COOKIE_SECURE=true`, and `FRONTEND_URL` / `BACKEND_URL` /
-`OAUTH_REDIRECT_URL` all point at the single hostname.
+`preview` runs as the bare Fly hostname (`balances-preview.fly.dev`). `demo`/`production` add
+**Cloudflare *in front*** of the same Fly app (proxied custom domain) for TLS edge, CDN, and WAF — a
+cache rule on Vite's hashed `/assets/*` recovers edge caching. Purely additive: same image, same
+single origin, same cookie/OAuth flow; only a DNS/proxy layer is added. (When Cloudflare fronts the
+app it becomes a trusted proxy, enabling real-client-IP extraction — currently off, see `server.go`.)
+
+Per-env config: `COOKIE_SECURE=true`, and `FRONTEND_URL` / `BACKEND_URL` / `OAUTH_REDIRECT_URL` point
+at that env's hostname.
 
 ### Tag-driven deployment
 
@@ -94,9 +101,10 @@ v0.6.0           → production  (manual approval via GitHub Environment)
 - Secrets and per-env config live in **GitHub Environments** (`preview` / `demo` / `production`).
   The `production` environment carries a **required reviewer**, adding a second hard gate on top of
   the merge signoff from [[adr-0029]].
-- The backend job runs `flyctl deploy` against the env's Fly app; `goose up` runs inside Fly as the
-  `release_command`. A Neon branch can dry-run a migration before it reaches a long-lived env.
-- The frontend job builds and `wrangler pages deploy`s to the env's Pages project.
+- A single `flyctl deploy` against the env's Fly app builds the image (SPA + binary) and rolls it
+  out; `goose up` runs inside Fly as the `release_command`. A Neon branch can dry-run a migration
+  before it reaches a long-lived env. There is **no separate frontend deploy** — the SPA ships in the
+  image, so the only GitHub secret per env is `FLY_API_TOKEN`.
 - Each env has its own Google OAuth client / redirect URI and its own Resend + DB secrets.
 
 ## Considered alternatives
@@ -113,15 +121,24 @@ v0.6.0           → production  (manual approval via GitHub Environment)
   single alpha user; `demo`/`production` are stood up on first real need.
 - **One VPS running the whole stack** (a deferred option in ADR-0013). Rejected for alpha — more ops
   than managed free tiers for no current benefit; still viable later via the same Docker artifacts.
+- **SPA on Cloudflare Pages + an `/api` proxy.** Rejected for alpha — single origin via Pages needs a
+  proxy in front (a Pages Function or a custom-domain rule) at *every* tier, carrying a two-host split
+  and a proxy hop permanently for marginal CDN gain on a small hashed bundle. Serving the SPA from the
+  Go app is one origin everywhere, and Cloudflare-in-front recovers the CDN at demo/production without
+  the split. (This reverses the initial Pages choice once single-origin's proxy cost became concrete —
+  preview should rehearse the production shape, and production wants one app behind a CDN, not a
+  permanent two-host split.)
 
 ## Consequences
 
-- New prerequisites to build: a multi-stage **Dockerfile** (none exists yet), a **`fly.toml`** per
-  app with the `goose up` `release_command`, a Neon project + per-env branches, Cloudflare Pages
-  projects, a verified Resend domain, a per-env Google OAuth client, and GitHub Environments +
-  secrets. The workflow YAML is the small part; this provisioning is the real work.
+- Prerequisites: a multi-stage **Dockerfile** (SPA + Go binary), a **`fly.toml`** per app with the
+  `goose up` `release_command` and `WEB_DIR` for the embedded SPA, a Neon project + per-env branches,
+  a verified Resend domain, a per-env Google OAuth client, and GitHub Environments + secrets (only
+  `FLY_API_TOKEN` per env — backend runtime secrets live on Fly via `fly secrets`). The workflow YAML
+  is the small part; the provisioning is the real work.
 - `dev` is reachable only while the laptop and foreground `cloudflared` are running — by design.
-- Running cost at alpha ≈ **$0–2/mo** (Fly scale-to-zero; Neon, Cloudflare Pages, Resend free).
+- Running cost at alpha ≈ **$0–2/mo** (Fly scale-to-zero; Neon and Resend free; no Cloudflare needed
+  for `preview`).
 - Adding `demo` then `production` later is another Fly app + Neon branch + the already-wired tag
   pattern and GitHub Environment.
 - Vendor-shift risk (ADR-0013's stated concern) stays bounded: no vendor SDK lock-in, `pg_dump`

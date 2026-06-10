@@ -18,6 +18,8 @@ primary_region = "sin"
 [env]
   PORT = "8080"
   LOG_FORMAT = "json"
+  # serve the SPA baked into the image (single-origin, ADR-0030)
+  WEB_DIR = "/app/web"
 
 [http_service]
   internal_port = 8080

@@ -1,0 +1,39 @@
+# Tag-driven deploy (ADR-0029/0030). A SemVer tag routes to an environment and a
+# single `flyctl deploy` builds the image (SPA + Go binary) and rolls it out;
+# `goose up` runs inside Fly as the release_command. Single-origin: the Go app
+# serves the SPA, so there is no separate frontend deploy.
+#
+#   v0.6.0-alpha.N -> preview     (auto)
+#   v0.6.0-rc.N    -> demo        (auto, once demo exists)
+#   v0.6.0         -> production  (GitHub Environment can require manual approval)
+name: deploy
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  route:
+    runs-on: ubuntu-latest
+    outputs:
+      env: ${{ steps.pick.outputs.env }}
+    steps:
+      - id: pick
+        run: |
+          t='${{ github.ref_name }}'
+          if   [[ "$t" == *-alpha.* ]]; then echo "env=preview" >> "$GITHUB_OUTPUT"
+          elif [[ "$t" == *-rc.* || "$t" == *-beta.* ]]; then echo "env=demo" >> "$GITHUB_OUTPUT"
+          elif [[ "$t" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "env=production" >> "$GITHUB_OUTPUT"
+          else echo "::error::tag $t matches no environment"; exit 1; fi
+
+  deploy:
+    needs: route
+    runs-on: ubuntu-latest
+    environment: ${{ needs.route.outputs.env }}   # secrets + (production) approval gate
+    concurrency: deploy-${{ needs.route.outputs.env }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy to ${{ needs.route.outputs.env }}
+        run: flyctl deploy --app "balances-${{ needs.route.outputs.env }}" --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

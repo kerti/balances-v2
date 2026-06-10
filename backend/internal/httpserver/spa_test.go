@@ -1,0 +1,54 @@
+package httpserver
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+func TestSPAHandler(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "index.html"), "INDEX")
+	if err := os.MkdirAll(filepath.Join(dir, "assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(dir, "assets", "app.js"), "APP")
+
+	h := spaHandler(dir)
+	cases := []struct {
+		name, path, want string
+	}{
+		{"root serves index", "/", "INDEX"},
+		{"real asset served", "/assets/app.js", "APP"},
+		{"client route falls back", "/investments/123", "INDEX"},
+		{"missing path falls back", "/nope.txt", "INDEX"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h(rec, httptest.NewRequest("GET", c.path, nil))
+			if got := rec.Body.String(); got != c.want {
+				t.Errorf("%s: body = %q, want %q", c.path, got, c.want)
+			}
+		})
+	}
+
+	// A path with .. is rejected outright (http.ServeFile guards it), never
+	// serving anything outside the web dir.
+	t.Run("traversal is rejected", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h(rec, httptest.NewRequest("GET", "/../etc/passwd", nil))
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+		}
+	})
+}
+
+func mustWrite(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}

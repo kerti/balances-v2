@@ -12,6 +12,11 @@ type Config struct {
 	Port        int    `env:"PORT" envDefault:"8080"`
 	LogFormat   string `env:"LOG_FORMAT" envDefault:"text"`
 
+	// WebDir, when set, makes the server serve the built SPA from that directory
+	// (single-origin production, ADR-0030) with an index.html fallback for
+	// client-side routes. Unset in dev, where Vite serves the SPA and proxies /api.
+	WebDir string `env:"WEB_DIR"`
+
 	// ShutdownTimeout bounds how long graceful shutdown waits for in-flight
 	// requests to drain before forcing the server closed. Adjustable so dev
 	// restarts can use a short grace period; production keeps a longer one.
