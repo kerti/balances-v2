@@ -1,0 +1,5 @@
+# SPA history fallback for Cloudflare Pages (ADR-0025): serve index.html for any
+# client-side route so deep links / refreshes don't 404. Real static assets are
+# served first; this only catches unmatched paths. /api/* never reaches Pages —
+# Cloudflare routes it to the Fly backend upstream (single-origin, ADR-0030).
+/*    /index.html    200
