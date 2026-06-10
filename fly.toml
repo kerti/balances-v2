@@ -12,8 +12,10 @@ primary_region = "sin"
 [deploy]
   # Runs in a one-off VM with the app's secrets before the new version goes live;
   # a failed migration blocks the rollout. The baseline migration is embedded in
-  # the binary (go:embed), so no files are needed at runtime.
-  release_command = "/app/balances migrate up"
+  # the binary (go:embed), so no files are needed at runtime. This is appended to
+  # the image ENTRYPOINT (/app/balances), so it's the args only — not the binary
+  # path, or it would run `/app/balances /app/balances migrate up`.
+  release_command = "migrate up"
 
 [env]
   PORT = "8080"
