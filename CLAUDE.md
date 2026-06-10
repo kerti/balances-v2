@@ -11,3 +11,7 @@ Default canonical strings (`needs-triage`, `needs-info`, `ready-for-agent`, `rea
 ### Domain docs
 
 Single-context layout — one `CONTEXT.md` and one `docs/adr/` at the repo root. Code is split into `frontend/` and `backend/` for organisation, but the domain language is shared. See `docs/agents/domain.md`.
+
+### Releases
+
+Batched, tag-driven SemVer pre-releases (ADR-0029/0030). Cutting a release — pick version, label the batch, check migrations, tag, publish auto-generated notes, verify the deploy. See `docs/agents/release.md`.
