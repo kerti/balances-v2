@@ -14,15 +14,16 @@ import "github.com/kerti/balances-v2/backend/internal/errs"
 // `repo.ErrFoo` spelling at call sites; new code can also reference
 // `errs.ErrFoo` directly. See ADR-0027.
 var (
-	ErrUnauthenticated         = errs.ErrUnauthenticated
-	ErrNotFound                = errs.ErrNotFound
-	ErrInvalidSnapshotShape    = errs.ErrInvalidSnapshotShape
-	ErrInvalidTransactionType  = errs.ErrInvalidTransactionType
-	ErrInvalidTransactionShape = errs.ErrInvalidTransactionShape
-	ErrInvalidLifecycle        = errs.ErrInvalidLifecycle
-	ErrFxRateExists            = errs.ErrFxRateExists
-	ErrForeignPositionsExist   = errs.ErrForeignPositionsExist
-	ErrPositionNotActive       = errs.ErrPositionNotActive
-	ErrTagNameExists           = errs.ErrTagNameExists
-	ErrInvalidRolloverLink     = errs.ErrInvalidRolloverLink
+	ErrUnauthenticated          = errs.ErrUnauthenticated
+	ErrNotFound                 = errs.ErrNotFound
+	ErrInvalidSnapshotShape     = errs.ErrInvalidSnapshotShape
+	ErrInvalidTransactionType   = errs.ErrInvalidTransactionType
+	ErrInvalidTransactionShape  = errs.ErrInvalidTransactionShape
+	ErrInvalidLifecycle         = errs.ErrInvalidLifecycle
+	ErrFxRateExists             = errs.ErrFxRateExists
+	ErrForeignPositionsExist    = errs.ErrForeignPositionsExist
+	ErrPositionNotActive        = errs.ErrPositionNotActive
+	ErrTagNameExists            = errs.ErrTagNameExists
+	ErrInvalidRolloverLink      = errs.ErrInvalidRolloverLink
+	ErrSnapshotDateOutsideMonth = errs.ErrSnapshotDateOutsideMonth
 )

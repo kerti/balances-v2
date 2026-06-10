@@ -14,11 +14,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
 import { formatCurrency } from '@/lib/format'
-import { todayDate } from '@/lib/dateLimits'
+import { monthStartDate, monthEndDateCapped } from '@/lib/dateLimits'
 import type { UpdateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
 
 type AccruedInterestSnapshotLike = {
   id: string
+  year_month: string
   amount: string
   currency: string
   accrued_interest: string | null
@@ -147,7 +148,8 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
             <Input
               id="edit_ai_as_of_date"
               type="date"
-              max={todayDate()}
+              min={monthStartDate(snapshot.year_month)}
+              max={monthEndDateCapped(snapshot.year_month)}
               value={form.as_of_date}
               onChange={(e) =>
                 setForm({ ...form, as_of_date: e.target.value })

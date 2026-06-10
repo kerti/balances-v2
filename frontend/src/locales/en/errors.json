@@ -12,6 +12,7 @@
     "INVALID_YEAR_MONTH": "Invalid month: expected YYYY-MM.",
     "FUTURE_YEAR_MONTH": "Month cannot be in the future.",
     "SNAPSHOT_FUTURE_DATE": "Snapshot date cannot be in the future.",
+    "SNAPSHOT_DATE_OUTSIDE_MONTH": "Statement date must fall within the snapshot's month.",
     "TRANSACTION_FUTURE_DATE": "Transaction date cannot be in the future.",
     "INVALID_SNAPSHOT_SHAPE": "Snapshot values don't match this investment type.",
     "INVALID_TRANSACTION_TYPE": "Transaction type isn't supported for this investment.",

@@ -16,7 +16,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
 import { formatCurrency } from '@/lib/format'
-import { thisYearMonth, todayDate, carryoverSeedDate } from '@/lib/dateLimits'
+import {
+  thisYearMonth,
+  carryoverSeedDate,
+  monthStartDate,
+  monthEndDateCapped,
+} from '@/lib/dateLimits'
 import { useSession } from '@/hooks/useSession'
 import type { CarryoverDateMode } from '@/lib/dateLimits'
 import type { CreateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
@@ -171,7 +176,8 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
               <Input
                 id="inv_as_of_date"
                 type="date"
-                max={todayDate()}
+                min={monthStartDate(form.year_month)}
+                max={monthEndDateCapped(form.year_month)}
                 value={form.as_of_date}
                 onChange={(e) =>
                   setForm({ ...form, as_of_date: e.target.value })

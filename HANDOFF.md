@@ -41,9 +41,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
 
 - **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
-  blocker; #76 (snapshot month integrity — keep `year_month` immutable, educate delete-and-redo +
-  validate `as_of_date`, reframes the closed #57) is the fast-follow. #58 (maturity-date edit didn't
-  sync `terminated_at` + close snapshot) and #53 (tag assign not reflected) shipped. Fix via branch → PR → squash-merge.
+  blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and
+  `as_of_date` pinned to its `year_month` via DB CHECK `<table>_as_of_in_month`, migration 00003 +
+  bounded date inputs; reframes the closed #57) shipped. #58 (maturity-date edit didn't sync
+  `terminated_at` + close snapshot) and #53 (tag assign not reflected) shipped. Fix via branch → PR → squash-merge.
 - **PDF export** of monthly reports (Q22) — still open.
 - **Hardening / follow-ups** — bump `actions/checkout` (Node 20 deprecation), add an HSTS header,
   wire the `cloudflared` dev-tunnel (`make dev-tunnel`), document DB backup/restore (Neon branch +

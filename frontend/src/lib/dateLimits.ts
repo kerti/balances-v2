@@ -23,7 +23,7 @@ export function todayDate(): string {
 }
 
 // SUPPORTED_CARRYOVER_DATE_MODES mirrors the users.carryover_date_mode CHECK
-// (migration 00026) and the handler's supportedCarryoverDateModes map. It is
+// (migration 00002) and the handler's supportedCarryoverDateModes map. It is
 // the per-user preference (issue #105) for the as-of date the carryover dialog
 // pre-fills. Add a mode by extending all three.
 export const SUPPORTED_CARRYOVER_DATE_MODES = [
@@ -84,4 +84,26 @@ export function carryoverSeedDate(
       seed = today
   }
   return seed > today ? today : seed
+}
+
+// monthStartDate returns the first day of a "YYYY-MM" month as "YYYY-MM-DD",
+// suitable for the `min` of a snapshot's statement-date input — the statement
+// date must fall within the snapshot's month (backend CHECK
+// <table>_as_of_in_month, migration 00003).
+export function monthStartDate(yearMonth: string): string {
+  return `${yearMonth}-01`
+}
+
+// monthEndDateCapped returns the last day of a "YYYY-MM" month as "YYYY-MM-DD",
+// but never later than today — for the current month the cap is today, since a
+// snapshot is a past observation. Suitable for the `max` of the statement-date
+// input. Both halves are YYYY-MM-DD, so the lexicographic min is also the
+// chronological min.
+export function monthEndDateCapped(yearMonth: string): string {
+  const [year, month] = yearMonth.split('-').map(Number)
+  // Day 0 of the next 1-based month index is the last day of `month`.
+  const lastDay = new Date(year, month, 0).getDate()
+  const endOfMonth = `${yearMonth}-${String(lastDay).padStart(2, '0')}`
+  const today = todayDate()
+  return endOfMonth < today ? endOfMonth : today
 }

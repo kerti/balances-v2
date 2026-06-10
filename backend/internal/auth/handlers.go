@@ -379,7 +379,7 @@ var supportedThemes = map[string]struct{}{
 }
 
 // supportedCarryoverDateModes mirrors the allowed set in the
-// users.carryover_date_mode CHECK (migration 00026) and the frontend's
+// users.carryover_date_mode CHECK (migration 00002) and the frontend's
 // SUPPORTED_CARRYOVER_DATE_MODES constant. Add a mode by extending all three.
 // Validated here so a bad value is a 400 with a friendly message rather than a
 // 500 from the CHECK violation.

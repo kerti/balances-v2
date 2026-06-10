@@ -48,9 +48,13 @@ coupons, resets at each coupon). The Snapshot model accommodates both: accrued i
 record an amount in a currency. Stock / MutualFund / Gold snapshots record quantity, market price
 per unit, and total value (= quantity × price). Bond / TimeDeposit snapshots record total value and
 accrued interest, where **total value is dirty** — it already includes the accrued interest.
-`accrued_interest` is a breakdown column for income-tracking visibility, not an additive component.
-Net-worth aggregation sums `total value` uniformly across all snapshot tables. All snapshot values
-are entered manually from statements; the system does not auto-compute interest or market value.
+`accrued_interest` is carried as a breakdown column for income-tracking visibility, not as an
+additive component. Net-worth aggregation sums `total value` uniformly across all snapshot tables.
+All snapshot values are entered manually from statements; the system does not auto-compute interest
+or market value. A Snapshot belongs to exactly one month: its `year_month` is immutable after
+creation (to move a reading to another month, delete it and record a new one), and its optional
+`as_of_date` (the statement date) must fall **within that same calendar month** — enforced by a DB
+CHECK on every snapshot table and by bounded date inputs in the UI.
 
 **Transaction**: An event in an Investment instrument's ledger. Types: **Buy**, **Sell**,
 **Coupon**, **Dividend**, **Distribution**, **Fee**, **Maturity**.

@@ -49,6 +49,10 @@ const (
 	// later than today UTC.
 	CodeSnapshotFutureDate Code = "SNAPSHOT_FUTURE_DATE"
 
+	// CodeSnapshotDateOutsideMonth maps repo.ErrSnapshotDateOutsideMonth -> 400
+	// — a snapshot's as_of_date falls outside its year_month's calendar month.
+	CodeSnapshotDateOutsideMonth Code = "SNAPSHOT_DATE_OUTSIDE_MONTH"
+
 	// CodeTransactionFutureDate is a 400 for an investment-transaction
 	// transaction_date strictly later than today UTC.
 	CodeTransactionFutureDate Code = "TRANSACTION_FUTURE_DATE"

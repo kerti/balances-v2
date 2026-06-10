@@ -88,4 +88,11 @@ var (
 	// Mapped to 409 Conflict — the request is well-formed but the positions'
 	// current rollover state forbids it.
 	ErrInvalidRolloverLink = errors.New("repo: invalid rollover link")
+
+	// ErrSnapshotDateOutsideMonth is returned when a snapshot's as_of_date
+	// (statement date) falls outside its year_month's calendar month. The DB
+	// CHECK constraint <table>_as_of_in_month (migration 00003) enforces it
+	// across all four snapshot tables on INSERT and UPDATE; the repo maps the
+	// resulting check_violation to this sentinel. Mapped to 400.
+	ErrSnapshotDateOutsideMonth = errors.New("repo: snapshot as_of_date outside its year_month")
 )

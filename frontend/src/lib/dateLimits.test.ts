@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { carryoverSeedDate, thisYearMonth, todayDate } from './dateLimits'
+import {
+  carryoverSeedDate,
+  thisYearMonth,
+  todayDate,
+  monthStartDate,
+  monthEndDateCapped,
+} from './dateLimits'
 
 describe('dateLimits', () => {
   beforeEach(() => {
@@ -71,5 +77,22 @@ describe('dateLimits', () => {
         '2026-05-30',
       )
     })
+  })
+
+  it('monthStartDate returns the first of the month', () => {
+    expect(monthStartDate('2026-03')).toBe('2026-03-01')
+    expect(monthStartDate('2026-12')).toBe('2026-12-01')
+  })
+
+  it('monthEndDateCapped returns the last day for a past month', () => {
+    // System time pinned to 2026-05-30; these months are fully in the past.
+    expect(monthEndDateCapped('2026-02')).toBe('2026-02-28') // non-leap
+    expect(monthEndDateCapped('2026-04')).toBe('2026-04-30') // 30-day month
+    expect(monthEndDateCapped('2024-02')).toBe('2024-02-29') // leap year
+  })
+
+  it('monthEndDateCapped caps the current month at today', () => {
+    // May has 31 days, but today is the 30th — the cap wins.
+    expect(monthEndDateCapped('2026-05')).toBe('2026-05-30')
   })
 })

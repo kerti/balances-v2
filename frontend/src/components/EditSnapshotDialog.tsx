@@ -13,11 +13,13 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
-import { todayDate } from '@/lib/dateLimits'
+import { monthStartDate, monthEndDateCapped } from '@/lib/dateLimits'
+import { formatYearMonth } from '@/lib/format'
 
 // Generic snapshot shape — only the fields the edit form needs.
 type SnapshotLike = {
   id: string
+  year_month: string
   amount: string
   currency: string
   as_of_date: string | null
@@ -44,9 +46,10 @@ type Props<TResult> = {
   mutation: UseMutationResult<TResult, unknown, UpdateSnapshotMutationVariables>
 }
 
-// year_month is not editable: changing it would mean creating a different
-// month's snapshot, which conflicts with the (position_id, year_month) unique
-// constraint. To "move" a snapshot to a different month, delete and recreate.
+// year_month is shown read-only, not editable: changing it would mean creating
+// a different month's snapshot, which conflicts with the (position_id,
+// year_month) unique constraint. To "move" a snapshot to a different month, the
+// user deletes it (row menu) and records a new one — see snapshot.wrongMonthHint.
 export function EditSnapshotDialog<TResult>({
   open,
   onOpenChange,
@@ -85,6 +88,19 @@ export function EditSnapshotDialog<TResult>({
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
+            <Label htmlFor="edit_year_month">{t('fields.month')}</Label>
+            <Input
+              id="edit_year_month"
+              data-testid="snapshot-month-locked"
+              disabled
+              value={formatYearMonth(snapshot.year_month)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t('snapshot.wrongMonthHint')}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
             <Label htmlFor="edit_amount">
               {t('fields.amountIn', { currency: snapshot.currency })}
             </Label>
@@ -102,7 +118,8 @@ export function EditSnapshotDialog<TResult>({
             <Input
               id="edit_as_of_date"
               type="date"
-              max={todayDate()}
+              min={monthStartDate(snapshot.year_month)}
+              max={monthEndDateCapped(snapshot.year_month)}
               value={form.as_of_date}
               onChange={(e) =>
                 setForm({ ...form, as_of_date: e.target.value })

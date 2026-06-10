@@ -408,6 +408,9 @@ func (r *LiabilityRepo) CreateLiabilitySnapshot(ctx context.Context, p CreateLia
 		HouseholdID: hid,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -442,6 +445,9 @@ func (r *LiabilityRepo) UpdateLiabilitySnapshot(ctx context.Context, p UpdateLia
 		UpdatedBy:   &user,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

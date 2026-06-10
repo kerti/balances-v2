@@ -15,7 +15,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
-import { thisYearMonth, todayDate, carryoverSeedDate } from '@/lib/dateLimits'
+import {
+  thisYearMonth,
+  carryoverSeedDate,
+  monthStartDate,
+  monthEndDateCapped,
+} from '@/lib/dateLimits'
 import { useSession } from '@/hooks/useSession'
 import type { CarryoverDateMode } from '@/lib/dateLimits'
 import type { RevaluationSuggestion } from '@/lib/revaluation'
@@ -157,7 +162,8 @@ export function CreateSnapshotDialog<TResult>({
               <Input
                 id="as_of_date"
                 type="date"
-                max={todayDate()}
+                min={monthStartDate(form.year_month)}
+                max={monthEndDateCapped(form.year_month)}
                 value={form.as_of_date}
                 onChange={(e) =>
                   setForm({ ...form, as_of_date: e.target.value })

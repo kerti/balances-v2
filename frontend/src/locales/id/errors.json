@@ -12,6 +12,7 @@
     "INVALID_YEAR_MONTH": "Bulan tidak valid: format yang diharapkan YYYY-MM.",
     "FUTURE_YEAR_MONTH": "Bulan tidak boleh di masa depan.",
     "SNAPSHOT_FUTURE_DATE": "Tanggal snapshot tidak boleh di masa depan.",
+    "SNAPSHOT_DATE_OUTSIDE_MONTH": "Tanggal laporan harus berada dalam bulan snapshot.",
     "TRANSACTION_FUTURE_DATE": "Tanggal transaksi tidak boleh di masa depan.",
     "INVALID_SNAPSHOT_SHAPE": "Nilai snapshot tidak sesuai dengan jenis investasi ini.",
     "INVALID_TRANSACTION_TYPE": "Jenis transaksi tidak didukung untuk investasi ini.",

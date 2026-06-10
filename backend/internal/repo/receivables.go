@@ -378,6 +378,9 @@ func (r *ReceivableRepo) CreateReceivableSnapshot(ctx context.Context, p CreateR
 		HouseholdID: hid,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -412,6 +415,9 @@ func (r *ReceivableRepo) UpdateReceivableSnapshot(ctx context.Context, p UpdateR
 		UpdatedBy:   &user,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

@@ -69,7 +69,7 @@ RETURNING *;
 
 -- name: UpdateUserCarryoverDateMode :one
 -- Self-attributed: the user sets how the carryover dialog seeds its as-of date
--- (issue #105). The DB CHECK (migration 00026) enforces the allowed set; the
+-- (issue #105). The DB CHECK (migration 00002) enforces the allowed set; the
 -- handler additionally validates before issuing this query so the client gets a
 -- 400 rather than a 500 on a bad value.
 UPDATE users

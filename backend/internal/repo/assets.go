@@ -65,6 +65,9 @@ func (r *AssetRepo) CreateAssetSnapshot(ctx context.Context, p CreateAssetSnapsh
 		HouseholdID: hid,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			// CTE matched no asset, so the snapshot wasn't inserted —
 			// either the asset doesn't exist in this household or it's
@@ -102,6 +105,9 @@ func (r *AssetRepo) UpdateAssetSnapshot(ctx context.Context, p UpdateAssetSnapsh
 		UpdatedBy:   &user,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

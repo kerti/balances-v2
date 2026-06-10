@@ -87,6 +87,9 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 		HouseholdID:     hid,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
@@ -146,6 +149,9 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		UpdatedBy:       &user,
 	})
 	if err != nil {
+		if asOfMonthViolation(err) {
+			return nil, ErrSnapshotDateOutsideMonth
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
