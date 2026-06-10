@@ -143,8 +143,11 @@ These are not ADRs because they're tactical, but they're load-bearing:
   post-create because all categories share one row shape (unlike
   `investment_transactions.transaction_type` which would invalidate the DB CHECK). When adding new
   income categories: extend the income CHECK in the baseline migration, the validator `oneof=…` tag in
-  both `createReq` and `updateReq` in `internal/income/income.go`, and the `IncomeCategory` union +
-  `CATEGORY_LABEL` map in the frontend.
+  both `createReq` and `updateReq` in `internal/income/income.go`, the `IncomeCategory` union in
+  `api/types.ts`, and the `categoryOptions.<key>` labels in both locale catalogs (`locales/{en,id}/
+  income.json`) — there is no `CATEGORY_LABEL` TS map anymore (i18n sweep, #11). Note `regularity`
+  (`routine`/`incidental`) is an independent stored field with its own `oneof` validator, not derived
+  from category — adding a category does not touch it.
 - **Transaction validation is two-layer.** DB CHECK enforces type→shape integrity (e.g., `buy/sell`
   rows must have quantity AND price_per_unit). The repo's
   `validateInvestmentTransactionType(subtype, type)` enforces the subtype→type matrix (e.g.,
@@ -167,27 +170,39 @@ These are not ADRs because they're tactical, but they're load-bearing:
   wrapper line in the router config; don't reach for `useNavigate` inside a screen.
 - **Nav is the shadcn Sidebar** (`AppSidebar`, data-driven from a single `NAV` array): persistent on
   desktop, drawer on phones. Subtyped groups (Assets, Liabilities, Investments) show always-expanded
-  sub-items and get a placeholder **group home** page (`/assets`, `/liabilities`, `/investments`) —
-  stubs for the future per-group dashboards. Flat groups (Receivables, Income) list at their root
+  sub-items and get a **group home** page (`/assets`, `/liabilities`, `/investments`). `/investments`
+  is a real dashboard (`InvestmentsHome`, cost-basis + time-series + pie/stack charts, #14);
+  `/assets` + `/liabilities` are still placeholder stubs awaiting their per-group dashboards. Flat
+  groups (Receivables, Income) list at their root
   path, no home. Liability **detail nests under its subtype** (`/liabilities/personal/:id`) so the
   dynamic `:id` never overlaps the literal subtype segments. Add a destination = add it to `NAV`.
 - **E2E navigates by URL.** Specs `goto('/path')` to enter a screen; for mid-test nav that must avoid
   a reload, click persistent sidebar `link`s (the old `getByRole('tab', …)` nav is gone). See
   `rebuild.spec` (preserves client-side `['reports']` invalidation) and `currency-display.spec`.
+- **Reports auto-invalidate after every write.** A global `MutationCache` in `main.tsx` calls
+  `invalidateQueries({ queryKey: ['reports'] })` on every successful mutation, so monthly reports +
+  dashboard regenerate lazily on next read (ADR-0006) without each mutation hook opting in. Don't
+  hand-wire per-screen `['reports']` invalidation, and keep report-feeding queries under the
+  `['reports']` key prefix so they're swept by it.
 - **React Query useEffect gotcha.** Never put a `useMutation` result in a `useEffect` deps array —
-  it's recreated every render and will loop. There's a comment to this effect in
-  `EditSnapshotDialog`; replicate the pattern when needed.
-- **Decimals are strings on the wire**, `decimal.Decimal` in Go, with DECIMAL(20,4) for amounts and
-  DECIMAL(20,8) for rates/FX. ADR-0011.
+  it's recreated every render and will loop. Edit dialogs sidestep this entirely (no `useEffect`;
+  form state seeded from the entity prop with `key={entity.id}` remount); keep it that way.
+- **Decimals are strings on the wire**, `decimal.Decimal` in Go. Three precision shapes (ADR-0011):
+  DECIMAL(20,4) for monetary amounts, DECIMAL(20,8) for instrument quantities **and** rates/FX. Lone
+  exception: `gold_details.purity` is DECIMAL(5,4) (a 0–1 fraction). A new quantity column takes
+  (20,8), not (20,4).
 - **Rates are stored as percentage** (e.g., `5.5` for 5.5%), not as decimal fraction. Frontend
   reads/writes the same number the user sees on screen — no client-side scaling. Applies to
   `liabilities.interest_rate`, `property_details.annual_appreciation_rate`,
   `vehicle_details.annual_depreciation_rate`, `bond_details.coupon_rate`,
   `time_deposit_details.interest_rate`.
-- **Maturity urgency styling** (`lib/maturity.ts`): 4-tier — default (>90d, muted), approaching
-  (≤90d, bold), imminent (≤30d, bold + amber, countdown format), matured (muted + ⚠ prefix). Bond +
-  TimeDeposit list rows + detail pages share this helper. Don't reinvent the date-comparison logic
-  inline.
+- **Maturity urgency styling** (`lib/maturity.ts`): 4 states, 3 colour treatments — default (>90d,
+  muted) and matured (<0d, muted + ⚠ prefix) share `text-muted-foreground`; approaching (≤90d, bold)
+  and imminent (≤30d, bold + amber, countdown format) are the two distinct accents. States differ by
+  label even where colour repeats. Used by **Bond + TimeDeposit list rows only** — detail pages
+  dropped the inline urgency label (#55) and just show `formatDate(maturity_date)`. List rows
+  **suppress the label when the position is terminated** (`!terminated && …`). Don't reinvent the
+  date-comparison logic inline.
 - **Soft-delete everything**, including snapshots. ADR-0007. Hard-delete is not a UI feature — "can
   be undone via the database" is the line we use in confirm dialogs.
 - **Backend lint is enforced.** `golangci-lint run` from `backend/` must be clean. Config at repo
@@ -219,7 +234,9 @@ These are not ADRs because they're tactical, but they're load-bearing:
   a `<div>`, not a heading). **No spec uses `page.locator()` structural selectors.** Stable
   role/label selectors (`getByRole('button'|'link')`, `getByLabel` on properly-associated inputs) and
   `getByText` for stable copy are fine to keep; the point is to ban brittle structural traversal, not
-  to testid every button. When you add a new structural-locator need, add a test id instead.
+  to testid every button. When you add a new structural-locator need, add a test id instead. **Lone
+  exception:** `theme.spec.ts` uses `page.locator('html')` to assert the dark-mode class on the root
+  element — the `<html>` node can't carry a test id.
 - **Tenancy test pattern**: every position group's `*_tenancy_test.go` covers both the cross-tenant
   rejection path (bob attempts X, expects `ErrNotFound`) and the alice-side happy-path CRUD success
   (update + delete on entity and snapshot, then verify Get/List). Cross-tenant alone leaves
