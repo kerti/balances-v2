@@ -19,9 +19,11 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 are complete; **M6 (v1 polish) is in progress, nearing close.** CI is green. Preparing the
-**first alpha release** (`v0.6.0-alpha.1`) — see ADR-0029/0030/0031 for branching, hosting, and the
-migration baseline.
+M1–M5 are complete; **M6 (v1 polish) is nearly closed.** CI is green. **`v0.6.0-alpha.1` is
+DEPLOYED** to the `preview` environment (`https://preview.<personal-domain>`) via the tag-driven
+pipeline (ADR-0029/0030/0031). Single-origin: one Fly app (region `sin`) serves the SPA + `/api`;
+Neon Postgres (preview branch), Resend mail, Google OAuth (Testing mode). Custom domain on Cloudflare
+DNS-only with Fly-managed TLS.
 
 - **M1–M3** — walking skeleton, Google OAuth + invites, first vertical slice (bank-account asset
   with snapshots), all tenancy-tested.
@@ -69,18 +71,25 @@ migration baseline.
 
 ## What's next
 
-M6 is the v1-polish milestone (see `docs/ROADMAP.md`). Toward the first alpha:
+Alpha is deployed; M6 effectively closes with it. Open work, in rough priority:
 
-- **Alpha rollout** — branching/PR flow (ADR-0029), hosting on Fly + Neon + Cloudflare Pages + Resend
-  (ADR-0030), tag-driven deploy. ADRs 0029/0030 await maintainer signoff; 0031 (squash) is done.
-- **Deploy** — stand up the `preview` environment; real Resend domain; document DB backup/restore.
-  **SPA history fallback required** (serve `index.html` for unknown non-`/api` paths) now that
-  routing is client-side — vite dev/preview already do it, the production static server must too
-  (ADR-0025).
-- **PDF export** of monthly reports (user requirement, Q22) — still open.
+- **Alpha bug fixes** (dogfood targets) — #53 (tag assign not reflected), #56 (maturity snapshot not
+  instant), #58 (maturity-date edit doesn't update termination) are the recommended alpha blockers;
+  #57 (edit snapshot month-year) is a fast-follow. Fix via branch → PR → squash-merge.
+- **PDF export** of monthly reports (Q22) — still open.
+- **Hardening / follow-ups** — bump `actions/checkout` (Node 20 deprecation), add an HSTS header,
+  wire the `cloudflared` dev-tunnel (`make dev-tunnel`), document DB backup/restore (Neon branch +
+  `pg_dump`), and the deferred security items (#70: e2e-in-CI, SHA-pin actions, gitleaks).
+- **demo / production** — stand up when a beta/RC exists; same image, add Cloudflare *in front*
+  (proxied) for CDN/WAF (ADR-0030).
 
-Don't auto-start the next item — the user pauses between milestones to direct. The deferred backlog
-below holds the smaller, optional items.
+**Deploying:** push a SemVer tag — `v0.6.0-alpha.N` → `preview` (auto). `deploy.yml` routes by tag and
+runs `flyctl deploy` (builds the SPA+API image, `goose up` via `release_command`, rolls out). Backend
+runtime secrets live on Fly (`fly secrets`); only `FLY_API_TOKEN` is in the GitHub `preview`
+environment.
+
+Don't auto-start the next item — the user pauses between items to direct. The deferred backlog below
+holds the smaller, optional items.
 
 ## Conventions to keep, not to break
 
