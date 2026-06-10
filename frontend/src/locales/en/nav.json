@@ -25,6 +25,8 @@
       "local": "Local"
     },
     "sourceCode": "Source code on GitHub",
-    "website": "Maintainer website"
+    "sourceCodeLabel": "Source code",
+    "website": "Maintainer website",
+    "maintainerLabel": "Maintainer"
   }
 }

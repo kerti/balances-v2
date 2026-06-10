@@ -25,6 +25,8 @@
       "local": "Lokal"
     },
     "sourceCode": "Kode sumber di GitHub",
-    "website": "Situs web pengelola"
+    "sourceCodeLabel": "Kode sumber",
+    "website": "Situs web pengelola",
+    "maintainerLabel": "Pengelola"
   }
 }

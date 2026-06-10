@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Globe } from 'lucide-react'
+import { CircleUser } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -154,7 +154,7 @@ export function AppSidebar() {
               {t(`footer.deploy.${DEPLOY_ENV}`)}
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-1.5">
             <a
               href={REPO_URL}
               target="_blank"
@@ -162,9 +162,10 @@ export function AppSidebar() {
               aria-label={t('footer.sourceCode')}
               title={t('footer.sourceCode')}
               data-testid="footer-link-github"
-              className="transition-colors hover:text-foreground"
+              className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
             >
               <GitHubMark className="h-4 w-4" />
+              {t('footer.sourceCodeLabel')}
             </a>
             <a
               href={MAINTAINER_URL}
@@ -173,9 +174,10 @@ export function AppSidebar() {
               aria-label={t('footer.website')}
               title={t('footer.website')}
               data-testid="footer-link-website"
-              className="transition-colors hover:text-foreground"
+              className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
             >
-              <Globe className="h-4 w-4" />
+              <CircleUser className="h-4 w-4" />
+              {t('footer.maintainerLabel')}
             </a>
           </div>
         </div>
