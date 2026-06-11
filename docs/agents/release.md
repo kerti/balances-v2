@@ -71,6 +71,13 @@ Run from a clean, up-to-date `main`.
      cleanly against a scratch DB before tagging.
    - No migration files changed → safe; `migrate up` is a no-op on deploy.
 
+   **Numbering — renumber at merge (not timestamps).** Goose reads the version from the
+   `NNNNN_` filename prefix; `migrations.go` is a bare `//go:embed *.sql` glob with no registry,
+   so a migration's number lives only in its filename. Author against the next free number at
+   branch time; if it's taken by the time you merge (two `NNNNN_*` files share a prefix in the
+   diff), bump the later one — `git mv 00002_foo.sql 00003_foo.sql`, nothing else to touch. Keeps
+   apply-order == merge-order. The human squash-merge is the serialization point where this surfaces.
+
 5. **CI is green on `main`.** `gh run list --branch main --limit 5`. The tag deploys whatever `main`
    points at — never tag a red `main`.
 
