@@ -85,6 +85,11 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreateProperty)
 		r.Get("/", h.handleListProperties)
+		// Create-from-file import: upload a position workbook from the list
+		// screen and create a brand-new property (Detail sheet) + seed its
+		// snapshots (Snapshots sheet) atomically. Static segment, so no clash
+		// with POST "/" or the /{id} routes.
+		r.Post("/import", h.handleImportCreateProperty)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGetProperty)
 			r.Patch("/", h.handleUpdateProperty)
@@ -97,6 +102,11 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreateVehicle)
 		r.Get("/", h.handleListVehicles)
+		// Create-from-file import: upload a position workbook from the list
+		// screen and create a brand-new vehicle (Detail sheet) + seed its
+		// snapshots (Snapshots sheet) atomically. Static segment, so no clash
+		// with POST "/" or the /{id} routes.
+		r.Post("/import", h.handleImportCreateVehicle)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGetVehicle)
 			r.Patch("/", h.handleUpdateVehicle)

@@ -282,6 +282,86 @@ func (r *AssetRepo) ExportVehicle(ctx context.Context, id uuid.UUID) (*VehicleEx
 	return out, nil
 }
 
+// CreateVehicleWithSnapshots creates a vehicle and seeds its snapshot history
+// in a single transaction (all-or-nothing) — the commit path of the create-
+// from-file import. It mirrors CreateVehicle's asset+details writes, then
+// optionally assigns the resolved Tag and upserts every snapshot row, all under
+// one tx so a mid-batch failure leaves nothing behind. tagID nil leaves the
+// position untagged; an empty snaps seeds no history.
+func (r *AssetRepo) CreateVehicleWithSnapshots(ctx context.Context, p CreateVehicleParams, tagID *uuid.UUID, snaps []ImportSnapshotRow) (*Vehicle, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := r.q.WithTx(tx)
+	asset, err := qtx.CreateAsset(ctx, db.CreateAssetParams{
+		HouseholdID:     hid,
+		DisplayName:     p.DisplayName,
+		Description:     p.Description,
+		Subtype:         "vehicle",
+		OwnershipType:   p.OwnershipType,
+		SoleOwnerUserID: p.SoleOwnerUserID,
+		NativeCurrency:  p.NativeCurrency,
+		CreatedBy:       &user,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create asset: %w", err)
+	}
+
+	details, err := qtx.CreateVehicleDetails(ctx, db.CreateVehicleDetailsParams{
+		AssetID:                asset.ID,
+		VehicleType:            p.VehicleType,
+		Make:                   p.Make,
+		Model:                  p.Model,
+		Year:                   p.Year,
+		PlateNumber:            p.PlateNumber,
+		AnnualDepreciationRate: p.AnnualDepreciationRate,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create vehicle_details: %w", err)
+	}
+
+	if tagID != nil {
+		if _, err := qtx.AssignAssetTag(ctx, db.AssignAssetTagParams{
+			TagID:       tagID,
+			ID:          asset.ID,
+			HouseholdID: hid,
+			UpdatedBy:   &user,
+		}); err != nil {
+			return nil, fmt.Errorf("assign tag: %w", err)
+		}
+		asset.TagID = tagID
+	}
+
+	for _, row := range snaps {
+		if _, err := qtx.UpsertAssetSnapshot(ctx, db.UpsertAssetSnapshotParams{
+			ID:          asset.ID,
+			YearMonth:   row.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    row.AsOfDate,
+			Description: row.Description,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}); err != nil {
+			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
+	return &Vehicle{Asset: asset, Details: details}, nil
+}
+
 func (r *AssetRepo) DeleteVehicle(ctx context.Context, id uuid.UUID) error {
 	if _, err := r.GetVehicle(ctx, id); err != nil {
 		return err

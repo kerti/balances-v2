@@ -1,194 +1,55 @@
 package assets
 
 import (
-	"bytes"
 	"context"
-	"errors"
-	"io"
 	"net/http"
 	"strings"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 
-	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/importcreate"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
-// importCreateResponse is the create-from-file import result. It parallels the
-// snapshot-import importResponse but adds the Detail-sheet half: would_create
-// (a position would be / was created), the field-level errors, and — on a
-// committed write — the new position's id. ToInsert counts the seeded
-// snapshots (a brand-new position has no existing months, so there is no
-// to_update counterpart).
-type importCreateResponse struct {
-	Mode        string                      `json:"mode"`      // "preview" | "commit"
-	Committed   bool                        `json:"committed"` // true only when a position was written
-	WouldCreate bool                        `json:"would_create"`
-	PositionID  *uuid.UUID                  `json:"position_id,omitempty"`
-	ToInsert    int                         `json:"to_insert"`
-	FieldErrors []snapshotimport.FieldError `json:"field_errors"`
-	Errors      []snapshotimport.RowError   `json:"errors"`
-}
+// Create-from-file import for the asset-table groups (bank account, property,
+// vehicle): the uploaded position workbook's Detail sheet becomes the position,
+// its Snapshots sheet seeds the history — atomically on commit. The shared
+// transport + preview/commit gate + Detail-cell parsing live in
+// internal/importcreate; only the per-group field mapping (the resolve methods
+// below) and the repo write differ. See issue #88 (bank account) / #89 (fan-out).
 
-// handleImportCreateBankAccount creates a brand-new bank account from an
-// uploaded position workbook: the Detail sheet becomes the position, the
-// Snapshots sheet seeds its history — atomically. With mode=preview (default)
-// it validates the Detail fields + resolves the sole_owner email / tag name +
-// validates the snapshot rows and writes nothing; with mode=commit it creates
-// the position + snapshots in one transaction, but only if zero field/row
-// errors (all-or-nothing) — otherwise 422 with the errors.
+// ----- bank account -------------------------------------------------------
+
 func (h *Handlers) handleImportCreateBankAccount(w http.ResponseWriter, r *http.Request) {
-	mode := r.URL.Query().Get("mode")
-	if mode == "" {
-		mode = "preview"
-	}
-	if mode != "preview" && mode != "commit" {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidImportMode, nil)
-		return
-	}
-
-	r.Body = http.MaxBytesReader(w, r.Body, maxImportUpload)
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
-		return
-	}
-	defer func() { _ = file.Close() }()
-
-	// Read the upload once: both the Detail and the Snapshots sheet are parsed
-	// from the same workbook, each opening its own reader over these bytes.
-	data, err := io.ReadAll(file)
-	if err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
-		return
-	}
-
-	detail, err := snapshotimport.ParseDetail(bytes.NewReader(data))
-	if err != nil {
-		// Unreadable file, or no Detail sheet — there is nothing to create from.
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidSpreadsheet, nil)
-		return
-	}
-
-	params, tagID, fieldErrs, err := h.resolveBankAccountDetail(r.Context(), detail)
-	if err != nil {
-		httperr.WriteRepo(w, "import create: resolve detail", err)
-		return
-	}
-
-	parsed, rowErrs, err := snapshotimport.Parse(bytes.NewReader(data), snapshotimport.Options{
-		DefaultCurrency: strings.TrimSpace(detail["native_currency"]),
-		ValidCurrency:   func(c string) bool { return h.validate.Var(c, "iso4217") == nil },
-	})
-	if err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidSpreadsheet, nil)
-		return
-	}
-
-	resp := importCreateResponse{
-		Mode:        mode,
-		FieldErrors: fieldErrs,
-		Errors:      rowErrs,
-		ToInsert:    len(parsed),
-	}
-	if resp.FieldErrors == nil {
-		resp.FieldErrors = []snapshotimport.FieldError{}
-	}
-	if resp.Errors == nil {
-		resp.Errors = []snapshotimport.RowError{}
-	}
-	hasErrors := len(fieldErrs) > 0 || len(rowErrs) > 0
-	resp.WouldCreate = !hasErrors
-
-	// commit refuses a workbook with any bad field or row — fix and re-upload.
-	if mode == "commit" && hasErrors {
-		writeJSON(w, http.StatusUnprocessableEntity, resp)
-		return
-	}
-
-	if mode == "preview" {
-		writeJSON(w, http.StatusOK, resp)
-		return
-	}
-
-	rows := make([]repo.ImportSnapshotRow, len(parsed))
-	for i, p := range parsed {
-		rows[i] = repo.ImportSnapshotRow{
-			YearMonth:   p.YearMonth,
-			Amount:      p.Amount,
-			Currency:    p.Currency,
-			AsOfDate:    p.AsOfDate,
-			Description: p.Description,
-		}
-	}
-
-	account, err := h.repo.CreateBankAccountWithSnapshots(r.Context(), params, tagID, rows)
-	if err != nil {
-		httperr.WriteRepo(w, "import create bank account", err)
-		return
-	}
-	resp.Committed = true
-	resp.PositionID = &account.Asset.ID
-	writeJSON(w, http.StatusOK, resp)
+	importcreate.Run(w, r, h.validate, h.resolveBankAccountDetail,
+		func(ctx context.Context, p repo.CreateBankAccountParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
+			acct, err := h.repo.CreateBankAccountWithSnapshots(ctx, p, tagID, rows)
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return acct.Asset.ID, nil
+		})
 }
 
-// resolveBankAccountDetail turns the parsed Detail sheet into create params,
-// resolving the two id-typed conventions (sole_owner email -> user id, tag name
-// -> tag id) and collecting every per-field problem. A returned error is a DB
-// failure during resolution (mapped to a 5xx); a bad email / missing field is a
-// FieldError, not an error. An unmatched tag is left unassigned (tagID nil), per
-// the create-import contract.
 func (h *Handlers) resolveBankAccountDetail(ctx context.Context, detail map[string]string) (repo.CreateBankAccountParams, *uuid.UUID, []snapshotimport.FieldError, error) {
-	var fieldErrs []snapshotimport.FieldError
-
-	ownership := strings.TrimSpace(detail["ownership_type"])
-	email := strings.TrimSpace(detail["sole_owner"])
-
-	// Resolve the sole owner only when ownership is "sole" and an email was
-	// given. A sole position with a blank email is left to the struct
-	// validator's required_if (reported as the "sole_owner" field below); a
-	// joint position ignores any stray email (export writes it blank).
-	var soleOwnerID *uuid.UUID
-	emailHandled := false
-	if ownership == "sole" && email != "" {
-		id, found, err := h.repo.LookupUserIDByEmail(ctx, email)
-		if err != nil {
-			return repo.CreateBankAccountParams{}, nil, nil, err
-		}
-		if !found {
-			fieldErrs = append(fieldErrs, snapshotimport.FieldError{
-				Field:   "sole_owner",
-				Message: "no household member has the email " + email,
-			})
-		} else {
-			soleOwnerID = &id
-		}
-		emailHandled = true
+	soleOwnerID, emailHandled, fieldErrs, err := importcreate.ResolveSoleOwner(
+		ctx, detail["ownership_type"], detail["sole_owner"], h.repo.LookupUserIDByEmail)
+	if err != nil {
+		return repo.CreateBankAccountParams{}, nil, nil, err
 	}
 
 	req := createBankAccountReq{
 		DisplayName:     strings.TrimSpace(detail["display_name"]),
-		Description:     optionalStr(detail["description"]),
-		OwnershipType:   ownership,
+		Description:     importcreate.OptionalStr(detail["description"]),
+		OwnershipType:   strings.TrimSpace(detail["ownership_type"]),
 		SoleOwnerUserID: soleOwnerID,
 		NativeCurrency:  strings.TrimSpace(detail["native_currency"]),
 		BankName:        strings.TrimSpace(detail["bank_name"]),
 		AccountNumber:   strings.TrimSpace(detail["account_number"]),
 		AccountType:     strings.TrimSpace(detail["account_type"]),
 	}
-
-	if verr := h.validate.Struct(&req); verr != nil {
-		for _, fe := range collectFieldErrors(verr) {
-			// Don't double-report sole_owner: if we already attached a
-			// resolution error for it, skip the validator's required_if.
-			if emailHandled && fe.Field == "sole_owner" {
-				continue
-			}
-			fieldErrs = append(fieldErrs, fe)
-		}
-	}
+	fieldErrs = append(fieldErrs, validateStruct(h, &req, emailHandled)...)
 
 	tagID, err := h.repo.LookupTagIDByName(ctx, strings.TrimSpace(detail["tag"]))
 	if err != nil {
@@ -208,48 +69,138 @@ func (h *Handlers) resolveBankAccountDetail(ctx context.Context, detail map[stri
 	return params, tagID, fieldErrs, nil
 }
 
-// collectFieldErrors maps every validator.FieldError onto a Detail-sheet
-// FieldError. The struct's sole_owner_user_id field is reported as "sole_owner"
-// — the Detail-sheet key the user actually filled (an email), not the resolved
-// id field.
-func collectFieldErrors(err error) []snapshotimport.FieldError {
-	var verrs validator.ValidationErrors
-	if !errors.As(err, &verrs) {
+// ----- property -----------------------------------------------------------
+
+func (h *Handlers) handleImportCreateProperty(w http.ResponseWriter, r *http.Request) {
+	importcreate.Run(w, r, h.validate, h.resolvePropertyDetail,
+		func(ctx context.Context, p repo.CreatePropertyParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
+			property, err := h.repo.CreatePropertyWithSnapshots(ctx, p, tagID, rows)
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return property.Asset.ID, nil
+		})
+}
+
+func (h *Handlers) resolvePropertyDetail(ctx context.Context, detail map[string]string) (repo.CreatePropertyParams, *uuid.UUID, []snapshotimport.FieldError, error) {
+	soleOwnerID, emailHandled, fieldErrs, err := importcreate.ResolveSoleOwner(
+		ctx, detail["ownership_type"], detail["sole_owner"], h.repo.LookupUserIDByEmail)
+	if err != nil {
+		return repo.CreatePropertyParams{}, nil, nil, err
+	}
+
+	acquisitionDate := importcreate.Date(detail, "acquisition_date", &fieldErrs)
+	acquisitionCost := importcreate.Decimal(detail, "acquisition_cost", &fieldErrs)
+	appreciationRate := importcreate.Decimal(detail, "annual_appreciation_rate", &fieldErrs)
+
+	// createPropertyReq validates the required + enum fields (display_name,
+	// ownership_type, native_currency, property_type, sole_owner required_if).
+	// The optional typed cells are parsed above and carried in params directly.
+	req := createPropertyReq{
+		DisplayName:     strings.TrimSpace(detail["display_name"]),
+		Description:     importcreate.OptionalStr(detail["description"]),
+		OwnershipType:   strings.TrimSpace(detail["ownership_type"]),
+		SoleOwnerUserID: soleOwnerID,
+		NativeCurrency:  strings.TrimSpace(detail["native_currency"]),
+		PropertyType:    strings.TrimSpace(detail["property_type"]),
+		Address:         importcreate.OptionalStr(detail["address"]),
+		AcquisitionCost: acquisitionCost,
+	}
+	fieldErrs = append(fieldErrs, validateStruct(h, &req, emailHandled)...)
+
+	tagID, err := h.repo.LookupTagIDByName(ctx, strings.TrimSpace(detail["tag"]))
+	if err != nil {
+		return repo.CreatePropertyParams{}, nil, nil, err
+	}
+
+	params := repo.CreatePropertyParams{
+		DisplayName:            req.DisplayName,
+		Description:            req.Description,
+		OwnershipType:          req.OwnershipType,
+		SoleOwnerUserID:        req.SoleOwnerUserID,
+		NativeCurrency:         req.NativeCurrency,
+		PropertyType:           req.PropertyType,
+		Address:                req.Address,
+		AcquisitionDate:        acquisitionDate,
+		AcquisitionCost:        acquisitionCost,
+		AnnualAppreciationRate: appreciationRate,
+	}
+	return params, tagID, fieldErrs, nil
+}
+
+// ----- vehicle ------------------------------------------------------------
+
+func (h *Handlers) handleImportCreateVehicle(w http.ResponseWriter, r *http.Request) {
+	importcreate.Run(w, r, h.validate, h.resolveVehicleDetail,
+		func(ctx context.Context, p repo.CreateVehicleParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
+			vehicle, err := h.repo.CreateVehicleWithSnapshots(ctx, p, tagID, rows)
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return vehicle.Asset.ID, nil
+		})
+}
+
+func (h *Handlers) resolveVehicleDetail(ctx context.Context, detail map[string]string) (repo.CreateVehicleParams, *uuid.UUID, []snapshotimport.FieldError, error) {
+	soleOwnerID, emailHandled, fieldErrs, err := importcreate.ResolveSoleOwner(
+		ctx, detail["ownership_type"], detail["sole_owner"], h.repo.LookupUserIDByEmail)
+	if err != nil {
+		return repo.CreateVehicleParams{}, nil, nil, err
+	}
+
+	year := importcreate.Int32(detail, "year", &fieldErrs)
+	depreciationRate := importcreate.Decimal(detail, "annual_depreciation_rate", &fieldErrs)
+
+	req := createVehicleReq{
+		DisplayName:     strings.TrimSpace(detail["display_name"]),
+		Description:     importcreate.OptionalStr(detail["description"]),
+		OwnershipType:   strings.TrimSpace(detail["ownership_type"]),
+		SoleOwnerUserID: soleOwnerID,
+		NativeCurrency:  strings.TrimSpace(detail["native_currency"]),
+		VehicleType:     strings.TrimSpace(detail["vehicle_type"]),
+		Make:            importcreate.OptionalStr(detail["make"]),
+		Model:           importcreate.OptionalStr(detail["model"]),
+		Year:            year,
+		PlateNumber:     importcreate.OptionalStr(detail["plate_number"]),
+	}
+	fieldErrs = append(fieldErrs, validateStruct(h, &req, emailHandled)...)
+
+	tagID, err := h.repo.LookupTagIDByName(ctx, strings.TrimSpace(detail["tag"]))
+	if err != nil {
+		return repo.CreateVehicleParams{}, nil, nil, err
+	}
+
+	params := repo.CreateVehicleParams{
+		DisplayName:            req.DisplayName,
+		Description:            req.Description,
+		OwnershipType:          req.OwnershipType,
+		SoleOwnerUserID:        req.SoleOwnerUserID,
+		NativeCurrency:         req.NativeCurrency,
+		VehicleType:            req.VehicleType,
+		Make:                   req.Make,
+		Model:                  req.Model,
+		Year:                   year,
+		PlateNumber:            req.PlateNumber,
+		AnnualDepreciationRate: depreciationRate,
+	}
+	return params, tagID, fieldErrs, nil
+}
+
+// validateStruct runs the go-playground validator over a create-request struct
+// and maps every failure onto a Detail-sheet FieldError. When emailHandled is
+// true the sole_owner field was already resolved (and any error attached) by
+// ResolveSoleOwner, so the validator's duplicate required_if is dropped.
+func validateStruct(h *Handlers, req any, emailHandled bool) []snapshotimport.FieldError {
+	verr := h.validate.Struct(req)
+	if verr == nil {
 		return nil
 	}
-	out := make([]snapshotimport.FieldError, 0, len(verrs))
-	for _, fe := range verrs {
-		field := fe.Field()
-		if field == "sole_owner_user_id" {
-			field = "sole_owner"
+	var out []snapshotimport.FieldError
+	for _, fe := range importcreate.CollectFieldErrors(verr) {
+		if emailHandled && fe.Field == "sole_owner" {
+			continue
 		}
-		out = append(out, snapshotimport.FieldError{Field: field, Message: ruleMessage(fe)})
+		out = append(out, fe)
 	}
 	return out
-}
-
-// ruleMessage renders a short English reason for a failed validator tag, mirror
-// of the rules on createBankAccountReq. The import flow ships English copy
-// inline (unlike the i18n error envelopes), so the message is human-readable.
-func ruleMessage(fe validator.FieldError) string {
-	switch fe.Tag() {
-	case "required", "required_if":
-		return "is required"
-	case "oneof":
-		return "must be one of: " + strings.ReplaceAll(fe.Param(), " ", ", ")
-	case "iso4217":
-		return "must be a 3-letter ISO currency code"
-	default:
-		return "is invalid"
-	}
-}
-
-// optionalStr maps a trimmed Detail cell to an optional string field: nil when
-// blank, a pointer otherwise.
-func optionalStr(s string) *string {
-	s = strings.TrimSpace(s)
-	if s == "" {
-		return nil
-	}
-	return &s
 }

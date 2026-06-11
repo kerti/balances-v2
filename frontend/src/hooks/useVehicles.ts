@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import { postCreateImport, type CreateImportArgs } from '@/hooks/snapshotImport'
 import type { Vehicle, VehicleListItem } from '@/api/types'
 
 export type CreateVehiclePayload = {
@@ -70,6 +71,22 @@ export function useUpdateVehicle(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vehicles'] })
       qc.invalidateQueries({ queryKey: ['vehicles', id] })
+    },
+  })
+}
+
+// useImportCreateVehicle drives the create-from-file dialog on the list screen:
+// a preview is a server-side dry-run; a committed create writes a new vehicle +
+// its snapshots in one transaction, so only that refreshes the list.
+export function useImportCreateVehicle() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: CreateImportArgs) =>
+      postCreateImport('/api/vehicles', args.file, args.mode),
+    onSuccess: (result) => {
+      if (result.committed) {
+        qc.invalidateQueries({ queryKey: ['vehicles'] })
+      }
     },
   })
 }

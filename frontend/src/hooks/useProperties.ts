@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import { postCreateImport, type CreateImportArgs } from '@/hooks/snapshotImport'
 import type { Property, PropertyListItem } from '@/api/types'
 
 export type CreatePropertyPayload = {
@@ -68,6 +69,22 @@ export function useUpdateProperty(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['properties'] })
       qc.invalidateQueries({ queryKey: ['properties', id] })
+    },
+  })
+}
+
+// useImportCreateProperty drives the create-from-file dialog on the list
+// screen: a preview is a server-side dry-run; a committed create writes a new
+// property + its snapshots in one transaction, so only that refreshes the list.
+export function useImportCreateProperty() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: CreateImportArgs) =>
+      postCreateImport('/api/properties', args.file, args.mode),
+    onSuccess: (result) => {
+      if (result.committed) {
+        qc.invalidateQueries({ queryKey: ['properties'] })
+      }
     },
   })
 }

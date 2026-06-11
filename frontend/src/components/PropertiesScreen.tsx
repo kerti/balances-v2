@@ -5,11 +5,12 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
-import { useProperties } from '@/hooks/useProperties'
+import { useProperties, useImportCreateProperty } from '@/hooks/useProperties'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreatePropertyDialog } from '@/components/CreatePropertyDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { PropertyListRow } from '@/components/PropertyListRow'
 import { ownershipLabel } from '@/lib/ownership'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
@@ -37,6 +38,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function PropertiesScreen({ onSelect }: Props) {
   const { t } = useTranslation(['assets', 'common', 'errors'])
   const { data, isPending, error } = useProperties()
+  const importMutation = useImportCreateProperty()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
   const [showInactive, setShowInactive] = useState(false)
@@ -101,7 +103,10 @@ export function PropertiesScreen({ onSelect }: Props) {
             {t('assets:property.listSubtitle')}
           </p>
         </div>
-        <CreatePropertyDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreatePropertyDialog />
+        </div>
       </div>
 
       <ListHeadline

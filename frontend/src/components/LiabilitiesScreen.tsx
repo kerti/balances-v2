@@ -5,11 +5,12 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
-import { useLiabilities } from '@/hooks/useLiabilities'
+import { useLiabilities, useImportCreateLiability } from '@/hooks/useLiabilities'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateLiabilityDialog } from '@/components/CreateLiabilityDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { LiabilityListRow } from '@/components/LiabilityListRow'
 import { ownershipLabel } from '@/lib/ownership'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
@@ -38,6 +39,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function LiabilitiesScreen({ subtype, onSelect }: Props) {
   const { t } = useTranslation(['liabilities', 'common', 'errors'])
   const { data, isPending, error } = useLiabilities(subtype)
+  const importMutation = useImportCreateLiability()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
   const [showInactive, setShowInactive] = useState(false)
@@ -104,7 +106,10 @@ export function LiabilitiesScreen({ subtype, onSelect }: Props) {
             {t(`liabilities:screens.${subtype}.description`)}
           </p>
         </div>
-        <CreateLiabilityDialog defaultSubtype={subtype} />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateLiabilityDialog defaultSubtype={subtype} />
+        </div>
       </div>
 
       <ListHeadline

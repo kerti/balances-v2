@@ -5,11 +5,12 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
-import { useVehicles } from '@/hooks/useVehicles'
+import { useVehicles, useImportCreateVehicle } from '@/hooks/useVehicles'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateVehicleDialog } from '@/components/CreateVehicleDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { VehicleListRow } from '@/components/VehicleListRow'
 import { ownershipLabel } from '@/lib/ownership'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
@@ -37,6 +38,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function VehiclesScreen({ onSelect }: Props) {
   const { t } = useTranslation(['assets', 'common', 'errors'])
   const { data, isPending, error } = useVehicles()
+  const importMutation = useImportCreateVehicle()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
   const [showInactive, setShowInactive] = useState(false)
@@ -101,7 +103,10 @@ export function VehiclesScreen({ onSelect }: Props) {
             {t('assets:vehicle.listSubtitle')}
           </p>
         </div>
-        <CreateVehicleDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateVehicleDialog />
+        </div>
       </div>
 
       <ListHeadline

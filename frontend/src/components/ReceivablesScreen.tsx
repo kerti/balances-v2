@@ -5,11 +5,12 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
-import { useReceivables } from '@/hooks/useReceivables'
+import { useReceivables, useImportCreateReceivable } from '@/hooks/useReceivables'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateReceivableDialog } from '@/components/CreateReceivableDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { ReceivableListRow } from '@/components/ReceivableListRow'
 import { ownershipLabel } from '@/lib/ownership'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
@@ -37,6 +38,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function ReceivablesScreen({ onSelect }: Props) {
   const { t } = useTranslation(['receivables', 'common', 'errors'])
   const { data, isPending, error } = useReceivables()
+  const importMutation = useImportCreateReceivable()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
   const [showInactive, setShowInactive] = useState(false)
@@ -101,7 +103,10 @@ export function ReceivablesScreen({ onSelect }: Props) {
             {t('receivables:listSubtitle')}
           </p>
         </div>
-        <CreateReceivableDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateReceivableDialog />
+        </div>
       </div>
 
       <ListHeadline
