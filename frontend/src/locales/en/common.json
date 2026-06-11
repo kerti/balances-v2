@@ -159,6 +159,9 @@
     "importN_other": "Import {{count}} months",
     "importPlain": "Import"
   },
+  "export": {
+    "trigger": "Export"
+  },
   "tour": {
     "help": "Help",
     "next": "Next",

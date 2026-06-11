@@ -159,6 +159,9 @@
     "importN_other": "Impor {{count}} bulan",
     "importPlain": "Impor"
   },
+  "export": {
+    "trigger": "Ekspor"
+  },
   "tour": {
     "help": "Bantuan",
     "next": "Lanjut",

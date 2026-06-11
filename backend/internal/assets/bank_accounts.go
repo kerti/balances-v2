@@ -2,12 +2,16 @@ package assets
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/google/uuid"
 
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
+	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
 // ----- requests -----------------------------------------------------------
@@ -116,6 +120,87 @@ func (h *Handlers) handleUpdateBankAccount(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	writeJSON(w, http.StatusOK, account)
+}
+
+// handleExportBankAccount streams a fully-populated position workbook for one
+// bank account — a "Detail" sheet (its fields) + a "Snapshots" sheet (its
+// history) — in the exact format the importer reads, so the file round-trips
+// back in through the unchanged snapshot-import flow.
+func (h *Handlers) handleExportBankAccount(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		writeInvalidID(w, "id")
+		return
+	}
+
+	data, err := h.repo.ExportBankAccount(r.Context(), id)
+	if err != nil {
+		httperr.WriteRepo(w, "export bank account", err)
+		return
+	}
+
+	asset := data.Account.Asset
+	snaps := make([]snapshotimport.ExportSnapshot, len(data.Snapshots))
+	for i, s := range data.Snapshots {
+		snaps[i] = snapshotimport.ExportSnapshot{
+			YearMonth:   s.YearMonth,
+			AsOfDate:    s.AsOfDate,
+			Amount:      s.Amount,
+			Currency:    s.Currency,
+			Description: s.Description,
+		}
+	}
+
+	xlsx, err := snapshotimport.BuildWorkbook(snapshotimport.TemplateMeta{
+		PositionName:    asset.DisplayName,
+		DefaultCurrency: asset.NativeCurrency,
+		Detail:          bankAccountDetailFields(data),
+	}, snaps)
+	if err != nil {
+		httperr.WriteRepo(w, "export bank account: build", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.xlsx"`, exportFilename(asset.DisplayName)))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(xlsx)
+}
+
+// bankAccountDetailFields maps a bank account onto the Detail sheet's
+// field/value/notes rows. Field order mirrors the create-request; the two
+// id-typed fields follow the repo-wide conventions — ownership_type + a
+// sole_owner email (blank for joint), and tag as the Tag's name.
+func bankAccountDetailFields(data *repo.BankAccountExport) []snapshotimport.DetailField {
+	asset := data.Account.Asset
+	details := data.Account.Details
+	desc := ""
+	if asset.Description != nil {
+		desc = *asset.Description
+	}
+	return []snapshotimport.DetailField{
+		{Key: "display_name", Value: asset.DisplayName},
+		{Key: "description", Value: desc},
+		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
+		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
+		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},
+		{Key: "bank_name", Value: details.BankName},
+		{Key: "account_number", Value: details.AccountNumber},
+		{Key: "account_type", Value: details.AccountType, Note: "savings | current | other"},
+	}
+}
+
+// nonFilenameChars collapses anything outside a safe filename set to a single
+// dash, so a display name can't smuggle quotes/newlines into Content-Disposition.
+var nonFilenameChars = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+func exportFilename(displayName string) string {
+	slug := strings.Trim(nonFilenameChars.ReplaceAllString(displayName, "-"), "-")
+	if slug == "" {
+		return "bank-account-export"
+	}
+	return slug + "-export"
 }
 
 func (h *Handlers) handleDeleteBankAccount(w http.ResponseWriter, r *http.Request) {

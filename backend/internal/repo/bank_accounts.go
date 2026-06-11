@@ -220,6 +220,61 @@ func (r *AssetRepo) UpdateBankAccount(ctx context.Context, id uuid.UUID, p Updat
 	return &BankAccount{Asset: asset, Details: details}, nil
 }
 
+// BankAccountExport is everything export needs to render a full position
+// workbook: the aggregate, the human-facing values for the two id-typed fields
+// (owner email, tag name — resolved per the Detail-sheet conventions), and the
+// full snapshot history.
+type BankAccountExport struct {
+	Account    BankAccount
+	OwnerEmail string // sole_owner's email; "" for joint
+	TagName    string // resolved tag name; "" when untagged
+	Snapshots  []db.AssetSnapshot
+}
+
+// ExportBankAccount gathers a bank account, its resolved owner email + tag
+// name, and its snapshot history, scoped + ownership-checked to the caller's
+// household (404 via GetBankAccount when not owned or wrong subtype).
+func (r *AssetRepo) ExportBankAccount(ctx context.Context, id uuid.UUID) (*BankAccountExport, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := r.GetBankAccount(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &BankAccountExport{Account: *account}
+
+	if uid := account.Asset.SoleOwnerUserID; uid != nil {
+		user, err := r.q.GetUserByID(ctx, *uid)
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve owner: %w", err)
+		}
+		out.OwnerEmail = user.Email
+	}
+
+	if tid := account.Asset.TagID; tid != nil {
+		tag, err := r.q.GetTagByID(ctx, db.GetTagByIDParams{ID: *tid, HouseholdID: hid})
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve tag: %w", err)
+		}
+		out.TagName = tag.Name
+	}
+
+	snaps, err := r.q.ListAssetSnapshotsForAsset(ctx, db.ListAssetSnapshotsForAssetParams{
+		AssetID:     id,
+		HouseholdID: hid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export: list snapshots: %w", err)
+	}
+	out.Snapshots = snaps
+
+	return out, nil
+}
+
 func (r *AssetRepo) DeleteBankAccount(ctx context.Context, id uuid.UUID) error {
 	// Verify the asset is actually a bank_account before deleting, so a
 	// caller can't accidentally delete a property via this method.

@@ -64,6 +64,10 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetBankAccount)
 			r.Patch("/", h.handleUpdateBankAccount)
 			r.Delete("/", h.handleDeleteBankAccount)
+			// Export the full position workbook (Detail + Snapshots) in the
+			// importer's format, so it round-trips back through the snapshot
+			// import on the detail page.
+			r.Get("/export", h.handleExportBankAccount)
 		})
 	})
 

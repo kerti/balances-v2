@@ -112,6 +112,13 @@ export function importTemplateUrl(assetId: string): string {
   return snapshotImportTemplateUrl(`/api/assets/${assetId}/snapshots`)
 }
 
+// bankAccountExportUrl is the plain-GET download for a bank account's full
+// position workbook (Detail + Snapshots). Like the template link, the session
+// cookie rides along same-origin, so a bare anchor is enough.
+export function bankAccountExportUrl(assetId: string): string {
+  return `/api/bank-accounts/${assetId}/export`
+}
+
 export function useImportSnapshots(assetId: string) {
   const qc = useQueryClient()
   return useMutation({

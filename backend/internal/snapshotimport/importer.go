@@ -37,7 +37,19 @@ import (
 // SheetName is the worksheet the importer reads data rows from.
 const SheetName = "Snapshots"
 
+// DetailSheetName is the worksheet that carries the position's own fields as a
+// key/value listing (group-specific). The blank template ships keys with an
+// example value + an enum/format hint; export fills the real values. The
+// snapshot Parse path ignores this sheet entirely, so an exported workbook
+// re-imports through the unchanged detail-page flow.
+const DetailSheetName = "Detail"
+
 const instructionsSheet = "Instructions"
+
+// detailHeaders label the Detail sheet's columns. The data is the key/value
+// pair (field, value); the trailing notes column carries enum/format hints for
+// the blank template and is ignored on parse, so values round-trip cleanly.
+var detailHeaders = []string{"field", "value", "notes"}
 
 // Shape selects the column layout of the template (and the columns Parse
 // expects). The zero value is ShapeAmount, so existing flat-amount callers are
@@ -116,18 +128,66 @@ type Options struct {
 // TemplateMeta scopes a generated template to one position. PositionName is the
 // position's display name (asset / liability / receivable / investment — the
 // importer is position-group-agnostic, only the calling repo knows the group).
-// Shape selects the column layout (default ShapeAmount).
+// Shape selects the column layout (default ShapeAmount). Detail, when set,
+// emits a "Detail" sheet of the position's own fields; leave it nil for the
+// flat groups that don't (yet) carry a Detail sheet.
 type TemplateMeta struct {
 	PositionName    string
 	DefaultCurrency string
 	Shape           Shape
+	Detail          []DetailField
 }
 
-// BuildTemplate returns the bytes of an .xlsx template scoped to one position:
-// a "Snapshots" sheet (header + one example row) and an "Instructions" sheet.
+// DetailField is one key/value row on the Detail sheet. Value is the example
+// value (blank template) or the populated value (export). Note is an optional
+// enum/format hint shown in the trailing notes column; it is purely advisory
+// and never read back by ParseDetail.
+type DetailField struct {
+	Key   string
+	Value string
+	Note  string
+}
+
+// ExportSnapshot is one fully-populated snapshot to write onto the Snapshots
+// sheet of an export. Amount/Currency are always written; the shape-specific
+// pointers are written only when the meta's Shape uses that column.
+type ExportSnapshot struct {
+	YearMonth       time.Time
+	AsOfDate        *time.Time
+	Amount          decimal.Decimal
+	Currency        string
+	Description     *string
+	Quantity        *decimal.Decimal // ShapeQuantityPrice
+	PricePerUnit    *decimal.Decimal // ShapeQuantityPrice
+	AccruedInterest *decimal.Decimal // ShapeAccruedInterest
+}
+
+// BuildTemplate returns the bytes of a blank .xlsx template scoped to one
+// position: an optional "Detail" sheet (its fields with example values), a
+// "Snapshots" sheet (header + one example row), and an "Instructions" sheet.
 func BuildTemplate(meta TemplateMeta) ([]byte, error) {
+	return BuildWorkbook(meta, nil)
+}
+
+// BuildWorkbook is the unified position-workbook builder behind both the blank
+// template and the export. Pass snaps == nil to emit a blank template (one
+// example Snapshots row); pass a non-nil slice (possibly empty) to emit an
+// export with those rows and no example. When meta.Detail is set a "Detail"
+// sheet is written first; export populates it with real values, the blank
+// template with example values + hints.
+func BuildWorkbook(meta TemplateMeta, snaps []ExportSnapshot) ([]byte, error) {
 	f := excelize.NewFile()
 	defer func() { _ = f.Close() }()
+
+	// Detail sheet first (the position's identity), when fields are provided.
+	if len(meta.Detail) > 0 {
+		if _, err := f.NewSheet(DetailSheetName); err != nil {
+			return nil, fmt.Errorf("new detail sheet: %w", err)
+		}
+		if err := writeDetailSheet(f, meta.Detail); err != nil {
+			return nil, err
+		}
+	}
 
 	idx, err := f.NewSheet(SheetName)
 	if err != nil {
@@ -140,10 +200,21 @@ func BuildTemplate(meta TemplateMeta) ([]byte, error) {
 			return nil, fmt.Errorf("write header: %w", err)
 		}
 	}
-	for i, v := range exampleRow(meta) {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 2)
-		if err := f.SetCellStr(SheetName, cell, v); err != nil {
-			return nil, fmt.Errorf("write example: %w", err)
+	if snaps == nil {
+		for i, v := range exampleRow(meta) {
+			cell, _ := excelize.CoordinatesToCellName(i+1, 2)
+			if err := f.SetCellStr(SheetName, cell, v); err != nil {
+				return nil, fmt.Errorf("write example: %w", err)
+			}
+		}
+	} else {
+		for r, s := range snaps {
+			for c, v := range snapshotRowCells(meta.Shape, s) {
+				cell, _ := excelize.CoordinatesToCellName(c+1, r+2)
+				if err := f.SetCellStr(SheetName, cell, v); err != nil {
+					return nil, fmt.Errorf("write snapshot row: %w", err)
+				}
+			}
 		}
 	}
 
@@ -167,6 +238,90 @@ func BuildTemplate(meta TemplateMeta) ([]byte, error) {
 		return nil, fmt.Errorf("serialise xlsx: %w", err)
 	}
 	return buf.Bytes(), nil
+}
+
+// writeDetailSheet lays out the field/value/notes header plus one row per field.
+func writeDetailSheet(f *excelize.File, fields []DetailField) error {
+	for i, h := range detailHeaders {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		if err := f.SetCellStr(DetailSheetName, cell, h); err != nil {
+			return fmt.Errorf("write detail header: %w", err)
+		}
+	}
+	for r, fld := range fields {
+		for c, v := range []string{fld.Key, fld.Value, fld.Note} {
+			cell, _ := excelize.CoordinatesToCellName(c+1, r+2)
+			if err := f.SetCellStr(DetailSheetName, cell, v); err != nil {
+				return fmt.Errorf("write detail row: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// snapshotRowCells renders one populated snapshot in the column order of the
+// shape's headers (mirror of exampleRow). Blank cells are written for absent
+// optional values so columns stay aligned.
+func snapshotRowCells(shape Shape, s ExportSnapshot) []string {
+	ym := s.YearMonth.Format("2006-01")
+	asOf := ""
+	if s.AsOfDate != nil {
+		asOf = s.AsOfDate.Format("2006-01-02")
+	}
+	desc := ""
+	if s.Description != nil {
+		desc = *s.Description
+	}
+	dec := func(p *decimal.Decimal) string {
+		if p == nil {
+			return ""
+		}
+		return p.String()
+	}
+	switch shape {
+	case ShapeQuantityPrice:
+		return []string{ym, asOf, dec(s.Quantity), dec(s.PricePerUnit), s.Currency, desc}
+	case ShapeAccruedInterest:
+		return []string{ym, asOf, s.Amount.String(), dec(s.AccruedInterest), s.Currency, desc}
+	default:
+		return []string{ym, asOf, s.Amount.String(), s.Currency, desc}
+	}
+}
+
+// ParseDetail reads the "Detail" sheet back into a field->value map (the notes
+// column is ignored). A returned error means the file is unreadable or has no
+// Detail sheet. Blank/keyless rows are skipped. This is the inverse of the
+// Detail half of BuildWorkbook; the snapshot importer never calls it.
+func ParseDetail(r io.Reader) (map[string]string, error) {
+	f, err := excelize.OpenReader(r)
+	if err != nil {
+		return nil, fmt.Errorf("not a readable .xlsx file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	rows, err := f.GetRows(DetailSheetName)
+	if err != nil {
+		return nil, fmt.Errorf("read sheet %q: %w", DetailSheetName, err)
+	}
+	out := make(map[string]string, len(rows))
+	for i, cols := range rows {
+		if i == 0 { // header
+			continue
+		}
+		if len(cols) == 0 {
+			continue
+		}
+		key := strings.TrimSpace(cols[0])
+		if key == "" {
+			continue
+		}
+		val := ""
+		if len(cols) > 1 {
+			val = strings.TrimSpace(cols[1])
+		}
+		out[key] = val
+	}
+	return out, nil
 }
 
 // exampleRow is the single illustrative data row, in the column order of the
@@ -228,7 +383,21 @@ func instructions(meta TemplateMeta) []string {
 		"just use \"Download as .xlsx\" (NOT CSV) when you save to upload.",
 	}
 
-	return append(append(head, valueLines...), tail...)
+	lines := append(append(head, valueLines...), tail...)
+
+	// The "Detail" sheet lists this position's own fields (field / value /
+	// notes). Importing reads only the Snapshots sheet, so Detail is reference
+	// material here; the notes column spells out each field's allowed values.
+	if len(meta.Detail) > 0 {
+		lines = append(lines,
+			"",
+			"The \"Detail\" sheet lists this position's own fields (field / value / notes).",
+			"It is filled in on export and is here for reference — importing reads only the",
+			"\"Snapshots\" sheet above, so changes to Detail are ignored on upload.",
+		)
+	}
+
+	return lines
 }
 
 // Parse reads the "Snapshots" sheet of an .xlsx and returns the valid rows plus

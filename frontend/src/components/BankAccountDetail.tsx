@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +28,7 @@ import {
   useDeleteSnapshot,
   useImportSnapshots,
   importTemplateUrl,
+  bankAccountExportUrl,
 } from '@/hooks/useAssetSnapshots'
 import { CreateSnapshotDialog } from '@/components/CreateSnapshotDialog'
 import { ImportSnapshotsDialog } from '@/components/ImportSnapshotsDialog'
@@ -234,19 +235,36 @@ export function BankAccountDetail({ assetId, onBack }: Props) {
                 {t('assets:bankAccount.snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(asset.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateSnapshotDialog
-                  currency={asset.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={importTemplateUrl(asset.id)}
-                  mutation={importSnapshotMutation}
-                  currency={asset.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Export the full position workbook (Detail + Snapshots). Plain
+                  anchor download — session cookie rides along same-origin, like
+                  the import template link. Available regardless of status so a
+                  terminated account can still be backed up. */}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                data-testid="bank-account-export"
+              >
+                <a href={bankAccountExportUrl(asset.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(asset.status) && (
+                <>
+                  <CreateSnapshotDialog
+                    currency={asset.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={importTemplateUrl(asset.id)}
+                    mutation={importSnapshotMutation}
+                    currency={asset.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

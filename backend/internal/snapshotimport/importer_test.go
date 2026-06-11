@@ -3,6 +3,7 @@ package snapshotimport
 import (
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
@@ -282,4 +283,99 @@ func decimalFromString(t *testing.T, s string) decimal.Decimal {
 		t.Fatalf("decimal %q: %v", s, err)
 	}
 	return d
+}
+
+// --- Detail sheet + export round trip (issue #85) -------------------------
+
+func ptrTime(t *testing.T, s string) *time.Time {
+	t.Helper()
+	tt, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		t.Fatalf("time %q: %v", s, err)
+	}
+	return &tt
+}
+
+func ptrStr(s string) *string { return &s }
+
+// TestBuildWorkbook_DetailRoundTrip is the build->parse symmetry for the Detail
+// sheet: every field's value comes back under its key; the notes column is
+// dropped on parse.
+func TestBuildWorkbook_DetailRoundTrip(t *testing.T) {
+	fields := []DetailField{
+		{Key: "display_name", Value: "Joint savings"},
+		{Key: "ownership_type", Value: "joint", Note: "sole | joint"},
+		{Key: "sole_owner", Value: "", Note: "owner's email; blank when joint"},
+		{Key: "tag", Value: "Emergency fund"},
+		{Key: "account_type", Value: "savings", Note: "savings | current | other"},
+	}
+	xlsx, err := BuildWorkbook(TemplateMeta{PositionName: "Joint savings", DefaultCurrency: "IDR", Detail: fields}, nil)
+	if err != nil {
+		t.Fatalf("BuildWorkbook: %v", err)
+	}
+
+	got, err := ParseDetail(bytes.NewReader(xlsx))
+	if err != nil {
+		t.Fatalf("ParseDetail: %v", err)
+	}
+	for _, f := range fields {
+		if got[f.Key] != f.Value {
+			t.Errorf("field %q: want %q, got %q", f.Key, f.Value, got[f.Key])
+		}
+	}
+	if len(got) != len(fields) {
+		t.Errorf("field count: want %d, got %d (%v)", len(fields), len(got), got)
+	}
+}
+
+// TestBuildWorkbook_ExportParseRoundTrip exports a populated workbook and reads
+// both sheets back: Snapshots through the importer's Parse (the extra Detail
+// sheet must not break it), and Detail through ParseDetail.
+func TestBuildWorkbook_ExportParseRoundTrip(t *testing.T) {
+	detail := []DetailField{
+		{Key: "display_name", Value: "Main checking"},
+		{Key: "ownership_type", Value: "sole"},
+		{Key: "sole_owner", Value: "alice@example.com"},
+	}
+	snaps := []ExportSnapshot{
+		{YearMonth: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), AsOfDate: ptrTime(t, "2026-01-31"), Amount: decimalFromString(t, "10000000"), Currency: "IDR", Description: ptrStr("Opening")},
+		{YearMonth: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC), Amount: decimalFromString(t, "11500000"), Currency: "USD"},
+	}
+	xlsx, err := BuildWorkbook(TemplateMeta{PositionName: "Main checking", DefaultCurrency: "IDR", Detail: detail}, snaps)
+	if err != nil {
+		t.Fatalf("BuildWorkbook: %v", err)
+	}
+
+	// Snapshots sheet round-trips through the unchanged importer; Detail ignored.
+	parsed, rowErrs, err := Parse(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR"})
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if len(rowErrs) != 0 {
+		t.Fatalf("unexpected row errors: %v", rowErrs)
+	}
+	if len(parsed) != 2 {
+		t.Fatalf("want 2 parsed rows, got %d", len(parsed))
+	}
+	if !parsed[0].Amount.Equal(decimalFromString(t, "10000000")) || parsed[0].Currency != "IDR" {
+		t.Errorf("row 0: got amount=%s currency=%s", parsed[0].Amount, parsed[0].Currency)
+	}
+	if parsed[0].AsOfDate == nil || !parsed[0].AsOfDate.Equal(*ptrTime(t, "2026-01-31")) {
+		t.Errorf("row 0 as_of_date: got %v", parsed[0].AsOfDate)
+	}
+	if parsed[0].Description == nil || *parsed[0].Description != "Opening" {
+		t.Errorf("row 0 description: got %v", parsed[0].Description)
+	}
+	if !parsed[1].Amount.Equal(decimalFromString(t, "11500000")) || parsed[1].Currency != "USD" {
+		t.Errorf("row 1: got amount=%s currency=%s", parsed[1].Amount, parsed[1].Currency)
+	}
+
+	// Detail sheet round-trips through ParseDetail.
+	gotDetail, err := ParseDetail(bytes.NewReader(xlsx))
+	if err != nil {
+		t.Fatalf("ParseDetail: %v", err)
+	}
+	if gotDetail["sole_owner"] != "alice@example.com" || gotDetail["ownership_type"] != "sole" {
+		t.Errorf("detail mismatch: %v", gotDetail)
+	}
 }
