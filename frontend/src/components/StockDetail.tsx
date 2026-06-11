@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ import {
   useDeleteInvestmentSnapshot,
   useImportInvestmentSnapshots,
   investmentImportTemplateUrl,
+  stockExportUrl,
 } from '@/hooks/useInvestmentSnapshots'
 import {
   useInvestmentTransactions,
@@ -287,19 +288,31 @@ export function StockDetail({ investmentId, onBack }: Props) {
                 {t('investments:stock.snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(stock.investment.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateQuantityPriceSnapshotDialog
-                  currency={stock.investment.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={investmentImportTemplateUrl(stock.investment.id)}
-                  mutation={importSnapshotMutation}
-                  currency={stock.investment.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Export the full position workbook (Detail + Snapshots +
+                  Transactions). Plain anchor download — session cookie rides
+                  along same-origin. Available regardless of status so a
+                  terminated position can still be backed up. */}
+              <Button asChild size="sm" variant="outline" data-testid="stock-export">
+                <a href={stockExportUrl(stock.investment.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(stock.investment.status) && (
+                <>
+                  <CreateQuantityPriceSnapshotDialog
+                    currency={stock.investment.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={investmentImportTemplateUrl(stock.investment.id)}
+                    mutation={importSnapshotMutation}
+                    currency={stock.investment.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

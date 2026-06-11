@@ -45,7 +45,25 @@ const SheetName = "Snapshots"
 // re-imports through the unchanged detail-page flow.
 const DetailSheetName = "Detail"
 
+// TransactionsSheetName is the row-based ledger sheet (ADR-0023): one
+// investment transaction per row, columns covering the union of every
+// transaction type's fields. Investment exports emit it; the other position
+// groups carry no ledger and leave it off. Export-only for now — re-importing
+// the Transactions sheet is create-only seeding handled in a later slice, so
+// there is no Parse counterpart and the snapshot import path ignores it.
+const TransactionsSheetName = "Transactions"
+
 const instructionsSheet = "Instructions"
+
+// transactionHeaders is the ADR-0023 column union, left to right: the shared
+// fields first (type/date/currency/amount), then the trade columns, then the
+// maturity columns, with description last.
+var transactionHeaders = []string{
+	"transaction_type", "transaction_date", "currency", "amount",
+	"quantity", "price_per_unit",
+	"principal_amount", "interest_amount", "principal_disposition", "interest_disposition",
+	"description",
+}
 
 // detailHeaders label the Detail sheet's columns. The data is the key/value
 // pair (field, value); the trailing notes column carries enum/format hints for
@@ -137,6 +155,11 @@ type TemplateMeta struct {
 	DefaultCurrency string
 	Shape           Shape
 	Detail          []DetailField
+	// Transactions, when non-nil, adds the row-based "Transactions" ledger
+	// sheet (ADR-0023 column union). Investment exports set it — to a possibly
+	// empty (but non-nil) slice, which still emits the sheet with just its
+	// header. The other position groups leave it nil: they have no ledger.
+	Transactions []ExportTransaction
 }
 
 // DetailField is one key/value row on the Detail sheet. Value is the example
@@ -161,6 +184,24 @@ type ExportSnapshot struct {
 	Quantity        *decimal.Decimal // ShapeQuantityPrice
 	PricePerUnit    *decimal.Decimal // ShapeQuantityPrice
 	AccruedInterest *decimal.Decimal // ShapeAccruedInterest
+}
+
+// ExportTransaction is one row of the Transactions ledger sheet (ADR-0023).
+// Only the columns a given transaction type populates are non-nil; the rest are
+// written blank so the column union stays aligned. This is export-only: there
+// is no parse counterpart yet.
+type ExportTransaction struct {
+	TransactionType      string
+	TransactionDate      time.Time
+	Currency             string
+	Amount               *decimal.Decimal
+	Quantity             *decimal.Decimal
+	PricePerUnit         *decimal.Decimal
+	PrincipalAmount      *decimal.Decimal
+	InterestAmount       *decimal.Decimal
+	PrincipalDisposition *string
+	InterestDisposition  *string
+	Description          *string
 }
 
 // nonFilenameChars collapses anything outside a safe filename set to a single
@@ -237,6 +278,16 @@ func BuildWorkbook(meta TemplateMeta, snaps []ExportSnapshot) ([]byte, error) {
 		}
 	}
 
+	// Transactions ledger (investment exports only — nil for the other groups).
+	if meta.Transactions != nil {
+		if _, err := f.NewSheet(TransactionsSheetName); err != nil {
+			return nil, fmt.Errorf("new transactions sheet: %w", err)
+		}
+		if err := writeTransactionsSheet(f, meta.Transactions); err != nil {
+			return nil, err
+		}
+	}
+
 	if _, err := f.NewSheet(instructionsSheet); err != nil {
 		return nil, fmt.Errorf("new instructions sheet: %w", err)
 	}
@@ -276,6 +327,56 @@ func writeDetailSheet(f *excelize.File, fields []DetailField) error {
 		}
 	}
 	return nil
+}
+
+// writeTransactionsSheet lays out the ADR-0023 column-union header plus one row
+// per ledger transaction. Blank cells are written for columns a given type does
+// not populate, keeping the union aligned.
+func writeTransactionsSheet(f *excelize.File, txns []ExportTransaction) error {
+	for i, h := range transactionHeaders {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		if err := f.SetCellStr(TransactionsSheetName, cell, h); err != nil {
+			return fmt.Errorf("write transactions header: %w", err)
+		}
+	}
+	for r, t := range txns {
+		for c, v := range transactionRowCells(t) {
+			cell, _ := excelize.CoordinatesToCellName(c+1, r+2)
+			if err := f.SetCellStr(TransactionsSheetName, cell, v); err != nil {
+				return fmt.Errorf("write transaction row: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// transactionRowCells renders one transaction in transactionHeaders order.
+func transactionRowCells(t ExportTransaction) []string {
+	dec := func(p *decimal.Decimal) string {
+		if p == nil {
+			return ""
+		}
+		return p.String()
+	}
+	str := func(p *string) string {
+		if p == nil {
+			return ""
+		}
+		return *p
+	}
+	return []string{
+		t.TransactionType,
+		t.TransactionDate.Format("2006-01-02"),
+		t.Currency,
+		dec(t.Amount),
+		dec(t.Quantity),
+		dec(t.PricePerUnit),
+		dec(t.PrincipalAmount),
+		dec(t.InterestAmount),
+		str(t.PrincipalDisposition),
+		str(t.InterestDisposition),
+		str(t.Description),
+	}
 }
 
 // snapshotRowCells renders one populated snapshot in the column order of the
@@ -413,6 +514,18 @@ func instructions(meta TemplateMeta) []string {
 			"The \"Detail\" sheet lists this position's own fields (field / value / notes).",
 			"It is filled in on export and is here for reference — importing reads only the",
 			"\"Snapshots\" sheet above, so changes to Detail are ignored on upload.",
+		)
+	}
+
+	// The "Transactions" sheet is the investment's full ledger, one row per
+	// transaction (ADR-0023). Like Detail it is export-only reference material
+	// here — importing reads only the Snapshots sheet.
+	if meta.Transactions != nil {
+		lines = append(lines,
+			"",
+			"The \"Transactions\" sheet is this investment's full transaction ledger, one",
+			"row per transaction. It is filled in on export and is here for reference —",
+			"importing reads only the \"Snapshots\" sheet above, so it is ignored on upload.",
 		)
 	}
 

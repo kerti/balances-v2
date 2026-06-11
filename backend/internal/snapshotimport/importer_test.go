@@ -426,6 +426,146 @@ func TestBuildWorkbook_ExportShapes(t *testing.T) {
 	})
 }
 
+// TestBuildWorkbook_Transactions covers the ADR-0023 Transactions ledger sheet:
+// a non-nil slice emits the sheet (header + one row per transaction, with the
+// column union aligned and blanks for unused columns), the extra sheet does not
+// break the Snapshots Parse, and a nil slice omits the sheet entirely.
+func TestBuildWorkbook_Transactions(t *testing.T) {
+	amt := decimalFromString(t, "5000000")
+	qty := decimalFromString(t, "100")
+	price := decimalFromString(t, "50000")
+	div := decimalFromString(t, "120000")
+	principal := decimalFromString(t, "10000000")
+	interest := decimalFromString(t, "600000")
+	cashOut := "cash_out"
+	rolled := "rolled_to_new"
+
+	txns := []ExportTransaction{
+		// buy: amount + quantity + price_per_unit
+		{TransactionType: "buy", TransactionDate: *ptrTime(t, "2026-01-05"), Currency: "IDR",
+			Amount: &amt, Quantity: &qty, PricePerUnit: &price, Description: ptrStr("opening lot")},
+		// dividend: amount only
+		{TransactionType: "dividend", TransactionDate: *ptrTime(t, "2026-02-10"), Currency: "IDR", Amount: &div},
+		// maturity: principal/interest + dispositions, no amount/qty/price
+		{TransactionType: "maturity", TransactionDate: *ptrTime(t, "2026-03-01"), Currency: "IDR",
+			PrincipalAmount: &principal, InterestAmount: &interest,
+			PrincipalDisposition: &rolled, InterestDisposition: &cashOut},
+	}
+
+	snaps := []ExportSnapshot{
+		{YearMonth: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Currency: "IDR", Quantity: &qty, PricePerUnit: &price},
+	}
+	xlsx, err := BuildWorkbook(TemplateMeta{
+		PositionName: "Stock", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice,
+		Detail:       []DetailField{{Key: "display_name", Value: "Stock"}},
+		Transactions: txns,
+	}, snaps)
+	if err != nil {
+		t.Fatalf("BuildWorkbook: %v", err)
+	}
+
+	rows := sheetRows(t, xlsx, TransactionsSheetName)
+	if len(rows) != 4 { // header + 3 txns
+		t.Fatalf("want 4 rows (header + 3), got %d: %v", len(rows), rows)
+	}
+	// Header is the full column union, in order.
+	wantHeader := []string{
+		"transaction_type", "transaction_date", "currency", "amount",
+		"quantity", "price_per_unit",
+		"principal_amount", "interest_amount", "principal_disposition", "interest_disposition",
+		"description",
+	}
+	for i, h := range wantHeader {
+		if rows[0][i] != h {
+			t.Errorf("header[%d]: got %q want %q", i, rows[0][i], h)
+		}
+	}
+	// cell reads a row's column safely — GetRows trims trailing empty cells, so
+	// a short row means the unread tail columns were blank.
+	cell := func(row []string, idx int) string {
+		if idx < len(row) {
+			return row[idx]
+		}
+		return ""
+	}
+	// buy row: amount/quantity/price set, maturity columns blank.
+	buy := rows[1]
+	if buy[0] != "buy" || buy[1] != "2026-01-05" || cell(buy, 3) != "5000000" || cell(buy, 4) != "100" || cell(buy, 5) != "50000" {
+		t.Errorf("buy row shared/trade cells: %v", buy)
+	}
+	if cell(buy, 6) != "" || cell(buy, 8) != "" || cell(buy, 10) != "opening lot" {
+		t.Errorf("buy row maturity blanks / description: %v", buy)
+	}
+	// dividend row: amount only, trade + maturity columns blank.
+	div0 := rows[2]
+	if div0[0] != "dividend" || cell(div0, 3) != "120000" || cell(div0, 4) != "" || cell(div0, 6) != "" {
+		t.Errorf("dividend row: %v", div0)
+	}
+	// maturity row: principal/interest + dispositions set, amount/qty/price blank.
+	mat := rows[3]
+	if mat[0] != "maturity" || cell(mat, 3) != "" || cell(mat, 4) != "" || cell(mat, 5) != "" {
+		t.Errorf("maturity row trade blanks: %v", mat)
+	}
+	if cell(mat, 6) != "10000000" || cell(mat, 7) != "600000" || cell(mat, 8) != "rolled_to_new" || cell(mat, 9) != "cash_out" {
+		t.Errorf("maturity row maturity cells: %v", mat)
+	}
+
+	// The extra Transactions sheet must not break the Snapshots Parse.
+	parsed, rowErrs, err := Parse(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR", Shape: ShapeQuantityPrice})
+	if err != nil || len(rowErrs) != 0 {
+		t.Fatalf("Parse: err=%v rowErrs=%v", err, rowErrs)
+	}
+	if len(parsed) != 1 {
+		t.Fatalf("want 1 parsed snapshot, got %d", len(parsed))
+	}
+
+	t.Run("empty non-nil slice emits header-only sheet", func(t *testing.T) {
+		xlsx, err := BuildWorkbook(TemplateMeta{
+			PositionName: "Stock", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice,
+			Transactions: []ExportTransaction{},
+		}, snaps)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		rows := sheetRows(t, xlsx, TransactionsSheetName)
+		if len(rows) != 1 {
+			t.Fatalf("want header-only (1 row), got %d", len(rows))
+		}
+	})
+
+	t.Run("nil slice omits the sheet", func(t *testing.T) {
+		xlsx, err := BuildWorkbook(TemplateMeta{
+			PositionName: "Stock", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice,
+		}, snaps)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+		if err != nil {
+			t.Fatalf("open: %v", err)
+		}
+		defer func() { _ = f.Close() }()
+		if idx, _ := f.GetSheetIndex(TransactionsSheetName); idx != -1 {
+			t.Errorf("Transactions sheet present on nil-transaction export (index %d)", idx)
+		}
+	})
+}
+
+// sheetRows opens an in-memory workbook and returns the rows of one sheet.
+func sheetRows(t *testing.T, xlsx []byte, sheet string) [][]string {
+	t.Helper()
+	f, err := excelize.OpenReader(bytes.NewReader(xlsx))
+	if err != nil {
+		t.Fatalf("open workbook: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+	rows, err := f.GetRows(sheet)
+	if err != nil {
+		t.Fatalf("get rows %q: %v", sheet, err)
+	}
+	return rows
+}
+
 // TestParseDetail_Errors covers the no-Detail-sheet error path and the
 // keyless-row skip.
 func TestParseDetail_Errors(t *testing.T) {

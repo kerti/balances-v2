@@ -69,6 +69,10 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetStock)
 				r.Patch("/", h.handleUpdateStock)
 				r.Delete("/", h.handleDeleteStock)
+				// Export the full position workbook (Detail + Snapshots +
+				// Transactions) in the importer's format; round-trips back in
+				// through the snapshot-import flow on the detail page.
+				r.Get("/export", h.handleExportStock)
 			})
 		})
 
@@ -79,6 +83,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetMutualFund)
 				r.Patch("/", h.handleUpdateMutualFund)
 				r.Delete("/", h.handleDeleteMutualFund)
+				r.Get("/export", h.handleExportMutualFund)
 			})
 		})
 
@@ -89,6 +94,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetGold)
 				r.Patch("/", h.handleUpdateGold)
 				r.Delete("/", h.handleDeleteGold)
+				r.Get("/export", h.handleExportGold)
 			})
 		})
 
@@ -99,6 +105,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetBond)
 				r.Patch("/", h.handleUpdateBond)
 				r.Delete("/", h.handleDeleteBond)
+				r.Get("/export", h.handleExportBond)
 			})
 		})
 
@@ -109,6 +116,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetTimeDeposit)
 				r.Patch("/", h.handleUpdateTimeDeposit)
 				r.Delete("/", h.handleDeleteTimeDeposit)
+				r.Get("/export", h.handleExportTimeDeposit)
 			})
 		})
 
