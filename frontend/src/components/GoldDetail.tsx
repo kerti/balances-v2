@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ import {
   useDeleteInvestmentSnapshot,
   useImportInvestmentSnapshots,
   investmentImportTemplateUrl,
+  goldExportUrl,
 } from '@/hooks/useInvestmentSnapshots'
 import {
   useInvestmentTransactions,
@@ -288,20 +289,30 @@ export function GoldDetail({ investmentId, onBack }: Props) {
                 {t('investments:gold.snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(gold.investment.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateQuantityPriceSnapshotDialog
-                  currency={gold.investment.native_currency}
-                  priceHint={t('investments:gold.snapshotPriceHint')}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={investmentImportTemplateUrl(gold.investment.id)}
-                  mutation={importSnapshotMutation}
-                  currency={gold.investment.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Full position workbook (Detail + Snapshots + Transactions);
+                  available regardless of status. */}
+              <Button asChild size="sm" variant="outline" data-testid="gold-export">
+                <a href={goldExportUrl(gold.investment.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(gold.investment.status) && (
+                <>
+                  <CreateQuantityPriceSnapshotDialog
+                    currency={gold.investment.native_currency}
+                    priceHint={t('investments:gold.snapshotPriceHint')}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={investmentImportTemplateUrl(gold.investment.id)}
+                    mutation={importSnapshotMutation}
+                    currency={gold.investment.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

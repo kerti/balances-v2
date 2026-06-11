@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,7 @@ import {
   useDeleteInvestmentSnapshot,
   useImportInvestmentSnapshots,
   investmentImportTemplateUrl,
+  mutualFundExportUrl,
 } from '@/hooks/useInvestmentSnapshots'
 import {
   useInvestmentTransactions,
@@ -289,19 +290,29 @@ export function MutualFundDetail({ investmentId, onBack }: Props) {
                 {t('investments:mutualFund.snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(mf.investment.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateQuantityPriceSnapshotDialog
-                  currency={mf.investment.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={investmentImportTemplateUrl(mf.investment.id)}
-                  mutation={importSnapshotMutation}
-                  currency={mf.investment.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Full position workbook (Detail + Snapshots + Transactions);
+                  available regardless of status. */}
+              <Button asChild size="sm" variant="outline" data-testid="mutual-fund-export">
+                <a href={mutualFundExportUrl(mf.investment.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(mf.investment.status) && (
+                <>
+                  <CreateQuantityPriceSnapshotDialog
+                    currency={mf.investment.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={investmentImportTemplateUrl(mf.investment.id)}
+                    mutation={importSnapshotMutation}
+                    currency={mf.investment.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

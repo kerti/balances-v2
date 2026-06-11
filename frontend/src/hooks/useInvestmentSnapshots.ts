@@ -134,6 +134,30 @@ export function investmentImportTemplateUrl(investmentId: string): string {
   return snapshotImportTemplateUrl(`/api/investments/${investmentId}/snapshots`)
 }
 
+// Per-subtype export URLs for the full position workbook (Detail + Snapshots +
+// Transactions). Plain-GET download — the session cookie rides along
+// same-origin, like the import-template link. The route is subtype-specific
+// because the backend resolves the subtype-shaped Detail sheet.
+export function stockExportUrl(investmentId: string): string {
+  return `/api/investments/stocks/${investmentId}/export`
+}
+
+export function mutualFundExportUrl(investmentId: string): string {
+  return `/api/investments/mutual-funds/${investmentId}/export`
+}
+
+export function bondExportUrl(investmentId: string): string {
+  return `/api/investments/bonds/${investmentId}/export`
+}
+
+export function goldExportUrl(investmentId: string): string {
+  return `/api/investments/golds/${investmentId}/export`
+}
+
+export function timeDepositExportUrl(investmentId: string): string {
+  return `/api/investments/time-deposits/${investmentId}/export`
+}
+
 export function useImportInvestmentSnapshots(
   investmentId: string,
   listKey: InvestmentListKey,

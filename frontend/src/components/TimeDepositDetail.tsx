@@ -28,6 +28,7 @@ import {
   useDeleteInvestmentSnapshot,
   useImportInvestmentSnapshots,
   investmentImportTemplateUrl,
+  timeDepositExportUrl,
 } from '@/hooks/useInvestmentSnapshots'
 import {
   useInvestmentTransactions,
@@ -56,7 +57,7 @@ import { ownershipLabel } from '@/lib/ownership'
 import { matchesTxnSearch } from '@/lib/transactionSearch'
 import { maturityRolloverPrefill } from '@/lib/rollover'
 import { flatCostSeries } from '@/lib/costBasis'
-import { ArrowDown, ArrowUp, Pencil, Repeat, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, Pencil, Repeat, Trash2 } from 'lucide-react'
 import { InvestmentHeadline } from '@/components/InvestmentHeadline'
 
 type Props = {
@@ -431,19 +432,29 @@ export function TimeDepositDetail({
                 {t('investments:timeDeposit.snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(td.investment.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateAccruedInterestSnapshotDialog
-                  currency={td.investment.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={investmentImportTemplateUrl(td.investment.id)}
-                  mutation={importSnapshotMutation}
-                  currency={td.investment.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Full position workbook (Detail + Snapshots + Transactions);
+                  available regardless of status. */}
+              <Button asChild size="sm" variant="outline" data-testid="time-deposit-export">
+                <a href={timeDepositExportUrl(td.investment.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(td.investment.status) && (
+                <>
+                  <CreateAccruedInterestSnapshotDialog
+                    currency={td.investment.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={investmentImportTemplateUrl(td.investment.id)}
+                    mutation={importSnapshotMutation}
+                    currency={td.investment.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
