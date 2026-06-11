@@ -379,3 +379,85 @@ func TestBuildWorkbook_ExportParseRoundTrip(t *testing.T) {
 		t.Errorf("detail mismatch: %v", gotDetail)
 	}
 }
+
+// TestBuildWorkbook_ExportShapes covers the quantity/price and accrued-interest
+// column layouts of snapshotRowCells: build an export in each shape, then parse
+// it back through the matching Shape and check the shape-specific values land.
+func TestBuildWorkbook_ExportShapes(t *testing.T) {
+	t.Run("quantity/price", func(t *testing.T) {
+		qty, price := decimalFromString(t, "100"), decimalFromString(t, "8500")
+		snaps := []ExportSnapshot{{
+			YearMonth: time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC),
+			Currency:  "IDR", Quantity: &qty, PricePerUnit: &price,
+		}}
+		xlsx, err := BuildWorkbook(TemplateMeta{PositionName: "Gold", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice}, snaps)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		parsed, rowErrs, err := Parse(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR", Shape: ShapeQuantityPrice})
+		if err != nil || len(rowErrs) != 0 {
+			t.Fatalf("Parse: err=%v rowErrs=%v", err, rowErrs)
+		}
+		if len(parsed) != 1 || parsed[0].Quantity == nil || !parsed[0].Quantity.Equal(qty) || !parsed[0].PricePerUnit.Equal(price) {
+			t.Fatalf("quantity/price round trip lost: %+v", parsed)
+		}
+		if !parsed[0].Amount.Equal(qty.Mul(price)) {
+			t.Errorf("derived amount: got %s, want %s", parsed[0].Amount, qty.Mul(price))
+		}
+	})
+
+	t.Run("accrued interest", func(t *testing.T) {
+		acc := decimalFromString(t, "250000")
+		snaps := []ExportSnapshot{{
+			YearMonth: time.Date(2026, 4, 1, 0, 0, 0, 0, time.UTC),
+			Amount:    decimalFromString(t, "50250000"), Currency: "IDR", AccruedInterest: &acc,
+		}}
+		xlsx, err := BuildWorkbook(TemplateMeta{PositionName: "Bond", DefaultCurrency: "IDR", Shape: ShapeAccruedInterest}, snaps)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		parsed, rowErrs, err := Parse(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR", Shape: ShapeAccruedInterest})
+		if err != nil || len(rowErrs) != 0 {
+			t.Fatalf("Parse: err=%v rowErrs=%v", err, rowErrs)
+		}
+		if len(parsed) != 1 || parsed[0].AccruedInterest == nil || !parsed[0].AccruedInterest.Equal(acc) {
+			t.Fatalf("accrued round trip lost: %+v", parsed)
+		}
+	})
+}
+
+// TestParseDetail_Errors covers the no-Detail-sheet error path and the
+// keyless-row skip.
+func TestParseDetail_Errors(t *testing.T) {
+	t.Run("missing Detail sheet errors", func(t *testing.T) {
+		// A Snapshots-only workbook has no Detail sheet to read.
+		xlsx := buildXLSX(t, [][]string{header})
+		if _, err := ParseDetail(bytes.NewReader(xlsx)); err == nil {
+			t.Fatal("want error for missing Detail sheet, got nil")
+		}
+	})
+
+	t.Run("unreadable file errors", func(t *testing.T) {
+		if _, err := ParseDetail(bytes.NewReader([]byte("not an xlsx"))); err == nil {
+			t.Fatal("want error for non-xlsx, got nil")
+		}
+	})
+
+	t.Run("keyless rows are skipped", func(t *testing.T) {
+		fields := []DetailField{
+			{Key: "bank_name", Value: "TestBank"},
+			{Key: "", Value: "orphan value"}, // no key -> skipped
+		}
+		xlsx, err := BuildWorkbook(TemplateMeta{PositionName: "X", DefaultCurrency: "IDR", Detail: fields}, nil)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		got, err := ParseDetail(bytes.NewReader(xlsx))
+		if err != nil {
+			t.Fatalf("ParseDetail: %v", err)
+		}
+		if len(got) != 1 || got["bank_name"] != "TestBank" {
+			t.Errorf("want only bank_name, got %v", got)
+		}
+	})
+}

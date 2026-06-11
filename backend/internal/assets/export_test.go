@@ -27,10 +27,30 @@ func TestBankAccountHandlers_Export(t *testing.T) {
 		requireStatus(t, rec, http.StatusNotFound)
 	})
 
+	t.Run("name with no filename-safe chars falls back", func(t *testing.T) {
+		create := h.do(t, "POST", "/bank-accounts", map[string]any{
+			"display_name":    "!!!",
+			"ownership_type":  "joint",
+			"native_currency": "IDR",
+			"bank_name":       "TestBank",
+			"account_number":  "444",
+			"account_type":    "savings",
+		})
+		requireStatus(t, create, http.StatusCreated)
+		id := decodeBody[map[string]any](t, create)["asset"].(map[string]any)["id"].(string)
+
+		rec := h.do(t, "GET", "/bank-accounts/"+id+"/export", nil)
+		requireStatus(t, rec, http.StatusOK)
+		if cd := rec.Header().Get("Content-Disposition"); cd != `attachment; filename="bank-account-export.xlsx"` {
+			t.Errorf("fallback filename: got %q", cd)
+		}
+	})
+
 	t.Run("round trip: export then re-import", func(t *testing.T) {
 		// A sole account so the Detail sheet exercises owner-email resolution.
 		create := h.do(t, "POST", "/bank-accounts", map[string]any{
 			"display_name":       "Main checking",
+			"description":        "Primary account",
 			"ownership_type":     "sole",
 			"sole_owner_user_id": h.user.ID.String(),
 			"native_currency":    "IDR",
@@ -70,6 +90,9 @@ func TestBankAccountHandlers_Export(t *testing.T) {
 		}
 		if detail["display_name"] != "Main checking" {
 			t.Errorf("detail display_name: got %q", detail["display_name"])
+		}
+		if detail["description"] != "Primary account" {
+			t.Errorf("detail description: got %q", detail["description"])
 		}
 		if detail["ownership_type"] != "sole" {
 			t.Errorf("detail ownership_type: got %q", detail["ownership_type"])
