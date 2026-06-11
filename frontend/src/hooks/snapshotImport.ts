@@ -18,6 +18,59 @@ export type ImportResult = {
 
 export type ImportArgs = { file: File; mode: 'preview' | 'commit' }
 
+// ----- create-from-file import (position workbook -> new position) ----------
+
+export type ImportFieldError = { field: string; message: string }
+
+// CreateImportResult is the create-import counterpart of ImportResult: it adds
+// the Detail-sheet half (field_errors + would_create) and, on a committed
+// write, the new position's id. ToInsert counts the seeded snapshots; a new
+// position has no existing months, so there is no to_update.
+export type CreateImportResult = {
+  mode: 'preview' | 'commit'
+  committed: boolean
+  would_create: boolean
+  position_id?: string
+  to_insert: number
+  field_errors: ImportFieldError[]
+  errors: ImportRowError[]
+}
+
+export type CreateImportArgs = { file: File; mode: 'preview' | 'commit' }
+
+// postCreateImport uploads a position workbook to a group's create-import
+// endpoint (e.g. `/api/bank-accounts`). Like postSnapshotImport it bypasses the
+// JSON `api` wrapper for multipart, and treats a 422 as the "workbook had bad
+// fields/rows" outcome whose body is a valid CreateImportResult.
+export async function postCreateImport(
+  base: string,
+  file: File,
+  mode: 'preview' | 'commit',
+): Promise<CreateImportResult> {
+  const body = new FormData()
+  body.append('file', file)
+  const res = await fetch(`${base}/import?mode=${mode}`, {
+    method: 'POST',
+    body,
+  })
+  if (res.status === 422) return (await res.json()) as CreateImportResult
+  if (!res.ok) {
+    let errBody: ErrorEnvelope | string | undefined
+    try {
+      const parsed = await res.json()
+      errBody = isEnvelope(parsed) ? parsed : undefined
+    } catch {
+      errBody = await res.text().catch(() => undefined)
+    }
+    throw new ApiError(
+      res.status,
+      res.statusText || `import failed (${res.status})`,
+      errBody,
+    )
+  }
+  return (await res.json()) as CreateImportResult
+}
+
 // snapshotImportTemplateUrl is a plain GET the browser can hit as a download
 // link; the session cookie rides along same-origin. `base` is the snapshots
 // collection path, e.g. `/api/assets/{id}/snapshots`.

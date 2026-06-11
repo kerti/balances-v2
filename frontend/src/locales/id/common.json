@@ -159,6 +159,21 @@
     "importN_other": "Impor {{count}} bulan",
     "importPlain": "Impor"
   },
+  "importCreate": {
+    "trigger": "Impor",
+    "title": "Impor {{noun}}",
+    "description": "Buat {{noun}} baru dari sebuah workbook — detail dan seluruh riwayat snapshot-nya, dalam satu langkah.",
+    "uploadLabel": "Unggah workbook posisi",
+    "formatHint": "Workbook memerlukan sheet Detail dan sheet Snapshots. Cara termudah mendapatkan formatnya adalah dengan Ekspor {{noun}} yang sudah ada lalu menyuntingnya.",
+    "needsFixing_one": "{{count}} hal perlu diperbaiki — tidak ada yang dibuat:",
+    "needsFixing_other": "{{count}} hal perlu diperbaiki — tidak ada yang dibuat:",
+    "fieldError": "{{field}}: {{message}}",
+    "preview_one": "Siap: {{noun}} baru dengan {{count}} snapshot. Belum tersimpan — tekan Buat untuk konfirmasi.",
+    "preview_other": "Siap: {{noun}} baru dengan {{count}} snapshot. Belum tersimpan — tekan Buat untuk konfirmasi.",
+    "committed_one": "{{noun}} baru dibuat dengan {{count}} snapshot.",
+    "committed_other": "{{noun}} baru dibuat dengan {{count}} snapshot.",
+    "createBtn": "Buat"
+  },
   "export": {
     "trigger": "Ekspor"
   },

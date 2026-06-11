@@ -134,6 +134,17 @@ type RowError struct {
 	Message string `json:"message"`
 }
 
+// FieldError reports a single rejected Detail-sheet field on a create-import: a
+// missing required field, a bad enum, or an unresolved reference (e.g. an
+// unknown sole_owner email). Field is the Detail-sheet key; Message is the
+// human reason. Like RowError it carries the copy inline (the import flow is
+// English-only, unlike the i18n error envelopes), and the whole create is
+// refused if any FieldError is present (all-or-nothing).
+type FieldError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 // Options configures parsing. DefaultCurrency fills rows that leave the
 // currency column blank (the position's native currency). ValidCurrency, when
 // non-nil, gates each resolved currency (ISO-4217 in production; nil in tests

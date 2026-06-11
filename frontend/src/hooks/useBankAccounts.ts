@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import { postCreateImport, type CreateImportArgs } from '@/hooks/snapshotImport'
 import type { BankAccount, BankAccountListItem } from '@/api/types'
 
 export type CreateBankAccountPayload = {
@@ -64,6 +65,23 @@ export function useUpdateBankAccount(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['bank-accounts'] })
       qc.invalidateQueries({ queryKey: ['bank-accounts', id] })
+    },
+  })
+}
+
+// useImportCreateBankAccount drives the create-from-file dialog on the list
+// screen: a preview is a server-side dry-run; a committed create writes a new
+// bank account + its snapshots in one transaction, so only that refreshes the
+// list cache.
+export function useImportCreateBankAccount() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: CreateImportArgs) =>
+      postCreateImport('/api/bank-accounts', args.file, args.mode),
+    onSuccess: (result) => {
+      if (result.committed) {
+        qc.invalidateQueries({ queryKey: ['bank-accounts'] })
+      }
     },
   })
 }

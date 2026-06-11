@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -273,6 +274,134 @@ func (r *AssetRepo) ExportBankAccount(ctx context.Context, id uuid.UUID) (*BankA
 	out.Snapshots = snaps
 
 	return out, nil
+}
+
+// LookupUserIDByEmail resolves a household member's email back to their user id
+// — the inverse of the Detail-sheet's sole_owner convention (export writes the
+// email). The match is case-insensitive on a trimmed email. found is false when
+// no member of the caller's household has that email (the handler turns that
+// into a per-field error, not a 404). Scoping to ListUsersByHousehold enforces
+// that the resolved owner is actually a household member.
+func (r *AssetRepo) LookupUserIDByEmail(ctx context.Context, email string) (id uuid.UUID, found bool, err error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	users, err := r.q.ListUsersByHousehold(ctx, hid)
+	if err != nil {
+		return uuid.Nil, false, fmt.Errorf("lookup user by email: %w", err)
+	}
+	want := strings.ToLower(strings.TrimSpace(email))
+	for _, u := range users {
+		if strings.ToLower(u.Email) == want {
+			return u.ID, true, nil
+		}
+	}
+	return uuid.Nil, false, nil
+}
+
+// LookupTagIDByName resolves a Tag name back to its id within the caller's
+// household — the inverse of the Detail-sheet's tag convention (export writes
+// the name). Returns (nil, nil) when no Tag matches: per the create-import
+// contract an unmatched tag is left unassigned rather than erroring. The match
+// is exact on a trimmed name (round-trips an export verbatim).
+func (r *AssetRepo) LookupTagIDByName(ctx context.Context, name string) (*uuid.UUID, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	want := strings.TrimSpace(name)
+	if want == "" {
+		return nil, nil
+	}
+	tags, err := r.q.ListTagsByHousehold(ctx, hid)
+	if err != nil {
+		return nil, fmt.Errorf("lookup tag by name: %w", err)
+	}
+	for _, tg := range tags {
+		if tg.Name == want {
+			tid := tg.ID
+			return &tid, nil
+		}
+	}
+	return nil, nil
+}
+
+// CreateBankAccountWithSnapshots creates a bank account and seeds its snapshot
+// history in a single transaction (all-or-nothing) — the commit path of the
+// create-from-file import. It mirrors CreateBankAccount's asset+details writes,
+// then optionally assigns the resolved Tag and upserts every snapshot row, all
+// under one tx so a mid-batch failure leaves nothing behind. tagID nil leaves
+// the position untagged; an empty snaps seeds no history.
+func (r *AssetRepo) CreateBankAccountWithSnapshots(ctx context.Context, p CreateBankAccountParams, tagID *uuid.UUID, snaps []ImportSnapshotRow) (*BankAccount, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := r.q.WithTx(tx)
+	asset, err := qtx.CreateAsset(ctx, db.CreateAssetParams{
+		HouseholdID:     hid,
+		DisplayName:     p.DisplayName,
+		Description:     p.Description,
+		Subtype:         "bank_account",
+		OwnershipType:   p.OwnershipType,
+		SoleOwnerUserID: p.SoleOwnerUserID,
+		NativeCurrency:  p.NativeCurrency,
+		CreatedBy:       &user,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create asset: %w", err)
+	}
+
+	details, err := qtx.CreateBankAccountDetails(ctx, db.CreateBankAccountDetailsParams{
+		AssetID:       asset.ID,
+		BankName:      p.BankName,
+		AccountNumber: p.AccountNumber,
+		AccountType:   p.AccountType,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create bank_account_details: %w", err)
+	}
+
+	if tagID != nil {
+		if _, err := qtx.AssignAssetTag(ctx, db.AssignAssetTagParams{
+			TagID:       tagID,
+			ID:          asset.ID,
+			HouseholdID: hid,
+			UpdatedBy:   &user,
+		}); err != nil {
+			return nil, fmt.Errorf("assign tag: %w", err)
+		}
+		asset.TagID = tagID // reflect the assignment in the returned aggregate
+	}
+
+	for _, row := range snaps {
+		if _, err := qtx.UpsertAssetSnapshot(ctx, db.UpsertAssetSnapshotParams{
+			ID:          asset.ID,
+			YearMonth:   row.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    row.AsOfDate,
+			Description: row.Description,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}); err != nil {
+			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
+	return &BankAccount{Asset: asset, Details: details}, nil
 }
 
 func (r *AssetRepo) DeleteBankAccount(ctx context.Context, id uuid.UUID) error {

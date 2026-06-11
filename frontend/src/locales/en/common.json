@@ -159,6 +159,21 @@
     "importN_other": "Import {{count}} months",
     "importPlain": "Import"
   },
+  "importCreate": {
+    "trigger": "Import",
+    "title": "Import a {{noun}}",
+    "description": "Create a brand-new {{noun}} from a workbook — its details and full snapshot history, in one step.",
+    "uploadLabel": "Upload a position workbook",
+    "formatHint": "The workbook needs a Detail sheet and a Snapshots sheet. The easiest way to get the right format is to Export an existing {{noun}} and edit it.",
+    "needsFixing_one": "{{count}} thing needs fixing — nothing was created:",
+    "needsFixing_other": "{{count}} things need fixing — nothing was created:",
+    "fieldError": "{{field}}: {{message}}",
+    "preview_one": "Ready: a new {{noun}} with {{count}} snapshot. Nothing saved yet — press Create to confirm.",
+    "preview_other": "Ready: a new {{noun}} with {{count}} snapshots. Nothing saved yet — press Create to confirm.",
+    "committed_one": "Created a new {{noun}} with {{count}} snapshot.",
+    "committed_other": "Created a new {{noun}} with {{count}} snapshots.",
+    "createBtn": "Create"
+  },
   "export": {
     "trigger": "Export"
   },

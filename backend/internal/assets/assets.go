@@ -64,6 +64,12 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreateBankAccount)
 		r.Get("/", h.handleListBankAccounts)
+		// Create-from-file import: upload a position workbook from the list
+		// screen and create a brand-new bank account (Detail sheet) + seed its
+		// snapshots (Snapshots sheet) atomically. ?mode=preview (default)
+		// validates + counts; ?mode=commit is all-or-nothing. Static segment, so
+		// no clash with POST "/" or the /{id} routes.
+		r.Post("/import", h.handleImportCreateBankAccount)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGetBankAccount)
 			r.Patch("/", h.handleUpdateBankAccount)

@@ -24,11 +24,12 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
-import { useBankAccounts } from '@/hooks/useBankAccounts'
+import { useBankAccounts, useImportCreateBankAccount } from '@/hooks/useBankAccounts'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateBankAccountDialog } from '@/components/CreateBankAccountDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { BankAccountListRow } from '@/components/BankAccountListRow'
 import { ownershipLabel } from '@/lib/ownership'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
@@ -56,6 +57,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function BankAccountsScreen({ onSelect }: Props) {
   const { t } = useTranslation(['assets', 'common', 'errors'])
   const { data, isPending, error } = useBankAccounts()
+  const importMutation = useImportCreateBankAccount()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
   const [showInactive, setShowInactive] = useState(false)
@@ -120,7 +122,10 @@ export function BankAccountsScreen({ onSelect }: Props) {
             {t('assets:bankAccount.listSubtitle')}
           </p>
         </div>
-        <CreateBankAccountDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateBankAccountDialog />
+        </div>
       </div>
 
       <ListHeadline
