@@ -15,3 +15,7 @@ Single-context layout — one `CONTEXT.md` and one `docs/adr/` at the repo root.
 ### Releases
 
 Batched, tag-driven SemVer pre-releases (ADR-0029/0030). Cutting a release — pick version, label the batch, check migrations, tag, publish auto-generated notes, verify the deploy. See `docs/agents/release.md`.
+
+### Local dev / lint / tests
+
+Makefile-based run loop, the backend-restart-after-Go-edits gotcha, smoke-test recipe, lint, and test suites. See `docs/agents/dev.md` (`make help` lists every target).

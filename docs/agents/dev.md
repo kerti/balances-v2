@@ -1,0 +1,61 @@
+# Local dev, lint, and tests
+
+Operational recipes for running balances-v2 locally and checking work before pushing. The domain and
+conventions live in `CONTEXT.md` and `HANDOFF.md`; this file is just the how-to-run reference.
+
+`make help` lists every target. The common loop uses the **background dev-server** targets so the
+servers keep running across edits.
+
+## Running locally
+
+```bash
+make up               # start the compose stack (postgres etc.) in the background
+make restart          # (re)start both background dev servers — backend + frontend
+make servers-status   # show which dev servers are running
+make logs             # follow compose logs   (server logs: /tmp/balances-{backend,frontend}.log)
+```
+
+Foreground equivalents when you want a single attached process: `make backend-run`,
+`make frontend-dev`. Migrations auto-run on backend `serve` startup; run them manually with
+`make backend-migrate-up` / `-down` / `-status`.
+
+**Restart the backend after Go edits — `make backend-restart`.** The dev server runs a *built binary*
+and does **not** auto-reload (no air/CompileDaemon wired). File edits don't take effect until the
+binary is rebuilt, and the auto-migrate-on-`serve` masks this — migrations apply but stale Go code
+keeps running. If a backend test passes locally but the dev server shows old behavior, restart first;
+don't go hunting for a code bug. `make restart` bounces both servers.
+
+## Auth and smoke-testing the API
+
+The backend command is `serve`, not `server`. There is **no dev-login backdoor** — auth is real
+Google OAuth. For backend smoke tests against authenticated endpoints, pull a current session token
+from the `sessions` table and pass it as a cookie:
+
+```bash
+docker exec balances-v2-postgres-1 psql -U balances -d balances \
+  -c "SELECT s.id as token FROM sessions s WHERE s.expires_at > now() LIMIT 1;"
+# then: curl -H "Cookie: session=<token>" http://localhost:8080/api/...
+```
+
+## Lint (clean before pushing)
+
+```bash
+cd backend && golangci-lint run    # config: .golangci.yml (repo root)
+cd frontend && npm run lint        # config: frontend/eslint.config.js
+```
+
+CI runs both on every push. `revive`'s `exported` / `package-comments` are deliberately disabled for
+application code; `react-refresh/only-export-components` is off for `components/ui/**` (shadcn);
+`react-hooks/set-state-in-effect` is enforced everywhere else.
+
+## Tests (run the suite for the area you touched)
+
+```bash
+make backend-test                  # all Go tests   (or: cd backend && go test ./...  [-race])
+cd frontend && npm run test:coverage   # vitest
+make e2e                           # full Playwright run — create+seed db, mock OIDC, suite (ADR-0024)
+```
+
+Match the suite to the area touched; don't skip just because lint + build pass. The Codecov config
+(`codecov.yml`) keeps coverage status informational-only — failing CI from coverage drops is a
+deliberate non-goal until alpha.

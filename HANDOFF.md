@@ -234,45 +234,11 @@ Not ADRs because they're tactical, but load-bearing:
 - **Don't auto-start the next milestone** without explicit user instruction. User pauses between
   milestones to direct.
 
-## How to run locally
+## Running, linting, testing locally
 
-```bash
-# Backend
-cd /Users/rad/Documents/Code/src/balances-v2
-set -a && source .env && set +a
-cd backend && go run ./cmd/balances serve
-
-# Frontend (separate terminal)
-cd frontend && npm run dev
-
-# Migrations (auto-run on serve, but to run manually)
-cd backend && go run ./cmd/balances migrate up
-```
-
-The backend is `serve`, not `server`. There is **no dev-login backdoor** — auth is real Google
-OAuth. For backend smoke tests against authenticated endpoints, pull a current session token from the
-`sessions` table:
-
-```bash
-docker exec balances-v2-postgres-1 psql -U balances -d balances \
-  -c "SELECT s.id as token FROM sessions s WHERE s.expires_at > now() LIMIT 1;"
-```
-
-Pass via `Cookie: session=<token>` header.
-
-## Lint locally before pushing
-
-```bash
-# Backend
-cd backend && golangci-lint run
-
-# Frontend
-cd frontend && npm run lint
-```
-
-CI runs both on every push. golangci-lint config is at `.golangci.yml` (repo root); ESLint config is
-`frontend/eslint.config.js`. The Codecov config (`codecov.yml`) keeps coverage status
-informational-only — failing CI from coverage drops is a deliberate non-goal until alpha.
+See `docs/agents/dev.md` — Makefile-based run loop (`make up` / `make restart`), the
+backend-restart-after-Go-edits gotcha, the session-token smoke-test recipe, lint, and the test
+suites. `make help` lists every target.
 
 ## Deferred backlog
 
