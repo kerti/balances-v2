@@ -48,18 +48,18 @@ func TestLiabilityHandlers_Export(t *testing.T) {
 
 	t.Run("round trip: export then re-import", func(t *testing.T) {
 		create := h.do(t, "POST", "/liabilities", map[string]any{
-			"display_name":      "Home loan",
-			"description":       "Mortgage",
-			"subtype":           "institutional",
-			"ownership_type":    "sole",
+			"display_name":       "Home loan",
+			"description":        "Mortgage",
+			"subtype":            "institutional",
+			"ownership_type":     "sole",
 			"sole_owner_user_id": h.user.ID.String(),
-			"native_currency":   "IDR",
-			"counterparty_name": "TestBank",
-			"principal":         "1400000000",
-			"interest_rate":     "7.5",
-			"term_months":       180,
-			"start_date":        "2015-06-01",
-			"maturity_date":     "2030-06-01",
+			"native_currency":    "IDR",
+			"counterparty_name":  "TestBank",
+			"principal":          "1400000000",
+			"interest_rate":      "7.5",
+			"term_months":        180,
+			"start_date":         "2015-06-01",
+			"maturity_date":      "2030-06-01",
 		})
 		requireStatus(t, create, http.StatusCreated)
 		id := decodeBody[db.Liability](t, create).ID

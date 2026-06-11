@@ -139,7 +139,7 @@ func TestExportVehicle(t *testing.T) {
 	tags := repo.NewTagRepo(tdb.Pool)
 
 	t.Run("sole owner + tag + snapshots resolve", func(t *testing.T) {
-		make_ := "Toyota"
+		carMake := "Toyota"
 		year := int32(2020)
 		veh, err := assets.CreateVehicle(aliceCtx, repo.CreateVehicleParams{
 			DisplayName:     "Daily driver",
@@ -147,7 +147,7 @@ func TestExportVehicle(t *testing.T) {
 			SoleOwnerUserID: &alice.ID,
 			NativeCurrency:  "IDR",
 			VehicleType:     "car",
-			Make:            &make_,
+			Make:            &carMake,
 			Year:            &year,
 		})
 		if err != nil {
