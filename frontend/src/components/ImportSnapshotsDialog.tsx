@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
+import { fileFromDrop } from '@/lib/importDrop'
+import { cn } from '@/lib/utils'
 import type { ImportArgs, ImportResult } from '@/hooks/snapshotImport'
 
 type Props = {
@@ -33,11 +35,15 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
   const [open, setOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [result, setResult] = useState<ImportResult | null>(null)
+  const [dragActive, setDragActive] = useState(false)
+  const [invalid, setInvalid] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   function reset() {
     setFile(null)
     setResult(null)
+    setDragActive(false)
+    setInvalid(false)
     mutation.reset()
     if (fileRef.current) fileRef.current.value = ''
   }
@@ -46,10 +52,39 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
     reset()
   }
 
-  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    setFile(e.target.files?.[0] ?? null)
+  // Single funnel for both the picker and the drop zone so a non-.xlsx is
+  // rejected identically either way. An `empty` drop leaves the selection as-is.
+  function selectFiles(files: FileList | File[] | null) {
+    const outcome = fileFromDrop(files)
+    if (!outcome.ok && outcome.reason === 'empty') return
     setResult(null)
     mutation.reset()
+    if (!outcome.ok) {
+      setFile(null)
+      setInvalid(true)
+      if (fileRef.current) fileRef.current.value = ''
+      return
+    }
+    setInvalid(false)
+    setFile(outcome.file)
+  }
+
+  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    selectFiles(e.target.files)
+  }
+
+  function onDragOver(e: React.DragEvent) {
+    e.preventDefault()
+    setDragActive(true)
+  }
+  function onDragLeave(e: React.DragEvent) {
+    e.preventDefault()
+    setDragActive(false)
+  }
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setDragActive(false)
+    selectFiles(e.dataTransfer.files)
   }
 
   function run(mode: 'preview' | 'commit') {
@@ -103,15 +138,42 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
 
           <div className="grid gap-1.5">
             <Label htmlFor="import-file">{t('import.step2Label')}</Label>
-            <input
-              id="import-file"
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              onChange={onPickFile}
-              className="text-sm"
-              data-testid="import-file-input"
-            />
+            <div
+              onDragOver={onDragOver}
+              onDragLeave={onDragLeave}
+              onDrop={onDrop}
+              data-testid="import-drop-zone"
+              data-drag-active={dragActive}
+              className={cn(
+                'grid gap-2 rounded-md border-2 border-dashed p-4 transition-colors',
+                dragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-input bg-muted/30',
+              )}
+            >
+              <p className="text-sm text-muted-foreground">
+                {dragActive ? t('import.dropActive') : t('import.dropHint')}
+              </p>
+              <input
+                id="import-file"
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={onPickFile}
+                className="text-sm"
+                data-testid="import-file-input"
+              />
+            </div>
+            {invalid && (
+              <p className="text-sm text-destructive" data-testid="import-invalid-file">
+                {t('import.invalidFile')}
+              </p>
+            )}
+            {file && !invalid && (
+              <p className="text-xs text-muted-foreground" data-testid="import-selected-file">
+                {file.name}
+              </p>
+            )}
           </div>
 
           {result && !committed && (
