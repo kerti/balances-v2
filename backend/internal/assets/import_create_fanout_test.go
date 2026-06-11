@@ -3,6 +3,8 @@ package assets_test
 import (
 	"net/http"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 // Fan-out of the create-from-file import (issue #89) to the two other asset-
@@ -110,6 +112,45 @@ func TestPropertyHandlers_ImportCreate(t *testing.T) {
 		}
 	})
 
+	t.Run("matching tag name resolves and is assigned", func(t *testing.T) {
+		h := newHarness(t)
+		tagID := h.seedTag(t, "Emergency fund")
+		detail := jointPropertyDetail()
+		detail[5] = []string{"tag", "Emergency fund"}
+		rec := h.doUpload(t, "/properties/import?mode=commit", buildCreateXLSX(t, detail, twoSnapshots()))
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[createImportResp](t, rec)
+		if !body.Committed || body.PositionID == nil {
+			t.Fatalf("tagged commit failed: %+v", body)
+		}
+		got := h.do(t, "GET", "/properties/"+*body.PositionID, nil)
+		requireStatus(t, got, http.StatusOK)
+		assetTagID := decodeBody[struct {
+			Asset struct {
+				TagID *uuid.UUID `json:"tag_id"`
+			} `json:"asset"`
+		}](t, got).Asset.TagID
+		if assetTagID == nil || *assetTagID != tagID {
+			t.Fatalf("want tag_id %s, got %v", tagID, assetTagID)
+		}
+	})
+
+	t.Run("unknown sole_owner email blocks creation", func(t *testing.T) {
+		h := newHarness(t)
+		detail := jointPropertyDetail()
+		detail[2] = []string{"ownership_type", "sole"}
+		detail[3] = []string{"sole_owner", "stranger@example.com"}
+		rec := h.doUpload(t, "/properties/import?mode=commit", buildCreateXLSX(t, detail, twoSnapshots()))
+		requireStatus(t, rec, http.StatusUnprocessableEntity)
+		body := decodeBody[createImportResp](t, rec)
+		if !hasFieldError(body, "sole_owner") {
+			t.Fatalf("want a sole_owner field error, got %+v", body.FieldErrors)
+		}
+		if countList(t, h, "/properties") != 0 {
+			t.Error("422 commit wrote a position")
+		}
+	})
+
 	t.Run("a real export round-trips into a new property", func(t *testing.T) {
 		h := newHarness(t)
 		src := h.createProperty(t, "Round trip source")
@@ -171,6 +212,29 @@ func TestVehicleHandlers_ImportCreate(t *testing.T) {
 		body := decodeBody[createImportResp](t, rec)
 		if body.WouldCreate || !hasFieldError(body, "year") {
 			t.Fatalf("want a year field error, got %+v", body.FieldErrors)
+		}
+	})
+
+	t.Run("matching tag name resolves and is assigned", func(t *testing.T) {
+		h := newHarness(t)
+		tagID := h.seedTag(t, "Garage")
+		detail := jointVehicleDetail()
+		detail[5] = []string{"tag", "Garage"}
+		rec := h.doUpload(t, "/vehicles/import?mode=commit", buildCreateXLSX(t, detail, twoSnapshots()))
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[createImportResp](t, rec)
+		if !body.Committed || body.PositionID == nil {
+			t.Fatalf("tagged commit failed: %+v", body)
+		}
+		got := h.do(t, "GET", "/vehicles/"+*body.PositionID, nil)
+		requireStatus(t, got, http.StatusOK)
+		assetTagID := decodeBody[struct {
+			Asset struct {
+				TagID *uuid.UUID `json:"tag_id"`
+			} `json:"asset"`
+		}](t, got).Asset.TagID
+		if assetTagID == nil || *assetTagID != tagID {
+			t.Fatalf("want tag_id %s, got %v", tagID, assetTagID)
 		}
 	})
 

@@ -2,6 +2,7 @@ package liabilities_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
@@ -29,6 +31,7 @@ var fakeNow = func() time.Time { return time.Date(2030, 1, 1, 0, 0, 0, 0, time.U
 type handlerHarness struct {
 	router *chi.Mux
 	user   db.User
+	pool   *pgxpool.Pool
 }
 
 func newHarness(t *testing.T) *handlerHarness {
@@ -40,7 +43,20 @@ func newHarness(t *testing.T) *handlerHarness {
 	r := chi.NewRouter()
 	liabilities.New(repo.NewLiabilityRepo(tdb.Pool), liabilities.WithNow(fakeNow)).Mount(r)
 
-	return &handlerHarness{router: r, user: user}
+	return &handlerHarness{router: r, user: user, pool: tdb.Pool}
+}
+
+// seedTag creates a Tag in the harness user's household and returns its id —
+// for create-import tests that exercise the Detail-sheet tag-name resolution
+// (the /tags routes aren't mounted on this liability router).
+func (h *handlerHarness) seedTag(t *testing.T, name string) uuid.UUID {
+	t.Helper()
+	ctx := auth.WithUser(context.Background(), h.user)
+	tag, err := repo.NewTagRepo(h.pool).CreateTag(ctx, name, "#22c55e")
+	if err != nil {
+		t.Fatalf("seed tag: %v", err)
+	}
+	return tag.ID
 }
 
 func (h *handlerHarness) do(t *testing.T, method, path string, body any) *httptest.ResponseRecorder {

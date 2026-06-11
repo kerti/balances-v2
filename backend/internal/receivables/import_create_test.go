@@ -6,6 +6,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
+	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
@@ -172,6 +173,25 @@ func TestReceivableHandlers_ImportCreate(t *testing.T) {
 		}
 		if countReceivables(t, h) != 0 {
 			t.Error("422 commit wrote a position")
+		}
+	})
+
+	t.Run("matching tag name resolves and is assigned", func(t *testing.T) {
+		h := newHarness(t)
+		tagID := h.seedTag(t, "Owed to us")
+		detail := jointReceivableDetail()
+		detail[5] = []string{"tag", "Owed to us"}
+		rec := h.doUpload(t, "/receivables/import?mode=commit", buildCreateXLSX(t, detail, twoSnapshots()))
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[createImportResp](t, rec)
+		if !body.Committed || body.PositionID == nil {
+			t.Fatalf("tagged commit failed: %+v", body)
+		}
+		got := h.do(t, "GET", "/receivables/"+*body.PositionID, nil)
+		requireStatus(t, got, http.StatusOK)
+		gotTag := decodeBody[db.Receivable](t, got).TagID
+		if gotTag == nil || *gotTag != tagID {
+			t.Fatalf("want tag_id %s, got %v", tagID, gotTag)
 		}
 	})
 

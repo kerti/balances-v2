@@ -6,6 +6,7 @@ import (
 
 	"github.com/xuri/excelize/v2"
 
+	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
@@ -184,6 +185,25 @@ func TestLiabilityHandlers_ImportCreate(t *testing.T) {
 		requireStatus(t, rec, http.StatusUnprocessableEntity)
 		if countLiabilities(t, h) != 0 {
 			t.Error("422 commit wrote a position")
+		}
+	})
+
+	t.Run("matching tag name resolves and is assigned", func(t *testing.T) {
+		h := newHarness(t)
+		tagID := h.seedTag(t, "Debts")
+		detail := jointLiabilityDetail()
+		detail[6] = []string{"tag", "Debts"}
+		rec := h.doUpload(t, "/liabilities/import?mode=commit", buildCreateXLSX(t, detail, twoSnapshots()))
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[createImportResp](t, rec)
+		if !body.Committed || body.PositionID == nil {
+			t.Fatalf("tagged commit failed: %+v", body)
+		}
+		got := h.do(t, "GET", "/liabilities/"+*body.PositionID, nil)
+		requireStatus(t, got, http.StatusOK)
+		gotTag := decodeBody[db.Liability](t, got).TagID
+		if gotTag == nil || *gotTag != tagID {
+			t.Fatalf("want tag_id %s, got %v", tagID, gotTag)
 		}
 	})
 
