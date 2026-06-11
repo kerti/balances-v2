@@ -90,6 +90,13 @@ export function receivableImportTemplateUrl(receivableId: string): string {
   return snapshotImportTemplateUrl(`/api/receivables/${receivableId}/snapshots`)
 }
 
+// receivableExportUrl is the plain-GET download for a receivable's full position
+// workbook (Detail + Snapshots). The session cookie rides along same-origin, so
+// a bare anchor is enough.
+export function receivableExportUrl(receivableId: string): string {
+  return `/api/receivables/${receivableId}/export`
+}
+
 export function useImportReceivableSnapshots(receivableId: string) {
   const qc = useQueryClient()
   return useMutation({

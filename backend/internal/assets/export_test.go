@@ -126,3 +126,139 @@ func TestBankAccountHandlers_Export(t *testing.T) {
 		}
 	})
 }
+
+// TestPropertyHandlers_Export mirrors the bank-account export round trip for
+// the property group: the Detail sheet carries the property-specific fields,
+// and the Snapshots sheet re-imports cleanly through the shared asset endpoint.
+func TestPropertyHandlers_Export(t *testing.T) {
+	h := newHarness(t)
+
+	t.Run("400 invalid id", func(t *testing.T) {
+		rec := h.do(t, "GET", "/properties/not-a-uuid/export", nil)
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("404 unknown property", func(t *testing.T) {
+		rec := h.do(t, "GET", "/properties/"+uuid.NewString()+"/export", nil)
+		requireStatus(t, rec, http.StatusNotFound)
+	})
+
+	t.Run("round trip: export then re-import", func(t *testing.T) {
+		create := h.do(t, "POST", "/properties", map[string]any{
+			"display_name":             "Family home",
+			"description":              "Primary residence",
+			"ownership_type":           "sole",
+			"sole_owner_user_id":       h.user.ID.String(),
+			"native_currency":          "IDR",
+			"property_type":            "house",
+			"address":                  "123 Test St",
+			"acquisition_date":         "2015-06-01",
+			"acquisition_cost":         "2500000000",
+			"annual_appreciation_rate": "5",
+		})
+		requireStatus(t, create, http.StatusCreated)
+		id := decodeBody[map[string]any](t, create)["asset"].(map[string]any)["id"].(string)
+
+		snapBase := "/assets/" + id + "/snapshots"
+		rows := [][]string{
+			assetImportHeader,
+			{"2026-01", "2026-01-31", "2600000000", "IDR", "Revalued"},
+		}
+		commit := h.doUpload(t, snapBase+"/import?mode=commit", buildImportXLSX(t, rows))
+		requireStatus(t, commit, http.StatusOK)
+
+		rec := h.do(t, "GET", "/properties/"+id+"/export", nil)
+		requireStatus(t, rec, http.StatusOK)
+		xlsx := rec.Body.Bytes()
+
+		detail, err := snapshotimport.ParseDetail(bytes.NewReader(xlsx))
+		if err != nil {
+			t.Fatalf("ParseDetail: %v", err)
+		}
+		if detail["display_name"] != "Family home" {
+			t.Errorf("detail display_name: got %q", detail["display_name"])
+		}
+		if detail["sole_owner"] != "Alice@example.com" {
+			t.Errorf("detail sole_owner: got %q", detail["sole_owner"])
+		}
+		if detail["property_type"] != "house" || detail["address"] != "123 Test St" {
+			t.Errorf("detail property fields: %v", detail)
+		}
+		if detail["acquisition_date"] != "2015-06-01" || detail["acquisition_cost"] != "2500000000" {
+			t.Errorf("detail acquisition fields: %v", detail)
+		}
+
+		reimport := h.doUpload(t, snapBase+"/import?mode=commit", xlsx)
+		requireStatus(t, reimport, http.StatusOK)
+		body := decodeBody[importResp](t, reimport)
+		if body.ToUpdate != 1 || body.ToInsert != 0 {
+			t.Errorf("re-import counts: want update=1 insert=0, got update=%d insert=%d", body.ToUpdate, body.ToInsert)
+		}
+	})
+}
+
+// TestVehicleHandlers_Export mirrors the property round trip for the vehicle
+// group.
+func TestVehicleHandlers_Export(t *testing.T) {
+	h := newHarness(t)
+
+	t.Run("400 invalid id", func(t *testing.T) {
+		rec := h.do(t, "GET", "/vehicles/not-a-uuid/export", nil)
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("404 unknown vehicle", func(t *testing.T) {
+		rec := h.do(t, "GET", "/vehicles/"+uuid.NewString()+"/export", nil)
+		requireStatus(t, rec, http.StatusNotFound)
+	})
+
+	t.Run("round trip: export then re-import", func(t *testing.T) {
+		create := h.do(t, "POST", "/vehicles", map[string]any{
+			"display_name":             "Daily driver",
+			"ownership_type":           "sole",
+			"sole_owner_user_id":       h.user.ID.String(),
+			"native_currency":          "IDR",
+			"vehicle_type":             "car",
+			"make":                     "Toyota",
+			"model":                    "Avanza",
+			"year":                     2020,
+			"plate_number":             "B 1234 XYZ",
+			"annual_depreciation_rate": "10",
+		})
+		requireStatus(t, create, http.StatusCreated)
+		id := decodeBody[map[string]any](t, create)["asset"].(map[string]any)["id"].(string)
+
+		snapBase := "/assets/" + id + "/snapshots"
+		rows := [][]string{
+			assetImportHeader,
+			{"2026-01", "2026-01-31", "180000000", "IDR", "Opening"},
+		}
+		commit := h.doUpload(t, snapBase+"/import?mode=commit", buildImportXLSX(t, rows))
+		requireStatus(t, commit, http.StatusOK)
+
+		rec := h.do(t, "GET", "/vehicles/"+id+"/export", nil)
+		requireStatus(t, rec, http.StatusOK)
+		xlsx := rec.Body.Bytes()
+
+		detail, err := snapshotimport.ParseDetail(bytes.NewReader(xlsx))
+		if err != nil {
+			t.Fatalf("ParseDetail: %v", err)
+		}
+		if detail["display_name"] != "Daily driver" {
+			t.Errorf("detail display_name: got %q", detail["display_name"])
+		}
+		if detail["vehicle_type"] != "car" || detail["make"] != "Toyota" || detail["model"] != "Avanza" {
+			t.Errorf("detail vehicle fields: %v", detail)
+		}
+		if detail["year"] != "2020" || detail["plate_number"] != "B 1234 XYZ" {
+			t.Errorf("detail year/plate: %v", detail)
+		}
+
+		reimport := h.doUpload(t, snapBase+"/import?mode=commit", xlsx)
+		requireStatus(t, reimport, http.StatusOK)
+		body := decodeBody[importResp](t, reimport)
+		if body.ToUpdate != 1 || body.ToInsert != 0 {
+			t.Errorf("re-import counts: want update=1 insert=0, got update=%d insert=%d", body.ToUpdate, body.ToInsert)
+		}
+	})
+}

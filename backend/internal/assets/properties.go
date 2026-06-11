@@ -2,6 +2,7 @@ package assets
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
+	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
 // ----- requests -----------------------------------------------------------
@@ -137,6 +139,62 @@ func (h *Handlers) handleUpdateProperty(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, property)
+}
+
+// handleExportProperty streams a fully-populated position workbook for one
+// property — a "Detail" sheet (its fields) + a "Snapshots" sheet (its history)
+// — in the importer's format, so the file round-trips back in through the
+// unchanged snapshot-import flow on the detail page.
+func (h *Handlers) handleExportProperty(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		writeInvalidID(w, "id")
+		return
+	}
+
+	data, err := h.repo.ExportProperty(r.Context(), id)
+	if err != nil {
+		httperr.WriteRepo(w, "export property", err)
+		return
+	}
+
+	asset := data.Property.Asset
+	xlsx, err := snapshotimport.BuildWorkbook(snapshotimport.TemplateMeta{
+		PositionName:    asset.DisplayName,
+		DefaultCurrency: asset.NativeCurrency,
+		Detail:          propertyDetailFields(data),
+	}, assetSnapshotsToExport(data.Snapshots))
+	if err != nil {
+		httperr.WriteRepo(w, "export property: build", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.xlsx"`, snapshotimport.ExportFilename(asset.DisplayName, "property-export")))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(xlsx)
+}
+
+// propertyDetailFields maps a property onto the Detail sheet's field/value/notes
+// rows. Field order mirrors the create-request; the two id-typed fields follow
+// the repo-wide conventions — ownership_type + a sole_owner email (blank for
+// joint), and tag as the Tag's name.
+func propertyDetailFields(data *repo.PropertyExport) []snapshotimport.DetailField {
+	asset := data.Property.Asset
+	details := data.Property.Details
+	return []snapshotimport.DetailField{
+		{Key: "display_name", Value: asset.DisplayName},
+		{Key: "description", Value: derefStr(asset.Description)},
+		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
+		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
+		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},
+		{Key: "property_type", Value: details.PropertyType, Note: "house | apartment | land | commercial"},
+		{Key: "address", Value: derefStr(details.Address)},
+		{Key: "acquisition_date", Value: dateStr(details.AcquisitionDate), Note: "YYYY-MM-DD"},
+		{Key: "acquisition_cost", Value: decStr(details.AcquisitionCost), Note: "digits only, no thousands separators"},
+		{Key: "annual_appreciation_rate", Value: decStr(details.AnnualAppreciationRate), Note: "percent per year (e.g. 5)"},
+	}
 }
 
 func (h *Handlers) handleDeleteProperty(w http.ResponseWriter, r *http.Request) {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ import {
   useDeleteLiabilitySnapshot,
   useImportLiabilitySnapshots,
   liabilityImportTemplateUrl,
+  liabilityExportUrl,
 } from '@/hooks/useLiabilitySnapshots'
 import { CreateSnapshotDialog } from '@/components/CreateSnapshotDialog'
 import { ImportSnapshotsDialog } from '@/components/ImportSnapshotsDialog'
@@ -276,19 +277,36 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
                 {t('liabilities:snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(liability.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateSnapshotDialog
-                  currency={liability.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={liabilityImportTemplateUrl(liability.id)}
-                  mutation={importSnapshotMutation}
-                  currency={liability.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Export the full position workbook (Detail + Snapshots). Plain
+                  anchor download — session cookie rides along same-origin, like
+                  the import template link. Available regardless of status so a
+                  terminated position can still be backed up. */}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                data-testid="liability-export"
+              >
+                <a href={liabilityExportUrl(liability.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(liability.status) && (
+                <>
+                  <CreateSnapshotDialog
+                    currency={liability.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={liabilityImportTemplateUrl(liability.id)}
+                    mutation={importSnapshotMutation}
+                    currency={liability.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

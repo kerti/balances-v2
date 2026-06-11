@@ -119,6 +119,16 @@ export function bankAccountExportUrl(assetId: string): string {
   return `/api/bank-accounts/${assetId}/export`
 }
 
+// propertyExportUrl / vehicleExportUrl are the same plain-GET workbook download
+// for the property and vehicle groups.
+export function propertyExportUrl(assetId: string): string {
+  return `/api/properties/${assetId}/export`
+}
+
+export function vehicleExportUrl(assetId: string): string {
+  return `/api/vehicles/${assetId}/export`
+}
+
 export function useImportSnapshots(assetId: string) {
   const qc = useQueryClient()
   return useMutation({

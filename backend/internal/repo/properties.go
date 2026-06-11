@@ -224,6 +224,61 @@ func (r *AssetRepo) UpdateProperty(ctx context.Context, id uuid.UUID, p UpdatePr
 	return &Property{Asset: asset, Details: details}, nil
 }
 
+// PropertyExport is everything export needs to render a full position workbook:
+// the aggregate, the human-facing values for the two id-typed fields (owner
+// email, tag name — resolved per the Detail-sheet conventions), and the full
+// snapshot history.
+type PropertyExport struct {
+	Property   Property
+	OwnerEmail string // sole_owner's email; "" for joint
+	TagName    string // resolved tag name; "" when untagged
+	Snapshots  []db.AssetSnapshot
+}
+
+// ExportProperty gathers a property, its resolved owner email + tag name, and
+// its snapshot history, scoped + ownership-checked to the caller's household
+// (404 via GetProperty when not owned or wrong subtype).
+func (r *AssetRepo) ExportProperty(ctx context.Context, id uuid.UUID) (*PropertyExport, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	property, err := r.GetProperty(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &PropertyExport{Property: *property}
+
+	if uid := property.Asset.SoleOwnerUserID; uid != nil {
+		user, err := r.q.GetUserByID(ctx, *uid)
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve owner: %w", err)
+		}
+		out.OwnerEmail = user.Email
+	}
+
+	if tid := property.Asset.TagID; tid != nil {
+		tag, err := r.q.GetTagByID(ctx, db.GetTagByIDParams{ID: *tid, HouseholdID: hid})
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve tag: %w", err)
+		}
+		out.TagName = tag.Name
+	}
+
+	snaps, err := r.q.ListAssetSnapshotsForAsset(ctx, db.ListAssetSnapshotsForAssetParams{
+		AssetID:     id,
+		HouseholdID: hid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export: list snapshots: %w", err)
+	}
+	out.Snapshots = snaps
+
+	return out, nil
+}
+
 func (r *AssetRepo) DeleteProperty(ctx context.Context, id uuid.UUID) error {
 	if _, err := r.GetProperty(ctx, id); err != nil {
 		return err

@@ -171,6 +171,61 @@ func (r *ReceivableRepo) DeleteReceivable(ctx context.Context, id uuid.UUID) err
 	return nil
 }
 
+// ReceivableExport is everything export needs to render a full position
+// workbook: the receivable row, the human-facing values for the two id-typed
+// fields (owner email, tag name — resolved per the Detail-sheet conventions),
+// and the full snapshot history.
+type ReceivableExport struct {
+	Receivable db.Receivable
+	OwnerEmail string // sole_owner's email; "" for joint
+	TagName    string // resolved tag name; "" when untagged
+	Snapshots  []db.ReceivableSnapshot
+}
+
+// ExportReceivable gathers a receivable, its resolved owner email + tag name,
+// and its snapshot history, scoped + ownership-checked to the caller's
+// household (404 via GetReceivable when not owned).
+func (r *ReceivableRepo) ExportReceivable(ctx context.Context, id uuid.UUID) (*ReceivableExport, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	receivable, err := r.GetReceivable(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &ReceivableExport{Receivable: *receivable}
+
+	if uid := receivable.SoleOwnerUserID; uid != nil {
+		user, err := r.q.GetUserByID(ctx, *uid)
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve owner: %w", err)
+		}
+		out.OwnerEmail = user.Email
+	}
+
+	if tid := receivable.TagID; tid != nil {
+		tag, err := r.q.GetTagByID(ctx, db.GetTagByIDParams{ID: *tid, HouseholdID: hid})
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve tag: %w", err)
+		}
+		out.TagName = tag.Name
+	}
+
+	snaps, err := r.q.ListReceivableSnapshotsForReceivable(ctx, db.ListReceivableSnapshotsForReceivableParams{
+		ReceivableID: id,
+		HouseholdID:  hid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export: list snapshots: %w", err)
+	}
+	out.Snapshots = snaps
+
+	return out, nil
+}
+
 // ----- receivable snapshots ----------------------------------------------
 
 type CreateReceivableSnapshotParams struct {

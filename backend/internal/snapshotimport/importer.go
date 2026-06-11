@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -160,6 +161,24 @@ type ExportSnapshot struct {
 	Quantity        *decimal.Decimal // ShapeQuantityPrice
 	PricePerUnit    *decimal.Decimal // ShapeQuantityPrice
 	AccruedInterest *decimal.Decimal // ShapeAccruedInterest
+}
+
+// nonFilenameChars collapses anything outside a safe filename set to a single
+// dash, so a position's display name can't smuggle quotes/newlines into a
+// Content-Disposition header.
+var nonFilenameChars = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
+
+// ExportFilename slugifies a position's display name into a filename-safe stem
+// (no extension) for an export download's Content-Disposition. Unsafe runs
+// collapse to a single dash; the fallback is returned when nothing safe
+// survives (e.g. a name of only punctuation). Shared by every position group's
+// export handler so the download naming stays uniform.
+func ExportFilename(displayName, fallback string) string {
+	slug := strings.Trim(nonFilenameChars.ReplaceAllString(displayName, "-"), "-")
+	if slug == "" {
+		return fallback
+	}
+	return slug + "-export"
 }
 
 // BuildTemplate returns the bytes of a blank .xlsx template scoped to one

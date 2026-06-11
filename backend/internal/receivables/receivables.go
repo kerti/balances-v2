@@ -58,6 +58,10 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
 			r.Patch("/lifecycle", h.handleUpdateLifecycle)
+			// Export the full position workbook (Detail + Snapshots) in the
+			// importer's format, so it round-trips back through the snapshot
+			// import on the detail page.
+			r.Get("/export", h.handleExport)
 			r.Route("/snapshots", func(r chi.Router) {
 				r.Post("/", h.handleCreateSnapshot)
 				r.Get("/", h.handleListSnapshots)

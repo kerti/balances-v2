@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"regexp"
-	"strings"
 
 	"github.com/google/uuid"
 
@@ -140,29 +138,18 @@ func (h *Handlers) handleExportBankAccount(w http.ResponseWriter, r *http.Reques
 	}
 
 	asset := data.Account.Asset
-	snaps := make([]snapshotimport.ExportSnapshot, len(data.Snapshots))
-	for i, s := range data.Snapshots {
-		snaps[i] = snapshotimport.ExportSnapshot{
-			YearMonth:   s.YearMonth,
-			AsOfDate:    s.AsOfDate,
-			Amount:      s.Amount,
-			Currency:    s.Currency,
-			Description: s.Description,
-		}
-	}
-
 	xlsx, err := snapshotimport.BuildWorkbook(snapshotimport.TemplateMeta{
 		PositionName:    asset.DisplayName,
 		DefaultCurrency: asset.NativeCurrency,
 		Detail:          bankAccountDetailFields(data),
-	}, snaps)
+	}, assetSnapshotsToExport(data.Snapshots))
 	if err != nil {
 		httperr.WriteRepo(w, "export bank account: build", err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.xlsx"`, exportFilename(asset.DisplayName)))
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.xlsx"`, snapshotimport.ExportFilename(asset.DisplayName, "bank-account-export")))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(xlsx)
 }
@@ -189,18 +176,6 @@ func bankAccountDetailFields(data *repo.BankAccountExport) []snapshotimport.Deta
 		{Key: "account_number", Value: details.AccountNumber},
 		{Key: "account_type", Value: details.AccountType, Note: "savings | current | other"},
 	}
-}
-
-// nonFilenameChars collapses anything outside a safe filename set to a single
-// dash, so a display name can't smuggle quotes/newlines into Content-Disposition.
-var nonFilenameChars = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
-
-func exportFilename(displayName string) string {
-	slug := strings.Trim(nonFilenameChars.ReplaceAllString(displayName, "-"), "-")
-	if slug == "" {
-		return "bank-account-export"
-	}
-	return slug + "-export"
 }
 
 func (h *Handlers) handleDeleteBankAccount(w http.ResponseWriter, r *http.Request) {

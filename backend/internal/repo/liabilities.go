@@ -196,6 +196,61 @@ func (r *LiabilityRepo) DeleteLiability(ctx context.Context, id uuid.UUID) error
 	return nil
 }
 
+// LiabilityExport is everything export needs to render a full position
+// workbook: the liability row, the human-facing values for the two id-typed
+// fields (owner email, tag name — resolved per the Detail-sheet conventions),
+// and the full snapshot history.
+type LiabilityExport struct {
+	Liability  db.Liability
+	OwnerEmail string // sole_owner's email; "" for joint
+	TagName    string // resolved tag name; "" when untagged
+	Snapshots  []db.LiabilitySnapshot
+}
+
+// ExportLiability gathers a liability, its resolved owner email + tag name, and
+// its snapshot history, scoped + ownership-checked to the caller's household
+// (404 via GetLiability when not owned).
+func (r *LiabilityRepo) ExportLiability(ctx context.Context, id uuid.UUID) (*LiabilityExport, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	liability, err := r.GetLiability(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &LiabilityExport{Liability: *liability}
+
+	if uid := liability.SoleOwnerUserID; uid != nil {
+		user, err := r.q.GetUserByID(ctx, *uid)
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve owner: %w", err)
+		}
+		out.OwnerEmail = user.Email
+	}
+
+	if tid := liability.TagID; tid != nil {
+		tag, err := r.q.GetTagByID(ctx, db.GetTagByIDParams{ID: *tid, HouseholdID: hid})
+		if err != nil {
+			return nil, fmt.Errorf("export: resolve tag: %w", err)
+		}
+		out.TagName = tag.Name
+	}
+
+	snaps, err := r.q.ListLiabilitySnapshotsForLiability(ctx, db.ListLiabilitySnapshotsForLiabilityParams{
+		LiabilityID: id,
+		HouseholdID: hid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("export: list snapshots: %w", err)
+	}
+	out.Snapshots = snaps
+
+	return out, nil
+}
+
 // ----- liability snapshots -----------------------------------------------
 
 type CreateLiabilitySnapshotParams struct {

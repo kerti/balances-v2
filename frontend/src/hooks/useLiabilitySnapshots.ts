@@ -91,6 +91,13 @@ export function liabilityImportTemplateUrl(liabilityId: string): string {
   return snapshotImportTemplateUrl(`/api/liabilities/${liabilityId}/snapshots`)
 }
 
+// liabilityExportUrl is the plain-GET download for a liability's full position
+// workbook (Detail + Snapshots). The session cookie rides along same-origin, so
+// a bare anchor is enough.
+export function liabilityExportUrl(liabilityId: string): string {
+  return `/api/liabilities/${liabilityId}/export`
+}
+
 export function useImportLiabilitySnapshots(liabilityId: string) {
   const qc = useQueryClient()
   return useMutation({

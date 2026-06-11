@@ -2,6 +2,7 @@ package assets
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
+	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
 // ----- requests -----------------------------------------------------------
@@ -128,6 +130,63 @@ func (h *Handlers) handleUpdateVehicle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, vehicle)
+}
+
+// handleExportVehicle streams a fully-populated position workbook for one
+// vehicle — a "Detail" sheet (its fields) + a "Snapshots" sheet (its history)
+// — in the importer's format, so the file round-trips back in through the
+// unchanged snapshot-import flow on the detail page.
+func (h *Handlers) handleExportVehicle(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		writeInvalidID(w, "id")
+		return
+	}
+
+	data, err := h.repo.ExportVehicle(r.Context(), id)
+	if err != nil {
+		httperr.WriteRepo(w, "export vehicle", err)
+		return
+	}
+
+	asset := data.Vehicle.Asset
+	xlsx, err := snapshotimport.BuildWorkbook(snapshotimport.TemplateMeta{
+		PositionName:    asset.DisplayName,
+		DefaultCurrency: asset.NativeCurrency,
+		Detail:          vehicleDetailFields(data),
+	}, assetSnapshotsToExport(data.Snapshots))
+	if err != nil {
+		httperr.WriteRepo(w, "export vehicle: build", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s.xlsx"`, snapshotimport.ExportFilename(asset.DisplayName, "vehicle-export")))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(xlsx)
+}
+
+// vehicleDetailFields maps a vehicle onto the Detail sheet's field/value/notes
+// rows. Field order mirrors the create-request; the two id-typed fields follow
+// the repo-wide conventions — ownership_type + a sole_owner email (blank for
+// joint), and tag as the Tag's name.
+func vehicleDetailFields(data *repo.VehicleExport) []snapshotimport.DetailField {
+	asset := data.Vehicle.Asset
+	details := data.Vehicle.Details
+	return []snapshotimport.DetailField{
+		{Key: "display_name", Value: asset.DisplayName},
+		{Key: "description", Value: derefStr(asset.Description)},
+		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
+		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
+		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},
+		{Key: "vehicle_type", Value: details.VehicleType, Note: "car | motorcycle | other"},
+		{Key: "make", Value: derefStr(details.Make)},
+		{Key: "model", Value: derefStr(details.Model)},
+		{Key: "year", Value: int32Str(details.Year), Note: "4-digit model year"},
+		{Key: "plate_number", Value: derefStr(details.PlateNumber)},
+		{Key: "annual_depreciation_rate", Value: decStr(details.AnnualDepreciationRate), Note: "percent per year (e.g. 10)"},
+	}
 }
 
 func (h *Handlers) handleDeleteVehicle(w http.ResponseWriter, r *http.Request) {

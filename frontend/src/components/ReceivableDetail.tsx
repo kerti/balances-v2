@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Download, Pencil, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ import {
   useDeleteReceivableSnapshot,
   useImportReceivableSnapshots,
   receivableImportTemplateUrl,
+  receivableExportUrl,
 } from '@/hooks/useReceivableSnapshots'
 import { CreateSnapshotDialog } from '@/components/CreateSnapshotDialog'
 import { ImportSnapshotsDialog } from '@/components/ImportSnapshotsDialog'
@@ -226,19 +227,36 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
                 {t('receivables:snapshotsDescription')}
               </CardDescription>
             </div>
-            {isActiveStatus(receivable.status) && (
-              <div className="flex flex-wrap gap-2">
-                <CreateSnapshotDialog
-                  currency={receivable.native_currency}
-                  mutation={createSnapshotMutation}
-                />
-                <ImportSnapshotsDialog
-                  templateUrl={receivableImportTemplateUrl(receivable.id)}
-                  mutation={importSnapshotMutation}
-                  currency={receivable.native_currency}
-                />
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {/* Export the full position workbook (Detail + Snapshots). Plain
+                  anchor download — session cookie rides along same-origin, like
+                  the import template link. Available regardless of status so a
+                  terminated position can still be backed up. */}
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                data-testid="receivable-export"
+              >
+                <a href={receivableExportUrl(receivable.id)}>
+                  <Download className="mr-1 size-4" />
+                  {t('common:export.trigger')}
+                </a>
+              </Button>
+              {isActiveStatus(receivable.status) && (
+                <>
+                  <CreateSnapshotDialog
+                    currency={receivable.native_currency}
+                    mutation={createSnapshotMutation}
+                  />
+                  <ImportSnapshotsDialog
+                    templateUrl={receivableImportTemplateUrl(receivable.id)}
+                    mutation={importSnapshotMutation}
+                    currency={receivable.native_currency}
+                  />
+                </>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">

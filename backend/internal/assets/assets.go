@@ -9,15 +9,19 @@ package assets
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
+	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
 type Handlers struct {
@@ -79,6 +83,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetProperty)
 			r.Patch("/", h.handleUpdateProperty)
 			r.Delete("/", h.handleDeleteProperty)
+			r.Get("/export", h.handleExportProperty)
 		})
 	})
 
@@ -90,6 +95,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetVehicle)
 			r.Patch("/", h.handleUpdateVehicle)
 			r.Delete("/", h.handleDeleteVehicle)
+			r.Get("/export", h.handleExportVehicle)
 		})
 	})
 
@@ -142,4 +148,54 @@ func writeInvalidDate(w http.ResponseWriter, field string) {
 func parseIDParam(r *http.Request, name string) (uuid.UUID, error) {
 	raw := chi.URLParam(r, name)
 	return uuid.Parse(raw)
+}
+
+// derefStr renders an optional string field for a Detail sheet cell ("" when nil).
+func derefStr(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+// decStr renders an optional decimal field for a Detail sheet cell ("" when nil).
+func decStr(p *decimal.Decimal) string {
+	if p == nil {
+		return ""
+	}
+	return p.String()
+}
+
+// dateStr renders an optional date field as YYYY-MM-DD for a Detail sheet cell
+// ("" when nil) — the same layout the create-request accepts on the way back in.
+func dateStr(p *time.Time) string {
+	if p == nil {
+		return ""
+	}
+	return p.Format("2006-01-02")
+}
+
+// int32Str renders an optional int32 field for a Detail sheet cell ("" when nil).
+func int32Str(p *int32) string {
+	if p == nil {
+		return ""
+	}
+	return strconv.FormatInt(int64(*p), 10)
+}
+
+// assetSnapshotsToExport maps the shared asset_snapshots rows (bank_account /
+// property / vehicle all use the flat amount shape) onto the importer's
+// ExportSnapshot — the Snapshots half of a position-workbook export.
+func assetSnapshotsToExport(snaps []db.AssetSnapshot) []snapshotimport.ExportSnapshot {
+	out := make([]snapshotimport.ExportSnapshot, len(snaps))
+	for i, s := range snaps {
+		out[i] = snapshotimport.ExportSnapshot{
+			YearMonth:   s.YearMonth,
+			AsOfDate:    s.AsOfDate,
+			Amount:      s.Amount,
+			Currency:    s.Currency,
+			Description: s.Description,
+		}
+	}
+	return out
 }
