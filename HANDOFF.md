@@ -25,16 +25,9 @@ latest DEPLOYED** release (two batched alphas: alpha.1 then alpha.2) on the `pre
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
 
-- **M1–M3** — walking skeleton, Google OAuth + invites, first vertical slice (bank-account asset
-  with snapshots), all tenancy-tested.
-- **M4.1** — property + vehicle asset subtypes through the full stack; two-level nav; Title Case.
-- **M4.2** — liability + receivable groups end-to-end.
-- **M4.3** — investments group, all five subtypes (stock, mutual_fund, gold, bond, time_deposit).
-- **M4.4** — investment transaction ledger (Buy/Sell/Coupon/Dividend/Distribution/Fee/Maturity).
-- **M4.5** — Income: a flat flow-event entity (no subtype/snapshots/transactions/lifecycle).
-- **M4.6** — position lifecycle UI (status / terminated_at) across all groups.
-- **M5** — materialized monthly net-worth report + dashboard (net-worth headline,
-  comprehensive-income lines, side-by-side currency display, Q15c).
+- **M1–M5** — walking skeleton → OAuth + invites → all four position groups + five investment
+  subtypes + transaction ledger + Income + position lifecycle → materialized monthly net-worth report
+  + dashboard. All tenancy-tested. Detail in closed issues + Release notes.
 - **M6** — v1 polish + approachability, shipped across alpha.1/alpha.2. Themes: xlsx importer + owner
   UX; React Router + shadcn Sidebar (ADR-0025); EN+ID i18n (#5–#12, `docs/glossary-id.md`); error-code
   envelope (ADR-0027); investment analytics + correctness (ADR-0008/0009 amended); valuations/taxonomy;
