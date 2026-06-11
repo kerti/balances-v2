@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs'
 import { test, expect } from '@playwright/test'
+
+const XLSX_MIME =
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
 // Export → re-import round-trip for the per-position workbook (#85/#86). On a
 // property detail page (representative of the property/vehicle/liability/
@@ -37,12 +41,20 @@ test('property export re-imports flawlessly', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download')
   await page.getByTestId('property-export').click()
   const download = await downloadPromise
-  expect(download.suggestedFilename()).toMatch(/\.xlsx$/)
-  const exportedPath = await download.path()
+  const filename = download.suggestedFilename()
+  expect(filename).toMatch(/\.xlsx$/)
+
+  // Read the bytes and re-attach them under the real filename + MIME. Playwright's
+  // download.path() points at a GUID-named temp file with no extension, which the
+  // dialog's .xlsx validator (lib/importDrop) would reject — so feed a buffer with
+  // the proper name instead, exactly as a user re-selecting the file would.
+  const buffer = readFileSync(await download.path())
 
   // --- Feed the exported file straight back through the import dialog ---
   await page.getByTestId('import-snapshots-trigger').click()
-  await page.getByTestId('import-file-input').setInputFiles(exportedPath)
+  await page
+    .getByTestId('import-file-input')
+    .setInputFiles({ name: filename, mimeType: XLSX_MIME, buffer })
   await expect(page.getByTestId('import-selected-file')).toBeVisible()
 
   // Dry-run check: the file is clean, and the one month re-classifies as an
