@@ -1,0 +1,41 @@
+#!/bin/sh
+# Pre-commit PII/secret guard.
+#
+# Blocks a commit whose staged ADDITIONS match any rule in .pii-patterns
+# (gitignored, one POSIX extended-regex per line, case-insensitive; blank lines
+# and #-comments ignored). The denylist is local-only because the real terms are
+# themselves the PII — run `make hooks-install` to set it up.
+#
+# Reports only the offending filenames, never the matched content, so a blocked
+# commit doesn't echo the PII back into a terminal or agent context.
+#
+# Bypass is deliberately unsupported as policy: do NOT use `git commit --no-verify`.
+set -eu
+
+pf=".pii-patterns"
+if [ ! -f "$pf" ]; then
+  echo "pii-guard: no $pf — run 'make hooks-install' to enable; skipping." >&2
+  exit 0
+fi
+
+# Join the active rules into one alternation. Nothing to do if all are comments.
+regex=$(grep -vE '^[[:space:]]*($|#)' "$pf" | paste -sd'|' -)
+[ -z "$regex" ] && exit 0
+
+# NOTE: filenames with spaces aren't handled (none in this repo); revisit if that changes.
+bad=""
+for f in $(git diff --cached --name-only --diff-filter=ACM); do
+  if git diff --cached --no-color -U0 -- "$f" \
+      | grep -E '^\+' | grep -vE '^\+\+\+' \
+      | grep -iqE "$regex"; then
+    bad="$bad $f"
+  fi
+done
+
+if [ -n "$bad" ]; then
+  echo "✗ pii-guard: staged additions match a .pii-patterns rule — commit blocked:" >&2
+  for f in $bad; do echo "    $f" >&2; done
+  echo "  Scrub to neutral fixtures + toy numbers, then re-stage. Do NOT use --no-verify." >&2
+  exit 1
+fi
+exit 0

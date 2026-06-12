@@ -1,0 +1,14 @@
+# .pii-patterns — LOCAL, gitignored denylist for the pre-commit pii-guard.
+#
+# One POSIX extended-regex (ERE) per line, matched case-insensitively against
+# staged ADDED lines. Blank lines and #-comments are ignored.
+#
+# Keep the real file LOCAL — never commit it; the actual terms are the PII.
+# `make hooks-install` copies this template to .pii-patterns and appends your
+# git identity (name + email) so commits are protected out of the box.
+#
+# Add your real dev-data terms below. Examples (commented — adapt, don't ship):
+#   Jane Doe
+#   jane\.doe@example\.com
+#   [0-9]{4}[ -]?[0-9]{4}[ -]?[0-9]{4}    # an account-number shape you use
+#   PT [A-Z][a-z]+ Makmur                 # a real entity / employer name

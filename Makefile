@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check session-token
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check session-token hooks-install
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -67,6 +67,7 @@ help:
 	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
 	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
 	@echo "  session-token           print a live session token for curl smoke tests"
+	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
 
 up:
 	docker compose up -d
@@ -252,3 +253,17 @@ session-token:
 	  "SELECT s.id FROM sessions s WHERE s.expires_at > now() ORDER BY s.expires_at DESC LIMIT 1" 2>/dev/null); \
 	if [ -z "$$tok" ]; then echo "✗ no live session — log in via the dev UI first" >&2; exit 1; fi; \
 	echo "$$tok"
+
+# Install the repo git hooks (core.hooksPath=.githooks) and seed the local,
+# gitignored .pii-patterns denylist from the template + your git identity, so
+# the pre-commit pii-guard protects commits out of the box. Idempotent.
+hooks-install:
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/pre-commit
+	@if [ ! -f .pii-patterns ]; then \
+	  cp .pii-patterns.example .pii-patterns; \
+	  { git config user.name; git config user.email; } \
+	    | sed 's/[][\\.^$$*+?(){}|]/\\&/g' >> .pii-patterns; \
+	  echo "hooks-install: seeded .pii-patterns (gitignored) from template + git identity"; \
+	fi
+	@echo "✓ git hooks installed (core.hooksPath=.githooks); pre-commit pii-guard active"

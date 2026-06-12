@@ -48,6 +48,9 @@ CI runs both on every push. `revive`'s `exported` / `package-comments` are delib
 application code; `react-refresh/only-export-components` is off for `components/ui/**` (shadcn);
 `react-hooks/set-state-in-effect` is enforced everywhere else.
 
+`make check` runs both lints + Go tests + vitest as a pre-push gate, printing one pass/fail line per
+step (full output in `/tmp/balances-check-*.log`, read only on a ✗); e2e is excluded.
+
 ## Tests (run the suite for the area you touched)
 
 ```bash
@@ -59,3 +62,23 @@ make e2e                           # full Playwright run — create+seed db, moc
 Match the suite to the area touched; don't skip just because lint + build pass. The Codecov config
 (`codecov.yml`) keeps coverage status informational-only — failing CI from coverage drops is a
 deliberate non-goal until alpha.
+
+## Pre-commit hook (PII guard)
+
+Run **once per clone**:
+
+```bash
+make hooks-install
+```
+
+This sets `core.hooksPath=.githooks` and seeds a local, gitignored `.pii-patterns` denylist (from
+`.pii-patterns.example` + your git identity). The `.githooks/pre-commit` guard then scans each
+commit's staged **additions** against those rules (case-insensitive ERE, one per line) and blocks the
+commit if any match, printing only the offending **filenames** — never the matched content, so a
+blocked commit doesn't echo PII back into the terminal.
+
+Add your real dev-data terms (account names, employer, figures you reuse) to `.pii-patterns`; it's
+never committed, because the terms are themselves the PII. **Do not bypass with `--no-verify`** — the
+guard is the backstop for the public repo. It complements, not replaces, scrubbing to neutral
+fixtures + toy numbers before staging.
+

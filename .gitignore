@@ -16,3 +16,6 @@
 *.log
 .idea/
 .vscode/
+
+# Local PII denylist for the pre-commit pii-guard (the real terms are the PII)
+.pii-patterns
