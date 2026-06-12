@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check session-token
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -20,6 +20,7 @@ BACKEND_PORT := $(or $(PORT),8080)
 # it inherits host/port/credentials from .env without duplicating them.
 PG_CONTAINER := balances-v2-postgres-1
 PG_USER      := balances
+PG_DB        := balances
 E2E_DB       := balances_e2e
 E2E_DATABASE_URL := $(shell echo "$(DATABASE_URL)" | sed 's|/balances?|/$(E2E_DB)?|')
 
@@ -61,6 +62,11 @@ help:
 	@echo "  e2e-seed                migrate + reset balances_e2e to the fixture"
 	@echo "  e2e-backend             run the backend against balances_e2e (foreground)"
 	@echo "  e2e-mock-oidc           run the fake OIDC provider (foreground, :8090)"
+	@echo ""
+	@echo "Workflow helpers (terse output; see docs/agents/dev.md):"
+	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
+	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
+	@echo "  session-token           print a live session token for curl smoke tests"
 
 up:
 	docker compose up -d
@@ -213,3 +219,36 @@ servers-status:
 	else \
 	  echo "frontend: stopped"; \
 	fi
+
+# ---- Workflow helpers ----------------------------------------------------
+# Each emits a single status line per step so they're cheap to read in an
+# agent's context; verbose output goes to a /tmp log read only on failure.
+
+# Pre-task pre-flight: refuse on a dirty tree, verify GitHub access, then
+# fast-forward main. Run before starting any new piece of work so you never
+# branch off a stale local main.
+start-task:
+	@test -z "$$(git status --porcelain)" || { echo "✗ working tree dirty — commit or stash first, then re-run"; exit 1; }
+	@git ls-remote origin HEAD >/dev/null 2>&1 || { echo "✗ no GitHub access — unlock the SSH key (ssh-add) or run 'gh auth login'"; exit 1; }
+	@git checkout main >/dev/null 2>&1 || { echo "✗ could not switch to main"; exit 1; }
+	@git pull --ff-only >/dev/null 2>&1 || { echo "✗ pull failed (diverged or no upstream) — resolve manually"; exit 1; }
+	@echo "✓ on main, up to date @ $$(git rev-parse --short HEAD)"
+
+# Pre-push gate: backend + frontend lint and tests. Each step's full output is
+# redirected to /tmp/balances-check-*.log; stdout gets only a pass/fail line.
+# e2e is excluded — run `make e2e` separately (it's slow and verbose).
+check:
+	@fail=0; \
+	printf '%-14s' 'golangci-lint'; (cd backend && golangci-lint run) >/tmp/balances-check-be-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-lint.log'; fail=1; }; \
+	printf '%-14s' 'eslint';        (cd frontend && npm run -s lint)   >/tmp/balances-check-fe-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-lint.log'; fail=1; }; \
+	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
+	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
+	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
+
+# Print one live session token (newest, unexpired) for curl smoke tests against
+# authenticated endpoints. Empty result → non-zero exit with a hint on stderr.
+session-token:
+	@tok=$$(docker exec $(PG_CONTAINER) psql -U $(PG_USER) -d $(PG_DB) -tAc \
+	  "SELECT s.id FROM sessions s WHERE s.expires_at > now() ORDER BY s.expires_at DESC LIMIT 1" 2>/dev/null); \
+	if [ -z "$$tok" ]; then echo "✗ no live session — log in via the dev UI first" >&2; exit 1; fi; \
+	echo "$$tok"
