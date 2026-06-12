@@ -10,10 +10,11 @@ import {
   RiskProfileFilter,
   type RiskProfileFilterValue,
 } from '@/components/RiskProfileFilter'
-import { useGolds } from '@/hooks/useInvestments'
+import { useGolds, useImportCreateGold } from '@/hooks/useInvestments'
 import { useInvestmentTimeSeries } from '@/hooks/useInvestmentTimeSeries'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateGoldDialog } from '@/components/CreateGoldDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { GoldListRow } from '@/components/GoldListRow'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
 import { aggregateListPositions, type Position } from '@/lib/listAggregates'
@@ -39,6 +40,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function GoldsScreen({ onSelect }: Props) {
   const { t } = useTranslation(['investments', 'common', 'errors'])
   const { data, isPending, error } = useGolds()
+  const importMutation = useImportCreateGold()
   const [showInactive, setShowInactive] = useState(false)
   const [riskFilter, setRiskFilter] = useState<RiskProfileFilterValue>('all')
 
@@ -117,7 +119,10 @@ export function GoldsScreen({ onSelect }: Props) {
             {t('investments:gold.listSubtitle')}
           </p>
         </div>
-        <CreateGoldDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateGoldDialog />
+        </div>
       </div>
 
       <InvestmentListHeadline

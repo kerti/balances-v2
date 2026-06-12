@@ -258,6 +258,19 @@ func (r *InvestmentRepo) DeleteInvestmentTransaction(ctx context.Context, transa
 	return nil
 }
 
+// ValidateSeedTransaction validates one create-from-list ledger row (issue #90)
+// against the subtype→type matrix and the ADR-0023 column-combo shape, the same
+// two checks CreateInvestmentTransaction applies. It is exported so the import
+// flow can surface a per-row error in the dry-run preview (a malformed row never
+// reaches the all-or-nothing commit). p carries no InvestmentID — only the type
+// and value columns are inspected.
+func ValidateSeedTransaction(subtype string, p CreateInvestmentTransactionParams) error {
+	if err := validateInvestmentTransactionType(subtype, p.TransactionType); err != nil {
+		return err
+	}
+	return validateInvestmentTransactionShape(p)
+}
+
 // validateInvestmentTransactionType enforces the subtype→type matrix.
 // TimeDeposit only accepts Maturity (placement lives in the Create dialog).
 // Bond accepts the full equity-style trade plus Coupon and Maturity.

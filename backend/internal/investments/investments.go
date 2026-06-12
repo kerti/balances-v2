@@ -65,6 +65,9 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/stocks", func(r chi.Router) {
 			r.Post("/", h.handleCreateStock)
 			r.Get("/", h.handleListStocks)
+			// Create-from-list import: a new stock from an uploaded workbook
+			// (Detail + Snapshots + Transactions ledger), atomic preview/commit.
+			r.Post("/import", h.handleImportCreateStock)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.handleGetStock)
 				r.Patch("/", h.handleUpdateStock)
@@ -79,6 +82,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/mutual-funds", func(r chi.Router) {
 			r.Post("/", h.handleCreateMutualFund)
 			r.Get("/", h.handleListMutualFunds)
+			r.Post("/import", h.handleImportCreateMutualFund)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.handleGetMutualFund)
 				r.Patch("/", h.handleUpdateMutualFund)
@@ -90,6 +94,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/golds", func(r chi.Router) {
 			r.Post("/", h.handleCreateGold)
 			r.Get("/", h.handleListGolds)
+			r.Post("/import", h.handleImportCreateGold)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.handleGetGold)
 				r.Patch("/", h.handleUpdateGold)
@@ -101,6 +106,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/bonds", func(r chi.Router) {
 			r.Post("/", h.handleCreateBond)
 			r.Get("/", h.handleListBonds)
+			r.Post("/import", h.handleImportCreateBond)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.handleGetBond)
 				r.Patch("/", h.handleUpdateBond)
@@ -112,6 +118,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/time-deposits", func(r chi.Router) {
 			r.Post("/", h.handleCreateTimeDeposit)
 			r.Get("/", h.handleListTimeDeposits)
+			r.Post("/import", h.handleImportCreateTimeDeposit)
 			r.Route("/{id}", func(r chi.Router) {
 				r.Get("/", h.handleGetTimeDeposit)
 				r.Patch("/", h.handleUpdateTimeDeposit)

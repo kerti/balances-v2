@@ -10,10 +10,11 @@ import {
   RiskProfileFilter,
   type RiskProfileFilterValue,
 } from '@/components/RiskProfileFilter'
-import { useTimeDeposits } from '@/hooks/useInvestments'
+import { useTimeDeposits, useImportCreateTimeDeposit } from '@/hooks/useInvestments'
 import { useInvestmentTimeSeries } from '@/hooks/useInvestmentTimeSeries'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateTimeDepositDialog } from '@/components/CreateTimeDepositDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { TimeDepositListRow } from '@/components/TimeDepositListRow'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
 import { aggregateListPositions, type Position } from '@/lib/listAggregates'
@@ -39,6 +40,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function TimeDepositsScreen({ onSelect }: Props) {
   const { t } = useTranslation(['investments', 'common', 'errors'])
   const { data, isPending, error } = useTimeDeposits()
+  const importMutation = useImportCreateTimeDeposit()
   const [showInactive, setShowInactive] = useState(false)
   const [riskFilter, setRiskFilter] = useState<RiskProfileFilterValue>('all')
 
@@ -118,7 +120,10 @@ export function TimeDepositsScreen({ onSelect }: Props) {
             {t('investments:timeDeposit.listSubtitle')}
           </p>
         </div>
-        <CreateTimeDepositDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateTimeDepositDialog />
+        </div>
       </div>
 
       <InvestmentListHeadline

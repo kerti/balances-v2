@@ -10,10 +10,11 @@ import {
   RiskProfileFilter,
   type RiskProfileFilterValue,
 } from '@/components/RiskProfileFilter'
-import { useBonds } from '@/hooks/useInvestments'
+import { useBonds, useImportCreateBond } from '@/hooks/useInvestments'
 import { useInvestmentTimeSeries } from '@/hooks/useInvestmentTimeSeries'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateBondDialog } from '@/components/CreateBondDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { BondListRow } from '@/components/BondListRow'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
 import { aggregateListPositions, type Position } from '@/lib/listAggregates'
@@ -39,6 +40,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function BondsScreen({ onSelect }: Props) {
   const { t } = useTranslation(['investments', 'common', 'errors'])
   const { data, isPending, error } = useBonds()
+  const importMutation = useImportCreateBond()
   const [showInactive, setShowInactive] = useState(false)
   const [riskFilter, setRiskFilter] = useState<RiskProfileFilterValue>('all')
 
@@ -118,7 +120,10 @@ export function BondsScreen({ onSelect }: Props) {
             {t('investments:bond.listSubtitle')}
           </p>
         </div>
-        <CreateBondDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateBondDialog />
+        </div>
       </div>
 
       <InvestmentListHeadline

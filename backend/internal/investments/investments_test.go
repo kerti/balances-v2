@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -27,6 +28,7 @@ var fakeNow = func() time.Time { return time.Date(2030, 1, 1, 0, 0, 0, 0, time.U
 type handlerHarness struct {
 	router *chi.Mux
 	user   db.User
+	pool   *pgxpool.Pool
 }
 
 func newHarness(t *testing.T) *handlerHarness {
@@ -38,7 +40,7 @@ func newHarness(t *testing.T) *handlerHarness {
 	r := chi.NewRouter()
 	investments.New(repo.NewInvestmentRepo(tdb.Pool), investments.WithNow(fakeNow)).Mount(r)
 
-	return &handlerHarness{router: r, user: user}
+	return &handlerHarness{router: r, user: user, pool: tdb.Pool}
 }
 
 func (h *handlerHarness) do(t *testing.T, method, path string, body any) *httptest.ResponseRecorder {

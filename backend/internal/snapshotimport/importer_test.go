@@ -35,6 +35,30 @@ func buildXLSX(t *testing.T, rows [][]string) []byte {
 
 var header = []string{"year_month", "as_of_date", "amount", "currency", "description"}
 
+// buildSheet writes rows to a single named sheet (used to build a raw
+// Transactions sheet with deliberately malformed cells).
+func buildSheet(t *testing.T, sheet string, rows [][]string) []byte {
+	t.Helper()
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+	if _, err := f.NewSheet(sheet); err != nil {
+		t.Fatalf("new sheet: %v", err)
+	}
+	for r, row := range rows {
+		for c, v := range row {
+			cell, _ := excelize.CoordinatesToCellName(c+1, r+1)
+			if err := f.SetCellStr(sheet, cell, v); err != nil {
+				t.Fatalf("set cell: %v", err)
+			}
+		}
+	}
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		t.Fatalf("serialise: %v", err)
+	}
+	return buf.Bytes()
+}
+
 func parse(t *testing.T, rows [][]string, opts Options) ([]ParsedRow, []RowError) {
 	t.Helper()
 	in := append([][]string{header}, rows...)
@@ -598,6 +622,93 @@ func TestParseDetail_Errors(t *testing.T) {
 		}
 		if len(got) != 1 || got["bank_name"] != "TestBank" {
 			t.Errorf("want only bank_name, got %v", got)
+		}
+	})
+}
+
+// TestParseTransactions covers the create-from-list ledger parse (issue #90):
+// a built workbook round-trips back through ParseTransactions, a missing sheet
+// yields an empty ledger (not an error), blank currency defaults, and bad
+// cells (number/date/missing-required) surface per-row.
+func TestParseTransactions(t *testing.T) {
+	amt := decimalFromString(t, "5000000")
+	qty := decimalFromString(t, "100")
+	price := decimalFromString(t, "50000")
+	principal := decimalFromString(t, "10000000")
+	interest := decimalFromString(t, "600000")
+	cashOut := "cash_out"
+	rolled := "rolled_to_new"
+	txns := []ExportTransaction{
+		{TransactionType: "buy", TransactionDate: *ptrTime(t, "2026-01-05"), Currency: "IDR",
+			Amount: &amt, Quantity: &qty, PricePerUnit: &price, Description: ptrStr("opening lot")},
+		{TransactionType: "maturity", TransactionDate: *ptrTime(t, "2026-03-01"), Currency: "USD",
+			PrincipalAmount: &principal, InterestAmount: &interest,
+			PrincipalDisposition: &rolled, InterestDisposition: &cashOut},
+	}
+	xlsx, err := BuildWorkbook(TemplateMeta{
+		PositionName: "Bond", DefaultCurrency: "IDR", Shape: ShapeAccruedInterest,
+		Transactions: txns,
+	}, []ExportSnapshot{{YearMonth: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Amount: amt, Currency: "IDR"}})
+	if err != nil {
+		t.Fatalf("BuildWorkbook: %v", err)
+	}
+
+	parsed, rowErrs, err := ParseTransactions(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR"})
+	if err != nil || len(rowErrs) != 0 {
+		t.Fatalf("ParseTransactions: err=%v rowErrs=%v", err, rowErrs)
+	}
+	if len(parsed) != 2 {
+		t.Fatalf("want 2 parsed transactions, got %d", len(parsed))
+	}
+	buy := parsed[0]
+	if buy.TransactionType != "buy" || buy.Currency != "IDR" || buy.Amount == nil || buy.Amount.String() != "5000000" {
+		t.Errorf("buy: %+v", buy)
+	}
+	if buy.Quantity == nil || buy.PricePerUnit == nil || buy.Description == nil || *buy.Description != "opening lot" {
+		t.Errorf("buy trade/desc cells: %+v", buy)
+	}
+	if buy.PrincipalAmount != nil || buy.PrincipalDisposition != nil {
+		t.Errorf("buy must not carry maturity columns: %+v", buy)
+	}
+	mat := parsed[1]
+	if mat.TransactionType != "maturity" || mat.Currency != "USD" || mat.Amount != nil {
+		t.Errorf("maturity shared cells: %+v", mat)
+	}
+	if mat.PrincipalAmount == nil || mat.InterestAmount == nil ||
+		mat.PrincipalDisposition == nil || *mat.PrincipalDisposition != "rolled_to_new" ||
+		mat.InterestDisposition == nil || *mat.InterestDisposition != "cash_out" {
+		t.Errorf("maturity columns: %+v", mat)
+	}
+
+	t.Run("missing Transactions sheet yields empty ledger, no error", func(t *testing.T) {
+		snapOnly := buildXLSX(t, [][]string{header})
+		parsed, rowErrs, err := ParseTransactions(bytes.NewReader(snapOnly), Options{DefaultCurrency: "IDR"})
+		if err != nil {
+			t.Fatalf("ParseTransactions: %v", err)
+		}
+		if len(parsed) != 0 || len(rowErrs) != 0 {
+			t.Errorf("want empty ledger, got parsed=%v rowErrs=%v", parsed, rowErrs)
+		}
+	})
+
+	t.Run("blank currency defaults; bad cells surface per-row", func(t *testing.T) {
+		rows := [][]string{
+			transactionHeaders,
+			{"dividend", "2026-02-10", "", "120000", "", "", "", "", "", "", "blank currency -> default"},
+			{"buy", "2026-02-11", "IDR", "not-a-number", "1", "1", "", "", "", "", ""},
+			{"buy", "13/02/2026", "IDR", "1", "1", "1", "", "", "", "", ""},
+			{"", "2026-02-12", "IDR", "1", "", "", "", "", "", "", "missing type"},
+		}
+		xlsx := buildSheet(t, TransactionsSheetName, rows)
+		parsed, rowErrs, err := ParseTransactions(bytes.NewReader(xlsx), Options{DefaultCurrency: "IDR"})
+		if err != nil {
+			t.Fatalf("ParseTransactions: %v", err)
+		}
+		if len(parsed) != 1 || parsed[0].Currency != "IDR" {
+			t.Fatalf("want 1 good row defaulting to IDR, got %+v", parsed)
+		}
+		if len(rowErrs) != 3 {
+			t.Fatalf("want 3 row errors (bad number, bad date, missing type), got %d: %v", len(rowErrs), rowErrs)
 		}
 	})
 }

@@ -25,13 +25,16 @@ export type ImportFieldError = { field: string; message: string }
 // CreateImportResult is the create-import counterpart of ImportResult: it adds
 // the Detail-sheet half (field_errors + would_create) and, on a committed
 // write, the new position's id. ToInsert counts the seeded snapshots; a new
-// position has no existing months, so there is no to_update.
+// position has no existing months, so there is no to_update. ledger_to_insert
+// counts the seeded transaction ledger (investment subtypes only, issue #90);
+// absent for the snapshot-only groups.
 export type CreateImportResult = {
   mode: 'preview' | 'commit'
   committed: boolean
   would_create: boolean
   position_id?: string
   to_insert: number
+  ledger_to_insert?: number
   field_errors: ImportFieldError[]
   errors: ImportRowError[]
 }

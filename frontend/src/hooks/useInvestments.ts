@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/api/client'
+import { postCreateImport, type CreateImportArgs } from '@/hooks/snapshotImport'
 import type {
   Bond,
   RiskProfile,
@@ -450,4 +451,43 @@ export function useDeleteTimeDeposit() {
       qc.invalidateQueries({ queryKey: ['time-deposits'] })
     },
   })
+}
+
+// Create-from-list import for the five investment subtypes (issue #90): a new
+// position from an uploaded workbook (Detail + Snapshots + Transactions ledger),
+// a preview being a server-side dry-run. Only a committed create refreshes the
+// subtype's list. Each subtype posts to its own /import endpoint; the dialog +
+// transport are group-agnostic (shared with the asset/liability/receivable
+// groups via postCreateImport).
+function useImportCreateInvestment(plural: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: CreateImportArgs) =>
+      postCreateImport(`/api/investments/${plural}`, args.file, args.mode),
+    onSuccess: (result) => {
+      if (result.committed) {
+        qc.invalidateQueries({ queryKey: [plural] })
+      }
+    },
+  })
+}
+
+export function useImportCreateStock() {
+  return useImportCreateInvestment('stocks')
+}
+
+export function useImportCreateMutualFund() {
+  return useImportCreateInvestment('mutual-funds')
+}
+
+export function useImportCreateGold() {
+  return useImportCreateInvestment('golds')
+}
+
+export function useImportCreateBond() {
+  return useImportCreateInvestment('bonds')
+}
+
+export function useImportCreateTimeDeposit() {
+  return useImportCreateInvestment('time-deposits')
 }

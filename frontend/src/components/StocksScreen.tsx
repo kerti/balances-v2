@@ -10,10 +10,11 @@ import {
   RiskProfileFilter,
   type RiskProfileFilterValue,
 } from '@/components/RiskProfileFilter'
-import { useStocks } from '@/hooks/useInvestments'
+import { useStocks, useImportCreateStock } from '@/hooks/useInvestments'
 import { useInvestmentTimeSeries } from '@/hooks/useInvestmentTimeSeries'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
 import { CreateStockDialog } from '@/components/CreateStockDialog'
+import { ImportPositionDialog } from '@/components/ImportPositionDialog'
 import { StockListRow } from '@/components/StockListRow'
 import { isActiveStatus, statusLabel } from '@/lib/lifecycle'
 import { aggregateListPositions, type Position } from '@/lib/listAggregates'
@@ -42,6 +43,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function StocksScreen({ onSelect }: Props) {
   const { t } = useTranslation(['investments', 'common', 'errors'])
   const { data, isPending, error } = useStocks()
+  const importMutation = useImportCreateStock()
   const [showInactive, setShowInactive] = useState(false)
   const [riskFilter, setRiskFilter] = useState<RiskProfileFilterValue>('all')
 
@@ -121,7 +123,10 @@ export function StocksScreen({ onSelect }: Props) {
             {t('investments:stock.listSubtitle')}
           </p>
         </div>
-        <CreateStockDialog />
+        <div className="flex items-center gap-2">
+          <ImportPositionDialog noun={noun} mutation={importMutation} />
+          <CreateStockDialog />
+        </div>
       </div>
 
       <InvestmentListHeadline

@@ -39,13 +39,16 @@ const maxUpload = 5 << 20 // 5 MB
 // the new position's id. ToInsert counts the seeded snapshots (a brand-new
 // position has no existing months, so there is no to_update counterpart).
 type Response struct {
-	Mode        string                      `json:"mode"`      // "preview" | "commit"
-	Committed   bool                        `json:"committed"` // true only when a position was written
-	WouldCreate bool                        `json:"would_create"`
-	PositionID  *uuid.UUID                  `json:"position_id,omitempty"`
-	ToInsert    int                         `json:"to_insert"`
-	FieldErrors []snapshotimport.FieldError `json:"field_errors"`
-	Errors      []snapshotimport.RowError   `json:"errors"`
+	Mode        string     `json:"mode"`      // "preview" | "commit"
+	Committed   bool       `json:"committed"` // true only when a position was written
+	WouldCreate bool       `json:"would_create"`
+	PositionID  *uuid.UUID `json:"position_id,omitempty"`
+	ToInsert    int        `json:"to_insert"`
+	// LedgerToInsert counts the seeded ledger transactions (investment
+	// create-import only, issue #90); omitted for the snapshot-only groups.
+	LedgerToInsert int                         `json:"ledger_to_insert,omitempty"`
+	FieldErrors    []snapshotimport.FieldError `json:"field_errors"`
+	Errors         []snapshotimport.RowError   `json:"errors"`
 }
 
 // ResolveFunc maps a parsed Detail sheet onto a group's create params,
@@ -74,28 +77,8 @@ func Run[T any](
 	resolve ResolveFunc[T],
 	commit CommitFunc[T],
 ) {
-	mode := r.URL.Query().Get("mode")
-	if mode == "" {
-		mode = "preview"
-	}
-	if mode != "preview" && mode != "commit" {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidImportMode, nil)
-		return
-	}
-
-	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
-	file, _, err := r.FormFile("file")
-	if err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
-		return
-	}
-	defer func() { _ = file.Close() }()
-
-	// Read the upload once: both the Detail and the Snapshots sheet are parsed
-	// from the same workbook, each opening its own reader over these bytes.
-	data, err := io.ReadAll(file)
-	if err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
+	data, mode, ok := readUpload(w, r)
+	if !ok {
 		return
 	}
 
@@ -166,6 +149,201 @@ func Run[T any](
 	resp.Committed = true
 	resp.PositionID = &id
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// LedgerCommitFunc is CommitFunc's investment counterpart (issue #90): it creates
+// the position, seeds the subtype-shaped snapshots AND the transaction ledger in
+// one transaction, returning the new position id. Runs only on mode=commit with
+// zero field/row errors.
+type LedgerCommitFunc[T any] func(ctx context.Context, params T, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error)
+
+// RunWithLedger is the Investment-group create-from-file flow: it extends Run with
+// the Transactions ledger sheet (the heaviest slice, #90). The uploaded workbook's
+// Detail sheet becomes the position (via resolve), the Snapshots sheet seeds its
+// subtype-shaped history, and the Transactions sheet seeds its ledger — all
+// atomically on commit. shape selects the snapshot column layout; subtype drives
+// per-row ledger validation against the ADR-0023 type matrix + shape. preview
+// validates + reports counts and writes nothing; commit refuses any field/row
+// error (all-or-nothing) and otherwise creates everything.
+func RunWithLedger[T any](
+	w http.ResponseWriter,
+	r *http.Request,
+	validate *validator.Validate,
+	subtype string,
+	shape snapshotimport.Shape,
+	resolve ResolveFunc[T],
+	commit LedgerCommitFunc[T],
+) {
+	data, mode, ok := readUpload(w, r)
+	if !ok {
+		return
+	}
+
+	detail, err := snapshotimport.ParseDetail(bytes.NewReader(data))
+	if err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidSpreadsheet, nil)
+		return
+	}
+
+	params, tagID, fieldErrs, err := resolve(r.Context(), detail)
+	if err != nil {
+		httperr.WriteRepo(w, "import create: resolve detail", err)
+		return
+	}
+
+	validCurrency := func(c string) bool { return validate.Var(c, "iso4217") == nil }
+	defaultCurrency := strings.TrimSpace(detail["native_currency"])
+
+	parsed, snapErrs, err := snapshotimport.Parse(bytes.NewReader(data), snapshotimport.Options{
+		DefaultCurrency: defaultCurrency,
+		ValidCurrency:   validCurrency,
+		Shape:           shape,
+	})
+	if err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidSpreadsheet, nil)
+		return
+	}
+
+	txns, txnParseErrs, err := snapshotimport.ParseTransactions(bytes.NewReader(data), snapshotimport.Options{
+		DefaultCurrency: defaultCurrency,
+		ValidCurrency:   validCurrency,
+	})
+	if err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidSpreadsheet, nil)
+		return
+	}
+	ledger, ledgerErrs := validateLedger(subtype, txns)
+
+	// All row-level problems — bad snapshot rows, unparseable ledger cells, and
+	// ledger rows that violate the subtype matrix/shape — gate the commit together.
+	rowErrs := make([]snapshotimport.RowError, 0, len(snapErrs)+len(txnParseErrs)+len(ledgerErrs))
+	rowErrs = append(rowErrs, snapErrs...)
+	rowErrs = append(rowErrs, txnParseErrs...)
+	rowErrs = append(rowErrs, ledgerErrs...)
+
+	resp := Response{
+		Mode:           mode,
+		FieldErrors:    fieldErrs,
+		Errors:         rowErrs,
+		ToInsert:       len(parsed),
+		LedgerToInsert: len(ledger),
+	}
+	if resp.FieldErrors == nil {
+		resp.FieldErrors = []snapshotimport.FieldError{}
+	}
+	hasErrors := len(fieldErrs) > 0 || len(rowErrs) > 0
+	resp.WouldCreate = !hasErrors
+
+	if mode == "commit" && hasErrors {
+		writeJSON(w, http.StatusUnprocessableEntity, resp)
+		return
+	}
+	if mode == "preview" {
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+
+	snaps := make([]repo.ImportInvestmentSnapshotRow, len(parsed))
+	for i, p := range parsed {
+		snaps[i] = repo.ImportInvestmentSnapshotRow{
+			YearMonth:       p.YearMonth,
+			Amount:          p.Amount,
+			Currency:        p.Currency,
+			Quantity:        p.Quantity,
+			PricePerUnit:    p.PricePerUnit,
+			AccruedInterest: p.AccruedInterest,
+			AsOfDate:        p.AsOfDate,
+			Description:     p.Description,
+		}
+	}
+
+	id, err := commit(r.Context(), params, tagID, snaps, ledger)
+	if err != nil {
+		httperr.WriteRepo(w, "import create: commit", err)
+		return
+	}
+	resp.Committed = true
+	resp.PositionID = &id
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// validateLedger maps parsed ledger rows onto repo seed rows, rejecting any that
+// violate the subtype→type matrix or the ADR-0023 column-combo shape
+// (repo.ValidateSeedTransaction), plus a second Maturity (terminal — at most one
+// per position). Bad rows become RowErrors keyed by the spreadsheet row; the good
+// rows are returned for the commit. Ledger ordering (Maturity last) is enforced
+// in the repo seed, not here.
+func validateLedger(subtype string, txns []snapshotimport.ParsedTransaction) ([]repo.ImportTransactionRow, []snapshotimport.RowError) {
+	var rows []repo.ImportTransactionRow
+	var errs []snapshotimport.RowError
+	maturitySeen := false
+	for _, t := range txns {
+		if err := repo.ValidateSeedTransaction(subtype, repo.CreateInvestmentTransactionParams{
+			TransactionType:      t.TransactionType,
+			Amount:               t.Amount,
+			Quantity:             t.Quantity,
+			PricePerUnit:         t.PricePerUnit,
+			PrincipalAmount:      t.PrincipalAmount,
+			InterestAmount:       t.InterestAmount,
+			PrincipalDisposition: t.PrincipalDisposition,
+			InterestDisposition:  t.InterestDisposition,
+		}); err != nil {
+			errs = append(errs, snapshotimport.RowError{Row: t.Row, Message: err.Error()})
+			continue
+		}
+		if t.TransactionType == repo.TxnTypeMaturity {
+			if maturitySeen {
+				errs = append(errs, snapshotimport.RowError{Row: t.Row, Message: "a position can have at most one maturity transaction"})
+				continue
+			}
+			maturitySeen = true
+		}
+		rows = append(rows, repo.ImportTransactionRow{
+			TransactionType:      t.TransactionType,
+			TransactionDate:      t.TransactionDate,
+			Currency:             t.Currency,
+			Description:          t.Description,
+			Amount:               t.Amount,
+			Quantity:             t.Quantity,
+			PricePerUnit:         t.PricePerUnit,
+			PrincipalAmount:      t.PrincipalAmount,
+			InterestAmount:       t.InterestAmount,
+			PrincipalDisposition: t.PrincipalDisposition,
+			InterestDisposition:  t.InterestDisposition,
+		})
+	}
+	return rows, errs
+}
+
+// readUpload runs the shared create-from-file transport for Run and RunWithLedger:
+// it validates ?mode (default preview), reads the size-capped multipart "file"
+// body once (both the Detail and Snapshots/Transactions sheets parse from these
+// bytes), and returns them with the mode. On any failure it writes the error
+// response and returns ok=false so the caller returns immediately.
+func readUpload(w http.ResponseWriter, r *http.Request) (data []byte, mode string, ok bool) {
+	mode = r.URL.Query().Get("mode")
+	if mode == "" {
+		mode = "preview"
+	}
+	if mode != "preview" && mode != "commit" {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidImportMode, nil)
+		return nil, "", false
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxUpload)
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
+		return nil, "", false
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err = io.ReadAll(file)
+	if err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidFileUpload, nil)
+		return nil, "", false
+	}
+	return data, mode, true
 }
 
 // ResolveSoleOwner resolves the sole_owner email convention shared by every

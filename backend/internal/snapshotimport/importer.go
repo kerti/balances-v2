@@ -199,8 +199,8 @@ type ExportSnapshot struct {
 
 // ExportTransaction is one row of the Transactions ledger sheet (ADR-0023).
 // Only the columns a given transaction type populates are non-nil; the rest are
-// written blank so the column union stays aligned. This is export-only: there
-// is no parse counterpart yet.
+// written blank so the column union stays aligned. ParsedTransaction is its
+// inverse on the create-from-list seed path (issue #90).
 type ExportTransaction struct {
 	TransactionType      string
 	TransactionDate      time.Time
@@ -745,4 +745,149 @@ func parseDate(s string) (time.Time, error) {
 
 func firstOfMonth(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+// ParsedTransaction is one ledger row read back from the "Transactions" sheet on
+// a create-from-list seed (issue #90), the inverse of ExportTransaction. Row is
+// the 1-based spreadsheet row, surfaced in errors. This package validates only
+// the file shape (a parseable type/date/currency and well-formed numbers); the
+// subtype→type matrix and ADR-0023 column-combo rules are enforced in the repo
+// layer, which knows the parent investment's subtype.
+type ParsedTransaction struct {
+	Row                  int
+	TransactionType      string
+	TransactionDate      time.Time
+	Currency             string
+	Amount               *decimal.Decimal
+	Quantity             *decimal.Decimal
+	PricePerUnit         *decimal.Decimal
+	PrincipalAmount      *decimal.Decimal
+	InterestAmount       *decimal.Decimal
+	PrincipalDisposition *string
+	InterestDisposition  *string
+	Description          *string
+}
+
+// ParseTransactions reads the "Transactions" sheet of an .xlsx into ledger rows
+// plus a per-row error list. A missing sheet is not an error — a workbook with
+// no ledger (or a snapshot-only upload) seeds no transactions, so it returns an
+// empty slice. A returned error means the file itself is unreadable. Blank rows
+// are skipped. Only cell-level shape is checked here (required type/date/currency,
+// numeric value columns); type-matrix and column-combo validation belong to the
+// repo. opts.DefaultCurrency fills a blank currency cell; opts.ValidCurrency, when
+// set, gates each resolved code.
+func ParseTransactions(r io.Reader, opts Options) ([]ParsedTransaction, []RowError, error) {
+	f, err := excelize.OpenReader(r)
+	if err != nil {
+		return nil, nil, fmt.Errorf("not a readable .xlsx file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	// A workbook without a Transactions sheet simply has no ledger to seed.
+	if idx, _ := f.GetSheetIndex(TransactionsSheetName); idx == -1 {
+		return nil, nil, nil
+	}
+
+	rows, err := f.GetRows(TransactionsSheetName)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read sheet %q: %w", TransactionsSheetName, err)
+	}
+
+	var (
+		parsed []ParsedTransaction
+		errs   []RowError
+	)
+	for i := 1; i < len(rows); i++ { // row 1 is the header
+		rowNum := i + 1
+		cols := rows[i]
+		get := func(idx int) string {
+			if idx < len(cols) {
+				return strings.TrimSpace(cols[idx])
+			}
+			return ""
+		}
+
+		// Blank-row skip: every column up to description (10) empty.
+		blank := true
+		for c := 0; c <= 10; c++ {
+			if get(c) != "" {
+				blank = false
+				break
+			}
+		}
+		if blank {
+			continue
+		}
+
+		txn := ParsedTransaction{Row: rowNum, TransactionType: strings.ToLower(get(0))}
+		if txn.TransactionType == "" {
+			errs = append(errs, RowError{rowNum, "transaction_type is required"})
+			continue
+		}
+
+		dateStr := get(1)
+		if dateStr == "" {
+			errs = append(errs, RowError{rowNum, "transaction_date is required (YYYY-MM-DD)"})
+			continue
+		}
+		td, err := parseDate(dateStr)
+		if err != nil {
+			errs = append(errs, RowError{rowNum, "transaction_date must be YYYY-MM-DD (got " + dateStr + ")"})
+			continue
+		}
+		txn.TransactionDate = td
+
+		cur := strings.ToUpper(get(2))
+		if cur == "" {
+			cur = strings.ToUpper(opts.DefaultCurrency)
+		}
+		if opts.ValidCurrency != nil && !opts.ValidCurrency(cur) {
+			errs = append(errs, RowError{rowNum, "currency must be a 3-letter ISO code (got " + cur + ")"})
+			continue
+		}
+		txn.Currency = cur
+
+		var rerr *RowError
+		txn.Amount = optDecimal(get(3), "amount", rowNum, &rerr)
+		txn.Quantity = optDecimal(get(4), "quantity", rowNum, &rerr)
+		txn.PricePerUnit = optDecimal(get(5), "price_per_unit", rowNum, &rerr)
+		txn.PrincipalAmount = optDecimal(get(6), "principal_amount", rowNum, &rerr)
+		txn.InterestAmount = optDecimal(get(7), "interest_amount", rowNum, &rerr)
+		if rerr != nil {
+			errs = append(errs, *rerr)
+			continue
+		}
+		txn.PrincipalDisposition = optStr(get(8))
+		txn.InterestDisposition = optStr(get(9))
+		txn.Description = optStr(get(10))
+
+		parsed = append(parsed, txn)
+	}
+
+	return parsed, errs, nil
+}
+
+// optDecimal parses an optional numeric ledger cell: blank yields nil; an
+// unparseable value records the first such RowError into *rerr (left nil if a
+// prior column already failed) and yields nil.
+func optDecimal(raw, col string, rowNum int, rerr **RowError) *decimal.Decimal {
+	if raw == "" {
+		return nil
+	}
+	d, err := decimal.NewFromString(raw)
+	if err != nil {
+		if *rerr == nil {
+			*rerr = &RowError{rowNum, col + " must be a number with no thousands separators (got " + raw + ")"}
+		}
+		return nil
+	}
+	return &d
+}
+
+// optStr maps a blank cell to nil, a non-blank one to a pointer.
+func optStr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
