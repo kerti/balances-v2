@@ -146,10 +146,13 @@ history per ADR-0007.
   **not** enforce maturity uniqueness at the DB level (no partial unique index on `(investment_id)
   WHERE transaction_type = 'maturity' AND deleted_at IS NULL`); the freeze guard makes a second one
   unreachable through the live API, and the create-from-list seed (issue #90) rejects a second
-  maturity row in its preview. The create-from-list import reuses this exact terminal behavior to
-  restore a matured position faithfully (decision (b), #90): the seeded ledger is applied with the
-  Maturity row last, so the seed produces the matured status + close snapshot rather than fighting
-  the freeze guard.
+  maturity row in its preview. The create-from-list import reuses this terminal behavior to restore a
+  matured position faithfully (decision (b), #90): it seeds the ledger with the Maturity row last so
+  the write-order matches the terminal-event model, producing the matured status + close snapshot.
+  Note the seed inserts via the unguarded db query (not the guarded
+  `repo.CreateInvestmentTransaction`), so intra-ledger order is not enforced by the freeze guard
+  during seeding; the load-bearing ordering is snapshots-before-ledger, so the 0 close overwrites any
+  seeded snapshot in the maturity month.
 - Per ADR-0003, no transaction type auto-propagates to bank-account snapshots. The user reads cash
   off their bank statement at the next month-end.
 - Per-shape frontend dialog forks (`Trade` / `CashIncome` / `Fee` / `Maturity`) mirror the snapshot

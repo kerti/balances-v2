@@ -680,6 +680,12 @@ func TestParseTransactions(t *testing.T) {
 		t.Errorf("maturity columns: %+v", mat)
 	}
 
+	t.Run("unreadable file errors", func(t *testing.T) {
+		if _, _, err := ParseTransactions(bytes.NewReader([]byte("not an xlsx")), Options{}); err == nil {
+			t.Fatal("want error for non-xlsx, got nil")
+		}
+	})
+
 	t.Run("missing Transactions sheet yields empty ledger, no error", func(t *testing.T) {
 		snapOnly := buildXLSX(t, [][]string{header})
 		parsed, rowErrs, err := ParseTransactions(bytes.NewReader(snapOnly), Options{DefaultCurrency: "IDR"})

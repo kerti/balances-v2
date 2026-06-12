@@ -21,11 +21,15 @@ import (
 // seeding — transactions are applied solely when creating a new position here,
 // never bulk-imported into an existing one.
 //
-// Maturity-in-seed follows decision (b) from #90: a Maturity row is applied LAST
-// so the create flow legitimately produces a matured position with its 0-value
-// close snapshot, reusing the exact terminal behavior of
-// CreateInvestmentTransaction. The post-maturity freeze guard makes maturity-last
-// mandatory, not cosmetic — seedLedger sorts to honor it.
+// Maturity-in-seed follows decision (b) from #90: a Maturity row produces a
+// matured position with its 0-value close snapshot, reproducing the terminal
+// behavior of CreateInvestmentTransaction. seedLedger applies the Maturity row
+// last so the seed write-order matches the conceptual terminal-event model and
+// stays correct if it is ever routed through the status-guarded insert. (The
+// seed uses the unguarded db query directly, so intra-ledger order is not itself
+// load-bearing today; the load-bearing ordering is snapshots-before-ledger, so
+// the 0 close overwrites any seeded snapshot in the maturity month — see
+// createInvestmentWithHistory.)
 
 // ImportTransactionRow is one ledger transaction to seed on a create-from-list
 // import, the repo-side counterpart of snapshotimport.ParsedTransaction. The
@@ -366,11 +370,12 @@ func seedSnapshots(ctx context.Context, qtx *db.Queries, invID uuid.UUID, subtyp
 }
 
 // seedLedger inserts the seeded ledger inside an existing tx, applying any
-// Maturity row LAST (decision (b), #90): the post-maturity freeze means a Maturity
-// must not precede other rows. A Maturity additionally flips the position to
-// 'matured', sets terminated_at, and upserts the 0-value close snapshot — the
-// exact terminal behavior of CreateInvestmentTransaction, reproduced here against
-// the shared qtx. The 0 close wins over any seeded snapshot in the maturity month.
+// Maturity row LAST (decision (b), #90) so the seed write-order matches the
+// terminal-event model. A Maturity additionally flips the position to 'matured',
+// sets terminated_at, and upserts the 0-value close snapshot — the exact terminal
+// behavior of CreateInvestmentTransaction, reproduced here against the shared qtx.
+// The 0 close wins over any seeded snapshot in the maturity month because
+// seedSnapshots has already run (createInvestmentWithHistory orders them).
 func seedLedger(ctx context.Context, qtx *db.Queries, invID uuid.UUID, ledger []ImportTransactionRow, user, hid uuid.UUID) error {
 	ordered := make([]ImportTransactionRow, len(ledger))
 	copy(ordered, ledger)

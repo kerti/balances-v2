@@ -4,13 +4,29 @@ import (
 	"context"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
+
+// snapRow is the minimal shape of a listed investment snapshot the import tests
+// assert on (the maturity-month close reconciliation).
+type snapRow struct {
+	YearMonth time.Time       `json:"year_month"`
+	Amount    decimal.Decimal `json:"amount"`
+}
+
+func snapshotsOf(t *testing.T, h *handlerHarness, id string) []snapRow {
+	t.Helper()
+	rec := h.do(t, "GET", "/investments/"+id+"/snapshots", nil)
+	requireStatus(t, rec, http.StatusOK)
+	return decodeBody[[]snapRow](t, rec)
+}
 
 // Create-from-list import for the five investment subtypes (issue #90): the
 // uploaded workbook's Detail sheet becomes a new investment, its Snapshots sheet
@@ -391,6 +407,99 @@ func TestInvestmentImportCreate_Maturity(t *testing.T) {
 			t.Errorf("snapshots: want 1 (the 0 close), got %d", n)
 		}
 	})
+}
+
+// TestInvestmentImportCreate_MaturityReconciliation proves the two ordering
+// guarantees of the seed: the 0-value close snapshot wins over a seeded snapshot
+// in the maturity month (snapshots-before-ledger), and a Maturity row listed
+// before other rows still produces the matured position (seedLedger applies it
+// last).
+func TestInvestmentImportCreate_MaturityReconciliation(t *testing.T) {
+	t.Run("0 close overwrites a seeded snapshot in the maturity month", func(t *testing.T) {
+		h := newHarness(t)
+		// A pre-maturity reading in the SAME month as maturity (2030-01).
+		snaps := [][]string{{"2030-01", "2030-01-15", "10500000", "0", "IDR", "pre-maturity"}}
+		txns := [][]string{
+			{"maturity", "2030-01-01", "IDR", "", "", "", "10000000", "600000", "cash_out", "cash_out", "matured"},
+		}
+		rec := h.doUpload(t, "/investments/bonds/import?mode=commit", buildCreateWorkbook(t, bondDetail(), accruedHeader, snaps, txns))
+		requireStatus(t, rec, http.StatusOK)
+		id := *decodeBody[createImportResp](t, rec).PositionID
+
+		rows := snapshotsOf(t, h, id)
+		if len(rows) != 1 {
+			t.Fatalf("want 1 snapshot (the reconciled close), got %d", len(rows))
+		}
+		if !rows[0].Amount.IsZero() {
+			t.Errorf("maturity-month snapshot: want 0 (close overwrote the seeded reading), got %s", rows[0].Amount)
+		}
+	})
+
+	t.Run("maturity listed first still matures the position", func(t *testing.T) {
+		h := newHarness(t)
+		// Maturity precedes a coupon in file order; the seed must reorder it last.
+		txns := [][]string{
+			{"maturity", "2030-01-01", "IDR", "", "", "", "10000000", "600000", "cash_out", "cash_out", "matured"},
+			{"coupon", "2025-06-01", "IDR", "52083", "", "", "", "", "", "", "earlier coupon"},
+		}
+		rec := h.doUpload(t, "/investments/bonds/import?mode=commit", buildCreateWorkbook(t, bondDetail(), accruedHeader, nil, txns))
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[createImportResp](t, rec)
+		if !body.Committed || body.PositionID == nil || body.LedgerToInsert != 2 {
+			t.Fatalf("want committed bond with ledger=2, got %+v", body)
+		}
+		got := decodeBody[*repo.Bond](t, h.do(t, "GET", "/investments/bonds/"+*body.PositionID, nil))
+		if got.Investment.Status != "matured" {
+			t.Errorf("status: want matured, got %q", got.Investment.Status)
+		}
+	})
+}
+
+// TestInvestmentImportCreate_TransportErrors covers the shared readUpload guards
+// on an investment import endpoint: bad mode, missing file, and a non-spreadsheet
+// upload all 4xx without writing.
+func TestInvestmentImportCreate_TransportErrors(t *testing.T) {
+	h := newHarness(t)
+	good := buildCreateWorkbook(t, stockDetail(), qtyPriceHeader, nil, nil)
+
+	t.Run("400 invalid mode", func(t *testing.T) {
+		rec := h.doUpload(t, "/investments/stocks/import?mode=sideways", good)
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+	t.Run("400 missing file", func(t *testing.T) {
+		rec := h.doUpload(t, "/investments/stocks/import", nil)
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+	t.Run("400 not a spreadsheet", func(t *testing.T) {
+		rec := h.doUpload(t, "/investments/stocks/import", []byte("this is not xlsx"))
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+	if countList(t, h, "/investments/stocks") != 0 {
+		t.Error("a 4xx upload wrote a position")
+	}
+}
+
+// TestInvestmentImportCreate_UnknownTagUntagged: a tag name that matches no Tag
+// leaves the new position untagged (the create-import contract — an unmatched tag
+// is not an error).
+func TestInvestmentImportCreate_UnknownTagUntagged(t *testing.T) {
+	h := newHarness(t)
+	detail := append(stockDetail()[:0:0], stockDetail()...)
+	for i := range detail {
+		if detail[i][0] == "tag" {
+			detail[i] = []string{"tag", "No Such Tag"}
+		}
+	}
+	rec := h.doUpload(t, "/investments/stocks/import?mode=commit", buildCreateWorkbook(t, detail, qtyPriceHeader, nil, nil))
+	requireStatus(t, rec, http.StatusOK)
+	body := decodeBody[createImportResp](t, rec)
+	if !body.Committed || body.PositionID == nil {
+		t.Fatalf("want committed stock, got %+v", body)
+	}
+	got := decodeBody[*repo.Stock](t, h.do(t, "GET", "/investments/stocks/"+*body.PositionID, nil))
+	if got.Investment.TagID != nil {
+		t.Errorf("unknown tag should leave the position untagged, got tag_id %v", got.Investment.TagID)
+	}
 }
 
 // TestInvestmentImportCreate_RoundTrip exports a seeded stock then re-imports the
