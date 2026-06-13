@@ -102,6 +102,14 @@ jobs:
           cache-dependency-path: backend/go.sum
       - name: Run tests with coverage
         run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+      # Go profiles carry module-qualified paths
+      # (github.com/kerti/balances-v2/backend/...). The pip codecov-cli
+      # (use_pypi) doesn't strip the module prefix the way the old binary
+      # uploader did, so codecov.yml's flag paths + ignore globs (backend/…)
+      # matched nothing and the backend flag reported 0%. Rewrite to
+      # repo-relative paths before upload.
+      - name: Normalise coverage paths for Codecov
+        run: sed -i 's#github.com/kerti/balances-v2/##g' coverage.out
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
         with:
