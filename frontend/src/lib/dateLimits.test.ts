@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  carryoverSeed,
   carryoverSeedDate,
   thisYearMonth,
   todayDate,
   monthStartDate,
   monthEndDateCapped,
 } from './dateLimits'
+import type { CarryoverDateMode } from './dateLimits'
 
 describe('dateLimits', () => {
   beforeEach(() => {
@@ -76,6 +78,57 @@ describe('dateLimits', () => {
       expect(carryoverSeedDate('end_of_month_after_last_snapshot', null)).toBe(
         '2026-05-30',
       )
+    })
+  })
+
+  describe('carryoverSeed', () => {
+    // Clock is pinned to 2026-05-30 (May) by the outer beforeEach.
+
+    it('derives yearMonth from the seed date (today mode = current month)', () => {
+      expect(carryoverSeed('today', '2026-04')).toEqual({
+        yearMonth: '2026-05',
+        asOfDate: '2026-05-30',
+      })
+    })
+
+    it('back-dates yearMonth for end_of_last_month', () => {
+      expect(carryoverSeed('end_of_last_month')).toEqual({
+        yearMonth: '2026-04',
+        asOfDate: '2026-04-30',
+      })
+    })
+
+    it('back-dates yearMonth for end_of_month_after_last_snapshot', () => {
+      expect(carryoverSeed('end_of_month_after_last_snapshot', '2026-03')).toEqual({
+        yearMonth: '2026-04',
+        asOfDate: '2026-04-30',
+      })
+    })
+
+    it('keeps the pair consistent when the seed is clamped to today', () => {
+      // Snapshot in May → end of June (future) clamps to today; yearMonth must
+      // follow the clamped date, not the unclamped June.
+      expect(carryoverSeed('end_of_month_after_last_snapshot', '2026-05')).toEqual({
+        yearMonth: '2026-05',
+        asOfDate: '2026-05-30',
+      })
+    })
+
+    // The whole point of #119: whatever the mode, the seeded { yearMonth,
+    // asOfDate } pair must satisfy the date input's own min/max, so the
+    // pre-filled form is submittable without the user editing the month.
+    it('produces a pair within the month bounds for every mode', () => {
+      const modes: CarryoverDateMode[] = [
+        'today',
+        'end_of_last_month',
+        'end_of_month_after_last_snapshot',
+      ]
+      for (const mode of modes) {
+        const { yearMonth, asOfDate } = carryoverSeed(mode, '2026-03')
+        expect(asOfDate.slice(0, 7)).toBe(yearMonth)
+        expect(asOfDate >= monthStartDate(yearMonth)).toBe(true)
+        expect(asOfDate <= monthEndDateCapped(yearMonth)).toBe(true)
+      }
     })
   })
 

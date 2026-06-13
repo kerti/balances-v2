@@ -86,6 +86,24 @@ export function carryoverSeedDate(
   return seed > today ? today : seed
 }
 
+// carryoverSeed returns the { yearMonth, asOfDate } pair the carryover dialog
+// pre-fills. asOfDate follows the user's carryover_date_mode (see
+// carryoverSeedDate); yearMonth is *derived from it* rather than defaulting to
+// the current month, so the pair is always internally consistent — the date
+// falls within its own month. That keeps the seeded form submittable without
+// the user having to edit the month down: it satisfies the snapshot
+// month-integrity CHECK (migration 00003) and the date input's min/max for
+// every mode, including the back-dating modes end_of_last_month and
+// end_of_month_after_last_snapshot (issue #119). The "YYYY-MM" slice is exactly
+// what <input type="month"> wants and equals asOfDate's month by construction.
+export function carryoverSeed(
+  mode: CarryoverDateMode,
+  lastSnapshotMonth?: string | null,
+): { yearMonth: string; asOfDate: string } {
+  const asOfDate = carryoverSeedDate(mode, lastSnapshotMonth)
+  return { yearMonth: asOfDate.slice(0, 7), asOfDate }
+}
+
 // monthStartDate returns the first day of a "YYYY-MM" month as "YYYY-MM-DD",
 // suitable for the `min` of a snapshot's statement-date input — the statement
 // date must fall within the snapshot's month (backend CHECK

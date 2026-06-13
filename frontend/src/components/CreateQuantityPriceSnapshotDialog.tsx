@@ -18,7 +18,7 @@ import { errorMessage } from '@/lib/errorMessage'
 import { formatCurrency } from '@/lib/format'
 import {
   thisYearMonth,
-  carryoverSeedDate,
+  carryoverSeed,
   monthStartDate,
   monthEndDateCapped,
 } from '@/lib/dateLimits'
@@ -91,11 +91,12 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
   function startCarryover() {
     if (!carryover) return
     const mode = (me?.carryover_date_mode ?? 'today') as CarryoverDateMode
+    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth)
     setForm({
-      year_month: thisYearMonth(),
+      year_month: seed.yearMonth,
       quantity: carryover.quantity ?? '',
       price_per_unit: carryover.price_per_unit ?? '',
-      as_of_date: carryoverSeedDate(mode, carryover.lastSnapshotMonth),
+      as_of_date: seed.asOfDate,
       description: '',
     })
     setOpen(true)
