@@ -261,6 +261,7 @@ check:
 	@fail=0; \
 	printf '%-14s' 'golangci-lint'; (cd backend && golangci-lint run) >/tmp/balances-check-be-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-lint.log'; fail=1; }; \
 	printf '%-14s' 'eslint';        (cd frontend && npm run -s lint)   >/tmp/balances-check-fe-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-lint.log'; fail=1; }; \
+	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >/tmp/balances-check-fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-tsc.log';  fail=1; }; \
 	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
 	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
