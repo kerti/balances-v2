@@ -1,0 +1,46 @@
+# Secret scanning (issue #70). Defence-in-depth behind GitHub's native
+# secret-scanning + push-protection (both enabled): gitleaks adds full
+# git-history scans, generic entropy rules, and a portable config that still
+# works if the repo goes private (no GitHub Advanced Security required).
+#
+# Runs the pinned gitleaks binary directly rather than the marketplace action —
+# no extra third-party action to trust/SHA-pin, and no org-license gate.
+name: gitleaks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly full-history rescan, Monday 06:00 UTC.
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan for secrets
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          # Full history so `gitleaks git` scans every commit, not just the tip.
+          fetch-depth: 0
+      - name: Run gitleaks
+        run: |
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          # Non-zero exit on any finding fails the job. --redact keeps the secret
+          # value out of logs; config carries the fixture allowlist.
+          ./gitleaks git . --redact --verbose --config .gitleaks.toml

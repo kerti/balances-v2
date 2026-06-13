@@ -1,0 +1,21 @@
+# gitleaks config (issue #70). Extends the built-in ruleset; the allowlist below
+# scopes out files that legitimately contain placeholder/fixture credentials so
+# the scan doesn't fail on them. GitHub native secret-scanning + push-protection
+# are the first line of defence — gitleaks adds full git-history scans, generic
+# entropy rules, and stays usable if the repo ever goes private (no GHAS needed).
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholder env + e2e fixtures — no real secrets live here"
+paths = [
+  # Template env with empty/placeholder values (real .env is gitignored).
+  '''\.env\.example$''',
+  # E2E harness fixtures: the mock OIDC client id/secret are constants, and the
+  # RSA signing key is generated at runtime (never committed). See ADR-0024.
+  '''frontend/playwright\.config\.ts$''',
+  '''backend/cmd/balances/mockoidc\.go$''',
+  # E2E specs carry fixture identities (Alice / alice@example.com), not secrets.
+  '''frontend/e2e/.*''',
+]
