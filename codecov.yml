@@ -22,15 +22,19 @@ ignore:
   - "backend/cmd/balances/**"
   - "backend/internal/migrations/**"
 
+# Both flags upload on every commit (CI runs both suites unconditionally), so
+# carryforward is off: the report reflects only what was actually uploaded this
+# commit, never stale data carried from an ancestor. A broken upload fails CI
+# via fail_ci_if_error rather than being silently backfilled.
 flags:
   backend:
     paths:
       - backend/
-    carryforward: true
+    carryforward: false
   frontend:
     paths:
       - frontend/
-    carryforward: true
+    carryforward: false
 
 comment:
   layout: "header, diff, flags, files"

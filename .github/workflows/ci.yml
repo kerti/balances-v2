@@ -9,71 +9,15 @@ on:
 permissions:
   contents: read
 
+# Every job runs on every PR — no path-gating. Codecov needs both the backend
+# and frontend flags uploaded on every commit to report an accurate combined
+# total; gating skipped one side and left Codecov carrying forward stale (or
+# zero) coverage for the untouched half. Actions are free on this public repo,
+# so always running both suites is the deterministic, no-cost guarantee.
+
 jobs:
-  changes:
-    name: Detect changes
-    runs-on: ubuntu-latest
-    outputs:
-      backend: ${{ steps.filter.outputs.backend }}
-      frontend: ${{ steps.filter.outputs.frontend }}
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-      - id: filter
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-
-          # Resolve the changed-file list ourselves with git — no third-party
-          # action, so no Node-runtime deprecation treadmill or marketplace
-          # supply-chain surface. Fail-safe: whenever the diff range can't be
-          # trusted (first push, force-push, base not in history), run every
-          # job. The only failure mode is running too much, never skipping a
-          # job whose paths actually changed.
-          run_all=false
-          if [ -z "${BASE_SHA}" ] || [ "${BASE_SHA}" = "0000000000000000000000000000000000000000" ] \
-             || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
-            echo "No usable base ref (${BASE_SHA:-<empty>}); running all jobs."
-            run_all=true
-            changed=""
-          elif [ "${EVENT_NAME}" = "pull_request" ]; then
-            # Three-dot: changes on the PR branch since it diverged from base.
-            changed="$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")"
-          else
-            # Push: exactly what this push introduced (before..after).
-            changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
-          fi
-
-          echo "Changed files:"
-          echo "${changed:-  (none / run-all)}"
-
-          backend=false
-          frontend=false
-          if [ "${run_all}" = "true" ]; then
-            backend=true
-            frontend=true
-          else
-            # Cross-cutting files trigger both groups.
-            if echo "${changed}" | grep -qE '^(\.github/workflows/ci\.yml|Makefile|codecov\.yml|\.golangci\.yml)$'; then
-              backend=true
-              frontend=true
-            fi
-            echo "${changed}" | grep -qE '^backend/'  && backend=true || true
-            echo "${changed}" | grep -qE '^frontend/' && frontend=true || true
-          fi
-
-          echo "backend=${backend}"   >> "$GITHUB_OUTPUT"
-          echo "frontend=${frontend}" >> "$GITHUB_OUTPUT"
-          echo "Resolved: backend=${backend} frontend=${frontend}"
-
   backend-lint:
     name: Backend lint
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -88,8 +32,6 @@ jobs:
 
   backend-test:
     name: Backend test
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -117,12 +59,10 @@ jobs:
           files: backend/coverage.out
           flags: backend
           fail_ci_if_error: true
-          use_pypi: true 
+          use_pypi: true
 
   backend-vuln:
     name: Backend vuln scan
-    needs: changes
-    if: needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -140,8 +80,6 @@ jobs:
 
   frontend-checks:
     name: Frontend checks
-    needs: changes
-    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -164,28 +102,4 @@ jobs:
           files: frontend/coverage/lcov.info
           flags: frontend
           fail_ci_if_error: true
-          use_pypi: true 
-
-  # Single aggregator so branch protection can require one stable check even
-  # though the jobs above are path-gated (a skipped required job blocks merges;
-  # skipped != success). Passes when every dependency is success-or-skipped.
-  ci-gate:
-    name: CI gate
-    if: always()
-    needs: [changes, backend-lint, backend-test, backend-vuln, frontend-checks]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify no required job failed
-        run: |
-          for r in \
-            "${{ needs.changes.result }}" \
-            "${{ needs.backend-lint.result }}" \
-            "${{ needs.backend-test.result }}" \
-            "${{ needs.backend-vuln.result }}" \
-            "${{ needs.frontend-checks.result }}"; do
-            if [ "$r" != "success" ] && [ "$r" != "skipped" ]; then
-              echo "A required job did not pass (result: $r)"
-              exit 1
-            fi
-          done
-          echo "All required jobs passed or were skipped."
+          use_pypi: true
