@@ -80,4 +80,12 @@ var (
 	// that already exists (case-insensitive) among the household's living
 	// Tags — the (household, lower(name)) partial unique index. Mapped to 409.
 	ErrTagNameExists = errors.New("repo: tag name already exists")
+
+	// ErrInvalidRolloverLink is returned when manually linking a matured deposit
+	// to its rollover successor (issue #65) would form an illegal chain: the two
+	// are the same position, the successor is already rolled over from somewhere,
+	// the source already has a successor, or the link would close a direct cycle.
+	// Mapped to 409 Conflict — the request is well-formed but the positions'
+	// current rollover state forbids it.
+	ErrInvalidRolloverLink = errors.New("repo: invalid rollover link")
 )

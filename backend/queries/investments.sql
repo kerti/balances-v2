@@ -25,6 +25,19 @@ WHERE rolled_from_investment_id = $1
 ORDER BY created_at
 LIMIT 1;
 
+-- name: SetRolloverSource :one
+-- Stamps an existing investment's rolled_from_investment_id, the manual
+-- counterpart to setting it at create time (issue #65) — used to link a
+-- hand-created successor back to the matured deposit it redeployed, so the
+-- source's rollover callout clears. Household-scoped; the repo guards chain
+-- legality (no self-link / cycle / double-link) before calling this.
+UPDATE investments
+SET rolled_from_investment_id = $3,
+    updated_by                = $4,
+    updated_at                = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
+RETURNING *;
+
 -- name: ListInvestmentsByHousehold :many
 SELECT *
 FROM investments

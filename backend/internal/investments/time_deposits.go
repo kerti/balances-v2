@@ -160,6 +160,36 @@ func (h *Handlers) handleUpdateTimeDeposit(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, td)
 }
 
+type linkRolloverSuccessorReq struct {
+	// SuccessorID is the existing deposit that redeployed this (matured) one's
+	// funds (issue #65). Stamping its rolled_from_investment_id clears this
+	// position's rollover callout.
+	SuccessorID uuid.UUID `json:"successor_id" validate:"required"`
+}
+
+func (h *Handlers) handleLinkRolloverSuccessor(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIDParam(r, "id")
+	if err != nil {
+		writeInvalidID(w, "id")
+		return
+	}
+	var req linkRolloverSuccessorReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
+		return
+	}
+	if err := h.validate.Struct(&req); err != nil {
+		httperr.WriteValidation(w, err)
+		return
+	}
+	td, err := h.repo.LinkRolloverSuccessor(r.Context(), id, req.SuccessorID)
+	if err != nil {
+		httperr.WriteRepo(w, "link rollover successor", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, td)
+}
+
 func (h *Handlers) handleDeleteTimeDeposit(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIDParam(r, "id")
 	if err != nil {

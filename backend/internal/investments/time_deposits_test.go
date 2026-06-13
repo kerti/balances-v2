@@ -194,6 +194,51 @@ func TestTimeDepositHandlers_Update(t *testing.T) {
 	})
 }
 
+func TestTimeDepositHandlers_LinkRolloverSuccessor(t *testing.T) {
+	h := newHarness(t)
+	source := h.createTimeDeposit(t, "Matured source")
+	successor := h.createTimeDeposit(t, "Hand-made successor")
+
+	t.Run("200 links and source resolves rolled_to", func(t *testing.T) {
+		rec := h.do(t, "POST", "/investments/time-deposits/"+source.Investment.ID.String()+"/rollover-successor", map[string]any{
+			"successor_id": successor.Investment.ID.String(),
+		})
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[*repo.TimeDeposit](t, rec)
+		if body.RolledTo == nil || body.RolledTo.ID != successor.Investment.ID {
+			t.Errorf("rolled_to: want %v, got %+v", successor.Investment.ID, body.RolledTo)
+		}
+	})
+
+	t.Run("409 self-link", func(t *testing.T) {
+		other := h.createTimeDeposit(t, "Self link")
+		rec := h.do(t, "POST", "/investments/time-deposits/"+other.Investment.ID.String()+"/rollover-successor", map[string]any{
+			"successor_id": other.Investment.ID.String(),
+		})
+		requireStatus(t, rec, http.StatusConflict)
+	})
+
+	t.Run("404 unknown source", func(t *testing.T) {
+		fresh := h.createTimeDeposit(t, "Fresh succ")
+		rec := h.do(t, "POST", "/investments/time-deposits/"+uuid.NewString()+"/rollover-successor", map[string]any{
+			"successor_id": fresh.Investment.ID.String(),
+		})
+		requireStatus(t, rec, http.StatusNotFound)
+	})
+
+	t.Run("400 invalid source id format", func(t *testing.T) {
+		rec := h.do(t, "POST", "/investments/time-deposits/not-a-uuid/rollover-successor", map[string]any{
+			"successor_id": successor.Investment.ID.String(),
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("400 missing successor_id", func(t *testing.T) {
+		rec := h.do(t, "POST", "/investments/time-deposits/"+source.Investment.ID.String()+"/rollover-successor", map[string]any{})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+}
+
 func TestTimeDepositHandlers_Delete(t *testing.T) {
 	h := newHarness(t)
 

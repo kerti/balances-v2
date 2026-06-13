@@ -62,6 +62,8 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"FxRateExists", errs.ErrFxRateExists, http.StatusConflict, CodeFxRateExists},
 		{"ForeignPositionsExist", errs.ErrForeignPositionsExist, http.StatusConflict, CodeForeignPositionsExist},
 		{"PositionNotActive", errs.ErrPositionNotActive, http.StatusConflict, CodePositionNotActive},
+		{"TagNameExists", errs.ErrTagNameExists, http.StatusConflict, CodeTagNameExists},
+		{"InvalidRolloverLink", errs.ErrInvalidRolloverLink, http.StatusConflict, CodeInvalidRolloverLink},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -442,6 +442,30 @@ export function useUpdateTimeDeposit(id: string) {
   })
 }
 
+// Manually link a hand-created successor so the matured source's rollover
+// callout clears (issue #65). sourceId is the matured deposit being viewed;
+// the payload's successor_id is the existing deposit that holds the rolled
+// funds. Invalidates both detail queries + the list so the callout and the
+// rollover chain refresh without a reload.
+export function useLinkRolloverSuccessor(sourceId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (successorId: string) =>
+      api<TimeDeposit>(
+        `/api/investments/time-deposits/${sourceId}/rollover-successor`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ successor_id: successorId }),
+        },
+      ),
+    onSuccess: (_data, successorId) => {
+      qc.invalidateQueries({ queryKey: ['time-deposits'] })
+      qc.invalidateQueries({ queryKey: ['time-deposits', sourceId] })
+      qc.invalidateQueries({ queryKey: ['time-deposits', successorId] })
+    },
+  })
+}
+
 export function useDeleteTimeDeposit() {
   const qc = useQueryClient()
   return useMutation({

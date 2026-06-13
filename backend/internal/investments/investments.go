@@ -124,6 +124,9 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Patch("/", h.handleUpdateTimeDeposit)
 				r.Delete("/", h.handleDeleteTimeDeposit)
 				r.Get("/export", h.handleExportTimeDeposit)
+				// Manually link a hand-created successor so the matured source's
+				// rollover callout clears (issue #65). {id} is the source.
+				r.Post("/rollover-successor", h.handleLinkRolloverSuccessor)
 			})
 		})
 

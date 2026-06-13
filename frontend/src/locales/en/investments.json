@@ -472,7 +472,14 @@
     "rollover": {
       "calloutTitle": "This deposit matured and rolled over.",
       "calloutBody": "{{amount}} is being reinvested. Create the new deposit to keep tracking it.",
-      "calloutAction": "Create rollover deposit"
+      "calloutAction": "Create rollover deposit",
+      "calloutLinkAction": "Already created it? Link existing",
+      "linkTitle": "Link the rollover deposit",
+      "linkDescription": "Pick the deposit you already created for the rolled-over funds. We'll connect them so this notice goes away.",
+      "linkLabel": "Rollover deposit",
+      "linkPlaceholder": "Select a deposit…",
+      "linkEmpty": "No eligible deposits to link. Create one first, or it may already be linked elsewhere.",
+      "linkSubmit": "Link deposit"
     },
     "rolloverChain": {
       "title": "Rollover",

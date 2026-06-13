@@ -24,4 +24,5 @@ var (
 	ErrForeignPositionsExist   = errs.ErrForeignPositionsExist
 	ErrPositionNotActive       = errs.ErrPositionNotActive
 	ErrTagNameExists           = errs.ErrTagNameExists
+	ErrInvalidRolloverLink     = errs.ErrInvalidRolloverLink
 )

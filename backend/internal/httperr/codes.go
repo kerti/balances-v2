@@ -109,6 +109,11 @@ const (
 	// name (case-insensitive) already exists in the household.
 	CodeTagNameExists Code = "TAG_NAME_EXISTS"
 
+	// CodeInvalidRolloverLink maps repo.ErrInvalidRolloverLink -> 409 — a manual
+	// rollover link (issue #65) that would form an illegal chain (self-link,
+	// already-linked successor, source with an existing successor, or a cycle).
+	CodeInvalidRolloverLink Code = "INVALID_ROLLOVER_LINK"
+
 	// CodeUnauthorized is the 401 emitted by the session middleware when the
 	// request has no valid session cookie. Distinct from the repo's
 	// unreachable ErrUnauthenticated — this one is the real, client-facing

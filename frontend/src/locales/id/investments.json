@@ -472,7 +472,14 @@
     "rollover": {
       "calloutTitle": "Deposito ini jatuh tempo dan digulung ke deposito baru.",
       "calloutBody": "{{amount}} sedang diinvestasikan kembali. Buat deposito baru agar tetap terpantau.",
-      "calloutAction": "Buat deposito gulungan"
+      "calloutAction": "Buat deposito gulungan",
+      "calloutLinkAction": "Sudah dibuat? Tautkan yang ada",
+      "linkTitle": "Tautkan deposito gulungan",
+      "linkDescription": "Pilih deposito yang sudah Anda buat untuk dana yang digulung. Kami akan menghubungkannya agar pemberitahuan ini hilang.",
+      "linkLabel": "Deposito gulungan",
+      "linkPlaceholder": "Pilih deposito…",
+      "linkEmpty": "Tidak ada deposito yang bisa ditautkan. Buat dulu, atau mungkin sudah tertaut di tempat lain.",
+      "linkSubmit": "Tautkan deposito"
     },
     "rolloverChain": {
       "title": "Gulungan",

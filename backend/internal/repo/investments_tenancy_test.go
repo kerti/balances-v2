@@ -645,6 +645,146 @@ func TestInvestmentRepo_TenancyAndCRUD(t *testing.T) {
 	})
 }
 
+// TestInvestmentRepo_LinkRolloverSuccessor exercises the manual rollover-link
+// path (issue #65): stamping a hand-created successor's rolled_from so the
+// matured source's callout clears, plus every illegal-chain guard.
+func TestInvestmentRepo_LinkRolloverSuccessor(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+
+	aliceUser := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	bobUser := testutil.CreateHouseholdWithUser(t, q, "Bob")
+	aliceCtx := auth.WithUser(context.Background(), aliceUser)
+	bobCtx := auth.WithUser(context.Background(), bobUser)
+
+	r := repo.NewInvestmentRepo(tdb.Pool)
+	rate, _ := decimal.NewFromString("0.055")
+
+	// newTD creates a bare time deposit in the given household context.
+	newTD := func(ctx context.Context, name string) *repo.TimeDeposit {
+		t.Helper()
+		td, err := r.CreateTimeDeposit(ctx, repo.CreateTimeDepositParams{
+			DisplayName:    name,
+			OwnershipType:  "joint",
+			NativeCurrency: "IDR",
+			RiskProfile:    "medium",
+			BankName:       "BCA",
+			Principal:      decimal.NewFromInt(50_000_000),
+			InterestRate:   rate,
+			TermMonths:     12,
+			PlacementDate:  time.Date(2026, time.January, 15, 0, 0, 0, 0, time.UTC),
+			MaturityDate:   time.Date(2027, time.January, 15, 0, 0, 0, 0, time.UTC),
+			RolloverPolicy: "auto_renew_principal",
+		})
+		if err != nil {
+			t.Fatalf("CreateTimeDeposit %q: %v", name, err)
+		}
+		return td
+	}
+
+	t.Run("happy path links hand-created successor both ways", func(t *testing.T) {
+		source := newTD(aliceCtx, "Source TD")
+		successor := newTD(aliceCtx, "Hand-made successor")
+
+		out, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, successor.Investment.ID)
+		if err != nil {
+			t.Fatalf("LinkRolloverSuccessor: %v", err)
+		}
+		// The returned source now resolves its successor (callout clears).
+		if out.RolledTo == nil || out.RolledTo.ID != successor.Investment.ID {
+			t.Errorf("source RolledTo: want %v, got %+v", successor.Investment.ID, out.RolledTo)
+		}
+		// The successor points back to the source.
+		succGet, err := r.GetTimeDeposit(aliceCtx, successor.Investment.ID)
+		if err != nil {
+			t.Fatalf("GetTimeDeposit successor: %v", err)
+		}
+		if succGet.RolledFrom == nil || succGet.RolledFrom.ID != source.Investment.ID {
+			t.Errorf("successor RolledFrom: want %v, got %+v", source.Investment.ID, succGet.RolledFrom)
+		}
+	})
+
+	t.Run("self-link is rejected", func(t *testing.T) {
+		source := newTD(aliceCtx, "Self TD")
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, source.Investment.ID); !errors.Is(err, repo.ErrInvalidRolloverLink) {
+			t.Errorf("want ErrInvalidRolloverLink, got %v", err)
+		}
+	})
+
+	t.Run("already-linked successor is rejected", func(t *testing.T) {
+		source := newTD(aliceCtx, "Src A")
+		successor := newTD(aliceCtx, "Succ A")
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, successor.Investment.ID); err != nil {
+			t.Fatalf("first link: %v", err)
+		}
+		// A second source can't claim the same successor.
+		other := newTD(aliceCtx, "Src A2")
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, other.Investment.ID, successor.Investment.ID); !errors.Is(err, repo.ErrInvalidRolloverLink) {
+			t.Errorf("want ErrInvalidRolloverLink, got %v", err)
+		}
+	})
+
+	t.Run("source that already has a successor is rejected", func(t *testing.T) {
+		source := newTD(aliceCtx, "Src B")
+		first := newTD(aliceCtx, "Succ B1")
+		second := newTD(aliceCtx, "Succ B2")
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, first.Investment.ID); err != nil {
+			t.Fatalf("first link: %v", err)
+		}
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, second.Investment.ID); !errors.Is(err, repo.ErrInvalidRolloverLink) {
+			t.Errorf("want ErrInvalidRolloverLink, got %v", err)
+		}
+	})
+
+	t.Run("direct cycle is rejected", func(t *testing.T) {
+		// a rolled from b; linking a as b's successor would close the cycle.
+		a := newTD(aliceCtx, "Cycle A")
+		b := newTD(aliceCtx, "Cycle B")
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, b.Investment.ID, a.Investment.ID); err != nil {
+			t.Fatalf("seed link a<-b: %v", err)
+		}
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, a.Investment.ID, b.Investment.ID); !errors.Is(err, repo.ErrInvalidRolloverLink) {
+			t.Errorf("want ErrInvalidRolloverLink, got %v", err)
+		}
+	})
+
+	t.Run("cross-tenant source or successor is ErrNotFound", func(t *testing.T) {
+		aliceSrc := newTD(aliceCtx, "Alice src")
+		aliceSucc := newTD(aliceCtx, "Alice succ")
+		bobTD := newTD(bobCtx, "Bob TD")
+
+		// Bob can't touch alice's positions at all.
+		if _, err := r.LinkRolloverSuccessor(bobCtx, aliceSrc.Investment.ID, aliceSucc.Investment.ID); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("bob linking alice's: want ErrNotFound, got %v", err)
+		}
+		// Alice can't pull bob's TD into her chain (as source or successor).
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, bobTD.Investment.ID, aliceSucc.Investment.ID); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("alice source=bob's: want ErrNotFound, got %v", err)
+		}
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, aliceSrc.Investment.ID, bobTD.Investment.ID); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("alice successor=bob's: want ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("non-time-deposit id is ErrNotFound", func(t *testing.T) {
+		source := newTD(aliceCtx, "Src C")
+		stock, err := r.CreateStock(aliceCtx, repo.CreateStockParams{
+			DisplayName:    "BBCA",
+			OwnershipType:  "joint",
+			NativeCurrency: "IDR",
+			RiskProfile:    "medium",
+			Ticker:         "BBCA",
+			Exchange:       "IDX",
+		})
+		if err != nil {
+			t.Fatalf("CreateStock: %v", err)
+		}
+		if _, err := r.LinkRolloverSuccessor(aliceCtx, source.Investment.ID, stock.Investment.ID); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("successor=stock: want ErrNotFound, got %v", err)
+		}
+	})
+}
+
 // TestInvestmentRepo_SnapshotShapeValidation exercises the repo-level
 // subtype→shape mapping that the DB's column-level CHECK can't express
 // (ADR-0022). Stock/MutualFund/Gold require quantity+price_per_unit and

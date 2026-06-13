@@ -311,6 +311,101 @@ func (r *InvestmentRepo) UpdateTimeDeposit(ctx context.Context, id uuid.UUID, p 
 	return &TimeDeposit{Investment: inv, Details: details}, nil
 }
 
+// LinkRolloverSuccessor records that the matured deposit sourceID rolled over
+// into the existing deposit successorID, by stamping the successor's
+// rolled_from_investment_id (issue #65) — the manual counterpart to the create
+// path's RolledFromInvestmentID. Closes the gap where a hand-created successor
+// stayed unlinked and the source kept nagging with the rollover callout.
+//
+// Both positions must be household-scoped time deposits. The link is rejected
+// (ErrInvalidRolloverLink) when it would form an illegal chain: a self-link, a
+// successor already rolled over from somewhere, a source that already has a
+// successor (the chain is 1:1 by concept), or a direct cycle. Returns the
+// source TD, now carrying the resolved RolledTo ref.
+func (r *InvestmentRepo) LinkRolloverSuccessor(ctx context.Context, sourceID, successorID uuid.UUID) (*TimeDeposit, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if sourceID == successorID {
+		return nil, ErrInvalidRolloverLink
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := r.q.WithTx(tx)
+
+	// Both ends must exist, be ours, and be time deposits. A cross-tenant or
+	// wrong-subtype id is indistinguishable from a missing one (ErrNotFound).
+	src, err := getOwnedTimeDeposit(ctx, qtx, sourceID, hid)
+	if err != nil {
+		return nil, err
+	}
+	succ, err := getOwnedTimeDeposit(ctx, qtx, successorID, hid)
+	if err != nil {
+		return nil, err
+	}
+
+	// The successor is already someone's rollover — don't silently re-point it.
+	if succ.RolledFromInvestmentID != nil {
+		return nil, ErrInvalidRolloverLink
+	}
+	// A direct cycle: the source itself rolled over from the successor.
+	if src.RolledFromInvestmentID != nil && *src.RolledFromInvestmentID == successorID {
+		return nil, ErrInvalidRolloverLink
+	}
+	// The source already has a successor — the chain is 1:1, so refuse a second.
+	switch _, err := qtx.GetRolloverSuccessor(ctx, db.GetRolloverSuccessorParams{
+		RolledFromInvestmentID: &sourceID,
+		HouseholdID:            hid,
+	}); {
+	case err == nil:
+		return nil, ErrInvalidRolloverLink
+	case errors.Is(err, pgx.ErrNoRows):
+		// no successor yet — good, proceed
+	default:
+		return nil, fmt.Errorf("check existing rollover successor: %w", err)
+	}
+
+	if _, err := qtx.SetRolloverSource(ctx, db.SetRolloverSourceParams{
+		ID:                     successorID,
+		HouseholdID:            hid,
+		RolledFromInvestmentID: &sourceID,
+		UpdatedBy:              &user,
+	}); err != nil {
+		return nil, fmt.Errorf("set rollover source: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
+	}
+
+	// Re-read the source so the response carries the freshly resolved RolledTo
+	// ref (and the caller's rollover callout clears).
+	return r.GetTimeDeposit(ctx, sourceID)
+}
+
+// getOwnedTimeDeposit fetches a household-scoped investment and asserts it is a
+// time deposit, collapsing both "not yours / not found" and "wrong subtype"
+// into ErrNotFound.
+func getOwnedTimeDeposit(ctx context.Context, q *db.Queries, id, hid uuid.UUID) (db.Investment, error) {
+	inv, err := q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: id, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return db.Investment{}, ErrNotFound
+		}
+		return db.Investment{}, err
+	}
+	if inv.Subtype != "time_deposit" {
+		return db.Investment{}, ErrNotFound
+	}
+	return inv, nil
+}
+
 func (r *InvestmentRepo) DeleteTimeDeposit(ctx context.Context, id uuid.UUID) error {
 	if _, err := r.GetTimeDeposit(ctx, id); err != nil {
 		return err

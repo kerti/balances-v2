@@ -40,6 +40,7 @@ import { CreateAccruedInterestSnapshotDialog } from '@/components/CreateAccruedI
 import { ImportSnapshotsDialog } from '@/components/ImportSnapshotsDialog'
 import { CreateMaturityTransactionDialog } from '@/components/CreateMaturityTransactionDialog'
 import { CreateTimeDepositDialog } from '@/components/CreateTimeDepositDialog'
+import { LinkRolloverSuccessorDialog } from '@/components/LinkRolloverSuccessorDialog'
 import { TransactionRow } from '@/components/TransactionRow'
 import { TerminatePositionDialog } from '@/components/TerminatePositionDialog'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -285,11 +286,16 @@ export function TimeDepositDetail({
               </p>
             </div>
           </div>
-          <CreateTimeDepositDialog
-            prefill={rollover.prefill}
-            rolledFromInvestmentId={td.investment.id}
-            triggerLabel={t('investments:timeDeposit.rollover.calloutAction')}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <CreateTimeDepositDialog
+              prefill={rollover.prefill}
+              rolledFromInvestmentId={td.investment.id}
+              triggerLabel={t('investments:timeDeposit.rollover.calloutAction')}
+            />
+            {/* Hand-created the successor already? Link it so this callout
+                clears without spawning a duplicate (issue #65). */}
+            <LinkRolloverSuccessorDialog sourceId={td.investment.id} />
+          </div>
         </div>
       )}
 

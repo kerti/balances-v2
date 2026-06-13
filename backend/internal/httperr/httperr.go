@@ -65,6 +65,8 @@ func WriteRepo(w http.ResponseWriter, op string, err error) {
 		Write(w, http.StatusConflict, CodePositionNotActive, nil)
 	case errors.Is(err, errs.ErrTagNameExists):
 		Write(w, http.StatusConflict, CodeTagNameExists, nil)
+	case errors.Is(err, errs.ErrInvalidRolloverLink):
+		Write(w, http.StatusConflict, CodeInvalidRolloverLink, nil)
 	default:
 		slog.Error(op, "err", err)
 		Write(w, http.StatusInternalServerError, CodeInternal, nil)

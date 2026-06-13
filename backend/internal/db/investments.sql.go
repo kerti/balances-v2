@@ -196,6 +196,59 @@ func (q *Queries) ListInvestmentsByHousehold(ctx context.Context, arg ListInvest
 	return items, nil
 }
 
+const setRolloverSource = `-- name: SetRolloverSource :one
+UPDATE investments
+SET rolled_from_investment_id = $3,
+    updated_by                = $4,
+    updated_at                = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, risk_profile, rolled_from_investment_id, tag_id
+`
+
+type SetRolloverSourceParams struct {
+	ID                     uuid.UUID  `json:"id"`
+	HouseholdID            uuid.UUID  `json:"household_id"`
+	RolledFromInvestmentID *uuid.UUID `json:"rolled_from_investment_id"`
+	UpdatedBy              *uuid.UUID `json:"updated_by"`
+}
+
+// Stamps an existing investment's rolled_from_investment_id, the manual
+// counterpart to setting it at create time (issue #65) — used to link a
+// hand-created successor back to the matured deposit it redeployed, so the
+// source's rollover callout clears. Household-scoped; the repo guards chain
+// legality (no self-link / cycle / double-link) before calling this.
+func (q *Queries) SetRolloverSource(ctx context.Context, arg SetRolloverSourceParams) (Investment, error) {
+	row := q.db.QueryRow(ctx, setRolloverSource,
+		arg.ID,
+		arg.HouseholdID,
+		arg.RolledFromInvestmentID,
+		arg.UpdatedBy,
+	)
+	var i Investment
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.DisplayName,
+		&i.Description,
+		&i.Subtype,
+		&i.OwnershipType,
+		&i.SoleOwnerUserID,
+		&i.NativeCurrency,
+		&i.Status,
+		&i.TerminatedAt,
+		&i.TerminationNote,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.RiskProfile,
+		&i.RolledFromInvestmentID,
+		&i.TagID,
+	)
+	return i, err
+}
+
 const softDeleteInvestment = `-- name: SoftDeleteInvestment :execrows
 UPDATE investments
 SET deleted_at = now(),
