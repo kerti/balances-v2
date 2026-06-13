@@ -19,6 +19,7 @@ import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { preferredName } from '@/lib/names'
 import { errorMessage } from '@/lib/errorMessage'
 import { RiskProfileSelect } from '@/components/RiskProfileSelect'
+import { GoldPuritySelect } from '@/components/GoldPuritySelect'
 import type { RiskProfile } from '@/api/types'
 
 function emptyForm() {
@@ -120,19 +121,11 @@ export function CreateGoldDialog() {
                 <option value="jewelry">{t('investments:gold.goldForms.jewelry')}</option>
               </select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="gold_purity">
-                {t('investments:gold.fields.purity')}
-              </Label>
-              <Input
-                id="gold_purity"
-                required
-                inputMode="decimal"
-                value={form.purity}
-                onChange={(e) => setForm({ ...form, purity: e.target.value })}
-                placeholder={t('investments:gold.placeholders.purity')}
-              />
-            </div>
+            <GoldPuritySelect
+              idPrefix="gold_create"
+              value={form.purity}
+              onChange={(v) => setForm({ ...form, purity: v })}
+            />
           </div>
 
           <div className="grid gap-2">

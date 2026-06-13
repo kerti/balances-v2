@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { formatGoldPurity } from '@/lib/gold'
+import {
+  formatGoldPurity,
+  goldPurityPresetKarat,
+  GOLD_PURITY_PRESETS,
+} from '@/lib/gold'
 
 describe('formatGoldPurity', () => {
   it('renders pure gold (0.999+) as 24K with the conventional suffix', () => {
@@ -24,5 +28,26 @@ describe('formatGoldPurity', () => {
     expect(formatGoldPurity('0')).toBe('0')
     expect(formatGoldPurity('-0.5')).toBe('-0.5')
     expect(formatGoldPurity('1.5')).toBe('1.5')
+  })
+})
+
+describe('goldPurityPresetKarat', () => {
+  it('matches each preset to its karat', () => {
+    for (const p of GOLD_PURITY_PRESETS) {
+      expect(goldPurityPresetKarat(p.value)).toBe(p.karat)
+    }
+  })
+
+  it('matches trailing-zero variants of a preset', () => {
+    expect(goldPurityPresetKarat('0.75')).toBe(18)
+  })
+
+  it('keeps a 0.999 bar off the 0.9999 (24K) preset', () => {
+    expect(goldPurityPresetKarat('0.999')).toBeNull()
+  })
+
+  it('returns null for off-grid and non-numeric purities', () => {
+    expect(goldPurityPresetKarat('0.92')).toBeNull()
+    expect(goldPurityPresetKarat('not-a-number')).toBeNull()
   })
 })

@@ -17,6 +17,7 @@ import { preferredName } from '@/lib/names'
 import { useSession } from '@/hooks/useSession'
 import { errorMessage } from '@/lib/errorMessage'
 import { RiskProfileSelect } from '@/components/RiskProfileSelect'
+import { GoldPuritySelect } from '@/components/GoldPuritySelect'
 import type { Gold, GoldListItem } from '@/api/types'
 
 type Props = {
@@ -106,18 +107,11 @@ export function EditGoldDialog({ open, onOpenChange, gold }: Props) {
                 <option value="jewelry">{t('investments:gold.goldForms.jewelry')}</option>
               </select>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_gold_purity">
-                {t('investments:gold.fields.purity')}
-              </Label>
-              <Input
-                id="edit_gold_purity"
-                required
-                inputMode="decimal"
-                value={form.purity}
-                onChange={(e) => setForm({ ...form, purity: e.target.value })}
-              />
-            </div>
+            <GoldPuritySelect
+              idPrefix="gold_edit"
+              value={form.purity}
+              onChange={(v) => setForm({ ...form, purity: v })}
+            />
           </div>
 
           <div className="grid gap-2">

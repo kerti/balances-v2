@@ -553,7 +553,12 @@
     },
     "fields": {
       "form": "Form",
-      "purity": "Purity (0–1)"
+      "purity": "Purity"
+    },
+    "purity": {
+      "karatOption": "{{karat}}K",
+      "customOption": "Custom…",
+      "customLabel": "Custom purity (0–1)"
     },
     "placeholders": {
       "displayName": "Antam bar 10g",

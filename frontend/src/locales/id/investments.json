@@ -553,7 +553,12 @@
     },
     "fields": {
       "form": "Bentuk",
-      "purity": "Kemurnian (0–1)"
+      "purity": "Kemurnian"
+    },
+    "purity": {
+      "karatOption": "{{karat}}K",
+      "customOption": "Khusus…",
+      "customLabel": "Kemurnian khusus (0–1)"
     },
     "placeholders": {
       "displayName": "Emas batangan Antam 10g",
