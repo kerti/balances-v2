@@ -19,9 +19,15 @@ import type {
 // the useInvestmentSnapshots listKey pattern.
 //
 // Exception: a Maturity transaction flips the parent investment to 'matured'
-// server-side (ADR-0009 hard guard). Bond/TimeDeposit detail pages pass their
-// subtype `detailKey` so create also invalidates [detailKey, id], refreshing
-// the status badge and re-gating the (now-hidden) transaction-create row.
+// server-side (ADR-0009 hard guard) AND upserts a truthful close snapshot at
+// the maturity month (issue #25). Bond/TimeDeposit detail pages pass their
+// subtype `detailKey` so create also invalidates:
+//   [detailKey, id]                  — status badge + re-gates the (now-hidden)
+//                                      transaction-create row
+//   ['investment-snapshots', id]     — the close snapshot appears in the list
+//                                      instantly (issue #56)
+//   [detailKey]                      — the subtype collection inlines the
+//                                      latest snapshot per row
 
 export type CreateInvestmentTransactionPayload = {
   transaction_type: TransactionType
@@ -73,9 +79,15 @@ export function useCreateInvestmentTransaction(
       qc.invalidateQueries({
         queryKey: ['investment-transactions', investmentId],
       })
-      // Maturity may have flipped the parent to 'matured' — refresh the detail.
+      // Maturity may have flipped the parent to 'matured' and upserted a close
+      // snapshot — refresh the detail, the snapshot list, and the subtype
+      // collection (issues #25 + #56).
       if (detailKey) {
         qc.invalidateQueries({ queryKey: [detailKey, investmentId] })
+        qc.invalidateQueries({
+          queryKey: ['investment-snapshots', investmentId],
+        })
+        qc.invalidateQueries({ queryKey: [detailKey] })
       }
     },
   })
