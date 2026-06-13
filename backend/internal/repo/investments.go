@@ -72,6 +72,15 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
 		return nil, err
 	}
+	// A time deposit's snapshots are confined to its term window (issue #62);
+	// other subtypes are unbounded, so this is a no-op for them.
+	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	if err := bounds.checkSnapshotMonth(p.YearMonth); err != nil {
+		return nil, err
+	}
 
 	snap, err := r.q.CreateInvestmentSnapshot(ctx, db.CreateInvestmentSnapshotParams{
 		ID:              p.InvestmentID,
@@ -133,6 +142,16 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		return nil, fmt.Errorf("get parent investment: %w", err)
 	}
 	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
+		return nil, err
+	}
+	// year_month is immutable on update, so this can only fire on a row that
+	// already sits outside the term (e.g. legacy data) — we decline to bless it
+	// rather than silently re-save it (issue #62). No-op for non-time-deposits.
+	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	if err := bounds.checkSnapshotMonth(existing.YearMonth); err != nil {
 		return nil, err
 	}
 

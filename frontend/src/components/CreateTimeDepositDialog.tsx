@@ -75,6 +75,14 @@ export function CreateTimeDepositDialog({
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null
 
+  // The term must be a forward window (issue #62): maturity strictly after
+  // placement. Mirrors the server's ErrInvalidDepositTerm so the user gets the
+  // feedback inline instead of round-tripping a 400.
+  const termInvalid =
+    !!form.placement_date &&
+    !!form.maturity_date &&
+    form.maturity_date <= form.placement_date
+
   function close() {
     setOpen(false)
     setForm({ ...emptyForm(), ...prefill })
@@ -103,6 +111,7 @@ export function CreateTimeDepositDialog({
     e.preventDefault()
     if (!user) return
     if (!form.risk_profile) return
+    if (termInvalid) return
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -275,6 +284,7 @@ export function CreateTimeDepositDialog({
                   id="td_maturity_date"
                   required
                   type="date"
+                  min={form.placement_date || undefined}
                   max="9999-12-31"
                   value={form.maturity_date}
                   onChange={(e) =>
@@ -283,6 +293,14 @@ export function CreateTimeDepositDialog({
                 />
               </div>
             </div>
+            {termInvalid && (
+              <p
+                data-testid="td-term-error"
+                className="text-sm text-destructive"
+              >
+                {t('investments:timeDeposit.maturityAfterPlacement')}
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 border-t pt-4">
@@ -382,7 +400,7 @@ export function CreateTimeDepositDialog({
             <Button type="button" variant="outline" onClick={close}>
               {t('common:cancel')}
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || termInvalid}>
               {mutation.isPending
                 ? t('common:actions.creating')
                 : t('common:actions.create')}

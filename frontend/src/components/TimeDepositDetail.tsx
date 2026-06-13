@@ -529,6 +529,8 @@ export function TimeDepositDetail({
                 <CreateMaturityTransactionDialog
                   currency={td.investment.native_currency}
                   rolloverPolicy={td.details.rollover_policy}
+                  placementDate={td.details.placement_date?.slice(0, 10)}
+                  maturityDate={td.details.maturity_date?.slice(0, 10)}
                   mutation={createTransactionMutation}
                 />
               </div>

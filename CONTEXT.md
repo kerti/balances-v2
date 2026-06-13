@@ -40,7 +40,10 @@ coupons, resets at each coupon). The Snapshot model accommodates both: accrued i
 **Gold**: A position in physical or paper gold, tracked by quantity (typically grams).
 
 **TimeDeposit**: A locked principal at a bank with a fixed interest rate and maturity date.
-*Indonesian: deposito.* _Avoid_: Deposit (ambiguous with cash held in a bank account).
+*Indonesian: deposito.* _Avoid_: Deposit (ambiguous with cash held in a bank account). Its
+**term** is the window `[placement_date, maturity_date]` (maturity strictly after placement); every
+Snapshot (at month granularity) and the terminal Maturity Transaction must fall inside it — enforced
+in the repo layer, with the maturity-after-placement half backed by a DB CHECK (migration 00004).
 
 ### Snapshots and transactions
 

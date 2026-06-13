@@ -69,6 +69,10 @@ func WriteRepo(w http.ResponseWriter, op string, err error) {
 		Write(w, http.StatusConflict, CodeInvalidRolloverLink, nil)
 	case errors.Is(err, errs.ErrSnapshotDateOutsideMonth):
 		Write(w, http.StatusBadRequest, CodeSnapshotDateOutsideMonth, nil)
+	case errors.Is(err, errs.ErrInvalidDepositTerm):
+		Write(w, http.StatusBadRequest, CodeInvalidDepositTerm, nil)
+	case errors.Is(err, errs.ErrOutsideDepositTerm):
+		Write(w, http.StatusBadRequest, CodeOutsideDepositTerm, nil)
 	default:
 		slog.Error(op, "err", err)
 		Write(w, http.StatusInternalServerError, CodeInternal, nil)

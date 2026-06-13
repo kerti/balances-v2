@@ -470,6 +470,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                 />
                 <CreateMaturityTransactionDialog
                   currency={bond.investment.native_currency}
+                  maturityDate={bond.details.maturity_date?.slice(0, 10)}
                   mutation={createTransactionMutation}
                 />
               </div>

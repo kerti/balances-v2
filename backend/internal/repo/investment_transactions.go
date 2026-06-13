@@ -81,6 +81,15 @@ func (r *InvestmentRepo) CreateInvestmentTransaction(ctx context.Context, p Crea
 	if err := validateInvestmentTransactionShape(p); err != nil {
 		return nil, err
 	}
+	// A time deposit's transactions — only the terminal Maturity event — must
+	// fall inside its term window (issue #62). No-op for unbounded subtypes.
+	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
+		return nil, err
+	}
 	// ADR-0009: a terminated position is closed to new activity. Maturity is
 	// the canonical case — once it flips the position to 'matured' (below), no
 	// further transactions may land; a position terminated via the lifecycle
@@ -256,6 +265,17 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("get investment for maturity edit: %w", err)
+	}
+	// The edited Maturity date must still land inside the term (issue #62). For a
+	// time deposit the maturity month is also where the 0-value close snapshot is
+	// re-asserted below, so keeping the date in-window keeps that snapshot in-window
+	// too. No-op for a Bond (unbounded — no placement_date).
+	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
+		return nil, err
 	}
 
 	tx, err := r.pool.Begin(ctx)

@@ -23,6 +23,8 @@
     "POSITION_NOT_ACTIVE": "Posisi ini sudah tidak aktif.",
     "TAG_NAME_EXISTS": "Tag dengan nama itu sudah ada.",
     "INVALID_ROLLOVER_LINK": "Deposito itu tidak bisa ditautkan sebagai rollover — deposito yang sama, sudah tertaut, atau akan membentuk lingkaran.",
+    "INVALID_DEPOSIT_TERM": "Tanggal jatuh tempo harus setelah tanggal penempatan.",
+    "OUTSIDE_DEPOSIT_TERM": "Snapshot dan jatuh tempo harus berada di antara tanggal penempatan dan jatuh tempo.",
     "INVALID_RATE": "Kurs harus lebih besar dari nol.",
     "INVALID_IMPORT_MODE": "Mode impor harus preview atau commit.",
     "INVALID_FILE_UPLOAD": "Berkas unggahan tidak ada atau terlalu besar.",

@@ -469,6 +469,7 @@
       "no_rollover": "No rollover"
     },
     "rolloverHint": "What the bank does automatically at maturity if you take no action. Auto-renew with interest = compound; auto-renew principal = interest paid out, principal rolls; no rollover = bank releases everything to your account.",
+    "maturityAfterPlacement": "Maturity date must be after the placement date.",
     "rollover": {
       "calloutTitle": "This deposit matured and rolled over.",
       "calloutBody": "{{amount}} is being reinvested. Create the new deposit to keep tracking it.",

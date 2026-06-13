@@ -210,6 +210,51 @@ func TestCreateTimeDepositWithSnapshotsAndLedger_Maturity(t *testing.T) {
 	}
 }
 
+// TestCreateTimeDepositWithSnapshotsAndLedger_TermBounds: the seed path confines
+// a deposit's snapshots and Maturity to its term, and rejects an inverted term
+// (issue #62) — the import counterpart of the manual-path guards.
+func TestCreateTimeDepositWithSnapshotsAndLedger_TermBounds(t *testing.T) {
+	r, ctx := investmentRepoFor(t)
+	accrued := decimal.RequireFromString("100000")
+	base := func() repo.CreateTimeDepositParams {
+		return repo.CreateTimeDepositParams{
+			DisplayName: "Seeded TD", OwnershipType: "joint", NativeCurrency: "IDR", RiskProfile: "medium",
+			BankName: "BCA", Principal: decimal.RequireFromString("100000000"), InterestRate: decimal.RequireFromString("4.5"),
+			TermMonths: 12, PlacementDate: day(2026, 1, 15), MaturityDate: day(2027, 1, 15), RolloverPolicy: "no_rollover",
+		}
+	}
+
+	t.Run("snapshot before the term rolls the seed back", func(t *testing.T) {
+		_, err := r.CreateTimeDepositWithSnapshotsAndLedger(ctx, base(), nil,
+			[]repo.ImportInvestmentSnapshotRow{
+				{YearMonth: ym(2025, time.December), Amount: decimal.RequireFromString("100000000"), Currency: "IDR", AccruedInterest: &accrued},
+			}, nil)
+		if !errors.Is(err, repo.ErrOutsideDepositTerm) {
+			t.Fatalf("pre-term seed snapshot: want ErrOutsideDepositTerm, got %v", err)
+		}
+	})
+
+	t.Run("maturity after the term rolls the seed back", func(t *testing.T) {
+		_, err := r.CreateTimeDepositWithSnapshotsAndLedger(ctx, base(), nil, nil,
+			[]repo.ImportTransactionRow{
+				{TransactionType: "maturity", TransactionDate: day(2027, 2, 1), Currency: "IDR",
+					PrincipalAmount: ptrDec("100000000"), InterestAmount: ptrDec("4500000"),
+					PrincipalDisposition: ptrStrLit("cash_out"), InterestDisposition: ptrStrLit("cash_out")},
+			})
+		if !errors.Is(err, repo.ErrOutsideDepositTerm) {
+			t.Fatalf("post-term seed maturity: want ErrOutsideDepositTerm, got %v", err)
+		}
+	})
+
+	t.Run("inverted term is rejected before any seeding", func(t *testing.T) {
+		p := base()
+		p.PlacementDate, p.MaturityDate = day(2027, 1, 15), day(2026, 1, 15)
+		if _, err := r.CreateTimeDepositWithSnapshotsAndLedger(ctx, p, nil, nil, nil); !errors.Is(err, repo.ErrInvalidDepositTerm) {
+			t.Fatalf("inverted seed term: want ErrInvalidDepositTerm, got %v", err)
+		}
+	})
+}
+
 // TestInvestmentRepo_LookupAndTagSeed covers the owner-email + tag-name lookups
 // and a tag actually assigned through the seed.
 func TestInvestmentRepo_LookupAndTagSeed(t *testing.T) {

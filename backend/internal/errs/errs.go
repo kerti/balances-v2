@@ -95,4 +95,20 @@ var (
 	// across all four snapshot tables on INSERT and UPDATE; the repo maps the
 	// resulting check_violation to this sentinel. Mapped to 400.
 	ErrSnapshotDateOutsideMonth = errors.New("repo: snapshot as_of_date outside its year_month")
+
+	// ErrInvalidDepositTerm is returned when a TimeDeposit's maturity_date is
+	// not strictly after its placement_date — the term window would be empty or
+	// inverted (issue #62). The DB CHECK time_deposit_details_maturity_after_
+	// placement (migration 00004) backs this; the repo catches it first for a
+	// human-readable 400.
+	ErrInvalidDepositTerm = errors.New("repo: time deposit maturity_date must be after placement_date")
+
+	// ErrOutsideDepositTerm is returned when a TimeDeposit snapshot or
+	// transaction falls outside the deposit's term window [placement_date,
+	// maturity_date] — a snapshot whose month is before placement or after
+	// maturity, the Maturity event dated outside the term, or a term edit that
+	// would strand existing history outside the new window (issue #62). The
+	// confinement spans two tables, so it is enforced in the repo, not by a
+	// CHECK. Mapped to 400.
+	ErrOutsideDepositTerm = errors.New("repo: entry falls outside the time deposit's term")
 )

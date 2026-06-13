@@ -102,7 +102,7 @@ func (r *InvestmentRepo) LookupTagIDByName(ctx context.Context, name string) (*u
 // (all-or-nothing). It is the commit path of the stock create-from-list import.
 func (r *InvestmentRepo) CreateStockWithSnapshotsAndLedger(ctx context.Context, p CreateStockParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*Stock, error) {
 	var out *Stock
-	err := r.createInvestmentWithHistory(ctx, "stock", tagID, snaps, ledger, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	err := r.createInvestmentWithHistory(ctx, "stock", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,
@@ -138,7 +138,7 @@ func (r *InvestmentRepo) CreateStockWithSnapshotsAndLedger(ctx context.Context, 
 // CreateMutualFundWithSnapshotsAndLedger — see CreateStockWithSnapshotsAndLedger.
 func (r *InvestmentRepo) CreateMutualFundWithSnapshotsAndLedger(ctx context.Context, p CreateMutualFundParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*MutualFund, error) {
 	var out *MutualFund
-	err := r.createInvestmentWithHistory(ctx, "mutual_fund", tagID, snaps, ledger, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	err := r.createInvestmentWithHistory(ctx, "mutual_fund", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,
@@ -175,7 +175,7 @@ func (r *InvestmentRepo) CreateMutualFundWithSnapshotsAndLedger(ctx context.Cont
 // CreateGoldWithSnapshotsAndLedger — see CreateStockWithSnapshotsAndLedger.
 func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p CreateGoldParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*Gold, error) {
 	var out *Gold
-	err := r.createInvestmentWithHistory(ctx, "gold", tagID, snaps, ledger, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	err := r.createInvestmentWithHistory(ctx, "gold", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,
@@ -214,7 +214,7 @@ func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p
 // re-seeding it here would double the cost basis.
 func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p CreateBondParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*Bond, error) {
 	var out *Bond
-	err := r.createInvestmentWithHistory(ctx, "bond", tagID, snaps, ledger, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	err := r.createInvestmentWithHistory(ctx, "bond", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,
@@ -255,8 +255,12 @@ func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p
 // A TimeDeposit's only allowed ledger type is Maturity (the subtype matrix), so a
 // matured deposit round-trips with its single Maturity row applied here.
 func (r *InvestmentRepo) CreateTimeDepositWithSnapshotsAndLedger(ctx context.Context, p CreateTimeDepositParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*TimeDeposit, error) {
+	if !p.MaturityDate.After(p.PlacementDate) {
+		return nil, ErrInvalidDepositTerm
+	}
 	var out *TimeDeposit
-	err := r.createInvestmentWithHistory(ctx, "time_deposit", tagID, snaps, ledger, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	bounds := termBounds{placement: p.PlacementDate, maturity: p.MaturityDate}
+	err := r.createInvestmentWithHistory(ctx, "time_deposit", tagID, snaps, ledger, bounds, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,
@@ -305,6 +309,7 @@ func (r *InvestmentRepo) createInvestmentWithHistory(
 	tagID *uuid.UUID,
 	snaps []ImportInvestmentSnapshotRow,
 	ledger []ImportTransactionRow,
+	bounds termBounds,
 	createCore func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error),
 ) error {
 	user, hid, err := currentUser(ctx)
@@ -335,10 +340,10 @@ func (r *InvestmentRepo) createInvestmentWithHistory(
 		}
 	}
 
-	if err := seedSnapshots(ctx, qtx, inv.ID, subtype, snaps, user, hid); err != nil {
+	if err := seedSnapshots(ctx, qtx, inv.ID, subtype, snaps, bounds, user, hid); err != nil {
 		return err
 	}
-	if err := seedLedger(ctx, qtx, inv.ID, ledger, user, hid); err != nil {
+	if err := seedLedger(ctx, qtx, inv.ID, ledger, bounds, user, hid); err != nil {
 		return err
 	}
 
@@ -350,10 +355,15 @@ func (r *InvestmentRepo) createInvestmentWithHistory(
 
 // seedSnapshots upserts the seeded snapshot rows inside an existing tx, validating
 // each row's value-shape against the subtype first (the DB CHECK is the backstop).
-func seedSnapshots(ctx context.Context, qtx *db.Queries, invID uuid.UUID, subtype string, snaps []ImportInvestmentSnapshotRow, user, hid uuid.UUID) error {
+func seedSnapshots(ctx context.Context, qtx *db.Queries, invID uuid.UUID, subtype string, snaps []ImportInvestmentSnapshotRow, bounds termBounds, user, hid uuid.UUID) error {
 	for _, row := range snaps {
 		if err := validateInvestmentSnapshotShape(subtype, row.Quantity, row.PricePerUnit, row.AccruedInterest); err != nil {
 			return err
+		}
+		// A seeded time deposit's readings are confined to its term (issue #62);
+		// unbounded for every other subtype.
+		if err := bounds.checkSnapshotMonth(row.YearMonth); err != nil {
+			return fmt.Errorf("seed snapshot %s: %w", row.YearMonth.Format("2006-01"), err)
 		}
 		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
 			ID:              invID,
@@ -381,7 +391,7 @@ func seedSnapshots(ctx context.Context, qtx *db.Queries, invID uuid.UUID, subtyp
 // behavior of CreateInvestmentTransaction, reproduced here against the shared qtx.
 // The 0 close wins over any seeded snapshot in the maturity month because
 // seedSnapshots has already run (createInvestmentWithHistory orders them).
-func seedLedger(ctx context.Context, qtx *db.Queries, invID uuid.UUID, ledger []ImportTransactionRow, user, hid uuid.UUID) error {
+func seedLedger(ctx context.Context, qtx *db.Queries, invID uuid.UUID, ledger []ImportTransactionRow, bounds termBounds, user, hid uuid.UUID) error {
 	ordered := make([]ImportTransactionRow, len(ledger))
 	copy(ordered, ledger)
 	sort.SliceStable(ordered, func(i, j int) bool {
@@ -390,6 +400,11 @@ func seedLedger(ctx context.Context, qtx *db.Queries, invID uuid.UUID, ledger []
 	})
 
 	for _, row := range ordered {
+		// A seeded time deposit's only ledger row, Maturity, must land inside the
+		// term (issue #62); unbounded for every other subtype.
+		if err := bounds.checkTransactionDate(row.TransactionDate); err != nil {
+			return fmt.Errorf("seed transaction (%s): %w", row.TransactionType, err)
+		}
 		if _, err := qtx.CreateInvestmentTransaction(ctx, db.CreateInvestmentTransactionParams{
 			ID:                   invID,
 			TransactionType:      row.TransactionType,

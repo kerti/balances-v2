@@ -33,11 +33,35 @@ import type { Disposition, RolloverPolicy } from '@/api/types'
 type Props<TResult> = {
   currency: string
   rolloverPolicy?: RolloverPolicy
+  // The instrument's term, YYYY-MM-DD (issue #62). The Maturity event happened
+  // at maturityDate, so it seeds the date field and — together with
+  // placementDate — bounds it: the backend confines a TimeDeposit's Maturity to
+  // [placement, maturity]. Both optional; a Bond passes only maturityDate (no
+  // placement → no lower bound, and the backend leaves bonds unbounded).
+  placementDate?: string
+  maturityDate?: string
   mutation: UseMutationResult<
     TResult,
     unknown,
     CreateInvestmentTransactionPayload
   >
+}
+
+// The Maturity event is dated at maturityDate, the day the deposit actually
+// matured — not at data-entry time. Defaulting to "today" would stamp
+// terminated_at and the close snapshot in the wrong month, and (post-#62) be
+// rejected outright once maturityDate is in the past. Falls back to today when
+// the term has no maturityDate (shouldn't happen) or it is still in the future.
+function defaultMaturityDate(maturityDate?: string): string {
+  const today = todayDate()
+  return maturityDate && maturityDate <= today ? maturityDate : today
+}
+
+// The latest selectable date: the term's maturity (the #62 hard upper bound),
+// but never in the future (the existing transaction future-date guard).
+function maxMaturityDate(maturityDate?: string): string {
+  const today = todayDate()
+  return maturityDate && maturityDate < today ? maturityDate : today
 }
 
 function defaultsForPolicy(
@@ -54,10 +78,10 @@ function defaultsForPolicy(
   }
 }
 
-function emptyForm(policy?: RolloverPolicy) {
+function emptyForm(policy?: RolloverPolicy, maturityDate?: string) {
   const d = defaultsForPolicy(policy)
   return {
-    transaction_date: todayDate(),
+    transaction_date: defaultMaturityDate(maturityDate),
     principal_amount: '',
     interest_amount: '',
     principal_disposition: d.principal,
@@ -69,11 +93,13 @@ function emptyForm(policy?: RolloverPolicy) {
 export function CreateMaturityTransactionDialog<TResult>({
   currency,
   rolloverPolicy,
+  placementDate,
+  maturityDate,
   mutation,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(() => emptyForm(rolloverPolicy))
+  const [form, setForm] = useState(() => emptyForm(rolloverPolicy, maturityDate))
 
   const totalReceived = (() => {
     const p = Number(form.principal_amount)
@@ -84,7 +110,7 @@ export function CreateMaturityTransactionDialog<TResult>({
 
   function close() {
     setOpen(false)
-    setForm(emptyForm(rolloverPolicy))
+    setForm(emptyForm(rolloverPolicy, maturityDate))
     mutation.reset()
   }
 
@@ -133,7 +159,8 @@ export function CreateMaturityTransactionDialog<TResult>({
               id="mat_date"
               type="date"
               required
-              max={todayDate()}
+              min={placementDate || undefined}
+              max={maxMaturityDate(maturityDate)}
               value={form.transaction_date}
               onChange={(e) =>
                 setForm({ ...form, transaction_date: e.target.value })

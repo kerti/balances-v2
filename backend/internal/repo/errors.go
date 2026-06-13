@@ -26,4 +26,6 @@ var (
 	ErrTagNameExists            = errs.ErrTagNameExists
 	ErrInvalidRolloverLink      = errs.ErrInvalidRolloverLink
 	ErrSnapshotDateOutsideMonth = errs.ErrSnapshotDateOutsideMonth
+	ErrInvalidDepositTerm       = errs.ErrInvalidDepositTerm
+	ErrOutsideDepositTerm       = errs.ErrOutsideDepositTerm
 )

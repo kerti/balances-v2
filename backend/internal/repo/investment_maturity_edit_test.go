@@ -15,9 +15,11 @@ import (
 
 // TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot covers issue
 // #58: editing a Maturity transaction's date must drag the position's
-// terminated_at and the 0-value close snapshot along with it. The reported case
-// was a mistyped year — the transaction updated but the position's termination
-// date (and, by extension, its close-snapshot month) stayed stale.
+// terminated_at and the 0-value close snapshot along with it. Here the deposit
+// was recorded as matured a couple of months early (a within-term mistake, so
+// it clears the #62 term bounds), then corrected to the true maturity date —
+// a correction that crosses a month boundary, which is what exercises the
+// close-snapshot relocation.
 func TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -48,8 +50,8 @@ func TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot(t *testing.T
 	principal := decimal.NewFromInt(50_000_000)
 	interest := decimal.NewFromInt(2_750_000)
 
-	// Mistyped year: maturity entered as 2028 instead of 2027.
-	wrongDate := time.Date(2028, time.January, 15, 0, 0, 0, 0, time.UTC)
+	// Recorded two months early (within the term), to be corrected below.
+	wrongDate := time.Date(2026, time.November, 15, 0, 0, 0, 0, time.UTC)
 	mat, err := r.CreateInvestmentTransaction(ctx, repo.CreateInvestmentTransactionParams{
 		InvestmentID:         td.Investment.ID,
 		TransactionType:      repo.TxnTypeMaturity,

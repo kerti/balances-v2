@@ -118,6 +118,17 @@ const (
 	// already-linked successor, source with an existing successor, or a cycle).
 	CodeInvalidRolloverLink Code = "INVALID_ROLLOVER_LINK"
 
+	// CodeInvalidDepositTerm maps repo.ErrInvalidDepositTerm -> 400 — a time
+	// deposit whose maturity_date is not strictly after its placement_date
+	// (issue #62).
+	CodeInvalidDepositTerm Code = "INVALID_DEPOSIT_TERM"
+
+	// CodeOutsideDepositTerm maps repo.ErrOutsideDepositTerm -> 400 — a time
+	// deposit snapshot or transaction (including the Maturity event), or a term
+	// edit, that falls outside the deposit's [placement_date, maturity_date]
+	// window (issue #62).
+	CodeOutsideDepositTerm Code = "OUTSIDE_DEPOSIT_TERM"
+
 	// CodeUnauthorized is the 401 emitted by the session middleware when the
 	// request has no valid session cookie. Distinct from the repo's
 	// unreachable ErrUnauthenticated — this one is the real, client-facing

@@ -61,8 +61,17 @@ export function EditTimeDepositDialog({
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null
 
+  // Maturity must stay strictly after placement (issue #62) — mirrors the
+  // server's ErrInvalidDepositTerm. (A term that strands existing snapshots is
+  // caught server-side as OUTSIDE_DEPOSIT_TERM and surfaced via mutation.error.)
+  const termInvalid =
+    !!form.placement_date &&
+    !!form.maturity_date &&
+    form.maturity_date <= form.placement_date
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
+    if (termInvalid) return
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -206,6 +215,7 @@ export function EditTimeDepositDialog({
                   id="edit_td_maturity_date"
                   required
                   type="date"
+                  min={form.placement_date || undefined}
                   max="9999-12-31"
                   value={form.maturity_date}
                   onChange={(e) =>
@@ -214,6 +224,14 @@ export function EditTimeDepositDialog({
                 />
               </div>
             </div>
+            {termInvalid && (
+              <p
+                data-testid="edit-td-term-error"
+                className="text-sm text-destructive"
+              >
+                {t('investments:timeDeposit.maturityAfterPlacement')}
+              </p>
+            )}
           </div>
 
           <div className="space-y-3 border-t pt-4">
@@ -314,7 +332,7 @@ export function EditTimeDepositDialog({
             >
               {t('common:cancel')}
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || termInvalid}>
               {mutation.isPending
                 ? t('common:actions.saving')
                 : t('common:actions.saveChanges')}

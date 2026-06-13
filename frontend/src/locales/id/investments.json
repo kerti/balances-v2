@@ -469,6 +469,7 @@
       "no_rollover": "Tanpa perpanjangan"
     },
     "rolloverHint": "Apa yang bank lakukan otomatis saat jatuh tempo jika Anda tidak ambil tindakan. Perpanjang otomatis dengan bunga = bunga berbunga; perpanjang otomatis pokok = bunga dibayar, pokok digulung; tanpa perpanjangan = bank mengembalikan semuanya ke rekening Anda.",
+    "maturityAfterPlacement": "Tanggal jatuh tempo harus setelah tanggal penempatan.",
     "rollover": {
       "calloutTitle": "Deposito ini jatuh tempo dan digulung ke deposito baru.",
       "calloutBody": "{{amount}} sedang diinvestasikan kembali. Buat deposito baru agar tetap terpantau.",

@@ -82,10 +82,82 @@ type UpdateTimeDepositParams struct {
 	RolloverPolicy  string
 }
 
+// termBounds is a time deposit's [placement_date, maturity_date] window — the
+// span its principal is locked for. Every snapshot and transaction of the
+// deposit must fall inside it (issue #62). The zero value is "unbounded" and
+// makes every check a no-op, so the shared snapshot/transaction paths can call
+// the checks unconditionally and have them apply only to time deposits.
+type termBounds struct {
+	placement time.Time
+	maturity  time.Time
+}
+
+func (b termBounds) unbounded() bool { return b.placement.IsZero() && b.maturity.IsZero() }
+
+// timeDepositBounds loads the term window for a time deposit. Any other subtype
+// has no such window, so it returns unbounded bounds — the confinement is
+// TimeDeposit-only (Bonds carry a maturity but no placement and are out of
+// scope for #62).
+func timeDepositBounds(ctx context.Context, q *db.Queries, inv db.Investment) (termBounds, error) {
+	if inv.Subtype != "time_deposit" {
+		return termBounds{}, nil
+	}
+	d, err := q.GetTimeDepositDetailsByInvestmentID(ctx, inv.ID)
+	if err != nil {
+		return termBounds{}, fmt.Errorf("load time deposit bounds: %w", err)
+	}
+	return termBounds{placement: d.PlacementDate, maturity: d.MaturityDate}, nil
+}
+
+// checkSnapshotMonth confines a snapshot to the term at month granularity: its
+// year_month must lie within the placement month..maturity month, inclusive —
+// a placement on the 20th still admits that whole month's reading (issue #62).
+func (b termBounds) checkSnapshotMonth(yearMonth time.Time) error {
+	if b.unbounded() {
+		return nil
+	}
+	ym := monthStart(yearMonth)
+	if ym.Before(monthStart(b.placement)) || ym.After(monthStart(b.maturity)) {
+		return fmt.Errorf("%w: snapshot month %s is outside %s..%s",
+			ErrOutsideDepositTerm, yearMonth.Format("2006-01"),
+			b.placement.Format("2006-01"), b.maturity.Format("2006-01"))
+	}
+	return nil
+}
+
+// checkTransactionDate confines a transaction — for a time deposit only the
+// terminal Maturity event — to the term to the day: placement_date <= date <=
+// maturity_date (the hard upper bound, issue #62).
+func (b termBounds) checkTransactionDate(date time.Time) error {
+	if b.unbounded() {
+		return nil
+	}
+	d := dayStart(date)
+	if d.Before(dayStart(b.placement)) || d.After(dayStart(b.maturity)) {
+		return fmt.Errorf("%w: transaction date %s is outside %s..%s",
+			ErrOutsideDepositTerm, date.Format("2006-01-02"),
+			b.placement.Format("2006-01-02"), b.maturity.Format("2006-01-02"))
+	}
+	return nil
+}
+
+func monthStart(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC)
+}
+
+func dayStart(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+}
+
 func (r *InvestmentRepo) CreateTimeDeposit(ctx context.Context, p CreateTimeDepositParams) (*TimeDeposit, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return nil, err
+	}
+	// The term must be a non-empty forward window (issue #62). Caught here for a
+	// clean 400; the DB CHECK (migration 00004) is the backstop.
+	if !p.MaturityDate.After(p.PlacementDate) {
+		return nil, ErrInvalidDepositTerm
 	}
 
 	tx, err := r.pool.Begin(ctx)
@@ -276,6 +348,9 @@ func (r *InvestmentRepo) UpdateTimeDeposit(ctx context.Context, id uuid.UUID, p 
 	if err != nil {
 		return nil, err
 	}
+	if !p.MaturityDate.After(p.PlacementDate) {
+		return nil, ErrInvalidDepositTerm
+	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -304,6 +379,16 @@ func (r *InvestmentRepo) UpdateTimeDeposit(ctx context.Context, id uuid.UUID, p 
 		return nil, ErrNotFound
 	}
 
+	// Narrowing the term must not strand history outside the new window: a
+	// snapshot whose month, or a transaction whose date, no longer fits is a
+	// silent integrity hole. Reject the edit and let the user fix the offending
+	// entry first (issue #62). Validated against the new bounds before the
+	// details write so the whole update rolls back cleanly.
+	newBounds := termBounds{placement: p.PlacementDate, maturity: p.MaturityDate}
+	if err := r.revalidateHistoryInTerm(ctx, qtx, inv.ID, hid, newBounds); err != nil {
+		return nil, err
+	}
+
 	details, err := qtx.UpdateTimeDepositDetails(ctx, db.UpdateTimeDepositDetailsParams{
 		InvestmentID:   inv.ID,
 		BankName:       p.BankName,
@@ -323,6 +408,40 @@ func (r *InvestmentRepo) UpdateTimeDeposit(ctx context.Context, id uuid.UUID, p 
 	}
 
 	return &TimeDeposit{Investment: inv, Details: details}, nil
+}
+
+// revalidateHistoryInTerm asserts that every existing snapshot and transaction
+// of a deposit still falls inside the given (typically just-edited) term window
+// (issue #62). Used by UpdateTimeDeposit to refuse a term change that would
+// strand history outside the new bounds. Runs on the caller's qtx so the
+// rejection rolls back the in-flight update.
+func (r *InvestmentRepo) revalidateHistoryInTerm(ctx context.Context, qtx *db.Queries, invID, hid uuid.UUID, bounds termBounds) error {
+	snaps, err := qtx.ListInvestmentSnapshotsForInvestment(ctx, db.ListInvestmentSnapshotsForInvestmentParams{
+		InvestmentID: invID,
+		HouseholdID:  hid,
+	})
+	if err != nil {
+		return fmt.Errorf("list snapshots for term revalidation: %w", err)
+	}
+	for _, s := range snaps {
+		if err := bounds.checkSnapshotMonth(s.YearMonth); err != nil {
+			return err
+		}
+	}
+
+	txns, err := qtx.ListInvestmentTransactionsForInvestment(ctx, db.ListInvestmentTransactionsForInvestmentParams{
+		InvestmentID: invID,
+		HouseholdID:  hid,
+	})
+	if err != nil {
+		return fmt.Errorf("list transactions for term revalidation: %w", err)
+	}
+	for _, t := range txns {
+		if err := bounds.checkTransactionDate(t.TransactionDate); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // LinkRolloverSuccessor records that the matured deposit sourceID rolled over
