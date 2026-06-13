@@ -393,3 +393,241 @@ func TestDetailCellParsers(t *testing.T) {
 		}
 	})
 }
+
+// ---- RunWithLedger (issue #90) -------------------------------------------
+
+// These drive the investment create-import flow in isolation — no database. The
+// resolve + commit closures are stubs, so RunWithLedger / validateLedger /
+// readUpload are exercised within this package (the handler suites cross-package
+// exercise doesn't count toward per-package coverage). subtype + shape select the
+// snapshot layout + ledger matrix.
+
+var qtyPriceSnapHeader = []string{"year_month", "as_of_date", "quantity", "price_per_unit", "currency", "description"}
+var accruedSnapHeader = []string{"year_month", "as_of_date", "amount", "accrued_interest", "currency", "description"}
+var ledgerTxnHeader = []string{
+	"transaction_type", "transaction_date", "currency", "amount",
+	"quantity", "price_per_unit",
+	"principal_amount", "interest_amount", "principal_disposition", "interest_disposition",
+	"description",
+}
+
+// buildLedgerWorkbook serialises Detail + Snapshots (snapHeader) + Transactions
+// onto an in-memory .xlsx — the investment position-workbook shape RunWithLedger
+// parses.
+func buildLedgerWorkbook(t *testing.T, detail [][]string, snapHeader []string, snaps, txns [][]string) []byte {
+	t.Helper()
+	f := excelize.NewFile()
+	defer func() { _ = f.Close() }()
+
+	if _, err := f.NewSheet(snapshotimport.DetailSheetName); err != nil {
+		t.Fatalf("new detail sheet: %v", err)
+	}
+	writeSheet(t, f, snapshotimport.DetailSheetName, append([][]string{{"field", "value", "notes"}}, detail...))
+
+	if _, err := f.NewSheet(snapshotimport.SheetName); err != nil {
+		t.Fatalf("new snapshots sheet: %v", err)
+	}
+	writeSheet(t, f, snapshotimport.SheetName, append([][]string{snapHeader}, snaps...))
+
+	if _, err := f.NewSheet(snapshotimport.TransactionsSheetName); err != nil {
+		t.Fatalf("new transactions sheet: %v", err)
+	}
+	writeSheet(t, f, snapshotimport.TransactionsSheetName, append([][]string{ledgerTxnHeader}, txns...))
+
+	if err := f.DeleteSheet("Sheet1"); err != nil {
+		t.Fatalf("delete default sheet: %v", err)
+	}
+	buf, err := f.WriteToBuffer()
+	if err != nil {
+		t.Fatalf("serialise: %v", err)
+	}
+	return buf.Bytes()
+}
+
+type ledgerStub struct {
+	fieldErrs    []snapshotimport.FieldError
+	resolveErr   error
+	commitErr    error
+	commitCalled bool
+	gotSnaps     int
+	gotLedger    int
+}
+
+func (s *ledgerStub) resolve(_ context.Context, _ map[string]string) (string, *uuid.UUID, []snapshotimport.FieldError, error) {
+	return "params", nil, s.fieldErrs, s.resolveErr
+}
+
+func (s *ledgerStub) commit(_ context.Context, _ string, _ *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
+	s.commitCalled = true
+	s.gotSnaps = len(snaps)
+	s.gotLedger = len(ledger)
+	if s.commitErr != nil {
+		return uuid.Nil, s.commitErr
+	}
+	return uuid.New(), nil
+}
+
+func runLedgerUpload(t *testing.T, query string, body []byte, withFile bool, subtype string, shape snapshotimport.Shape, s *ledgerStub) *httptest.ResponseRecorder {
+	t.Helper()
+	var buf bytes.Buffer
+	mw := multipart.NewWriter(&buf)
+	if withFile {
+		fw, err := mw.CreateFormFile("file", "wb.xlsx")
+		if err != nil {
+			t.Fatalf("form file: %v", err)
+		}
+		if _, err := fw.Write(body); err != nil {
+			t.Fatalf("write file: %v", err)
+		}
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatalf("close mw: %v", err)
+	}
+	req := httptest.NewRequest("POST", "/import"+query, &buf)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	rec := httptest.NewRecorder()
+	importcreate.RunWithLedger(rec, req, httperr.NewValidator(), subtype, shape, s.resolve, s.commit)
+	return rec
+}
+
+func stockLedgerDetail() [][]string {
+	return [][]string{{"display_name", "Imported"}, {"native_currency", "IDR"}}
+}
+
+func stockSnaps() [][]string {
+	return [][]string{{"2026-01", "2026-01-31", "100", "9500", "IDR", "Jan"}}
+}
+
+func TestRunWithLedger(t *testing.T) {
+	buyDiv := [][]string{
+		{"buy", "2026-01-05", "IDR", "950000", "100", "9500", "", "", "", "", "buy"},
+		{"dividend", "2026-02-10", "IDR", "120000", "", "", "", "", "", "", "div"},
+	}
+	clean := func() []byte {
+		return buildLedgerWorkbook(t, stockLedgerDetail(), qtyPriceSnapHeader, stockSnaps(), buyDiv)
+	}
+
+	t.Run("invalid mode is 400", func(t *testing.T) {
+		rec := runLedgerUpload(t, "?mode=sideways", clean(), true, "stock", snapshotimport.ShapeQuantityPrice, &ledgerStub{})
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("want 400, got %d", rec.Code)
+		}
+	})
+
+	t.Run("missing file is 400", func(t *testing.T) {
+		rec := runLedgerUpload(t, "", nil, false, "stock", snapshotimport.ShapeQuantityPrice, &ledgerStub{})
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("want 400, got %d", rec.Code)
+		}
+	})
+
+	t.Run("not a spreadsheet is 400", func(t *testing.T) {
+		rec := runLedgerUpload(t, "", []byte("nope"), true, "stock", snapshotimport.ShapeQuantityPrice, &ledgerStub{})
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("want 400, got %d", rec.Code)
+		}
+	})
+
+	t.Run("resolve error is 500", func(t *testing.T) {
+		rec := runLedgerUpload(t, "?mode=commit", clean(), true, "stock", snapshotimport.ShapeQuantityPrice,
+			&ledgerStub{resolveErr: errors.New("db down")})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("want 500, got %d", rec.Code)
+		}
+	})
+
+	t.Run("clean preview counts snapshots + ledger, writes nothing", func(t *testing.T) {
+		s := &ledgerStub{}
+		rec := runLedgerUpload(t, "", clean(), true, "stock", snapshotimport.ShapeQuantityPrice, s)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("want 200, got %d", rec.Code)
+		}
+		resp := decodeResp(t, rec)
+		if !resp.WouldCreate || resp.Committed || resp.ToInsert != 1 || resp.LedgerToInsert != 2 {
+			t.Fatalf("preview: %+v", resp)
+		}
+		if s.commitCalled {
+			t.Error("preview called commit")
+		}
+	})
+
+	t.Run("clean commit hands snapshots + ledger to commit", func(t *testing.T) {
+		s := &ledgerStub{}
+		rec := runLedgerUpload(t, "?mode=commit", clean(), true, "stock", snapshotimport.ShapeQuantityPrice, s)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("want 200, got %d", rec.Code)
+		}
+		resp := decodeResp(t, rec)
+		if !resp.Committed || resp.PositionID == nil {
+			t.Fatalf("commit: %+v", resp)
+		}
+		if !s.commitCalled || s.gotSnaps != 1 || s.gotLedger != 2 {
+			t.Errorf("commit got snaps=%d ledger=%d", s.gotSnaps, s.gotLedger)
+		}
+	})
+
+	t.Run("resolve field error blocks preview and fails commit 422", func(t *testing.T) {
+		s := &ledgerStub{fieldErrs: []snapshotimport.FieldError{{Field: "ticker", Message: "is required"}}}
+		preview := runLedgerUpload(t, "", clean(), true, "stock", snapshotimport.ShapeQuantityPrice, s)
+		if r := decodeResp(t, preview); r.WouldCreate {
+			t.Error("field error should block would_create")
+		}
+		commit := runLedgerUpload(t, "?mode=commit", clean(), true, "stock", snapshotimport.ShapeQuantityPrice,
+			&ledgerStub{fieldErrs: []snapshotimport.FieldError{{Field: "ticker", Message: "is required"}}})
+		if commit.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("want 422, got %d", commit.Code)
+		}
+	})
+
+	t.Run("bad snapshot row blocks commit 422", func(t *testing.T) {
+		bad := buildLedgerWorkbook(t, stockLedgerDetail(), qtyPriceSnapHeader,
+			[][]string{{"not-a-month", "", "100", "9500", "IDR", "bad"}}, nil)
+		rec := runLedgerUpload(t, "?mode=commit", bad, true, "stock", snapshotimport.ShapeQuantityPrice, &ledgerStub{})
+		if rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("want 422, got %d", rec.Code)
+		}
+		if len(decodeResp(t, rec).Errors) == 0 {
+			t.Error("want a row error")
+		}
+	})
+
+	t.Run("ledger row off the subtype matrix is a row error (422 on commit)", func(t *testing.T) {
+		// coupon is not a stock transaction type.
+		txns := [][]string{{"coupon", "2026-02-10", "IDR", "50000", "", "", "", "", "", "", "nope"}}
+		wb := buildLedgerWorkbook(t, stockLedgerDetail(), qtyPriceSnapHeader, stockSnaps(), txns)
+		rec := runLedgerUpload(t, "?mode=commit", wb, true, "stock", snapshotimport.ShapeQuantityPrice, &ledgerStub{})
+		if rec.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("want 422, got %d", rec.Code)
+		}
+		if errs := decodeResp(t, rec).Errors; len(errs) == 0 || errs[0].Row != 2 {
+			t.Fatalf("want a row-2 ledger error, got %+v", errs)
+		}
+	})
+
+	t.Run("a valid maturity passes validation; a second is rejected", func(t *testing.T) {
+		one := [][]string{
+			{"maturity", "2030-01-01", "IDR", "", "", "", "10000000", "600000", "cash_out", "cash_out", "matured"},
+		}
+		s := &ledgerStub{}
+		rec := runLedgerUpload(t, "?mode=commit", buildLedgerWorkbook(t, stockLedgerDetail(), accruedSnapHeader, nil, one),
+			true, "bond", snapshotimport.ShapeAccruedInterest, s)
+		if rec.Code != http.StatusOK || s.gotLedger != 1 {
+			t.Fatalf("single maturity should commit, got %d ledger=%d", rec.Code, s.gotLedger)
+		}
+
+		two := append(one, []string{"maturity", "2030-02-01", "IDR", "", "", "", "10000000", "600000", "cash_out", "cash_out", "second"})
+		rec2 := runLedgerUpload(t, "?mode=commit", buildLedgerWorkbook(t, stockLedgerDetail(), accruedSnapHeader, nil, two),
+			true, "bond", snapshotimport.ShapeAccruedInterest, &ledgerStub{})
+		if rec2.Code != http.StatusUnprocessableEntity {
+			t.Fatalf("second maturity should 422, got %d", rec2.Code)
+		}
+	})
+
+	t.Run("commit error is 500", func(t *testing.T) {
+		rec := runLedgerUpload(t, "?mode=commit", clean(), true, "stock", snapshotimport.ShapeQuantityPrice,
+			&ledgerStub{commitErr: errors.New("boom")})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("want 500, got %d", rec.Code)
+		}
+	})
+}

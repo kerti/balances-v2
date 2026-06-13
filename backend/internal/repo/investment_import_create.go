@@ -131,6 +131,7 @@ func (r *InvestmentRepo) CreateStockWithSnapshotsAndLedger(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
+	out.Investment.TagID = tagID // reflect the assignment in the returned aggregate
 	return out, nil
 }
 
@@ -167,6 +168,7 @@ func (r *InvestmentRepo) CreateMutualFundWithSnapshotsAndLedger(ctx context.Cont
 	if err != nil {
 		return nil, err
 	}
+	out.Investment.TagID = tagID // reflect the assignment in the returned aggregate
 	return out, nil
 }
 
@@ -202,6 +204,7 @@ func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p
 	if err != nil {
 		return nil, err
 	}
+	out.Investment.TagID = tagID // reflect the assignment in the returned aggregate
 	return out, nil
 }
 
@@ -244,6 +247,7 @@ func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p
 	if err != nil {
 		return nil, err
 	}
+	out.Investment.TagID = tagID // reflect the assignment in the returned aggregate
 	return out, nil
 }
 
@@ -286,6 +290,7 @@ func (r *InvestmentRepo) CreateTimeDepositWithSnapshotsAndLedger(ctx context.Con
 	if err != nil {
 		return nil, err
 	}
+	out.Investment.TagID = tagID // reflect the assignment in the returned aggregate
 	return out, nil
 }
 
