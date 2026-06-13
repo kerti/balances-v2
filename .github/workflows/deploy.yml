@@ -31,8 +31,8 @@ jobs:
     environment: ${{ needs.route.outputs.env }}   # secrets + (production) approval gate
     concurrency: deploy-${{ needs.route.outputs.env }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master-pinned 2026-06-13
       - name: Deploy to ${{ needs.route.outputs.env }}
         # APP_VERSION/DEPLOY_ENV are baked into the SPA bundle for the footer
         # (issue #75); the Dockerfile web stage reads them as VITE_ vars.

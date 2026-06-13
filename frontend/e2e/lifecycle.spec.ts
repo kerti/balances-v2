@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test'
 // off on a non-active position and returns on reopen. Self-cleaning: deletes
 // the account it creates, leaving the seed's empty bank-account list. See
 // ADR-0024.
-test('bank account lifecycle: close → reopen → delete', async ({ page }) => {
+test('bank account lifecycle: close → reopen → delete', { tag: '@smoke' }, async ({ page }) => {
   const name = `E2E account ${Date.now()}`
   // The position's lifecycle pill, by test id. The Terminate dialog's <select>
   // carries <option>s with the same labels, so a text or tag locator would be

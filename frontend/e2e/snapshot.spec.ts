@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test'
 // unique description; the amount renders IDR-formatted and is a poor anchor.
 // Self-cleaning: deletes the snapshot and then the parent account, leaving the
 // seed's empty bank-account list. See ADR-0024.
-test('bank account snapshot create → edit → delete', async ({ page }) => {
+test('bank account snapshot create → edit → delete', { tag: '@smoke' }, async ({ page }) => {
   const account = `E2E snap account ${Date.now()}`
   const desc = `E2E snapshot ${Date.now()}`
   const editedDesc = `${desc} edited`
