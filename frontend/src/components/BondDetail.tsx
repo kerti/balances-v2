@@ -377,6 +377,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                             amount: bondLatestSnapshot.amount,
                             accrued_interest:
                               bondLatestSnapshot.accrued_interest,
+                            lastSnapshotMonth: bondLatestSnapshot.year_month,
                           }
                         : null
                     }

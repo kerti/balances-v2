@@ -250,7 +250,10 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
                     mutation={createSnapshotMutation}
                     carryover={
                       snapshots?.[0]
-                        ? { amount: snapshots[0].amount }
+                        ? {
+                            amount: snapshots[0].amount,
+                            lastSnapshotMonth: snapshots[0].year_month,
+                          }
                         : null
                     }
                   />

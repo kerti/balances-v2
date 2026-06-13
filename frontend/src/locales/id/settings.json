@@ -20,6 +20,17 @@
     "dark": "Gelap",
     "saved": "Tampilan diperbarui"
   },
+  "carryoverDate": {
+    "title": "Tanggal salin-lanjut",
+    "description": "Saat Anda menyalin angka bulan lalu ke snapshot baru, ini menentukan tanggal laporan awalnya. Anda tetap dapat mengubah tanggal sebelum menyimpan.",
+    "label": "Tanggal bawaan",
+    "saved": "Tanggal salin-lanjut diperbarui",
+    "modes": {
+      "today": "Hari ini",
+      "end_of_last_month": "Akhir bulan lalu",
+      "end_of_month_after_last_snapshot": "Akhir bulan setelah snapshot terakhir"
+    }
+  },
   "currency": {
     "title": "Mata Uang",
     "description": "Kekayaan bersih dilaporkan dalam mata uang ini. Aktifkan multi-mata-uang untuk menyimpan posisi dalam mata uang lain dan memasukkan kurs bulanan.",

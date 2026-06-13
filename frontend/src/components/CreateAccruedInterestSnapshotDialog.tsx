@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
 import { formatCurrency } from '@/lib/format'
-import { thisYearMonth, todayDate } from '@/lib/dateLimits'
+import { thisYearMonth, todayDate, carryoverSeedDate } from '@/lib/dateLimits'
+import type { CarryoverDateMode } from '@/lib/dateLimits'
+import { useSession } from '@/hooks/useSession'
 import type { CreateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
 
 type Props<TResult> = {
@@ -26,9 +28,15 @@ type Props<TResult> = {
     unknown,
     CreateInvestmentSnapshotPayload
   >
-  // Latest snapshot's total value + accrued, when one exists. Drives the "Copy
-  // carryover" helper (issue #60). Null hides the helper.
-  carryover?: { amount: string; accrued_interest: string | null } | null
+  // Latest snapshot's total value + accrued + period, when one exists. Drives
+  // the "Copy carryover" helper (issue #60); lastSnapshotMonth (the latest
+  // snapshot's year_month) anchors the end_of_month_after_last_snapshot date
+  // mode (issue #105). Null hides the helper.
+  carryover?: {
+    amount: string
+    accrued_interest: string | null
+    lastSnapshotMonth: string
+  } | null
 }
 
 function emptyForm() {
@@ -63,20 +71,23 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
   carryover,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
+  const { data: me } = useSession()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
   const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest)
 
   // Seed the form from the last snapshot and open the dialog. Month resets to
-  // the current month and the statement date to today.
+  // the current month; the statement date is seeded per the user's
+  // carryover_date_mode preference (issue #105, default 'today').
   function startCarryover() {
     if (!carryover) return
+    const mode = (me?.carryover_date_mode ?? 'today') as CarryoverDateMode
     setForm({
       year_month: thisYearMonth(),
       amount: carryover.amount,
       accrued_interest: carryover.accrued_interest ?? '0',
-      as_of_date: todayDate(),
+      as_of_date: carryoverSeedDate(mode, carryover.lastSnapshotMonth),
       description: '',
     })
     setOpen(true)

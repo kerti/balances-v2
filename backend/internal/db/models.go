@@ -349,21 +349,22 @@ type TimeDepositDetail struct {
 }
 
 type User struct {
-	ID          uuid.UUID          `json:"id"`
-	HouseholdID uuid.UUID          `json:"household_id"`
-	DisplayName string             `json:"display_name"`
-	Email       string             `json:"email"`
-	GoogleSub   string             `json:"google_sub"`
-	Locale      string             `json:"locale"`
-	TimeZone    string             `json:"time_zone"`
-	CreatedBy   *uuid.UUID         `json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedBy   *uuid.UUID         `json:"updated_by"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
-	Nickname    *string            `json:"nickname"`
-	PictureUrl  *string            `json:"picture_url"`
-	Theme       string             `json:"theme"`
+	ID                uuid.UUID          `json:"id"`
+	HouseholdID       uuid.UUID          `json:"household_id"`
+	DisplayName       string             `json:"display_name"`
+	Email             string             `json:"email"`
+	GoogleSub         string             `json:"google_sub"`
+	Locale            string             `json:"locale"`
+	TimeZone          string             `json:"time_zone"`
+	CreatedBy         *uuid.UUID         `json:"created_by"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedBy         *uuid.UUID         `json:"updated_by"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt         pgtype.Timestamptz `json:"deleted_at"`
+	Nickname          *string            `json:"nickname"`
+	PictureUrl        *string            `json:"picture_url"`
+	Theme             string             `json:"theme"`
+	CarryoverDateMode string             `json:"carryover_date_mode"`
 }
 
 type VehicleDetail struct {

@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
 import { formatCurrency } from '@/lib/format'
-import { thisYearMonth, todayDate } from '@/lib/dateLimits'
+import { thisYearMonth, todayDate, carryoverSeedDate } from '@/lib/dateLimits'
+import { useSession } from '@/hooks/useSession'
+import type { CarryoverDateMode } from '@/lib/dateLimits'
 import type { CreateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
 
 type Props<TResult> = {
@@ -35,7 +37,11 @@ type Props<TResult> = {
   // Latest snapshot's quantity + price, when one exists. Drives the "Copy
   // carryover" helper (issue #60): an unchanged month keeps the same factors,
   // so the derived total carries over too. Null hides the helper.
-  carryover?: { quantity: string | null; price_per_unit: string | null } | null
+  carryover?: {
+    quantity: string | null
+    price_per_unit: string | null
+    lastSnapshotMonth: string
+  } | null
 }
 
 function emptyForm() {
@@ -68,20 +74,23 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
   carryover,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
+  const { data: me } = useSession()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
   const derivedAmount = deriveAmount(form.quantity, form.price_per_unit)
 
   // Seed the form from the last snapshot's factors and open the dialog. Month
-  // resets to the current month and the statement date to today.
+  // resets to the current month; the statement date is seeded per the user's
+  // carryover_date_mode preference (issue #105, default 'today').
   function startCarryover() {
     if (!carryover) return
+    const mode = (me?.carryover_date_mode ?? 'today') as CarryoverDateMode
     setForm({
       year_month: thisYearMonth(),
       quantity: carryover.quantity ?? '',
       price_per_unit: carryover.price_per_unit ?? '',
-      as_of_date: todayDate(),
+      as_of_date: carryoverSeedDate(mode, carryover.lastSnapshotMonth),
       description: '',
     })
     setOpen(true)

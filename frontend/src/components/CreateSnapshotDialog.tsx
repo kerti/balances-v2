@@ -15,7 +15,9 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { errorMessage } from '@/lib/errorMessage'
-import { thisYearMonth, todayDate } from '@/lib/dateLimits'
+import { thisYearMonth, todayDate, carryoverSeedDate } from '@/lib/dateLimits'
+import { useSession } from '@/hooks/useSession'
+import type { CarryoverDateMode } from '@/lib/dateLimits'
 import type { RevaluationSuggestion } from '@/lib/revaluation'
 import {
   formatCurrency,
@@ -42,10 +44,13 @@ type Props<TResult> = {
   // null when no suggestion applies. The Apply button is the only writer —
   // typing the amount manually is never overridden.
   suggest?: (yearMonth: string) => RevaluationSuggestion | null
-  // Latest snapshot's amount, when one exists. Drives the "Copy carryover"
-  // helper (issue #60): formalises an unchanged month by pre-filling the
-  // amount and defaulting the dates to today. Null hides the helper.
-  carryover?: { amount: string } | null
+  // Latest snapshot's amount + period, when one exists. Drives the "Copy
+  // carryover" helper (issue #60): formalises an unchanged month by pre-filling
+  // the amount and seeding the as-of date per the user's carryover_date_mode
+  // preference (issue #105). lastSnapshotMonth (the latest snapshot's
+  // year_month) anchors the end_of_month_after_last_snapshot mode. Null hides
+  // the helper.
+  carryover?: { amount: string; lastSnapshotMonth: string } | null
 }
 
 export function CreateSnapshotDialog<TResult>({
@@ -55,6 +60,7 @@ export function CreateSnapshotDialog<TResult>({
   carryover,
 }: Props<TResult>) {
   const { t } = useTranslation('common')
+  const { data: me } = useSession()
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     year_month: thisYearMonth(),
@@ -64,14 +70,16 @@ export function CreateSnapshotDialog<TResult>({
   })
 
   // Seed the form from the last snapshot and open the dialog. The month resets
-  // to the current month and the statement date to today; the user edits the
-  // month if the carryover belongs to an earlier period.
+  // to the current month; the statement date is seeded per the user's
+  // carryover_date_mode preference (issue #105, default 'today'). The user
+  // edits the month if the carryover belongs to an earlier period.
   function startCarryover() {
     if (!carryover) return
+    const mode = (me?.carryover_date_mode ?? 'today') as CarryoverDateMode
     setForm({
       year_month: thisYearMonth(),
       amount: carryover.amount,
-      as_of_date: todayDate(),
+      as_of_date: carryoverSeedDate(mode, carryover.lastSnapshotMonth),
       description: '',
     })
     setOpen(true)

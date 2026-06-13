@@ -65,6 +65,9 @@ func TestHandleMe_IncludesCurrencySettings(t *testing.T) {
 	if body.PictureURL != nil {
 		t.Errorf("picture_url: got %q, want nil (unset by default)", *body.PictureURL)
 	}
+	if body.CarryoverDateMode != "today" {
+		t.Errorf("carryover_date_mode: got %q, want \"today\" (default)", body.CarryoverDateMode)
+	}
 }
 
 func TestMeResponseFor_MapsPicture(t *testing.T) {
@@ -210,11 +213,33 @@ func TestHandleUpdateMe(t *testing.T) {
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
 
-	t.Run("200 nickname + locale + theme together", func(t *testing.T) {
+	for _, mode := range []string{"today", "end_of_last_month", "end_of_month_after_last_snapshot"} {
+		t.Run("200 sets carryover_date_mode to "+mode, func(t *testing.T) {
+			rec := h.do(t, "PATCH", "/me", map[string]any{"carryover_date_mode": mode})
+			requireStatus(t, rec, http.StatusOK)
+			body := decodeBody[meResponse](t, rec)
+			if body.CarryoverDateMode != mode {
+				t.Fatalf("carryover_date_mode: got %q, want %q", body.CarryoverDateMode, mode)
+			}
+		})
+	}
+
+	t.Run("400 unsupported carryover_date_mode", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/me", map[string]any{"carryover_date_mode": "yesterday"})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("400 null carryover_date_mode", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/me", map[string]any{"carryover_date_mode": nil})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("200 nickname + locale + theme + carryover together", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/me", map[string]any{
-			"nickname": "Bee",
-			"locale":   "en-GB",
-			"theme":    "light",
+			"nickname":            "Bee",
+			"locale":              "en-GB",
+			"theme":               "light",
+			"carryover_date_mode": "end_of_last_month",
 		})
 		requireStatus(t, rec, http.StatusOK)
 		body := decodeBody[meResponse](t, rec)
@@ -223,6 +248,9 @@ func TestHandleUpdateMe(t *testing.T) {
 		}
 		if body.Theme != "light" {
 			t.Errorf("theme: got %q, want light", body.Theme)
+		}
+		if body.CarryoverDateMode != "end_of_last_month" {
+			t.Errorf("carryover_date_mode: got %q, want end_of_last_month", body.CarryoverDateMode)
 		}
 		if body.Nickname == nil || *body.Nickname != "Bee" {
 			t.Errorf("nickname: got %v, want \"Bee\"", body.Nickname)

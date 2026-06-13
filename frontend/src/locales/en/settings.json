@@ -20,6 +20,17 @@
     "dark": "Dark",
     "saved": "Appearance updated"
   },
+  "carryoverDate": {
+    "title": "Carry-over date",
+    "description": "When you copy last month's figure into a new snapshot, this sets the statement date it starts with. You can still change the date before saving.",
+    "label": "Default date",
+    "saved": "Carry-over date updated",
+    "modes": {
+      "today": "Today",
+      "end_of_last_month": "End of last month",
+      "end_of_month_after_last_snapshot": "End of the month after the last snapshot"
+    }
+  },
   "currency": {
     "title": "Currency",
     "description": "Net worth is reported in this currency. Turn on multi-currency to hold positions in other currencies and enter monthly exchange rates.",

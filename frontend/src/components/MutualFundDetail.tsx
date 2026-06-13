@@ -309,6 +309,7 @@ export function MutualFundDetail({ investmentId, onBack }: Props) {
                         ? {
                             quantity: latestSnapshot.quantity,
                             price_per_unit: latestSnapshot.price_per_unit,
+                            lastSnapshotMonth: latestSnapshot.year_month,
                           }
                         : null
                     }

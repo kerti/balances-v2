@@ -457,6 +457,7 @@ export function TimeDepositDetail({
                         ? {
                             amount: snapshots[0].amount,
                             accrued_interest: snapshots[0].accrued_interest,
+                            lastSnapshotMonth: snapshots[0].year_month,
                           }
                         : null
                     }
