@@ -15,7 +15,7 @@ Last reviewed: 2026-06-06 (M6).
 | eslint + vitest + build | Frontend checks | `ci.yml` → `frontend-checks` | → Codecov |
 | Codecov | Coverage reporting (informational, not a gate) | `codecov.yml` | pre-existing |
 | **CodeQL** | SAST for Go + TS/JS; Security tab + PR annotations | `codeql.yml` | added 2026-06-06; weekly cron + per-PR |
-| **govulncheck** | Go dependency vuln scan (reachability-based) | `ci.yml` → `backend-vuln` | added 2026-06-06; path-gated, in `ci-gate` |
+| **govulncheck** | Go dependency vuln scan (reachability-based) | `ci.yml` → `backend-vuln` | added 2026-06-06 |
 | **Dependabot** | Weekly update PRs + security alerts | `dependabot.yml` | added 2026-06-06; gomod + npm + github-actions |
 
 ## Why these three
@@ -30,7 +30,7 @@ version bumps. All GitHub-native, zero infra, free for public repos.
 - **SonarQube / SonarCloud** — declined 2026-06-06. Heavy overlap with
   golangci-lint + eslint for smell detection; the real adds (dashboard, dup
   detection, quality-gate) didn't justify a second coverage gate competing with
-  Codecov or a second required check competing with `ci-gate`. Self-host adds a
+  Codecov or another required check alongside the existing CI jobs. Self-host adds a
   server to maintain. Revisit only if we want the trend dashboard.
 
 ## Reassess before alpha
