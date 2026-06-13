@@ -41,6 +41,11 @@ type TimeDepositListItem struct {
 	// CostBasis is the principal directly — a TD ledger holds only the
 	// terminal Maturity transaction, never buys (issue #18).
 	CostBasis decimal.Decimal `json:"cost_basis"`
+	// Ledger summary for the row (issue #67). A TD ledger holds at most the
+	// terminal Maturity, so this is 0 or 1. LastTransactionDate is YYYY-MM-DD,
+	// nil when there are none.
+	TransactionCount    int     `json:"transaction_count"`
+	LastTransactionDate *string `json:"last_transaction_date"`
 }
 
 type CreateTimeDepositParams struct {
@@ -241,12 +246,21 @@ func (r *InvestmentRepo) ListTimeDeposits(ctx context.Context) ([]TimeDepositLis
 		snapByID[s.InvestmentID] = s
 	}
 
+	txns, err := r.q.ListInvestmentTransactionsByInvestmentIDs(ctx, ids)
+	if err != nil {
+		return nil, fmt.Errorf("list investment transactions: %w", err)
+	}
+	txnByID := groupTransactionsByInvestment(txns)
+
 	out := make([]TimeDepositListItem, 0, len(invs))
 	for _, x := range invs {
+		count, lastDate := transactionAggregates(txnByID[x.ID])
 		item := TimeDepositListItem{
-			Investment: x,
-			Details:    detailByID[x.ID],
-			CostBasis:  detailByID[x.ID].Principal,
+			Investment:          x,
+			Details:             detailByID[x.ID],
+			CostBasis:           detailByID[x.ID].Principal,
+			TransactionCount:    count,
+			LastTransactionDate: lastDate,
 		}
 		if s, ok := snapByID[x.ID]; ok {
 			s := s

@@ -18,6 +18,7 @@ import { isActiveStatus } from '@/lib/lifecycle'
 import { cn } from '@/lib/utils'
 import { RiskProfileBadge } from '@/components/RiskProfileBadge'
 import { maturityClass, maturityInfo } from '@/lib/maturity'
+import { TransactionActivityCell } from '@/components/TransactionActivityCell'
 import type { TimeDepositListItem } from '@/api/types'
 
 type Props = {
@@ -95,6 +96,10 @@ export function TimeDepositListRow({ item, onSelect }: Props) {
             <span className="text-muted-foreground">—</span>
           )}
         </TableCell>
+        <TransactionActivityCell
+          count={item.transaction_count}
+          lastDate={item.last_transaction_date}
+        />
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

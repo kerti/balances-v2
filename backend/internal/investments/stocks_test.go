@@ -146,6 +146,38 @@ func TestStockHandlers_List_CostBasis(t *testing.T) {
 		t.Fatalf("list length: want 1, got %d", len(list))
 	}
 	requireCostBasis(t, list[0].CostBasis, "1050000")
+
+	// Same ledger feeds the row's activity summary (issue #67): four
+	// transactions, latest dated 2026-03-02.
+	if list[0].TransactionCount != 4 {
+		t.Errorf("transaction_count: want 4, got %d", list[0].TransactionCount)
+	}
+	if list[0].LastTransactionDate == nil {
+		t.Fatalf("last_transaction_date: want 2026-03-02, got nil")
+	}
+	if *list[0].LastTransactionDate != "2026-03-02" {
+		t.Errorf("last_transaction_date: want 2026-03-02, got %s", *list[0].LastTransactionDate)
+	}
+}
+
+// TestStockHandlers_List_NoTransactions confirms a position with an empty
+// ledger reports a zero count and nil last-transaction date (issue #67).
+func TestStockHandlers_List_NoTransactions(t *testing.T) {
+	h := newHarness(t)
+	h.createStock(t, "Quiet stock")
+
+	rec := h.do(t, "GET", "/investments/stocks", nil)
+	requireStatus(t, rec, http.StatusOK)
+	list := decodeBody[[]repo.StockListItem](t, rec)
+	if len(list) != 1 {
+		t.Fatalf("list length: want 1, got %d", len(list))
+	}
+	if list[0].TransactionCount != 0 {
+		t.Errorf("transaction_count: want 0, got %d", list[0].TransactionCount)
+	}
+	if list[0].LastTransactionDate != nil {
+		t.Errorf("last_transaction_date: want nil, got %s", *list[0].LastTransactionDate)
+	}
 }
 
 func TestStockHandlers_Get(t *testing.T) {

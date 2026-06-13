@@ -210,6 +210,7 @@ export function MutualFundsScreen({ onSelect }: Props) {
                         dir={sortDir}
                         onSort={() => toggle('value')}
                       />
+                      <TableHead>{t('common:activity.header')}</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>

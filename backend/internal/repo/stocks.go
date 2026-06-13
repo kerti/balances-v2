@@ -29,6 +29,11 @@ type StockListItem struct {
 	// payload is self-contained — the headline P/L needs no per-position
 	// transaction fetch. See costBasisFromLedger.
 	CostBasis decimal.Decimal `json:"cost_basis"`
+	// TransactionCount / LastTransactionDate summarise the ledger for the row
+	// (issue #67). Both derive from the same batch already loaded for cost
+	// basis. LastTransactionDate is YYYY-MM-DD, nil when there are none.
+	TransactionCount    int     `json:"transaction_count"`
+	LastTransactionDate *string `json:"last_transaction_date"`
 }
 
 type CreateStockParams struct {
@@ -170,10 +175,14 @@ func (r *InvestmentRepo) ListStocks(ctx context.Context) ([]StockListItem, error
 
 	out := make([]StockListItem, 0, len(invs))
 	for _, x := range invs {
+		ledger := txnByID[x.ID]
+		count, lastDate := transactionAggregates(ledger)
 		item := StockListItem{
-			Investment: x,
-			Details:    detailByID[x.ID],
-			CostBasis:  costBasisFromLedger(txnByID[x.ID]),
+			Investment:          x,
+			Details:             detailByID[x.ID],
+			CostBasis:           costBasisFromLedger(ledger),
+			TransactionCount:    count,
+			LastTransactionDate: lastDate,
 		}
 		if s, ok := snapByID[x.ID]; ok {
 			s := s

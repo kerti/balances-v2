@@ -26,6 +26,10 @@ type GoldListItem struct {
 	// CostBasis is the avg-cost ledger replay (issue #18). See
 	// costBasisFromLedger.
 	CostBasis decimal.Decimal `json:"cost_basis"`
+	// Ledger summary for the row (issue #67). LastTransactionDate is
+	// YYYY-MM-DD, nil when there are none.
+	TransactionCount    int     `json:"transaction_count"`
+	LastTransactionDate *string `json:"last_transaction_date"`
 }
 
 type CreateGoldParams struct {
@@ -167,10 +171,14 @@ func (r *InvestmentRepo) ListGolds(ctx context.Context) ([]GoldListItem, error) 
 
 	out := make([]GoldListItem, 0, len(invs))
 	for _, x := range invs {
+		ledger := txnByID[x.ID]
+		count, lastDate := transactionAggregates(ledger)
 		item := GoldListItem{
-			Investment: x,
-			Details:    detailByID[x.ID],
-			CostBasis:  costBasisFromLedger(txnByID[x.ID]),
+			Investment:          x,
+			Details:             detailByID[x.ID],
+			CostBasis:           costBasisFromLedger(ledger),
+			TransactionCount:    count,
+			LastTransactionDate: lastDate,
 		}
 		if s, ok := snapByID[x.ID]; ok {
 			s := s

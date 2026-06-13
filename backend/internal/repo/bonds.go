@@ -34,6 +34,10 @@ type BondListItem struct {
 	CostBasis decimal.Decimal `json:"cost_basis"`
 	// OutstandingFace is the held nominal derived from the ledger (issue #27).
 	OutstandingFace decimal.Decimal `json:"outstanding_face"`
+	// Ledger summary for the row (issue #67). LastTransactionDate is
+	// YYYY-MM-DD, nil when there are none.
+	TransactionCount    int     `json:"transaction_count"`
+	LastTransactionDate *string `json:"last_transaction_date"`
 }
 
 type CreateBondParams struct {
@@ -226,11 +230,14 @@ func (r *InvestmentRepo) ListBonds(ctx context.Context) ([]BondListItem, error) 
 	out := make([]BondListItem, 0, len(invs))
 	for _, x := range invs {
 		ledger := txnByID[x.ID]
+		count, lastDate := transactionAggregates(ledger)
 		item := BondListItem{
-			Investment:      x,
-			Details:         detailByID[x.ID],
-			CostBasis:       costBasisFromLedger(ledger),
-			OutstandingFace: outstandingFaceFromLedger(ledger),
+			Investment:          x,
+			Details:             detailByID[x.ID],
+			CostBasis:           costBasisFromLedger(ledger),
+			OutstandingFace:     outstandingFaceFromLedger(ledger),
+			TransactionCount:    count,
+			LastTransactionDate: lastDate,
 		}
 		if s, ok := snapByID[x.ID]; ok {
 			s := s

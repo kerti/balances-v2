@@ -101,6 +101,12 @@
     "amount": "Nominal",
     "notes": "Catatan"
   },
+  "activity": {
+    "header": "Aktivitas",
+    "count_one": "{{count}} transaksi",
+    "count_other": "{{count}} transaksi",
+    "last": "terakhir {{date}}"
+  },
   "list": {
     "showInactive": "Tampilkan {{nounPlural}} non-aktif ({{count}})",
     "activeCount_one": "di {{count}} {{noun}} aktif",

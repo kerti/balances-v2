@@ -294,6 +294,10 @@ export type StockListItem = {
   // Avg-cost ledger replay folded into the list payload (issue #18) — the
   // headline P/L reads this instead of replaying transactions client-side.
   cost_basis: string
+  // Ledger summary for the row (issue #67). last_transaction_date is
+  // YYYY-MM-DD, null when there are none.
+  transaction_count: number
+  last_transaction_date: string | null
 }
 
 // Global fund-type taxonomy (issue #20): the four universal ICI/Morningstar
@@ -329,6 +333,10 @@ export type MutualFundListItem = {
   // Avg-cost ledger replay folded into the list payload (issue #18) — the
   // headline P/L reads this instead of replaying transactions client-side.
   cost_basis: string
+  // Ledger summary for the row (issue #67). last_transaction_date is
+  // YYYY-MM-DD, null when there are none.
+  transaction_count: number
+  last_transaction_date: string | null
 }
 
 export type GoldDetails = {
@@ -349,6 +357,10 @@ export type GoldListItem = {
   // Avg-cost ledger replay folded into the list payload (issue #18) — the
   // headline P/L reads this instead of replaying transactions client-side.
   cost_basis: string
+  // Ledger summary for the row (issue #67). last_transaction_date is
+  // YYYY-MM-DD, null when there are none.
+  transaction_count: number
+  last_transaction_date: string | null
 }
 
 export type BondType = 'govt_primary' | 'secondary_market'
@@ -385,6 +397,10 @@ export type BondListItem = {
   cost_basis: string
   // Held nominal derived from the ledger (issue #27).
   outstanding_face: string
+  // Ledger summary for the row (issue #67). last_transaction_date is
+  // YYYY-MM-DD, null when there are none.
+  transaction_count: number
+  last_transaction_date: string | null
 }
 
 export type RolloverPolicy =
@@ -428,6 +444,10 @@ export type TimeDepositListItem = {
   // Avg-cost ledger replay folded into the list payload (issue #18) — the
   // headline P/L reads this instead of replaying transactions client-side.
   cost_basis: string
+  // Ledger summary for the row (issue #67). last_transaction_date is
+  // YYYY-MM-DD, null when there are none.
+  transaction_count: number
+  last_transaction_date: string | null
 }
 
 // ----- investment transaction (M4.4) ------------------------------------

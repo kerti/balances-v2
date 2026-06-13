@@ -87,6 +87,20 @@ func outstandingFaceFromLedger(txns []db.InvestmentTransaction) decimal.Decimal 
 	return qty.Mul(bondFaceUnit)
 }
 
+// transactionAggregates summarises a position's ledger for list rows (issue
+// #67): the total transaction count and the most-recent transaction date as a
+// YYYY-MM-DD string (nil when the ledger is empty). txns MUST be ordered by
+// transaction_date ascending — ListInvestmentTransactionsByInvestmentIDs is —
+// so the last element is the latest. The date is formatted plain (no time
+// component) so list rows render a clean day without the storage timestamp.
+func transactionAggregates(txns []db.InvestmentTransaction) (int, *string) {
+	if len(txns) == 0 {
+		return 0, nil
+	}
+	last := txns[len(txns)-1].TransactionDate.Format("2006-01-02")
+	return len(txns), &last
+}
+
 // groupTransactionsByInvestment buckets a flat batch result by investment_id,
 // preserving the query's ascending date order within each bucket.
 func groupTransactionsByInvestment(txns []db.InvestmentTransaction) map[uuid.UUID][]db.InvestmentTransaction {

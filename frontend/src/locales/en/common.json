@@ -101,6 +101,12 @@
     "amount": "Amount",
     "notes": "Notes"
   },
+  "activity": {
+    "header": "Activity",
+    "count_one": "{{count}} transaction",
+    "count_other": "{{count}} transactions",
+    "last": "last {{date}}"
+  },
   "list": {
     "showInactive": "Show inactive {{nounPlural}} ({{count}})",
     "activeCount_one": "across {{count}} active {{noun}}",
