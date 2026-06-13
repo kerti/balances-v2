@@ -17,6 +17,7 @@ Last reviewed: 2026-06-13 (pre-alpha hardening, #70).
 | **CodeQL** | SAST for Go + TS/JS; Security tab + PR annotations | `codeql.yml` | added 2026-06-06; weekly cron + per-PR |
 | **govulncheck** | Go dependency vuln scan (reachability-based) | `ci.yml` → `backend-vuln` | added 2026-06-06 |
 | **Dependabot** | Weekly update PRs + security alerts | `dependabot.yml` | added 2026-06-06; gomod + npm + github-actions |
+| **SHA-pinned actions** | Third-party Actions pinned to commit SHA (supply-chain) | all `.github/workflows/*` | added 2026-06-13 (#70); `# vN` comment lets Dependabot bump pins |
 | **E2E (Playwright)** | Smoke gate per-PR + nightly full suite | `e2e.yml` → `e2e-run.yml` | added 2026-06-13 (#70); tiered via `{ tag: '@smoke' }`; offline harness (mock-oidc + `services: postgres`) |
 
 ## Why these three
@@ -38,15 +39,12 @@ version bumps. All GitHub-native, zero infra, free for public repos.
 
 Deferred items worth a second look once the app faces real users:
 
-1. **SHA-pin GitHub Actions.** Workflows use mutable tags (`@v6`). A compromised
-   tag runs in CI. Pin to commit SHA; Dependabot's github-actions ecosystem
-   then bumps the pins. Matches the supply-chain caution already in `ci.yml`.
-2. **gitleaks** — secret scanning in CI/history. Marginal if GitHub
+1. **gitleaks** — secret scanning in CI/history. Marginal if GitHub
    push-protection is enabled; cheap insurance for a money app.
-3. **Concurrency cancellation** — `cancel-in-progress` to stop paying for stale
+2. **Concurrency cancellation** — `cancel-in-progress` to stop paying for stale
    runs on rapid pushes. Pure cost hygiene. `e2e.yml` already does this; `ci.yml`
    and `codeql.yml` still open.
-4. **Container/Trivy scanning** — deferred with deployment; reassess when the
+3. **Container/Trivy scanning** — deferred with deployment; reassess when the
    deploy story lands.
 
 ## Setup notes / one-time actions
