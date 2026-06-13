@@ -304,6 +304,14 @@ export function GoldDetail({ investmentId, onBack }: Props) {
                     currency={gold.investment.native_currency}
                     priceHint={t('investments:gold.snapshotPriceHint')}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      latestSnapshot
+                        ? {
+                            quantity: latestSnapshot.quantity,
+                            price_per_unit: latestSnapshot.price_per_unit,
+                          }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={investmentImportTemplateUrl(gold.investment.id)}

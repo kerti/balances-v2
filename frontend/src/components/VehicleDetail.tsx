@@ -274,6 +274,11 @@ export function VehicleDetail({ assetId, onBack }: Props) {
                         snapshots,
                       })
                     }
+                    carryover={
+                      snapshots?.[0]
+                        ? { amount: snapshots[0].amount }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={importTemplateUrl(asset.id)}

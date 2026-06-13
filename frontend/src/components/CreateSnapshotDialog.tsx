@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { CopyPlus, Plus } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
@@ -42,12 +42,17 @@ type Props<TResult> = {
   // null when no suggestion applies. The Apply button is the only writer —
   // typing the amount manually is never overridden.
   suggest?: (yearMonth: string) => RevaluationSuggestion | null
+  // Latest snapshot's amount, when one exists. Drives the "Copy carryover"
+  // helper (issue #60): formalises an unchanged month by pre-filling the
+  // amount and defaulting the dates to today. Null hides the helper.
+  carryover?: { amount: string } | null
 }
 
 export function CreateSnapshotDialog<TResult>({
   currency,
   mutation,
   suggest,
+  carryover,
 }: Props<TResult>) {
   const { t } = useTranslation('common')
   const [open, setOpen] = useState(false)
@@ -57,6 +62,20 @@ export function CreateSnapshotDialog<TResult>({
     as_of_date: '',
     description: '',
   })
+
+  // Seed the form from the last snapshot and open the dialog. The month resets
+  // to the current month and the statement date to today; the user edits the
+  // month if the carryover belongs to an earlier period.
+  function startCarryover() {
+    if (!carryover) return
+    setForm({
+      year_month: thisYearMonth(),
+      amount: carryover.amount,
+      as_of_date: todayDate(),
+      description: '',
+    })
+    setOpen(true)
+  }
 
   function close() {
     setOpen(false)
@@ -85,6 +104,18 @@ export function CreateSnapshotDialog<TResult>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+      {carryover && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={startCarryover}
+          data-testid="snapshot-carryover"
+        >
+          <CopyPlus className="mr-1 size-4" />
+          {t('snapshot.carryoverTrigger')}
+        </Button>
+      )}
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="mr-1 size-4" />

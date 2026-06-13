@@ -256,6 +256,11 @@ export function BankAccountDetail({ assetId, onBack }: Props) {
                   <CreateSnapshotDialog
                     currency={asset.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      snapshots?.[0]
+                        ? { amount: snapshots[0].amount }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={importTemplateUrl(asset.id)}

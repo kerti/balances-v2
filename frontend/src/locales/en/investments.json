@@ -78,6 +78,7 @@
   },
   "quantityPriceSnapshot": {
     "trigger": "New",
+    "carryoverTrigger": "Copy carryover",
     "createTitle": "Record monthly snapshot",
     "createDescription": "Enter the month-end quantity and price per unit. The total value is derived ({{currency}}).",
     "editTitle": "Edit snapshot",
@@ -92,6 +93,7 @@
   },
   "accruedInterestSnapshot": {
     "trigger": "New",
+    "carryoverTrigger": "Copy carryover",
     "createTitle": "Record monthly snapshot",
     "createDescription": "Enter the month-end total value and the accrued interest component ({{currency}}). Total already includes accrued.",
     "editTitle": "Edit snapshot",

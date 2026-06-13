@@ -304,6 +304,14 @@ export function StockDetail({ investmentId, onBack }: Props) {
                   <CreateQuantityPriceSnapshotDialog
                     currency={stock.investment.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      latestSnapshot
+                        ? {
+                            quantity: latestSnapshot.quantity,
+                            price_per_unit: latestSnapshot.price_per_unit,
+                          }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={investmentImportTemplateUrl(stock.investment.id)}

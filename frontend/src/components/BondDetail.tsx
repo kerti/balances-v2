@@ -371,6 +371,15 @@ export function BondDetail({ investmentId, onBack }: Props) {
                   <CreateAccruedInterestSnapshotDialog
                     currency={bond.investment.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      bondLatestSnapshot
+                        ? {
+                            amount: bondLatestSnapshot.amount,
+                            accrued_interest:
+                              bondLatestSnapshot.accrued_interest,
+                          }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={investmentImportTemplateUrl(bond.investment.id)}

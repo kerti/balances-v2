@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { CopyPlus, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,9 @@ type Props<TResult> = {
     unknown,
     CreateInvestmentSnapshotPayload
   >
+  // Latest snapshot's total value + accrued, when one exists. Drives the "Copy
+  // carryover" helper (issue #60). Null hides the helper.
+  carryover?: { amount: string; accrued_interest: string | null } | null
 }
 
 function emptyForm() {
@@ -57,12 +60,27 @@ function derivePrincipal(amount: string, accrued: string): string | null {
 export function CreateAccruedInterestSnapshotDialog<TResult>({
   currency,
   mutation,
+  carryover,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
   const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest)
+
+  // Seed the form from the last snapshot and open the dialog. Month resets to
+  // the current month and the statement date to today.
+  function startCarryover() {
+    if (!carryover) return
+    setForm({
+      year_month: thisYearMonth(),
+      amount: carryover.amount,
+      accrued_interest: carryover.accrued_interest ?? '0',
+      as_of_date: todayDate(),
+      description: '',
+    })
+    setOpen(true)
+  }
 
   function close() {
     setOpen(false)
@@ -89,6 +107,18 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+      {carryover && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={startCarryover}
+          data-testid="snapshot-carryover"
+        >
+          <CopyPlus className="mr-1 size-4" />
+          {t('investments:accruedInterestSnapshot.carryoverTrigger')}
+        </Button>
+      )}
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="mr-1 size-4" />

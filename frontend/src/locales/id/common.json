@@ -110,6 +110,7 @@
   },
   "snapshot": {
     "trigger": "Baru",
+    "carryoverTrigger": "Salin terakhir",
     "createTitle": "Catat snapshot bulanan",
     "createDescription": "Masukkan nilai akhir bulan. Mata uang dikunci ke mata uang asal posisi ({{currency}}).",
     "editTitle": "Ubah snapshot",

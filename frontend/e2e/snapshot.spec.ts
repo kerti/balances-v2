@@ -36,6 +36,19 @@ test('bank account snapshot create → edit → delete', async ({ page }) => {
   const row = page.getByRole('row', { name: new RegExp(desc) })
   await expect(row).toBeVisible()
 
+  // --- Copy carryover (issue #60): prefills the amount from the last
+  //     snapshot and defaults the statement date to today. Open it, assert the
+  //     prefill, then cancel without writing. ---
+  await page.getByTestId('snapshot-carryover').click()
+  const carryDialog = page.getByRole('dialog')
+  await expect(carryDialog.getByLabel('Amount (IDR)')).toHaveValue('12500000')
+  const today = new Date()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  await expect(
+    carryDialog.getByLabel('Statement date (optional)'),
+  ).toHaveValue(todayStr)
+  await carryDialog.getByRole('button', { name: 'Cancel' }).click()
+
   // --- Edit the snapshot (change the description) ---
   await row.getByRole('button', { name: 'Snapshot actions' }).click()
   await page.getByRole('menuitem', { name: 'Edit' }).click()

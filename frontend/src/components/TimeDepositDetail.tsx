@@ -446,6 +446,14 @@ export function TimeDepositDetail({
                   <CreateAccruedInterestSnapshotDialog
                     currency={td.investment.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      snapshots?.[0]
+                        ? {
+                            amount: snapshots[0].amount,
+                            accrued_interest: snapshots[0].accrued_interest,
+                          }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={investmentImportTemplateUrl(td.investment.id)}

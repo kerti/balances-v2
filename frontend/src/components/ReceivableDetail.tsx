@@ -248,6 +248,11 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
                   <CreateSnapshotDialog
                     currency={receivable.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      snapshots?.[0]
+                        ? { amount: snapshots[0].amount }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={receivableImportTemplateUrl(receivable.id)}

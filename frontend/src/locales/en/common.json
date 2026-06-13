@@ -110,6 +110,7 @@
   },
   "snapshot": {
     "trigger": "New",
+    "carryoverTrigger": "Copy carryover",
     "createTitle": "Record monthly snapshot",
     "createDescription": "Enter the month-end value. Currency is locked to the position's native currency ({{currency}}).",
     "editTitle": "Edit snapshot",

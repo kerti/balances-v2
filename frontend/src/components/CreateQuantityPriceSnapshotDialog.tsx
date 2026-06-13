@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { CopyPlus, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import type { UseMutationResult } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,10 @@ type Props<TResult> = {
     unknown,
     CreateInvestmentSnapshotPayload
   >
+  // Latest snapshot's quantity + price, when one exists. Drives the "Copy
+  // carryover" helper (issue #60): an unchanged month keeps the same factors,
+  // so the derived total carries over too. Null hides the helper.
+  carryover?: { quantity: string | null; price_per_unit: string | null } | null
 }
 
 function emptyForm() {
@@ -61,12 +65,27 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
   currency,
   priceHint,
   mutation,
+  carryover,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
   const derivedAmount = deriveAmount(form.quantity, form.price_per_unit)
+
+  // Seed the form from the last snapshot's factors and open the dialog. Month
+  // resets to the current month and the statement date to today.
+  function startCarryover() {
+    if (!carryover) return
+    setForm({
+      year_month: thisYearMonth(),
+      quantity: carryover.quantity ?? '',
+      price_per_unit: carryover.price_per_unit ?? '',
+      as_of_date: todayDate(),
+      description: '',
+    })
+    setOpen(true)
+  }
 
   function close() {
     setOpen(false)
@@ -94,6 +113,18 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+      {carryover && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={startCarryover}
+          data-testid="snapshot-carryover"
+        >
+          <CopyPlus className="mr-1 size-4" />
+          {t('investments:quantityPriceSnapshot.carryoverTrigger')}
+        </Button>
+      )}
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="mr-1 size-4" />

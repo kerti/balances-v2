@@ -298,6 +298,11 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
                   <CreateSnapshotDialog
                     currency={liability.native_currency}
                     mutation={createSnapshotMutation}
+                    carryover={
+                      snapshots?.[0]
+                        ? { amount: snapshots[0].amount }
+                        : null
+                    }
                   />
                   <ImportSnapshotsDialog
                     templateUrl={liabilityImportTemplateUrl(liability.id)}
