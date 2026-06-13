@@ -215,7 +215,7 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 		return nil, err
 	}
 
-	txn, err := r.q.UpdateInvestmentTransaction(ctx, db.UpdateInvestmentTransactionParams{
+	updateParams := db.UpdateInvestmentTransactionParams{
 		ID:                   p.TransactionID,
 		HouseholdID:          hid,
 		TransactionDate:      p.TransactionDate,
@@ -229,12 +229,80 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 		PrincipalDisposition: p.PrincipalDisposition,
 		InterestDisposition:  p.InterestDisposition,
 		UpdatedBy:            &user,
-	})
+	}
+
+	// Non-maturity transactions carry no position-level state, so a plain
+	// single-row update is the whole story.
+	if existing.TransactionType != TxnTypeMaturity {
+		txn, err := r.q.UpdateInvestmentTransaction(ctx, updateParams)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return nil, ErrNotFound
+			}
+			return nil, fmt.Errorf("update investment transaction: %w", err)
+		}
+		return &txn, nil
+	}
+
+	// Maturity is terminal: at create time it flipped the position to 'matured',
+	// set terminated_at to the maturity date, and wrote a 0-value close snapshot
+	// at the maturity month (see CreateInvestmentTransaction). Editing the date
+	// must drag all three along with it, atomically — otherwise the position's
+	// terminated_at and the close snapshot drift to a stale month (issue #58).
+	// inv supplies the subtype + native currency the close-snapshot shape needs.
+	inv, err := r.q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: existing.InvestmentID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get investment for maturity edit: %w", err)
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	txn, err := qtx.UpdateInvestmentTransaction(ctx, updateParams)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("update investment transaction: %w", err)
+	}
+
+	// Re-assert the terminal state at the (possibly new) maturity date. Status is
+	// already 'matured'; this is idempotent on status and only moves terminated_at.
+	newDate := p.TransactionDate
+	if _, err := qtx.UpdateInvestmentLifecycle(ctx, db.UpdateInvestmentLifecycleParams{
+		ID:           existing.InvestmentID,
+		HouseholdID:  hid,
+		Status:       StatusMatured,
+		TerminatedAt: &newDate,
+		UpdatedBy:    &user,
+	}); err != nil {
+		return nil, fmt.Errorf("re-flip investment to matured: %w", err)
+	}
+
+	// Relocate the 0-value close snapshot when the maturity month moved: drop the
+	// old month's close (deleteCloseSnapshot only removes the zero-amount row, so
+	// a real snapshot the user kept that month survives), then re-assert it at the
+	// new month. Same month: the upsert just refreshes as_of_date. These are the
+	// same helpers the lifecycle terminate/un-terminate path uses.
+	oldDate := existing.TransactionDate
+	if oldDate.Year() != newDate.Year() || oldDate.Month() != newDate.Month() {
+		if err := deleteCloseSnapshot(ctx, qtx, existing.InvestmentID, oldDate, user, hid); err != nil {
+			return nil, err
+		}
+	}
+	if err := upsertCloseSnapshot(ctx, qtx, existing.InvestmentID, inv.Subtype, inv.NativeCurrency, newDate, user, hid); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
 	}
 	return &txn, nil
 }
