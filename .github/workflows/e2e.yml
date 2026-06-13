@@ -1,0 +1,47 @@
+# E2E in CI (issue #70), tiered so the suite can grow without slowing PRs:
+#
+#   smoke (@smoke-tagged specs) -> per-PR + push-to-main merge gate. Fast; blocks.
+#   full  (entire suite)        -> nightly cron + manual. Catches regressions
+#                                  without gating merges.
+#
+# Promote a spec into the gate by adding { tag: '@smoke' } to its test() call.
+# Both tiers reuse e2e-run.yml; the only difference is the grep. See ADR-0024 for
+# the offline e2e harness (mock-oidc + seeded balances_e2e DB) and docs/ci-tooling.md.
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    # Nightly 05:00 UTC — full suite against main.
+    - cron: '0 5 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Cancel superseded runs on rapid pushes — e2e is the most expensive suite, so
+# stale runs are the most worth dropping.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: E2E
+    # Merge gate: PRs, pushes to main, and manual runs. Not on schedule — full covers it.
+    if: github.event_name != 'schedule'
+    uses: ./.github/workflows/e2e-run.yml
+    with:
+      tier: smoke
+      grep: --grep @smoke
+
+  full:
+    name: E2E
+    # Whole suite: nightly + on demand. Too slow to gate every PR.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/e2e-run.yml
+    with:
+      tier: full

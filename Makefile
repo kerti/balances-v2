@@ -192,7 +192,26 @@ e2e: e2e-db-create e2e-seed
 	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
 	    sleep 0.2; \
 	  done; \
-	  cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e
+	  cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS)
+
+# CI variant of `e2e` (issue #70). Differs only in the DB-create step: CI runs a
+# GitHub `services: postgres` reachable on localhost — there is no docker
+# container to `docker exec` into — and the balances_e2e DB is created by the
+# service's POSTGRES_DB, so e2e-db-create is skipped. E2E_ARGS forwards Playwright
+# flags, e.g. `make e2e-ci E2E_ARGS='--grep @smoke'` for the per-PR smoke gate.
+e2e-ci: e2e-seed-ci
+	@cd backend && go build -o /tmp/balances-e2e ./cmd/balances
+	@/tmp/balances-e2e mock-oidc & \
+	  MOCK_PID=$$!; \
+	  trap "kill $$MOCK_PID 2>/dev/null" EXIT; \
+	  for i in $$(seq 1 50); do \
+	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
+	    sleep 0.2; \
+	  done; \
+	  cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS)
+
+e2e-seed-ci:
+	@cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e
 
 e2e-mock-oidc:
 	@cd backend && go run ./cmd/balances mock-oidc

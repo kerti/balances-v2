@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test'
 // Proves the session-injection harness end-to-end: the storageState cookie is
 // accepted by the real SessionMiddleware, so the app renders authenticated as
 // Alice (the seeded fixture user) instead of the sign-in screen. See ADR-0024.
-test('injected session renders the authenticated shell as Alice', async ({
+test('injected session renders the authenticated shell as Alice', { tag: '@smoke' }, async ({
   page,
 }) => {
   await page.goto('/')
