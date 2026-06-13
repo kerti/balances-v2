@@ -64,6 +64,7 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"PositionNotActive", errs.ErrPositionNotActive, http.StatusConflict, CodePositionNotActive},
 		{"TagNameExists", errs.ErrTagNameExists, http.StatusConflict, CodeTagNameExists},
 		{"InvalidRolloverLink", errs.ErrInvalidRolloverLink, http.StatusConflict, CodeInvalidRolloverLink},
+		{"SnapshotDateOutsideMonth", errs.ErrSnapshotDateOutsideMonth, http.StatusBadRequest, CodeSnapshotDateOutsideMonth},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
