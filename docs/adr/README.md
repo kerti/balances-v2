@@ -1,6 +1,6 @@
 # ADR index
 
-One line per decision so you can pick which to open without reading all 32. Read the full ADR before
+One line per decision so you can pick which to open without reading all 33. Read the full ADR before
 touching the area it governs.
 
 | ADR | Decision | Touches |
@@ -37,3 +37,4 @@ touching the area it governs.
 | [0030](0030-hosting-and-deployment-for-alpha.md) | Single-origin Fly app + Neon + Cloudflare DNS; tag→deploy pipeline | hosting, deploy |
 | [0031](0031-baseline-migration-squash-at-alpha.md) | Squash pre-alpha migrations into one baseline at alpha | migrations |
 | [0032](0032-toast-feedback-for-buttonless-autosaves.md) | Toast feedback for buttonless autosaves | frontend UX |
+| [0033](0033-versioning-the-upgrade-contract-and-migration-immutability.md) | SemVer = machine upgrade contract (not the "Balances" brand); `1.0.0` first prod; migration immutability + squash rules; majors invisible to pipeline | versioning, release, migrations |

@@ -49,7 +49,9 @@ Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
   wire the `cloudflared` dev-tunnel (`make dev-tunnel`), document DB backup/restore (Neon branch +
   `pg_dump`), and the deferred security items (#70: e2e-in-CI, SHA-pin actions, gitleaks).
 - **demo / production** — stand up when a beta/RC exists; same image, add Cloudflare *in front*
-  (proxied) for CDN/WAF (ADR-0030).
+  (proxied) for CDN/WAF (ADR-0030). First prod = `v1.0.0`; SemVer = operator upgrade contract, not the
+  "Balances" brand; migrations immutable from `1.0.0` (ADR-0033). Self-host compose stack is a
+  `1.0.0` blocker (#116).
 
 **Deploying:** push a SemVer tag — `v0.6.0-alpha.N` → `preview` (auto). `deploy.yml` routes by tag and
 runs `flyctl deploy` (builds the SPA+API image, `goose up` via `release_command`, rolls out). Backend
