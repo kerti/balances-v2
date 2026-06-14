@@ -16,6 +16,7 @@ import (
 // faking the OAuth exchange. handleCallback's HTTP-shaped wiring stays
 // uncovered until the exchanger-DI refactor (deferred).
 
+// covers: INV-AUTH-05
 func TestCreateFounder(t *testing.T) {
 	h := newAuthHarness(t)
 
@@ -48,6 +49,7 @@ func TestCreateFounder(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-06, INV-AUTH-07, INV-AUTH-08
 func TestBootstrapNewUser(t *testing.T) {
 	t.Run("no invite token creates a founder", func(t *testing.T) {
 		h := newAuthHarness(t)

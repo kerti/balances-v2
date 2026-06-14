@@ -22,6 +22,7 @@ func callbackRequest(state, code string) *http.Request {
 	return req
 }
 
+// covers: INV-AUTH-02
 func TestHandleCallback_GuardClauses(t *testing.T) {
 	h := newAuthHarness(t)
 	// Stub the exchanger so accidental fall-through doesn't reach Google.
@@ -141,6 +142,7 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-05
 func TestHandleCallback_NewFounder(t *testing.T) {
 	h := newAuthHarness(t)
 	const wantPicture = "https://lh3.googleusercontent.com/a/founder.jpg"
@@ -178,6 +180,7 @@ func TestHandleCallback_NewFounder(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-07
 func TestHandleCallback_InvitedUser(t *testing.T) {
 	h := newAuthHarness(t)
 	token := mustSeedInvitation(t, h, "invited2@example.com", time.Now().Add(24*time.Hour))
@@ -218,6 +221,7 @@ func TestHandleCallback_InvitedUser(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-06
 func TestHandleCallback_InvitationError(t *testing.T) {
 	h := newAuthHarness(t)
 	h.installStubOAuth(&googleClaims{

@@ -116,19 +116,43 @@ maturity path of `internal/repo/investment_transactions.go`.
 
 ## Zone: AUTH
 
-> _Seeded next — the other half of the access-control threat model. TENANCY
-> guards **which rows** an authenticated household sees; AUTH guards **who you
-> are** at the door, and establishes the `household_id` every TENANCY filter
-> then trusts. A break here is the same finance leak TENANCY prevents, entered
-> one layer earlier. Candidate invariants (ADR-0017): an unauthenticated request
-> is rejected by `RequireAuth` (401) before any handler runs; the OAuth `state`
-> is random and must match between start and callback (CSRF guard, `randomState`);
-> session IDs are random/opaque, cookies are HttpOnly/Secure, and a logout clears
-> the session; an invitation token is random, single-use, and expiring, and
-> accepting one binds the new user to **only** the inviting household
-> (`bootstrapNewUser`); the founder-bootstrap path creates its own household. Code
-> lives in `internal/auth/` — `session.go` (`RequireAuth`/`SessionMiddleware`),
-> `google.go` (OAuth), `invitations.go`, `handlers.go` (callback + bootstrap).
-> Existing tests `session_test.go`, `callback_test.go`, `invitations_test.go`,
-> `bootstrap_test.go`, `handlers_test.go` are the annotation targets. Fill this
-> table when seeding the zone._
+The other half of the access-control threat model. TENANCY guards **which rows**
+an authenticated household sees; AUTH guards **who you are** at the door, and
+establishes the `household_id` every TENANCY filter then trusts. A break here is
+the same finance leak TENANCY prevents, entered one layer earlier. Two security
+hinges: the OAuth `state`/`session` cookies that authenticate a browser, and the
+invitation flow that decides which household a brand-new user joins — a forwarded
+invite link must never let an unintended Google account into someone else's
+household. Code lives in `internal/auth/`: `session.go`
+(`RequireAuth`/`SessionMiddleware`), `google.go` (OAuth + `randomState`),
+`invitations.go`, `handlers.go` (callback + `bootstrapNewUser`/`createFounder`).
+
+| ID | Invariant | Source | Severity |
+|----|-----------|--------|----------|
+| INV-AUTH-01 | An unauthenticated request to a protected route is rejected with 401 by `RequireAuth` before the handler runs | ADR-0017, ADR-0005 | Critical |
+| INV-AUTH-02 | The OAuth `state` is random and the callback rejects (400) any request whose `state` query param does not match the state cookie set at start (CSRF guard) | ADR-0017 | Critical |
+| INV-AUTH-03 | A session is identified by a random opaque cookie value (HttpOnly, SameSite=Lax, Secure in prod); an unknown or expired session never authenticates, and a valid one attaches the user and slides the TTL | ADR-0017 | Critical |
+| INV-AUTH-04 | Logout deletes the session row and clears the cookie, and is idempotent when no cookie is present | ADR-0017 | High |
+| INV-AUTH-05 | First sign-in with no matching `google_sub` and no invitation bootstraps a brand-new household for the founder | ADR-0017 | High |
+| INV-AUTH-06 | An invitation token is random, single-use, and expiring; an unknown, already-used, or expired token is rejected | ADR-0017 | Critical |
+| INV-AUTH-07 | Accepting a valid invitation binds the new user to **only** the inviting household (not a new one) and marks the invitation used | ADR-0017, ADR-0005 | Critical |
+| INV-AUTH-08 | Invitation acceptance requires the Google-supplied email to match `invited_email` (forwarded-link guard); a mismatch is rejected and leaves the invitation unconsumed | ADR-0017 | Critical |
+
+## Zone: SNAPSHOTS
+
+> _Seeded next — the valuation substrate beneath FINANCE. Every net-worth number
+> the report engine derives traces back to a position **snapshot** (the dated
+> value record, ADR-0006); FINANCE and LIFECYCLE both already *assume* its rules
+> on read (INV-FINANCE-03's "latest snapshot ≤ M", INV-LIFECYCLE-03/04's close
+> snapshot) — this zone guards them at the write/storage layer where they're
+> actually enforced. Candidate invariants: a snapshot soft-deletes rather than
+> hard-deletes (audit trail, ADR-0007); the engine's "latest value at-or-before
+> M" selection ignores soft-deleted rows; a correction (re-snapshot at the same
+> date) supersedes the prior value rather than double-counting; a snapshot's date
+> can't precede the position's creation. Cross-household isolation is already
+> INV-TENANCY-01/-06 — this zone is the **temporal/value** correctness, not the
+> tenancy cut. Code lives in the snapshot write paths of `internal/repo/` (e.g.
+> `assets.go`, `investments.go` value-update handlers) + the selection in
+> `monthly_reports_engine.go`. Survey existing `*_test.go` in `internal/repo/`
+> and `internal/assets|investments/` for annotation targets before writing new
+> ones. Fill this table when seeding the zone._

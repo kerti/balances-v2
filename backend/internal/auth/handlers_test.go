@@ -14,6 +14,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
 
+// covers: INV-AUTH-02
 func TestHandleStart(t *testing.T) {
 	h := newAuthHarness(t)
 
@@ -171,6 +172,7 @@ func TestHandleListHouseholdMembers(t *testing.T) {
 	})
 }
 
+// covers: INV-AUTH-04
 func TestHandleLogout(t *testing.T) {
 	h := newAuthHarness(t)
 

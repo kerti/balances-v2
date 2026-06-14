@@ -108,6 +108,7 @@ func TestHtmlEscape(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-06
 func TestRandomInvitationToken(t *testing.T) {
 	seen := make(map[string]bool, 16)
 	for range 16 {
@@ -125,6 +126,7 @@ func TestRandomInvitationToken(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-02
 func TestRandomState(t *testing.T) {
 	seen := make(map[string]bool, 16)
 	for range 16 {

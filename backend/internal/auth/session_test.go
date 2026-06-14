@@ -36,6 +36,7 @@ func TestWithUserAndUserFromContext(t *testing.T) {
 	})
 }
 
+// covers: INV-AUTH-01
 func TestRequireAuth(t *testing.T) {
 	called := false
 	handler := RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -75,6 +76,7 @@ func TestRequireAuth(t *testing.T) {
 // SessionMiddleware tests use a small probe handler that echoes whether a
 // user is in context (via status code) so we can verify ctx propagation
 // without rebuilding the full route tree.
+// covers: INV-AUTH-03
 func TestSessionMiddleware(t *testing.T) {
 	h := newAuthHarness(t)
 
@@ -202,6 +204,7 @@ func mustRandomSessionID(t *testing.T) string {
 	return id
 }
 
+// covers: INV-AUTH-03
 func TestRandomSessionID_UniqueAndNonEmpty(t *testing.T) {
 	seen := make(map[string]bool, 32)
 	for range 32 {
@@ -219,6 +222,7 @@ func TestRandomSessionID_UniqueAndNonEmpty(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-03
 func TestSessionCookieHelpers(t *testing.T) {
 	h := newAuthHarness(t)
 

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**36 / 36** invariants have at least one covering test.
+**44 / 44** invariants have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -44,3 +44,11 @@
 | INV-LIFECYCLE-05 | Editing a Maturity transaction's date re-syncs terminated_at and relocates the close snapshot, leaving exactly one | `backend/internal/repo/investment_maturity_edit_test.go` |
 | INV-LIFECYCLE-06 | No further transaction is accepted on a terminal (matured) position — rejected with 409 | `backend/internal/investments/lifecycle_test.go` |
 | INV-LIFECYCLE-07 | Rollover successor linkage: linking sets `rolled_from_investment_id` / the source resolves `rolled_to`; self-link and unknown source are rejected (the INV-FINANCE-12 read-side assumption) | `backend/internal/investments/time_deposits_test.go` |
+| INV-AUTH-01 | An unauthenticated request to a protected route is rejected with 401 by `RequireAuth` before the handler runs | `backend/internal/auth/session_test.go` |
+| INV-AUTH-02 | The OAuth `state` is random and the callback rejects (400) any request whose `state` query param does not match the state cookie set at start (CSRF guard) | `backend/internal/auth/callback_test.go`<br>`backend/internal/auth/handlers_test.go`<br>`backend/internal/auth/invitations_test.go` |
+| INV-AUTH-03 | A session is identified by a random opaque cookie value (HttpOnly, SameSite=Lax, Secure in prod); an unknown or expired session never authenticates, and a valid one attaches the user and slides the TTL | `backend/internal/auth/session_test.go` |
+| INV-AUTH-04 | Logout deletes the session row and clears the cookie, and is idempotent when no cookie is present | `backend/internal/auth/handlers_test.go` |
+| INV-AUTH-05 | First sign-in with no matching `google_sub` and no invitation bootstraps a brand-new household for the founder | `backend/internal/auth/bootstrap_test.go`<br>`backend/internal/auth/callback_test.go` |
+| INV-AUTH-06 | An invitation token is random, single-use, and expiring; an unknown, already-used, or expired token is rejected | `backend/internal/auth/bootstrap_test.go`<br>`backend/internal/auth/callback_test.go`<br>`backend/internal/auth/invitations_test.go` |
+| INV-AUTH-07 | Accepting a valid invitation binds the new user to **only** the inviting household (not a new one) and marks the invitation used | `backend/internal/auth/bootstrap_test.go`<br>`backend/internal/auth/callback_test.go` |
+| INV-AUTH-08 | Invitation acceptance requires the Google-supplied email to match `invited_email` (forwarded-link guard); a mismatch is rejected and leaves the invitation unconsumed | `backend/internal/auth/bootstrap_test.go` |
