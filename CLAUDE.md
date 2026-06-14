@@ -22,4 +22,4 @@ Makefile-based run loop, the backend-restart-after-Go-edits gotcha, smoke-test r
 
 ### QA coverage matrix
 
-The app's must-hold invariants are catalogued with stable IDs in `docs/qa/invariants.md`; a test declares which it verifies via a `// covers: INV-...` annotation (same token in Go and TS). When you write a test for a catalogued invariant, add the annotation; when you establish a new invariant worth guarding, add a catalog row. `make qa-matrix` regenerates `docs/qa/COVERAGE.md` and reports uncovered invariants (advisory; `-strict` is the future CI gate).
+The app's must-hold invariants are catalogued with stable IDs in the per-zone files under `docs/qa/invariants/` (indexed by `docs/qa/README.md`; mechanism in `docs/qa/how-it-works.md`); a test declares which it verifies via a `// covers: INV-...` annotation (same token in Go and TS). When you write a test for a catalogued invariant, add the annotation; when you establish a new invariant worth guarding, add a catalog row. `make qa-matrix` regenerates the per-zone coverage under `docs/qa/coverage/` and reports uncovered invariants (advisory; `-strict` is the future CI gate).

@@ -93,7 +93,7 @@ in the Go suites described above — E2E does not take them over.
   creating fixture Households / Users / Positions. Tests don't repeat infrastructure code.
 - A "leak test" pattern is established early — realized as the `*_tenancy_test.go` files in
   `internal/repo/`, each asserting one resource's cross-Household isolation (catalogued as the
-  `INV-TENANCY-*` invariants in `docs/qa/invariants.md`).
+  `INV-TENANCY-*` invariants in `docs/qa/invariants/`).
 - `go-cmp` is added as a dev dependency.
 - Frontend tests run via `vitest run` and `vitest --watch`; CI runs the non-watch command.
 - The dev container (OrbStack on the user's machine) has Docker available, satisfying

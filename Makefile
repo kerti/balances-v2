@@ -66,7 +66,7 @@ help:
 	@echo "Workflow helpers (terse output; see docs/agents/dev.md):"
 	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
 	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
-	@echo "  qa-matrix               regenerate docs/qa/COVERAGE.md from invariant annotations"
+	@echo "  qa-matrix               regenerate docs/qa/coverage/ from invariant annotations"
 	@echo "  qa-gaps                 list within-zone test files that carry no covers: annotation"
 	@echo "  session-token           print a live session token for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
@@ -269,17 +269,17 @@ check:
 	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report 2>/tmp/balances-check-qa.log) | sed 's/^qa-matrix: //'; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
-# Regenerate docs/qa/COVERAGE.md from the `// covers: INV-...` annotations in the
-# test suite, joined against the docs/qa/invariants.md catalog. Advisory: prints
+# Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the
+# test suite, joined against the docs/qa/invariants/ catalog. Advisory: prints
 # uncovered invariants but does not fail. `-strict` (the future CI gate) makes an
-# uncovered invariant a non-zero exit. See docs/qa/invariants.md.
+# uncovered invariant a non-zero exit. See docs/qa/README.md.
 qa-matrix:
 	@cd backend && go run ./tools/qa-matrix
 
 # Advisory gap-finder: test files with no covers: annotation that sit in a
 # directory where another test does carry one — the likeliest within-zone
 # stragglers. Excludes wholly-unannotated dirs (uncatalogued zones, expected
-# blank). Does not rewrite COVERAGE.md. See docs/qa/invariants.md.
+# blank). Does not rewrite the coverage files. See docs/qa/README.md.
 qa-gaps:
 	@cd backend && go run ./tools/qa-matrix -gaps
 

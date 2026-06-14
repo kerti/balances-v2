@@ -1,10 +1,11 @@
-// Command qa-matrix joins the hand-authored QA invariant catalog
-// (docs/qa/invariants.md) against `// covers: INV-...` annotations scattered
-// across the Go + TypeScript test suites, regenerates docs/qa/COVERAGE.md, and
-// reports any invariant that no test claims to verify.
+// Command qa-matrix joins the hand-authored QA invariant catalog (the per-zone
+// files under docs/qa/invariants/) against `// covers: INV-...` annotations
+// scattered across the Go + TypeScript test suites, regenerates the per-zone
+// coverage files under docs/qa/coverage/ plus their index, and reports any
+// invariant that no test claims to verify.
 //
-// The catalog is the source of truth for *what must hold*; the coverage column
-// is computed here so it can never lie. Advisory by default (exit 0); -strict
+// The catalog is the source of truth for *what must hold*; the coverage files
+// are computed here so they can never lie. Advisory by default (exit 0); -strict
 // turns an uncovered invariant into a non-zero exit (the future CI gate).
 //
 //	cd backend && go run ./tools/qa-matrix          # regenerate + report
@@ -29,6 +30,10 @@ var (
 	// A coverage annotation: `// covers: INV-A, INV-B` (Go or TS, same token).
 	coversLine = regexp.MustCompile(`covers:\s*(INV-[A-Z0-9-]+(?:\s*,\s*INV-[A-Z0-9-]+)*)`)
 	invID      = regexp.MustCompile(`INV-[A-Z0-9-]+`)
+	// A zone catalog filename: NN-slug.md (the numeric prefix is the order).
+	zoneFile = regexp.MustCompile(`^(\d+)-(.+)\.md$`)
+	// The zone's title line: `# Zone: TENANCY`.
+	zoneTitle = regexp.MustCompile(`^#\s+Zone:\s*(.+?)\s*$`)
 )
 
 // skipDirs are never walked — generated output, deps, and build artifacts.
@@ -42,10 +47,18 @@ type invariant struct {
 	id, statement string
 }
 
+// zone is one catalog file: its output basename, display title, and the
+// invariant IDs it defines, in file order.
+type zone struct {
+	file  string // basename, e.g. "01-tenancy.md" — mirrored into coverage/
+	title string // display title, e.g. "TENANCY"
+	ids   []string
+}
+
 func main() {
 	root := flag.String("root", "", "repo root (default: nearest ancestor with a .git)")
 	strictFlag := flag.Bool("strict", false, "exit non-zero if any catalogued invariant is uncovered (the CI gate)")
-	reportFlag := flag.Bool("report", false, "print the summary only; don't rewrite COVERAGE.md (used by `make check`)")
+	reportFlag := flag.Bool("report", false, "print the summary only; don't rewrite the coverage files (used by `make check`)")
 	gapsFlag := flag.Bool("gaps", false, "also list test files that carry no `covers:` annotation but sit in a directory where another test does (within-zone stragglers)")
 	flag.Parse()
 
@@ -54,10 +67,10 @@ func main() {
 		fail(err)
 	}
 
-	catalogPath := filepath.Join(r, "docs", "qa", "invariants.md")
-	invs, order, err := parseCatalog(catalogPath)
+	catalogDir := filepath.Join(r, "docs", "qa", "invariants")
+	invs, zones, order, err := parseCatalog(catalogDir)
 	if err != nil {
-		fail(fmt.Errorf("read catalog %s: %w", catalogPath, err))
+		fail(fmt.Errorf("read catalog %s: %w", catalogDir, err))
 	}
 
 	coverage, err := scanCoverage(r)
@@ -82,12 +95,13 @@ func main() {
 		}
 	}
 
-	outPath := filepath.Join(r, "docs", "qa", "COVERAGE.md")
-	rel, _ := filepath.Rel(r, outPath)
+	outDir := filepath.Join(r, "docs", "qa", "coverage")
+	rel, _ := filepath.Rel(r, outDir)
+	rel = filepath.ToSlash(rel) + "/"
 	if *reportFlag {
 		rel = "(report-only, not written)"
-	} else if err := writeCoverage(outPath, invs, order, coverage, uncovered, orphans); err != nil {
-		fail(fmt.Errorf("write %s: %w", outPath, err))
+	} else if err := writeCoverage(outDir, invs, zones, order, coverage, uncovered, orphans); err != nil {
+		fail(fmt.Errorf("write %s: %w", outDir, err))
 	}
 
 	// Console summary.
@@ -197,31 +211,86 @@ func resolveRoot(explicit string) (string, error) {
 	}
 }
 
-// parseCatalog reads the markdown catalog, returning the invariants by ID and
-// the order they appear (so the generated matrix mirrors the catalog).
-func parseCatalog(path string) (map[string]invariant, []string, error) {
+// parseCatalog reads every NN-slug.md zone file under dir (in numeric-prefix
+// order), returning the invariants by ID, the zones in display order, and the
+// flat ID order (so the generated matrix mirrors the catalog).
+func parseCatalog(dir string) (map[string]invariant, []zone, []string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var files []string
+	for _, e := range entries {
+		if e.IsDir() || !zoneFile.MatchString(e.Name()) {
+			continue
+		}
+		files = append(files, e.Name())
+	}
+	sort.Strings(files) // numeric prefix => risk order
+
+	invs := map[string]invariant{}
+	var zones []zone
+	var order []string
+	for _, name := range files {
+		z, fileInvs, fileOrder, err := parseZoneFile(filepath.Join(dir, name))
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for id, inv := range fileInvs {
+			if _, dup := invs[id]; dup {
+				return nil, nil, nil, fmt.Errorf("duplicate invariant id %s in catalog", id)
+			}
+			invs[id] = inv
+		}
+		order = append(order, fileOrder...)
+		zones = append(zones, z)
+	}
+	return invs, zones, order, nil
+}
+
+// parseZoneFile reads one zone catalog file, returning its zone descriptor
+// (output basename + display title + ordered IDs) and the invariants it defines.
+func parseZoneFile(path string) (zone, map[string]invariant, []string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return zone{}, nil, nil, err
 	}
 	defer func() { _ = f.Close() }()
 
+	base := filepath.Base(path)
+	z := zone{file: base, title: deriveTitle(base)}
 	invs := map[string]invariant{}
 	var order []string
 	sc := bufio.NewScanner(f)
 	for sc.Scan() {
-		m := catalogRow.FindStringSubmatch(sc.Text())
+		line := sc.Text()
+		if m := zoneTitle.FindStringSubmatch(line); m != nil {
+			z.title = m[1]
+			continue
+		}
+		m := catalogRow.FindStringSubmatch(line)
 		if m == nil {
 			continue
 		}
 		id := m[1]
 		if _, dup := invs[id]; dup {
-			return nil, nil, fmt.Errorf("duplicate invariant id %s in catalog", id)
+			return zone{}, nil, nil, fmt.Errorf("duplicate invariant id %s in %s", id, base)
 		}
 		invs[id] = invariant{id: id, statement: m[2]}
 		order = append(order, id)
+		z.ids = append(z.ids, id)
 	}
-	return invs, order, sc.Err()
+	return z, invs, order, sc.Err()
+}
+
+// deriveTitle turns "01-tenancy.md" into "TENANCY" as a fallback when the file
+// carries no `# Zone:` heading.
+func deriveTitle(base string) string {
+	if m := zoneFile.FindStringSubmatch(base); m != nil {
+		return strings.ToUpper(m[2])
+	}
+	return base
 }
 
 // scanCoverage walks the repo for test files and maps each invariant ID to the
@@ -297,24 +366,102 @@ func coversInFile(path string) ([]string, error) {
 	return ids, sc.Err()
 }
 
-func writeCoverage(path string, invs map[string]invariant, order []string, coverage map[string][]string, uncovered, orphans []string) error {
+// writeCoverage regenerates docs/qa/coverage/: one file per zone that defines
+// invariants (mirroring the catalog basename), plus a README.md index with the
+// headline number, per-zone counts, and the uncovered/orphan findings.
+func writeCoverage(dir string, invs map[string]invariant, zones []zone, order []string, coverage map[string][]string, uncovered, orphans []string) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	// Drop stale generated zone files so a renamed/removed zone doesn't linger.
+	if err := pruneZoneFiles(dir, zones); err != nil {
+		return err
+	}
+
+	for _, z := range zones {
+		if len(z.ids) == 0 {
+			continue // a seeded-but-empty zone has nothing to cover yet
+		}
+		if err := os.WriteFile(filepath.Join(dir, z.file), []byte(renderZone(z, invs, coverage)), 0o644); err != nil {
+			return err
+		}
+	}
+	return os.WriteFile(filepath.Join(dir, "README.md"), []byte(renderIndex(zones, invs, order, coverage, uncovered, orphans)), 0o644)
+}
+
+// pruneZoneFiles removes generated NN-slug.md files in dir that no longer
+// correspond to a catalog zone (README.md is preserved — it's always rewritten).
+func pruneZoneFiles(dir string, zones []zone) error {
+	keep := map[string]bool{}
+	for _, z := range zones {
+		if len(z.ids) > 0 {
+			keep[z.file] = true
+		}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if e.IsDir() || !zoneFile.MatchString(e.Name()) || keep[e.Name()] {
+			continue
+		}
+		if err := os.Remove(filepath.Join(dir, e.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func renderZone(z zone, invs map[string]invariant, coverage map[string][]string) string {
+	covered := 0
+	for _, id := range z.ids {
+		if len(coverage[id]) > 0 {
+			covered++
+		}
+	}
+
 	var b strings.Builder
-	b.WriteString("# QA coverage matrix\n\n")
+	fmt.Fprintf(&b, "# Coverage: %s\n\n", z.title)
 	b.WriteString("<!-- GENERATED by `make qa-matrix` — do not edit by hand. -->\n")
-	b.WriteString("<!-- Rows come from docs/qa/invariants.md; the Covered-by column is\n")
+	fmt.Fprintf(&b, "<!-- Rows come from docs/qa/invariants/%s; the Covered-by column is\n", z.file)
 	b.WriteString("     computed from `// covers:` annotations in the test suite. -->\n\n")
-	fmt.Fprintf(&b, "**%d / %d** invariants have at least one covering test.\n\n",
-		len(order)-len(uncovered), len(order))
+	fmt.Fprintf(&b, "**%d / %d** invariants in this zone have at least one covering test.\n\n", covered, len(z.ids))
 
 	b.WriteString("| ID | Invariant | Covered by |\n")
 	b.WriteString("|----|-----------|------------|\n")
-	for _, id := range order {
-		files := coverage[id]
+	for _, id := range z.ids {
 		cell := "— **none**"
-		if len(files) > 0 {
+		if files := coverage[id]; len(files) > 0 {
 			cell = "`" + strings.Join(files, "`<br>`") + "`"
 		}
 		fmt.Fprintf(&b, "| %s | %s | %s |\n", id, invs[id].statement, cell)
+	}
+	return b.String()
+}
+
+func renderIndex(zones []zone, invs map[string]invariant, order []string, coverage map[string][]string, uncovered, orphans []string) string {
+	var b strings.Builder
+	b.WriteString("# QA coverage — index\n\n")
+	b.WriteString("<!-- GENERATED by `make qa-matrix` — do not edit by hand. -->\n")
+	b.WriteString("<!-- Rows come from docs/qa/invariants/; counts are computed from\n")
+	b.WriteString("     `// covers:` annotations in the test suite. -->\n\n")
+	fmt.Fprintf(&b, "**%d / %d** invariants have at least one covering test.\n\n", len(order)-len(uncovered), len(order))
+
+	b.WriteString("| Zone | Covered | Coverage |\n")
+	b.WriteString("|----|----|----|\n")
+	for _, z := range zones {
+		if len(z.ids) == 0 {
+			fmt.Fprintf(&b, "| %s | — seeded | — |\n", z.title)
+			continue
+		}
+		covered := 0
+		for _, id := range z.ids {
+			if len(coverage[id]) > 0 {
+				covered++
+			}
+		}
+		fmt.Fprintf(&b, "| %s | %d / %d | [%s](%s) |\n", z.title, covered, len(z.ids), z.title, z.file)
 	}
 
 	if len(uncovered) > 0 {
@@ -333,7 +480,7 @@ func writeCoverage(path string, invs map[string]invariant, order []string, cover
 		}
 	}
 
-	return os.WriteFile(path, []byte(b.String()), 0o644)
+	return b.String()
 }
 
 func fail(err error) {

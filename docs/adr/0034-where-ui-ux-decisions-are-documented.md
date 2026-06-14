@@ -8,7 +8,7 @@ behaviour enters the QA coverage matrix as catalogued invariants. This ADR sets 
 
 ## Why now
 
-The coverage matrix ([[adr-0021]], `docs/qa/invariants.md`) is growing a frontend/E2E story — the
+The coverage matrix ([[adr-0021]], `docs/qa/`) is growing a frontend/E2E story — the
 `covers:` token is language-agnostic and we will seed UI/E2E annotations per-invariant. Backend
 invariants derive from behavior ADRs (TENANCY from [[adr-0005]], FINANCE from [[adr-0008]], and so
 on); UI invariants need an equivalent documented basis to derive from, or they will be ad-hoc. And
@@ -39,9 +39,9 @@ the category so the next one knows it has a home.
 ### How UI behaviour enters the matrix
 
 A Presentation section or a UI-native ADR is the source of UI invariants exactly as a behavior ADR is
-the source of backend ones: catalogue them in `docs/qa/invariants.md` under the appropriate zone, and
-verify them with Playwright or vitest per the "Frontend & E2E coverage" rules already written there —
-minding the two wrinkles documented in that doc (Playwright is tiered: `@smoke` gates per-PR, the full
+the source of backend ones: catalogue them in the appropriate zone file under `docs/qa/invariants/`, and
+verify them with Playwright or vitest per the "Frontend & E2E coverage" rules in `docs/qa/how-it-works.md` —
+minding the two wrinkles documented there (Playwright is tiered: `@smoke` gates per-PR, the full
 suite runs nightly; vitest runs per-PR but isn't scanned by `qa-matrix` until its file filter is
 widened to `.test.ts`).
 
