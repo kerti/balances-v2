@@ -1,6 +1,5 @@
 import { Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { CircleUser } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -18,13 +17,7 @@ import {
 } from '@/components/ui/sidebar'
 import { routes } from '@/lib/routes'
 import { AppLogo } from '@/components/AppLogo'
-import { GitHubMark } from '@/components/icons/GitHubMark'
-import {
-  APP_VERSION,
-  DEPLOY_ENV,
-  MAINTAINER_URL,
-  REPO_URL,
-} from '@/lib/appInfo'
+import { AppInfo } from '@/components/AppInfo'
 
 // `labelKey` indexes into the `nav` namespace catalog rather than carrying the
 // EN string inline — keeps the structural NAV array translation-agnostic.
@@ -93,7 +86,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="px-2 py-1">
+        {/* Desktop only — on phones the top header already shows the logo, so
+            the drawer would double it up (issue #123). */}
+        <div className="hidden px-2 py-1 md:block">
           <AppLogo className="w-full h-auto" />
         </div>
       </SidebarHeader>
@@ -142,45 +137,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex flex-col gap-2 px-2 py-1 text-xs text-muted-foreground">
-          <div className="flex items-center justify-between gap-2">
-            <span data-testid="app-version" className="font-mono">
-              {APP_VERSION}
-            </span>
-            <span
-              data-testid="deploy-env"
-              className="rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
-            >
-              {t(`footer.deploy.${DEPLOY_ENV}`)}
-            </span>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <a
-              href={REPO_URL}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={t('footer.sourceCode')}
-              title={t('footer.sourceCode')}
-              data-testid="footer-link-github"
-              className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
-            >
-              <GitHubMark className="h-4 w-4" />
-              {t('footer.sourceCodeLabel')}
-            </a>
-            <a
-              href={MAINTAINER_URL}
-              target="_blank"
-              rel="noreferrer noopener"
-              aria-label={t('footer.website')}
-              title={t('footer.website')}
-              data-testid="footer-link-website"
-              className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
-            >
-              <CircleUser className="h-4 w-4" />
-              {t('footer.maintainerLabel')}
-            </a>
-          </div>
-        </div>
+        <AppInfo className="px-2 py-1" />
       </SidebarFooter>
     </Sidebar>
   )

@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { AppLogo } from '@/components/AppLogo'
+import { AppInfo } from '@/components/AppInfo'
 import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
 } from '@/components/ui/card'
 
@@ -22,6 +24,12 @@ export function SignInScreen() {
             <a href="/api/auth/google/start">{t('signIn.withGoogle')}</a>
           </Button>
         </CardContent>
+        {/* Same identity block as the sidebar footer (issue #123) so an
+            unauthenticated visitor can still see the version, deploy target,
+            and project/maintainer links. */}
+        <CardFooter className="border-t pt-4">
+          <AppInfo />
+        </CardFooter>
       </Card>
     </div>
   )
