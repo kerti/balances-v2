@@ -140,6 +140,7 @@ func decodeResp(t *testing.T, rec *httptest.ResponseRecorder) importcreate.Respo
 	return resp
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02
 func TestRun(t *testing.T) {
 	clean := buildWorkbook(t, detailRows(), twoSnapshotRows())
 
@@ -249,6 +250,7 @@ func TestRun(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-04
 func TestResolveSoleOwner(t *testing.T) {
 	ctx := context.Background()
 	id := uuid.New()
@@ -498,6 +500,7 @@ func stockSnaps() [][]string {
 	return [][]string{{"2026-01", "2026-01-31", "100", "9500", "IDR", "Jan"}}
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02
 func TestRunWithLedger(t *testing.T) {
 	buyDiv := [][]string{
 		{"buy", "2026-01-05", "IDR", "950000", "100", "9500", "", "", "", "", "buy"},

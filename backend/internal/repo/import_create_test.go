@@ -17,6 +17,7 @@ import (
 // convention: a household member's email resolves to their id (case-
 // insensitively), an unknown / cross-tenant email is "not found" rather than an
 // error.
+// covers: INV-IMPORT-04
 func TestLookupUserIDByEmail(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -61,6 +62,7 @@ func TestLookupUserIDByEmail(t *testing.T) {
 // TestLookupTagIDByName covers the inverse of the Detail-sheet tag convention:
 // a household Tag name resolves to its id; an unmatched / cross-tenant / blank
 // name returns (nil, nil) so the create-import leaves the position untagged.
+// covers: INV-IMPORT-04
 func TestLookupTagIDByName(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -125,6 +127,7 @@ func TestLookupTagIDByName(t *testing.T) {
 // TestCreateBankAccountWithSnapshots covers the commit path of create-import:
 // one transaction creates the position, assigns the resolved tag, and seeds
 // every snapshot.
+// covers: INV-IMPORT-03
 func TestCreateBankAccountWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

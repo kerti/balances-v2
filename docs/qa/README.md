@@ -24,4 +24,5 @@ prefix is that order.
 | AUTH | Who-you-are at the door + invitation binding (ADR-0017) | Critical/High | [catalog](invariants/04-auth.md) | [coverage](coverage/04-auth.md) |
 | SNAPSHOTS | Temporal/value correctness of the snapshot store beneath FINANCE (ADR-0006/0007) | Critical/High | [catalog](invariants/05-snapshots.md) | [coverage](coverage/05-snapshots.md) |
 | COST-BASIS | Avg-cost ledger replay (Go + frontend parity) beneath INV-FINANCE-08 (ADR-0023) | Critical/High | [catalog](invariants/06-cost-basis.md) | [coverage](coverage/06-cost-basis.md) |
-| IMPORT | _Seeded — bulk ingestion (snapshot import + create-with-snapshots fan-out)_ | — | [catalog](invariants/07-import.md) | — |
+| IMPORT | Bulk ingestion — preview/commit parity, all-or-nothing, fan-out atomicity (ADR-0022) | Critical/High | [catalog](invariants/07-import.md) | [coverage](coverage/07-import.md) |
+| BONDS | _Seeded — bond/TD valuation: ledger-derived outstanding face + coupon (ADR-0003)_ | — | [catalog](invariants/08-bonds.md) | — |

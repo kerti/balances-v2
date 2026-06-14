@@ -9,6 +9,7 @@ function makeFile(name: string, type = ''): File {
   return new File([new Uint8Array([1])], name, { type })
 }
 
+// covers: INV-IMPORT-06
 describe('isXlsxFile', () => {
   it('accepts a .xlsx by extension regardless of (often empty) MIME', () => {
     expect(isXlsxFile(makeFile('balances.xlsx'))).toBe(true)

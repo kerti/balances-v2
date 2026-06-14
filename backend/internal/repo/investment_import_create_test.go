@@ -28,6 +28,7 @@ func investmentRepoFor(t *testing.T) (*repo.InvestmentRepo, context.Context) {
 	return repo.NewInvestmentRepo(tdb.Pool), auth.WithUser(context.Background(), alice)
 }
 
+// covers: INV-IMPORT-03
 func TestCreateStockWithSnapshotsAndLedger_Aggregate(t *testing.T) {
 	r, ctx := investmentRepoFor(t)
 	qty := decimal.RequireFromString("100")
@@ -55,6 +56,7 @@ func TestCreateStockWithSnapshotsAndLedger_Aggregate(t *testing.T) {
 // A snapshot row carrying the wrong value-shape for the subtype (accrued_interest
 // on a quantity-price stock) is rejected by the seed's shape backstop, rolling
 // the whole create back.
+// covers: INV-IMPORT-02
 func TestCreateStockWithSnapshotsAndLedger_RejectsMismatchedSnapshotShape(t *testing.T) {
 	r, ctx := investmentRepoFor(t)
 	accrued := decimal.RequireFromString("1000")
@@ -103,6 +105,7 @@ func accruedSnap(month time.Month, amount, accrued string) repo.ImportInvestment
 // repo create-with-history method directly (the handler suite's cross-package
 // exercise doesn't count toward this package's coverage). Each seeds a snapshot
 // and a subtype-legal ledger.
+// covers: INV-IMPORT-03
 func TestCreateInvestmentWithSnapshotsAndLedger_PerSubtype(t *testing.T) {
 	qty := decimal.RequireFromString("100")
 	price := decimal.RequireFromString("9500")
@@ -259,6 +262,7 @@ func TestCreateTimeDepositWithSnapshotsAndLedger_TermBounds(t *testing.T) {
 
 // TestInvestmentRepo_LookupAndTagSeed covers the owner-email + tag-name lookups
 // and a tag actually assigned through the seed.
+// covers: INV-IMPORT-04
 func TestInvestmentRepo_LookupAndTagSeed(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -304,6 +308,7 @@ func ptrStrLit(s string) *string { return &s }
 
 // TestValidateSeedTransaction unit-tests the exported seed validator (pure, no
 // DB): the subtype→type matrix and the ADR-0023 column-combo shape.
+// covers: INV-COST-BASIS-04
 func TestValidateSeedTransaction(t *testing.T) {
 	qty := decimal.RequireFromString("100")
 	price := decimal.RequireFromString("9500")

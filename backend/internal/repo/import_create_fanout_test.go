@@ -25,6 +25,7 @@ func twoImportRows() []repo.ImportSnapshotRow {
 	}
 }
 
+// covers: INV-IMPORT-03
 func TestCreatePropertyWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -60,6 +61,7 @@ func TestCreatePropertyWithSnapshots(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-03
 func TestCreateVehicleWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -89,6 +91,7 @@ func TestCreateVehicleWithSnapshots(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-03
 func TestCreateLiabilityWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -125,6 +128,7 @@ func TestCreateLiabilityWithSnapshots(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-03
 func TestCreateReceivableWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -159,6 +163,7 @@ func TestCreateReceivableWithSnapshots(t *testing.T) {
 // to ids (the inverse of export). The AssetRepo copies are exercised by
 // import_create_test.go; these confirm the LiabilityRepo / ReceivableRepo
 // methods are wired to the same household-scoped tables.
+// covers: INV-IMPORT-04
 func TestFlatGroupLookups(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

@@ -94,6 +94,7 @@ func countBankAccounts(t *testing.T, h *handlerHarness) int {
 	return len(decodeBody[[]any](t, rec))
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02, INV-IMPORT-03, INV-IMPORT-04, INV-IMPORT-05
 func TestBankAccountHandlers_ImportCreate(t *testing.T) {
 	t.Run("preview validates without writing", func(t *testing.T) {
 		h := newHarness(t)

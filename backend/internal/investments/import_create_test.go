@@ -110,6 +110,7 @@ func countList(t *testing.T, h *handlerHarness, path string) int {
 	return len(decodeBody[[]any](t, rec))
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-03
 func TestInvestmentImportCreate_Stock(t *testing.T) {
 	qtyPrice := qtyPriceHeader
 	snaps := [][]string{
@@ -155,6 +156,7 @@ func TestInvestmentImportCreate_Stock(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-03
 func TestInvestmentImportCreate_MutualFundAndGold(t *testing.T) {
 	t.Run("mutual fund commits with buy + distribution", func(t *testing.T) {
 		h := newHarness(t)
@@ -213,6 +215,7 @@ func TestInvestmentImportCreate_MutualFundAndGold(t *testing.T) {
 // TestInvestmentImportCreate_OwnerAndTag exercises the two id-typed Detail
 // conventions: a sole_owner email resolved to a household member, and a tag
 // resolved by name — both seeded onto the new position.
+// covers: INV-IMPORT-04
 func TestInvestmentImportCreate_OwnerAndTag(t *testing.T) {
 	h := newHarness(t)
 	tag, err := repo.NewTagRepo(h.pool).CreateTag(auth.WithUser(context.Background(), h.user), "Brokerage", "#22c55e")
@@ -265,6 +268,7 @@ func TestInvestmentImportCreate_OwnerAndTag(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-02, INV-COST-BASIS-04
 func TestInvestmentImportCreate_FieldAndLedgerErrors(t *testing.T) {
 	qtyPrice := qtyPriceHeader
 
@@ -340,6 +344,7 @@ func bondDetail() [][]string {
 // last and legitimately matures the position with its 0-value close snapshot. The
 // bond case also proves the placement Buy on the ledger is seeded once (the import
 // path does not auto-seed, unlike CreateBond) and that a coupon survives.
+// covers: INV-IMPORT-03
 func TestInvestmentImportCreate_Maturity(t *testing.T) {
 	t.Run("bond matures with full ledger", func(t *testing.T) {
 		h := newHarness(t)
@@ -458,6 +463,7 @@ func TestInvestmentImportCreate_MaturityReconciliation(t *testing.T) {
 // TestInvestmentImportCreate_TransportErrors covers the shared readUpload guards
 // on an investment import endpoint: bad mode, missing file, and a non-spreadsheet
 // upload all 4xx without writing.
+// covers: INV-IMPORT-01
 func TestInvestmentImportCreate_TransportErrors(t *testing.T) {
 	h := newHarness(t)
 	good := buildCreateWorkbook(t, stockDetail(), qtyPriceHeader, nil, nil)
@@ -482,6 +488,7 @@ func TestInvestmentImportCreate_TransportErrors(t *testing.T) {
 // TestInvestmentImportCreate_UnknownTagUntagged: a tag name that matches no Tag
 // leaves the new position untagged (the create-import contract — an unmatched tag
 // is not an error).
+// covers: INV-IMPORT-04
 func TestInvestmentImportCreate_UnknownTagUntagged(t *testing.T) {
 	h := newHarness(t)
 	detail := append(stockDetail()[:0:0], stockDetail()...)
@@ -505,6 +512,7 @@ func TestInvestmentImportCreate_UnknownTagUntagged(t *testing.T) {
 // TestInvestmentImportCreate_RoundTrip exports a seeded stock then re-imports the
 // exported workbook, proving the export format round-trips back through the
 // create-from-list flow into an equivalent position + ledger.
+// covers: INV-IMPORT-05
 func TestInvestmentImportCreate_RoundTrip(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Round-trip stock")

@@ -126,6 +126,7 @@ func TestParse_HappyPath(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-05
 func TestParse_RowErrors(t *testing.T) {
 	parsed, errs := parse(t, [][]string{
 		{"2016-01", "", "notanumber", "", ""},     // row 2: bad amount
@@ -151,6 +152,7 @@ func TestParse_RowErrors(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-05
 func TestParse_DuplicateMonth(t *testing.T) {
 	parsed, errs := parse(t, [][]string{
 		{"2017-01", "", "100", "", ""},       // row 2: kept
@@ -165,6 +167,7 @@ func TestParse_DuplicateMonth(t *testing.T) {
 	}
 }
 
+// covers: INV-IMPORT-05
 func TestParse_BlankRowsSkipped(t *testing.T) {
 	parsed, errs := parse(t, [][]string{
 		{"2018-01", "", "100", "", ""},
@@ -182,6 +185,8 @@ func TestParse_BlankRowsSkipped(t *testing.T) {
 
 // TestRoundTrip proves the generated template is itself parseable and its
 // example row is valid — the format we emit is the format we accept.
+//
+// covers: INV-IMPORT-05
 func TestRoundTrip(t *testing.T) {
 	tpl, err := BuildTemplate(TemplateMeta{PositionName: "BCA Tabungan", DefaultCurrency: "IDR"})
 	if err != nil {
@@ -592,6 +597,7 @@ func sheetRows(t *testing.T, xlsx []byte, sheet string) [][]string {
 
 // TestParseDetail_Errors covers the no-Detail-sheet error path and the
 // keyless-row skip.
+// covers: INV-IMPORT-05
 func TestParseDetail_Errors(t *testing.T) {
 	t.Run("missing Detail sheet errors", func(t *testing.T) {
 		// A Snapshots-only workbook has no Detail sheet to read.
@@ -630,6 +636,7 @@ func TestParseDetail_Errors(t *testing.T) {
 // a built workbook round-trips back through ParseTransactions, a missing sheet
 // yields an empty ledger (not an error), blank currency defaults, and bad
 // cells (number/date/missing-required) surface per-row.
+// covers: INV-IMPORT-05
 func TestParseTransactions(t *testing.T) {
 	amt := decimalFromString(t, "5000000")
 	qty := decimalFromString(t, "100")

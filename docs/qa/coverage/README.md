@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**53 / 53** invariants have at least one covering test.
+**60 / 60** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -14,4 +14,5 @@
 | AUTH | 8 / 8 | [AUTH](04-auth.md) |
 | SNAPSHOTS | 5 / 5 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
-| IMPORT | — seeded | — |
+| IMPORT | 7 / 7 | [IMPORT](07-import.md) |
+| BONDS | — seeded | — |

@@ -66,6 +66,7 @@ func (h *handlerHarness) doUpload(t *testing.T, path string, xlsx []byte) *httpt
 
 var assetImportHeader = []string{"year_month", "as_of_date", "amount", "currency", "description"}
 
+// covers: INV-IMPORT-07
 func TestAssetHandlers_ImportTemplate(t *testing.T) {
 	h := newHarness(t)
 	parent := h.createBankAccount(t, "Template target")
@@ -93,6 +94,7 @@ func TestAssetHandlers_ImportTemplate(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02
 func TestAssetHandlers_ImportSnapshots(t *testing.T) {
 	h := newHarness(t)
 	parent := h.createBankAccount(t, "Import target")

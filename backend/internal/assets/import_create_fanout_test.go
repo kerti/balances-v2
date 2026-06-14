@@ -56,6 +56,7 @@ func jointVehicleDetail() [][]string {
 	}
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02, INV-IMPORT-03, INV-IMPORT-04, INV-IMPORT-05
 func TestPropertyHandlers_ImportCreate(t *testing.T) {
 	t.Run("preview validates without writing", func(t *testing.T) {
 		h := newHarness(t)
@@ -177,6 +178,7 @@ func TestPropertyHandlers_ImportCreate(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-02, INV-IMPORT-03, INV-IMPORT-04, INV-IMPORT-05
 func TestVehicleHandlers_ImportCreate(t *testing.T) {
 	t.Run("commit creates the vehicle and seeds snapshots", func(t *testing.T) {
 		h := newHarness(t)

@@ -67,6 +67,7 @@ func (h *handlerHarness) doUpload(t *testing.T, path string, xlsx []byte) *httpt
 // quantity_price shape: stock/mutual_fund/gold carry quantity + price_per_unit.
 var qtyPriceHeader = []string{"year_month", "as_of_date", "quantity", "price_per_unit", "currency", "description"}
 
+// covers: INV-IMPORT-07
 func TestInvestmentHandlers_ImportTemplate(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Template stock")
@@ -94,6 +95,7 @@ func TestInvestmentHandlers_ImportTemplate(t *testing.T) {
 	})
 }
 
+// covers: INV-IMPORT-01, INV-IMPORT-02
 func TestInvestmentHandlers_ImportSnapshots(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Import stock")

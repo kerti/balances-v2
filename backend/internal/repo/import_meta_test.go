@@ -18,6 +18,7 @@ import (
 // investments, its subtype) for an owned position, ErrNotFound for an unknown
 // id, and ErrNotFound for a position in another household — the ownership gate
 // that scopes the download template and the import ownership check.
+// covers: INV-IMPORT-07
 func TestImportMeta(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
