@@ -194,6 +194,7 @@ func TestTimeDepositHandlers_Update(t *testing.T) {
 	})
 }
 
+// covers: INV-LIFECYCLE-07
 func TestTimeDepositHandlers_LinkRolloverSuccessor(t *testing.T) {
 	h := newHarness(t)
 	source := h.createTimeDeposit(t, "Matured source")

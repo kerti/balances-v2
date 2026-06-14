@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**29 / 29** invariants have at least one covering test.
+**36 / 36** invariants have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -37,3 +37,10 @@
 | INV-FINANCE-15 | A foreign amount is converted at the latest rate ≤ M (carry-forward) and the rate is recorded in fx_rates_used | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-16 | A foreign currency with no rate ≤ M is excluded from net worth and flagged in missing_fx — never summed 1:1 | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-17 | With multi-currency off, amounts sum at face value — no conversion, missing_fx, or fx_rates_used | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-LIFECYCLE-01 | Lifecycle status is validated before the DB: group-defined enum + the status/terminated_at biconditional (active ⟺ no date; any terminal status ⟺ a date); violations are 400 | `backend/internal/assets/lifecycle_test.go` |
+| INV-LIFECYCLE-02 | A Maturity transaction flips the position to `matured` and sets terminated_at automatically | `backend/internal/investments/lifecycle_test.go`<br>`backend/internal/repo/investment_import_create_test.go` |
+| INV-LIFECYCLE-03 | An investment terminal flip writes a truthful 0-value close snapshot at the termination month (the INV-FINANCE-11/-13 read-side assumption) | `backend/internal/repo/investment_import_create_test.go`<br>`backend/internal/repo/investment_maturity_edit_test.go`<br>`backend/internal/repo/lifecycle_close_snapshot_test.go` |
+| INV-LIFECYCLE-04 | Reactivating a terminated investment (back to active) drops that close snapshot, so it carries its last real value, not 0 | `backend/internal/repo/lifecycle_close_snapshot_test.go` |
+| INV-LIFECYCLE-05 | Editing a Maturity transaction's date re-syncs terminated_at and relocates the close snapshot, leaving exactly one | `backend/internal/repo/investment_maturity_edit_test.go` |
+| INV-LIFECYCLE-06 | No further transaction is accepted on a terminal (matured) position — rejected with 409 | `backend/internal/investments/lifecycle_test.go` |
+| INV-LIFECYCLE-07 | Rollover successor linkage: linking sets `rolled_from_investment_id` / the source resolves `rolled_to`; self-link and unknown source are rejected (the INV-FINANCE-12 read-side assumption) | `backend/internal/investments/time_deposits_test.go` |

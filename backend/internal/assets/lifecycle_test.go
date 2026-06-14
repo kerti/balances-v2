@@ -11,6 +11,7 @@ import (
 // status, plus the bad-id / bad-json branches. The same handler shape is shared
 // verbatim by the liabilities/receivables/investments packages, so this stands
 // in for all four.
+// covers: INV-LIFECYCLE-01
 func TestAssetHandlers_Lifecycle(t *testing.T) {
 	h := newHarness(t)
 	parent := h.createBankAccount(t, "Lifecycle parent")

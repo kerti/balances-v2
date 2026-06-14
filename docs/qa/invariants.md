@@ -95,15 +95,40 @@ its rules are unit-tested without a container.
 
 ## Zone: LIFECYCLE
 
-> _Seeded next (the write-side twin of FINANCE): the position state machine of
-> ADR-0009, whose guarantees the report engine **assumes** on read. INV-FINANCE-11
-> /-12/-13 only hold if the repo actually writes them on mutation. Candidate
-> invariants: the status/terminated_at biconditional (active ⟺ no date, any
-> terminal status ⟺ a date); a terminal flip upserts a **truthful 0-value close
-> snapshot** at the termination month (the assumption #25 restored); an
-> un-terminate deletes that close snapshot; a rollover links the successor via
-> `rolled_from_investment_id`; an unknown status is rejected (400) before the DB.
-> Write-side code lives in `internal/repo/lifecycle.go` (`validatePositionLifecycle`,
-> `Update*Lifecycle`, `upsertCloseSnapshot`/`deleteCloseSnapshot`); existing tests
-> in `lifecycle_*_test.go` + `investment_maturity_edit_test.go` are the annotation
-> targets. Fill this table when seeding the zone._
+The write-side twin of FINANCE: the position state machine of ADR-0009, whose
+guarantees the report engine **assumes** on read. INV-FINANCE-11/-12/-13 only
+hold if the repo actually writes them on mutation — a terminated position must
+carry a truthful 0-value close snapshot, a maturity must flip status, a rollover
+must link its successor. A break here corrupts the derived return silently, the
+same failure mode as the FINANCE zone but introduced at the mutation rather than
+the calculation. Write-side code lives in `internal/repo/lifecycle.go` and the
+maturity path of `internal/repo/investment_transactions.go`.
+
+| ID | Invariant | Source | Severity |
+|----|-----------|--------|----------|
+| INV-LIFECYCLE-01 | Lifecycle status is validated before the DB: group-defined enum + the status/terminated_at biconditional (active ⟺ no date; any terminal status ⟺ a date); violations are 400 | ADR-0009 | Critical |
+| INV-LIFECYCLE-02 | A Maturity transaction flips the position to `matured` and sets terminated_at automatically | ADR-0009 | Critical |
+| INV-LIFECYCLE-03 | An investment terminal flip writes a truthful 0-value close snapshot at the termination month (the INV-FINANCE-11/-13 read-side assumption) | ADR-0009, ADR-0008 | Critical |
+| INV-LIFECYCLE-04 | Reactivating a terminated investment (back to active) drops that close snapshot, so it carries its last real value, not 0 | ADR-0009 | Critical |
+| INV-LIFECYCLE-05 | Editing a Maturity transaction's date re-syncs terminated_at and relocates the close snapshot, leaving exactly one | ADR-0009 | High |
+| INV-LIFECYCLE-06 | No further transaction is accepted on a terminal (matured) position — rejected with 409 | ADR-0009 | Critical |
+| INV-LIFECYCLE-07 | Rollover successor linkage: linking sets `rolled_from_investment_id` / the source resolves `rolled_to`; self-link and unknown source are rejected (the INV-FINANCE-12 read-side assumption) | ADR-0009 | High |
+
+## Zone: AUTH
+
+> _Seeded next — the other half of the access-control threat model. TENANCY
+> guards **which rows** an authenticated household sees; AUTH guards **who you
+> are** at the door, and establishes the `household_id` every TENANCY filter
+> then trusts. A break here is the same finance leak TENANCY prevents, entered
+> one layer earlier. Candidate invariants (ADR-0017): an unauthenticated request
+> is rejected by `RequireAuth` (401) before any handler runs; the OAuth `state`
+> is random and must match between start and callback (CSRF guard, `randomState`);
+> session IDs are random/opaque, cookies are HttpOnly/Secure, and a logout clears
+> the session; an invitation token is random, single-use, and expiring, and
+> accepting one binds the new user to **only** the inviting household
+> (`bootstrapNewUser`); the founder-bootstrap path creates its own household. Code
+> lives in `internal/auth/` — `session.go` (`RequireAuth`/`SessionMiddleware`),
+> `google.go` (OAuth), `invitations.go`, `handlers.go` (callback + bootstrap).
+> Existing tests `session_test.go`, `callback_test.go`, `invitations_test.go`,
+> `bootstrap_test.go`, `handlers_test.go` are the annotation targets. Fill this
+> table when seeding the zone._

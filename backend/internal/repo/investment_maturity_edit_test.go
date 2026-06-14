@@ -20,6 +20,7 @@ import (
 // it clears the #62 term bounds), then corrected to the true maturity date —
 // a correction that crosses a month boundary, which is what exercises the
 // close-snapshot relocation.
+// covers: INV-LIFECYCLE-03, INV-LIFECYCLE-05
 func TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -121,6 +122,7 @@ func TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot(t *testing.T
 // TestUpdateMaturityTransaction_SameMonthEdit verifies a within-month date
 // correction moves terminated_at but does not duplicate or strand the close
 // snapshot (the relocation is skipped; the upsert just refreshes it in place).
+// covers: INV-LIFECYCLE-05
 func TestUpdateMaturityTransaction_SameMonthEdit(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

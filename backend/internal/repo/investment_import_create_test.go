@@ -142,6 +142,7 @@ func TestCreateInvestmentWithSnapshotsAndLedger_PerSubtype(t *testing.T) {
 // repo level: a Maturity row (applied last) matures the bond and the 0-value
 // close snapshot overwrites the seeded snapshot in the maturity month. The
 // placement Buy is seeded once — the bond seed never auto-seeds it.
+// covers: INV-LIFECYCLE-02, INV-LIFECYCLE-03
 func TestCreateBondWithSnapshotsAndLedger_Maturity(t *testing.T) {
 	r, ctx := investmentRepoFor(t)
 	bond, err := r.CreateBondWithSnapshotsAndLedger(ctx, repo.CreateBondParams{
@@ -187,6 +188,7 @@ func TestCreateBondWithSnapshotsAndLedger_Maturity(t *testing.T) {
 
 // TestCreateTimeDepositWithSnapshotsAndLedger_Maturity: a TD's only ledger type
 // is Maturity, so a matured deposit round-trips with its single Maturity row.
+// covers: INV-LIFECYCLE-02
 func TestCreateTimeDepositWithSnapshotsAndLedger_Maturity(t *testing.T) {
 	r, ctx := investmentRepoFor(t)
 	td, err := r.CreateTimeDepositWithSnapshotsAndLedger(ctx, repo.CreateTimeDepositParams{

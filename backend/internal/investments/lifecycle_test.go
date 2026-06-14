@@ -10,6 +10,7 @@ import (
 // groups, fully exercised in the assets package) and — uniquely for
 // investments — the Maturity hard guard, where a Maturity transaction flips the
 // position to 'matured' and any further transaction is rejected with 409.
+// covers: INV-LIFECYCLE-02, INV-LIFECYCLE-06
 func TestInvestmentHandlers_Lifecycle(t *testing.T) {
 	h := newHarness(t)
 
