@@ -67,6 +67,7 @@ help:
 	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
 	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
 	@echo "  qa-matrix               regenerate docs/qa/COVERAGE.md from invariant annotations"
+	@echo "  qa-gaps                 list within-zone test files that carry no covers: annotation"
 	@echo "  session-token           print a live session token for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
 
@@ -274,6 +275,13 @@ check:
 # uncovered invariant a non-zero exit. See docs/qa/invariants.md.
 qa-matrix:
 	@cd backend && go run ./tools/qa-matrix
+
+# Advisory gap-finder: test files with no covers: annotation that sit in a
+# directory where another test does carry one — the likeliest within-zone
+# stragglers. Excludes wholly-unannotated dirs (uncatalogued zones, expected
+# blank). Does not rewrite COVERAGE.md. See docs/qa/invariants.md.
+qa-gaps:
+	@cd backend && go run ./tools/qa-matrix -gaps
 
 # Print one live session token (newest, unexpired) for curl smoke tests against
 # authenticated endpoints. Empty result → non-zero exit with a hint on stderr.

@@ -9,6 +9,7 @@
 //
 //	cd backend && go run ./tools/qa-matrix          # regenerate + report
 //	cd backend && go run ./tools/qa-matrix -strict  # also fail on a gap
+//	cd backend && go run ./tools/qa-matrix -gaps    # also list within-zone unannotated tests
 package main
 
 import (
@@ -45,6 +46,7 @@ func main() {
 	root := flag.String("root", "", "repo root (default: nearest ancestor with a .git)")
 	strictFlag := flag.Bool("strict", false, "exit non-zero if any catalogued invariant is uncovered (the CI gate)")
 	reportFlag := flag.Bool("report", false, "print the summary only; don't rewrite COVERAGE.md (used by `make check`)")
+	gapsFlag := flag.Bool("gaps", false, "also list test files that carry no `covers:` annotation but sit in a directory where another test does (within-zone stragglers)")
 	flag.Parse()
 
 	r, err := resolveRoot(*root)
@@ -97,9 +99,80 @@ func main() {
 		fmt.Printf("  ORPHAN    %s — annotated by a test but absent from the catalog\n", id)
 	}
 
+	if *gapsFlag {
+		gaps, err := scanGaps(r)
+		if err != nil {
+			fail(fmt.Errorf("scan gaps: %w", err))
+		}
+		fmt.Printf("\n%d within-zone unannotated test file(s) — a directory already verifies a\n", len(gaps))
+		fmt.Println("catalogued invariant, so these are the likeliest to be guarding one without saying so:")
+		for _, f := range gaps {
+			fmt.Printf("  GAP       %s\n", f)
+		}
+	}
+
 	if *strictFlag && len(uncovered) > 0 {
 		os.Exit(1)
 	}
+}
+
+// scanGaps returns the test files that carry no `covers:` annotation but live
+// in a directory where at least one sibling test file does. Test files in
+// directories with zero annotations are excluded on purpose: an unannotated
+// zone is an expected blank (a whole area not yet catalogued), not a straggler —
+// listing them would drown the signal. This narrows "what isn't in the matrix"
+// down to the files most likely to be silently verifying a catalogued invariant.
+func scanGaps(root string) ([]string, error) {
+	type dirState struct {
+		unannotated []string
+		annotated   int
+	}
+	dirs := map[string]*dirState{}
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if skipDirs[d.Name()] {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		name := d.Name()
+		if !strings.HasSuffix(name, "_test.go") && !strings.HasSuffix(name, ".spec.ts") {
+			return nil
+		}
+		ids, err := coversInFile(path)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Dir(path)
+		st := dirs[dir]
+		if st == nil {
+			st = &dirState{}
+			dirs[dir] = st
+		}
+		if len(ids) > 0 {
+			st.annotated++
+			return nil
+		}
+		rel, _ := filepath.Rel(root, path)
+		st.unannotated = append(st.unannotated, filepath.ToSlash(rel))
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var gaps []string
+	for _, st := range dirs {
+		if st.annotated == 0 {
+			continue
+		}
+		gaps = append(gaps, st.unannotated...)
+	}
+	sort.Strings(gaps)
+	return gaps, nil
 }
 
 // resolveRoot returns the explicit root, else walks up from the cwd to the

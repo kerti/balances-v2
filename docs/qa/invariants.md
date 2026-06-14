@@ -31,6 +31,15 @@ whose failure would silently corrupt data or leak a household's finances.
    (exit 0); the `-strict` flag (future CI gate) makes an uncovered invariant a
    build failure.
 
+`make qa-gaps` (the `-gaps` flag) answers the inverse question — *which tests
+aren't in the matrix?* — without the noise. A blanket list would be nearly every
+test, since most legitimately verify mechanics, not catalogued invariants. So it
+reports only **within-zone stragglers**: a test file with no `covers:`
+annotation that sits in a directory where another test *does* carry one. Those
+are the files most likely to be silently guarding a catalogued invariant.
+Wholly-unannotated directories (an uncatalogued zone — an expected blank) are
+excluded on purpose. Advisory only; it never rewrites `COVERAGE.md`.
+
 ## How zones grow
 
 Zones are added one at a time, heaviest/riskiest first (ADR-0021 put tenancy and

@@ -1,6 +1,6 @@
 # ADR index
 
-One line per decision so you can pick which to open without reading all 33. Read the full ADR before
+One line per decision so you can pick which to open without reading all 34. Read the full ADR before
 touching the area it governs.
 
 | ADR | Decision | Touches |
@@ -38,3 +38,4 @@ touching the area it governs.
 | [0031](0031-baseline-migration-squash-at-alpha.md) | Squash pre-alpha migrations into one baseline at alpha | migrations |
 | [0032](0032-toast-feedback-for-buttonless-autosaves.md) | Toast feedback for buttonless autosaves | frontend UX |
 | [0033](0033-versioning-the-upgrade-contract-and-migration-immutability.md) | SemVer = machine upgrade contract (not the "Balances" brand); `1.0.0` first prod; migration immutability + squash rules; majors invisible to pipeline | versioning, release, migrations |
+| [0034](0034-where-ui-ux-decisions-are-documented.md) | UI/UX documented as a Presentation section on the relevant behavior ADR; UI-native concerns get their own ADR; both are the basis for UI invariants in the QA matrix | docs, UX, qa |
