@@ -21,6 +21,7 @@ func (h *handlerHarness) createAssetSnapshot(t *testing.T, assetID uuid.UUID, ye
 	return decodeBody[db.AssetSnapshot](t, rec)
 }
 
+// covers: INV-SNAPSHOTS-05
 func TestAssetSnapshotHandlers_Create(t *testing.T) {
 	h := newHarness(t)
 	parent := h.createBankAccount(t, "Snapshot parent")
@@ -125,6 +126,7 @@ func TestAssetSnapshotHandlers_List(t *testing.T) {
 	}
 }
 
+// covers: INV-SNAPSHOTS-05
 func TestAssetSnapshotHandlers_Update(t *testing.T) {
 	h := newHarness(t)
 	parent := h.createBankAccount(t, "Snapshot update parent")

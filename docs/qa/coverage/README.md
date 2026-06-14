@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**44 / 44** invariants have at least one covering test.
+**49 / 49** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -12,4 +12,5 @@
 | FINANCE | 17 / 17 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 7 / 7 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 8 / 8 | [AUTH](04-auth.md) |
-| SNAPSHOTS | — seeded | — |
+| SNAPSHOTS | 5 / 5 | [SNAPSHOTS](05-snapshots.md) |
+| COST-BASIS | — seeded | — |

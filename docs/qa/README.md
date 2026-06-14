@@ -22,4 +22,5 @@ prefix is that order.
 | FINANCE | Net-worth & comprehensive-income calculation correctness (ADR-0006/0008/0002) | Critical/High | [catalog](invariants/02-finance.md) | [coverage](coverage/02-finance.md) |
 | LIFECYCLE | Position state machine the report engine assumes on read (ADR-0009) | Critical/High | [catalog](invariants/03-lifecycle.md) | [coverage](coverage/03-lifecycle.md) |
 | AUTH | Who-you-are at the door + invitation binding (ADR-0017) | Critical/High | [catalog](invariants/04-auth.md) | [coverage](coverage/04-auth.md) |
-| SNAPSHOTS | _Seeded — valuation substrate beneath FINANCE (ADR-0006/0007)_ | — | [catalog](invariants/05-snapshots.md) | — |
+| SNAPSHOTS | Temporal/value correctness of the snapshot store beneath FINANCE (ADR-0006/0007) | Critical/High | [catalog](invariants/05-snapshots.md) | [coverage](coverage/05-snapshots.md) |
+| COST-BASIS | _Seeded — investment ledger replay beneath INV-FINANCE-08 (ADR-0023)_ | — | [catalog](invariants/06-cost-basis.md) | — |

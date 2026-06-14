@@ -17,6 +17,8 @@ import (
 // TestAssetRepo_ImportAssetSnapshots covers the bulk-import path: dry-run writes
 // nothing, commit inserts, re-import upserts by month (last-write-wins, no
 // duplicate), and a cross-household import is rejected as ErrNotFound.
+//
+// covers: INV-SNAPSHOTS-04
 func TestAssetRepo_ImportAssetSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -114,6 +116,7 @@ func TestAssetRepo_ImportAssetSnapshots(t *testing.T) {
 
 // TestLiabilityRepo_ImportLiabilitySnapshots mirrors the asset import coverage
 // for the Liability group (dry-run / commit / upsert-by-month / tenancy).
+// covers: INV-SNAPSHOTS-04
 func TestLiabilityRepo_ImportLiabilitySnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -210,6 +213,7 @@ func TestLiabilityRepo_ImportLiabilitySnapshots(t *testing.T) {
 
 // TestReceivableRepo_ImportReceivableSnapshots mirrors the asset import coverage
 // for the Receivable group.
+// covers: INV-SNAPSHOTS-04
 func TestReceivableRepo_ImportReceivableSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -305,6 +309,7 @@ func TestReceivableRepo_ImportReceivableSnapshots(t *testing.T) {
 
 // TestInvestmentRepo_ImportInvestmentSnapshots covers both investment snapshot
 // shapes: quantity-price (stock) and accrued-interest (bond), plus tenancy.
+// covers: INV-SNAPSHOTS-04
 func TestInvestmentRepo_ImportInvestmentSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

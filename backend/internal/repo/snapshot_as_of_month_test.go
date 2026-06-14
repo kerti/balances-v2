@@ -21,6 +21,8 @@ import (
 // (WHERE deleted_at IS NULL) so the soft-deleted row no longer collides. If that
 // predicate ever regresses, the second create here fails the duplicate check and
 // the "delete and re-record" UX breaks.
+//
+// covers: INV-SNAPSHOTS-02, INV-SNAPSHOTS-03
 func TestAssetSnapshot_DeleteThenRecreateSameMonth(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -181,6 +183,7 @@ func TestAssetSnapshot_AsOfDateInMonth(t *testing.T) {
 // covered above in full; here we assert the create-reject, create-accept, and
 // update-reject branches that are the unique per-table mapping sites.
 
+// covers: INV-SNAPSHOTS-01
 func TestLiabilitySnapshot_AsOfDateInMonth(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -233,6 +236,7 @@ func TestLiabilitySnapshot_AsOfDateInMonth(t *testing.T) {
 	}
 }
 
+// covers: INV-SNAPSHOTS-01
 func TestReceivableSnapshot_AsOfDateInMonth(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -284,6 +288,7 @@ func TestReceivableSnapshot_AsOfDateInMonth(t *testing.T) {
 	}
 }
 
+// covers: INV-SNAPSHOTS-01
 func TestInvestmentSnapshot_AsOfDateInMonth(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

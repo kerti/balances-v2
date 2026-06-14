@@ -92,6 +92,7 @@ func TestInvestmentSnapshotHandlers_AccruedInterestShape(t *testing.T) {
 	})
 }
 
+// covers: INV-SNAPSHOTS-05
 func TestInvestmentSnapshotHandlers_CommonErrors(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Common errors parent")
@@ -199,6 +200,7 @@ func TestInvestmentSnapshotHandlers_CommonErrors(t *testing.T) {
 	})
 }
 
+// covers: INV-SNAPSHOTS-05
 func TestInvestmentSnapshotHandlers_ListUpdateDelete(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "List/Update/Delete parent")
