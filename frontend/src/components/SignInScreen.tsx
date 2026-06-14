@@ -28,7 +28,7 @@ export function SignInScreen() {
             unauthenticated visitor can still see the version, deploy target,
             and project/maintainer links. */}
         <CardFooter className="border-t pt-4">
-          <AppInfo />
+          <AppInfo variant="split" />
         </CardFooter>
       </Card>
     </div>
