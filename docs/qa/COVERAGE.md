@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**12 / 12** invariants have at least one covering test.
+**29 / 29** invariants have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -20,3 +20,20 @@
 | INV-TENANCY-10 | Income reads & mutations never cross households | `backend/internal/repo/income_tenancy_test.go` |
 | INV-TENANCY-11 | FX-rate reads & mutations never cross households | `backend/internal/repo/fx_rates_tenancy_test.go` |
 | INV-TENANCY-12 | Tag reads, assignment & breakdown never cross households | `backend/internal/repo/tags_tenancy_test.go` |
+| INV-FINANCE-01 | Net worth = Assets + Receivables + Investments − Liabilities (liabilities subtract) | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-02 | Per-user/Joint net-worth attribution reconciles with the total | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-03 | A month with no fresh snapshot carries the latest snapshot ≤ M and is flagged stale | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-04 | A position contributes nothing before its first snapshot; the series starts at the first month with data | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-05 | A terminated position contributes through its termination month, then drops out | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-06 | Comprehensive-income identity closes: ΔNW = EarnedIncome + InvestmentReturn + AssetValueChange − LivingExpenses | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-07 | The first reportable month suppresses the derived income-statement lines (return, asset-value-change, living-expenses NULL) | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-08 | Investment return per instrument per month = ΔSnapshot + cash_out − cash_in | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-09 | Transaction→cash-flow mapping: buy=in; sell/coupon/dividend/distribution=out; cash fee=in; unit-deducting fee=none; maturity=full terminal value out | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-10 | Only property + vehicle revaluation lands in asset-value-change; bank cash and investment marks stay out of it | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-11 | A liquidation (maturity/sale) books gain only — terminal-value cash_out offsets the truthful 0-value close, leaving no net-worth bubble | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-12 | A rolled time deposit's terminal-value cash_out is offset by the successor's cash_in; combined return is interest only, no phantom loss/gain even when the close snapshot under-accrues | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-13 | Deployed capital nets to zero in the placement month (TD synthetic placement cash_in; bond Buy, incl. multi-tranche) | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-14 | Every earned-income category and investment-return subtype accumulates to its own bucket and sums to the total | `backend/internal/repo/monthly_reports_engine_categories_test.go` |
+| INV-FINANCE-15 | A foreign amount is converted at the latest rate ≤ M (carry-forward) and the rate is recorded in fx_rates_used | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-16 | A foreign currency with no rate ≤ M is excluded from net worth and flagged in missing_fx — never summed 1:1 | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-17 | With multi-currency off, amounts sum at face value — no conversion, missing_fx, or fx_rates_used | `backend/internal/repo/monthly_reports_engine_test.go` |

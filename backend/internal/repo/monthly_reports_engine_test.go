@@ -42,6 +42,7 @@ func contains(stale []stalePosition, id uuid.UUID) bool {
 // Carry-forward covers the current month, a mid-history gap, and a never-yet-
 // snapshotted (birth) month with one rule: latest snapshot <= M, stale-flagged
 // when older than M.
+// covers: INV-FINANCE-03
 func TestEngine_CarryForward(t *testing.T) {
 	a := uuid.New()
 	in := reportEngineInput{
@@ -79,6 +80,7 @@ func TestEngine_CarryForward(t *testing.T) {
 }
 
 // A position born in February contributes nothing to January.
+// covers: INV-FINANCE-04
 func TestEngine_BirthMonth(t *testing.T) {
 	a := uuid.New()
 	in := reportEngineInput{
@@ -97,6 +99,7 @@ func TestEngine_BirthMonth(t *testing.T) {
 }
 
 // A terminated position contributes through its termination month, then drops.
+// covers: INV-FINANCE-05
 func TestEngine_TerminatedSuppression(t *testing.T) {
 	a := uuid.New()
 	feb := ym(2026, time.February)
@@ -117,6 +120,7 @@ func TestEngine_TerminatedSuppression(t *testing.T) {
 
 // Group sums and the per-user / Joint breakdown (with liability subtraction)
 // reconcile with the total.
+// covers: INV-FINANCE-01, INV-FINANCE-02
 func TestEngine_GroupsAndBreakdown(t *testing.T) {
 	alice, bob := uuid.New(), uuid.New()
 	a1, a2 := uuid.New(), uuid.New()
@@ -169,6 +173,7 @@ func TestEngine_GroupsAndBreakdown(t *testing.T) {
 }
 
 // No snapshot data → nothing to report.
+// covers: INV-FINANCE-04
 func TestEngine_EmptyIsNil(t *testing.T) {
 	if got := generateMonthlyReports(reportEngineInput{currentMonth: ym(2026, time.January)}); got != nil {
 		t.Errorf("empty input: got %v, want nil", got)
@@ -181,6 +186,7 @@ func TestEngine_EmptyIsNil(t *testing.T) {
 // disposition — the value leaves the position whether paid out or rolled over.
 // The rollover's matching cash_in into the successor TD is a separate engine
 // pass (issue #27 rollover), not part of this per-transaction mapping.
+// covers: INV-FINANCE-09
 func TestEngine_TransactionCashFlows(t *testing.T) {
 	amt := func(s string) *decimal.Decimal { v := dec(s); return &v }
 	str := func(s string) *string { return &s }
@@ -212,6 +218,7 @@ func TestEngine_TransactionCashFlows(t *testing.T) {
 // property/vehicle asset value change isolated from the residual, and the
 // comprehensive-income identity closing. Baseline month suppresses the derived
 // lines. Vehicle depreciation must land in asset_value_change, not expenses.
+// covers: INV-FINANCE-06, INV-FINANCE-07, INV-FINANCE-10
 func TestEngine_IncomeStatement(t *testing.T) {
 	bank, veh, stock := uuid.New(), uuid.New(), uuid.New()
 	in := reportEngineInput{
@@ -269,6 +276,7 @@ func TestEngine_IncomeStatement(t *testing.T) {
 
 // Multi-currency: a foreign holding is converted to the reporting currency at
 // the month's rate, and the rate is recorded in fx_rates_used.
+// covers: INV-FINANCE-15
 func TestEngine_FxConversion(t *testing.T) {
 	usdAcct := uuid.New()
 	in := reportEngineInput{
@@ -292,6 +300,7 @@ func TestEngine_FxConversion(t *testing.T) {
 }
 
 // A rate carries forward to later months that have no rate of their own.
+// covers: INV-FINANCE-15
 func TestEngine_FxCarryForward(t *testing.T) {
 	usdAcct := uuid.New()
 	in := reportEngineInput{
@@ -313,6 +322,7 @@ func TestEngine_FxCarryForward(t *testing.T) {
 
 // A foreign currency with no rate at or before the month excludes those
 // positions from net worth and records them in missing_fx — never 1:1.
+// covers: INV-FINANCE-16
 func TestEngine_FxMissingRate(t *testing.T) {
 	usdAcct, idrAcct := uuid.New(), uuid.New()
 	in := reportEngineInput{
@@ -340,6 +350,7 @@ func TestEngine_FxMissingRate(t *testing.T) {
 
 // Regression: with multi-currency off the converter is a no-op — amounts sum at
 // face value, no missing_fx, no fx_rates_used (the single-currency path).
+// covers: INV-FINANCE-17
 func TestEngine_FxOffPathUnchanged(t *testing.T) {
 	acct := uuid.New()
 	in := reportEngineInput{
@@ -361,6 +372,7 @@ func TestEngine_FxOffPathUnchanged(t *testing.T) {
 
 // Investment return counts the transaction cash flow: a Buy reduces return by
 // the cash put in, so a holding that rose 400 on 300 of new cash returns 100.
+// covers: INV-FINANCE-08
 func TestEngine_InvestmentReturnWithCashFlow(t *testing.T) {
 	stock := uuid.New()
 	buy := dec("300")
@@ -386,6 +398,7 @@ func TestEngine_InvestmentReturnWithCashFlow(t *testing.T) {
 // close snapshot at the maturity month plus the cash_out transaction — the
 // engine books interest only, and the position leaves no net-worth bubble.
 // This is the worked example from #25: principal 100, interest 5.
+// covers: INV-FINANCE-11
 func TestEngine_MaturityCashOutBooksInterestOnly(t *testing.T) {
 	td := uuid.New()
 	feb := ym(2026, time.February)
@@ -431,6 +444,7 @@ func TestEngine_MaturityCashOutBooksInterestOnly(t *testing.T) {
 // old TD's last snapshot under-accrues the final interest (see the 90→0 close
 // below), unlike the old fragile model that relied on the closing snapshot
 // equalling the full terminal value.
+// covers: INV-FINANCE-12
 func TestEngine_MaturityRolledNoDoubleCount(t *testing.T) {
 	oldTD, newTD := uuid.New(), uuid.New()
 	feb := ym(2026, time.February)
@@ -473,6 +487,7 @@ func TestEngine_MaturityRolledNoDoubleCount(t *testing.T) {
 // Sold position (#25): a manual Sell + terminate now writes the same truthful
 // 0-value close snapshot, so the engine books the realized gain only (not the
 // returned principal) and leaves no net-worth bubble.
+// covers: INV-FINANCE-11
 func TestEngine_SoldTerminationBooksGainOnly(t *testing.T) {
 	stock := uuid.New()
 	feb := ym(2026, time.February)
@@ -506,6 +521,7 @@ func TestEngine_SoldTerminationBooksGainOnly(t *testing.T) {
 // 0→principal snapshot jump is cancelled → 0 return (capital deployed, not
 // earned); later months book only accrued interest. A bank account establishes
 // the Dec baseline so the Jan placement month is a computed (non-baseline) one.
+// covers: INV-FINANCE-13
 func TestEngine_TimeDepositPlacementBooksZero(t *testing.T) {
 	bank, td := uuid.New(), uuid.New()
 	jan := ym(2026, time.January)
@@ -541,6 +557,7 @@ func TestEngine_TimeDepositPlacementBooksZero(t *testing.T) {
 // secondary-market bonds always did), whose cash_in cancels the 0→nominal
 // snapshot jump → 0 return in the placement month. No engine change is needed —
 // the existing Buy cash-flow path handles it; this pins the behaviour.
+// covers: INV-FINANCE-13
 func TestEngine_BondPlacementBuyBooksZero(t *testing.T) {
 	bank, bond := uuid.New(), uuid.New()
 	jan := ym(2026, time.January)
@@ -569,6 +586,7 @@ func TestEngine_BondPlacementBuyBooksZero(t *testing.T) {
 // snapshots tracking the nominal. Each tranche month's cash_in cancels its
 // snapshot step, so every placement/top-up month nets to 0 — the case the issue
 // calls "unfixable by inference" without a real per-tranche Buy.
+// covers: INV-FINANCE-13
 func TestEngine_BondTwoTranchePlacementsBookZero(t *testing.T) {
 	bank, bond := uuid.New(), uuid.New()
 	jan, feb := ym(2026, time.January), ym(2026, time.February)

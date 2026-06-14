@@ -12,6 +12,7 @@ import (
 // one income row per earned-income category and one investment position per
 // subtype, each with a Jan→Feb value change. January is the suppressed baseline;
 // the income statement (incl. both accumulators) is computed for February.
+// covers: INV-FINANCE-14
 func TestEngine_IncomeCategoriesAndReturnSubtypes(t *testing.T) {
 	jan, feb := ym(2026, time.January), ym(2026, time.February)
 
