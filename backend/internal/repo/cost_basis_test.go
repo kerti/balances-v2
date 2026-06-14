@@ -38,6 +38,7 @@ func assertDec(t *testing.T, got decimal.Decimal, want string) {
 	}
 }
 
+// covers: INV-COST-BASIS-01
 func TestCostBasisFromLedger(t *testing.T) {
 	jan := ym(2026, time.January)
 	feb := ym(2026, time.February)
@@ -134,6 +135,8 @@ func TestCostBasisFromLedger(t *testing.T) {
 // as long as buys precede their proportional sells (the query guarantees date
 // ascending). Two buys then a partial sell must equal the same set regardless of
 // the inter-buy order.
+//
+// covers: INV-COST-BASIS-02
 func TestCostBasisFromLedger_BuyOrderIndependent(t *testing.T) {
 	jan := ym(2026, time.January)
 	feb := ym(2026, time.February)
@@ -154,6 +157,7 @@ func TestCostBasisFromLedger_BuyOrderIndependent(t *testing.T) {
 	}
 }
 
+// covers: INV-COST-BASIS-03
 func TestCostSeriesAtMonths(t *testing.T) {
 	jan := ym(2026, time.January)
 	feb := ym(2026, time.February)
@@ -209,6 +213,7 @@ func TestCostSeriesAtMonths(t *testing.T) {
 	})
 }
 
+// covers: INV-COST-BASIS-03
 func TestFlatCostSeriesAtMonths(t *testing.T) {
 	jan := ym(2026, time.January)
 	feb := ym(2026, time.February)

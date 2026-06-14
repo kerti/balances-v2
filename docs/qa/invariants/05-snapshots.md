@@ -24,4 +24,3 @@ backfill (a 2026 account importing 2015 readings) is intentional, so there is no
 | INV-SNAPSHOTS-03 | A soft-deleted snapshot is excluded from every value read — the live list, the latest-per-position selection, and the report-feeding query all carry `deleted_at IS NULL`, so a corrected or removed reading never re-enters net worth | ADR-0007 | Critical |
 | INV-SNAPSHOTS-04 | Bulk import is an upsert keyed by (position, year_month): last-write-wins overwrites an existing month in place rather than double-counting, dry-run writes nothing, and the whole batch is one transaction | ADR-0006 | High |
 | INV-SNAPSHOTS-05 | A snapshot is a past observation — a future `year_month` (`CodeFutureYearMonth`) or future `as_of_date` (`CodeSnapshotFutureDate`) is rejected 400 on both the create and update paths | ADR-0006 | Medium |
-</content>

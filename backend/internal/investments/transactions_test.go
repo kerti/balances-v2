@@ -9,6 +9,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
 
+// covers: INV-COST-BASIS-04
 func TestInvestmentTransactionHandlers_TradeShape(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Trade parent")
@@ -60,6 +61,7 @@ func TestInvestmentTransactionHandlers_TradeShape(t *testing.T) {
 	})
 }
 
+// covers: INV-COST-BASIS-04
 func TestInvestmentTransactionHandlers_CashIncomeShape(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Dividend parent")
@@ -107,6 +109,7 @@ func TestInvestmentTransactionHandlers_CashIncomeShape(t *testing.T) {
 	})
 }
 
+// covers: INV-COST-BASIS-04
 func TestInvestmentTransactionHandlers_MaturityShape(t *testing.T) {
 	h := newHarness(t)
 	td := h.createTimeDeposit(t, "Maturity TD parent")
@@ -151,6 +154,7 @@ func TestInvestmentTransactionHandlers_MaturityShape(t *testing.T) {
 	})
 }
 
+// covers: INV-COST-BASIS-04
 func TestInvestmentTransactionHandlers_FeeShape(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Fee parent")
@@ -189,6 +193,7 @@ func TestInvestmentTransactionHandlers_FeeShape(t *testing.T) {
 	})
 }
 
+// covers: INV-COST-BASIS-04
 func TestInvestmentTransactionHandlers_CommonErrors(t *testing.T) {
 	h := newHarness(t)
 	stock := h.createStock(t, "Common errors parent")

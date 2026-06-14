@@ -25,6 +25,7 @@ const txn = (
     quantity: fields.quantity ?? null,
   }) as InvestmentTransaction
 
+// covers: INV-COST-BASIS-01, INV-COST-BASIS-02
 describe('computeCostBasis', () => {
   it('returns zero on an empty ledger', () => {
     expect(computeCostBasis([])).toEqual({ cost: 0, heldQty: 0 })
@@ -133,6 +134,7 @@ describe('computeCostBasis', () => {
   })
 })
 
+// covers: INV-COST-BASIS-03
 describe('costBasisSeries', () => {
   it('returns one cost entry per snapshot in input order', () => {
     const snaps = [{ year_month: '2026-03' }, { year_month: '2026-01' }]
@@ -186,6 +188,7 @@ describe('costBasisSeries', () => {
   })
 })
 
+// covers: INV-COST-BASIS-03
 describe('flatCostSeries', () => {
   it('emits the same cost at every snapshot', () => {
     const snaps = [{ year_month: '2026-01' }, { year_month: '2026-02' }]

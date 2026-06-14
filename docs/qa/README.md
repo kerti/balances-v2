@@ -23,4 +23,5 @@ prefix is that order.
 | LIFECYCLE | Position state machine the report engine assumes on read (ADR-0009) | Critical/High | [catalog](invariants/03-lifecycle.md) | [coverage](coverage/03-lifecycle.md) |
 | AUTH | Who-you-are at the door + invitation binding (ADR-0017) | Critical/High | [catalog](invariants/04-auth.md) | [coverage](coverage/04-auth.md) |
 | SNAPSHOTS | Temporal/value correctness of the snapshot store beneath FINANCE (ADR-0006/0007) | Critical/High | [catalog](invariants/05-snapshots.md) | [coverage](coverage/05-snapshots.md) |
-| COST-BASIS | _Seeded — investment ledger replay beneath INV-FINANCE-08 (ADR-0023)_ | — | [catalog](invariants/06-cost-basis.md) | — |
+| COST-BASIS | Avg-cost ledger replay (Go + frontend parity) beneath INV-FINANCE-08 (ADR-0023) | Critical/High | [catalog](invariants/06-cost-basis.md) | [coverage](coverage/06-cost-basis.md) |
+| IMPORT | _Seeded — bulk ingestion (snapshot import + create-with-snapshots fan-out)_ | — | [catalog](invariants/07-import.md) | — |
