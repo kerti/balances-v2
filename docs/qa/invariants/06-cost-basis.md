@@ -18,7 +18,8 @@
 > invisible-until-reconciled failure mode as FINANCE. Code: `cost_basis.go`,
 > `investment_transactions.go`, ADR-0023's shape CHECK; annotation targets:
 > `cost_basis_test.go` and the investment-transaction tests in `internal/repo/`,
-> plus any `costBasis.ts` vitest on the frontend (a real cross-language `covers:`
-> opportunity per how-it-works.md). Survey those before writing new tests; fill
-> this table when seeding the zone._
+> plus the `costBasis.ts` vitest on the frontend — now that `make qa-matrix`
+> scans `.test.ts`/`.test.tsx`, that's the natural place for this matrix's first
+> non-Go `covers:` annotation, no tool change needed. Survey those before writing
+> new tests; fill this table when seeding the zone._
 </content>

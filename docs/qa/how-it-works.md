@@ -60,25 +60,26 @@ cell is a finding, not a defect in the catalog.
 
 The `covers:` token is deliberately language-agnostic, so a browser or component
 test can verify an invariant exactly like a Go test. Every annotation today is
-Go; we'll seed frontend ones for invariants whose verification genuinely lives
-in the UI — client-side guardrails with no backend equivalent (the
-non-technical-audience design, ADR-0021's audience), or end-to-end flows a
-handler unit test can't reach (e.g. the full OAuth
+still Go, but the tool now scans three test kinds — Go (`_test.go`), Playwright
+(`.spec.ts`), and vitest (`.test.ts` / `.test.tsx`) — so a frontend annotation
+counts the moment it's written. We'll seed frontend ones for invariants whose
+verification genuinely lives in the UI — client-side guardrails with no backend
+equivalent (the non-technical-audience design, ADR-0021's audience), or
+end-to-end flows a handler unit test can't reach (e.g. the full OAuth
 button→redirect→callback→session round-trip via the mock-OIDC server, ADR-0024,
 of which only the callback half is unit-tested today).
 
-Two wrinkles stand between here and that working:
+One wrinkle remains, and it is only about the *future* `-strict` gate, not
+whether an annotation counts:
 
-- **Playwright (`e2e/*.spec.ts`)** — *scanned by `make qa-matrix` and run in CI,
-  but tiered*: only `@smoke`-tagged specs gate per-PR; the full suite runs
-  nightly (`e2e.yml`, #70). So if an invariant is covered *only* by a non-smoke
-  spec, a per-PR `-strict` gate would credit coverage that didn't run in that PR
-  — it runs nightly instead. Before E2E annotations count toward a per-PR strict
-  gate, either tag the covering spec `@smoke` so it runs in the gate, or have
-  strict accept nightly-verified coverage by design.
-- **Vitest (`src/**/*.test.ts`)** — *run in CI on every PR (`frontend-checks` /
-  `make check`), but not scanned*: the tool's file filter matches `.spec.ts`,
-  not `.test.ts`. A one-line change to `tools/qa-matrix` (add the `.test.ts` /
-  `.test.tsx` suffixes) makes vitest annotations count. Since vitest already
-  runs in every PR, these are the **safe ones to plug in first** — no
-  strict-gate hazard.
+- **Playwright (`e2e/*.spec.ts`)** — *scanned and run in CI, but tiered*: only
+  `@smoke`-tagged specs gate per-PR; the full suite runs nightly (`e2e.yml`,
+  #70). So if an invariant is covered *only* by a non-smoke spec, a per-PR
+  `-strict` gate would credit coverage that didn't run in that PR — it runs
+  nightly instead. Before E2E annotations count toward a per-PR strict gate,
+  either tag the covering spec `@smoke` so it runs in the gate, or have strict
+  accept nightly-verified coverage by design.
+- **Vitest (`src/**/*.test.ts`, `.test.tsx`)** — *scanned and run in CI on every
+  PR* (`frontend-checks` / `make check`). No strict-gate hazard: vitest runs in
+  the same gate it'd be credited in, so these are the **safe ones to annotate
+  first**.

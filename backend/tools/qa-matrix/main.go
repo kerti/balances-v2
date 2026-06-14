@@ -43,6 +43,20 @@ var skipDirs = map[string]bool{
 	"test-results": true,
 }
 
+// isScannedTestFile reports whether a file is a test file the matrix reads for
+// `covers:` annotations. Go unit tests (`_test.go`), Playwright specs
+// (`.spec.ts`, run in CI per ADR-0024/#70), and vitest component/unit tests
+// (`.test.ts` / `.test.tsx`, run every PR via `make check`) all qualify — the
+// `covers:` token is language-agnostic by design.
+func isScannedTestFile(name string) bool {
+	for _, suffix := range []string{"_test.go", ".spec.ts", ".test.ts", ".test.tsx"} {
+		if strings.HasSuffix(name, suffix) {
+			return true
+		}
+	}
+	return false
+}
+
 type invariant struct {
 	id, statement string
 }
@@ -153,7 +167,7 @@ func scanGaps(root string) ([]string, error) {
 			return nil
 		}
 		name := d.Name()
-		if !strings.HasSuffix(name, "_test.go") && !strings.HasSuffix(name, ".spec.ts") {
+		if !isScannedTestFile(name) {
 			return nil
 		}
 		ids, err := coversInFile(path)
@@ -308,7 +322,7 @@ func scanCoverage(root string) (map[string][]string, error) {
 			return nil
 		}
 		name := d.Name()
-		if !strings.HasSuffix(name, "_test.go") && !strings.HasSuffix(name, ".spec.ts") {
+		if !isScannedTestFile(name) {
 			return nil
 		}
 		ids, err := coversInFile(path)

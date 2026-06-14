@@ -4,6 +4,7 @@
 # Go
 /backend/bin/
 /backend/dist/
+/backend/qa-matrix
 *.test
 *.out
 
