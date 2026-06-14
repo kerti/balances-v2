@@ -12,7 +12,7 @@ The coverage matrix ([[adr-0021]], `docs/qa/invariants.md`) is growing a fronten
 `covers:` token is language-agnostic and we will seed UI/E2E annotations per-invariant. Backend
 invariants derive from behavior ADRs (TENANCY from [[adr-0005]], FINANCE from [[adr-0008]], and so
 on); UI invariants need an equivalent documented basis to derive from, or they will be ad-hoc. And
-because the audience is non-technical ([[feedback-audience-non-technical]]), presentation is a
+because the audience is non-technical, presentation is a
 correctness concern, not polish — a missing guardrail or a silent failure is a defect, exactly the
 kind of thing the matrix exists to guard. So the place UI decisions live, and the place UI invariants
 come from, want to be settled before the frontend zones land rather than reverse-engineered after.

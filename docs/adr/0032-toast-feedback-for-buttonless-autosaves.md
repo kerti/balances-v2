@@ -14,7 +14,7 @@ Language/Appearance selects deliberately, and each one fire-and-forgets a mutati
 exist today and more will follow (any preference that should persist instantly wants the same
 shape). A button-driven form gives its own feedback — the button returns to rest, the dialog closes,
 the row appears — but an autosaving select gives none. Without a confirmation a non-technical user
-([[feedback-audience-non-technical]]) cannot tell whether their choice stuck, and the inline error
+cannot tell whether their choice stuck, and the inline error
 copy was both inconsistent (each card rolled its own `<p>`) and spatially detached from where
 attention sits after picking from a dropdown.
 

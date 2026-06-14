@@ -18,7 +18,7 @@ that does one of three things:
 2. Else render `${err.status} ${err.statusText}`.
 3. Else render `err.message`.
 
-For the Indonesian-reading co-owner ([[feedback-audience-non-technical]]), `"snapshot date cannot
+For the Indonesian-reading co-owner, `"snapshot date cannot
 be in the future"` rendering inside an otherwise-Indonesian Create-Snapshot dialog is the most
 visible remaining English bleed. The mapping work is also the only piece of the i18n stream that
 scales linearly with future locales — every English sentence in `internal/*/*.go` is one more
@@ -243,7 +243,7 @@ The matching `id` catalog ships in the same slice, terms drawn from
 
 ### Slicing
 
-Per agreed-on cadence ([[feedback-commit-workflow]]):
+Per agreed-on cadence:
 
 1. **This ADR alone**, no code. Land it, get explicit sign-off on the shape (this commit).
 2. `internal/httperr` package + ADR-0026 link update + `repoErrorStatus`/`writeRepoError`

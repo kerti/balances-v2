@@ -9,7 +9,7 @@ responses stay English in this milestone; a follow-up ADR will introduce a typed
 
 ## Why now
 
-The app's audience is non-technical household members ([[feedback-audience-non-technical]]); the
+The app's audience is non-technical household members; the
 primary user reports the household co-owner reads Indonesian comfortably and English haltingly, so
 shipping EN-only is a usability ceiling not a translation luxury. Three structural reasons make now
 the cheapest moment:
@@ -124,7 +124,7 @@ and can be replaced wholesale when the envelope lands.
 Playwright specs that use `getByText` on English copy stay correct by **pinning the E2E user's
 locale to `en`** in the seeded session — one line in `e2e/global-setup.ts`. A separate testid sweep
 for the bleed cases is unnecessary; the project convention already prefers `data-testid`
-([[feedback-e2e-test-ids]]) and existing specs are mostly compliant.
+and existing specs are mostly compliant.
 
 ### A glossary doc precedes ID translation
 

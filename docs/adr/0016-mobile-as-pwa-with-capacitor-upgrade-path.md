@@ -21,7 +21,7 @@ later, **Capacitor** wraps the same web app in a native shell with a few days of
   an app that no third party will ever see.
 - **Workload is forms, tables, charts.** No camera, biometric, file-system, or heavy native API
   needs. Web on mobile handles this entirely.
-- **Solo backend developer with near-zero frontend skill** (per [[user_role]]) — taking on a second
+- **Solo backend developer with near-zero frontend skill** — taking on a second
   mobile codebase or a different rendering model (React Native primitives) would multiply the
   surface area to maintain. PWA reuses everything.
 - **iOS-first preference is fine for PWAs now** — modern iOS treats installed PWAs reasonably well.
