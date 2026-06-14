@@ -53,6 +53,7 @@ func TestInvestmentSnapshotHandlers_QuantityPriceShape(t *testing.T) {
 	})
 }
 
+// covers: INV-BONDS-02
 func TestInvestmentSnapshotHandlers_AccruedInterestShape(t *testing.T) {
 	h := newHarness(t)
 	bond := h.createBond(t, "Snapshot parent (bond)")

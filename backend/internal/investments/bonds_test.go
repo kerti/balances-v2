@@ -28,6 +28,7 @@ func (h *handlerHarness) createBond(t *testing.T, displayName string) *repo.Bond
 	return decodeBody[*repo.Bond](t, rec)
 }
 
+// covers: INV-BONDS-01
 func TestBondHandlers_Create(t *testing.T) {
 	h := newHarness(t)
 
@@ -122,6 +123,7 @@ func TestBondHandlers_Create(t *testing.T) {
 	})
 }
 
+// covers: INV-BONDS-01
 func TestBondHandlers_List(t *testing.T) {
 	h := newHarness(t)
 	h.createBond(t, "Listed bond")

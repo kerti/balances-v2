@@ -1,20 +1,16 @@
 # Zone: BONDS
 
-> _Seeded next — the bond / time-deposit valuation rules that feed FINANCE but
-> are neither pure cost basis (COST-BASIS) nor a raw snapshot (SNAPSHOTS). The
-> defining quantity is **outstanding nominal derived from the ledger**, not a
-> stored scalar: `outstandingFaceFromLedger` in `internal/repo/cost_basis.go`
-> computes (Σ buy_qty − Σ sell_qty) × `bondFaceUnit` (IDR 1,000,000 per unit,
-> #27, ADR-0003), so multi-tranche top-ups and partial sells scale the face
-> correctly without a drift-prone `face_value` column. Candidate invariants: face
-> = ledger-derived nominal (multi-tranche aware); the coupon helper scales off
-> that same outstanding face; the accrued-interest snapshot shape (amount = total
-> incl. accrued, plus `accrued_interest`) per ADR-0022's value-column XOR; the
-> time-deposit term bounds (a maturity date within the deposit's term, #62); and
-> the govt-primary 1,000,000-unit convention. Severity High — a wrong face
-> silently misstates a bond's value and its coupon. Code: `cost_basis.go`
-> (`outstandingFaceFromLedger`, `bondFaceUnit`), `internal/repo/bonds.go`,
-> `internal/repo/time_deposits.go`, `time_deposit_term_bounds.go`. Annotation
-> targets: `internal/investments/bonds_test.go`, `time_deposit_term_bounds_test.go`,
-> and the bond/TD branches of `monthly_reports_engine_test.go`. Survey those
-> before writing new tests; fill this table when seeding the zone._
+The bond / time-deposit valuation rules that feed FINANCE but are neither pure
+cost basis (COST-BASIS) nor a raw snapshot (SNAPSHOTS). A bond's defining
+quantity — its **outstanding nominal** — is not stored; it is derived from the
+transaction ledger, so multi-tranche top-ups and partial sells scale it
+correctly without a drift-prone `face_value` column (#27, ADR-0003). The
+time-deposit term is the other guard: a fixed forward window that snapshots and
+the terminal maturity must stay inside (#62). A wrong face silently misstates a
+bond's value; a snapshot outside its term silently misstates a deposit's history.
+
+| ID | Invariant | Source | Severity |
+|----|-----------|--------|----------|
+| INV-BONDS-01 | Outstanding nominal round-trips through the ledger: a govt-primary bond created from `face_value` F seeds a placement Buy at par (quantity = F ÷ 1,000,000, price_per_unit = 1,000,000) and its outstanding face derives back to F via `outstandingFaceFromLedger` = (Σ buy_qty − Σ sell_qty) × 1,000,000 — no stored scalar, multi-tranche and partial-sell aware by construction | ADR-0003 | High |
+| INV-BONDS-02 | A bond/time-deposit snapshot uses the accrued-interest shape — `amount` (total value, incl. accrued) plus `accrued_interest`, and not the quantity/price shape — per ADR-0022's value-column XOR | ADR-0022 | High |
+| INV-BONDS-03 | A time deposit's term is a non-empty forward window (maturity strictly after placement, else `ErrInvalidDepositTerm`/the migration CHECK), and it is enforced both ways: a snapshot's month must fall within placement..maturity (inclusive), the terminal Maturity transaction within placement..maturity to the day, and a term edit cannot be narrowed so it strands an existing snapshot or transaction outside the new window | ADR-0003 | High |

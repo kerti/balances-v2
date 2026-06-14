@@ -48,6 +48,8 @@ func newTermBoundsTD(t *testing.T) (*repo.InvestmentRepo, context.Context, *repo
 // TestTimeDeposit_RejectsInvertedTerm guards the maturity-after-placement rule
 // (issue #62) on both create and update — the app-layer companion to the DB
 // CHECK in migration 00004.
+//
+// covers: INV-BONDS-03
 func TestTimeDeposit_RejectsInvertedTerm(t *testing.T) {
 	r, ctx, td := newTermBoundsTD(t)
 
@@ -94,6 +96,7 @@ func TestTimeDeposit_RejectsInvertedTerm(t *testing.T) {
 // inside the term at month granularity (issue #62): a placement on the 15th
 // still admits that whole month, the maturity month is admitted, and the months
 // on either side are rejected.
+// covers: INV-BONDS-03
 func TestTimeDepositSnapshot_ConfinedToTerm(t *testing.T) {
 	r, ctx, td := newTermBoundsTD(t)
 
@@ -140,6 +143,7 @@ func TestTimeDepositSnapshot_ConfinedToTerm(t *testing.T) {
 // TestTimeDepositMaturity_ConfinedToTerm verifies the terminal Maturity event is
 // bound to the term to the day (issue #62): a payout dated after maturity_date
 // or before placement_date is rejected, the maturity date itself is accepted.
+// covers: INV-BONDS-03
 func TestTimeDepositMaturity_ConfinedToTerm(t *testing.T) {
 	r, ctx, td := newTermBoundsTD(t)
 
@@ -182,6 +186,7 @@ func TestTimeDepositMaturity_ConfinedToTerm(t *testing.T) {
 // TestTimeDeposit_TermEditCannotStrandHistory verifies a term edit is refused
 // when it would leave an existing snapshot outside the new window — the user
 // must fix the offending entry first (issue #62).
+// covers: INV-BONDS-03
 func TestTimeDeposit_TermEditCannotStrandHistory(t *testing.T) {
 	r, ctx, td := newTermBoundsTD(t)
 

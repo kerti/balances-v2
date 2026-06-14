@@ -25,4 +25,5 @@ prefix is that order.
 | SNAPSHOTS | Temporal/value correctness of the snapshot store beneath FINANCE (ADR-0006/0007) | Critical/High | [catalog](invariants/05-snapshots.md) | [coverage](coverage/05-snapshots.md) |
 | COST-BASIS | Avg-cost ledger replay (Go + frontend parity) beneath INV-FINANCE-08 (ADR-0023) | Critical/High | [catalog](invariants/06-cost-basis.md) | [coverage](coverage/06-cost-basis.md) |
 | IMPORT | Bulk ingestion — preview/commit parity, all-or-nothing, fan-out atomicity (ADR-0022) | Critical/High | [catalog](invariants/07-import.md) | [coverage](coverage/07-import.md) |
-| BONDS | _Seeded — bond/TD valuation: ledger-derived outstanding face + coupon (ADR-0003)_ | — | [catalog](invariants/08-bonds.md) | — |
+| BONDS | Bond/TD valuation — ledger-derived outstanding face + time-deposit term bounds (ADR-0003) | High | [catalog](invariants/08-bonds.md) | [coverage](coverage/08-bonds.md) |
+| TAGS | _Seeded — user-defined position tag lifecycle + referential integrity (ADR-0028)_ | — | [catalog](invariants/09-tags.md) | — |
