@@ -18,6 +18,7 @@ import (
 // for the property subtype. Snapshot-level tenancy is already covered by
 // the bank-account leak test (asset snapshots share one table), so this
 // test focuses on the property-specific repo surface only.
+// covers: INV-TENANCY-02
 func TestPropertyRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

@@ -24,6 +24,7 @@ func decPtr(d decimal.Decimal) *decimal.Decimal { return &d }
 // read, plus tenancy isolation and the staleness watermark (no-regen when
 // unchanged, regen on input edit). The rule coverage lives in the pure engine
 // test; this proves the wiring and JSON round-trip.
+// covers: INV-TENANCY-09
 func TestMonthlyReportRepo(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

@@ -18,6 +18,7 @@ import (
 // assignment, the dedicated-endpoint assignment path, the per-currency
 // breakdown aggregate, and delete-clears-assignments. Mirrors the per-group
 // tenancy suites.
+// covers: INV-TENANCY-12
 func TestTagRepo(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

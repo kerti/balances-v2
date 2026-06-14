@@ -20,6 +20,7 @@ import (
 // tenancy path, and the alice-side happy-path CRUD success branches per the
 // Phase 1 coverage pattern. Investment snapshots share a per-group table
 // (ADR-0022) so the snapshot CRUD is exercised once via the stock fixture.
+// covers: INV-TENANCY-06
 func TestInvestmentRepo_TenancyAndCRUD(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

@@ -16,6 +16,7 @@ import (
 
 // TestVehicleRepo_TenancyIsolation parallels the property leak test for
 // the vehicle subtype.
+// covers: INV-TENANCY-03
 func TestVehicleRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

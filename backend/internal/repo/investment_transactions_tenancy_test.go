@@ -20,6 +20,7 @@ import (
 // hit the DB CHECK. Covers one transaction per shape (Buy = trade, Dividend
 // = cash income, Fee = fee, Maturity = maturity) with the alice-side
 // happy path + bob-side rejection per the Phase 1 coverage pattern.
+// covers: INV-TENANCY-07
 func TestInvestmentTransaction_TenancyAndCRUD(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

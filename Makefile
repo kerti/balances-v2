@@ -66,6 +66,7 @@ help:
 	@echo "Workflow helpers (terse output; see docs/agents/dev.md):"
 	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
 	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
+	@echo "  qa-matrix               regenerate docs/qa/COVERAGE.md from invariant annotations"
 	@echo "  session-token           print a live session token for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
 
@@ -264,7 +265,15 @@ check:
 	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >/tmp/balances-check-fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-tsc.log';  fail=1; }; \
 	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
 	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
+	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report 2>/tmp/balances-check-qa.log) | sed 's/^qa-matrix: //'; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
+
+# Regenerate docs/qa/COVERAGE.md from the `// covers: INV-...` annotations in the
+# test suite, joined against the docs/qa/invariants.md catalog. Advisory: prints
+# uncovered invariants but does not fail. `-strict` (the future CI gate) makes an
+# uncovered invariant a non-zero exit. See docs/qa/invariants.md.
+qa-matrix:
+	@cd backend && go run ./tools/qa-matrix
 
 # Print one live session token (newest, unexpired) for curl smoke tests against
 # authenticated endpoints. Empty result → non-zero exit with a hint on stderr.

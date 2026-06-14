@@ -20,6 +20,7 @@ import (
 // invalid shapes (unknown status, terminal-without-date, active-with-date) plus
 // cross-group statuses, the correction path back to active clears the date, and
 // bob cannot terminate alice's position.
+// covers: INV-TENANCY-08
 func TestPositionLifecycle_UpdateAndValidation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

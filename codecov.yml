@@ -21,6 +21,7 @@ ignore:
   - "backend/internal/testutil/**"
   - "backend/cmd/balances/**"
   - "backend/internal/migrations/**"
+  - "backend/tools/**"
 
 # Both flags upload on every commit (CI runs both suites unconditionally), so
 # carryforward is off: the report reflects only what was actually uploaded this

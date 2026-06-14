@@ -44,7 +44,9 @@ diffs are excellent for spotting wrong fields in financial calculation outputs.
 1. **Heavy — financial calculations.** Net worth aggregation, comprehensive-income identity
    (ADR-0008), investment-return formula, carry-forward semantics, FX conversions,
    materialized-report generation and staleness regeneration. These are the *value* of the app;
-   they're pure functions that test cheaply. Target ~80%+ coverage of `internal/finance/`.
+   they're pure functions that test cheaply. Target ~80%+ coverage of the calculation code —
+   which lives in `internal/repo/monthly_reports_engine.go`, `internal/reports/`, and
+   `internal/income/` (an `internal/finance/` package was anticipated here but never created).
 2. **Heavy — tenancy isolation.** For every endpoint that touches per-Household data, a test
    verifies that requests authenticated as a different Household see zero rows. ADR-0005's threat
    model is a one-line failure away if a repository ever forgets its `household_id` filter.
@@ -89,9 +91,9 @@ in the Go suites described above — E2E does not take them over.
 
 - `internal/testutil/` exposes helpers for spinning up a test Postgres, applying migrations,
   creating fixture Households / Users / Positions. Tests don't repeat infrastructure code.
-- A "leak test" pattern is established early — likely a table-driven test in
-  `internal/repositories/` that iterates every endpoint with two Households' data and asserts
-  isolation.
+- A "leak test" pattern is established early — realized as the `*_tenancy_test.go` files in
+  `internal/repo/`, each asserting one resource's cross-Household isolation (catalogued as the
+  `INV-TENANCY-*` invariants in `docs/qa/invariants.md`).
 - `go-cmp` is added as a dev dependency.
 - Frontend tests run via `vitest run` and `vitest --watch`; CI runs the non-watch command.
 - The dev container (OrbStack on the user's machine) has Docker available, satisfying

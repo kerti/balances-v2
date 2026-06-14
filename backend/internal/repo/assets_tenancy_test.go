@@ -19,6 +19,7 @@ import (
 // any repository method. This is the day-one leak test required by ADR-0005
 // and ADR-0021 — every position-shaped endpoint needs equivalent coverage as
 // they ship.
+// covers: INV-TENANCY-01
 func TestAssetRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

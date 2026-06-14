@@ -19,6 +19,7 @@ import (
 // Unlike Asset leak tests where snapshot tenancy is covered once for all
 // subtypes, each group has its own snapshot table per ADR-0022, so this
 // test exercises both core CRUD and snapshot CRUD.
+// covers: INV-TENANCY-04
 func TestLiabilityRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

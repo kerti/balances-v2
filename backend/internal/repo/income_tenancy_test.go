@@ -21,6 +21,7 @@ import (
 // Populated-list assertion is included so the List query's read path is
 // exercised — bare cross-tenant tests would only hit the empty short-circuit
 // (M4.4 lesson, see HANDOFF "Tenancy test pattern").
+// covers: INV-TENANCY-10
 func TestIncomeRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

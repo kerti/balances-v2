@@ -19,3 +19,7 @@ Batched, tag-driven SemVer pre-releases (ADR-0029/0030). Cutting a release — p
 ### Local dev / lint / tests
 
 Makefile-based run loop, the backend-restart-after-Go-edits gotcha, smoke-test recipe, lint, and test suites. See `docs/agents/dev.md` (`make help` lists every target).
+
+### QA coverage matrix
+
+The app's must-hold invariants are catalogued with stable IDs in `docs/qa/invariants.md`; a test declares which it verifies via a `// covers: INV-...` annotation (same token in Go and TS). When you write a test for a catalogued invariant, add the annotation; when you establish a new invariant worth guarding, add a catalog row. `make qa-matrix` regenerates `docs/qa/COVERAGE.md` and reports uncovered invariants (advisory; `-strict` is the future CI gate).

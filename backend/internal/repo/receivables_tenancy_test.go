@@ -18,6 +18,7 @@ import (
 // receivables. Like liabilities, receivable_snapshots is a dedicated
 // per-group table (ADR-0022), so this exercises both core CRUD and
 // snapshot CRUD.
+// covers: INV-TENANCY-05
 func TestReceivableRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

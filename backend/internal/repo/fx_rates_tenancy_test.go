@@ -16,6 +16,7 @@ import (
 
 // Cross-tenant isolation + alice happy path on the FX-rate table, plus the
 // duplicate-month/currency conflict.
+// covers: INV-TENANCY-11
 func TestFxRateRepo_Tenancy(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
