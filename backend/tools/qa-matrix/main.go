@@ -131,7 +131,7 @@ func parseCatalog(path string) (map[string]invariant, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	invs := map[string]invariant{}
 	var order []string
@@ -209,7 +209,7 @@ func coversInFile(path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var ids []string
 	sc := bufio.NewScanner(f)
