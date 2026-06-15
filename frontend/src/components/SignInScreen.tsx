@@ -21,7 +21,9 @@ export function SignInScreen() {
         </CardHeader>
         <CardContent>
           <Button asChild className="w-full">
-            <a href="/api/auth/google/start">{t('signIn.withGoogle')}</a>
+            <a href="/api/auth/google/start" data-testid="signin-google">
+              {t('signIn.withGoogle')}
+            </a>
           </Button>
         </CardContent>
         {/* Same identity block as the sidebar footer (issue #123) so an

@@ -18,7 +18,7 @@ test('signs in via the mock OIDC provider and lands as Alice', { tag: '@smoke' }
 }) => {
   await page.goto('/')
 
-  const signIn = page.getByRole('link', { name: /sign in with google/i })
+  const signIn = page.getByTestId('signin-google')
   await expect(signIn).toBeVisible()
 
   // Full-page navigation through the redirect chain; auto-waiting assertions

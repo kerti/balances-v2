@@ -15,6 +15,6 @@ test('injected session renders the authenticated shell as Alice', { tag: '@smoke
 
   // SignInScreen must not be present.
   await expect(
-    page.getByRole('link', { name: /sign in with google/i }),
+    page.getByTestId('signin-google'),
   ).toHaveCount(0)
 })
