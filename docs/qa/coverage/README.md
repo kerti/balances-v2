@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**90 / 90** invariants have at least one covering test.
+**93 / 93** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -23,4 +23,5 @@
 | STALENESS | 3 / 3 | [STALENESS](13-staleness.md) |
 | ATTRIBUTION | 4 / 4 | [ATTRIBUTION](14-attribution.md) |
 | INTEGRITY | 3 / 3 | [INTEGRITY](15-integrity.md) |
-| PRESENTATION | — seeded | — |
+| PRESENTATION | 3 / 3 | [PRESENTATION](16-presentation.md) |
+| JOURNEYS | — seeded | — |

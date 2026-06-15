@@ -21,6 +21,7 @@ import {
 // explicitly so the suite doesn't depend on whatever i18n.language happens to
 // be when vitest runs.
 
+// covers: INV-PRESENTATION-01
 describe('formatCurrency', () => {
   it('renders no-decimal currencies (IDR) without a fractional part in en', () => {
     const out = formatCurrency('1500000', 'IDR', 'en-GB')

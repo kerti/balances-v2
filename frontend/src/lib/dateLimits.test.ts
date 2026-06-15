@@ -9,6 +9,7 @@ import {
 } from './dateLimits'
 import type { CarryoverDateMode } from './dateLimits'
 
+// covers: INV-PRESENTATION-02
 describe('dateLimits', () => {
   beforeEach(() => {
     vi.useFakeTimers()

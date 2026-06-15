@@ -17,6 +17,7 @@ const alice = member('u-alice', 'Alice')
 const bob = member('u-bob', 'Bob')
 const members = [alice, bob]
 
+// covers: INV-PRESENTATION-03
 describe('ownershipLabel', () => {
   it('returns "Joint" for joint ownership regardless of other args', () => {
     expect(ownershipLabel('joint', null, undefined, undefined)).toBe('Joint')
