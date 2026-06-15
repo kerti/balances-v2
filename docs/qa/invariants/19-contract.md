@@ -40,3 +40,39 @@
 > **No new tests expected** — survey `httperr_test.go`, add `// covers:` rows.
 > Targets: `internal/httperr/httperr.go`, `codes.go`. Source: ADR-0027 (error
 > envelope), ADR-0026 (the i18n catalog the codes key into)._
+
+---
+
+## After CONTRACT — the floor (read before seeding a zone 20)
+
+CONTRACT is the **intended last zone of this push**. The Critical/High
+correctness-and-leak surface is fully mapped by zones 01–18; everything past
+CONTRACT is the long tail where severity drops to Medium and overlap with
+existing zones rises. Two slices still genuinely clear the catalog bar (silent
+corruption / leaked-or-false state) and are **deliberately deferred, not
+forgotten** — seed them only if the matrix is being driven to provable
+completeness:
+
+- **AUTOSAVE / FEEDBACK** (ADR-0032, frontend-native) — buttonless controls
+  (Tag dropdown, Language/Appearance selects) fire-and-forget a mutation; a
+  *silently* failed autosave leaves the non-technical user believing a choice
+  stuck when it didn't (false-state / silent data loss for the exact audience
+  ADR-0021 targets). A `sonner` toast surface + per-control `onError` exist
+  (`SettingsScreen.tsx`, `DetailTagControl.tsx`, the `use*` hooks) → annotatable
+  via component tests or an `@smoke` spec. Medium.
+- **PRECISION** (ADR-0011) — `DECIMAL(20,4)` money / `(20,8)` qty+fx, storage
+  **never rounds** (half-up only at the display boundary). Distinct slice = the
+  Go↔`pgtype.Numeric` round-trip doesn't drift/truncate on write. Real but
+  **thin** and overlaps FINANCE/FX/PRESENTATION — carve as a small zone with
+  cross-refs, never clones. Medium.
+
+**Confirmed non-zones** (checked — do not carve): CONFIG/BOOT (only
+`DATABASE_URL` is `required`, already tested; sessions are opaque server-side
+rows so there's no signing secret to fail-fast on); CONCURRENCY (no
+optimistic-locking/version column exists — deliberate for a low-concurrency
+household app, so nothing to catalogue); MIGRATIONS (ADR-0033 immutability is a
+release/process guarantee via goose checksums, not a runtime invariant a repo
+test asserts); pure infra (chi/pgx/sqlc/vite/PWA/hosting — ADR-0013/14/15/16/18/30);
+meta/process (ADR-0021/29/31/34); i18n *completeness* (a missing catalog key is
+cosmetic, below the bar — the privacy-safe rendering half is already
+PRESENTATION).
