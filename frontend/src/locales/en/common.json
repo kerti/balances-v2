@@ -2,6 +2,7 @@
   "brand": "Balances",
   "signIn": {
     "tagline": "Track your household net worth without itemising every transaction.",
+    "languageLabel": "Language",
     "withGoogle": "Continue with Google"
   },
   "signOut": "Sign out",

@@ -2,6 +2,7 @@
   "brand": "Balances",
   "signIn": {
     "tagline": "Pantau kekayaan bersih rumah tangga tanpa mencatat setiap transaksi.",
+    "languageLabel": "Bahasa",
     "withGoogle": "Lanjutkan dengan Google"
   },
   "signOut": "Keluar",

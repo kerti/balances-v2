@@ -24,8 +24,26 @@ import (
 const (
 	oauthStateCookieName  = "oauth_state"
 	oauthInviteCookieName = "oauth_invite"
+	oauthLocaleCookieName = "oauth_locale"
 	invitationTTL         = 72 * time.Hour
 )
+
+// defaultSeedLocale is the lingua-franca fallback for a brand-new account when
+// the pre-auth picker sent no usable hint (ADR-0035). An Indonesian browser is
+// routed to id-ID by the picker's navigator pre-fill, so this only wins for an
+// unknown visitor whose browser signals nothing supported.
+const defaultSeedLocale = "en-GB"
+
+// resolveSeedLocale maps a pre-auth oauth_locale hint to the locale a new
+// account is born with: the hint if it's a supported BCP47 form, else the
+// en-GB default. Display-only and never persisted for an existing user — only
+// createFounder / bootstrapNewUser consult it, and only at account birth.
+func resolveSeedLocale(hint string) string {
+	if _, ok := supportedLocales[hint]; ok {
+		return hint
+	}
+	return defaultSeedLocale
+}
 
 type Config struct {
 	Google       GoogleConfig
@@ -115,6 +133,23 @@ func (h *Handlers) handleStart(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
+	// The pre-auth language pick rides the round-trip so a brand-new account is
+	// seeded in the chosen language (ADR-0035). Only a supported BCP47 value is
+	// carried; an unsupported hint is dropped and the seed falls back to en-GB.
+	if lng := r.URL.Query().Get("lng"); lng != "" {
+		if _, ok := supportedLocales[lng]; ok {
+			http.SetCookie(w, &http.Cookie{
+				Name:     oauthLocaleCookieName,
+				Value:    lng,
+				Path:     "/",
+				MaxAge:   300,
+				HttpOnly: true,
+				Secure:   h.cookieSecure,
+				SameSite: http.SameSiteLaxMode,
+			})
+		}
+	}
+
 	http.Redirect(w, r, h.googleOAuth.authCodeURL(state), http.StatusFound)
 }
 
@@ -142,8 +177,13 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 	if inviteCookie, err := r.Cookie(oauthInviteCookieName); err == nil {
 		inviteToken = inviteCookie.Value
 	}
+	var localeHint string
+	if localeCookie, err := r.Cookie(oauthLocaleCookieName); err == nil {
+		localeHint = localeCookie.Value
+	}
 	h.clearShortCookie(w, oauthStateCookieName)
 	h.clearShortCookie(w, oauthInviteCookieName)
+	h.clearShortCookie(w, oauthLocaleCookieName)
 
 	claims, err := h.googleOAuth.exchange(ctx, code)
 	if err != nil {
@@ -167,7 +207,7 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case errors.Is(err, pgx.ErrNoRows):
-		user, err = h.bootstrapNewUser(ctx, claims, inviteToken)
+		user, err = h.bootstrapNewUser(ctx, claims, inviteToken, resolveSeedLocale(localeHint))
 		if err != nil {
 			slog.Error("bootstrap new user", "err", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -229,9 +269,9 @@ func equalStringPtr(a, b *string) bool {
 // invitation). The invitation path verifies the Google-supplied email matches
 // the invitation's invited_email (per ADR-0017) so a forwarded link can't be
 // used by an unintended account.
-func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, inviteToken string) (db.User, error) {
+func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, inviteToken, seedLocale string) (db.User, error) {
 	if inviteToken == "" {
-		return h.createFounder(ctx, c)
+		return h.createFounder(ctx, c, seedLocale)
 	}
 
 	invite, err := h.q.GetInvitationByToken(ctx, inviteToken)
@@ -270,7 +310,7 @@ func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, invite
 	return user, nil
 }
 
-func (h *Handlers) createFounder(ctx context.Context, c *googleClaims) (db.User, error) {
+func (h *Handlers) createFounder(ctx context.Context, c *googleClaims, seedLocale string) (db.User, error) {
 	household, err := h.q.CreateHousehold(ctx, db.CreateHouseholdParams{
 		DisplayName:       c.Name + "'s Household",
 		ReportingCurrency: "IDR",
@@ -283,7 +323,7 @@ func (h *Handlers) createFounder(ctx context.Context, c *googleClaims) (db.User,
 		DisplayName: c.Name,
 		Email:       c.Email,
 		GoogleSub:   c.Sub,
-		Locale:      "id-ID",
+		Locale:      seedLocale,
 		TimeZone:    "Asia/Jakarta",
 		PictureUrl:  nullableString(c.Picture),
 		CreatedBy:   nil,

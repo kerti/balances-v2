@@ -25,7 +25,7 @@ func TestCreateFounder_SendsWelcomeEmail(t *testing.T) {
 		EmailVerified: true,
 		Name:          "New Founder",
 	}
-	user, err := h.h.createFounder(context.Background(), claims)
+	user, err := h.h.createFounder(context.Background(), claims, "en-GB")
 	if err != nil {
 		t.Fatalf("createFounder: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestCreateFounder_WelcomeEmailEscapesName(t *testing.T) {
 		EmailVerified: true,
 		Name:          `Mallory <script>alert(1)</script>`,
 	}
-	if _, err := h.h.createFounder(context.Background(), claims); err != nil {
+	if _, err := h.h.createFounder(context.Background(), claims, "en-GB"); err != nil {
 		t.Fatalf("createFounder: %v", err)
 	}
 
@@ -104,7 +104,7 @@ func TestCreateFounder_WelcomeMailFailureIsBestEffort(t *testing.T) {
 		EmailVerified: true,
 		Name:          "Resilient Founder",
 	}
-	user, err := h.h.createFounder(context.Background(), claims)
+	user, err := h.h.createFounder(context.Background(), claims, "en-GB")
 	if err != nil {
 		t.Fatalf("createFounder must not fail on mail error: %v", err)
 	}

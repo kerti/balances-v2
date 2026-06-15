@@ -26,7 +26,7 @@ func TestCreateFounder(t *testing.T) {
 		EmailVerified: true,
 		Name:          "Founder",
 	}
-	user, err := h.h.createFounder(context.Background(), claims)
+	user, err := h.h.createFounder(context.Background(), claims, "en-GB")
 	if err != nil {
 		t.Fatalf("createFounder: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestBootstrapNewUser(t *testing.T) {
 			EmailVerified: true,
 			Name:          "Newbie",
 		}
-		user, err := h.h.bootstrapNewUser(context.Background(), claims, "")
+		user, err := h.h.bootstrapNewUser(context.Background(), claims, "", "en-GB")
 		if err != nil {
 			t.Fatalf("bootstrapNewUser: %v", err)
 		}
@@ -78,7 +78,7 @@ func TestBootstrapNewUser(t *testing.T) {
 			EmailVerified: true,
 			Name:          "Invited",
 		}
-		user, err := h.h.bootstrapNewUser(context.Background(), claims, token)
+		user, err := h.h.bootstrapNewUser(context.Background(), claims, token, "en-GB")
 		if err != nil {
 			t.Fatalf("bootstrapNewUser: %v", err)
 		}
@@ -100,7 +100,7 @@ func TestBootstrapNewUser(t *testing.T) {
 	t.Run("unknown token returns 'invitation not found'", func(t *testing.T) {
 		h := newAuthHarness(t)
 		claims := &googleClaims{Sub: "x", Email: "x@example.com", EmailVerified: true, Name: "X"}
-		_, err := h.h.bootstrapNewUser(context.Background(), claims, "definitely-not-a-token")
+		_, err := h.h.bootstrapNewUser(context.Background(), claims, "definitely-not-a-token", "en-GB")
 		if err == nil || !strings.Contains(err.Error(), "not found") {
 			t.Errorf("err: want 'not found', got %v", err)
 		}
@@ -111,7 +111,7 @@ func TestBootstrapNewUser(t *testing.T) {
 		token := mustSeedInvitation(t, h, "stale@example.com", time.Now().Add(-1*time.Hour))
 
 		claims := &googleClaims{Sub: "s", Email: "stale@example.com", EmailVerified: true, Name: "S"}
-		_, err := h.h.bootstrapNewUser(context.Background(), claims, token)
+		_, err := h.h.bootstrapNewUser(context.Background(), claims, token, "en-GB")
 		if err == nil || !strings.Contains(err.Error(), "expired") {
 			t.Errorf("err: want 'expired', got %v", err)
 		}
@@ -122,12 +122,12 @@ func TestBootstrapNewUser(t *testing.T) {
 		token := mustSeedInvitation(t, h, "twice@example.com", time.Now().Add(24*time.Hour))
 		// First use should succeed.
 		claims1 := &googleClaims{Sub: "g1", Email: "twice@example.com", EmailVerified: true, Name: "T"}
-		if _, err := h.h.bootstrapNewUser(context.Background(), claims1, token); err != nil {
+		if _, err := h.h.bootstrapNewUser(context.Background(), claims1, token, "en-GB"); err != nil {
 			t.Fatalf("first bootstrap: %v", err)
 		}
 		// Second use should fail.
 		claims2 := &googleClaims{Sub: "g2", Email: "twice@example.com", EmailVerified: true, Name: "T2"}
-		_, err := h.h.bootstrapNewUser(context.Background(), claims2, token)
+		_, err := h.h.bootstrapNewUser(context.Background(), claims2, token, "en-GB")
 		if err == nil || !strings.Contains(err.Error(), "already used") {
 			t.Errorf("err: want 'already used', got %v", err)
 		}
@@ -138,7 +138,7 @@ func TestBootstrapNewUser(t *testing.T) {
 		token := mustSeedInvitation(t, h, "expected@example.com", time.Now().Add(24*time.Hour))
 
 		claims := &googleClaims{Sub: "g", Email: "imposter@example.com", EmailVerified: true, Name: "I"}
-		_, err := h.h.bootstrapNewUser(context.Background(), claims, token)
+		_, err := h.h.bootstrapNewUser(context.Background(), claims, token, "en-GB")
 		if err == nil || !strings.Contains(err.Error(), "does not match") {
 			t.Errorf("err: want 'does not match', got %v", err)
 		}
