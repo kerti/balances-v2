@@ -1,54 +1,23 @@
 # Zone: INTEGRITY
 
-> _Seeded next — the **write-side shape & ownership constraints** that make a
-> malformed row unrepresentable in the first place, the upstream guarantee every
-> read-side zone (FINANCE, ATTRIBUTION, LIFECYCLE) silently assumes. The pattern
-> is **two-layer**, called out repeatedly in HANDOFF: a DB `CHECK` enforces the
-> hard shape, and a repo-layer validator rejects the same bad input early with a
-> typed error (`ErrInvalidSnapshotShape`, the transaction validator) so the
-> handler returns 422 rather than a constraint-violation 500. This zone
-> catalogues the *guards*, not the calculations they protect. **Dedup discipline,
-> read before writing rows:** LIFECYCLE already owns the status↔`terminated_at`
-> biconditional (`<table>_lifecycle_chk`) — do **not** re-catalogue it; SNAPSHOTS
-> owns the `as_of_in_month` pin (migration 00003) and BONDS owns TD term bounds /
-> maturity-after-placement (migration 00004) — leave those there; ATTRIBUTION-04
-> catalogues the *read-side degrade* when a malformed sole row somehow exists,
-> whereas this zone catalogues the *write-side CHECK that stops it existing*
-> (they are two ends of the same risk — cross-link, don't duplicate). Genuine new
-> territory here:
->
-> (1) **Ownership biconditional** — every owned-entity table (`assets`,
-> `investments`, `liabilities`, `receivables`, `income`) carries
-> `CHECK ((ownership_type='sole') = (sole_owner_user_id IS NOT NULL))`: a `sole`
-> row **must** name an owner and a `joint` row **must not**. This is the exact
-> constraint that makes ATTRIBUTION-04's "malformed sole" an *impossible* row in
-> normal operation — pin that the DB rejects both halves (sole-without-owner and
-> joint-with-owner). Plus the enum `CHECK`s that bound `ownership_type` to
-> `{sole,joint}`.
->
-> (2) **Snapshot shape is exactly-one** — `investment_snapshot_shape`:
-> `(quantity AND price_per_unit AND NOT accrued_interest)` XOR
-> `(NOT quantity AND NOT price_per_unit AND accrued_interest)`. A unit-priced
-> holding and an interest-accruing holding are disjoint shapes; a row carrying
-> both or neither is rejected. The repo mirror is `ErrInvalidSnapshotShape`
-> (annotation targets: **`TestInvestmentRepo_SnapshotShapeValidation`** in
-> `investments_tenancy_test.go`, and
-> **`TestCreateStockWithSnapshotsAndLedger_RejectsMismatchedSnapshotShape`** in
-> `investment_import_create_test.go` — both already exercise the reject path,
-> unannotated).
->
-> (3) **Transaction type→shape** — `investment_transaction_shape`: each
-> `transaction_type` (`buy/sell/coupon/dividend/.../maturity`) admits only its
-> own value-column combination, enforced both by the DB CHECK and the repo
-> validator (annotation target: **`TestValidateSeedTransaction`** in
-> `investment_import_create_test.go`). Pin that a wrong type→column combo is
-> rejected at write, so the engine's per-type cash-flow branches never see an
-> impossible row.
->
-> Survey `investments_tenancy_test.go`, `investment_import_create_test.go`, and
-> `investment_transactions_tenancy_test.go` before writing — much of the reject
-> coverage already exists and needs only annotation; the likely *new* test is the
-> ownership-biconditional reject (both directions) if no test asserts it today.
-> Source: baseline migration `00001_baseline.sql` (the CHECKs), the repo
-> validators, ADR-0004 (ownership model). CONTEXT.md is the de-facto spec for
-> which shapes are legal._
+The **write-side shape & ownership constraints** that make a malformed row
+unrepresentable in the first place — the upstream guarantee every read-side zone
+(FINANCE, ATTRIBUTION, LIFECYCLE) silently assumes. The pattern is **two-layer**:
+a DB `CHECK` enforces the hard shape, and (where one exists) a repo-layer
+validator rejects the same bad input early with a typed error so the handler
+returns a 4xx rather than surfacing a raw constraint-violation 500. This zone
+catalogues the *guards*, not the calculations they protect. It deliberately does
+**not** re-catalogue neighbours that own their own constraint: LIFECYCLE owns the
+status↔`terminated_at` biconditional (`<table>_lifecycle_chk`), SNAPSHOTS owns the
+`as_of_in_month` pin (migration 00003), BONDS owns the TD term bounds /
+maturity-after-placement (migration 00004). INV-ATTRIBUTION-04 is the *read-side
+degrade* for a malformed sole row that somehow exists; INV-INTEGRITY-01 is the
+*write-side CHECK that stops it existing* — two ends of one risk. Source: baseline
+migration `00001_baseline.sql` (the CHECKs), the repo validators in
+`investments.go` / `investment_transactions.go`, ADR-0004 (ownership model).
+
+| ID | Invariant | Source | Severity |
+|----|-----------|--------|----------|
+| INV-INTEGRITY-01 | Ownership biconditional — every owned-entity table (`assets`, `investments`, `liabilities`, `receivables`, `income`) carries `CHECK ((ownership_type='sole') = (sole_owner_user_id IS NOT NULL))`, so the DB rejects **both** malformed halves: a `sole` row with a nil owner *and* a `joint` row that names one. This is the write-side guarantee that makes ATTRIBUTION-04's "malformed sole" an impossible row in normal operation; the enum CHECK additionally bounds `ownership_type` to `{sole, joint}`. DB-enforced only (the repo passes ownership straight through), so a bad write fails the transaction rather than persisting | ADR-0004 / migration 00001 | High |
+| INV-INTEGRITY-02 | Snapshot shape is exactly-one — an investment snapshot is either unit-priced (`quantity` + `price_per_unit`, no `accrued_interest`) **or** interest-accruing (`accrued_interest`, no `quantity`/`price_per_unit`), never both and never neither, keyed by the position's subtype. Enforced two-layer: the DB `investment_snapshot_shape` CHECK and the repo `ErrInvalidSnapshotShape` validator that rejects the mismatch before write (and rolls back a create-with-snapshots fan-out so a bad shape leaves nothing behind) | migration 00001 | Critical |
+| INV-INTEGRITY-03 | Transaction type→shape — each `transaction_type` (`buy/sell/coupon/dividend/distribution/fee/maturity`) admits only its own value-column combination, and a type must be legal for the position's subtype. Enforced two-layer: the DB `investment_transaction_shape` CHECK and the repo `ValidateSeedTransaction` validator (`ErrInvalidTransactionType` for an off-subtype type, `ErrInvalidTransactionShape` for a wrong column combo), so the engine's per-type cash-flow branches never see an impossible row | migration 00001 | High |

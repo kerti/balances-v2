@@ -792,6 +792,7 @@ func TestInvestmentRepo_LinkRolloverSuccessor(t *testing.T) {
 // reject accrued_interest; Bond/TimeDeposit require accrued_interest and
 // reject quantity/price. The wrong combo surfaces as
 // ErrInvalidSnapshotShape rather than a SQL constraint violation.
+// covers: INV-INTEGRITY-02
 func TestInvestmentRepo_SnapshotShapeValidation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
