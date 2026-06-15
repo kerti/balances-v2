@@ -127,8 +127,10 @@ aggregates are computed in). _Avoid_: Family, Team, Tenant.
 
 **User**: An individual member of a Household. A User belongs to exactly one Household (v1;
 multi-household membership is deferred). All Users in a Household have full read/write access to all
-its data. Users carry a `display_name`, `email`, `locale` (UI language, default `id-ID`), and
-`time_zone` ("current month" interpretation, default `Asia/Jakarta`).
+its data. Users carry a `display_name`, `email`, `locale` (UI language, default `en-GB` — the
+lingua-franca fallback for an unknown visitor; an Indonesian browser is still routed to
+`id-ID` by the pre-auth picker's navigator pre-fill), and `time_zone` ("current month"
+interpretation, default `Asia/Jakarta`).
 
 **Founder**: The User who bootstrapped a Household — the first sign-in with no pending invitation
 (`createFounder`, [[adr-0017]]). "Founder" denotes *creation lineage only, not a role or permission

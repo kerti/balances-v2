@@ -96,7 +96,9 @@ distinguish field-absent (skip) from field-present-null (clear, for nickname; 40
 locale has no "unset" state). Settings gains a "Language" dropdown that calls the PATCH and
 mirrors the choice into localStorage. First-login fallback in `AppShell` reads
 `navigator.languages`, maps to a supported BCP47, and writes the result back to the user row, so
-the next device picks it up automatically.
+the next device picks it up automatically. **(Superseded by [[adr-0035]]: once a pre-auth language
+picker exists, navigator detection is demoted to a display-only pre-fill and no longer PATCHes the
+user row; locale is seeded server-side at account birth instead.)**
 
 Browser-only / cookie-only alternatives rejected: device-switching is a real flow for this
 household app (phone + laptop), and the user row already holds the cousin field `nickname` — the
