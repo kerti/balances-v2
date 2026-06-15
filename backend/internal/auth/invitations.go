@@ -102,21 +102,21 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handlers) sendInvitationEmail(ctx context.Context, inviter db.User, household db.Household, invite db.HouseholdInvitation, acceptURL string) error {
-	subject := fmt.Sprintf("%s invited you to Balances", inviter.DisplayName)
-	html := fmt.Sprintf(`<p>Hi,</p>
-<p>%s has invited you to join their Balances household <strong>%s</strong>.</p>
-<p><a href="%s">Click here to accept the invitation</a></p>
-<p>The link expires on %s. If you weren't expecting this email, you can safely ignore it.</p>`,
-		htmlEscape(inviter.DisplayName), htmlEscape(household.DisplayName), acceptURL, invite.ExpiresAt.Time.Format(time.RFC1123))
-	text := fmt.Sprintf(`Hi,
+	c := localizedEmail(invitationCatalog, inviter.Locale)
+	expires := invite.ExpiresAt.Time.Format(time.RFC1123)
+	subject := fmt.Sprintf(c.subject, inviter.DisplayName)
+	expiry := fmt.Sprintf(c.expiry, expires)
 
-%s has invited you to join their Balances household "%s".
+	bodyHTML := fmt.Sprintf(c.body,
+		htmlEscape(inviter.DisplayName), "<strong>"+htmlEscape(household.DisplayName)+"</strong>")
+	bodyText := fmt.Sprintf(c.body, inviter.DisplayName, `"`+household.DisplayName+`"`)
 
-Accept the invitation here:
-%s
-
-The link expires on %s. If you weren't expecting this email, you can safely ignore it.
-`, inviter.DisplayName, household.DisplayName, acceptURL, invite.ExpiresAt.Time.Format(time.RFC1123))
+	html := fmt.Sprintf(`<p>%s</p>
+<p>%s</p>
+<p><a href="%s">%s</a></p>
+<p>%s</p>`, c.greeting, bodyHTML, acceptURL, c.linkText, expiry)
+	text := fmt.Sprintf("%s\n\n%s\n\n%s:\n%s\n\n%s\n",
+		c.greeting, bodyText, c.linkText, acceptURL, expiry)
 
 	return h.mailer.Send(ctx, email.Message{
 		To:      invite.InvitedEmail,

@@ -15,29 +15,22 @@ import (
 // never cost the founder their signup.
 func (h *Handlers) sendWelcomeEmail(ctx context.Context, user db.User) error {
 	inviteURL := h.frontendURL + "/settings"
-	name := htmlEscape(user.DisplayName)
+	c := localizedEmail(welcomeCatalog, user.Locale)
+	greetingHTML := fmt.Sprintf(c.greeting, htmlEscape(user.DisplayName))
+	greetingText := fmt.Sprintf(c.greeting, user.DisplayName)
 
-	html := email.Layout(fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">Welcome, %s!</p>
-<p style="margin:0 0 16px;">Balances helps your household see its <strong>net worth</strong> in one place — bank accounts, property, investments, and what you owe. Each month you enter your balances from your statements, and Balances tracks how your total moves over time.</p>
-<p style="margin:0 0 20px;">It works best with everyone in. Invite the people you share finances with so you're all looking at the same picture.</p>
-<p style="margin:0;"><a href="%s" style="display:inline-block;background:#6366F1;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">Invite your household</a></p>`,
-		name, inviteURL))
+	html := email.Layout(fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+<p style="margin:0 0 16px;">%s</p>
+<p style="margin:0 0 20px;">%s</p>
+<p style="margin:0;"><a href="%s" style="display:inline-block;background:#6366F1;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>`,
+		greetingHTML, c.intro, c.invite, inviteURL, c.cta))
 
-	text := fmt.Sprintf(`Welcome, %s!
-
-Balances helps your household see its net worth in one place — bank accounts, property, investments, and what you owe. Each month you enter your balances from your statements, and Balances tracks how your total moves over time.
-
-It works best with everyone in. Invite the people you share finances with so you're all looking at the same picture.
-
-Invite your household:
-%s
-
-— the Balances team
-`, user.DisplayName, inviteURL)
+	text := fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s:\n%s\n\n%s\n",
+		greetingText, c.intro, c.invite, c.cta, inviteURL, c.signoff)
 
 	return h.mailer.Send(ctx, email.Message{
 		To:      user.Email,
-		Subject: "Welcome to Balances",
+		Subject: c.subject,
 		HTML:    html,
 		Text:    text,
 	})
