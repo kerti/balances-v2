@@ -12,6 +12,7 @@ import { test, expect } from '@playwright/test'
 // starts unauthenticated and the sign-in screen renders first.
 test.use({ storageState: { cookies: [], origins: [] } })
 
+// covers: INV-JOURNEYS-01
 test('signs in via the mock OIDC provider and lands as Alice', { tag: '@smoke' }, async ({
   page,
 }) => {

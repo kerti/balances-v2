@@ -11,6 +11,7 @@ const XLSX_MIME =
 // Anchors on a unique display name; the import deliberately produces a second
 // row with the same name (a copy), and we assert two exist before cleaning both
 // up. See ADR-0024.
+// covers: INV-JOURNEYS-03
 test('bank account export re-imports as a new position from the list', async ({
   page,
 }) => {

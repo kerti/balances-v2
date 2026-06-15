@@ -1,44 +1,35 @@
 # Zone: JOURNEYS
 
-> _Seeded next — the **E2E-native** companion to PRESENTATION. Where
-> PRESENTATION pins pure-fn vitest twins of the backend truth, this zone pins the
-> invariants that only exist in the **whole-browser round-trip**: the ones that
-> cross a redirect, a session-cookie hand-off, or a navigation boundary that no
-> handler unit test and no pure-fn test can reach end-to-end. The catalog bar is
-> the same as everywhere else (silent corruption or a leaked/false state, not
-> mere mechanics) — applied to user journeys._
->
-> **The charter row is the OAuth sign-in flow (ADR-0024):** button → provider
-> redirect → callback → session cookie set → landed authenticated. Only the
-> callback half is unit-tested today (the handler — see AUTH); the *full loop* is
-> exercised in the browser against the mock-OIDC server. That round-trip is the
-> archetypal can't-reach-it-any-other-way invariant: the redirect and cookie
-> boundaries are exactly what a handler test stubs out.
->
-> **Other candidates** (pin only those whose failure misinforms or strands the
-> non-technical user, per the catalog bar):
-> - **Session expiry → re-auth** — a stale/expired session lands the user back at
->   sign-in, not at a broken authed shell or a raw 401.
-> - **Import preview → commit → list** — the browser face of IMPORT's
->   preview/commit parity (INV-IMPORT-*): what the preview showed is what the list
->   holds after commit, and a dry-run leaves the list untouched.
-> - **Carryover dialog → submittable form** — the *journey* face of
->   INV-PRESENTATION-02 / #119: opening the dialog seeds a `{ yearMonth, asOfDate }`
->   pair that submits without the user editing the month down. Cross-link
->   PRESENTATION-02; do not restate it.
->
-> **Gate wrinkle — read before annotating** (`how-it-works.md`): Playwright is
-> tiered. Only `@smoke`-tagged specs gate per-PR; the full suite runs nightly
-> (`e2e.yml`, #70). So an invariant covered *only* by a non-smoke spec would be
-> credited by a future per-PR `-strict` gate without having run in that PR — it
-> ran nightly instead. Before an annotation here counts toward a per-PR strict
-> gate, either **tag the covering spec `@smoke`** so it runs in the gate, or
-> record which rows are **nightly-verified by design**. This is the one structural
-> difference from PRESENTATION's safe-to-annotate-first vitest rows, and it is why
-> JOURNEYS is seeded as its own zone rather than folded in.
->
-> Target specs: `frontend/e2e/*.spec.ts` (pick/assert via `data-testid`). Survey
-> the existing specs before writing — several flows may already be covered and
-> need only the annotation (plus a `@smoke` tag where a row must gate per-PR).
-> Source: ADR-0024 (OAuth flow), #70 (tiered E2E in CI), ADR-0021 (the audience
-> these journeys serve)._
+The **E2E-native** companion to PRESENTATION. Where PRESENTATION pins pure-fn
+vitest twins of the backend truth, this zone pins the invariants that only exist
+in the **whole-browser round-trip** — the ones that cross a redirect, a
+session-cookie hand-off, or an export→re-import file boundary that no handler
+unit test and no pure-fn test can reach end-to-end. The catalog bar is unchanged
+(silent corruption or a leaked/false state, not mere mechanics), applied to user
+journeys. Each row **mirrors, never re-owns** the backend truth it exercises:
+AUTH owns the handler-level OAuth halves, IMPORT owns the preview/commit parity,
+PRESENTATION-02 owns the pure-fn date cap — the rows here pin the *browser loop*
+that stitches them together, cross-linked.
+
+**Gate tier matters here** (`how-it-works.md`): Playwright is tiered — only
+`@smoke`-tagged specs gate per-PR; the full suite runs nightly (`e2e.yml`, #70).
+The **Tier** column below records, per row, whether the covering spec runs in the
+per-PR gate (`@smoke`) or is **nightly-verified by design**. A future per-PR
+`-strict` gate must treat a nightly-only row as verified-nightly, not credit it
+per-PR. Source: ADR-0024 (OAuth flow), ADR-0021 (the non-technical audience these
+journeys serve), #70 (tiered E2E in CI).
+
+| ID | Invariant | Source | Severity | Tier |
+|----|-----------|--------|----------|------|
+| INV-JOURNEYS-01 | OAuth sign-in completes the full browser round-trip — clicking "Sign in with Google" from an unauthenticated context navigates `→ /auth/google/start → mock-OIDC authorize → callback → minted session cookie → back to the authenticated app shell` as the seeded user, the one path session-injection can't cover. The redirect chain and the cookie hand-off are exactly what the handler tests stub, so this is the only place the loop is verified intact. Mirrors, never re-owns, AUTH's handler halves (INV-AUTH-02 state/CSRF, INV-AUTH-03 session cookie, INV-AUTH-05 founder bootstrap); a break here strands every user at the door. Verified in `login.spec.ts` (runs the local mock-oidc provider, ADR-0024 option B — never contacts accounts.google.com) | ADR-0024 / INV-AUTH-02·03·05 | High | `@smoke` |
+| INV-JOURNEYS-02 | Carryover seeds a submittable form — opening the snapshot carryover dialog pre-fills the prior amount **and a statement date that is already valid** (defaults to today, within the date input's min/max), so the non-technical user can save without editing the month down. The browser/journey face of INV-PRESENTATION-02 (the pure-fn local-time date cap) and #60/#119; PRESENTATION-02 owns the cap, this owns the dialog wiring that surfaces a ready-to-submit value. Verified in `snapshot.spec.ts` (carryover prefill assertion) | ADR-0021 / INV-PRESENTATION-02 / #119 | Medium | `@smoke` |
+| INV-JOURNEYS-03 | Import preview→commit→list parity in the browser — feeding an exported position workbook through the list-screen Import dialog: the dry-run check reports **no errors and a would-create** (writing nothing), and only the explicit commit creates the position, which then appears in the list. The end-to-end UI face of INV-IMPORT-01 (preview/commit parity, dry-run no-op); IMPORT-01 owns the server contract, this owns the dialog's check→commit→reflected-in-list loop including the export→re-import file round-trip. Verified in `import-create-roundtrip.spec.ts` (bank-account workbook; `investment-import-create-roundtrip.spec.ts` is its investment twin) | ADR-0022 / INV-IMPORT-01 | High | nightly |
+
+> _Known candidate, deliberately not yet catalogued (no covering spec exists):
+> **session expiry → re-auth** — a stale/expired session should land the user
+> back at the sign-in screen, not a broken authed shell or a raw 401. `login.spec.ts`
+> proves the unauthenticated→sign-in-screen direction incidentally (it starts
+> with an empty `storageState`), but nothing exercises an **expired** session
+> mid-app. Mint INV-JOURNEYS-04 when a spec drives it; until then this is a noted
+> gap, not an uncovered catalog row (kept out of the matrix denominator on
+> purpose, per the seed convention — candidates live in prose until a test lands)._
