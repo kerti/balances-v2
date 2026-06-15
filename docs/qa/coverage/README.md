@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**80 / 80** invariants have at least one covering test.
+**83 / 83** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -20,4 +20,5 @@
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
 | FX | 4 / 4 | [FX](11-fx.md) |
 | SOFT-DELETE | 4 / 4 | [SOFT-DELETE](12-soft-delete.md) |
-| STALENESS | — seeded | — |
+| STALENESS | 3 / 3 | [STALENESS](13-staleness.md) |
+| ATTRIBUTION | — seeded | — |

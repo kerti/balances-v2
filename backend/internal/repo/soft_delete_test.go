@@ -90,7 +90,7 @@ func TestSoftDelete_Idempotent(t *testing.T) {
 // gather query that leaked the tombstone would keep the report at 200 — silently
 // overstating net worth after the user removed the holding.
 //
-// covers: INV-SOFT-DELETE-03
+// covers: INV-SOFT-DELETE-03, INV-STALENESS-01
 func TestMonthlyReport_GatherExcludesDeletedSnapshot(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
