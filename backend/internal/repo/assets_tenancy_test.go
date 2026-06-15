@@ -20,6 +20,7 @@ import (
 // and ADR-0021 — every position-shaped endpoint needs equivalent coverage as
 // they ship.
 // covers: INV-TENANCY-01
+// covers: INV-SOFT-DELETE-02
 func TestAssetRepo_TenancyIsolation(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

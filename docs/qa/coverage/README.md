@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**76 / 76** invariants have at least one covering test.
+**80 / 80** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -19,4 +19,4 @@
 | TAGS | 5 / 5 | [TAGS](09-tags.md) |
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
 | FX | 4 / 4 | [FX](11-fx.md) |
-| SOFT-DELETE | — seeded | — |
+| SOFT-DELETE | 4 / 4 | [SOFT-DELETE](12-soft-delete.md) |

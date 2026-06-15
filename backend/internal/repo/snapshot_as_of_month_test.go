@@ -22,7 +22,7 @@ import (
 // predicate ever regresses, the second create here fails the duplicate check and
 // the "delete and re-record" UX breaks.
 //
-// covers: INV-SNAPSHOTS-02, INV-SNAPSHOTS-03
+// covers: INV-SNAPSHOTS-02, INV-SNAPSHOTS-03, INV-SOFT-DELETE-04
 func TestAssetSnapshot_DeleteThenRecreateSameMonth(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
