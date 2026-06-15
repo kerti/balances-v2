@@ -22,4 +22,5 @@ household. Code lives in `internal/auth/`: `session.go`
 | INV-AUTH-07 | Accepting a valid invitation binds the new user to **only** the inviting household (not a new one) and marks the invitation used | ADR-0017, ADR-0005 | Critical |
 | INV-AUTH-08 | Invitation acceptance requires the Google-supplied email to match `invited_email` (forwarded-link guard); a mismatch is rejected and leaves the invitation unconsumed | ADR-0017 | Critical |
 | INV-AUTH-09 | The pre-auth language pick is display-only: it rides the OAuth round-trip in a short-lived `oauth_locale` cookie (set at start only for a supported BCP47 `?lng=`, cleared at the callback) and never PATCHes an account | ADR-0035 | High |
-| INV-AUTH-10 | A brand-new account's `locale` is seeded server-side at birth from the `oauth_locale` hint, falling back to `en-GB` when the hint is absent or unsupported | ADR-0035 | High |
+| INV-AUTH-10 | A brand-new account's `locale` is seeded server-side at birth from the `oauth_locale` hint, falling back to `en-GB` when the hint is absent or unsupported — for both the founder and the invited-member paths | ADR-0035 | High |
+| INV-AUTH-11 | The invitation accept URL carries the inviter's locale as `?lng=` (a direct backend `/start` link), so an invitee inherits the household language by default; override is available later in Settings | ADR-0035 | Medium |

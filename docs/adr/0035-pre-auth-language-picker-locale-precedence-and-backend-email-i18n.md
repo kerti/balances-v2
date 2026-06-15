@@ -69,11 +69,21 @@ A household usually shares a language, so an invitation inherits the **inviter's
 without touching the `household_invitations` table:
 
 - **Invitation email language** = `inviter.Locale` (already in scope in `sendInvitationEmail`).
-- **Invitee picker pre-fill** = the accept link carries `?lng=<inviter.Locale>`, pre-selecting the
-  language the email was written in (falls back to navigator if absent).
-- **Override** = the invitee touches the same pre-auth picker before continuing.
-- **Invitee account seed** = the `oauth_locale` cookie carries whatever the picker showed at
-  click-time, so `bootstrapNewUser` runs the *same* `oauth_locale ?? "en-GB"` seed as the founder.
+- **Invitee account seed** = the accept link is a backend URL
+  (`/api/auth/google/start?invite=<token>&lng=<inviter.Locale>`), so `?lng=` sets the same
+  `oauth_locale` cookie the founder picker sets, and `bootstrapNewUser` runs the *same*
+  `oauth_locale ?? "en-GB"` seed. The invitee's account is born in the inviter's locale.
+- **Override** = in Settings (post-auth). The Settings language dropdown lists each option by its
+  in-language name ("English" / "Bahasa Indonesia") regardless of the active UI language, so a
+  cross-language invitee can still find their language even if the UI loaded in one they don't read.
+
+> **Implementation note (revised during slice #169).** An earlier draft assumed the accept link would
+> land on the *frontend* sign-in surface and pre-fill the pre-auth picker, where the invitee could
+> override before continuing. The accept link is in fact a **direct backend URL**
+> (`/api/auth/google/start?invite=…`) — there is no frontend accept route — so the pre-auth picker is
+> not part of the invite flow. Inheritance is therefore automatic (the `?lng=` seed) and override
+> moves to Settings rather than a pre-auth toggle. Routing invites through a new frontend accept page
+> to restore a pre-auth override is a possible future enhancement, deliberately out of scope here.
 
 ### Backend email i18n: a hand-rolled per-locale catalog
 

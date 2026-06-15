@@ -296,7 +296,7 @@ func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, invite
 		DisplayName: c.Name,
 		Email:       c.Email,
 		GoogleSub:   c.Sub,
-		Locale:      "id-ID",
+		Locale:      seedLocale,
 		TimeZone:    "Asia/Jakarta",
 		PictureUrl:  nullableString(c.Picture),
 		CreatedBy:   &invite.CreatedBy,

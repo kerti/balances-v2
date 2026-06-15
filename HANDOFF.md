@@ -40,6 +40,12 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 
 Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
 
+- **i18n round-out (#159) — shipped** (ADR-0035, migration 00005): pre-auth language picker seeds a
+  new account's locale server-side at birth (founder #167 + invited member #169) via an `oauth_locale`
+  cookie; transactional emails localized by recipient locale (#168); navigator-flip account mutation
+  retired; default flipped `id-ID` → `en-GB`. Invitee inherits the inviter's language (accept-link
+  `?lng=`), override in Settings.
+
 - **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
   blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and
   `as_of_date` pinned to its `year_month` via DB CHECK `<table>_as_of_in_month`, migration 00003 +

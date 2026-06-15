@@ -82,7 +82,12 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	acceptURL := h.backendURL + "/api/auth/google/start?invite=" + token
+	// Carry the inviter's locale on the accept link so the invitee inherits the
+	// household language by default (ADR-0035): the link is a direct backend
+	// /start URL, so ?lng= becomes the oauth_locale seed hint. inviter.Locale is
+	// always a supported value (users.locale CHECK). The invitee can change it
+	// later in Settings.
+	acceptURL := h.backendURL + "/api/auth/google/start?invite=" + token + "&lng=" + inviter.Locale
 
 	if err := h.sendInvitationEmail(ctx, inviter, household, invite, acceptURL); err != nil {
 		// Email delivery is best-effort: log the error but still return the
