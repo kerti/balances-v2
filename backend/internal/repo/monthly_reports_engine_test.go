@@ -120,7 +120,7 @@ func TestEngine_TerminatedSuppression(t *testing.T) {
 
 // Group sums and the per-user / Joint breakdown (with liability subtraction)
 // reconcile with the total.
-// covers: INV-FINANCE-01, INV-FINANCE-02
+// covers: INV-FINANCE-01, INV-FINANCE-02, INV-ATTRIBUTION-01, INV-ATTRIBUTION-02
 func TestEngine_GroupsAndBreakdown(t *testing.T) {
 	alice, bob := uuid.New(), uuid.New()
 	a1, a2 := uuid.New(), uuid.New()
@@ -169,6 +169,86 @@ func TestEngine_GroupsAndBreakdown(t *testing.T) {
 		Add(r.userBreakdowns[bob.String()].NW)
 	if !sum.Equal(r.nwTotal) {
 		t.Errorf("breakdown sum %s != nwTotal %s", sum, r.nwTotal)
+	}
+}
+
+// Membership seeds the bucket set: a member who owns nothing still gets a
+// zero bucket, and sole vs joint income routes by ownerKey just like net worth.
+// covers: INV-ATTRIBUTION-03, INV-ATTRIBUTION-01, INV-ATTRIBUTION-02
+func TestEngine_AttributionMembershipAndIncomeRouting(t *testing.T) {
+	alice, bob, carol := uuid.New(), uuid.New(), uuid.New()
+	jan := ym(2026, time.January)
+	anchor := uuid.New() // a joint asset to establish the month range
+	in := reportEngineInput{
+		members: []uuid.UUID{alice, bob, carol}, // carol owns nothing
+		positions: []reportPosition{
+			{id: anchor, group: groupAsset, ownershipType: "joint"},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: anchor, yearMonth: jan, amount: dec("10")},
+		},
+		income: []reportIncome{
+			{yearMonth: jan, amount: dec("100"), category: "salary", ownershipType: "sole", soleOwnerID: &bob},
+			{yearMonth: jan, amount: dec("40"), category: "salary", ownershipType: "joint"},
+		},
+		currentMonth: jan,
+	}
+	r := findMonth(t, generateMonthlyReports(in), jan)
+
+	// Carol owns nothing but is a member → present with a zero bucket.
+	carolB, ok := r.userBreakdowns[carol.String()]
+	if !ok {
+		t.Fatalf("carol bucket missing: membership did not seed the bucket set")
+	}
+	if !carolB.NW.Equal(dec("0")) || !carolB.EarnedIncome.Equal(dec("0")) {
+		t.Errorf("carol bucket non-zero: NW=%s income=%s", carolB.NW, carolB.EarnedIncome)
+	}
+
+	// Sole income routes to its owner; joint income to the joint bucket; no leak.
+	checks := map[string]struct{ got, want decimal.Decimal }{
+		"bob income":   {r.userBreakdowns[bob.String()].EarnedIncome, dec("100")},
+		"joint income": {r.userBreakdowns[jointKey].EarnedIncome, dec("40")},
+		"alice income": {r.userBreakdowns[alice.String()].EarnedIncome, dec("0")},
+	}
+	for name, c := range checks {
+		if !c.got.Equal(c.want) {
+			t.Errorf("%s: got %s, want %s", name, c.got, c.want)
+		}
+	}
+	if !r.earnedIncome.total.Equal(dec("140")) {
+		t.Errorf("earned income total: got %s, want 140", r.earnedIncome.total)
+	}
+}
+
+// A sole row with a nil soleOwnerID is malformed; ownerKey degrades it to the
+// joint bucket rather than panicking or dropping the value from the total.
+// covers: INV-ATTRIBUTION-04
+func TestEngine_AttributionMalformedSoleDegradesToJoint(t *testing.T) {
+	alice := uuid.New()
+	orphan := uuid.New()
+	jan := ym(2026, time.January)
+	in := reportEngineInput{
+		members: []uuid.UUID{alice},
+		positions: []reportPosition{
+			// sole ownership but no owner id — the malformed row.
+			{id: orphan, group: groupAsset, ownershipType: "sole", soleOwnerID: nil},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: orphan, yearMonth: jan, amount: dec("500")},
+		},
+		currentMonth: jan,
+	}
+	r := findMonth(t, generateMonthlyReports(in), jan)
+
+	if !r.userBreakdowns[jointKey].NW.Equal(dec("500")) {
+		t.Errorf("malformed sole did not degrade to joint: joint NW=%s, want 500", r.userBreakdowns[jointKey].NW)
+	}
+	if !r.userBreakdowns[alice.String()].NW.Equal(dec("0")) {
+		t.Errorf("malformed sole leaked into a member bucket: alice NW=%s, want 0", r.userBreakdowns[alice.String()].NW)
+	}
+	// Value stays in the household total — reconciliation holds.
+	if !r.nwTotal.Equal(dec("500")) {
+		t.Errorf("malformed sole dropped from total: nwTotal=%s, want 500", r.nwTotal)
 	}
 }
 
