@@ -1,4 +1,4 @@
-# balances-v2
+# Balances
 
 [![CI](https://github.com/kerti/balances-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/kerti/balances-v2/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/kerti/balances-v2/graph/badge.svg)](https://codecov.io/gh/kerti/balances-v2)

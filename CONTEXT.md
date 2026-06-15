@@ -5,6 +5,11 @@ Household's positions. Investment instruments additionally keep a transaction le
 and income reporting; snapshot tables remain the source of truth for net worth.
 Transaction-by-transaction cash-flow tracking (Mint / YNAB style) is a deliberate non-feature.
 
+**Canonical casing:** the product name is **"Balances"** (capital B) — logo wordmark, app title, value-prop
+copy, email headers. The common noun **"balances"** stays lowercase (account balances, month-end
+balances, "enter your balances"). They disambiguate in the same sentence: *"Each month you enter your
+balances; Balances tracks your net worth."*
+
 ## Language
 
 ### Top-level groups

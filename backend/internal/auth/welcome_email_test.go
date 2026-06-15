@@ -38,8 +38,8 @@ func TestCreateFounder_SendsWelcomeEmail(t *testing.T) {
 	if msg.To != user.Email {
 		t.Errorf("To: want founder's own address %q, got %q", user.Email, msg.To)
 	}
-	if msg.Subject != "Welcome to balances" {
-		t.Errorf("Subject: want %q, got %q", "Welcome to balances", msg.Subject)
+	if msg.Subject != "Welcome to Balances" {
+		t.Errorf("Subject: want %q, got %q", "Welcome to Balances", msg.Subject)
 	}
 	// CTA deep-links to the Settings screen (hosts InviteForm) on the frontend.
 	wantCTA := h.h.frontendURL + "/settings"

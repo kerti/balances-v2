@@ -32,12 +32,12 @@ It works best with everyone in. Invite the people you share finances with so you
 Invite your household:
 %s
 
-— the balances team
+— the Balances team
 `, user.DisplayName, inviteURL)
 
 	return h.mailer.Send(ctx, email.Message{
 		To:      user.Email,
-		Subject: "Welcome to balances",
+		Subject: "Welcome to Balances",
 		HTML:    html,
 		Text:    text,
 	})

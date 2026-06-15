@@ -3,7 +3,7 @@ package email
 import "testing"
 
 // Layout is the shared branded shell both transactional senders render through.
-// It must embed the caller's body verbatim and carry the inline "balances"
+// It must embed the caller's body verbatim and carry the inline "Balances"
 // wordmark (the inline-branding decision — no image to block).
 func TestLayout(t *testing.T) {
 	out := Layout(`<p>hello body</p>`)

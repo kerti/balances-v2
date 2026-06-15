@@ -102,15 +102,15 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 }
 
 func (h *Handlers) sendInvitationEmail(ctx context.Context, inviter db.User, household db.Household, invite db.HouseholdInvitation, acceptURL string) error {
-	subject := fmt.Sprintf("%s invited you to balances", inviter.DisplayName)
+	subject := fmt.Sprintf("%s invited you to Balances", inviter.DisplayName)
 	html := fmt.Sprintf(`<p>Hi,</p>
-<p>%s has invited you to join their balances household <strong>%s</strong>.</p>
+<p>%s has invited you to join their Balances household <strong>%s</strong>.</p>
 <p><a href="%s">Click here to accept the invitation</a></p>
 <p>The link expires on %s. If you weren't expecting this email, you can safely ignore it.</p>`,
 		htmlEscape(inviter.DisplayName), htmlEscape(household.DisplayName), acceptURL, invite.ExpiresAt.Time.Format(time.RFC1123))
 	text := fmt.Sprintf(`Hi,
 
-%s has invited you to join their balances household "%s".
+%s has invited you to join their Balances household "%s".
 
 Accept the invitation here:
 %s

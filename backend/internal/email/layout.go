@@ -6,7 +6,7 @@ import "fmt"
 const brandIndigo = "#6366F1"
 
 // Layout wraps an HTML body fragment in the shared branded email shell: a header
-// bearing the "balances" wordmark and a muted footer. Both transactional senders
+// bearing the "Balances" wordmark and a muted footer. Both transactional senders
 // can share it.
 //
 // Branding is inline by design. Remote images and SVG are unreliable in mail
