@@ -11,6 +11,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/errs"
 )
 
+// covers: INV-CONTRACT-03
 func TestWrite_envelope(t *testing.T) {
 	rec := httptest.NewRecorder()
 	Write(rec, http.StatusBadRequest, CodeInvalidID, map[string]any{"field": "snapshot_id"})
@@ -33,6 +34,7 @@ func TestWrite_envelope(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-03
 func TestWrite_argsOmittedWhenNil(t *testing.T) {
 	rec := httptest.NewRecorder()
 	Write(rec, http.StatusNotFound, CodeNotFound, nil)
@@ -47,6 +49,7 @@ func TestWrite_argsOmittedWhenNil(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-02
 func TestWriteRepo_sentinelMapping(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -86,6 +89,7 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-02
 func TestWriteRepo_wrappedSentinel(t *testing.T) {
 	// errors.Is must traverse wrapping — the repo layer often returns
 	// fmt.Errorf("...: %w", errs.ErrNotFound) and the mapping has to keep
@@ -105,6 +109,7 @@ func TestWriteRepo_wrappedSentinel(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-01
 func TestWriteRepo_unknownErrorMapsToInternal(t *testing.T) {
 	rec := httptest.NewRecorder()
 	WriteRepo(rec, "op", errors.New("boom"))
@@ -124,6 +129,7 @@ func TestWriteRepo_unknownErrorMapsToInternal(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-01
 func TestWriteRepo_unauthenticatedFallsThrough(t *testing.T) {
 	// ErrUnauthenticated is deliberately not mapped — RequireAuth gates
 	// every HTTP route, so a repo seeing no user is a server bug. It
@@ -149,6 +155,7 @@ type sample struct {
 	Untagged string `validate:"required"`
 }
 
+// covers: INV-CONTRACT-04
 func TestWriteValidation_envelopeFromFirstFieldError(t *testing.T) {
 	v := NewValidator()
 	err := v.Struct(sample{Kind: "a", Ignored: "x", Untagged: "x"}) // Amount empty -> required fires
@@ -178,6 +185,7 @@ func TestWriteValidation_envelopeFromFirstFieldError(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-04
 func TestWriteValidation_oneofTagSurfaces(t *testing.T) {
 	v := NewValidator()
 	err := v.Struct(sample{Amount: "1", Kind: "nope", Ignored: "x", Untagged: "x"})
@@ -195,6 +203,7 @@ func TestWriteValidation_oneofTagSurfaces(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-04
 func TestWriteValidation_nonValidatorErrorMapsToInternal(t *testing.T) {
 	rec := httptest.NewRecorder()
 	WriteValidation(rec, errors.New("not a validator error"))
@@ -209,6 +218,7 @@ func TestWriteValidation_nonValidatorErrorMapsToInternal(t *testing.T) {
 	}
 }
 
+// covers: INV-CONTRACT-04
 func TestNewValidator_untaggedFieldFallsBackToGoName(t *testing.T) {
 	// Fields without a json tag fall back to the validator's default —
 	// the Go field name. The internal/* request structs tag every wire
