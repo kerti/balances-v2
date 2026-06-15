@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// covers: INV-NOTIFICATIONS-01
 func TestHandleCreateInvitation(t *testing.T) {
 	h := newAuthHarness(t)
 
@@ -94,6 +95,7 @@ func TestHandleCreateInvitation(t *testing.T) {
 	})
 }
 
+// covers: INV-NOTIFICATIONS-03
 func TestHtmlEscape(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"plain", "plain"},
