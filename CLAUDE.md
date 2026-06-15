@@ -1,5 +1,9 @@
 ## Agent skills
 
+### SDLC
+
+The spine that orders every other tool below — idea → triage → grill/ADR → slice → TDD → guard (incl. coverage matrix) → ship → release. How far up the spine a change starts scales with how much it commits the project to a shape. See `docs/agents/sdlc.md`.
+
 ### Issue tracker
 
 Issues live in GitHub at `kerti/balances-v2`, accessed via the `gh` CLI. See `docs/agents/issue-tracker.md`.

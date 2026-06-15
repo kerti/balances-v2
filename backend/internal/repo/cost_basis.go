@@ -69,8 +69,9 @@ var bondFaceUnit = decimal.NewFromInt(1_000_000)
 // outstandingFaceFromLedger derives a bond's held nominal from its transaction
 // ledger (issue #27): (Σ buy_qty − Σ sell_qty) × 1,000,000. It replaces the
 // dropped bond_details.face_value scalar — a hand-maintained total would be a
-// duplicated, drift-prone source of truth (ADR-0003). Multi-tranche nominal and
-// the coupon helper both read this so they scale correctly across top-ups.
+// duplicated, drift-prone source of truth (ADR-0003). Bond list/detail responses
+// surface it as OutstandingFace; it stays correct across multi-tranche top-ups
+// and partial sells by construction (the running Σ over the ledger).
 func outstandingFaceFromLedger(txns []db.InvestmentTransaction) decimal.Decimal {
 	qty := decimal.Zero
 	for _, tx := range txns {
