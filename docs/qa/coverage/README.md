@@ -20,3 +20,4 @@
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
 | FX | 4 / 4 | [FX](11-fx.md) |
 | SOFT-DELETE | 4 / 4 | [SOFT-DELETE](12-soft-delete.md) |
+| STALENESS | — seeded | — |
