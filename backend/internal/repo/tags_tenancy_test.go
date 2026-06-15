@@ -18,7 +18,7 @@ import (
 // assignment, the dedicated-endpoint assignment path, the per-currency
 // breakdown aggregate, and delete-clears-assignments. Mirrors the per-group
 // tenancy suites.
-// covers: INV-TENANCY-12
+// covers: INV-TENANCY-12, INV-TAGS-01, INV-TAGS-02, INV-TAGS-03, INV-TAGS-04
 func TestTagRepo(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -59,9 +59,59 @@ func TestTagRepo(t *testing.T) {
 		t.Fatalf("alice CreateReceivableSnapshot: %v", err)
 	}
 
+	// A second, deliberately untagged receivable so the breakdown has both a
+	// tagged cell and the Untagged bucket to reconcile against.
+	recvUntagged, err := rr.CreateReceivable(aliceCtx, repo.CreateReceivableParams{
+		DisplayName:      "Loan to sister",
+		OwnershipType:    "joint",
+		NativeCurrency:   "IDR",
+		CounterpartyName: "Sister",
+	})
+	if err != nil {
+		t.Fatalf("alice CreateReceivable (untagged): %v", err)
+	}
+	if _, err := rr.CreateReceivableSnapshot(aliceCtx, repo.CreateReceivableSnapshotParams{
+		ReceivableID: recvUntagged.ID,
+		YearMonth:    time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC),
+		Amount:       decimal.NewFromInt(20_000_000),
+		Currency:     "IDR",
+	}); err != nil {
+		t.Fatalf("alice CreateReceivableSnapshot (untagged): %v", err)
+	}
+
 	t.Run("duplicate name (case-insensitive) is ErrTagNameExists", func(t *testing.T) {
 		if _, err := tr.CreateTag(aliceCtx, "bca", "#fff"); !errors.Is(err, repo.ErrTagNameExists) {
 			t.Errorf("CreateTag dup: got %v, want ErrTagNameExists", err)
+		}
+	})
+
+	t.Run("rename onto an existing name (case-insensitive) is ErrTagNameExists", func(t *testing.T) {
+		other, err := tr.CreateTag(aliceCtx, "Mandiri", "#10b981")
+		if err != nil {
+			t.Fatalf("CreateTag Mandiri: %v", err)
+		}
+		if _, err := tr.UpdateTag(aliceCtx, other.ID, "bca", "#fff"); !errors.Is(err, repo.ErrTagNameExists) {
+			t.Errorf("UpdateTag onto existing name: got %v, want ErrTagNameExists", err)
+		}
+		// The collision must not have mutated the row.
+		if got, err := tr.GetTag(aliceCtx, other.ID); err != nil || got.Name != "Mandiri" {
+			t.Errorf("after failed rename: got (%v, %v); want name unchanged", got, err)
+		}
+		// A soft-deleted name is freed for reuse: the partial unique index is
+		// WHERE deleted_at IS NULL, so renaming Mandiri onto it now succeeds.
+		if err := tr.DeleteTag(aliceCtx, other.ID); err != nil {
+			t.Fatalf("DeleteTag Mandiri: %v", err)
+		}
+		freed, err := tr.CreateTag(aliceCtx, "Freed", "#ec4899")
+		if err != nil {
+			t.Fatalf("CreateTag Freed: %v", err)
+		}
+		if _, err := tr.UpdateTag(aliceCtx, freed.ID, "Mandiri", "#10b981"); err != nil {
+			t.Errorf("reuse of soft-deleted name: got %v, want nil", err)
+		}
+		// Clean up so the breakdown/list assertions below stay about aliceTag.
+		if err := tr.DeleteTag(aliceCtx, freed.ID); err != nil {
+			t.Fatalf("DeleteTag Freed: %v", err)
 		}
 	})
 
@@ -107,17 +157,36 @@ func TestTagRepo(t *testing.T) {
 		if err != nil {
 			t.Fatalf("alice TagBreakdown: %v", err)
 		}
-		var found bool
+		var tagged, untagged bool
+		recvTotal := decimal.Zero
 		for _, r := range rows {
-			if r.TagID != nil && *r.TagID == aliceTag.ID && r.Grp == "receivable" {
-				found = true
+			if r.Grp != "receivable" {
+				continue
+			}
+			recvTotal = recvTotal.Add(r.Total)
+			switch {
+			case r.TagID != nil && *r.TagID == aliceTag.ID:
+				tagged = true
 				if !r.Total.Equal(decimal.NewFromInt(50_000_000)) {
-					t.Errorf("breakdown total = %s, want 50000000", r.Total)
+					t.Errorf("tagged breakdown total = %s, want 50000000", r.Total)
+				}
+			case r.TagID == nil:
+				untagged = true
+				if !r.Total.Equal(decimal.NewFromInt(20_000_000)) {
+					t.Errorf("untagged breakdown total = %s, want 20000000", r.Total)
 				}
 			}
 		}
-		if !found {
+		if !tagged {
 			t.Errorf("alice breakdown missing the tagged receivable cell: %+v", rows)
+		}
+		if !untagged {
+			t.Errorf("alice breakdown missing the Untagged bucket: %+v", rows)
+		}
+		// Reconciliation: tagged + Untagged cover every receivable, so the cells
+		// sum back to the household's receivable total (INV-FINANCE-01 cut by tag).
+		if !recvTotal.Equal(decimal.NewFromInt(70_000_000)) {
+			t.Errorf("receivable cells sum = %s, want 70000000 (50M tagged + 20M untagged)", recvTotal)
 		}
 
 		if bobRows, err := tr.TagBreakdown(bobCtx); err != nil || len(bobRows) != 0 {

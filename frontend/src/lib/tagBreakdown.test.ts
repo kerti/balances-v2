@@ -24,6 +24,7 @@ const row = (
 
 const tags = [tag('t1', 'BCA', '#3b82f6'), tag('t2', 'Mandiri', '#10b981')]
 
+// covers: INV-TAGS-05
 describe('aggregateTagBreakdown', () => {
   it('returns [] for no rows', () => {
     expect(aggregateTagBreakdown([], tags, 'Untagged')).toEqual([])
