@@ -37,6 +37,8 @@ func transactionRows(t *testing.T, xlsx []byte) [][]string {
 // workbook streams back with the stock's Detail fields, its Snapshots re-import
 // cleanly through the unchanged importer, and its full transaction ledger lands
 // on the Transactions sheet.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-04
 func TestStockHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 
@@ -140,6 +142,8 @@ func TestStockHandlers_Export(t *testing.T) {
 // endpoints: each streams a workbook with its subtype-specific Detail fields and
 // an (empty but present) Transactions sheet. Stock + Bond get the deeper
 // snapshot/ledger round-trip above; this keeps the others honest cheaply.
+//
+// covers: INV-EXPORT-01
 func TestInvestmentHandlers_ExportSmoke(t *testing.T) {
 	h := newHarness(t)
 
@@ -196,6 +200,8 @@ func TestInvestmentHandlers_ExportSmoke(t *testing.T) {
 // TestBondHandlers_Export covers the accrued-interest snapshot shape. A
 // govt_primary bond auto-seeds a Buy at placement (issue #27), so its export
 // ships a non-empty ledger without an explicit postTxn.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-04
 func TestBondHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 

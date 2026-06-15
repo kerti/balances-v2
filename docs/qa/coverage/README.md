@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**68 / 68** invariants have at least one covering test.
+**72 / 72** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -17,4 +17,5 @@
 | IMPORT | 7 / 7 | [IMPORT](07-import.md) |
 | BONDS | 3 / 3 | [BONDS](08-bonds.md) |
 | TAGS | 5 / 5 | [TAGS](09-tags.md) |
-| EXPORT | — seeded | — |
+| EXPORT | 4 / 4 | [EXPORT](10-export.md) |
+| FX | — seeded | — |

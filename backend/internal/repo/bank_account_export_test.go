@@ -18,6 +18,8 @@ import (
 // TestExportBankAccount covers the export gather: a sole account resolves its
 // owner to an email and its tag to a name, snapshot history comes back, and the
 // ownership gate returns ErrNotFound for unknown / cross-tenant ids.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportBankAccount(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

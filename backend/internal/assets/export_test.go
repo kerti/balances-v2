@@ -14,6 +14,8 @@ import (
 // populated workbook streams back, its Detail sheet carries the position's
 // fields (owner resolved to an email), and its Snapshots sheet re-parses
 // through the unchanged importer — i.e. the file round-trips back in.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-04
 func TestBankAccountHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 
@@ -130,6 +132,8 @@ func TestBankAccountHandlers_Export(t *testing.T) {
 // TestPropertyHandlers_Export mirrors the bank-account export round trip for
 // the property group: the Detail sheet carries the property-specific fields,
 // and the Snapshots sheet re-imports cleanly through the shared asset endpoint.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-04
 func TestPropertyHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 
@@ -199,6 +203,8 @@ func TestPropertyHandlers_Export(t *testing.T) {
 
 // TestVehicleHandlers_Export mirrors the property round trip for the vehicle
 // group.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-04
 func TestVehicleHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 

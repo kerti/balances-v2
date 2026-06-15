@@ -15,6 +15,8 @@ import (
 // populated workbook streams back, its Detail sheet carries the receivable's
 // fields (owner resolved to an email), and its Snapshots sheet re-imports
 // through the unchanged importer — i.e. the file round-trips back in.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-04
 func TestReceivableHandlers_Export(t *testing.T) {
 	h := newHarness(t)
 

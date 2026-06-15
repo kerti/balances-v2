@@ -21,6 +21,7 @@ import (
 // history comes back, and the ownership gate returns ErrNotFound for unknown /
 // cross-tenant ids.
 
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportProperty(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -126,6 +127,7 @@ func TestExportProperty(t *testing.T) {
 	})
 }
 
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportVehicle(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -233,6 +235,7 @@ func TestExportVehicle(t *testing.T) {
 	})
 }
 
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportLiability(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -341,6 +344,7 @@ func TestExportLiability(t *testing.T) {
 	})
 }
 
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportReceivable(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

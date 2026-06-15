@@ -21,6 +21,8 @@ import (
 // come back. The ownership gate returns ErrNotFound for unknown / cross-tenant
 // ids. (The handler tests cover the joint / blank-owner path and the workbook
 // shape per snapshot type.)
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02, INV-EXPORT-03, INV-EXPORT-04
 func TestExportStock_RepoLevel(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)

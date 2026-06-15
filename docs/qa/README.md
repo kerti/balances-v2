@@ -27,4 +27,5 @@ prefix is that order.
 | IMPORT | Bulk ingestion — preview/commit parity, all-or-nothing, fan-out atomicity (ADR-0022) | Critical/High | [catalog](invariants/07-import.md) | [coverage](coverage/07-import.md) |
 | BONDS | Bond/TD valuation — ledger-derived outstanding face + time-deposit term bounds (ADR-0003) | High | [catalog](invariants/08-bonds.md) | [coverage](coverage/08-bonds.md) |
 | TAGS | User-defined position tag lifecycle + referential integrity — unique names, delete-detaches, household-validated assign, breakdown reconciliation (ADR-0028) | High/Medium | [catalog](invariants/09-tags.md) | [coverage](coverage/09-tags.md) |
-| EXPORT | _Seeded — per-position export workbook: owner-email/tag-name redaction + household-scoped resolution (joint ⇒ no owner identity)_ | — | [catalog](invariants/10-export.md) | — |
+| EXPORT | Per-position export workbook — owner-email/tag-name resolution privacy (joint ⇒ no owner identity, untagged ⇒ no tag) + household-scoped, subtype-checked gather (ADR-0005/0028) | Critical/High | [catalog](invariants/10-export.md) | [coverage](coverage/10-export.md) |
+| FX | _Seeded — multi-currency conversion beneath FINANCE: carry-forward latest-rate-at-or-before-month, reporting/multi-off passthrough, missing-rate surfaced (not zeroed), fx-rates-used audit (ADR-0002/0006)_ | — | [catalog](invariants/11-fx.md) | — |
