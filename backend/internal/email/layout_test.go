@@ -10,7 +10,7 @@ func TestLayout(t *testing.T) {
 
 	for _, want := range []string{
 		"<!DOCTYPE html>",
-		">balances<",        // inline wordmark header (no <img>)
+		">Balances<",        // inline wordmark header (no <img>)
 		"<p>hello body</p>", // caller fragment embedded verbatim
 		brandIndigo,         // brand accent applied
 	} {

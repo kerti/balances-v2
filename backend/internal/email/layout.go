@@ -31,13 +31,13 @@ func Layout(bodyHTML string) string {
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:12px;overflow:hidden;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
 <tr><td style="padding:24px 32px;border-bottom:1px solid #e2e8f0;">
-<span style="font-size:22px;font-weight:700;color:%s;letter-spacing:-0.02em;">balances</span>
+<span style="font-size:22px;font-weight:700;color:%s;letter-spacing:-0.02em;">Balances</span>
 </td></tr>
 <tr><td style="padding:28px 32px;color:#475569;font-size:15px;line-height:1.6;">
 %s
 </td></tr>
 <tr><td style="padding:20px 32px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;line-height:1.5;">
-You're receiving this because you created a balances household. balances helps your household track its net worth.
+You're receiving this because you created a Balances household. Balances helps your household track its net worth.
 </td></tr>
 </table>
 </td></tr>
