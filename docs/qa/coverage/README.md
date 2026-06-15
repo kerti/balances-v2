@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**103 / 103** invariants have at least one covering test.
+**105 / 105** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -25,5 +25,5 @@
 | INTEGRITY | 3 / 3 | [INTEGRITY](15-integrity.md) |
 | PRESENTATION | 3 / 3 | [PRESENTATION](16-presentation.md) |
 | JOURNEYS | 3 / 3 | [JOURNEYS](17-journeys.md) |
-| NOTIFICATIONS | 3 / 3 | [NOTIFICATIONS](18-notifications.md) |
+| NOTIFICATIONS | 5 / 5 | [NOTIFICATIONS](18-notifications.md) |
 | CONTRACT | 4 / 4 | [CONTRACT](19-contract.md) |

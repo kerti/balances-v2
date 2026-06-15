@@ -125,6 +125,12 @@ multi-household membership is deferred). All Users in a Household have full read
 its data. Users carry a `display_name`, `email`, `locale` (UI language, default `id-ID`), and
 `time_zone` ("current month" interpretation, default `Asia/Jakarta`).
 
+**Founder**: The User who bootstrapped a Household — the first sign-in with no pending invitation
+(`createFounder`, [[adr-0017]]). "Founder" denotes *creation lineage only, not a role or permission
+tier*: every User in a Household has equal full read/write access (see User). Contrast: an **invited
+member** joins an existing Household by accepting an email-token invitation. _Avoid_: Owner, Admin
+(imply a privilege the model doesn't grant).
+
 **Ownership** (Position attribute): Each Position carries an Ownership mode:
 
 - **SoleOwner** — attributed to a specific User for net-worth-breakdown purposes (e.g., "her

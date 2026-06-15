@@ -278,7 +278,7 @@ func (h *Handlers) createFounder(ctx context.Context, c *googleClaims) (db.User,
 	if err != nil {
 		return db.User{}, err
 	}
-	return h.q.CreateUser(ctx, db.CreateUserParams{
+	user, err := h.q.CreateUser(ctx, db.CreateUserParams{
 		HouseholdID: household.ID,
 		DisplayName: c.Name,
 		Email:       c.Email,
@@ -288,6 +288,16 @@ func (h *Handlers) createFounder(ctx context.Context, c *googleClaims) (db.User,
 		PictureUrl:  nullableString(c.Picture),
 		CreatedBy:   nil,
 	})
+	if err != nil {
+		return db.User{}, err
+	}
+
+	// Best-effort welcome email (ADR-0020): a mail outage must never cost the
+	// founder their signup, so we log and proceed rather than fail the flow.
+	if err := h.sendWelcomeEmail(ctx, user); err != nil {
+		slog.Error("send welcome email", "err", err, "user_id", user.ID)
+	}
+	return user, nil
 }
 
 func (h *Handlers) clearShortCookie(w http.ResponseWriter, name string) {
