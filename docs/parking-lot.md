@@ -19,3 +19,6 @@ This is a brain dump, not a contract.
 - **Async restore (background job)** — only if real restores ever get slow enough that a
   synchronous request is a poor fit. No job system exists today; streaming keeps restore
   bounded, so this stays parked until measured need.
+- **Editable Household display name** — today it's auto-derived from the founder's OAuth claim
+  (*"{Name}'s Household"*) and never surfaced or edited in the UI. The restore summary *displays* it
+  for context, which is adequate; letting the Household rename itself is a separate small feature.

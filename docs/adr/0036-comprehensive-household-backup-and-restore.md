@@ -188,6 +188,45 @@ have no SMTP configured; mirrors the welcome-email pattern), localized per recip
   This both tells members the URL changed and is a tamper tripwire. Soft-deleted users are not
   emailed.
 
+## Presentation / UX
+
+Per [[adr-0034]], the UI of a backend decision is documented here, not in a separate ADR — and for a
+non-technical audience this presentation *is* the feature's guardrails, so it's a correctness concern.
+This section is the basis for the BACKUP/RESTORE UI invariants in the QA matrix.
+
+- **Home:** Settings → Data, one section each for Backup and Restore, each with a plain-language
+  one-liner (what it is; that restore is destructive). No jargon, no raw error codes anywhere.
+- **State-adaptive prominence.** When the current Household is **empty/fresh** (the burned-house /
+  new-Raspberry-Pi first-run), Restore is surfaced **prominently** (*"New here? Restore a backup to
+  bring your data in."*) and Export is **hidden behind an empty-state hint** (*"Nothing to back up yet
+  — add some data first."*) until there's backup-worthy data. When the Household is **populated**, the
+  Restore section **leads with its destructive framing** (*"Restoring replaces everything in this
+  household"*) before the file picker, so the stakes are set before a file is chosen.
+- **Export feedback** is **indeterminate** (size is unknown up front — no fake percentage): button
+  disabled + *"Preparing your backup…"*, the `.json.gz` download begins when the stream completes, a
+  success toast ([[adr-0032]]) confirms, and copy notes large households take a moment. The
+  **fidelity toggle** (full vs compacted) carries consequence-explaining copy at the point of choice.
+- **Restore is preview → summary → confirm.** Upload → *"Checking your backup…"* → a summary screen
+  that names **both** Households' (derived) names, the counts erased and loaded, and states the action
+  is irreversible.
+- **The confirmation gate is stakes-scaled.** Target Household **empty** → a single checkbox (*"I
+  understand this replaces all data in this household"*) + button — nothing real to lose. Target
+  **populated** → **type `ERASE` to confirm** (a constant word, localized; the typed input is compared
+  against the **localized** word) — friction matched to irreversible loss. `ERASE` is chosen over
+  `RESTORE` (which sounds safe and defeats the guard) and over `REPLACE` (softer) because it echoes the
+  warning sentence above it. The derived Household name is **displayed** for context but never the
+  thing typed (it is auto-derived and never surfaced elsewhere — see parking lot).
+- **Commit (the long, dangerous op):** controls disabled + *"Restoring — don't close this window."*,
+  **double-submit blocked**, **navigation blocked** until done. Success → success screen + toast
+  (emails fire best-effort). Failure → the transaction rolled back, surfaced as *"Restore failed;
+  nothing was changed. Your current data is intact."* — making the atomic-rollback guarantee visible
+  so a failure doesn't read as data loss.
+- **Error states** ride the [[adr-0027]] `{code, args}` envelope → localized, actionable, never
+  silent: `INVALID_BACKUP_FILE`, `CORRUPT_BACKUP`, `BACKUP_FORMAT_TOO_NEW` (the refuse-newer guard made
+  visible — names the version to upgrade to when known), `NOT_A_MEMBER_OF_BACKUP` (the membership guard
+  made visible), `BACKUP_VALIDATION_FAILED`. Preview failures touch nothing and commit failures roll
+  back, so messages reassure *"nothing was changed"* where true.
+
 ## Considered alternatives
 
 - **`pg_dump` / physical SQL dump** — rejected; couples to the physical schema, no transform chain,
