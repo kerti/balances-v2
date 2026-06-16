@@ -139,8 +139,12 @@ A worst-case Household (≈30 years × ≈300 positions ≈ 216k snapshot/txn ro
 gzip) would cost ≈200–400 MB heap to load whole — enough to OOM a 256 MB Fly machine or a tight Pi,
 the exact self-host target. So:
 
-- **Export streams** — query each table in batches, encode incrementally into a gzip writer; constant
-  memory regardless of Household size.
+- **Export is gzip-streamed at the HTTP layer**, and the envelope's section order is the firm
+  contract (below). The first implementation (#174) *assembles* the Household in memory and then
+  encodes it — `O(Household)` memory, fine for realistic KB-scale data — rather than per-table cursor
+  batching; **constant-memory batched export is a documented refinement** deferred until a Household is
+  large enough to need it. The parents-before-children layout is honored in the output regardless, so
+  this never requires a format break.
 - **The file is laid out parents-before-children** (`household → users → tags → positions → snapshots
   → transactions → income → fx`). This is the load-bearing contract decision: it lets import **stream
   in a single pass** holding only the small parent-id sets (hundreds of UUIDs, <1 MB) plus the current

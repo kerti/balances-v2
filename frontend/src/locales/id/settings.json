@@ -55,5 +55,21 @@
     "sentTo": "Undangan terkirim ke {{email}}",
     "expires": "Kedaluwarsa {{when}}",
     "acceptUrl": "URL terima:"
+  },
+  "data": {
+    "title": "Cadangan",
+    "description": "Unduh seluruh data rumah tangga Anda sebagai satu berkas. Simpan di tempat aman, atau gunakan untuk memindahkan data ke perangkat lain.",
+    "fidelity": {
+      "label": "Yang disertakan",
+      "full": "Semuanya (disarankan)",
+      "fullHint": "Termasuk item yang sudah Anda hapus, agar salinannya persis.",
+      "compacted": "Data saat ini saja",
+      "compactedHint": "Salinan bersih tanpa item yang sudah dihapus."
+    },
+    "export": "Unduh cadangan",
+    "exporting": "Menyiapkan cadangan Anda…",
+    "exported": "Cadangan Anda telah diunduh.",
+    "exportError": "Gagal menyiapkan cadangan. Silakan coba lagi.",
+    "largeNote": "Rumah tangga besar mungkin perlu beberapa saat."
   }
 }

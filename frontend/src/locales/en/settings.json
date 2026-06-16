@@ -55,5 +55,21 @@
     "sentTo": "Invitation sent to {{email}}",
     "expires": "Expires {{when}}",
     "acceptUrl": "Accept URL:"
+  },
+  "data": {
+    "title": "Backup",
+    "description": "Download your entire household as a single file. Keep it somewhere safe, or use it to move your data to another device.",
+    "fidelity": {
+      "label": "What to include",
+      "full": "Everything (recommended)",
+      "fullHint": "Includes items you've deleted, so the copy is exact.",
+      "compacted": "Current data only",
+      "compactedHint": "A clean copy without anything you've deleted."
+    },
+    "export": "Download backup",
+    "exporting": "Preparing your backup…",
+    "exported": "Your backup has downloaded.",
+    "exportError": "Couldn't prepare your backup. Please try again.",
+    "largeNote": "Large households may take a moment."
   }
 }

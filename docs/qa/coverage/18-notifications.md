@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/18-notifications.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**5 / 5** invariants in this zone have at least one covering test.
+**7 / 7** invariants in this zone have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -13,3 +13,5 @@
 | INV-NOTIFICATIONS-03 | HTML-escaped interpolation — the inviter and household display names are `htmlEscape`d (`& < > "`) into the HTML body before interpolation; an injection guard on user-controlled display names rendered into an email. The plain-text part is raw by design (no markup to inject into) | `backend/internal/auth/invitations_test.go` |
 | INV-NOTIFICATIONS-04 | Mailed to the founder only — `sendWelcomeEmail` calls `mailer.Send` exactly once with `To:` the founder's own address (the just-created user), Subject `Welcome to balances`, and an HTML+text body carrying the invite CTA (`${FrontendURL}/settings`). Fires on `createFounder` only — never on invitation acceptance (an invited member already got the invite email). The per-message addressing row for the welcome sender; mirrors INV-NOTIFICATIONS-01 for the invitation sender | `backend/internal/auth/welcome_email_test.go` |
 | INV-NOTIFICATIONS-05 | HTML-escaped interpolation (welcome) — the founder display name (from Google OAuth claims) is `htmlEscape`d into the welcome HTML body before interpolation. The per-message re-pin of INV-NOTIFICATIONS-03 for the welcome sender; the plain-text part is raw by design | `backend/internal/auth/welcome_email_test.go` |
+| INV-NOTIFICATIONS-06 | Locale-rendered welcome — the welcome email's subject + body render in the recipient founder's `user.locale` via the per-locale catalog, falling back to en-GB for an unknown locale; the brand name "Balances" is left literal in every locale | `backend/internal/auth/email_i18n_test.go` |
+| INV-NOTIFICATIONS-07 | Locale-rendered invitation — the invitation email's subject + body render in the `inviter`'s locale (the only locale signal before the invitee exists), with the same en-GB fallback and literal brand name | `backend/internal/auth/email_i18n_test.go` |

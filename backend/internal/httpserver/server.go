@@ -12,6 +12,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/assets"
 	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/backup"
 	"github.com/kerti/balances-v2/backend/internal/config"
 	"github.com/kerti/balances-v2/backend/internal/fxrates"
 	"github.com/kerti/balances-v2/backend/internal/income"
@@ -34,6 +35,7 @@ type Server struct {
 	reportsH     *reports.Handlers
 	fxRatesH     *fxrates.Handlers
 	tagsH        *tags.Handlers
+	backupH      *backup.Handlers
 	router       chi.Router
 }
 
@@ -62,6 +64,10 @@ func New(
 		reportsH:     reportsH,
 		fxRatesH:     fxRatesH,
 		tagsH:        tagsH,
+		// Backup reads across every table from the shared pool; it needs only the
+		// pool + the instance URL (stamped into the envelope), so it's built here
+		// rather than threaded through main's per-entity wiring.
+		backupH: backup.New(pool, cfg.BackendURL),
 	}
 	s.router = s.buildRouter()
 	return s
@@ -94,6 +100,7 @@ func (s *Server) buildRouter() chi.Router {
 		s.reportsH.Mount(r)
 		s.fxRatesH.Mount(r)
 		s.tagsH.Mount(r)
+		s.backupH.Mount(r)
 	})
 
 	// Single-origin production: serve the built SPA from WEB_DIR alongside /api

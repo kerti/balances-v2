@@ -39,6 +39,7 @@ import {
 import { formatYearMonth } from '@/lib/format'
 import { InviteForm } from '@/components/InviteForm'
 import { TagsCard } from '@/components/TagsCard'
+import { BackupCard } from '@/components/BackupCard'
 
 export function SettingsScreen() {
   const { t } = useTranslation(['settings', 'common'])
@@ -129,6 +130,8 @@ export function SettingsScreen() {
       {me.multi_currency_enabled && <FxRatesCard />}
 
       <InviteForm />
+
+      <BackupCard />
     </div>
   )
 }

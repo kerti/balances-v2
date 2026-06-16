@@ -4,14 +4,14 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**105 / 105** invariants have at least one covering test.
+**115 / 115** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
 | TENANCY | 12 / 12 | [TENANCY](01-tenancy.md) |
 | FINANCE | 17 / 17 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 7 / 7 | [LIFECYCLE](03-lifecycle.md) |
-| AUTH | 8 / 8 | [AUTH](04-auth.md) |
+| AUTH | 11 / 11 | [AUTH](04-auth.md) |
 | SNAPSHOTS | 5 / 5 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 7 / 7 | [IMPORT](07-import.md) |
@@ -25,5 +25,6 @@
 | INTEGRITY | 3 / 3 | [INTEGRITY](15-integrity.md) |
 | PRESENTATION | 3 / 3 | [PRESENTATION](16-presentation.md) |
 | JOURNEYS | 3 / 3 | [JOURNEYS](17-journeys.md) |
-| NOTIFICATIONS | 5 / 5 | [NOTIFICATIONS](18-notifications.md) |
+| NOTIFICATIONS | 7 / 7 | [NOTIFICATIONS](18-notifications.md) |
 | CONTRACT | 4 / 4 | [CONTRACT](19-contract.md) |
+| BACKUP | 5 / 5 | [BACKUP](20-backup.md) |
