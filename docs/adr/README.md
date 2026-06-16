@@ -39,3 +39,5 @@ touching the area it governs.
 | [0032](0032-toast-feedback-for-buttonless-autosaves.md) | Toast feedback for buttonless autosaves | frontend UX |
 | [0033](0033-versioning-the-upgrade-contract-and-migration-immutability.md) | SemVer = machine upgrade contract (not the "Balances" brand); `1.0.0` first prod; migration immutability + squash rules; majors invisible to pipeline | versioning, release, migrations |
 | [0034](0034-where-ui-ux-decisions-are-documented.md) | UI/UX documented as a Presentation section on the relevant behavior ADR; UI-native concerns get their own ADR; both are the basis for UI invariants in the QA matrix | docs, UX, qa |
+| [0035](0035-pre-auth-language-picker-locale-precedence-and-backend-email-i18n.md) | Pre-auth language picker; locale precedence; backend email i18n; default `en-GB` | i18n, auth |
+| [0036](0036-comprehensive-household-backup-and-restore.md) | Whole-Household backup as versioned `.json.gz`; restore = streaming preview→commit wipe-then-load into a fresh/wiped Household; identity re-link by Google `sub`; format immutability at release | backup, restore, portability |

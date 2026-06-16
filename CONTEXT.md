@@ -218,6 +218,25 @@ changing hands. Living Expenses are the residual — itemised expense tracking i
 residual) and Asset Value Change pulls out property/vehicle marks, the residual is a genuine
 **cash-spending** proxy, not a catch-all conflating non-cash depreciation with spending.
 
+### Backup and restore
+
+**Backup**: A single portable artifact holding a Household's *entire* data — every Position, Snapshot,
+Transaction, Income event, Tag, FX rate, Household setting, and User. It exists for **disaster
+recovery** (a self-hosted device bricks or burns) and **portability** between instances (SaaS↔self-host,
+either direction). It is *not* a partial-import or merge tool — bringing some data into a *live*
+Household is the per-position spreadsheet import, a separate thing. A Backup is taken at one of two
+fidelities the user chooses: **full fidelity** (carries soft-deleted "Recycle Bin" rows for an exact
+round-trip) or **compacted** (live rows only — a clean snapshot of current truth). _Avoid_: Export
+(reserved for the per-position spreadsheet download), Dump.
+
+**Restore**: Loading a Backup into a **fresh or wiped-clean** Household — never merged into a populated
+one. Restore **replaces** the target Household's data wholesale. A member re-links to their restored
+identity automatically by their Google `sub` (stable across instances); other members re-link on their
+next sign-in — no re-invitation. Any member named in the Backup may restore (gated by an explicit
+confirmation, not by Founder lineage). Restore never resurrects soft-deleted rows — resurrecting from
+the Recycle Bin is a separate, unbuilt feature. _Avoid_: Import (reserved for the per-position
+spreadsheet flow).
+
 ## Relationships
 
 - A **Household** has 1..N **Users**; a **User** belongs to exactly one **Household**.
