@@ -98,3 +98,33 @@ type HouseholdData struct {
 	Income  []db.Income `json:"income"`
 	FxRates []db.FxRate `json:"fx_rates"`
 }
+
+// SectionCounts returns the per-section row counts keyed by the section's JSON
+// name. It is the single source of truth for section names — the export stamps
+// it into Envelope.Counts, and restore asserts the declared counts against a
+// freshly-computed one for integrity (ADR-0036).
+func (d *HouseholdData) SectionCounts() map[string]int {
+	return map[string]int{
+		"users":                   len(d.Users),
+		"tags":                    len(d.Tags),
+		"assets":                  len(d.Assets),
+		"bank_accounts":           len(d.BankAccounts),
+		"properties":              len(d.Properties),
+		"vehicles":                len(d.Vehicles),
+		"liabilities":             len(d.Liabilities),
+		"receivables":             len(d.Receivables),
+		"investments":             len(d.Investments),
+		"stocks":                  len(d.Stocks),
+		"mutual_funds":            len(d.MutualFunds),
+		"bonds":                   len(d.Bonds),
+		"golds":                   len(d.Golds),
+		"time_deposits":           len(d.TimeDeposits),
+		"asset_snapshots":         len(d.AssetSnapshots),
+		"liability_snapshots":     len(d.LiabilitySnapshots),
+		"receivable_snapshots":    len(d.ReceivableSnapshots),
+		"investment_snapshots":    len(d.InvestmentSnapshots),
+		"investment_transactions": len(d.InvestmentTransactions),
+		"income":                  len(d.Income),
+		"fx_rates":                len(d.FxRates),
+	}
+}

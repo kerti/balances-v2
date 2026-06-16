@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/20-backup.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**5 / 5** invariants in this zone have at least one covering test.
+**8 / 8** invariants in this zone have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -13,3 +13,6 @@
 | INV-BACKUP-03 | Monetary, quantity, and FX values serialize as JSON **strings**, never bare numbers, so decimal precision survives the round-trip (no IEEE-754 corruption) | `backend/internal/backup/export_test.go` |
 | INV-BACKUP-04 | The envelope is **parents-before-children**: household → users → tags → positions → their detail → snapshots → transactions → income → fx. Every child section follows its parent. This order is a frozen part of the `format_version: 1` contract — it is what lets a future importer stream the file in one pass — and may not change without a format bump | `backend/internal/backup/export_test.go`<br>`frontend/e2e/backup-export.spec.ts` |
 | INV-BACKUP-05 | The artifact is a gzip stream delivered as `household-backup-<date>.json.gz`; the client derives the save name from `Content-Disposition`, falling back to a date-stamped default when the header is absent or unusual | `frontend/src/lib/backup.test.ts` |
+| INV-BACKUP-06 | Restore refuses a backup whose `format_version` is **newer** than this build speaks (`ErrFormatTooNew`) rather than guessing, and rejects a sub-1 version as invalid; an older version is migrated forward through the registered transform chain (identity at v1) | `backend/internal/backup/restore_test.go` |
+| INV-BACKUP-07 | Restore verifies integrity before any load: a truncated/corrupt gzip stream (CRC) is rejected (`ErrCorruptBackup`), and every declared per-section count must match the payload or the file is rejected | `backend/internal/backup/restore_test.go` |
+| INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (`google_sub`, email fallback) or the restore is refused (`ErrNotMemberOfBackup`) | `backend/internal/backup/restore_test.go` |

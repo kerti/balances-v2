@@ -77,7 +77,7 @@ func (h *Handlers) handleExport(w http.ResponseWriter, r *http.Request) {
 // wraps it with the format header. See the memory note in format.go on why this
 // assembles before encoding rather than cursor-streaming per table.
 func (h *Handlers) buildEnvelope(ctx context.Context, hid uuid.UUID, fidelity Fidelity) (*Envelope, error) {
-	data, counts, err := h.gather(ctx, hid, fidelity)
+	data, err := h.gather(ctx, hid, fidelity)
 	if err != nil {
 		return nil, err
 	}
@@ -86,17 +86,17 @@ func (h *Handlers) buildEnvelope(ctx context.Context, hid uuid.UUID, fidelity Fi
 		ExportedAt:    time.Now().UTC(),
 		Instance:      h.instance,
 		Fidelity:      fidelity,
-		Counts:        counts,
+		Counts:        data.SectionCounts(),
 		Household:     *data,
 	}, nil
 }
 
-func (h *Handlers) gather(ctx context.Context, hid uuid.UUID, fidelity Fidelity) (*HouseholdData, map[string]int, error) {
+func (h *Handlers) gather(ctx context.Context, hid uuid.UUID, fidelity Fidelity) (*HouseholdData, error) {
 	incl := fidelity == FidelityFull
 
 	household, err := h.q.GetHouseholdForExport(ctx, hid)
 	if err != nil {
-		return nil, nil, fmt.Errorf("household: %w", err)
+		return nil, fmt.Errorf("household: %w", err)
 	}
 
 	d := &HouseholdData{Household: household}
@@ -105,123 +105,120 @@ func (h *Handlers) gather(ctx context.Context, hid uuid.UUID, fidelity Fidelity)
 	// with the section name so a failure points at the offending table.
 	type step struct {
 		name string
-		run  func() (int, error)
+		run  func() error
 	}
 	steps := []step{
-		{"users", func() (int, error) {
+		{"users", func() error {
 			v, e := h.q.ListUsersForExport(ctx, db.ListUsersForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Users = v
-			return len(v), e
+			return e
 		}},
-		{"tags", func() (int, error) {
+		{"tags", func() error {
 			v, e := h.q.ListTagsForExport(ctx, db.ListTagsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Tags = v
-			return len(v), e
+			return e
 		}},
-		{"assets", func() (int, error) {
+		{"assets", func() error {
 			v, e := h.q.ListAssetsForExport(ctx, db.ListAssetsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Assets = v
-			return len(v), e
+			return e
 		}},
-		{"bank_accounts", func() (int, error) {
+		{"bank_accounts", func() error {
 			v, e := h.q.ListBankAccountsForExport(ctx, db.ListBankAccountsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.BankAccounts = v
-			return len(v), e
+			return e
 		}},
-		{"properties", func() (int, error) {
+		{"properties", func() error {
 			v, e := h.q.ListPropertiesForExport(ctx, db.ListPropertiesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Properties = v
-			return len(v), e
+			return e
 		}},
-		{"vehicles", func() (int, error) {
+		{"vehicles", func() error {
 			v, e := h.q.ListVehiclesForExport(ctx, db.ListVehiclesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Vehicles = v
-			return len(v), e
+			return e
 		}},
-		{"liabilities", func() (int, error) {
+		{"liabilities", func() error {
 			v, e := h.q.ListLiabilitiesForExport(ctx, db.ListLiabilitiesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Liabilities = v
-			return len(v), e
+			return e
 		}},
-		{"receivables", func() (int, error) {
+		{"receivables", func() error {
 			v, e := h.q.ListReceivablesForExport(ctx, db.ListReceivablesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Receivables = v
-			return len(v), e
+			return e
 		}},
-		{"investments", func() (int, error) {
+		{"investments", func() error {
 			v, e := h.q.ListInvestmentsForExport(ctx, db.ListInvestmentsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Investments = v
-			return len(v), e
+			return e
 		}},
-		{"stocks", func() (int, error) {
+		{"stocks", func() error {
 			v, e := h.q.ListStocksForExport(ctx, db.ListStocksForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Stocks = v
-			return len(v), e
+			return e
 		}},
-		{"mutual_funds", func() (int, error) {
+		{"mutual_funds", func() error {
 			v, e := h.q.ListMutualFundsForExport(ctx, db.ListMutualFundsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.MutualFunds = v
-			return len(v), e
+			return e
 		}},
-		{"bonds", func() (int, error) {
+		{"bonds", func() error {
 			v, e := h.q.ListBondsForExport(ctx, db.ListBondsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Bonds = v
-			return len(v), e
+			return e
 		}},
-		{"golds", func() (int, error) {
+		{"golds", func() error {
 			v, e := h.q.ListGoldsForExport(ctx, db.ListGoldsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Golds = v
-			return len(v), e
+			return e
 		}},
-		{"time_deposits", func() (int, error) {
+		{"time_deposits", func() error {
 			v, e := h.q.ListTimeDepositsForExport(ctx, db.ListTimeDepositsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.TimeDeposits = v
-			return len(v), e
+			return e
 		}},
-		{"asset_snapshots", func() (int, error) {
+		{"asset_snapshots", func() error {
 			v, e := h.q.ListAssetSnapshotsForExport(ctx, db.ListAssetSnapshotsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.AssetSnapshots = v
-			return len(v), e
+			return e
 		}},
-		{"liability_snapshots", func() (int, error) {
+		{"liability_snapshots", func() error {
 			v, e := h.q.ListLiabilitySnapshotsForExport(ctx, db.ListLiabilitySnapshotsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.LiabilitySnapshots = v
-			return len(v), e
+			return e
 		}},
-		{"receivable_snapshots", func() (int, error) {
+		{"receivable_snapshots", func() error {
 			v, e := h.q.ListReceivableSnapshotsForExport(ctx, db.ListReceivableSnapshotsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.ReceivableSnapshots = v
-			return len(v), e
+			return e
 		}},
-		{"investment_snapshots", func() (int, error) {
+		{"investment_snapshots", func() error {
 			v, e := h.q.ListInvestmentSnapshotsForExport(ctx, db.ListInvestmentSnapshotsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.InvestmentSnapshots = v
-			return len(v), e
+			return e
 		}},
-		{"investment_transactions", func() (int, error) {
+		{"investment_transactions", func() error {
 			v, e := h.q.ListInvestmentTransactionsForExport(ctx, db.ListInvestmentTransactionsForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.InvestmentTransactions = v
-			return len(v), e
+			return e
 		}},
-		{"income", func() (int, error) {
+		{"income", func() error {
 			v, e := h.q.ListIncomeForExport(ctx, db.ListIncomeForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.Income = v
-			return len(v), e
+			return e
 		}},
-		{"fx_rates", func() (int, error) {
+		{"fx_rates", func() error {
 			v, e := h.q.ListFxRatesForExport(ctx, db.ListFxRatesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
 			d.FxRates = v
-			return len(v), e
+			return e
 		}},
 	}
 
-	counts := make(map[string]int, len(steps))
 	for _, s := range steps {
-		n, err := s.run()
-		if err != nil {
-			return nil, nil, fmt.Errorf("%s: %w", s.name, err)
+		if err := s.run(); err != nil {
+			return nil, fmt.Errorf("%s: %w", s.name, err)
 		}
-		counts[s.name] = n
 	}
-	return d, counts, nil
+	return d, nil
 }
