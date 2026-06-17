@@ -29,11 +29,15 @@ export type Position = {
   // "As of now" cost basis. Caller computes via lib/costBasis per the
   // subtype's quirk (ledger replay for Stock/MF/Gold/Bond; flat principal
   // for TD — bonds always carry a Buy at placement now, issue #27).
-  cost: number
+  // **Optional**: the non-investment groups (assets / liabilities /
+  // receivables) have no cost basis (epic #204), so they omit it and the
+  // aggregator treats cost as 0 — a value-only series.
+  cost?: number
   snapshots: Array<{ year_month: string; amount: string }>
   // Aligned with snapshots by year_month — caller computes via
-  // costBasisSeries (ledger) or flatCostSeries (constant).
-  costSeries: Array<{ year_month: string; cost: number }>
+  // costBasisSeries (ledger) or flatCostSeries (constant). Omitted by the
+  // value-only (non-investment) groups.
+  costSeries?: Array<{ year_month: string; cost: number }>
 }
 
 export type CurrencyAggregate = {
@@ -83,7 +87,8 @@ export function aggregateListPositions(
     }
     // Cost always contributes — a position with no snapshot still has a
     // cost basis (e.g. a freshly-placed bond whose Buy is recorded).
-    entry.cost += p.cost
+    // Value-only groups omit cost entirely → treated as 0.
+    entry.cost += p.cost ?? 0
     currencyMap.set(p.currency, entry)
   }
 
@@ -162,7 +167,7 @@ function aggregateMonthly(positions: Position[]): TimePoint[] {
       if (!live(m)) continue
       byMonth.set(m, { value: Number(s.amount), cost: 0 })
     }
-    for (const c of p.costSeries) {
+    for (const c of p.costSeries ?? []) {
       const m = monthOf(c.year_month)
       if (!live(m)) continue
       const entry = byMonth.get(m) ?? { value: 0, cost: 0 }

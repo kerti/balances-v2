@@ -57,10 +57,15 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 2. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
    ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
    bus-factor-insurance set — that's the point of having it.
-3. **Close M6 in full → `v0.6.0-alpha.5`.** Only remaining M6 done-when item is **PDF export (#187)**;
-   the Q8a/Q12/Q14c helpers already shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`,
-   `lib/rollover.ts`). Fold in **#56** (maturity auto-snapshot not instant — the open alpha bug) + a
-   short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
+3. **Close M6 in full → `v0.6.0-alpha.5`.** The M6 closer is now the **group-Home dashboard-polish
+   epic (#204)** — Assets/Liabilities Homes to InvestmentsHome parity + a Receivables total-over-time
+   chart (slices #200→#201→#202). **PDF export (#187) was pivoted to M8** (2026-06-17): 3 of 4 group
+   Homes were stubs, so polish-then-snapshot is the right order. The Q8a/Q12/Q14c helpers already
+   shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`, `lib/rollover.ts`); #56 maturity auto-snapshot
+   already landed. Still owed: a short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
+   - **Slice 1 (#200) — Assets Home** shipped: value-only `GET /api/assets/time-series` (cost-free
+     mirror of the #22 endpoint) + the shared `lib/groupHomeAggregates.ts` value-only aggregator +
+     generic `GroupCategoryStackChart`; `AssetsHome` now has Total-value/over-time/subtype-stack/pie.
 4. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
    trustable by real households, not richer in domain features. Lead with **self-host #116** (the
    bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**

@@ -135,6 +135,49 @@ func (q *Queries) GetAssetSnapshotByID(ctx context.Context, arg GetAssetSnapshot
 	return i, err
 }
 
+const listAssetSnapshotsByAssetIDs = `-- name: ListAssetSnapshotsByAssetIDs :many
+SELECT id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+FROM asset_snapshots
+WHERE asset_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY asset_id, year_month
+`
+
+// Full ascending value series per asset, for the Assets Home time graphs
+// (epic #204). Ascending order is what AssetTimeSeries' carry-forward sampling
+// relies on; mirrors ListInvestmentSnapshotsByInvestmentIDs.
+func (q *Queries) ListAssetSnapshotsByAssetIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]AssetSnapshot, error) {
+	rows, err := q.db.Query(ctx, listAssetSnapshotsByAssetIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []AssetSnapshot
+	for rows.Next() {
+		var i AssetSnapshot
+		if err := rows.Scan(
+			&i.ID,
+			&i.AssetID,
+			&i.YearMonth,
+			&i.Amount,
+			&i.Currency,
+			&i.AsOfDate,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAssetSnapshotsForAsset = `-- name: ListAssetSnapshotsForAsset :many
 SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
 FROM asset_snapshots s

@@ -1,4 +1,21 @@
 {
+  "home": {
+    "subtitle": "Composition and trend across bank accounts, properties, and vehicles.",
+    "totalValueTitle": "Total value",
+    "totalValueCount_one": "{{count}} asset",
+    "totalValueCount_other": "{{count}} assets",
+    "valueChartTitle": "Total value over time",
+    "valueChartDescription": "Sum across all active assets ({{currency}}).",
+    "categoryStackTitle": "Category share over time",
+    "categoryStackDescription": "Percentage of total value by category, month-by-month ({{currency}}).",
+    "categoryPieTitle": "Current category mix",
+    "categoryPieDescription": "Share of current value by category ({{currency}}).",
+    "categoryLabel": {
+      "bankAccount": "Bank accounts",
+      "property": "Properties",
+      "vehicle": "Vehicles"
+    }
+  },
   "bankAccount": {
     "listTitle": "Bank Accounts",
     "listSubtitle": "Track monthly balances across your household's bank accounts.",

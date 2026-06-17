@@ -1,4 +1,21 @@
 {
+  "home": {
+    "subtitle": "Komposisi dan tren mencakup rekening bank, properti, dan kendaraan.",
+    "totalValueTitle": "Total nilai",
+    "totalValueCount_one": "{{count}} aset",
+    "totalValueCount_other": "{{count}} aset",
+    "valueChartTitle": "Total nilai dari waktu ke waktu",
+    "valueChartDescription": "Jumlah seluruh aset aktif ({{currency}}).",
+    "categoryStackTitle": "Porsi kategori dari waktu ke waktu",
+    "categoryStackDescription": "Persentase total nilai per kategori, bulan demi bulan ({{currency}}).",
+    "categoryPieTitle": "Komposisi kategori saat ini",
+    "categoryPieDescription": "Porsi nilai saat ini per kategori ({{currency}}).",
+    "categoryLabel": {
+      "bankAccount": "Rekening bank",
+      "property": "Properti",
+      "vehicle": "Kendaraan"
+    }
+  },
   "bankAccount": {
     "listTitle": "Rekening Bank",
     "listSubtitle": "Pantau saldo bulanan di rekening bank rumah tangga Anda.",

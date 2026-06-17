@@ -61,6 +61,15 @@ FROM asset_snapshots
 WHERE asset_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY asset_id, year_month DESC;
 
+-- Full ascending value series per asset, for the Assets Home time graphs
+-- (epic #204). Ascending order is what AssetTimeSeries' carry-forward sampling
+-- relies on; mirrors ListInvestmentSnapshotsByInvestmentIDs.
+-- name: ListAssetSnapshotsByAssetIDs :many
+SELECT *
+FROM asset_snapshots
+WHERE asset_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY asset_id, year_month;
+
 -- name: SoftDeleteAssetSnapshot :execrows
 UPDATE asset_snapshots s
 SET deleted_at = now(),

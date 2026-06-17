@@ -2,8 +2,9 @@
 
 The design phase is captured in `CONTEXT.md` and `docs/adr/0001–0021.md`. This document is the
 implementation outline — eight milestones, each shippable, each a useful place to pause and resume.
-M1–M5 done; M6 closes with `v0.6.0-alpha.4` (PDF export the last item); M7 (productization) and M8
-(domain features, feedback-driven) were added 2026-06-17.
+M1–M5 done; M6 closes with the group-Home dashboard-polish epic (#204); PDF export (#187) was pivoted
+to M8 on 2026-06-17 (polish the live dashboard before snapshotting it to a report). M7
+(productization) and M8 (domain features, feedback-driven) were added 2026-06-17.
 
 Reorder, split, or merge milestones as reality demands. This is a north-star, not a contract.
 
@@ -42,7 +43,9 @@ headline, group/User breakdowns, comprehensive-income lines, time-series chart; 
 **Goal:** ready to depend on.
 
 **Done when:**
-- PDF export of monthly reports works (user requirement from Q22)
+- Group-Home dashboard parity (#204) lands — Assets/Liabilities Homes reach InvestmentsHome parity
+  and Receivables gets a total-over-time chart (the live dashboard now supersedes the Google-Sheets
+  workbook this app replaced)
 - Property/vehicle amortization-rate UI helper (Q8a) is in
 - Fee cash→quantity helper (Q12 follow-up) is in
 - TimeDeposit "duplicate matured TD" helper (Q14c-iv) is in
@@ -56,10 +59,12 @@ headline, group/User breakdowns, comprehensive-income lines, time-series chart; 
 **Status (2026-06-17):** the Q8a property/vehicle revaluation helper (`lib/revaluation.ts`), the Q12
 fee cash→quantity helper (`lib/feeQuantity.ts`), the Q14c matured-TD redeploy helper (`lib/rollover.ts`
 + `CreateTimeDepositDialog` prefill), the migration squash (ADR-0031 baseline), the hosting target
-(Fly preview, ADR-0030), and whole-household backup/restore (epic #52, ADR-0036) are all shipped. The
-**only remaining M6 done-when item is PDF export (#187)**; a production Resend domain is prod-gated and
-moves to M7; "production DB backup/restore documented" is a short ops note still owed. M6 closes with
-`v0.6.0-alpha.4`.
+(Fly preview, ADR-0030), and whole-household backup/restore (epic #52, ADR-0036) are all shipped.
+**PDF export (#187) was pivoted to M8** (re-scoped to a downloadable/emailable *polished* report,
+blocked on #204): 3 of 4 group Homes were stubs, so a PDF now would snapshot a half-finished report —
+polish-then-snapshot is the correct order. The **remaining M6 done-when item is the group-Home
+dashboard-polish epic (#204)**; a production Resend domain is prod-gated and moves to M7; "production
+DB backup/restore documented" is a short ops note still owed.
 
 ## Milestone 7 — Productization / beta
 
@@ -85,3 +90,7 @@ minor" convention).
 pre-specified here. Candidates currently parked in the backlog (#66 per-bond coupon disposition, #145
 expected-coupon projection, #69 component tests, etc.) compete on observed signal. Future ADRs
 (passkeys, offline support, push notifications, Apple OAuth) remain incremental enhancements.
+
+- **PDF export (#187)** — pivoted here from M6 (2026-06-17). Re-scoped to a downloadable/emailable
+  *polished* monthly report, building on the now-parity group Homes (epic #204); deferred so the PDF
+  snapshots a finished dashboard, not a half-built one.

@@ -115,6 +115,14 @@ func (h *Handlers) Mount(r chi.Router) {
 		})
 	})
 
+	// Per-asset monthly value series for the Assets Home time graphs (epic
+	// #204). Value-only — assets carry no cost basis. Static two-segment path,
+	// so no clash with the /assets/{id}/… routes below.
+	r.Group(func(r chi.Router) {
+		r.Use(auth.RequireAuth)
+		r.Get("/assets/time-series", h.handleAssetTimeSeries)
+	})
+
 	r.Route("/assets/{id}/snapshots", func(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreateSnapshot)
@@ -136,6 +144,18 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Patch("/", h.handleUpdateLifecycle)
 	})
+}
+
+// handleAssetTimeSeries returns the per-asset monthly value series for every
+// asset in the household (epic #204), feeding the Assets Home time graphs
+// without a per-asset fan-out. Value-only — no cost basis.
+func (h *Handlers) handleAssetTimeSeries(w http.ResponseWriter, r *http.Request) {
+	series, err := h.repo.AssetTimeSeries(r.Context())
+	if err != nil {
+		httperr.WriteRepo(w, "asset time series", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, series)
 }
 
 // ----- helpers shared across handlers -------------------------------------
