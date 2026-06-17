@@ -19,8 +19,8 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.2` is the
-latest DEPLOYED** release (two batched alphas: alpha.1 then alpha.2) on the `preview` environment
+M1–M5 complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.3` is the
+latest DEPLOYED** release (three batched alphas: alpha.1 → alpha.2 → alpha.3) on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -35,32 +35,33 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   (ADR-0031); CodeQL/govulncheck/Dependabot + path-gated CI; sidebar footer; autosave toasts
   (ADR-0032); unrecorded-position drill-down. Per-item detail lives in the closed issues + the
   alpha.1/alpha.2 GitHub Release notes (ADR-0029).
+- **alpha.3** — three epics on top of M6: **i18n round-out** (#159, ADR-0035, migs 00002–00005);
+  **whole-household backup/restore** (epic #52 complete, ADR-0036, PRs #174–186); the **QA invariant
+  matrix** (19 zones, 103 invariants, `make qa-matrix`). Plus xlsx create-from-list import fan-out,
+  founder welcome email, brand canonicalization, and the #70 security tail (SHA-pin / e2e-in-CI /
+  gitleaks). Detail in the closed issues + the alpha.3 GitHub Release notes.
 
 ## What's next
 
-Two big epics shipped since `v0.6.0-alpha.2` (unreleased): **i18n round-out** (#159, ADR-0035, mig
-00005) and **whole-household backup/restore** (epic #52 **complete**, ADR-0036, PRs #174–186). Detail
-lives in the closed issues + the alpha.3 Release notes. **Agreed plan (2026-06-17), in order:**
+**Agreed plan (2026-06-17), in order:**
 
-1. **Cut `v0.6.0-alpha.3` now** — release-only step batching the two epics above (carries mig 00005,
-   additive; no new code). Follow `docs/agents/release.md`.
-2. **Gate the QA invariant matrix in CI** — flip `make qa-matrix` toward a `-strict` CI gate (advisory
+1. **Gate the QA invariant matrix in CI** — flip `make qa-matrix` toward a `-strict` CI gate (advisory
    today). *Not a one-line flip:* E2E-covered invariants run **nightly, not per-PR** — `@smoke`-tag the
    covering specs or exclude them from the per-PR gate, or strict falsely credits coverage that didn't
    run (`docs/qa/how-it-works.md:72-83`). Goal: the matrix earns its maintenance weight or gets shrunk.
-3. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
+2. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
    ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
    bus-factor-insurance set — that's the point of having it.
-4. **Close M6 in full → `v0.6.0-alpha.4`.** Only remaining M6 done-when item is **PDF export (#187)**;
+3. **Close M6 in full → `v0.6.0-alpha.4`.** Only remaining M6 done-when item is **PDF export (#187)**;
    the Q8a/Q12/Q14c helpers already shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`,
    `lib/rollover.ts`). Fold in **#56** (maturity auto-snapshot not instant — the open alpha bug) + a
    short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
-5. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
+4. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
    trustable by real households, not richer in domain features. Lead with **self-host #116** (the
    bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**
    onboarding (invite-vs-found at first sign-in, irreversible — needs grill+ADR), production Resend
    domain (carried from M6), **#93** landing. See ROADMAP M7.
-6. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified). See
+5. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified). See
    ROADMAP M8.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
