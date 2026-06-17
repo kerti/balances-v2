@@ -109,8 +109,18 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 	// fail a successful restore. Must precede writeJSON (it sets a cookie header).
 	if restored, err := h.q.GetUserByGoogleSub(r.Context(), user.GoogleSub); err != nil {
 		slog.Warn("restore: lookup restored caller for re-login", "err", err)
-	} else if err := h.sessions.IssueSession(r.Context(), w, restored.ID, r.UserAgent()); err != nil {
-		slog.Warn("restore: re-issue caller session", "err", err)
+	} else {
+		if err := h.sessions.IssueSession(r.Context(), w, restored.ID, r.UserAgent()); err != nil {
+			slog.Warn("restore: re-issue caller session", "err", err)
+		}
+		// Best-effort post-restore emails (#176): a confirmation to the restorer
+		// and a relocation/security notice to every other live member. The
+		// notifier swallows its own send failures — a mail outage must never
+		// reflect on the restore that already committed — so this fires after the
+		// commit succeeded and is deliberately not on the error path. The restored
+		// caller carries the adopted (backup's) Household UUID, so its household is
+		// the one to enumerate. summaryItemCount is the restorer's sanity-check tally.
+		h.notifier.NotifyRestore(r.Context(), restored.HouseholdID, restored.ID, summaryItemCount(summary))
 	}
 
 	writeJSON(w, http.StatusOK, restoreResult{Restored: true, Summary: summary})
@@ -122,6 +132,20 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 type restoreResult struct {
 	Restored bool     `json:"restored"`
 	Summary  *Summary `json:"summary"`
+}
+
+// summaryItemCount totals every section count in a restore Summary — the
+// sanity-check tally the restorer's confirmation email shows ("N records are now
+// in place"). A nil Summary totals zero.
+func summaryItemCount(s *Summary) int {
+	if s == nil {
+		return 0
+	}
+	total := 0
+	for _, n := range s.Counts {
+		total += n
+	}
+	return total
 }
 
 // readBackupUpload reads the size-capped multipart "file" field shared by both

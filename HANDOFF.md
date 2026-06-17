@@ -47,9 +47,12 @@ Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
   `?lng=`), override in Settings.
 
 - **Whole-household backup/restore (#52, ADR-0036)** — export **shipped** (#174): `GET /api/backup/export`,
-  versioned `.json.gz`, full/compacted fidelity. Restore (#175) on branch `feat/backup-restore`: `POST
+  versioned `.json.gz`, full/compacted fidelity. Restore **shipped** (#175): `POST
   /api/backup/restore/{preview,commit}`, all-or-nothing wipe+load adopting the backup household UUID,
   stakes-scaled confirm UI in Settings → Data. Commit wipes the session → re-login re-links by `google_sub`.
+  Restore notifications **shipped** (#176): best-effort per-locale emails on success — restorer
+  confirmation + member relocation/security notice (tamper tripwire); soft-deleted members skipped.
+  Remaining: #177 (format-version transform-chain proof).
 
 - **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
   blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and

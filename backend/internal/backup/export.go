@@ -24,8 +24,9 @@ import (
 type Handlers struct {
 	pool     *pgxpool.Pool
 	q        *db.Queries
-	instance string        // this instance's public URL, stamped into the envelope
-	sessions SessionIssuer // re-issues the caller's session after a restore
+	instance string          // this instance's public URL, stamped into the envelope
+	sessions SessionIssuer   // re-issues the caller's session after a restore
+	notifier RestoreNotifier // best-effort post-restore emails (#176)
 }
 
 // SessionIssuer mints a fresh session + cookie for a user. The restore flow uses
@@ -35,8 +36,17 @@ type SessionIssuer interface {
 	IssueSession(ctx context.Context, w http.ResponseWriter, userID uuid.UUID, userAgent string) error
 }
 
-func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer) *Handlers {
-	return &Handlers{pool: pool, q: db.New(pool), instance: instanceURL, sessions: sessions}
+// RestoreNotifier fires the best-effort, per-recipient-localized emails that
+// follow a successful restore (#176, ADR-0036): a confirmation to the restorer
+// and a relocation/security notice to every other live member. It is fully
+// best-effort and self-logging — it returns nothing, so a mail outage can never
+// reflect on the restore that already committed. Satisfied by *auth.Handlers.
+type RestoreNotifier interface {
+	NotifyRestore(ctx context.Context, householdID, restorerID uuid.UUID, itemCount int)
+}
+
+func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier) *Handlers {
+	return &Handlers{pool: pool, q: db.New(pool), instance: instanceURL, sessions: sessions, notifier: notifier}
 }
 
 func (h *Handlers) Mount(r chi.Router) {

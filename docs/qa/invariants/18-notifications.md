@@ -6,11 +6,15 @@ without touching call sites — SMTP / Mailpit in dev, Resend in prod. This zone
 sits **beneath AUTH's invite-token invariants**: INV-AUTH-06/07/08 own the
 token's randomness / single-use / email-match-on-acceptance; this zone owns the
 **message that carries the token** — the side-effect path none of the token
-tests exercise. The app has two transactional senders: the invitation email
-(`Handlers.sendInvitationEmail`, `internal/auth/invitations.go`) and the founder
-**welcome email** (`Handlers.sendWelcomeEmail`, `internal/auth/welcome_email.go`,
-rendered through the shared `email.Layout` shell). The best-effort contract
-(INV-NOTIFICATIONS-02) is shared; addressing and escaping are pinned per sender.
+tests exercise. The app has three transactional senders: the invitation email
+(`Handlers.sendInvitationEmail`, `internal/auth/invitations.go`), the founder
+**welcome email** (`Handlers.sendWelcomeEmail`, `internal/auth/welcome_email.go`),
+and the **restore notifications** (`Handlers.NotifyRestore`,
+`internal/auth/restore_email.go` — a restorer confirmation + a member
+relocation/security notice, fired best-effort from the backup commit handler
+after a successful restore). All render through the shared `email.Layout` shell.
+The best-effort contract (INV-NOTIFICATIONS-02) is shared; addressing and
+escaping are pinned per sender.
 The zone grows as new senders land. The catalog bar
 holds (a leaked/misaddressed token or a silently-lost invite, not mere
 mechanics). `internal/email/smtp_test.go` covers only the SMTP *implementation*
@@ -26,10 +30,13 @@ ADR-0020 (mailer interface), ADR-0017 (invitations).
 | INV-NOTIFICATIONS-05 | HTML-escaped interpolation (welcome) — the founder display name (from Google OAuth claims) is `htmlEscape`d into the welcome HTML body before interpolation. The per-message re-pin of INV-NOTIFICATIONS-03 for the welcome sender; the plain-text part is raw by design | ADR-0020 / welcome_email.go | Medium |
 | INV-NOTIFICATIONS-06 | Locale-rendered welcome — the welcome email's subject + body render in the recipient founder's `user.locale` via the per-locale catalog, falling back to en-GB for an unknown locale; the brand name "Balances" is left literal in every locale | ADR-0035 / email_i18n.go | Medium |
 | INV-NOTIFICATIONS-07 | Locale-rendered invitation — the invitation email's subject + body render in the `inviter`'s locale (the only locale signal before the invitee exists), with the same en-GB fallback and literal brand name | ADR-0035 / email_i18n.go | Medium |
+| INV-NOTIFICATIONS-08 | Restore notification addressing & roles — after a successful restore, `NotifyRestore` mails exactly the **live** members: the **restorer** gets the "restore complete" confirmation (carrying the sanity-check item count), every **other** live member gets the relocation/security notice (which names the restorer and doubles as a tamper tripwire), and a **soft-deleted member is not mailed at all** (`ListUsersForExport` with `include_deleted=false`). Misrouting a role or mailing a soft-deleted user is the bar this row guards; fires on commit success only, never on a failed/refused restore | ADR-0036 / restore_email.go | Medium |
+| INV-NOTIFICATIONS-09 | Locale-rendered restore emails — each recipient's restore email (confirmation or notice) renders in **their own** `user.locale`, not the restorer's, with the en-GB fallback and literal brand name. The per-recipient re-pin of INV-NOTIFICATIONS-06/07 for the restore senders — a member reading the security notice in the wrong language is the bar | ADR-0035 / ADR-0036 / restore_email.go | Medium |
 
-> _Next sender to catalogue when it lands: the two senders today are the
-> invitation email and the founder welcome email. When a third ships (e.g. a
+> _Next sender to catalogue when it lands: today's senders are the invitation
+> email, the founder welcome email, and the restore notifications (restorer
+> confirmation + member relocation/security notice). When a fourth ships (e.g. a
 > maturity / staleness digest), seed its rows here against its own call site —
 > the Mailer interface and the best-effort contract (INV-NOTIFICATIONS-02)
 > generalise, but the addressing and escaping rows are per-message and must be
-> re-pinned. This zone is complete at 5/5._
+> re-pinned. This zone is complete at 7/7._

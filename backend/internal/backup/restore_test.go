@@ -32,6 +32,21 @@ func (s *stubIssuer) IssueSession(_ context.Context, w http.ResponseWriter, user
 	return nil
 }
 
+// stubNotifier is a no-op RestoreNotifier for tests that don't exercise the
+// post-restore emails (the notifier's own behaviour is covered in the auth
+// package). It records the household/restorer it was handed so a test can assert
+// the commit handler fired it after a successful restore.
+type stubNotifier struct {
+	householdID uuid.UUID
+	restorerID  uuid.UUID
+	itemCount   int
+	calls       int
+}
+
+func (s *stubNotifier) NotifyRestore(_ context.Context, householdID, restorerID uuid.UUID, itemCount int) {
+	s.householdID, s.restorerID, s.itemCount, s.calls = householdID, restorerID, itemCount, s.calls+1
+}
+
 func exportBytes(ctx context.Context, t *testing.T, h *Handlers) []byte {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/api/backup/export?fidelity=full", nil).WithContext(ctx)
@@ -63,7 +78,7 @@ func TestRestoreParseValidate(t *testing.T) {
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{})
 
 	gzipped := exportBytes(aliceCtx, t, h)
 
@@ -141,7 +156,7 @@ func TestRestoreCommit(t *testing.T) {
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise — must survive untouched
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{})
 
 	// The golden backup, captured before any mutation.
 	before, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
@@ -277,7 +292,8 @@ func TestRestoreEndpoints(t *testing.T) {
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
+	notifier := &stubNotifier{}
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier)
 	gzipped := exportBytes(aliceCtx, t, h)
 
 	t.Run("preview returns the stakes summary", func(t *testing.T) {
@@ -358,7 +374,29 @@ func TestRestoreEndpoints(t *testing.T) {
 		if got := after.Counts["asset_snapshots"]; got != 2 {
 			t.Errorf("asset_snapshots after commit = %d, want 2", got)
 		}
+		// The successful commit fired the post-restore notifier exactly once, for
+		// the restored caller's adopted household. The refused non-member commit
+		// above must not have fired it.
+		if notifier.calls != 1 {
+			t.Errorf("NotifyRestore calls = %d, want 1 (success only)", notifier.calls)
+		}
+		if notifier.householdID != alice.HouseholdID {
+			t.Errorf("NotifyRestore household = %s, want restored household %s", notifier.householdID, alice.HouseholdID)
+		}
+		if notifier.itemCount <= 0 {
+			t.Errorf("NotifyRestore itemCount = %d, want > 0", notifier.itemCount)
+		}
 	})
+}
+
+func TestSummaryItemCount(t *testing.T) {
+	if got := summaryItemCount(nil); got != 0 {
+		t.Errorf("nil summary = %d, want 0", got)
+	}
+	s := &Summary{Counts: map[string]int{"assets": 3, "investments": 2, "income": 5}}
+	if got := summaryItemCount(s); got != 10 {
+		t.Errorf("count = %d, want 10", got)
+	}
 }
 
 // covers: INV-BACKUP-06
