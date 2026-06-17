@@ -100,7 +100,7 @@ func TestBackupExport(t *testing.T) {
 	liveAmount := seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise
 
-	h := New(tdb.Pool, "http://test.local")
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
 
 	t.Run("full fidelity carries soft-deleted rows", func(t *testing.T) {
 		env, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)

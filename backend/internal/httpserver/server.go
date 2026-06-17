@@ -64,10 +64,10 @@ func New(
 		reportsH:     reportsH,
 		fxRatesH:     fxRatesH,
 		tagsH:        tagsH,
-		// Backup reads across every table from the shared pool; it needs only the
-		// pool + the instance URL (stamped into the envelope), so it's built here
-		// rather than threaded through main's per-entity wiring.
-		backupH: backup.New(pool, cfg.BackendURL),
+		// Backup reads across every table from the shared pool; it needs the pool,
+		// the instance URL (stamped into the envelope), and the auth handler to
+		// re-issue the caller's session after a restore wipes it.
+		backupH: backup.New(pool, cfg.BackendURL, authH),
 	}
 	s.router = s.buildRouter()
 	return s

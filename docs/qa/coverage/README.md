@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**118 / 118** invariants have at least one covering test.
+**120 / 120** invariants have at least one covering test.
 
 | Zone | Covered | Coverage |
 |----|----|----|
@@ -27,4 +27,4 @@
 | JOURNEYS | 3 / 3 | [JOURNEYS](17-journeys.md) |
 | NOTIFICATIONS | 7 / 7 | [NOTIFICATIONS](18-notifications.md) |
 | CONTRACT | 4 / 4 | [CONTRACT](19-contract.md) |
-| BACKUP | 8 / 8 | [BACKUP](20-backup.md) |
+| BACKUP | 10 / 10 | [BACKUP](20-backup.md) |

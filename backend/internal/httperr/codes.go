@@ -134,4 +134,29 @@ const (
 	// unreachable ErrUnauthenticated — this one is the real, client-facing
 	// gate before the repo ever runs.
 	CodeUnauthorized Code = "UNAUTHORIZED"
+
+	// CodeInvalidBackupFile is a 400 for an upload that is not a recognizable
+	// whole-Household backup — unparseable JSON, or a format_version below 1
+	// (backup.ErrInvalidBackupFile, ADR-0036).
+	CodeInvalidBackupFile Code = "INVALID_BACKUP_FILE"
+
+	// CodeCorruptBackup is a 400 for a backup whose gzip stream is damaged or
+	// truncated (CRC), or whose declared per-section count doesn't match the
+	// payload (backup.ErrCorruptBackup, ADR-0036).
+	CodeCorruptBackup Code = "CORRUPT_BACKUP"
+
+	// CodeBackupFormatTooNew is a 422 for a backup whose format_version is newer
+	// than this build speaks — it is refused rather than guessed
+	// (backup.ErrFormatTooNew, ADR-0036).
+	CodeBackupFormatTooNew Code = "BACKUP_FORMAT_TOO_NEW"
+
+	// CodeNotMemberOfBackup is a 403 when the caller is not a member of the
+	// backup's Household — you may only restore a Household you belong to
+	// (backup.ErrNotMemberOfBackup, ADR-0017/ADR-0036).
+	CodeNotMemberOfBackup Code = "NOT_A_MEMBER_OF_BACKUP"
+
+	// CodeBackupValidationFailed is a 422 for a backup whose object graph is
+	// internally inconsistent (a dangling foreign key, a row in the wrong
+	// Household) — backup.ErrValidationFailed (ADR-0036).
+	CodeBackupValidationFailed Code = "BACKUP_VALIDATION_FAILED"
 )

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { filenameFromDisposition } from './backup'
+import { filenameFromDisposition, isHouseholdEmpty, totalRows } from './backup'
 
 // covers: INV-BACKUP-05
 describe('filenameFromDisposition', () => {
@@ -29,5 +29,19 @@ describe('filenameFromDisposition', () => {
 
   it('falls back when the header has no filename', () => {
     expect(filenameFromDisposition('attachment', ref)).toBe('household-backup-2026-06-16.json.gz')
+  })
+})
+
+// covers: INV-BACKUP-10
+describe('restore stakes helpers', () => {
+  it('totalRows sums every section count', () => {
+    expect(totalRows({ assets: 3, asset_snapshots: 12, income: 1 })).toBe(16)
+    expect(totalRows({})).toBe(0)
+  })
+
+  it('isHouseholdEmpty is true only when every section is zero', () => {
+    expect(isHouseholdEmpty({})).toBe(true)
+    expect(isHouseholdEmpty({ assets: 0, income: 0 })).toBe(true)
+    expect(isHouseholdEmpty({ assets: 0, income: 1 })).toBe(false)
   })
 })

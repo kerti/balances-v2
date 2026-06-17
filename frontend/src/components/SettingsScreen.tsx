@@ -40,6 +40,7 @@ import { formatYearMonth } from '@/lib/format'
 import { InviteForm } from '@/components/InviteForm'
 import { TagsCard } from '@/components/TagsCard'
 import { BackupCard } from '@/components/BackupCard'
+import { RestoreCard } from '@/components/RestoreCard'
 
 export function SettingsScreen() {
   const { t } = useTranslation(['settings', 'common'])
@@ -132,6 +133,8 @@ export function SettingsScreen() {
       <InviteForm />
 
       <BackupCard />
+
+      <RestoreCard />
     </div>
   )
 }

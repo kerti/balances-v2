@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -219,30 +220,40 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID, err := randomSessionID()
-	if err != nil {
-		slog.Error("generate session id", "err", err)
+	if err := h.IssueSession(ctx, w, user.ID, r.UserAgent()); err != nil {
+		slog.Error("issue session", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
+	}
+
+	http.Redirect(w, r, h.frontendURL, http.StatusFound)
+}
+
+// IssueSession mints a fresh session for userID and writes the session cookie.
+// Shared by the OAuth callback and the whole-household restore: a restore wipes
+// every session row, so it re-issues one for the restored caller (re-linked by
+// google_sub) rather than dumping them on the sign-in screen. Must be called
+// before the response status is written, since it sets a Set-Cookie header.
+func (h *Handlers) IssueSession(ctx context.Context, w http.ResponseWriter, userID uuid.UUID, userAgent string) error {
+	sessionID, err := randomSessionID()
+	if err != nil {
+		return fmt.Errorf("generate session id: %w", err)
 	}
 	expiresAt := time.Now().Add(h.sessionTTL)
 	var ua *string
-	if a := r.Header.Get("User-Agent"); a != "" {
-		ua = &a
+	if userAgent != "" {
+		ua = &userAgent
 	}
 	if _, err := h.q.CreateSession(ctx, db.CreateSessionParams{
 		ID:        sessionID,
-		UserID:    user.ID,
+		UserID:    userID,
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 		UserAgent: ua,
 	}); err != nil {
-		slog.Error("create session", "err", err)
-		http.Error(w, "internal error", http.StatusInternalServerError)
-		return
+		return fmt.Errorf("create session: %w", err)
 	}
 	h.setSessionCookie(w, sessionID, expiresAt)
-
-	http.Redirect(w, r, h.frontendURL, http.StatusFound)
+	return nil
 }
 
 // nullableString maps an empty string to NULL (nil) and any non-empty value to

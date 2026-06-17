@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/20-backup.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**8 / 8** invariants in this zone have at least one covering test.
+**10 / 10** invariants in this zone have at least one covering test.
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -15,4 +15,6 @@
 | INV-BACKUP-05 | The artifact is a gzip stream delivered as `household-backup-<date>.json.gz`; the client derives the save name from `Content-Disposition`, falling back to a date-stamped default when the header is absent or unusual | `frontend/src/lib/backup.test.ts` |
 | INV-BACKUP-06 | Restore refuses a backup whose `format_version` is **newer** than this build speaks (`ErrFormatTooNew`) rather than guessing, and rejects a sub-1 version as invalid; an older version is migrated forward through the registered transform chain (identity at v1) | `backend/internal/backup/restore_test.go` |
 | INV-BACKUP-07 | Restore verifies integrity before any load: a truncated/corrupt gzip stream (CRC) is rejected (`ErrCorruptBackup`), and every declared per-section count must match the payload or the file is rejected | `backend/internal/backup/restore_test.go` |
-| INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (`google_sub`, email fallback) or the restore is refused (`ErrNotMemberOfBackup`) | `backend/internal/backup/restore_test.go` |
+| INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (matched by `google_sub` only — email is mutable/reassignable and must not gate a destructive restore) or it is refused (`ErrNotMemberOfBackup`) | `backend/internal/backup/restore_test.go`<br>`frontend/e2e/backup-restore.spec.ts` |
+| INV-BACKUP-09 | Restore commit is **all-or-nothing**: the wipe (caller's current Household, children→parents, incl. sessions/invitations/derived reports not in the backup) and the verbatim load run in one transaction, so any failure rolls back and the caller's data is left exactly as it was ("nothing was changed") | `backend/internal/backup/restore_test.go` |
+| INV-BACKUP-10 | Restore loads the backup **verbatim, adopting the backup's Household UUID** — a full-fidelity export→restore→re-export is an exact round-trip (every section count and soft-deleted row preserved). The load never touches another Household's rows (cross-tenant isolation holds through the destructive path) | `backend/internal/backup/restore_test.go`<br>`frontend/src/lib/backup.test.ts` |

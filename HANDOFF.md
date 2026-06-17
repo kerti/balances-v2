@@ -46,6 +46,11 @@ Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
   retired; default flipped `id-ID` → `en-GB`. Invitee inherits the inviter's language (accept-link
   `?lng=`), override in Settings.
 
+- **Whole-household backup/restore (#52, ADR-0036)** — export **shipped** (#174): `GET /api/backup/export`,
+  versioned `.json.gz`, full/compacted fidelity. Restore (#175) on branch `feat/backup-restore`: `POST
+  /api/backup/restore/{preview,commit}`, all-or-nothing wipe+load adopting the backup household UUID,
+  stakes-scaled confirm UI in Settings → Data. Commit wipes the session → re-login re-links by `google_sub`.
+
 - **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
   blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and
   `as_of_date` pinned to its `year_month` via DB CHECK `<table>_as_of_in_month`, migration 00003 +

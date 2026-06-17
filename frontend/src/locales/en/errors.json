@@ -30,6 +30,11 @@
     "INVALID_FILE_UPLOAD": "Missing or oversized file upload.",
     "INVALID_SPREADSHEET": "Could not read the spreadsheet.",
     "CANNOT_INVITE_SELF": "You can't invite yourself.",
+    "INVALID_BACKUP_FILE": "That file isn't a recognizable backup.",
+    "CORRUPT_BACKUP": "This backup file is damaged or incomplete.",
+    "BACKUP_FORMAT_TOO_NEW": "This backup was made by a newer version. Please update before restoring it.",
+    "NOT_A_MEMBER_OF_BACKUP": "You can only restore a backup of your own household.",
+    "BACKUP_VALIDATION_FAILED": "This backup is internally inconsistent and can't be restored.",
     "VALIDATION": "{{field}} {{rule}}.",
     "VALIDATION_RULE": {
       "required": "is required",

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,10 +17,22 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
-func exportBytes(t *testing.T, h *Handlers, ctx context.Context) []byte {
+// stubIssuer is a test double for SessionIssuer that records the user it was
+// asked to re-sign-in and writes a marker cookie, so a test can assert the
+// post-restore re-login happened.
+type stubIssuer struct{ lastUserID uuid.UUID }
+
+func (s *stubIssuer) IssueSession(_ context.Context, w http.ResponseWriter, userID uuid.UUID, _ string) error {
+	s.lastUserID = userID
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "reissued", Path: "/"})
+	return nil
+}
+
+func exportBytes(ctx context.Context, t *testing.T, h *Handlers) []byte {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/api/backup/export?fidelity=full", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
@@ -49,9 +63,9 @@ func TestRestoreParseValidate(t *testing.T) {
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local")
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
 
-	gzipped := exportBytes(t, h, aliceCtx)
+	gzipped := exportBytes(aliceCtx, t, h)
 
 	t.Run("gzip round-trip parses and a member validates", func(t *testing.T) {
 		env, err := Parse(bytes.NewReader(gzipped))
@@ -61,7 +75,7 @@ func TestRestoreParseValidate(t *testing.T) {
 		if env.FormatVersion != FormatVersion {
 			t.Errorf("format_version = %d", env.FormatVersion)
 		}
-		sum, err := Validate(env, alice.GoogleSub, alice.Email)
+		sum, err := Validate(env, alice.GoogleSub)
 		if err != nil {
 			t.Fatalf("Validate: %v", err)
 		}
@@ -88,16 +102,18 @@ func TestRestoreParseValidate(t *testing.T) {
 
 	t.Run("non-member is refused", func(t *testing.T) {
 		env, _ := Parse(bytes.NewReader(gzipped))
-		_, err := Validate(env, "stranger-sub", "stranger@example.com")
+		_, err := Validate(env, "stranger-sub")
 		if !errors.Is(err, ErrNotMemberOfBackup) {
 			t.Errorf("err = %v, want ErrNotMemberOfBackup", err)
 		}
 	})
 
-	t.Run("email fallback matches membership", func(t *testing.T) {
+	t.Run("a matching email is not enough — membership is google_sub only", func(t *testing.T) {
 		env, _ := Parse(bytes.NewReader(gzipped))
-		if _, err := Validate(env, "different-sub", alice.Email); err != nil {
-			t.Errorf("email fallback should match: %v", err)
+		// Same human email, different Google subject: must be refused, because email
+		// is mutable/reassignable and can't gate a destructive restore.
+		if _, err := Validate(env, "different-sub"); !errors.Is(err, ErrNotMemberOfBackup) {
+			t.Errorf("err = %v, want ErrNotMemberOfBackup (email must not match)", err)
 		}
 	})
 
@@ -108,9 +124,239 @@ func TestRestoreParseValidate(t *testing.T) {
 			AssetID:   uuid.New(), // points at no asset in the payload
 			YearMonth: time.Now(),
 		})
-		_, err := Validate(env, alice.GoogleSub, alice.Email)
+		_, err := Validate(env, alice.GoogleSub)
 		if !errors.Is(err, ErrValidationFailed) {
 			t.Errorf("err = %v, want ErrValidationFailed", err)
+		}
+	})
+}
+
+// covers: INV-BACKUP-09, INV-BACKUP-10
+func TestRestoreCommit(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
+	aliceCtx := auth.WithUser(context.Background(), alice)
+	bobCtx := auth.WithUser(context.Background(), bob)
+	seedHousehold(aliceCtx, t, tdb.Pool, alice)
+	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise — must survive untouched
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
+
+	// The golden backup, captured before any mutation.
+	before, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
+	if err != nil {
+		t.Fatalf("export before: %v", err)
+	}
+	bobBefore, err := h.buildEnvelope(context.Background(), bob.HouseholdID, FidelityFull)
+	if err != nil {
+		t.Fatalf("export bob: %v", err)
+	}
+	gzipped := exportBytes(aliceCtx, t, h)
+
+	t.Run("export -> commit -> re-export is verbatim", func(t *testing.T) {
+		// Mutate Alice's live data so the restore has something to overwrite.
+		assets := repo.NewAssetRepo(tdb.Pool)
+		if _, err := assets.CreateBankAccount(aliceCtx, repo.CreateBankAccountParams{
+			DisplayName:     "Scratch",
+			OwnershipType:   "sole",
+			SoleOwnerUserID: &alice.ID,
+			NativeCurrency:  "IDR",
+			BankName:        "X",
+			AccountNumber:   "9",
+			AccountType:     "savings",
+		}); err != nil {
+			t.Fatalf("mutate: %v", err)
+		}
+
+		env, err := Parse(bytes.NewReader(gzipped))
+		if err != nil {
+			t.Fatalf("Parse: %v", err)
+		}
+		if _, err := Validate(env, alice.GoogleSub); err != nil {
+			t.Fatalf("Validate: %v", err)
+		}
+		if err := Commit(context.Background(), tdb.Pool, env, alice.HouseholdID); err != nil {
+			t.Fatalf("Commit: %v", err)
+		}
+
+		after, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
+		if err != nil {
+			t.Fatalf("export after: %v", err)
+		}
+		// Every section count matches the golden — the scratch account is gone and
+		// the soft-deleted snapshot came back (full-fidelity verbatim round-trip).
+		for name, want := range before.Counts {
+			if got := after.Counts[name]; got != want {
+				t.Errorf("section %q count = %d after restore, want %d", name, got, want)
+			}
+		}
+		if after.Household.Household.DisplayName != before.Household.Household.DisplayName {
+			t.Errorf("household name = %q, want %q",
+				after.Household.Household.DisplayName, before.Household.Household.DisplayName)
+		}
+		if got := after.Counts["asset_snapshots"]; got != 2 {
+			t.Errorf("asset_snapshots = %d, want 2 (live + soft-deleted restored)", got)
+		}
+	})
+
+	t.Run("a different household is untouched", func(t *testing.T) {
+		bobAfter, err := h.buildEnvelope(context.Background(), bob.HouseholdID, FidelityFull)
+		if err != nil {
+			t.Fatalf("export bob after: %v", err)
+		}
+		for name, want := range bobBefore.Counts {
+			if got := bobAfter.Counts[name]; got != want {
+				t.Errorf("bob section %q count = %d, want %d (cross-tenant bleed)", name, got, want)
+			}
+		}
+	})
+
+	t.Run("a failed load rolls back, leaving the caller's data intact", func(t *testing.T) {
+		env, err := Parse(bytes.NewReader(gzipped))
+		if err != nil {
+			t.Fatalf("Parse: %v", err)
+		}
+		// Poison a row in a way validateGraph does not police (created_by is not
+		// checked): the FK insert fails mid-load, after the wipe has already run.
+		bad := uuid.New()
+		env.Household.AssetSnapshots[0].CreatedBy = &bad
+		if err := Commit(context.Background(), tdb.Pool, env, alice.HouseholdID); err == nil {
+			t.Fatal("Commit succeeded, want a foreign-key failure")
+		}
+
+		after, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
+		if err != nil {
+			t.Fatalf("export after rollback: %v", err)
+		}
+		if got := len(after.Household.Assets); got != 1 {
+			t.Errorf("assets after rollback = %d, want 1 (wipe must have rolled back)", got)
+		}
+		if got := after.Counts["asset_snapshots"]; got != 2 {
+			t.Errorf("asset_snapshots after rollback = %d, want 2", got)
+		}
+	})
+}
+
+// multipartBackup wraps raw backup bytes as a multipart body with a "file"
+// field, returning the body and its Content-Type header.
+func multipartBackup(t *testing.T, raw []byte) (*bytes.Buffer, string) {
+	t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	part, err := mw.CreateFormFile("file", "household-backup.json.gz")
+	if err != nil {
+		t.Fatalf("CreateFormFile: %v", err)
+	}
+	if _, err := part.Write(raw); err != nil {
+		t.Fatalf("write part: %v", err)
+	}
+	if err := mw.Close(); err != nil {
+		t.Fatalf("close writer: %v", err)
+	}
+	return &body, mw.FormDataContentType()
+}
+
+// postBackup builds and serves a multipart restore request to the given handler.
+func postBackup(ctx context.Context, t *testing.T, fn http.HandlerFunc, path string, raw []byte) *httptest.ResponseRecorder {
+	t.Helper()
+	body, ct := multipartBackup(t, raw)
+	req := httptest.NewRequest(http.MethodPost, path, body).WithContext(ctx)
+	req.Header.Set("Content-Type", ct)
+	rec := httptest.NewRecorder()
+	fn(rec, req)
+	return rec
+}
+
+// covers: INV-BACKUP-08, INV-BACKUP-09, INV-BACKUP-10
+func TestRestoreEndpoints(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
+	aliceCtx := auth.WithUser(context.Background(), alice)
+	bobCtx := auth.WithUser(context.Background(), bob)
+	seedHousehold(aliceCtx, t, tdb.Pool, alice)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{})
+	gzipped := exportBytes(aliceCtx, t, h)
+
+	t.Run("preview returns the stakes summary", func(t *testing.T) {
+		rec := postBackup(aliceCtx, t, h.handleRestorePreview, "/api/backup/restore/preview", gzipped)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("preview status = %d, body=%s", rec.Code, rec.Body.String())
+		}
+		var prev RestorePreview
+		if err := json.Unmarshal(rec.Body.Bytes(), &prev); err != nil {
+			t.Fatalf("decode preview: %v", err)
+		}
+		if prev.Backup.Counts["asset_snapshots"] != 2 {
+			t.Errorf("backup asset_snapshots = %d, want 2", prev.Backup.Counts["asset_snapshots"])
+		}
+		if prev.Backup.HouseholdName == "" {
+			t.Error("backup household name empty")
+		}
+		// Current stakes: Alice's seeded household is non-empty (one asset).
+		if prev.Current["assets"] != 1 {
+			t.Errorf("current assets = %d, want 1 (stakes)", prev.Current["assets"])
+		}
+	})
+
+	t.Run("preview refuses a non-member with 403", func(t *testing.T) {
+		rec := postBackup(bobCtx, t, h.handleRestorePreview, "/api/backup/restore/preview", gzipped)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("status = %d, want 403", rec.Code)
+		}
+		if !bytes.Contains(rec.Body.Bytes(), []byte("NOT_A_MEMBER_OF_BACKUP")) {
+			t.Errorf("body = %s, want NOT_A_MEMBER_OF_BACKUP", rec.Body.String())
+		}
+	})
+
+	t.Run("preview rejects a corrupt file with 400", func(t *testing.T) {
+		rec := postBackup(aliceCtx, t, h.handleRestorePreview, "/api/backup/restore/preview", gzipped[:len(gzipped)-5])
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want 400", rec.Code)
+		}
+		if !bytes.Contains(rec.Body.Bytes(), []byte("CORRUPT_BACKUP")) {
+			t.Errorf("body = %s, want CORRUPT_BACKUP", rec.Body.String())
+		}
+	})
+
+	t.Run("commit restores and a non-member cannot", func(t *testing.T) {
+		// Non-member commit is refused before any wipe.
+		rec := postBackup(bobCtx, t, h.handleRestoreCommit, "/api/backup/restore/commit", gzipped)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("non-member commit status = %d, want 403", rec.Code)
+		}
+
+		// Member commit performs the restore.
+		rec = postBackup(aliceCtx, t, h.handleRestoreCommit, "/api/backup/restore/commit", gzipped)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("commit status = %d, body=%s", rec.Code, rec.Body.String())
+		}
+		var res restoreResult
+		if err := json.Unmarshal(rec.Body.Bytes(), &res); err != nil {
+			t.Fatalf("decode result: %v", err)
+		}
+		if !res.Restored {
+			t.Error("restored = false")
+		}
+		// The caller is kept signed in: a fresh session cookie rides the response
+		// rather than dumping them on the sign-in screen.
+		var reissued bool
+		for _, c := range rec.Result().Cookies() {
+			if c.Name == "session" && c.Value != "" {
+				reissued = true
+			}
+		}
+		if !reissued {
+			t.Error("expected a re-issued session cookie after restore")
+		}
+		after, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
+		if err != nil {
+			t.Fatalf("export after: %v", err)
+		}
+		if got := after.Counts["asset_snapshots"]; got != 2 {
+			t.Errorf("asset_snapshots after commit = %d, want 2", got)
 		}
 	})
 }

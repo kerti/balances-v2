@@ -30,6 +30,11 @@
     "INVALID_FILE_UPLOAD": "Berkas unggahan tidak ada atau terlalu besar.",
     "INVALID_SPREADSHEET": "Tidak dapat membaca berkas spreadsheet.",
     "CANNOT_INVITE_SELF": "Anda tidak dapat mengundang diri sendiri.",
+    "INVALID_BACKUP_FILE": "Berkas itu bukan cadangan yang dikenali.",
+    "CORRUPT_BACKUP": "Berkas cadangan ini rusak atau tidak lengkap.",
+    "BACKUP_FORMAT_TOO_NEW": "Cadangan ini dibuat oleh versi yang lebih baru. Mohon perbarui sebelum memulihkannya.",
+    "NOT_A_MEMBER_OF_BACKUP": "Anda hanya dapat memulihkan cadangan rumah tangga Anda sendiri.",
+    "BACKUP_VALIDATION_FAILED": "Cadangan ini tidak konsisten dan tidak dapat dipulihkan.",
     "VALIDATION": "{{field}} {{rule}}.",
     "VALIDATION_RULE": {
       "required": "wajib diisi",

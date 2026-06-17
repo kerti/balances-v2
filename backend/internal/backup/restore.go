@@ -60,7 +60,7 @@ func Parse(r io.Reader) (*Envelope, error) {
 		if e != nil {
 			return nil, fmt.Errorf("%w: %v", ErrCorruptBackup, e)
 		}
-		defer gz.Close()
+		defer func() { _ = gz.Close() }()
 		// ReadAll forces the gzip trailer (CRC + length) to be verified, so a
 		// truncated/corrupt file surfaces here rather than as silent short data.
 		if raw, err = io.ReadAll(gz); err != nil {
@@ -133,11 +133,11 @@ type Summary struct {
 // consistent, and the caller is a member of the backup's household (the security
 // guard — you can only restore a household you belong to). Returns the preview
 // Summary on success.
-func Validate(env *Envelope, callerSub, callerEmail string) (*Summary, error) {
+func Validate(env *Envelope, callerSub string) (*Summary, error) {
 	if err := validateGraph(env); err != nil {
 		return nil, err
 	}
-	if !callerInBackup(env, callerSub, callerEmail) {
+	if !callerInBackup(env, callerSub) {
 		return nil, ErrNotMemberOfBackup
 	}
 	return &Summary{
@@ -148,14 +148,14 @@ func Validate(env *Envelope, callerSub, callerEmail string) (*Summary, error) {
 	}, nil
 }
 
-// callerInBackup reports whether the caller's Google subject (or, as a fallback,
-// email) names a user in the backup — the membership guard (ADR-0036/ADR-0017).
-func callerInBackup(env *Envelope, callerSub, callerEmail string) bool {
+// callerInBackup reports whether the caller's Google subject names a user in the
+// backup — the membership guard (ADR-0036/ADR-0017). Match is by google_sub
+// only: it is Google's immutable subject id, whereas email is mutable and can be
+// reassigned to a different person, so trusting it for a destructive
+// whole-household restore would be a (narrow) impersonation hole.
+func callerInBackup(env *Envelope, callerSub string) bool {
 	for _, u := range env.Household.Users {
 		if callerSub != "" && u.GoogleSub == callerSub {
-			return true
-		}
-		if callerEmail != "" && u.Email == callerEmail {
 			return true
 		}
 	}

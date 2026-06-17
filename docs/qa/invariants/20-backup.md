@@ -8,9 +8,11 @@ of which must stay household-scoped), **silent precision corruption** (decimals
 must ride the wire as strings, ADR-0011), and a **format-contract break** (the
 parents-before-children section order is frozen so a future importer can stream
 the file in one pass). Restore (preview→commit, wipe-then-load) and the
-format-version transform chain arrive in later slices (#175/#177) and will extend
-this zone. Code: `internal/backup/{format,export}.go`, `queries/backup.sql`; the
-frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
+format-version transform chain arrive across #175/#177 and extend this zone; the
+destructive wipe-then-load commit lands in `restore_commit.go` (its HTTP
+preview→commit wrapper and the restore UI follow). Code:
+`internal/backup/{format,export,restore,restore_commit}.go`, `queries/backup.sql`;
+the frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
 
 | ID | Invariant | Source | Severity |
 |----|-----------|--------|----------|
@@ -21,4 +23,6 @@ frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
 | INV-BACKUP-05 | The artifact is a gzip stream delivered as `household-backup-<date>.json.gz`; the client derives the save name from `Content-Disposition`, falling back to a date-stamped default when the header is absent or unusual | ADR-0036 | Medium |
 | INV-BACKUP-06 | Restore refuses a backup whose `format_version` is **newer** than this build speaks (`ErrFormatTooNew`) rather than guessing, and rejects a sub-1 version as invalid; an older version is migrated forward through the registered transform chain (identity at v1) | ADR-0036 | High |
 | INV-BACKUP-07 | Restore verifies integrity before any load: a truncated/corrupt gzip stream (CRC) is rejected (`ErrCorruptBackup`), and every declared per-section count must match the payload or the file is rejected | ADR-0036 | High |
-| INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (`google_sub`, email fallback) or the restore is refused (`ErrNotMemberOfBackup`) | ADR-0005, ADR-0017, ADR-0036 | Critical |
+| INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (matched by `google_sub` only — email is mutable/reassignable and must not gate a destructive restore) or it is refused (`ErrNotMemberOfBackup`) | ADR-0005, ADR-0017, ADR-0036 | Critical |
+| INV-BACKUP-09 | Restore commit is **all-or-nothing**: the wipe (caller's current Household, children→parents, incl. sessions/invitations/derived reports not in the backup) and the verbatim load run in one transaction, so any failure rolls back and the caller's data is left exactly as it was ("nothing was changed") | ADR-0036 | Critical |
+| INV-BACKUP-10 | Restore loads the backup **verbatim, adopting the backup's Household UUID** — a full-fidelity export→restore→re-export is an exact round-trip (every section count and soft-deleted row preserved). The load never touches another Household's rows (cross-tenant isolation holds through the destructive path) | ADR-0005, ADR-0036 | Critical |

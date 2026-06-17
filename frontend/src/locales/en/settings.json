@@ -70,6 +70,28 @@
     "exporting": "Preparing your backup…",
     "exported": "Your backup has downloaded.",
     "exportError": "Couldn't prepare your backup. Please try again.",
-    "largeNote": "Large households may take a moment."
+    "largeNote": "Large households may take a moment.",
+    "restore": {
+      "title": "Restore from backup",
+      "description": "Replace everything in this household with the contents of a backup file. This is how you move your data onto a new device.",
+      "choose": "Choose a backup file…",
+      "chooseHint": "Pick a backup file you downloaded earlier.",
+      "checking": "Checking the file…",
+      "previewError": "That file couldn't be read as a backup. Please try another.",
+      "summary": "This backup holds {{count}} item from “{{household}}”.",
+      "summary_other": "This backup holds {{count}} items from “{{household}}”.",
+      "stakesEmpty": "This household is empty, so nothing will be lost.",
+      "stakesWarning": "This will permanently erase the {{count}} item currently in this household and replace it with the backup. This can't be undone.",
+      "stakesWarning_other": "This will permanently erase the {{count}} items currently in this household and replace them with the backup. This can't be undone.",
+      "ack": "I understand this replaces everything in this household.",
+      "erasePrompt": "Type {{word}} to confirm you want to erase and replace your data.",
+      "eraseWord": "ERASE",
+      "commit": "Erase and restore",
+      "restoring": "Restoring…",
+      "cancel": "Cancel",
+      "dontClose": "Restoring your data — please don't close this window.",
+      "done": "Restore complete. Loading your data…",
+      "failed": "Restore failed — nothing was changed."
+    }
   }
 }

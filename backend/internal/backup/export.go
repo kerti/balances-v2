@@ -24,11 +24,19 @@ import (
 type Handlers struct {
 	pool     *pgxpool.Pool
 	q        *db.Queries
-	instance string // this instance's public URL, stamped into the envelope
+	instance string        // this instance's public URL, stamped into the envelope
+	sessions SessionIssuer // re-issues the caller's session after a restore
 }
 
-func New(pool *pgxpool.Pool, instanceURL string) *Handlers {
-	return &Handlers{pool: pool, q: db.New(pool), instance: instanceURL}
+// SessionIssuer mints a fresh session + cookie for a user. The restore flow uses
+// it to keep the caller signed in across the session-wiping commit; satisfied by
+// *auth.Handlers.
+type SessionIssuer interface {
+	IssueSession(ctx context.Context, w http.ResponseWriter, userID uuid.UUID, userAgent string) error
+}
+
+func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer) *Handlers {
+	return &Handlers{pool: pool, q: db.New(pool), instance: instanceURL, sessions: sessions}
 }
 
 func (h *Handlers) Mount(r chi.Router) {
@@ -37,6 +45,12 @@ func (h *Handlers) Mount(r chi.Router) {
 		// Any member may export (read-only, household-scoped) — equal-access
 		// model, ADR-0036/ADR-0004.
 		r.Get("/export", h.handleExport)
+		// Restore is a two-step, stateless re-upload: preview validates the file
+		// and returns the stakes summary; commit re-validates and performs the
+		// destructive wipe+load (ADR-0036). Equal-access, but the membership guard
+		// inside Validate means a member can only restore their own Household.
+		r.Post("/restore/preview", h.handleRestorePreview)
+		r.Post("/restore/commit", h.handleRestoreCommit)
 	})
 }
 

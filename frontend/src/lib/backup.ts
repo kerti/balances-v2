@@ -1,6 +1,75 @@
-// Pure helpers for the backup feature (ADR-0036). Kept out of the component so
-// they're unit-testable under the node-environment vitest runner (ADR-0021);
-// UI behaviour is covered by the Playwright @smoke spec.
+// Pure helpers + the restore data layer for the backup feature (ADR-0036). The
+// pure helpers are kept out of the component so they're unit-testable under the
+// node-environment vitest runner (ADR-0021); UI behaviour is covered by the
+// Playwright @smoke spec.
+import { ApiError, isEnvelope, type ErrorEnvelope } from '@/api/client'
+
+// RestoreSummary mirrors the backend backup.Summary: what a backup contains.
+export type RestoreSummary = {
+  household_name: string
+  format_version: number
+  fidelity: 'full' | 'compacted'
+  counts: Record<string, number>
+}
+
+// RestorePreview is the non-destructive preview: what the uploaded backup will
+// load (`backup`) and what the caller's current household will lose (`current`).
+// The UI scales its confirmation to the stakes in `current`.
+export type RestorePreview = {
+  backup: RestoreSummary
+  current: Record<string, number>
+}
+
+// RestoreResult is the commit response — `restored` is always true on success.
+export type RestoreResult = {
+  restored: boolean
+  summary: RestoreSummary
+}
+
+// totalRows sums a section-count map — the single headline number the UI shows
+// ("12 items") instead of enumerating every section.
+export function totalRows(counts: Record<string, number>): number {
+  return Object.values(counts).reduce((sum, n) => sum + n, 0)
+}
+
+// isHouseholdEmpty reports whether a section-count map represents an empty
+// household. Drives the stakes-scaled confirmation: an empty current household
+// (a fresh self-host import) is confirmed with a checkbox; a populated one
+// requires typing the erase word.
+export function isHouseholdEmpty(counts: Record<string, number>): boolean {
+  return totalRows(counts) === 0
+}
+
+// postRestore uploads a backup to a restore step (preview or commit) as
+// multipart, bypassing the JSON `api` wrapper (which would clobber the multipart
+// boundary). Any non-2xx is thrown as an ApiError carrying the ADR-0027
+// envelope, so errorMessage() can translate the backup-specific codes. Unlike
+// the snapshot importer, a 422 here is a real error (too-new format / invalid
+// graph), not a success-shaped result.
+async function postRestore<T>(step: 'preview' | 'commit', file: File): Promise<T> {
+  const body = new FormData()
+  body.append('file', file)
+  const res = await fetch(`/api/backup/restore/${step}`, { method: 'POST', body })
+  if (!res.ok) {
+    let errBody: ErrorEnvelope | string | undefined
+    try {
+      const parsed = await res.json()
+      errBody = isEnvelope(parsed) ? parsed : undefined
+    } catch {
+      errBody = await res.text().catch(() => undefined)
+    }
+    throw new ApiError(res.status, res.statusText || `restore failed (${res.status})`, errBody)
+  }
+  return (await res.json()) as T
+}
+
+export function postRestorePreview(file: File): Promise<RestorePreview> {
+  return postRestore<RestorePreview>('preview', file)
+}
+
+export function postRestoreCommit(file: File): Promise<RestoreResult> {
+  return postRestore<RestoreResult>('commit', file)
+}
 
 // filenameFromDisposition pulls the server-suggested name out of a
 // Content-Disposition header (e.g. `attachment; filename="household-backup-….json.gz"`),

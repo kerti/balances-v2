@@ -96,8 +96,12 @@ same person signing into a *different* instance (with a *different* OAuth client
 **same `google_sub`**. The backup therefore carries Users verbatim including `google_sub`, and the
 re-link is automatic:
 
-- The member who restores is matched to their backup User row by `google_sub` (email is the fallback
-  key for a future non-Google IdP).
+- The member who restores is matched to their backup User row by `google_sub` — Google's immutable
+  subject id. Email is **not** an OR fallback: it is mutable and reassignable, so matching a different
+  account by a coincidental address must never gate a destructive restore while a stable subject id is
+  available. (A future non-Google IdP, where no `google_sub` exists, would add an identity match scoped
+  to that absent-sub case — not a parallel email key.) Today every user is Google-auth, so the
+  membership guard is `google_sub`-only.
 - **Non-founder members are restored in place** as full members. They are **not** re-invited —
   invitations are ephemeral and excluded; the member already exists in the data. On their next
   sign-in to the new instance their `google_sub` matches and they land straight in the Household. If
@@ -129,7 +133,7 @@ throwaway empty Household — then uploads the backup, which **replaces** it.
   is wrong, and we want a hard error rather than a silent partial load. The transform chain owns
   "make old data satisfy new invariants."
 
-**Gating** is **type-to-confirm + membership** (the caller's `sub`/email must be in the backup),
+**Gating** is **type-to-confirm + membership** (the caller's `google_sub` must be in the backup),
 **not Founder-role** — inventing a privilege tier the domain explicitly refuses ([[adr-0017]]). The
 membership guard also stops anyone loading a stranger's backup and walking into it.
 
