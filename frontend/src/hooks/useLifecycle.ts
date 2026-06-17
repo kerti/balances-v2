@@ -12,6 +12,25 @@ export type LifecyclePayload = {
   termination_note: string | null
 }
 
+// Query keys to invalidate after a lifecycle change. Always the list + the
+// single-row cache; for investments also the snapshot list, because an
+// investment terminal flip (Sell / manual terminate) upserts a truthful 0-value
+// close snapshot server-side (repo/lifecycle.go, INV-LIFECYCLE-03) — the same
+// close the Maturity path writes. Without this refresh the new close snapshot
+// only shows after a manual reload (issue #56). The other three groups carry no
+// close snapshot, so they don't touch the snapshot list.
+export function lifecycleInvalidationKeys(
+  group: LifecycleGroup,
+  id: string,
+  listKey: string,
+): unknown[][] {
+  const keys: unknown[][] = [[listKey], [listKey, id]]
+  if (group === 'investments') {
+    keys.push(['investment-snapshots', id])
+  }
+  return keys
+}
+
 export function useUpdateLifecycle(
   group: LifecycleGroup,
   id: string,
@@ -25,8 +44,9 @@ export function useUpdateLifecycle(
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [listKey] })
-      qc.invalidateQueries({ queryKey: [listKey, id] })
+      for (const queryKey of lifecycleInvalidationKeys(group, id, listKey)) {
+        qc.invalidateQueries({ queryKey })
+      }
     },
   })
 }
