@@ -402,20 +402,37 @@ func TestSummaryItemCount(t *testing.T) {
 // covers: INV-BACKUP-06
 func TestMigrateGuards(t *testing.T) {
 	t.Run("newer version refused", func(t *testing.T) {
-		err := migrate(&Envelope{FormatVersion: FormatVersion + 1})
+		err := migrate(&Envelope{FormatVersion: FormatVersion + 1}, FormatVersion, transforms)
 		if !errors.Is(err, ErrFormatTooNew) {
 			t.Errorf("err = %v, want ErrFormatTooNew", err)
 		}
 	})
 	t.Run("sub-1 version invalid", func(t *testing.T) {
-		err := migrate(&Envelope{FormatVersion: 0})
+		err := migrate(&Envelope{FormatVersion: 0}, FormatVersion, transforms)
 		if !errors.Is(err, ErrInvalidBackupFile) {
 			t.Errorf("err = %v, want ErrInvalidBackupFile", err)
 		}
 	})
 	t.Run("current version passes", func(t *testing.T) {
-		if err := migrate(&Envelope{FormatVersion: FormatVersion}); err != nil {
+		if err := migrate(&Envelope{FormatVersion: FormatVersion}, FormatVersion, transforms); err != nil {
 			t.Errorf("migrate current: %v", err)
+		}
+	})
+	t.Run("a gap in the chain is refused, not silently skipped", func(t *testing.T) {
+		// Targeting v3 with only a v1→v2 transform registered must fail at the
+		// missing v2→v3 hop rather than load a half-migrated file.
+		chain := map[int]transformFunc{1: func(*Envelope) error { return nil }}
+		err := migrate(&Envelope{FormatVersion: 1}, 3, chain)
+		if !errors.Is(err, ErrValidationFailed) {
+			t.Errorf("err = %v, want ErrValidationFailed (missing v2→v3)", err)
+		}
+	})
+	t.Run("a transform that errors aborts the migration", func(t *testing.T) {
+		boom := errors.New("boom")
+		chain := map[int]transformFunc{1: func(*Envelope) error { return boom }}
+		err := migrate(&Envelope{FormatVersion: 1}, 2, chain)
+		if !errors.Is(err, ErrValidationFailed) {
+			t.Errorf("err = %v, want ErrValidationFailed wrapping the transform error", err)
 		}
 	})
 }

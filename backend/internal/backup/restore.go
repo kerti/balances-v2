@@ -47,6 +47,16 @@ var transforms = map[int]transformFunc{}
 // migrates it to the current format_version, and verifies integrity. It does not
 // touch the database — preview and commit both start here.
 func Parse(r io.Reader) (*Envelope, error) {
+	return parseWith(r, FormatVersion, transforms)
+}
+
+// parseWith is Parse with the target format version and transform chain injected
+// rather than read from the package globals. Product code always parses against
+// the build's FormatVersion + the real (empty-at-v1) transforms via Parse; the
+// seam exists so the test suite can prove an older file migrates into a *newer*
+// importer — the genuine "v1 file into a v2 system" proof (#177) — without
+// shipping a synthetic v2 in product code.
+func parseWith(r io.Reader, target int, chain map[int]transformFunc) (*Envelope, error) {
 	br := bufio.NewReader(r)
 	gzipped := false
 	if magic, _ := br.Peek(2); len(magic) == 2 && magic[0] == 0x1f && magic[1] == 0x8b {
@@ -76,7 +86,7 @@ func Parse(r io.Reader) (*Envelope, error) {
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidBackupFile, err)
 	}
-	if err := migrate(&env); err != nil {
+	if err := migrate(&env, target, chain); err != nil {
 		return nil, err
 	}
 	if err := assertCounts(&env); err != nil {
@@ -85,17 +95,20 @@ func Parse(r io.Reader) (*Envelope, error) {
 	return &env, nil
 }
 
-// migrate runs the transform chain from the file's format_version up to the
-// build's FormatVersion, refusing a newer or sub-1 version (ADR-0036).
-func migrate(env *Envelope) error {
+// migrate runs the transform chain from the file's format_version up to target,
+// refusing a newer (> target) or sub-1 version (ADR-0036). target is the
+// importer's format version (FormatVersion in production) and chain is the
+// registry of N→N+1 transforms; both are passed in so the test suite can drive
+// a synthetic target/chain without touching the product globals.
+func migrate(env *Envelope, target int, chain map[int]transformFunc) error {
 	if env.FormatVersion < 1 {
 		return fmt.Errorf("%w: format_version %d", ErrInvalidBackupFile, env.FormatVersion)
 	}
-	if env.FormatVersion > FormatVersion {
-		return fmt.Errorf("%w: file is v%d, this app speaks v%d", ErrFormatTooNew, env.FormatVersion, FormatVersion)
+	if env.FormatVersion > target {
+		return fmt.Errorf("%w: file is v%d, this app speaks v%d", ErrFormatTooNew, env.FormatVersion, target)
 	}
-	for v := env.FormatVersion; v < FormatVersion; v++ {
-		fn, ok := transforms[v]
+	for v := env.FormatVersion; v < target; v++ {
+		fn, ok := chain[v]
 		if !ok {
 			return fmt.Errorf("%w: no transform for v%d→v%d", ErrValidationFailed, v, v+1)
 		}

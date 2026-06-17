@@ -52,7 +52,9 @@ Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
   stakes-scaled confirm UI in Settings → Data. Commit wipes the session → re-login re-links by `google_sub`.
   Restore notifications **shipped** (#176): best-effort per-locale emails on success — restorer
   confirmation + member relocation/security notice (tamper tripwire); soft-deleted members skipped.
-  Remaining: #177 (format-version transform-chain proof).
+  Format-version transform chain **proven** (#177): injectable `parseWith`/`migrate` seam + frozen golden
+  fixtures (`backup/testdata/golden/`); process commitment — every format change ships its `N→N+1`
+  transform **and** a frozen golden `vN` (mint via `MINT_GOLDEN=1`). **Epic #52 complete.**
 
 - **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
   blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and

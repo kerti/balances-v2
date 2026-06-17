@@ -7,10 +7,12 @@ The defining risks are a **cross-tenant leak** (the export reads ~22 tables, eac
 of which must stay household-scoped), **silent precision corruption** (decimals
 must ride the wire as strings, ADR-0011), and a **format-contract break** (the
 parents-before-children section order is frozen so a future importer can stream
-the file in one pass). Restore (preview→commit, wipe-then-load) and the
-format-version transform chain arrive across #175/#177 and extend this zone; the
-destructive wipe-then-load commit lands in `restore_commit.go` (its HTTP
-preview→commit wrapper and the restore UI follow). Code:
+the file in one pass). Restore (preview→commit, wipe-then-load, #175) and the
+format-version transform chain (#177) shipped and extend this zone; the
+destructive wipe-then-load commit lands in `restore_commit.go`, and the
+transform chain + its frozen golden fixtures live in `restore.go`
+(`migrate`/`parseWith`) with the proof in `transform_test.go` +
+`testdata/golden/`. Code:
 `internal/backup/{format,export,restore,restore_commit}.go`, `queries/backup.sql`;
 the frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
 
@@ -26,3 +28,4 @@ the frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
 | INV-BACKUP-08 | Restore validates the whole object graph before commit — every position is in the backup's household and every owner/tag/parent reference resolves within the payload (no dangling FK), and the **caller must be a member** of the backup's household (matched by `google_sub` only — email is mutable/reassignable and must not gate a destructive restore) or it is refused (`ErrNotMemberOfBackup`) | ADR-0005, ADR-0017, ADR-0036 | Critical |
 | INV-BACKUP-09 | Restore commit is **all-or-nothing**: the wipe (caller's current Household, children→parents, incl. sessions/invitations/derived reports not in the backup) and the verbatim load run in one transaction, so any failure rolls back and the caller's data is left exactly as it was ("nothing was changed") | ADR-0036 | Critical |
 | INV-BACKUP-10 | Restore loads the backup **verbatim, adopting the backup's Household UUID** — a full-fidelity export→restore→re-export is an exact round-trip (every section count and soft-deleted row preserved). The load never touches another Household's rows (cross-tenant isolation holds through the destructive path) | ADR-0005, ADR-0036 | Critical |
+| INV-BACKUP-11 | Backwards-compat is **fixture-locked**: every historical golden backup fixture (`internal/backup/testdata/golden/`) still parses (decode → migrate → count-integrity) and validates against the live code, and the transform chain is honoured top-to-bottom — an older file migrates into a newer importer through the registered `N→N+1` transforms, a gap in the chain is refused (not half-migrated), and a transform that errors aborts the load. The process commitment (ADR-0036): every future format change ships its `N→N+1` transform **and** a frozen golden `vN` fixture, so an old backup can never silently stop loading. The test suite proves the path today with a synthetic v1→v2 transform driven through the injectable `parseWith` seam (no synthetic v2 in product code; shipped product stays at v1) | ADR-0036, ADR-0033 | High |
