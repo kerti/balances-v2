@@ -45,7 +45,9 @@ Run from a clean, up-to-date `main`.
    | `dependencies`| ⬆️ Dependencies     |
 
    Each PR carries **one** type label (rides the conventional-commit prefix: `feat`→enhancement,
-   `fix`→bug, `docs`→documentation, `build(deps)`→dependencies).
+   `fix`→bug, `docs`→documentation, `build(deps)`→dependencies). **Test-only and CI/dev/build tooling
+   PRs (`test`/`ci`/`build`/`chore`) go under `enhancement`** — there's no dedicated `chore`/`test`
+   label (decided 2026-06-17).
    ```sh
    for n in <pr numbers>; do
      printf "#%s: " "$n"; gh pr view $n --json labels --jq '[.labels[].name]|join(",")'

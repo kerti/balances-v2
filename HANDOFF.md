@@ -38,39 +38,42 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 
 ## What's next
 
-Alpha is deployed; M6 effectively closes with it. Open work, rough priority:
+Two big epics shipped since `v0.6.0-alpha.2` (unreleased): **i18n round-out** (#159, ADR-0035, mig
+00005) and **whole-household backup/restore** (epic #52 **complete**, ADR-0036, PRs #174–186). Detail
+lives in the closed issues + the alpha.3 Release notes. **Agreed plan (2026-06-17), in order:**
 
-- **i18n round-out (#159) — shipped** (ADR-0035, migration 00005): pre-auth language picker seeds a
-  new account's locale server-side at birth (founder #167 + invited member #169) via an `oauth_locale`
-  cookie; transactional emails localized by recipient locale (#168); navigator-flip account mutation
-  retired; default flipped `id-ID` → `en-GB`. Invitee inherits the inviter's language (accept-link
-  `?lng=`), override in Settings.
+1. **Cut `v0.6.0-alpha.3` now** — release-only step batching the two epics above (carries mig 00005,
+   additive; no new code). Follow `docs/agents/release.md`.
+2. **Gate the QA invariant matrix in CI** — flip `make qa-matrix` toward a `-strict` CI gate (advisory
+   today). *Not a one-line flip:* E2E-covered invariants run **nightly, not per-PR** — `@smoke`-tag the
+   covering specs or exclude them from the per-PR gate, or strict falsely credits coverage that didn't
+   run (`docs/qa/how-it-works.md:72-83`). Goal: the matrix earns its maintenance weight or gets shrunk.
+3. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
+   ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
+   bus-factor-insurance set — that's the point of having it.
+4. **Close M6 in full → `v0.6.0-alpha.4`.** Only remaining M6 done-when item is **PDF export (#187)**;
+   the Q8a/Q12/Q14c helpers already shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`,
+   `lib/rollover.ts`). Fold in **#56** (maturity auto-snapshot not instant — the open alpha bug) + a
+   short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
+5. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
+   trustable by real households, not richer in domain features. Lead with **self-host #116** (the
+   bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**
+   onboarding (invite-vs-found at first sign-in, irreversible — needs grill+ADR), production Resend
+   domain (carried from M6), **#93** landing. See ROADMAP M7.
+6. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified). See
+   ROADMAP M8.
 
-- **Whole-household backup/restore (#52, ADR-0036)** — export **shipped** (#174): `GET /api/backup/export`,
-  versioned `.json.gz`, full/compacted fidelity. Restore **shipped** (#175): `POST
-  /api/backup/restore/{preview,commit}`, all-or-nothing wipe+load adopting the backup household UUID,
-  stakes-scaled confirm UI in Settings → Data. Commit wipes the session → re-login re-links by `google_sub`.
-  Restore notifications **shipped** (#176): best-effort per-locale emails on success — restorer
-  confirmation + member relocation/security notice (tamper tripwire); soft-deleted members skipped.
-  Format-version transform chain **proven** (#177): injectable `parseWith`/`migrate` seam + frozen golden
-  fixtures (`backup/testdata/golden/`); process commitment — every format change ships its `N→N+1`
-  transform **and** a frozen golden `vN` (mint via `MINT_GOLDEN=1`). **Epic #52 complete.**
+Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
+unclosable), #185 (dead-code error fallback + the `api/client.ts` twin), #163 (email wordmark raster).
+Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel, the #70
+security tail (SHA-pin done #112, e2e-in-CI done #113, gitleaks done #114).
 
-- **Alpha bug fixes** (dogfood targets) — #56 (maturity snapshot not instant) is the open alpha
-  blocker. #76 (snapshot month integrity — `year_month` immutable, educate delete-and-redo, and
-  `as_of_date` pinned to its `year_month` via DB CHECK `<table>_as_of_in_month`, migration 00003 +
-  bounded date inputs; reframes the closed #57) shipped. #58 (maturity-date edit didn't sync
-  `terminated_at` + close snapshot) and #53 (tag assign not reflected) shipped. #62 (stricter TD
-  validations — maturity after placement via DB CHECK migration 00004; snapshots + the Maturity event
-  confined to the `[placement, maturity]` term in the repo layer) shipped. Fix via branch → PR → squash-merge.
-- **PDF export** of monthly reports (Q22) — still open.
-- **Hardening / follow-ups** — bump `actions/checkout` (Node 20 deprecation), add an HSTS header,
-  wire the `cloudflared` dev-tunnel (`make dev-tunnel`), document DB backup/restore (Neon branch +
-  `pg_dump`), and the deferred security items (#70: e2e-in-CI, SHA-pin actions, gitleaks).
-- **demo / production** — stand up when a beta/RC exists; same image, add Cloudflare *in front*
-  (proxied) for CDN/WAF (ADR-0030). First prod = `v1.0.0`; SemVer = operator upgrade contract, not the
-  "Balances" brand; migrations immutable from `1.0.0` (ADR-0033). Self-host compose stack is a
-  `1.0.0` blocker (#116).
+**Label convention (release notes):** every PR carries exactly one type label at merge —
+`enhancement`/`bug`/`documentation`/`dependencies`. Test-only and CI/dev/build tooling PRs go under
+**`enhancement`** (decided 2026-06-17 — no dedicated `chore`/`test` label).
+
+**demo / production** — first prod = `v1.0.0`; SemVer = operator upgrade contract, not the "Balances"
+brand; migrations immutable from `1.0.0`; self-host compose stack is a `1.0.0` blocker (#116, ADR-0033).
 
 **Deploying:** push a SemVer tag — `v0.6.0-alpha.N` → `preview` (auto). `deploy.yml` routes by tag and
 runs `flyctl deploy` (builds the SPA+API image, `goose up` via `release_command`, rolls out). Backend

@@ -1,7 +1,9 @@
 # Roadmap
 
 The design phase is captured in `CONTEXT.md` and `docs/adr/0001–0021.md`. This document is the
-implementation outline — six milestones, each shippable, each a useful place to pause and resume.
+implementation outline — eight milestones, each shippable, each a useful place to pause and resume.
+M1–M5 done; M6 closes with `v0.6.0-alpha.4` (PDF export the last item); M7 (productization) and M8
+(domain features, feedback-driven) were added 2026-06-17.
 
 Reorder, split, or merge milestones as reality demands. This is a north-star, not a contract.
 
@@ -89,5 +91,35 @@ The app's reason to exist.
 - A real Resend domain is configured for production email
 - Backup / restore for the production DB is documented
 
-After M6, v1 is done. Future ADRs (passkeys, offline support, push notifications, Apple OAuth)
-become incremental enhancements.
+**Status (2026-06-17):** the Q8a property/vehicle revaluation helper (`lib/revaluation.ts`), the Q12
+fee cash→quantity helper (`lib/feeQuantity.ts`), the Q14c matured-TD redeploy helper (`lib/rollover.ts`
++ `CreateTimeDepositDialog` prefill), the migration squash (ADR-0031 baseline), the hosting target
+(Fly preview, ADR-0030), and whole-household backup/restore (epic #52, ADR-0036) are all shipped. The
+**only remaining M6 done-when item is PDF export (#187)**; a production Resend domain is prod-gated and
+moves to M7; "production DB backup/restore documented" is a short ops note still owed. M6 closes with
+`v0.6.0-alpha.4`.
+
+## Milestone 7 — Productization / beta
+
+**Goal:** make Balances trustable by real households, not richer in domain features. The bet: a large,
+safe surface has shipped with **zero external feedback** (preview-only, OAuth Testing mode, no prod) —
+real usage, not more building, drives M8.
+
+**Done when:**
+- **Self-hosting (#116)** lands — the bus-factor answer and a `1.0.0` blocker (ADR-0033). Prioritized
+  over any net-new feature.
+- A non-disposable environment exists (hosted beta or self-host), distinct from `preview`.
+- **Onboarding (#158)** is resolved — invite-vs-found-household at first sign-in is irreversible
+  (one household, no leave/switch, ADR-0017); needs its own grill-with-docs + ADR before build.
+- A production Resend domain is configured (carried from M6).
+- Marketing landing + docs site (#93) ships, or is consciously deferred with a trigger.
+
+Opens at `v0.7.0-alpha.1` — the minor bump marks the milestone boundary (ADR-0033; "milestone =
+minor" convention).
+
+## Milestone 8 — Next domain features
+
+**Goal:** the next wave of domain capability, **prioritized by real-user feedback from M7**, not
+pre-specified here. Candidates currently parked in the backlog (#66 per-bond coupon disposition, #145
+expected-coupon projection, #69 component tests, etc.) compete on observed signal. Future ADRs
+(passkeys, offline support, push notifications, Apple OAuth) remain incremental enhancements.
