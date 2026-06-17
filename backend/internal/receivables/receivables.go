@@ -58,6 +58,10 @@ func (h *Handlers) Mount(r chi.Router) {
 		// snapshots (Snapshots sheet) atomically. Static segment, so no clash
 		// with POST "/" or the /{id} routes.
 		r.Post("/import", h.handleImportCreate)
+		// Per-receivable monthly value series for the list total-over-time
+		// chart (epic #204). Value-only — receivables carry no cost basis.
+		// Static single segment, so no clash with the /{id}/… routes below.
+		r.Get("/time-series", h.handleReceivableTimeSeries)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGet)
 			r.Patch("/", h.handleUpdate)
@@ -144,6 +148,18 @@ func (h *Handlers) handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// handleReceivableTimeSeries returns the per-receivable monthly value series
+// for every receivable in the household (epic #204), feeding the list
+// total-over-time chart without a per-receivable fan-out. Value-only.
+func (h *Handlers) handleReceivableTimeSeries(w http.ResponseWriter, r *http.Request) {
+	series, err := h.repo.ReceivableTimeSeries(r.Context())
+	if err != nil {
+		httperr.WriteRepo(w, "receivable time series", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, series)
 }
 
 func (h *Handlers) handleGet(w http.ResponseWriter, r *http.Request) {

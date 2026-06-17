@@ -1,4 +1,8 @@
 {
+  "home": {
+    "valueChartTitle": "Total piutang dari waktu ke waktu",
+    "valueChartDescription": "Jumlah seluruh piutang aktif ({{currency}})."
+  },
   "listTitle": "Piutang",
   "listSubtitle": "Uang yang terutang kepada rumah tangga Anda — pinjaman, simpanan dalam proses, pengembalian dana yang belum tertagih.",
   "totalOutstanding": "Total piutang",

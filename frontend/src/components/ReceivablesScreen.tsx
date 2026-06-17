@@ -5,7 +5,10 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components
 import { SortableHeader } from '@/components/SortableHeader'
 import { ListHeadline } from '@/components/ListHeadline'
 import { ShowInactiveToggle } from '@/components/ShowInactiveToggle'
+import { SnapshotChart } from '@/components/SnapshotChart'
+import { aggregateListPositions } from '@/lib/listAggregates'
 import { useReceivables, useImportCreateReceivable } from '@/hooks/useReceivables'
+import { useReceivableTimeSeries } from '@/hooks/useReceivableTimeSeries'
 import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
 import { useSession } from '@/hooks/useSession'
 import { useTableSort, type ColumnSort } from '@/hooks/useTableSort'
@@ -38,6 +41,7 @@ const tiebreakByName = (a: Row, b: Row) => a.name.localeCompare(b.name)
 export function ReceivablesScreen({ onSelect }: Props) {
   const { t } = useTranslation(['receivables', 'common', 'errors'])
   const { data, isPending, error } = useReceivables()
+  const timeSeries = useReceivableTimeSeries()
   const importMutation = useImportCreateReceivable()
   const { data: members } = useHouseholdMembers()
   const { data: currentUser } = useSession()
@@ -87,6 +91,25 @@ export function ReceivablesScreen({ onSelect }: Props) {
     [rows],
   )
 
+  // Total-outstanding over time, per native currency (epic #204). Receivables
+  // are a flat group — one line per currency, no subtype stack/pie. Value-only
+  // (no cost basis), so aggregateListPositions runs with cost omitted.
+  const timeSeriesByCurrency = useMemo(() => {
+    const positions = (data ?? []).map((item) => ({
+      id: item.receivable.id,
+      currency: item.receivable.native_currency,
+      status: item.receivable.status,
+      terminated_at: item.receivable.terminated_at,
+      latestValue: item.latest_snapshot
+        ? Number(item.latest_snapshot.amount)
+        : null,
+      snapshots: timeSeries.byId.get(item.receivable.id)?.snapshots ?? [],
+    }))
+    return aggregateListPositions(positions).timeSeriesByCurrency
+  }, [data, timeSeries.byId])
+
+  const chartCurrencies = [...timeSeriesByCurrency.keys()].sort()
+
   const terminatedCount = rows.filter((r) => !isActiveStatus(r.status)).length
   const visibleRows = showInactive
     ? sorted
@@ -117,6 +140,33 @@ export function ReceivablesScreen({ onSelect }: Props) {
         nounPlural={nounPlural}
         testId="receivables-total"
       />
+
+      {chartCurrencies.map((currency) => {
+        const series = timeSeriesByCurrency.get(currency) ?? []
+        if (series.length < 2) return null
+        return (
+          <Card
+            key={currency}
+            data-testid={`receivables-value-chart-${currency}`}
+          >
+            <CardHeader>
+              <CardTitle>{t('receivables:home.valueChartTitle')}</CardTitle>
+              <CardDescription>
+                {t('receivables:home.valueChartDescription', { currency })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SnapshotChart
+                snapshots={series.map((p) => ({
+                  year_month: p.year_month,
+                  amount: String(p.value),
+                }))}
+                currency={currency}
+              />
+            </CardContent>
+          </Card>
+        )
+      })}
 
       {isPending && (
         <p className="text-sm text-muted-foreground">{t('common:loading')}</p>

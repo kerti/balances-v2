@@ -176,6 +176,50 @@ func (q *Queries) ListLatestReceivableSnapshotsByReceivableIDs(ctx context.Conte
 	return items, nil
 }
 
+const listReceivableSnapshotsByReceivableIDs = `-- name: ListReceivableSnapshotsByReceivableIDs :many
+SELECT id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+FROM receivable_snapshots
+WHERE receivable_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY receivable_id, year_month
+`
+
+// Full ascending value series per receivable, for the Receivables list
+// total-over-time chart (epic #204). Ascending order is what
+// ReceivableTimeSeries' carry-forward sampling relies on; mirrors
+// ListAssetSnapshotsByAssetIDs.
+func (q *Queries) ListReceivableSnapshotsByReceivableIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]ReceivableSnapshot, error) {
+	rows, err := q.db.Query(ctx, listReceivableSnapshotsByReceivableIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReceivableSnapshot
+	for rows.Next() {
+		var i ReceivableSnapshot
+		if err := rows.Scan(
+			&i.ID,
+			&i.ReceivableID,
+			&i.YearMonth,
+			&i.Amount,
+			&i.Currency,
+			&i.AsOfDate,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listReceivableSnapshotsForReceivable = `-- name: ListReceivableSnapshotsForReceivable :many
 SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
 FROM receivable_snapshots s

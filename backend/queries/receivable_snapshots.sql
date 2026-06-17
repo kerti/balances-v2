@@ -59,6 +59,16 @@ FROM receivable_snapshots
 WHERE receivable_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY receivable_id, year_month DESC;
 
+-- Full ascending value series per receivable, for the Receivables list
+-- total-over-time chart (epic #204). Ascending order is what
+-- ReceivableTimeSeries' carry-forward sampling relies on; mirrors
+-- ListAssetSnapshotsByAssetIDs.
+-- name: ListReceivableSnapshotsByReceivableIDs :many
+SELECT *
+FROM receivable_snapshots
+WHERE receivable_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY receivable_id, year_month;
+
 -- name: SoftDeleteReceivableSnapshot :execrows
 UPDATE receivable_snapshots s
 SET deleted_at = now(),

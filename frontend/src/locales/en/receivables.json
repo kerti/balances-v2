@@ -1,4 +1,8 @@
 {
+  "home": {
+    "valueChartTitle": "Total outstanding over time",
+    "valueChartDescription": "Sum across all active receivables ({{currency}})."
+  },
   "listTitle": "Receivables",
   "listSubtitle": "Money owed to your household — loans, deposits in transit, outstanding refunds.",
   "totalOutstanding": "Total outstanding",
