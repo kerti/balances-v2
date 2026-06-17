@@ -1,4 +1,20 @@
 {
+  "home": {
+    "subtitle": "Composition and trend across personal and institutional debts.",
+    "totalOwedTitle": "Total owed",
+    "totalOwedCount_one": "{{count}} liability",
+    "totalOwedCount_other": "{{count}} liabilities",
+    "valueChartTitle": "Total owed over time",
+    "valueChartDescription": "Sum across all active liabilities ({{currency}}).",
+    "categoryStackTitle": "Category share over time",
+    "categoryStackDescription": "Percentage of total owed by category, month-by-month ({{currency}}).",
+    "categoryPieTitle": "Current category mix",
+    "categoryPieDescription": "Share of current owed by category ({{currency}}).",
+    "categoryLabel": {
+      "personal": "Personal",
+      "institutional": "Institutional"
+    }
+  },
   "subtypes": {
     "personal": "Personal",
     "institutional": "Institutional"

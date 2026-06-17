@@ -59,6 +59,10 @@ func (h *Handlers) Mount(r chi.Router) {
 		// snapshots (Snapshots sheet) atomically. Static segment, so no clash
 		// with POST "/" or the /{id} routes.
 		r.Post("/import", h.handleImportCreate)
+		// Per-liability monthly value series for the Liabilities Home time
+		// graphs (epic #204). Value-only — liabilities carry no cost basis.
+		// Static single segment, so no clash with the /{id}/… routes below.
+		r.Get("/time-series", h.handleLiabilityTimeSeries)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGet)
 			r.Patch("/", h.handleUpdate)
@@ -169,6 +173,18 @@ func (h *Handlers) handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, list)
+}
+
+// handleLiabilityTimeSeries returns the per-liability monthly value series for
+// every liability in the household (epic #204), feeding the Liabilities Home
+// time graphs without a per-liability fan-out. Value-only — no cost basis.
+func (h *Handlers) handleLiabilityTimeSeries(w http.ResponseWriter, r *http.Request) {
+	series, err := h.repo.LiabilityTimeSeries(r.Context())
+	if err != nil {
+		httperr.WriteRepo(w, "liability time series", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, series)
 }
 
 func (h *Handlers) handleGet(w http.ResponseWriter, r *http.Request) {

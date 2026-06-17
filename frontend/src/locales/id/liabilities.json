@@ -1,4 +1,20 @@
 {
+  "home": {
+    "subtitle": "Komposisi dan tren mencakup utang pribadi dan institusional.",
+    "totalOwedTitle": "Total utang",
+    "totalOwedCount_one": "{{count}} liabilitas",
+    "totalOwedCount_other": "{{count}} liabilitas",
+    "valueChartTitle": "Total utang dari waktu ke waktu",
+    "valueChartDescription": "Jumlah seluruh liabilitas aktif ({{currency}}).",
+    "categoryStackTitle": "Porsi kategori dari waktu ke waktu",
+    "categoryStackDescription": "Persentase total utang per kategori, bulan demi bulan ({{currency}}).",
+    "categoryPieTitle": "Komposisi kategori saat ini",
+    "categoryPieDescription": "Porsi utang saat ini per kategori ({{currency}}).",
+    "categoryLabel": {
+      "personal": "Pribadi",
+      "institutional": "Institusional"
+    }
+  },
   "subtypes": {
     "personal": "Pribadi",
     "institutional": "Institusional"

@@ -59,6 +59,15 @@ FROM liability_snapshots
 WHERE liability_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY liability_id, year_month DESC;
 
+-- Full ascending value series per liability, for the Liabilities Home time
+-- graphs (epic #204). Ascending order is what LiabilityTimeSeries' carry-
+-- forward sampling relies on; mirrors ListAssetSnapshotsByAssetIDs.
+-- name: ListLiabilitySnapshotsByLiabilityIDs :many
+SELECT *
+FROM liability_snapshots
+WHERE liability_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY liability_id, year_month;
+
 -- name: SoftDeleteLiabilitySnapshot :execrows
 UPDATE liability_snapshots s
 SET deleted_at = now(),

@@ -176,6 +176,49 @@ func (q *Queries) ListLatestLiabilitySnapshotsByLiabilityIDs(ctx context.Context
 	return items, nil
 }
 
+const listLiabilitySnapshotsByLiabilityIDs = `-- name: ListLiabilitySnapshotsByLiabilityIDs :many
+SELECT id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+FROM liability_snapshots
+WHERE liability_id = ANY($1::uuid[]) AND deleted_at IS NULL
+ORDER BY liability_id, year_month
+`
+
+// Full ascending value series per liability, for the Liabilities Home time
+// graphs (epic #204). Ascending order is what LiabilityTimeSeries' carry-
+// forward sampling relies on; mirrors ListAssetSnapshotsByAssetIDs.
+func (q *Queries) ListLiabilitySnapshotsByLiabilityIDs(ctx context.Context, dollar_1 []uuid.UUID) ([]LiabilitySnapshot, error) {
+	rows, err := q.db.Query(ctx, listLiabilitySnapshotsByLiabilityIDs, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []LiabilitySnapshot
+	for rows.Next() {
+		var i LiabilitySnapshot
+		if err := rows.Scan(
+			&i.ID,
+			&i.LiabilityID,
+			&i.YearMonth,
+			&i.Amount,
+			&i.Currency,
+			&i.AsOfDate,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLiabilitySnapshotsForLiability = `-- name: ListLiabilitySnapshotsForLiability :many
 SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
 FROM liability_snapshots s
