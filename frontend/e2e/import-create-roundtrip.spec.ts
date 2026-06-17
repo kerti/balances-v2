@@ -12,7 +12,7 @@ const XLSX_MIME =
 // row with the same name (a copy), and we assert two exist before cleaning both
 // up. See ADR-0024.
 // covers: INV-JOURNEYS-03
-test('bank account export re-imports as a new position from the list', async ({
+test('bank account export re-imports as a new position from the list', { tag: '@smoke' }, async ({
   page,
 }) => {
   const name = `E2E import-create ${Date.now()}`

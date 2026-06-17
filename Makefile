@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check session-token hooks-install
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -67,6 +67,7 @@ help:
 	@echo "  start-task              pre-flight: clean tree? GitHub access? then sync main"
 	@echo "  check                   pre-push gate: lint + tests, pass/fail only (logs in /tmp)"
 	@echo "  qa-matrix               regenerate docs/qa/coverage/ from invariant annotations"
+	@echo "  qa-strict               CI gate: fail if any invariant lacks per-PR coverage"
 	@echo "  qa-gaps                 list within-zone test files that carry no covers: annotation"
 	@echo "  session-token           print a live session token for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
@@ -280,15 +281,23 @@ check:
 	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >/tmp/balances-check-fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-tsc.log';  fail=1; }; \
 	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
 	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
-	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report 2>/tmp/balances-check-qa.log) | sed 's/^qa-matrix: //'; \
+	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report -strict) >/tmp/balances-check-qa.log 2>&1; qa=$$?; \
+	  sed -n '1s/^qa-matrix: /  /p' /tmp/balances-check-qa.log; \
+	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
 # Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the
 # test suite, joined against the docs/qa/invariants/ catalog. Advisory: prints
-# uncovered invariants but does not fail. `-strict` (the future CI gate) makes an
-# uncovered invariant a non-zero exit. See docs/qa/README.md.
+# uncovered / nightly-only invariants but does not fail. See docs/qa/README.md.
 qa-matrix:
 	@cd backend && go run ./tools/qa-matrix
+
+# The CI gate (also run inside `make check`). Fails if any catalogued invariant
+# lacks per-PR coverage — uncovered, or covered only by a nightly (non-smoke)
+# Playwright spec. -report so it doesn't rewrite the coverage files. See
+# docs/qa/how-it-works.md.
+qa-strict:
+	@cd backend && go run ./tools/qa-matrix -report -strict
 
 # Advisory gap-finder: test files with no covers: annotation that sit in a
 # directory where another test does carry one — the likeliest within-zone

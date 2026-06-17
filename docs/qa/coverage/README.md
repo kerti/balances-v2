@@ -4,9 +4,9 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**123 / 123** invariants have at least one covering test.
+**123 / 123** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
-| Zone | Covered | Coverage |
+| Zone | Per-PR | Coverage |
 |----|----|----|
 | TENANCY | 12 / 12 | [TENANCY](01-tenancy.md) |
 | FINANCE | 17 / 17 | [FINANCE](02-finance.md) |

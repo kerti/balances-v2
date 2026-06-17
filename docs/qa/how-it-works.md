@@ -30,10 +30,12 @@ finances.
 3. `make qa-matrix` greps the suite for those annotations, joins them against
    the catalog, regenerates the per-zone files under `docs/qa/coverage/` plus
    their [index](coverage/README.md), and prints any **uncovered** invariant
-   (catalogued but annotated nowhere) and any **orphan** annotation (an ID
-   referenced by a test but absent from the catalog). It is **advisory** today
-   (exit 0); the `-strict` flag (future CI gate) makes an uncovered invariant a
-   build failure.
+   (catalogued but annotated nowhere), any **nightly-only** invariant (covered,
+   but only by a non-smoke Playwright spec — see below), and any **orphan**
+   annotation (an ID referenced by a test but absent from the catalog). `make
+   qa-matrix` itself is **advisory** (exit 0); the **`-strict`** flag is the CI
+   gate (`make qa-strict`, wired into `ci.yml` + `make check`) — it exits
+   non-zero if any invariant is uncovered *or* nightly-only.
 
 `make qa-gaps` (the `-gaps` flag) answers the inverse question — *which tests
 aren't in the matrix?* — without the noise. A blanket list would be nearly every
@@ -69,17 +71,27 @@ end-to-end flows a handler unit test can't reach (e.g. the full OAuth
 button→redirect→callback→session round-trip via the mock-OIDC server, ADR-0024,
 of which only the callback half is unit-tested today).
 
-One wrinkle remains, and it is only about the *future* `-strict` gate, not
-whether an annotation counts:
+## Tiering: what the per-PR gate credits
 
-- **Playwright (`e2e/*.spec.ts`)** — *scanned and run in CI, but tiered*: only
-  `@smoke`-tagged specs gate per-PR; the full suite runs nightly (`e2e.yml`,
-  #70). So if an invariant is covered *only* by a non-smoke spec, a per-PR
-  `-strict` gate would credit coverage that didn't run in that PR — it runs
-  nightly instead. Before E2E annotations count toward a per-PR strict gate,
-  either tag the covering spec `@smoke` so it runs in the gate, or have strict
-  accept nightly-verified coverage by design.
-- **Vitest (`src/**/*.test.ts`, `.test.tsx`)** — *scanned and run in CI on every
-  PR* (`frontend-checks` / `make check`). No strict-gate hazard: vitest runs in
-  the same gate it'd be credited in, so these are the **safe ones to annotate
-  first**.
+`-strict` enforces **per-PR** coverage, because the per-PR gate is what actually
+protects a merge. Not every test kind runs per-PR, so coverage is tiered:
+
+- **Go (`_test.go`)** and **vitest (`src/**/*.test.ts`, `.test.tsx`)** — run on
+  every PR (`backend-test` / `frontend-checks`, i.e. `make check`). Always
+  **per-PR**.
+- **Playwright (`e2e/*.spec.ts`)** — *tiered* (#70): only `@smoke`-tagged tests
+  gate per-PR; the full suite runs nightly (`e2e.yml`). So a spec test is
+  **per-PR** iff it carries `{ tag: '@smoke' }`, else **nightly**.
+
+The tool reads the `@smoke` tag of the `test()` a `covers:` annotation sits above
+(the catalog convention is that the annotation is the line directly before its
+`test()`), so it knows each location's tier. An invariant is **per-PR-covered**
+if at least one of its covering tests is per-PR. If every covering test is
+nightly-only, `-strict` reports it as **nightly-only** and fails the gate — the
+same as uncovered — so the per-PR gate never credits coverage that didn't run in
+the PR. To clear a nightly-only finding: `@smoke`-tag the covering spec so it
+runs in the gate, or add a Go/vitest backstop.
+
+This makes the gate honest by construction: a future non-smoke-only annotation
+can't silently inflate the per-PR number. Vitest annotations remain the
+friction-free ones — they run in the same gate that credits them.

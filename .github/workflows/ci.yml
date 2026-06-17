@@ -68,6 +68,25 @@ jobs:
           fail_ci_if_error: true
           use_pypi: true
 
+  qa-matrix:
+    name: QA invariant matrix
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      # Strict gate: fail if any catalogued invariant lacks per-PR coverage —
+      # uncovered, or covered only by a nightly (non-smoke) Playwright spec this
+      # PR's gate doesn't run. -report so the read-only check never rewrites the
+      # committed coverage files. See docs/qa/how-it-works.md.
+      - name: Strict coverage gate
+        run: go run ./tools/qa-matrix -report -strict
+
   backend-vuln:
     name: Backend vuln scan
     runs-on: ubuntu-latest

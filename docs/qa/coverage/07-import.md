@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/07-import.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**7 / 7** invariants in this zone have at least one covering test.
+**7 / 7** invariants in this zone have at least one covering test (**7** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|

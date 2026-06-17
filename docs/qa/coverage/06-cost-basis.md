@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/06-cost-basis.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**4 / 4** invariants in this zone have at least one covering test.
+**4 / 4** invariants in this zone have at least one covering test (**4** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|

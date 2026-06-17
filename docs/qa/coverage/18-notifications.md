@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/18-notifications.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**9 / 9** invariants in this zone have at least one covering test.
+**9 / 9** invariants in this zone have at least one covering test (**9** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|

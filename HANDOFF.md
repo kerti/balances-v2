@@ -49,10 +49,11 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 
 **Agreed plan (2026-06-17), in order:**
 
-1. **Gate the QA invariant matrix in CI** — flip `make qa-matrix` toward a `-strict` CI gate (advisory
-   today). *Not a one-line flip:* E2E-covered invariants run **nightly, not per-PR** — `@smoke`-tag the
-   covering specs or exclude them from the per-PR gate, or strict falsely credits coverage that didn't
-   run (`docs/qa/how-it-works.md:72-83`). Goal: the matrix earns its maintenance weight or gets shrunk.
+1. **Gate the QA invariant matrix in CI** — ✅ **DONE.** `qa-matrix` is now tier-aware: `-strict`
+   (`make qa-strict`, wired into `ci.yml` + `make check`) fails on any invariant lacking **per-PR**
+   coverage — uncovered, or covered only by a nightly (non-smoke) Playwright spec. JOURNEYS-03's spec
+   tagged `@smoke` to close the one nightly-only gap; 123/123 per-PR. Mechanism in
+   `docs/qa/how-it-works.md` ("Tiering").
 2. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
    ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
    bus-factor-insurance set — that's the point of having it.

@@ -6,10 +6,19 @@
 //
 // The catalog is the source of truth for *what must hold*; the coverage files
 // are computed here so they can never lie. Advisory by default (exit 0); -strict
-// turns an uncovered invariant into a non-zero exit (the future CI gate).
+// turns an uncovered invariant into a non-zero exit (the CI gate).
+//
+// Coverage is *tiered* by whether the covering test runs in the per-PR gate.
+// Go (`_test.go`) and vitest (`.test.ts`/`.test.tsx`) always run per-PR (via
+// `make check`/`frontend-checks`). Playwright specs are split (#70): only
+// `@smoke`-tagged tests run per-PR; the rest run nightly. So an invariant
+// covered *only* by a non-smoke spec is verified nightly, not in the gate —
+// `-strict` treats that as a gap (a "nightly-only" finding), the same as an
+// uncovered one, so the per-PR gate never credits coverage that didn't run in
+// the PR. See docs/qa/how-it-works.md.
 //
 //	cd backend && go run ./tools/qa-matrix          # regenerate + report
-//	cd backend && go run ./tools/qa-matrix -strict  # also fail on a gap
+//	cd backend && go run ./tools/qa-matrix -strict  # also fail on a gap (uncovered or nightly-only)
 //	cd backend && go run ./tools/qa-matrix -gaps    # also list within-zone unannotated tests
 package main
 
@@ -57,6 +66,28 @@ func isScannedTestFile(name string) bool {
 	return false
 }
 
+// tier records whether a covering test runs in the per-PR gate or only nightly.
+// perPR < nightly so that when the same file yields both, perPR wins (the test
+// that does run in the gate is the one that counts).
+type tier int
+
+const (
+	tierPerPR   tier = iota // Go, vitest, or @smoke-tagged Playwright — runs in the per-PR gate
+	tierNightly             // non-smoke Playwright — runs only in the nightly full suite
+)
+
+// location is one covering test file plus the tier it runs in.
+type location struct {
+	file string
+	tier tier
+}
+
+// annotation is one `covers:` reference resolved to its tier within a file.
+type annotation struct {
+	id   string
+	tier tier
+}
+
 type invariant struct {
 	id, statement string
 }
@@ -102,10 +133,17 @@ func main() {
 	}
 	sort.Strings(orphans)
 
-	var uncovered []string
+	// uncovered: no test annotates it at all. nightlyOnly: annotated, but every
+	// covering test runs only nightly (non-smoke Playwright) — so the per-PR gate
+	// would credit coverage that didn't run in the PR. Both are gaps for -strict.
+	var uncovered, nightlyOnly []string
 	for _, id := range order {
-		if len(coverage[id]) == 0 {
+		locs := coverage[id]
+		switch {
+		case len(locs) == 0:
 			uncovered = append(uncovered, id)
+		case !anyPerPR(locs):
+			nightlyOnly = append(nightlyOnly, id)
 		}
 	}
 
@@ -114,17 +152,24 @@ func main() {
 	rel = filepath.ToSlash(rel) + "/"
 	if *reportFlag {
 		rel = "(report-only, not written)"
-	} else if err := writeCoverage(outDir, invs, zones, order, coverage, uncovered, orphans); err != nil {
+	} else if err := writeCoverage(outDir, invs, zones, order, coverage, uncovered, nightlyOnly, orphans); err != nil {
 		fail(fmt.Errorf("write %s: %w", outDir, err))
 	}
 
-	// Console summary.
-	fmt.Printf("qa-matrix: %d/%d invariants covered → %s\n", len(order)-len(uncovered), len(order), rel)
+	// Console summary. The headline tracks per-PR coverage — the number the gate
+	// enforces — and breaks out nightly-only as a parenthetical so the "covered
+	// somewhere" total is still visible.
+	perPR := len(order) - len(uncovered) - len(nightlyOnly)
+	fmt.Printf("qa-matrix: %d/%d invariants covered per-PR (%d nightly-only, %d uncovered) → %s\n",
+		perPR, len(order), len(nightlyOnly), len(uncovered), rel)
 	for _, id := range uncovered {
-		fmt.Printf("  UNCOVERED %s — %s\n", id, invs[id].statement)
+		fmt.Printf("  UNCOVERED    %s — %s\n", id, invs[id].statement)
+	}
+	for _, id := range nightlyOnly {
+		fmt.Printf("  NIGHTLY-ONLY %s — covered only by a non-smoke spec; runs nightly, not in this gate\n", id)
 	}
 	for _, id := range orphans {
-		fmt.Printf("  ORPHAN    %s — annotated by a test but absent from the catalog\n", id)
+		fmt.Printf("  ORPHAN       %s — annotated by a test but absent from the catalog\n", id)
 	}
 
 	if *gapsFlag {
@@ -139,9 +184,21 @@ func main() {
 		}
 	}
 
-	if *strictFlag && len(uncovered) > 0 {
+	if *strictFlag && (len(uncovered) > 0 || len(nightlyOnly) > 0) {
 		os.Exit(1)
 	}
+}
+
+// anyPerPR reports whether at least one covering location runs in the per-PR
+// gate (Go, vitest, or an @smoke Playwright spec). An invariant covered only by
+// nightly locations is not credited by the per-PR -strict gate.
+func anyPerPR(locs []location) bool {
+	for _, l := range locs {
+		if l.tier == tierPerPR {
+			return true
+		}
+	}
+	return false
 }
 
 // scanGaps returns the test files that carry no `covers:` annotation but live
@@ -308,9 +365,9 @@ func deriveTitle(base string) string {
 }
 
 // scanCoverage walks the repo for test files and maps each invariant ID to the
-// sorted, de-duplicated set of repo-relative files that annotate it.
-func scanCoverage(root string) (map[string][]string, error) {
-	hits := map[string]map[string]bool{}
+// sorted, de-duplicated set of covering locations (repo-relative file + tier).
+func scanCoverage(root string) (map[string][]location, error) {
+	hits := map[string]map[string]tier{} // id -> file -> tier (perPR wins on tie)
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -325,20 +382,24 @@ func scanCoverage(root string) (map[string][]string, error) {
 		if !isScannedTestFile(name) {
 			return nil
 		}
-		ids, err := coversInFile(path)
+		anns, err := coversInFileTiered(path)
 		if err != nil {
 			return err
 		}
-		if len(ids) == 0 {
+		if len(anns) == 0 {
 			return nil
 		}
 		rel, _ := filepath.Rel(root, path)
 		rel = filepath.ToSlash(rel)
-		for _, id := range ids {
-			if hits[id] == nil {
-				hits[id] = map[string]bool{}
+		for _, a := range anns {
+			if hits[a.id] == nil {
+				hits[a.id] = map[string]tier{}
 			}
-			hits[id][rel] = true
+			// Same file, two tiers (a spec with both a smoke and a non-smoke
+			// test covering one ID): the per-PR one wins — it runs in the gate.
+			if existing, ok := hits[a.id][rel]; !ok || a.tier < existing {
+				hits[a.id][rel] = a.tier
+			}
 		}
 		return nil
 	})
@@ -346,16 +407,85 @@ func scanCoverage(root string) (map[string][]string, error) {
 		return nil, err
 	}
 
-	out := map[string][]string{}
+	out := map[string][]location{}
 	for id, files := range hits {
-		list := make([]string, 0, len(files))
-		for f := range files {
-			list = append(list, f)
+		list := make([]location, 0, len(files))
+		for f, t := range files {
+			list = append(list, location{file: f, tier: t})
 		}
-		sort.Strings(list)
+		sort.Slice(list, func(i, j int) bool { return list[i].file < list[j].file })
 		out[id] = list
 	}
 	return out, nil
+}
+
+// coversInFileTiered returns every invariant ID referenced by a `covers:`
+// annotation in one file, each tagged with the tier it runs in. Go and vitest
+// files are wholly per-PR. In a Playwright spec, a `covers:` comment sits
+// directly above the `test()` it annotates (the catalog convention); the tier
+// is per-PR iff that test carries an `@smoke` tag, else nightly.
+func coversInFileTiered(path string) ([]annotation, error) {
+	lines, err := readLines(path)
+	if err != nil {
+		return nil, err
+	}
+	isSpec := strings.HasSuffix(path, ".spec.ts")
+
+	var out []annotation
+	for i, line := range lines {
+		m := coversLine.FindStringSubmatch(line)
+		if m == nil {
+			continue
+		}
+		t := tierPerPR
+		if isSpec {
+			t = tierForNextTest(lines, i+1)
+		}
+		for _, id := range invID.FindAllString(m[1], -1) {
+			out = append(out, annotation{id: id, tier: t})
+		}
+	}
+	return out, nil
+}
+
+// tierForNextTest finds the first `test(` declaration at or after start and
+// reports whether it carries an `@smoke` tag (per-PR) or not (nightly). The tag
+// is part of the test() signature, so it's scanned from the `test(` line up to
+// the body open (`=> {`) / the `async` keyword. A `covers:` with no following
+// test() is treated as nightly — conservative: the gate won't credit it.
+func tierForNextTest(lines []string, start int) tier {
+	for i := start; i < len(lines); i++ {
+		if !strings.Contains(lines[i], "test(") {
+			continue
+		}
+		for j := i; j < len(lines); j++ {
+			if strings.Contains(lines[j], "@smoke") {
+				return tierPerPR
+			}
+			if strings.Contains(lines[j], "=> {") || strings.Contains(lines[j], "async") {
+				return tierNightly
+			}
+		}
+		return tierNightly
+	}
+	return tierNightly
+}
+
+// readLines reads a file into a slice of lines, tolerant of long lines.
+func readLines(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = f.Close() }()
+
+	var lines []string
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
+	}
+	return lines, sc.Err()
 }
 
 // coversInFile returns every invariant ID referenced by a `covers:` annotation
@@ -383,7 +513,7 @@ func coversInFile(path string) ([]string, error) {
 // writeCoverage regenerates docs/qa/coverage/: one file per zone that defines
 // invariants (mirroring the catalog basename), plus a README.md index with the
 // headline number, per-zone counts, and the uncovered/orphan findings.
-func writeCoverage(dir string, invs map[string]invariant, zones []zone, order []string, coverage map[string][]string, uncovered, orphans []string) error {
+func writeCoverage(dir string, invs map[string]invariant, zones []zone, order []string, coverage map[string][]location, uncovered, nightlyOnly, orphans []string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
@@ -400,7 +530,7 @@ func writeCoverage(dir string, invs map[string]invariant, zones []zone, order []
 			return err
 		}
 	}
-	return os.WriteFile(filepath.Join(dir, "README.md"), []byte(renderIndex(zones, invs, order, coverage, uncovered, orphans)), 0o644)
+	return os.WriteFile(filepath.Join(dir, "README.md"), []byte(renderIndex(zones, invs, order, coverage, uncovered, nightlyOnly, orphans)), 0o644)
 }
 
 // pruneZoneFiles removes generated NN-slug.md files in dir that no longer
@@ -427,11 +557,14 @@ func pruneZoneFiles(dir string, zones []zone) error {
 	return nil
 }
 
-func renderZone(z zone, invs map[string]invariant, coverage map[string][]string) string {
-	covered := 0
+func renderZone(z zone, invs map[string]invariant, coverage map[string][]location) string {
+	covered, perPR := 0, 0
 	for _, id := range z.ids {
-		if len(coverage[id]) > 0 {
+		if locs := coverage[id]; len(locs) > 0 {
 			covered++
+			if anyPerPR(locs) {
+				perPR++
+			}
 		}
 	}
 
@@ -440,48 +573,75 @@ func renderZone(z zone, invs map[string]invariant, coverage map[string][]string)
 	b.WriteString("<!-- GENERATED by `make qa-matrix` — do not edit by hand. -->\n")
 	fmt.Fprintf(&b, "<!-- Rows come from docs/qa/invariants/%s; the Covered-by column is\n", z.file)
 	b.WriteString("     computed from `// covers:` annotations in the test suite. -->\n\n")
-	fmt.Fprintf(&b, "**%d / %d** invariants in this zone have at least one covering test.\n\n", covered, len(z.ids))
+	fmt.Fprintf(&b, "**%d / %d** invariants in this zone have at least one covering test "+
+		"(**%d** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).\n\n", covered, len(z.ids), perPR)
 
 	b.WriteString("| ID | Invariant | Covered by |\n")
 	b.WriteString("|----|-----------|------------|\n")
 	for _, id := range z.ids {
-		cell := "— **none**"
-		if files := coverage[id]; len(files) > 0 {
-			cell = "`" + strings.Join(files, "`<br>`") + "`"
-		}
-		fmt.Fprintf(&b, "| %s | %s | %s |\n", id, invs[id].statement, cell)
+		fmt.Fprintf(&b, "| %s | %s | %s |\n", id, invs[id].statement, renderCell(coverage[id]))
 	}
 	return b.String()
 }
 
-func renderIndex(zones []zone, invs map[string]invariant, order []string, coverage map[string][]string, uncovered, orphans []string) string {
+// renderCell formats the Covered-by column: each file in backticks, with a
+// _(nightly)_ marker on locations that run only in the nightly suite.
+func renderCell(locs []location) string {
+	if len(locs) == 0 {
+		return "— **none**"
+	}
+	parts := make([]string, 0, len(locs))
+	for _, l := range locs {
+		s := "`" + l.file + "`"
+		if l.tier == tierNightly {
+			s += " _(nightly)_"
+		}
+		parts = append(parts, s)
+	}
+	return strings.Join(parts, "<br>")
+}
+
+func renderIndex(zones []zone, invs map[string]invariant, order []string, coverage map[string][]location, uncovered, nightlyOnly, orphans []string) string {
 	var b strings.Builder
 	b.WriteString("# QA coverage — index\n\n")
 	b.WriteString("<!-- GENERATED by `make qa-matrix` — do not edit by hand. -->\n")
 	b.WriteString("<!-- Rows come from docs/qa/invariants/; counts are computed from\n")
 	b.WriteString("     `// covers:` annotations in the test suite. -->\n\n")
-	fmt.Fprintf(&b, "**%d / %d** invariants have at least one covering test.\n\n", len(order)-len(uncovered), len(order))
+	perPR := len(order) - len(uncovered) - len(nightlyOnly)
+	fmt.Fprintf(&b, "**%d / %d** invariants are verified in the per-PR gate "+
+		"(%d covered only nightly, %d uncovered). The per-PR number is what `make qa-matrix -strict` enforces.\n\n",
+		perPR, len(order), len(nightlyOnly), len(uncovered))
 
-	b.WriteString("| Zone | Covered | Coverage |\n")
+	b.WriteString("| Zone | Per-PR | Coverage |\n")
 	b.WriteString("|----|----|----|\n")
 	for _, z := range zones {
 		if len(z.ids) == 0 {
 			fmt.Fprintf(&b, "| %s | — seeded | — |\n", z.title)
 			continue
 		}
-		covered := 0
+		perPRZone := 0
 		for _, id := range z.ids {
-			if len(coverage[id]) > 0 {
-				covered++
+			if anyPerPR(coverage[id]) {
+				perPRZone++
 			}
 		}
-		fmt.Fprintf(&b, "| %s | %d / %d | [%s](%s) |\n", z.title, covered, len(z.ids), z.title, z.file)
+		fmt.Fprintf(&b, "| %s | %d / %d | [%s](%s) |\n", z.title, perPRZone, len(z.ids), z.title, z.file)
 	}
 
 	if len(uncovered) > 0 {
 		b.WriteString("\n## Uncovered invariants\n\n")
 		b.WriteString("Catalogued but verified by no test — each is a QA gap.\n\n")
 		for _, id := range uncovered {
+			fmt.Fprintf(&b, "- **%s** — %s\n", id, invs[id].statement)
+		}
+	}
+
+	if len(nightlyOnly) > 0 {
+		b.WriteString("\n## Nightly-only invariants\n\n")
+		b.WriteString("Covered only by a non-smoke Playwright spec, so they're verified in the\n")
+		b.WriteString("nightly full suite — not in the per-PR gate. `-strict` treats these as gaps:\n")
+		b.WriteString("`@smoke`-tag the covering spec or add a Go/vitest backstop to close them.\n\n")
+		for _, id := range nightlyOnly {
 			fmt.Fprintf(&b, "- **%s** — %s\n", id, invs[id].statement)
 		}
 	}
