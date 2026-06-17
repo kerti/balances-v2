@@ -19,8 +19,8 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.3` is the
-latest DEPLOYED** release (three batched alphas: alpha.1 → alpha.2 → alpha.3) on the `preview` environment
+M1–M5 complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.4` is the
+latest DEPLOYED** release (four batched alphas: alpha.1 → alpha.2 → alpha.3 → alpha.4) on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -40,6 +40,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   matrix** (19 zones, 103 invariants, `make qa-matrix`). Plus xlsx create-from-list import fan-out,
   founder welcome email, brand canonicalization, and the #70 security tail (SHA-pin / e2e-in-CI /
   gitleaks). Detail in the closed issues + the alpha.3 GitHub Release notes.
+- **alpha.4** — unplanned single-fix patch cut: transactional email was 501-ing at the relay because a
+  display-name `From` was used as the SMTP envelope reverse-path; now split (bare envelope, display-name
+  header), un-breaking restore/welcome/invite mail on preview (#192/#193). No migration. This consumed
+  the alpha.4 slot the plan had reserved for the M6 close, which shifts to **alpha.5** (see below).
 
 ## What's next
 
@@ -52,7 +56,7 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 2. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
    ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
    bus-factor-insurance set — that's the point of having it.
-3. **Close M6 in full → `v0.6.0-alpha.4`.** Only remaining M6 done-when item is **PDF export (#187)**;
+3. **Close M6 in full → `v0.6.0-alpha.5`.** Only remaining M6 done-when item is **PDF export (#187)**;
    the Q8a/Q12/Q14c helpers already shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`,
    `lib/rollover.ts`). Fold in **#56** (maturity auto-snapshot not instant — the open alpha bug) + a
    short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
@@ -65,7 +69,9 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    ROADMAP M8.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
-unclosable), #185 (dead-code error fallback + the `api/client.ts` twin), #163 (email wordmark raster).
+unclosable), #185 (dead-code error fallback + the `api/client.ts` twin), #163 (email wordmark raster),
+#191 (lazy-import error boundary — reload onto new bundle after a deploy), #190 (missing `/assets/*`
+should 404, not SPA-fallback to index.html).
 Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel, the #70
 security tail (SHA-pin done #112, e2e-in-CI done #113, gitleaks done #114).
 
