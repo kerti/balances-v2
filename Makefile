@@ -128,6 +128,12 @@ frontend-build:
 # real readiness (backend /healthz; vite's "Local:" line) instead of a blind
 # `sleep` — both servers come up in well under a second, so fixed sleeps were
 # pure dead time. See issue #30.
+#
+# Starts fail loud (issue #181): the poll loops exit non-zero if the process
+# dies (compile error, panic, port already bound) or never signals readiness
+# within the timeout, printing the tail of the log to stderr. A failed
+# `backend-restart` short-circuits the `restart` chain, so frontend isn't
+# restarted on a backend that never came up.
 
 backend-stop:
 	@pkill -f 'go run ./cmd/balances' 2>/dev/null || true
@@ -141,11 +147,14 @@ backend-stop:
 
 backend-restart: backend-stop
 	@( cd backend && exec nohup go run ./cmd/balances serve ) > $(BACKEND_LOG) 2>&1 < /dev/null &
-	@for i in $$(seq 1 100); do \
-	  curl -fsS http://localhost:$(BACKEND_PORT)/healthz >/dev/null 2>&1 && break; \
+	@seen=0; for i in $$(seq 1 100); do \
+	  curl -fsS http://localhost:$(BACKEND_PORT)/healthz >/dev/null 2>&1 && { echo "backend: started (log: $(BACKEND_LOG))"; exit 0; }; \
+	  if pgrep -f 'go run ./cmd/balances serve' >/dev/null 2>&1 || pgrep -x balances >/dev/null 2>&1; then seen=1; elif [ $$seen = 1 ]; then break; fi; \
 	  sleep 0.1; \
-	done
-	@echo "backend: started (log: $(BACKEND_LOG))"
+	done; \
+	echo "✗ backend failed to start (died or timed out) — tail of $(BACKEND_LOG):" >&2; \
+	tail -n 20 $(BACKEND_LOG) >&2; \
+	exit 1
 
 frontend-stop:
 	@pkill -f 'frontend/node_modules/.bin/vite' 2>/dev/null || true
@@ -159,12 +168,17 @@ frontend-stop:
 frontend-restart: frontend-stop
 	@: > $(FRONTEND_LOG)
 	@( cd frontend && exec nohup npm run dev ) > $(FRONTEND_LOG) 2>&1 < /dev/null &
-	@for i in $$(seq 1 150); do \
-	  grep -q 'Local:' $(FRONTEND_LOG) 2>/dev/null && break; \
+	@seen=0; for i in $$(seq 1 150); do \
+	  grep -q 'Local:' $(FRONTEND_LOG) 2>/dev/null && { echo "frontend: started (log: $(FRONTEND_LOG))"; exit 0; }; \
+	  if pgrep -f 'frontend/node_modules/.bin/vite' >/dev/null 2>&1 || pgrep -f 'npm run dev' >/dev/null 2>&1; then seen=1; elif [ $$seen = 1 ]; then break; fi; \
 	  sleep 0.1; \
-	done
-	@echo "frontend: started (log: $(FRONTEND_LOG))"
+	done; \
+	echo "✗ frontend failed to start (died or timed out) — tail of $(FRONTEND_LOG):" >&2; \
+	tail -n 20 $(FRONTEND_LOG) >&2; \
+	exit 1
 
+# `restart` chains both; make's own error propagation stops the chain (and skips
+# the final echo) the moment either side exits non-zero.
 restart: backend-restart frontend-restart
 	@echo "both servers restarted"
 
