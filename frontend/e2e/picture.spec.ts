@@ -19,7 +19,7 @@ test('OAuth callback backfills picture_url and the avatar renders the image', as
 }) => {
   await page.goto('/')
 
-  const signIn = page.getByRole('link', { name: /sign in with google/i })
+  const signIn = page.getByTestId('signin-google')
   await expect(signIn).toBeVisible()
   await signIn.click()
 

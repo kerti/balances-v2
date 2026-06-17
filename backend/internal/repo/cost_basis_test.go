@@ -265,3 +265,28 @@ func TestGroupTransactionsByInvestment(t *testing.T) {
 		t.Fatalf("bucket a lost ascending order")
 	}
 }
+
+func TestTransactionAggregates(t *testing.T) {
+	t.Run("empty ledger is 0 and nil", func(t *testing.T) {
+		n, last := transactionAggregates(nil)
+		if n != 0 || last != nil {
+			t.Fatalf("got (%d, %v), want (0, nil)", n, last)
+		}
+	})
+
+	t.Run("count + latest date from the last (ascending) element", func(t *testing.T) {
+		jan := time.Date(2026, 1, 5, 9, 30, 0, 0, time.UTC)
+		feb := time.Date(2026, 2, 9, 14, 0, 0, 0, time.UTC)
+		n, last := transactionAggregates([]db.InvestmentTransaction{
+			txn("buy", jan, decp("1"), decp("1")),
+			txn("buy", feb, decp("1"), decp("1")),
+		})
+		if n != 2 {
+			t.Errorf("count = %d, want 2", n)
+		}
+		// Latest = last element, formatted as a plain day (no time component).
+		if last == nil || *last != "2026-02-09" {
+			t.Errorf("last = %v, want 2026-02-09", last)
+		}
+	})
+}

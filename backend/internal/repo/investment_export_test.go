@@ -127,3 +127,126 @@ func TestExportStock_RepoLevel(t *testing.T) {
 		}
 	})
 }
+
+// TestExportInvestmentSubtypes_RepoLevel covers the four remaining export
+// wrappers (mutual fund, bond, gold, time deposit). Each is a thin Get +
+// assemble over the shared exportCommon (proven by the Stock test above), so
+// these assert the subtype Detail is carried through on the happy path and that
+// an unknown id propagates ErrNotFound from the wrapper's Get.
+//
+// covers: INV-EXPORT-01, INV-EXPORT-02
+func TestExportInvestmentSubtypes_RepoLevel(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	aliceCtx := auth.WithUser(context.Background(), alice)
+	inv := repo.NewInvestmentRepo(tdb.Pool)
+
+	t.Run("mutual fund", func(t *testing.T) {
+		mf, err := inv.CreateMutualFund(aliceCtx, repo.CreateMutualFundParams{
+			DisplayName:    "Index fund",
+			OwnershipType:  "joint",
+			NativeCurrency: "IDR",
+			RiskProfile:    "medium",
+			FundCode:       "IDX-IDXR",
+			FundType:       "equity",
+		})
+		if err != nil {
+			t.Fatalf("CreateMutualFund: %v", err)
+		}
+		out, err := inv.ExportMutualFund(aliceCtx, mf.Investment.ID)
+		if err != nil {
+			t.Fatalf("ExportMutualFund: %v", err)
+		}
+		if out.MutualFund.Details.FundCode != "IDX-IDXR" {
+			t.Errorf("FundCode = %q, want IDX-IDXR", out.MutualFund.Details.FundCode)
+		}
+		if out.OwnerEmail != "" {
+			t.Errorf("joint OwnerEmail = %q, want empty", out.OwnerEmail)
+		}
+		if _, err := inv.ExportMutualFund(aliceCtx, uuid.New()); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("unknown id: got %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("bond", func(t *testing.T) {
+		bond, err := inv.CreateBond(aliceCtx, repo.CreateBondParams{
+			DisplayName:     "Secondary bond",
+			OwnershipType:   "joint",
+			NativeCurrency:  "IDR",
+			RiskProfile:     "low",
+			BondType:        "secondary_market",
+			Issuer:          "Govt",
+			CouponRate:      decimal.RequireFromString("6.5"),
+			CouponFrequency: "semi_annual",
+			MaturityDate:    time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC),
+		})
+		if err != nil {
+			t.Fatalf("CreateBond: %v", err)
+		}
+		out, err := inv.ExportBond(aliceCtx, bond.Investment.ID)
+		if err != nil {
+			t.Fatalf("ExportBond: %v", err)
+		}
+		if out.Bond.Details.Issuer != "Govt" {
+			t.Errorf("Issuer = %q, want Govt", out.Bond.Details.Issuer)
+		}
+		if _, err := inv.ExportBond(aliceCtx, uuid.New()); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("unknown id: got %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("gold", func(t *testing.T) {
+		gold, err := inv.CreateGold(aliceCtx, repo.CreateGoldParams{
+			DisplayName:    "Gold bars",
+			OwnershipType:  "joint",
+			NativeCurrency: "IDR",
+			RiskProfile:    "low",
+			Form:           "bar",
+			Purity:         decimal.RequireFromString("0.9999"),
+		})
+		if err != nil {
+			t.Fatalf("CreateGold: %v", err)
+		}
+		out, err := inv.ExportGold(aliceCtx, gold.Investment.ID)
+		if err != nil {
+			t.Fatalf("ExportGold: %v", err)
+		}
+		if out.Gold.Details.Form != "bar" {
+			t.Errorf("Form = %q, want bar", out.Gold.Details.Form)
+		}
+		if _, err := inv.ExportGold(aliceCtx, uuid.New()); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("unknown id: got %v, want ErrNotFound", err)
+		}
+	})
+
+	t.Run("time deposit", func(t *testing.T) {
+		td, err := inv.CreateTimeDeposit(aliceCtx, repo.CreateTimeDepositParams{
+			DisplayName:    "TD 12mo",
+			OwnershipType:  "joint",
+			NativeCurrency: "IDR",
+			RiskProfile:    "low",
+			BankName:       "TestBank",
+			Principal:      decimal.RequireFromString("100000000"),
+			InterestRate:   decimal.RequireFromString("5.5"),
+			TermMonths:     12,
+			PlacementDate:  time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+			MaturityDate:   time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
+			RolloverPolicy: "no_rollover",
+		})
+		if err != nil {
+			t.Fatalf("CreateTimeDeposit: %v", err)
+		}
+		out, err := inv.ExportTimeDeposit(aliceCtx, td.Investment.ID)
+		if err != nil {
+			t.Fatalf("ExportTimeDeposit: %v", err)
+		}
+		if out.TimeDeposit.Details.BankName != "TestBank" {
+			t.Errorf("BankName = %q, want TestBank", out.TimeDeposit.Details.BankName)
+		}
+		if _, err := inv.ExportTimeDeposit(aliceCtx, uuid.New()); !errors.Is(err, repo.ErrNotFound) {
+			t.Errorf("unknown id: got %v, want ErrNotFound", err)
+		}
+	})
+}
