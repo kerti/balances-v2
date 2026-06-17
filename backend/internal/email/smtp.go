@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/mail"
 	"net/smtp"
 	"strings"
 )
@@ -25,6 +26,12 @@ type SMTPConfig struct {
 
 type SMTPMailer struct {
 	cfg SMTPConfig
+	// envelope is the bare RFC5321 address used as the SMTP reverse-path
+	// (MAIL FROM). It is derived from cfg.From: a display-name From like
+	// "Balances <noreply@example.com>" keeps that form in the From: header but
+	// must be reduced to the bare "noreply@example.com" here, or the relay
+	// rejects the envelope with 501 "Bad sender address syntax" (#192).
+	envelope string
 }
 
 func NewSMTPMailer(cfg SMTPConfig) (*SMTPMailer, error) {
@@ -37,7 +44,14 @@ func NewSMTPMailer(cfg SMTPConfig) (*SMTPMailer, error) {
 	if cfg.From == "" {
 		return nil, errors.New("smtp: from address is required")
 	}
-	return &SMTPMailer{cfg: cfg}, nil
+	// Degrade gracefully: if From doesn't parse (a malformed secret), fall back
+	// to the raw value rather than failing construction — a bad EMAIL_FROM_ADDRESS
+	// must never crash boot. The send may still 501, but that's no worse than today.
+	envelope := cfg.From
+	if addr, err := mail.ParseAddress(cfg.From); err == nil {
+		envelope = addr.Address
+	}
+	return &SMTPMailer{cfg: cfg, envelope: envelope}, nil
 }
 
 func (m *SMTPMailer) Send(_ context.Context, msg Message) error {
@@ -58,7 +72,9 @@ func (m *SMTPMailer) Send(_ context.Context, msg Message) error {
 	if m.cfg.Username != "" {
 		auth = smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
 	}
-	return smtp.SendMail(addr, auth, m.cfg.From, []string{msg.To}, body)
+	// Envelope reverse-path is the bare address; the display-name form (if any)
+	// lives only in the From: header built above (#192).
+	return smtp.SendMail(addr, auth, m.envelope, []string{msg.To}, body)
 }
 
 func buildMultipartMessage(from string, msg Message) ([]byte, error) {
