@@ -1,10 +1,9 @@
-# CI tooling — current state & pre-alpha reassessment
+# CI tooling — current state & decision log
 
 Living record of what runs in CI beyond the build/test/deploy basics, plus the
-backlog of tooling we considered and deliberately deferred. **Revisit the
-"Reassess before alpha" section before cutting the alpha release.**
+backlog of tooling we considered and deliberately deferred and why.
 
-Last reviewed: 2026-06-13 (pre-alpha hardening, #70).
+Last reviewed: 2026-06-17 (post-alpha.4; pre-alpha hardening landed in #70).
 
 ## Wired now
 
@@ -36,15 +35,16 @@ version bumps. All GitHub-native, zero infra, free for public repos.
   Codecov or another required check alongside the existing CI jobs. Self-host adds a
   server to maintain. Revisit only if we want the trend dashboard.
 
-## Reassess before alpha
+## Deferred — reassess as the app faces real users
 
-Deferred items worth a second look once the app faces real users:
+Items consciously left open; revisit on real-usage signal (M7+):
 
 1. **Concurrency cancellation** — `cancel-in-progress` to stop paying for stale
    runs on rapid pushes. Pure cost hygiene. `e2e.yml` and `gitleaks.yml` already
    do this; `ci.yml` and `codeql.yml` still open.
-2. **Container/Trivy scanning** — deferred with deployment; reassess when the
-   deploy story lands.
+2. **Container/Trivy scanning** — deferred with deployment. The deploy story has
+   since landed (Fly, ADR-0030), so this is now actionable — wire it when the
+   self-host image (#116) firms up the container we'd actually scan.
 
 ## Setup notes / one-time actions
 
