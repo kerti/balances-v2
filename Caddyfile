@@ -1,0 +1,8 @@
+# Bundled turnkey TLS for the optional `proxy` profile (ADR-0037, #228). Caddy
+# obtains and auto-renews a Let's Encrypt cert for CADDY_DOMAIN and reverse-
+# proxies to the app's plain-http single origin (the app never terminates TLS).
+# Off by default; enable with `docker compose --profile proxy up` after setting
+# CADDY_DOMAIN, APP_URL=https://<domain> and COOKIE_SECURE=true in .env.
+{$CADDY_DOMAIN} {
+	reverse_proxy app:8080
+}
