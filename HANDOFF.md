@@ -61,8 +61,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    domain, **#93** landing. See ROADMAP M7. **Self-host #116 is now grilled + designed (ADR-0037)
    and sliced into #224–229**: #224 (`APP_URL` single-origin collapse) **DONE**, #225 (GHCR
    publish `ghcr.io/kerti/balances`) **DONE**, #226 (`EMAIL_ENABLED` no-op mailer + copy-invite-link
-   fallback, also #223's first flag) **DONE**; next
-   #227 (operator compose stack) → #228 (Caddy/BYO-proxy) → #229 (`SELF-HOSTING.md`, gated by a
+   fallback, also #223's first flag) **DONE**, #227 (operator compose stack: pull-based
+   `app`/`postgres`/one-shot `migrate`, dev scaffolding split to `docker-compose.dev.yml`,
+   self-host `.env.example`) **DONE**; next
+   #228 (Caddy/BYO-proxy) → #229 (`SELF-HOSTING.md`, gated by a
    fresh-VM rehearsal). Targets v1.0.0.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.

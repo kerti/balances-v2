@@ -6,6 +6,10 @@
 -include .env
 export
 
+# Dev scaffolding (postgres + mailpit) lives in docker-compose.dev.yml; the
+# repo-root docker-compose.yml is the operator self-host stack (ADR-0037).
+DEV_COMPOSE := docker-compose.dev.yml
+
 # Background dev-server logs. tail -f to follow.
 BACKEND_LOG  := /tmp/balances-backend.log
 FRONTEND_LOG := /tmp/balances-frontend.log
@@ -73,16 +77,16 @@ help:
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
 
 up:
-	docker compose up -d
+	docker compose -f $(DEV_COMPOSE) up -d
 
 down:
-	docker compose down
+	docker compose -f $(DEV_COMPOSE) down
 
 logs:
-	docker compose logs -f
+	docker compose -f $(DEV_COMPOSE) logs -f
 
 ps:
-	docker compose ps
+	docker compose -f $(DEV_COMPOSE) ps
 
 backend-run:
 	cd backend && go run ./cmd/balances serve

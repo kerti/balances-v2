@@ -1,3 +1,10 @@
+# Operator-facing self-host stack (ADR-0037, #227). Pull-based: the app is the
+# published image (ghcr.io/kerti/balances:<tag>), never built here. A bare
+# `docker compose up` boots Postgres, runs migrations once, then starts the app
+# on http://localhost:${APP_PORT:-8080}. Copy .env.example to .env first.
+#
+# Dev scaffolding (postgres + mailpit for a host-run backend) lives in
+# docker-compose.dev.yml — `make up`.
 services:
   postgres:
     image: postgres:16-alpine
@@ -5,8 +12,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-balances}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-balances}
       POSTGRES_DB: ${POSTGRES_DB:-balances}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -15,8 +20,44 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot: apply pending migrations, then exit 0. The app waits on this
+  # completing successfully, so a failed migration leaves a clearly-failed
+  # `migrate` container and the app never starts half-migrated (ADR-0037 — the
+  # compose equivalent of Fly's release_command). DATABASE_URL is injected here
+  # (host = the `postgres` service) so the operator never hand-writes it.
+  migrate:
+    image: ghcr.io/kerti/balances:${BALANCES_TAG:-latest}
+    command: ["migrate", "up"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-balances}:${POSTGRES_PASSWORD:-balances}@postgres:5432/${POSTGRES_DB:-balances}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    image: ghcr.io/kerti/balances:${BALANCES_TAG:-latest}
+    command: ["serve"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-balances}:${POSTGRES_PASSWORD:-balances}@postgres:5432/${POSTGRES_DB:-balances}?sslmode=disable
+      # Serve the SPA bundle baked into the image alongside /api (single origin).
+      WEB_DIR: /app/web
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  # Optional local mail sink for trials. Off by default; bring it up with
+  # `docker compose --profile mail up` and set EMAIL_ENABLED=true + SMTP_HOST=mailpit.
   mailpit:
     image: axllent/mailpit:latest
+    profiles: ["mail"]
     ports:
       - "${MAILPIT_SMTP_PORT:-1025}:1025"
       - "${MAILPIT_HTTP_PORT:-8025}:8025"
