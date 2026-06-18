@@ -121,4 +121,24 @@ describe('postRestore data layer', () => {
     // through to the generic copy rather than surfacing a stray shape.
     expect(err.body).toBeUndefined()
   })
+
+  it('captures a non-JSON error body as raw text (#185)', async () => {
+    // A proxy/gateway can answer a non-2xx with HTML, not the JSON envelope.
+    // The old code read res.json() first (consuming the stream), so the text
+    // fallback came back empty and the body was lost; now it's surfaced.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('<html>502 Bad Gateway</html>', {
+          status: 502,
+          headers: { 'Content-Type': 'text/html' },
+        }),
+      ),
+    )
+
+    const err = (await postRestoreCommit(backupFile()).catch((e) => e)) as ApiError
+    expect(err).toBeInstanceOf(ApiError)
+    expect(err.status).toBe(502)
+    expect(err.body).toBe('<html>502 Bad Gateway</html>')
+  })
 })

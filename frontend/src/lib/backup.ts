@@ -51,12 +51,23 @@ async function postRestore<T>(step: 'preview' | 'commit', file: File): Promise<T
   body.append('file', file)
   const res = await fetch(`/api/backup/restore/${step}`, { method: 'POST', body })
   if (!res.ok) {
+    // Read the body once. The previous form called res.json() first, which
+    // consumes the stream, so the res.text() fallback always read an empty,
+    // already-drained body — the raw-text path was dead (#185). Pull the text
+    // ourselves and parse it, so a non-JSON error body (a gateway's HTML page,
+    // plain text) is surfaced instead of silently lost.
+    const raw = await res.text().catch(() => undefined)
     let errBody: ErrorEnvelope | string | undefined
-    try {
-      const parsed = await res.json()
-      errBody = isEnvelope(parsed) ? parsed : undefined
-    } catch {
-      errBody = await res.text().catch(() => undefined)
+    if (raw) {
+      try {
+        const parsed: unknown = JSON.parse(raw)
+        // Valid JSON: keep it only if it's an ADR-0027 envelope; a non-envelope
+        // shape is dropped so errorMessage() falls through to the generic copy.
+        errBody = isEnvelope(parsed) ? parsed : undefined
+      } catch {
+        // Not JSON — surface the raw text.
+        errBody = raw
+      }
     }
     throw new ApiError(res.status, res.statusText || `restore failed (${res.status})`, errBody)
   }
