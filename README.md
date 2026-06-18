@@ -37,5 +37,5 @@ docker compose up             # migrations apply once, then login at http://loca
 ```
 
 Upgrade to a new release by bumping `BALANCES_TAG` and running `docker compose pull && docker
-compose up -d`. The full operator walkthrough (Google OAuth client, TLS topologies, backups) lands
-in `SELF-HOSTING.md`.
+compose up -d`. The full operator walkthrough — three TLS topologies, the Google OAuth client, the
+upgrade contract, and database backups — is in [`SELF-HOSTING.md`](SELF-HOSTING.md).
