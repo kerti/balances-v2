@@ -12,13 +12,14 @@ const CategoryStackChartImpl = lazyWithReload(
 
 type Props = {
   series: CategoryTimePoint[]
+  currency: string
 }
 
-export function CategoryStackChart({ series }: Props) {
+export function CategoryStackChart({ series, currency }: Props) {
   if (series.length < 2) return null
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
-      <CategoryStackChartImpl series={series} />
+      <CategoryStackChartImpl series={series} currency={currency} />
     </Suspense>
   )
 }

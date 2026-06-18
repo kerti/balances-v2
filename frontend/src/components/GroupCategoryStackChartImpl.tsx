@@ -7,13 +7,14 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/components/ui/chart'
-import { formatChartMonth } from '@/lib/format'
+import { formatChartMonth, formatCurrency } from '@/lib/format'
 import type { GroupCategoryTimePoint } from '@/lib/groupHomeAggregates'
 import type { GroupStackCategory } from './GroupCategoryStackChart'
 
 type Props = {
   series: GroupCategoryTimePoint[]
   categories: GroupStackCategory[]
+  currency: string
 }
 
 type Row = { month: string } & Record<string, number | string>
@@ -36,6 +37,7 @@ function toRows(
 export default function GroupCategoryStackChartImpl({
   series,
   categories,
+  currency,
 }: Props) {
   const data = toRows(series, categories)
 
@@ -77,13 +79,36 @@ export default function GroupCategoryStackChartImpl({
           content={
             <ChartTooltipContent
               labelFormatter={(label) => label}
-              formatter={(value, _name, item) => {
+              // Render a full row per category — colored indicator + label +
+              // share% + native amount — so each band is identifiable, matching
+              // the cost-vs-value chart. (ChartTooltipContent renders *only* the
+              // formatter's output when one is set, so it must supply the
+              // indicator/label itself.)
+              formatter={(value, name, item) => {
+                const key = String(name)
+                const seriesLabel = (chartConfig as ChartConfig)[key]?.label
                 const total = present.reduce(
                   (s, c) => s + (Number(item.payload[c.key]) || 0),
                   0,
                 )
                 const pct = total > 0 ? (Number(value) / total) * 100 : 0
-                return `${pct.toFixed(1)}%`
+                return (
+                  <div className="flex w-full items-center justify-between gap-3">
+                    <span className="flex items-center gap-1.5 text-muted-foreground">
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: `var(--color-${key})` }}
+                      />
+                      {seriesLabel ?? key}
+                    </span>
+                    <span className="font-mono font-medium tabular-nums text-foreground">
+                      {pct.toFixed(1)}%
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        {formatCurrency(String(value), currency)}
+                      </span>
+                    </span>
+                  </div>
+                )
               }}
             />
           }

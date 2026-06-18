@@ -304,7 +304,7 @@ function CategoryStackCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <CategoryStackChart series={series} />
+        <CategoryStackChart series={series} currency={currency} />
       </CardContent>
     </Card>
   )

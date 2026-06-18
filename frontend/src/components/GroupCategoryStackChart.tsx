@@ -21,13 +21,22 @@ export type GroupStackCategory = {
 type Props = {
   series: GroupCategoryTimePoint[]
   categories: GroupStackCategory[]
+  currency: string
 }
 
-export function GroupCategoryStackChart({ series, categories }: Props) {
+export function GroupCategoryStackChart({
+  series,
+  categories,
+  currency,
+}: Props) {
   if (series.length < 2) return null
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
-      <GroupCategoryStackChartImpl series={series} categories={categories} />
+      <GroupCategoryStackChartImpl
+        series={series}
+        categories={categories}
+        currency={currency}
+      />
     </Suspense>
   )
 }

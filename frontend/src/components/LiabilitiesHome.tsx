@@ -237,7 +237,11 @@ function CategoryStackCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <GroupCategoryStackChart series={series} categories={categories} />
+        <GroupCategoryStackChart
+          series={series}
+          categories={categories}
+          currency={currency}
+        />
       </CardContent>
     </Card>
   )
