@@ -1,6 +1,10 @@
 {
   "failedToLoad": "Failed to load: {{message}}",
   "unknownError": "unknown error",
+  "appError": {
+    "body": "The app ran into an unexpected problem. Reloading usually fixes it.",
+    "reload": "Reload"
+  },
   "code": {
     "UNKNOWN": "Something went wrong.",
     "INTERNAL": "Server error. Please try again.",

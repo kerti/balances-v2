@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyWithReload } from '@/lib/lazyWithReload'
 
 type SnapshotLike = {
   year_month: string
@@ -30,7 +31,7 @@ type Props = {
 // separate chunk, fetched only when a detail page actually renders the
 // chart. The empty-snapshot short-circuit stays out here so we don't
 // even request the chunk on empty data.
-const SnapshotChartImpl = lazy(() => import('./SnapshotChartImpl'))
+const SnapshotChartImpl = lazyWithReload(() => import('./SnapshotChartImpl'))
 
 export function SnapshotChart({
   snapshots,

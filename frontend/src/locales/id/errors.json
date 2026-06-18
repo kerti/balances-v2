@@ -1,6 +1,10 @@
 {
   "failedToLoad": "Gagal memuat: {{message}}",
   "unknownError": "kesalahan tidak diketahui",
+  "appError": {
+    "body": "Aplikasi mengalami masalah tak terduga. Memuat ulang biasanya memperbaikinya.",
+    "reload": "Muat ulang"
+  },
   "code": {
     "UNKNOWN": "Terjadi kesalahan.",
     "INTERNAL": "Kesalahan server. Silakan coba lagi.",

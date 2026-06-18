@@ -9,7 +9,8 @@
 // red) — matches the existing P/L tone language (emerald gain,
 // destructive loss) and reads at a glance.
 
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyWithReload } from '@/lib/lazyWithReload'
 
 export type PieSlice = {
   key: string
@@ -24,7 +25,9 @@ type Props = {
   legendPosition?: 'bottom' | 'right'
 }
 
-const InvestmentPieChartImpl = lazy(() => import('./InvestmentPieChartImpl'))
+const InvestmentPieChartImpl = lazyWithReload(
+  () => import('./InvestmentPieChartImpl'),
+)
 
 export function InvestmentPieChart({ slices, currency, legendPosition = 'bottom' }: Props) {
   const total = slices.reduce((s, sl) => s + sl.value, 0)

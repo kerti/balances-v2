@@ -2,10 +2,13 @@
 // boundary so the recharts + shadcn-chart code lands in a separate
 // chunk alongside the other home charts.
 
-import { lazy, Suspense } from 'react'
+import { Suspense } from 'react'
+import { lazyWithReload } from '@/lib/lazyWithReload'
 import type { CategoryTimePoint } from '@/lib/homeAggregates'
 
-const CategoryStackChartImpl = lazy(() => import('./CategoryStackChartImpl'))
+const CategoryStackChartImpl = lazyWithReload(
+  () => import('./CategoryStackChartImpl'),
+)
 
 type Props = {
   series: CategoryTimePoint[]

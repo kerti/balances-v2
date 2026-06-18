@@ -11,6 +11,7 @@ import { useSession } from '@/hooks/useSession'
 import { routes } from '@/lib/routes'
 import { SignInScreen } from '@/components/SignInScreen'
 import { AppShell } from '@/components/AppShell'
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary'
 import { DashboardScreen } from '@/components/DashboardScreen'
 import { AssetsHome } from '@/components/AssetsHome'
 import { BankAccountsScreen } from '@/components/BankAccountsScreen'
@@ -65,6 +66,10 @@ function DetailRoute({
 const router = createBrowserRouter([
   {
     element: <AppShell />,
+    // Any error thrown while rendering a route subtree (notably a lazy chart
+    // chunk that failed twice — past the lazyWithReload one-shot) surfaces here
+    // instead of React Router's raw developer dump (#191).
+    errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <DashboardScreen /> },
 
