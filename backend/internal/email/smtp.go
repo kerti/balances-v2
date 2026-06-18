@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/mail"
 	"net/smtp"
 	"strings"
@@ -32,6 +33,12 @@ type SMTPMailer struct {
 	// must be reduced to the bare "noreply@example.com" here, or the relay
 	// rejects the envelope with 501 "Bad sender address syntax" (#192).
 	envelope string
+	// fromErr, when non-nil, marks the mailer as unable to send: cfg.From did
+	// not yield a usable RFC5321 reverse-path. Send returns it instead of
+	// shipping a bad envelope the relay silently 501s on (#195). Recorded here
+	// rather than returned from the constructor so a malformed
+	// EMAIL_FROM_ADDRESS can't crash boot — mail is best-effort.
+	fromErr error
 }
 
 func NewSMTPMailer(cfg SMTPConfig) (*SMTPMailer, error) {
@@ -44,17 +51,32 @@ func NewSMTPMailer(cfg SMTPConfig) (*SMTPMailer, error) {
 	if cfg.From == "" {
 		return nil, errors.New("smtp: from address is required")
 	}
-	// Degrade gracefully: if From doesn't parse (a malformed secret), fall back
-	// to the raw value rather than failing construction — a bad EMAIL_FROM_ADDRESS
-	// must never crash boot. The send may still 501, but that's no worse than today.
-	envelope := cfg.From
-	if addr, err := mail.ParseAddress(cfg.From); err == nil {
-		envelope = addr.Address
+	// Strip CR/LF before the value reaches the From: header or the envelope: a
+	// From carrying line breaks is either corruption (a secret with a stray
+	// trailing newline — the common real case) or an SMTP header-injection
+	// attempt smuggling extra headers into buildMultipartMessage's output.
+	// Stripping rescues the trailing-newline case and neutralizes injection.
+	cfg.From = stripLineBreaks(cfg.From)
+
+	m := &SMTPMailer{cfg: cfg}
+	addr, err := mail.ParseAddress(cfg.From)
+	if err != nil {
+		// Don't crash boot on a malformed EMAIL_FROM_ADDRESS — record the
+		// failure so Send refuses (returns an error) rather than silently
+		// shipping a bad reverse-path and letting the relay 501 it (#195).
+		m.fromErr = fmt.Errorf("smtp: unusable from address %q: %w", cfg.From, err)
+		slog.Error("smtp mailer: unparseable EMAIL_FROM_ADDRESS; email sends will be refused until it is fixed",
+			"from", cfg.From, "err", err)
+		return m, nil
 	}
-	return &SMTPMailer{cfg: cfg, envelope: envelope}, nil
+	m.envelope = addr.Address
+	return m, nil
 }
 
 func (m *SMTPMailer) Send(_ context.Context, msg Message) error {
+	if m.fromErr != nil {
+		return m.fromErr
+	}
 	if msg.To == "" || msg.Subject == "" {
 		return errors.New("smtp: to and subject are required")
 	}
@@ -119,6 +141,13 @@ func writePart(buf *bytes.Buffer, boundary, contentType, body string) {
 	buf.WriteString("\r\n\r\n")
 	buf.WriteString(strings.ReplaceAll(body, "\n", "\r\n"))
 	buf.WriteString("\r\n")
+}
+
+// stripLineBreaks removes CR and LF so a From value can't inject extra SMTP
+// headers into the message buildMultipartMessage emits, and so a secret with a
+// stray trailing newline still parses to a clean address.
+func stripLineBreaks(s string) string {
+	return strings.NewReplacer("\r", "", "\n", "").Replace(s)
 }
 
 func randomBoundary() (string, error) {
