@@ -19,8 +19,8 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** with the alpha. CI is green. **`v0.6.0-alpha.4` is the
-latest DEPLOYED** release (four batched alphas: alpha.1 → alpha.2 → alpha.3 → alpha.4) on the `preview` environment
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.6.0-alpha.5` is
+the latest DEPLOYED** release (five batched alphas: alpha.1 → … → alpha.5) on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -42,44 +42,34 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   gitleaks). Detail in the closed issues + the alpha.3 GitHub Release notes.
 - **alpha.4** — unplanned single-fix patch cut: transactional email was 501-ing at the relay because a
   display-name `From` was used as the SMTP envelope reverse-path; now split (bare envelope, display-name
-  header), un-breaking restore/welcome/invite mail on preview (#192/#193). No migration. This consumed
-  the alpha.4 slot the plan had reserved for the M6 close, which shifts to **alpha.5** (see below).
+  header), un-breaking restore/welcome/invite mail on preview (#192/#193). No migration.
+- **alpha.5** — **closes M6.** The group-Home parity epic (#204): Assets + Liabilities home pages
+  (total / over-time / subtype-stack / pie, matching InvestmentsHome) and a Receivables total-over-time
+  chart (#200→#202). Plus the QA matrix tier-aware CI gate (#196), stale-chunk reload onto a fresh
+  bundle (#191), 100%-stacked tooltip band labels (#214), and a fix tail — snapshot-list refresh on
+  manual terminal flip (#56), `/assets/*` 404 vs SPA-fallback (#190), restore non-JSON error surfacing
+  (#185), SMTP-From CR/LF hardening (#195). No migration. Detail in the alpha.5 GitHub Release notes.
 
 ## What's next
 
-**Agreed plan (2026-06-17), in order:**
+**M6 is closed (alpha.5).** Next, in order:
 
-1. **Gate the QA invariant matrix in CI** — ✅ **DONE.** `qa-matrix` is now tier-aware: `-strict`
-   (`make qa-strict`, wired into `ci.yml` + `make check`) fails on any invariant lacking **per-PR**
-   coverage — uncovered, or covered only by a nightly (non-smoke) Playwright spec. JOURNEYS-03's spec
-   tagged `@smoke` to close the one nightly-only gap; 123/123 per-PR. Mechanism in
-   `docs/qa/how-it-works.md` ("Tiering").
-2. **Prune docs** — cut docs that are neither CI-enforced nor read-on-resume; collapse HANDOFF/ROADMAP/
-   ADR overlap. Rebalances doc-weight vs shipped-surface. Does **not** gut the ADR/CONTEXT/HANDOFF
-   bus-factor-insurance set — that's the point of having it.
-3. **Close M6 in full → `v0.6.0-alpha.5`.** The M6 closer is now the **group-Home dashboard-polish
-   epic (#204)** — Assets/Liabilities Homes to InvestmentsHome parity + a Receivables total-over-time
-   chart (slices #200→#201→#202). **PDF export (#187) was pivoted to M8** (2026-06-17): 3 of 4 group
-   Homes were stubs, so polish-then-snapshot is the right order. The Q8a/Q12/Q14c helpers already
-   shipped (`lib/revaluation.ts`, `lib/feeQuantity.ts`, `lib/rollover.ts`); #56 maturity auto-snapshot
-   already landed. Still owed: a short prod-DB backup/restore ops note (Neon branch + `pg_dump`).
-   - **Slice 1 (#200) — Assets Home** shipped: value-only `GET /api/assets/time-series` (cost-free
-     mirror of the #22 endpoint) + the shared `lib/groupHomeAggregates.ts` value-only aggregator +
-     generic `GroupCategoryStackChart`; `AssetsHome` now has Total-value/over-time/subtype-stack/pie.
-4. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
+1. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
    trustable by real households, not richer in domain features. Lead with **self-host #116** (the
    bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**
    onboarding (invite-vs-found at first sign-in, irreversible — needs grill+ADR), production Resend
-   domain (carried from M6), **#93** landing. See ROADMAP M7.
-5. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified). See
-   ROADMAP M8.
+   domain, **#93** landing. See ROADMAP M7.
+2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
+   Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
+
+**Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 flat depth-1
+subdomain scheme (drop `-v2`), #216 single Resend sending domain across envs, #217 demo readiness
+(email sink / guest auth / nightly reset / OAuth publish), #218 Neon prod-project isolation + backup
+retention. Feeds M7.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
-unclosable), #185 (dead-code error fallback + the `api/client.ts` twin), #163 (email wordmark raster),
-#191 (lazy-import error boundary — reload onto new bundle after a deploy), #190 (missing `/assets/*`
-should 404, not SPA-fallback to index.html).
-Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel, the #70
-security tail (SHA-pin done #112, e2e-in-CI done #113, gitleaks done #114).
+unclosable), #163 (email wordmark raster).
+Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
 
 **Label convention (release notes):** every PR carries exactly one type label at merge —
 `enhancement`/`bug`/`documentation`/`dependencies`. Test-only and CI/dev/build tooling PRs go under
