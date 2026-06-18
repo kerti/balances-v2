@@ -35,6 +35,20 @@ func TestSPAHandler(t *testing.T) {
 		})
 	}
 
+	// A missing build chunk under /assets/ must 404, not fall back to the SPA
+	// shell — otherwise a stale hashed-chunk request gets 200 text/html and the
+	// browser fails to parse the HTML as a module (#190).
+	t.Run("missing asset 404s instead of falling back", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h(rec, httptest.NewRequest("GET", "/assets/SnapshotChartImpl-deadbeef.js", nil))
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status = %d, want %d", rec.Code, http.StatusNotFound)
+		}
+		if got := rec.Body.String(); got == "INDEX" {
+			t.Errorf("missing asset served the SPA shell, want a 404 body")
+		}
+	})
+
 	// A path with .. is rejected outright (http.ServeFile guards it), never
 	// serving anything outside the web dir.
 	t.Run("traversal is rejected", func(t *testing.T) {

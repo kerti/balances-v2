@@ -117,7 +117,16 @@ func (s *Server) buildRouter() chi.Router {
 // spaHandler serves static files from dir, falling back to index.html for any
 // path without a matching file so client-side routes (ADR-0025) resolve on a
 // refresh or deep link. The within-dir prefix check guards against path
-// traversal; misses fall through to index.html rather than leaking the error.
+// traversal; client-route misses fall through to index.html rather than
+// leaking the error.
+//
+// One exception: a miss under /assets/ is a genuinely-absent build chunk (Vite
+// emits content-hashed bundles there), not a client route. Falling back to
+// index.html would answer 200 text/html for a stale .js request — the browser
+// then tries to parse HTML as a module ("Failed to fetch dynamically imported
+// module") and a CDN can cache the shell under the chunk URL. So missing
+// /assets/* gets a clean 404 the client can reason about (#190; pairs with the
+// #191 reload-on-chunk-error boundary).
 func spaHandler(dir string) http.HandlerFunc {
 	root := filepath.Clean(dir)
 	fileServer := http.FileServer(http.Dir(root))
@@ -127,6 +136,10 @@ func spaHandler(dir string) http.HandlerFunc {
 		if info, err := os.Stat(full); err == nil && !info.IsDir() &&
 			strings.HasPrefix(full, root+string(os.PathSeparator)) {
 			fileServer.ServeHTTP(w, r)
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/assets/") {
+			http.NotFound(w, r)
 			return
 		}
 		http.ServeFile(w, r, index)
