@@ -58,7 +58,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    trustable by real households, not richer in domain features. Lead with **self-host #116** (the
    bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**
    onboarding (invite-vs-found at first sign-in, irreversible — needs grill+ADR), production Resend
-   domain, **#93** landing. See ROADMAP M7.
+   domain, **#93** landing. See ROADMAP M7. **Self-host #116 is now grilled + designed (ADR-0037)
+   and sliced into #224–229**: start #224 (`APP_URL`), #225 (GHCR publish), #226 (`EMAIL_ENABLED` +
+   copy-invite-link, also #223's first flag) — no blockers — then #227 (operator compose stack) →
+   #228 (Caddy/BYO-proxy) → #229 (`SELF-HOSTING.md`, gated by a fresh-VM rehearsal). Targets v1.0.0.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
