@@ -140,11 +140,26 @@ Two layers, in order of convenience:
    the system of record; the Release is the rollup.
 
    > ⚠️ `gh release edit … --notes "<body>"` **replaces the entire body — it does not append.** The
-   > digest goes *on top of* the auto-generated `## What's Changed` PR list (the system-of-record tail
-   > the digest's "detail lives in the linked issue/PR below" line points at) — never *instead of* it.
-   > Capture the generated block first (`gh release view <tag> --json body --jq .body` right after
-   > `--generate-notes`), then pass `digest + "\n---\n" + <that block>` as one `--notes` value. Dropping
-   > the PR list silently is the trap (hit on alpha.5).
+   > digest goes *on top of* the auto-generated `## What's Changed` PR list (the system-of-record tail)
+   > — never *instead of* it. Keep the convention from prior releases: digest, then `---`, then the PR
+   > list **wrapped in a `<details>` collapsible** so the page stays a readable rollup:
+   > ```
+   > <digest>
+   >
+   > ---
+   >
+   > <details>
+   > <summary>Full technical changelog</summary>
+   >
+   >
+   > <captured ## What's Changed block + Full Changelog link>
+   >
+   > </details>
+   > ```
+   > (Blank line after `<summary>` and before `</details>` — GitHub needs it to render the markdown
+   > inside.) Capture the generated block first (`gh release view <tag> --json body --jq .body` right
+   > after `--generate-notes`), then pass the whole assembled body as one `--notes` value. Dropping the
+   > PR list or the collapsible silently is the trap (hit both on alpha.5).
 
    > Note: the hand-written `docs/releases/v0.6.0-alpha.1.md` was a one-off for the first alpha.
    > From alpha.2 the GitHub Release is the artifact — no per-tag file under `docs/releases/` unless
