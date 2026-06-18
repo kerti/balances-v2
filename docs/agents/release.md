@@ -87,6 +87,40 @@ Run from a clean, up-to-date `main`.
    now lives in closed issues + release notes), leaving only in-progress / next-up state. Fold this
    into the same commit as any release-doc change (HANDOFF-atomic rule).
 
+## Back up the database (migration-bearing cuts only)
+
+**Trigger:** step 4 found one or more `NNNNN_*.sql` in the batch, **or** the batch carries a
+schema/data change you couldn't reproduce by replaying migrations. A **no-migration cut** (e.g.
+`v0.6.0-alpha.5`) needs no snapshot — skip this section.
+
+This is the **operator's** DB snapshot of the deployed environment, taken *before* `deploy.yml` runs
+`migrate up`. It is **not** the in-app **household** backup (ADR-0036) — that's a per-household JSON
+export *inside* the product; this is a whole-database point-in-time copy the operator can roll back to.
+Two layers, in order of convenience:
+
+1. **Neon branch snapshot (instant, preferred).** Neon keeps point-in-time history and branches with
+   no data copy (ADR-0030). Before pushing the tag, branch off the env's branch as a named restore
+   point — from the Neon console, or the CLI if it's set up:
+   ```sh
+   neonctl branches create --name "preview-pre-<tag>" --parent preview   # e.g. preview-pre-v0.7.0-alpha.1
+   ```
+   If the migration goes wrong, restore by resetting `preview` to that branch (Neon console →
+   *Restore*), or repoint the app's `DATABASE_URL` at the snapshot branch. Seconds, no dump/restore.
+
+2. **`pg_dump` (portable, off-vendor) — belt-and-suspenders.** A copy that survives leaving Neon
+   (ADR-0013's portability constraint; ADR-0030 leans on exactly this):
+   ```sh
+   pg_dump "$PREVIEW_DATABASE_URL" --no-owner --no-privileges -Fc -f "balances-preview-<tag>.dump"
+   # roll back into a scratch / replacement DB:
+   pg_restore --no-owner --no-privileges --clean --if-exists -d "$TARGET_DATABASE_URL" "balances-preview-<tag>.dump"
+   ```
+   `$PREVIEW_DATABASE_URL` is the env's Neon connection string — the value of the `DATABASE_URL` Fly
+   secret (`fly secrets list -a <app>` shows the name, not the value; copy the string from the Neon
+   console). Keep the `.dump` off the repo — it contains real data.
+
+> Alpha/preview scope only. The full production backup cadence, retention, and DR policy are deferred
+> to the `production` ADR that ADR-0030 promises ("backups, observability, … when it is stood up").
+
 ## Cut the release
 
 1. **Tag and push** from `main` at the reviewed commit:
