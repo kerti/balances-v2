@@ -130,36 +130,68 @@ Two layers, in order of convenience:
    ```
    Pushing the tag is the trigger — `deploy.yml` fires on `push: tags: ['v*']`.
 
-2. **Generate notes + publish the GitHub Release.** Notes auto-group from PR labels (step 2 above):
+2. **Generate the auto-notes**, then **rewrite the body to the template below.** First capture the
+   auto-generated PR list — you'll paste it into the fold:
    ```sh
    gh release create v0.6.0-alpha.2 --prerelease --generate-notes \
      --notes-start-tag v0.6.0-alpha.1
+   gh release view v0.6.0-alpha.2 --json body --jq .body   # grab the `## What's Changed` block
    ```
-   Then **edit the generated notes into a terse, user-facing digest** — grouped Added / Fixed /
-   Changed, written for the non-technical audience, not a commit dump (ADR-0029). Issues + PRs stay
-   the system of record; the Release is the rollup.
 
-   > ⚠️ `gh release edit … --notes "<body>"` **replaces the entire body — it does not append.** The
-   > digest goes *on top of* the auto-generated `## What's Changed` PR list (the system-of-record tail)
-   > — never *instead of* it. Keep the convention from prior releases: digest, then `---`, then the PR
-   > list **wrapped in a `<details>` collapsible** so the page stays a readable rollup:
-   > ```
-   > <digest>
-   >
-   > ---
-   >
-   > <details>
-   > <summary>Full technical changelog</summary>
-   >
-   >
-   > <captured ## What's Changed block + Full Changelog link>
-   >
-   > </details>
-   > ```
-   > (Blank line after `<summary>` and before `</details>` — GitHub needs it to render the markdown
-   > inside.) Capture the generated block first (`gh release view <tag> --json body --jq .body` right
-   > after `--generate-notes`), then pass the whole assembled body as one `--notes` value. Dropping the
-   > PR list or the collapsible silently is the trap (hit both on alpha.5).
+   ### Release-notes template
+
+   Every release from `v0.6.0-alpha.2` onward follows this shape (alpha.1 was a one-off product tour).
+   Build the whole body, then publish it in one shot:
+   ```sh
+   gh release edit <tag> --notes "$(cat notes.md)"
+   ```
+
+   ```
+   > **Alpha preview** on the `preview` environment. Schema is not guaranteed stable
+   > between alphas; data may be reset. <MIGRATION CLAUSE>
+
+   <one-line, plain-language summary of what this release is — do NOT lead with the version number>
+
+   ## ✨ Added
+   - **Bold lead-in.** What the reader can now do, in their words — not how it's built.
+
+   ## 🐛 Fixed
+   - The fix from the user's point of view.
+
+   ## 🔧 Behind the scenes
+   - Tooling / docs / CI / refactors with no user-visible behavior change.
+
+   ---
+
+   <details>
+   <summary>Full technical changelog</summary>
+
+
+   <the captured `## What's Changed` block + `**Full Changelog**` link, verbatim>
+
+   </details>
+   ```
+
+   **Rules:**
+   - **Banner blockquote is always first**, carries the environment + the stability disclaimer. Wording
+     swaps by channel: `*-alpha.N` → "**Alpha preview** on the `preview` environment…"; `*-rc.N` /
+     `*-beta.N` → "**Release candidate** on the `demo` environment."; `vX.Y.Z` → drop the instability
+     line (prod is the stable contract, ADR-0033).
+   - **`<MIGRATION CLAUSE>`** ends the banner — one of "No schema changes this release." /
+     "Includes database migrations, applied automatically on deploy." (from step 4).
+   - **Never lead the body with the version number** — it's already the release title.
+   - **Sections are `## ✨ Added`, `## 🐛 Fixed`, `## 🔧 Behind the scenes`** (add `## 🔁 Changed` only
+     for a real behavior change that's neither). Omit any that's empty. No other headings/emoji.
+   - **Digest voice:** bold lead-in + plain explanation for the non-technical household audience
+     (ADR-0029). No PR numbers in the digest — they live in the fold.
+   - **Tail:** `---`, then the `<details><summary>Full technical changelog</summary>` block. **Keep the
+     blank line after `<summary>` and before `</details>`** — GitHub needs it to render the markdown
+     inside. Summary text is exactly "Full technical changelog".
+   - The product is **Balances** (capitalised) in all copy.
+
+   > ⚠️ `gh release edit … --notes "<body>"` **replaces the entire body — it does not append.** Assemble
+   > the full body (digest + fold) and pass it once. Dropping the PR list or the collapsible silently is
+   > the trap (hit both on alpha.5; alpha.2–alpha.5 were later retrofitted to this template).
 
    > Note: the hand-written `docs/releases/v0.6.0-alpha.1.md` was a one-off for the first alpha.
    > From alpha.2 the GitHub Release is the artifact — no per-tag file under `docs/releases/` unless
