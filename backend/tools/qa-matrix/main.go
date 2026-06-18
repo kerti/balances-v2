@@ -52,6 +52,21 @@ var skipDirs = map[string]bool{
 	"test-results": true,
 }
 
+// selfPkgRel is the matrix tool's own package, relative to repo root. Its
+// *_test.go fixtures carry throwaway `// covers: INV-...` lines (inline string
+// literals and temp files), so scanning it would surface those fixture IDs as
+// spurious orphans (issue #234). Skip the whole package.
+var selfPkgRel = filepath.Join("backend", "tools", "qa-matrix")
+
+// isSelfPkg reports whether path is the matrix tool's own package directory.
+func isSelfPkg(root, path string) bool {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return false
+	}
+	return rel == selfPkgRel
+}
+
 // isScannedTestFile reports whether a file is a test file the matrix reads for
 // `covers:` annotations. Go unit tests (`_test.go`), Playwright specs
 // (`.spec.ts`, run in CI per ADR-0024/#70), and vitest component/unit tests
@@ -218,7 +233,7 @@ func scanGaps(root string) ([]string, error) {
 			return err
 		}
 		if d.IsDir() {
-			if skipDirs[d.Name()] {
+			if skipDirs[d.Name()] || isSelfPkg(root, path) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -373,7 +388,7 @@ func scanCoverage(root string) (map[string][]location, error) {
 			return err
 		}
 		if d.IsDir() {
-			if skipDirs[d.Name()] {
+			if skipDirs[d.Name()] || isSelfPkg(root, path) {
 				return filepath.SkipDir
 			}
 			return nil

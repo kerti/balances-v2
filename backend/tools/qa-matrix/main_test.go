@@ -137,6 +137,29 @@ func TestCoversInFileTiered(t *testing.T) {
 	}
 }
 
+// TestIsSelfPkg guards issue #234: the scan must skip the matrix tool's own
+// package so its `// covers: INV-...` test fixtures (inline literals + temp
+// files) don't surface as spurious orphans. Match is exact on the repo-relative
+// path — a sibling tool dir or a same-named dir elsewhere is not excluded.
+func TestIsSelfPkg(t *testing.T) {
+	root := filepath.Join("repo")
+	cases := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"own package", filepath.Join("repo", "backend", "tools", "qa-matrix"), true},
+		{"sibling tool", filepath.Join("repo", "backend", "tools", "other"), false},
+		{"same name elsewhere", filepath.Join("repo", "frontend", "qa-matrix"), false},
+		{"repo root", root, false},
+	}
+	for _, c := range cases {
+		if got := isSelfPkg(root, c.path); got != c.want {
+			t.Errorf("%s: isSelfPkg(%q) = %v, want %v", c.name, c.path, got, c.want)
+		}
+	}
+}
+
 // TestAnyPerPR guards the gate's accept/reject decision: an invariant counts as
 // per-PR-covered iff at least one covering location runs in the gate.
 func TestAnyPerPR(t *testing.T) {
