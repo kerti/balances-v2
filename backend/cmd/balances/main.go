@@ -105,15 +105,26 @@ func serveCmd() error {
 
 	queries := db.New(pool)
 
-	mailer, err := email.NewSMTPMailer(email.SMTPConfig{
-		Host:     cfg.SMTPHost,
-		Port:     cfg.SMTPPort,
-		Username: cfg.SMTPUsername,
-		Password: cfg.SMTPPassword,
-		From:     cfg.EmailFromAddress,
-	})
-	if err != nil {
-		return fmt.Errorf("mailer: %w", err)
+	// EMAIL_ENABLED=false (ADR-0037, self-host) wires a no-op Mailer and skips
+	// SMTP construction entirely, so the app boots with no SMTP config set.
+	// Invitations fall back to the "copy invite link" UI affordance (the create
+	// endpoint still returns the AcceptURL); welcome/restore mails no-op cleanly.
+	var mailer email.Mailer
+	if cfg.EmailEnabled {
+		smtpMailer, err := email.NewSMTPMailer(email.SMTPConfig{
+			Host:     cfg.SMTPHost,
+			Port:     cfg.SMTPPort,
+			Username: cfg.SMTPUsername,
+			Password: cfg.SMTPPassword,
+			From:     cfg.EmailFromAddress,
+		})
+		if err != nil {
+			return fmt.Errorf("mailer: %w", err)
+		}
+		mailer = smtpMailer
+	} else {
+		slog.Info("EMAIL_ENABLED=false: outbound email disabled; invitations rely on the copy-link fallback")
+		mailer = email.NewNoopMailer()
 	}
 
 	authH, err := auth.New(ctx, queries, auth.Config{

@@ -54,7 +54,9 @@
     "submit": "Kirim undangan",
     "sentTo": "Undangan terkirim ke {{email}}",
     "expires": "Kedaluwarsa {{when}}",
-    "acceptUrl": "URL terima:"
+    "acceptUrl": "URL terima:",
+    "copyLink": "Salin tautan",
+    "copied": "Tersalin!"
   },
   "data": {
     "title": "Cadangan",

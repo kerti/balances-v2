@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/18-notifications.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**9 / 9** invariants in this zone have at least one covering test (**9** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**10 / 10** invariants in this zone have at least one covering test (**10** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -17,3 +17,4 @@
 | INV-NOTIFICATIONS-07 | Locale-rendered invitation — the invitation email's subject + body render in the `inviter`'s locale (the only locale signal before the invitee exists), with the same en-GB fallback and literal brand name | `backend/internal/auth/email_i18n_test.go` |
 | INV-NOTIFICATIONS-08 | Restore notification addressing & roles — after a successful restore, `NotifyRestore` mails exactly the **live** members: the **restorer** gets the "restore complete" confirmation (carrying the sanity-check item count), every **other** live member gets the relocation/security notice (which names the restorer and doubles as a tamper tripwire), and a **soft-deleted member is not mailed at all** (`ListUsersForExport` with `include_deleted=false`). Misrouting a role or mailing a soft-deleted user is the bar this row guards; fires on commit success only, never on a failed/refused restore | `backend/internal/auth/restore_email_test.go` |
 | INV-NOTIFICATIONS-09 | Locale-rendered restore emails — each recipient's restore email (confirmation or notice) renders in **their own** `user.locale`, not the restorer's, with the en-GB fallback and literal brand name. The per-recipient re-pin of INV-NOTIFICATIONS-06/07 for the restore senders — a member reading the security notice in the wrong language is the bar | `backend/internal/auth/restore_email_test.go` |
+| INV-NOTIFICATIONS-10 | Mail is gated by `EMAIL_ENABLED` (default true) — when false, `main` wires `email.NoopMailer` and skips SMTP construction entirely, so the app boots with no SMTP config; `NoopMailer.Send` returns nil for any payload, so every best-effort sender (invitation, welcome, restore) no-ops cleanly and the invitation still persists + returns its AcceptURL, which the **copy-invite-link** UI affordance surfaces for manual sharing. The self-host no-mail path ([[adr-0037]]); the SMTP wiring is unchanged when the flag is true | `backend/internal/email/noop_test.go`<br>`frontend/e2e/invite-copy-link.spec.ts` |

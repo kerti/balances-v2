@@ -26,6 +26,7 @@ export function InviteForm() {
   const { t } = useTranslation(['settings', 'common'])
   const [email, setEmail] = useState('')
   const [result, setResult] = useState<InviteResp | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const mutation = useMutation({
     mutationFn: (emailToInvite: string) =>
@@ -35,9 +36,23 @@ export function InviteForm() {
       }),
     onSuccess: (data) => {
       setResult(data)
+      setCopied(false)
       setEmail('')
     },
   })
+
+  // The accept link is the only mail with a hard dependency, so it's always
+  // surfaced for manual sharing — the fallback when EMAIL_ENABLED=false and the
+  // invite email never goes out (ADR-0037). Best-effort: a denied clipboard
+  // permission leaves the URL visible to copy by hand.
+  async function copyAcceptUrl(url: string) {
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
 
   return (
     <Card>
@@ -85,8 +100,19 @@ export function InviteForm() {
             </p>
             <p className="text-muted-foreground break-all">
               {t('invite.acceptUrl')}{' '}
-              <code className="text-xs">{result.accept_url}</code>
+              <code className="text-xs" data-testid="invite-accept-url">
+                {result.accept_url}
+              </code>
             </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="copy-invite-link"
+              onClick={() => copyAcceptUrl(result.accept_url)}
+            >
+              {copied ? t('invite.copied') : t('invite.copyLink')}
+            </Button>
           </div>
         )}
       </CardContent>

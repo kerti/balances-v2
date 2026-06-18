@@ -18,6 +18,7 @@ var configEnvKeys = []string{
 	"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OIDC_ISSUER_URL",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
 	"SESSION_TTL", "COOKIE_SECURE",
+	"EMAIL_ENABLED",
 	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
 	"EMAIL_FROM_ADDRESS",
 }
@@ -64,6 +65,10 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.EmailFromAddress != "noreply@balances.local" {
 		t.Errorf("EmailFromAddress = %q", cfg.EmailFromAddress)
+	}
+	// Mail is on by default (ADR-0037); a self-hoster opts out with EMAIL_ENABLED=false.
+	if !cfg.EmailEnabled {
+		t.Errorf("EmailEnabled = false, want default true")
 	}
 	// With neither APP_URL nor the individual URL vars set, the split-origin dev
 	// defaults stand (Vite SPA on :5173, API on :8080).
@@ -170,6 +175,22 @@ func TestLoad_Overrides(t *testing.T) {
 	}
 	if !cfg.CookieSecure {
 		t.Errorf("CookieSecure = false, want true")
+	}
+}
+
+// TestLoad_EmailDisabled: EMAIL_ENABLED=false flips the gate that main reads to
+// wire a no-op Mailer and skip SMTP construction (ADR-0037, self-host).
+func TestLoad_EmailDisabled(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("EMAIL_ENABLED", "false")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.EmailEnabled {
+		t.Errorf("EmailEnabled = true, want false")
 	}
 }
 

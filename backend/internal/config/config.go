@@ -52,6 +52,15 @@ type Config struct {
 	SessionTTL       time.Duration `env:"SESSION_TTL" envDefault:"720h"`
 	CookieSecure     bool          `env:"COOKIE_SECURE" envDefault:"false"`
 
+	// EmailEnabled gates all outbound transactional mail (ADR-0037). The default
+	// is true, preserving current behaviour. A self-hoster who wants no mail
+	// dependency sets EMAIL_ENABLED=false: main wires a no-op Mailer and skips
+	// SMTP construction entirely, so the app boots and runs with no SMTP config.
+	// The only mail with a hard dependency — invitations — falls back to the
+	// "copy invite link" affordance on the invitation flow (the create endpoint
+	// already returns the AcceptURL); welcome and restore mails silently no-op.
+	EmailEnabled bool `env:"EMAIL_ENABLED" envDefault:"true"`
+
 	SMTPHost         string `env:"SMTP_HOST" envDefault:"localhost"`
 	SMTPPort         int    `env:"SMTP_PORT" envDefault:"1025"`
 	SMTPUsername     string `env:"SMTP_USERNAME"`

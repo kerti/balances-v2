@@ -54,7 +54,9 @@
     "submit": "Send invitation",
     "sentTo": "Invitation sent to {{email}}",
     "expires": "Expires {{when}}",
-    "acceptUrl": "Accept URL:"
+    "acceptUrl": "Accept URL:",
+    "copyLink": "Copy link",
+    "copied": "Copied!"
   },
   "data": {
     "title": "Backup",
