@@ -24,6 +24,12 @@ func TestSPAHandler(t *testing.T) {
 		{"real asset served", "/assets/app.js", "APP"},
 		{"client route falls back", "/investments/123", "INDEX"},
 		{"missing path falls back", "/nope.txt", "INDEX"},
+		// The Assets section lives at client routes under /assets/ (e.g.
+		// assets/bank-accounts in App.tsx), which collide with Vite's build-output
+		// dir. An extensionless miss there is a client route, not a stale chunk, so
+		// it must serve the SPA shell on a hard refresh — not 404 (#241).
+		{"client route under assets falls back", "/assets/bank-accounts", "INDEX"},
+		{"nested client route under assets falls back", "/assets/bank-accounts/123", "INDEX"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

@@ -3,6 +3,7 @@ package httpserver
 import (
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -120,13 +121,18 @@ func (s *Server) buildRouter() chi.Router {
 // traversal; client-route misses fall through to index.html rather than
 // leaking the error.
 //
-// One exception: a miss under /assets/ is a genuinely-absent build chunk (Vite
-// emits content-hashed bundles there), not a client route. Falling back to
-// index.html would answer 200 text/html for a stale .js request — the browser
-// then tries to parse HTML as a module ("Failed to fetch dynamically imported
-// module") and a CDN can cache the shell under the chunk URL. So missing
-// /assets/* gets a clean 404 the client can reason about (#190; pairs with the
-// #191 reload-on-chunk-error boundary).
+// One exception: a miss under /assets/ that names a file (has an extension) is
+// a genuinely-absent build chunk (Vite emits content-hashed bundles there), not
+// a client route. Falling back to index.html would answer 200 text/html for a
+// stale .js request — the browser then tries to parse HTML as a module ("Failed
+// to fetch dynamically imported module") and a CDN can cache the shell under the
+// chunk URL. So a missing /assets/<file>.<ext> gets a clean 404 the client can
+// reason about (#190; pairs with the #191 reload-on-chunk-error boundary).
+//
+// The extension check matters because the app also has *client routes* under
+// /assets/ — the Assets section (e.g. /assets/bank-accounts, App.tsx) collides
+// with Vite's build-output dir. Those are extensionless, so a hard refresh on
+// one must serve the SPA shell, not 404 (#241).
 func spaHandler(dir string) http.HandlerFunc {
 	root := filepath.Clean(dir)
 	fileServer := http.FileServer(http.Dir(root))
@@ -138,7 +144,7 @@ func spaHandler(dir string) http.HandlerFunc {
 			fileServer.ServeHTTP(w, r)
 			return
 		}
-		if strings.HasPrefix(r.URL.Path, "/assets/") {
+		if strings.HasPrefix(r.URL.Path, "/assets/") && path.Ext(r.URL.Path) != "" {
 			http.NotFound(w, r)
 			return
 		}
