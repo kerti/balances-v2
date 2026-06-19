@@ -19,8 +19,8 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.1` is
-the latest DEPLOYED** release (the M7-opening minor bump; six batched alphas preceded it on the 0.6 line)
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.2` is
+the latest DEPLOYED** release (M7 line; six batched alphas preceded it on the 0.6 line)
 on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
@@ -55,19 +55,31 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   `migrate`), `APP_URL` single-origin collapse, `EMAIL_ENABLED` no-op mailer + copy-invite-link
   fallback, Caddy/BYO-proxy TLS topologies, and the `SELF-HOSTING.md` operator guide. No migration.
   Detail in the v0.7.0-alpha.1 GitHub Release notes.
+- **v0.7.0-alpha.2** — self-host rehearsal fix tail: **multi-arch GHCR image** (amd64+arm64, #242 —
+  was amd64-only, broke arm64 `docker compose up`) and the **`/assets/*` deep-route 404 on hard
+  refresh** (#241, narrows the #190 chunk-404 to extension-bearing paths so client routes under
+  `/assets/` fall back to the SPA shell). No migration. Detail in the v0.7.0-alpha.2 Release notes.
 
 ## What's next
 
-**M6 closed (alpha.5); M7 (productization) is open (v0.7.0-alpha.1).** Next, in order:
+**M6 closed (alpha.5); M7 (productization) is open (latest deploy v0.7.0-alpha.2).** Next, in order:
 
-1. **Finish self-host #116 → close it.** The stack + docs shipped in v0.7.0-alpha.1; the only
-   remaining gate is the **fresh-VM rehearsal** (acceptance amended on #229 to a **two-run matrix**:
-   (1) localhost — first install + `EMAIL_ENABLED=false` + upgrade across an additive migration +
-   `pg_dump`→`pg_restore` roundtrip; (2) Caddy turnkey on a real domain — HTTPS + `COOKIE_SECURE=true`
-   + https redirect URI + ACME). The GHCR image is **public** out of the box (inherits from the public
-   repo — the feared private→public flip never fired). **Remaining blocker:** the **upgrade leg can't
-   run** until a 2nd tag carries an additive migration (none pending), so this cut unblocks only the
-   first-install half. Fix any doc gaps the rehearsal surfaces, then close #229 + #116.
+1. **Finish the self-host #116 rehearsal → close #229 + #116.** Stack + docs shipped (alpha.1) and the
+   arm64/deep-route fixes the rehearsal surfaced shipped (alpha.2). Acceptance on #229 is a **two-run
+   matrix**; status:
+   - **Run 1 — localhost: ✅ PASSED** (2026-06-19/20): multi-arch pull, one-shot migrate, OAuth,
+     `EMAIL_ENABLED=false` copy-invite-link (no mail), `pg_dump`→`pg_restore` roundtrip. The GHCR image
+     is **public** out of the box (inherits from the public repo — the feared private→public flip never
+     fired).
+   - **Run 2 — Caddy turnkey on a real domain: ⏳ NOT RUN** — HTTPS + `COOKIE_SECURE=true` + https
+     redirect URI + Let's Encrypt ACME. **Gated on a public VM + domain (ports 80/443).** This is the
+     cold-start resume point — the user will provide infra.
+   - **Upgrade leg: ⏳ BLOCKED** — needs a 2nd tag carrying an additive migration (none pending);
+     exercise it whenever the next migration rides a tag.
+   - **In flight:** PR **#245** (pin `COMPOSE_PROJECT_NAME` so the operator stack can't collide with
+     the in-repo dev `postgres_data` volume — a rehearsal finding) awaits merge; issue **#244** filed
+     (e2e is blind to the single-origin built-bundle serving path — why #190/#241 both shipped — plus
+     cataloguing the serving invariant; needs-triage). Both ride alpha.3.
 2. **Rest of M7 = productization.** Make it trustable by real households, not richer in domain
    features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in, irreversible
    — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
