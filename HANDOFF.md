@@ -64,11 +64,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    remaining gate is the **fresh-VM rehearsal** (acceptance amended on #229 to a **two-run matrix**:
    (1) localhost — first install + `EMAIL_ENABLED=false` + upgrade across an additive migration +
    `pg_dump`→`pg_restore` roundtrip; (2) Caddy turnkey on a real domain — HTTPS + `COOKIE_SECURE=true`
-   + https redirect URI + ACME). **Two known blockers to start it:** the first GHCR publish lands
-   **private** — flip package visibility → public (`gh api` PATCH in the GHCR-publish notes) before an
-   unauthenticated `docker compose pull` works; and the **upgrade leg can't run** until a 2nd tag
-   carries an additive migration (none pending), so this cut only unblocks the first-install half.
-   Fix any doc gaps the rehearsal surfaces, then close #229 + #116.
+   + https redirect URI + ACME). The GHCR image is **public** out of the box (inherits from the public
+   repo — the feared private→public flip never fired). **Remaining blocker:** the **upgrade leg can't
+   run** until a 2nd tag carries an additive migration (none pending), so this cut unblocks only the
+   first-install half. Fix any doc gaps the rehearsal surfaces, then close #229 + #116.
 2. **Rest of M7 = productization.** Make it trustable by real households, not richer in domain
    features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in, irreversible
    — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
