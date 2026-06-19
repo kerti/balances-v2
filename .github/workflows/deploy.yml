@@ -69,6 +69,10 @@ jobs:
         with:
           context: .
           push: true
+          # Self-hosters run on arm64 too (Apple Silicon, Raspberry Pi, ARM
+          # cloud VMs), so publish a multi-arch manifest. The Dockerfile cross-
+          # compiles per target, so no QEMU emulation is needed.
+          platforms: linux/amd64,linux/arm64
           tags: ghcr.io/kerti/balances:${{ github.ref_name }}
           # Kept in lockstep with the Fly build args above so the published
           # artifact bakes the same version/env identity into the SPA bundle.

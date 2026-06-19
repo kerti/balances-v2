@@ -5,7 +5,9 @@
 # the binary runs on a scratch-class base.
 
 # ---- web (SPA) ----
-FROM node:22 AS web
+# Built on the native build platform — the SPA bundle is architecture-agnostic,
+# so there's no reason to emulate the target arch here.
+FROM --platform=$BUILDPLATFORM node:22 AS web
 WORKDIR /web
 # App identity baked into the bundle (issue #75). The deploy workflow passes the
 # release tag and target env as build args; Vite picks up VITE_*-prefixed vars
@@ -20,13 +22,19 @@ COPY frontend/ ./
 RUN npm run build   # -> /web/dist
 
 # ---- build (Go) ----
-FROM golang:1.26 AS build
+# Run the toolchain on the native build platform and cross-compile to the
+# target arch (TARGETOS/TARGETARCH are supplied by buildx per --platform). Go
+# cross-compiles cleanly with CGO off, so this is far faster than emulating the
+# target under QEMU, and it produces a multi-arch image (amd64 + arm64).
+FROM --platform=$BUILDPLATFORM golang:1.26 AS build
+ARG TARGETOS
+ARG TARGETARCH
 WORKDIR /src
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
 # -tags timetzdata embeds the zoneinfo DB (distroless static has none).
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -tags timetzdata \
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags timetzdata \
     -ldflags="-s -w" -o /out/balances ./cmd/balances
 
 # ---- run ----
