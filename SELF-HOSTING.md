@@ -41,6 +41,13 @@ when something goes wrong.
   curl -fsSL  "$base/.env.example" -o .env
   ```
 
+  Use a directory **outside any clone of the source repository**. The stack pins
+  `COMPOSE_PROJECT_NAME=balances` in `.env`, so it owns an isolated `balances_*`
+  namespace regardless of where you run it — but running it from inside the
+  checkout (which also carries a `docker-compose.dev.yml` for development) is
+  asking for confusion. A dedicated directory keeps the operator stack cleanly
+  separate.
+
 - A pinned release tag. The image is published to the GitHub Container Registry as
   `ghcr.io/kerti/balances:<tag>` (e.g. `v1.0.0`). **No `latest` tag is published** — you always pin a
   real version so upgrades are deliberate. Browse releases at
