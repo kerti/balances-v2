@@ -19,8 +19,9 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.6.0-alpha.5` is
-the latest DEPLOYED** release (five batched alphas: alpha.1 → … → alpha.5) on the `preview` environment
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.1` is
+the latest DEPLOYED** release (the M7-opening minor bump; six batched alphas preceded it on the 0.6 line)
+on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -49,26 +50,29 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   bundle (#191), 100%-stacked tooltip band labels (#214), and a fix tail — snapshot-list refresh on
   manual terminal flip (#56), `/assets/*` 404 vs SPA-fallback (#190), restore non-JSON error surfacing
   (#185), SMTP-From CR/LF hardening (#195). No migration. Detail in the alpha.5 GitHub Release notes.
+- **v0.7.0-alpha.1** — **opens M7 (productization).** The whole self-host stack (#116, ADR-0037,
+  slices #224–229): pull-based `docker-compose.yml` (published GHCR image + Postgres + one-shot
+  `migrate`), `APP_URL` single-origin collapse, `EMAIL_ENABLED` no-op mailer + copy-invite-link
+  fallback, Caddy/BYO-proxy TLS topologies, and the `SELF-HOSTING.md` operator guide. No migration.
+  Detail in the v0.7.0-alpha.1 GitHub Release notes.
 
 ## What's next
 
-**M6 is closed (alpha.5).** Next, in order:
+**M6 closed (alpha.5); M7 (productization) is open (v0.7.0-alpha.1).** Next, in order:
 
-1. **M7 = productization → `v0.7.0-alpha.1`** (minor bump = milestone boundary, ADR-0033). Make it
-   trustable by real households, not richer in domain features. Lead with **self-host #116** (the
-   bus-factor answer — **prioritized over any net-new feature**), a non-disposable env, **#158**
-   onboarding (invite-vs-found at first sign-in, irreversible — needs grill+ADR), production Resend
-   domain, **#93** landing. See ROADMAP M7. **Self-host #116 is now grilled + designed (ADR-0037)
-   and sliced into #224–229**: #224 (`APP_URL` single-origin collapse) **DONE**, #225 (GHCR
-   publish `ghcr.io/kerti/balances`) **DONE**, #226 (`EMAIL_ENABLED` no-op mailer + copy-invite-link
-   fallback, also #223's first flag) **DONE**, #227 (operator compose stack: pull-based
-   `app`/`postgres`/one-shot `migrate`, dev scaffolding split to `docker-compose.dev.yml`,
-   self-host `.env.example`) **DONE**, #228 (Caddy/BYO-proxy + bundled-TLS profile) **DONE**,
-   #229 (`SELF-HOSTING.md`: three-topology quickstart, OAuth-client walkthrough, upgrade contract,
-   pg_dump/restore, troubleshooting) **doc written** — the only remaining gate is the **fresh-VM
-   rehearsal** (first install + `EMAIL_ENABLED=false` path + an upgrade across an additive migration;
-   fix any doc gaps it surfaces). With that, self-host #116 closes. Targets v1.0.0.
-2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
+1. **Finish self-host #116 → close it.** The stack + docs shipped in v0.7.0-alpha.1; the only
+   remaining gate is the **fresh-VM rehearsal** (acceptance amended on #229 to a **two-run matrix**:
+   (1) localhost — first install + `EMAIL_ENABLED=false` + upgrade across an additive migration +
+   `pg_dump`→`pg_restore` roundtrip; (2) Caddy turnkey on a real domain — HTTPS + `COOKIE_SECURE=true`
+   + https redirect URI + ACME). **Two known blockers to start it:** the first GHCR publish lands
+   **private** — flip package visibility → public (`gh api` PATCH in the GHCR-publish notes) before an
+   unauthenticated `docker compose pull` works; and the **upgrade leg can't run** until a 2nd tag
+   carries an additive migration (none pending), so this cut only unblocks the first-install half.
+   Fix any doc gaps the rehearsal surfaces, then close #229 + #116.
+2. **Rest of M7 = productization.** Make it trustable by real households, not richer in domain
+   features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in, irreversible
+   — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
+3. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
 **Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 flat depth-1
