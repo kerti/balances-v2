@@ -13,7 +13,7 @@ require (
 	github.com/pressly/goose/v3 v3.27.1
 	github.com/shopspring/decimal v1.4.0
 	github.com/testcontainers/testcontainers-go v0.43.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.42.0
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.43.0
 	github.com/xuri/excelize/v2 v2.10.1
 	golang.org/x/oauth2 v0.36.0
 )
