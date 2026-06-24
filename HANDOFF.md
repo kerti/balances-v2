@@ -86,8 +86,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 3. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
-**Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 flat depth-1
-subdomain scheme (drop `-v2`), #216 single Resend sending domain across envs, #217 demo readiness
+**Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 subdomain scheme
+— **decided: nested product subtree** (`app.balances.<domain>` prod unmarked, `balances.<domain>`
+landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview migrated, issue stays open
+for prod/demo standup. #216 single Resend sending domain — **DONE & closed**. #217 demo readiness
 (email sink / guest auth / nightly reset / OAuth publish), #218 Neon prod-project isolation + backup
 retention. Feeds M7.
 

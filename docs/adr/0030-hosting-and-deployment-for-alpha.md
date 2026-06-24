@@ -7,6 +7,23 @@ PostgreSQL on **Neon**, and mail on **Resend** (already chosen in [[adr-0020]]).
 start — `preview`**; the developer's own machine serves as `dev` via a Cloudflare Tunnel, and
 `demo`/`production` are provisioned only when a real RC / production ship exists.
 
+## Amended (2026-06-24)
+
+The custom-domain plan below is revised:
+
+- **All envs stay Cloudflare DNS-only — never proxied.** Product hosts are a nested subtree
+  (`preview.balances.<domain>`, `app.balances.<domain>` for prod, `balances.<domain>` landing). CF
+  free Universal SSL only covers a depth-1 wildcard, **not** depth-2 `*.balances.<domain>`; proxying
+  a nested host would need paid Advanced Certificate Manager. So TLS is Fly origin Let's Encrypt
+  per-host everywhere — no edge CDN/WAF, and no `/assets/*` cache rule. The "Cloudflare *in front*
+  of demo/prod" paragraph and its per-env `FRONTEND_URL`/`BACKEND_URL`/`OAUTH_REDIRECT_URL` note
+  below are superseded accordingly.
+- **OAuth/origin URLs derive from a single `APP_URL`** ([[adr-0037]]); keep `FRONTEND_URL` /
+  `BACKEND_URL` / `OAUTH_REDIRECT_URL` **unset** so `applyURLDefaults` can't override the
+  `APP_URL`-derived origin (this bit the preview-host migration).
+- **One shared Resend sending domain** across envs (`mail.<domain>`), envs distinguished by
+  `EMAIL_FROM` local-part/display-name — not a Resend domain per env.
+
 ## Why now
 
 [[adr-0013]] packaged the app as portable Docker and explicitly deferred the hosting target "until
