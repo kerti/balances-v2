@@ -109,6 +109,13 @@ const (
 	// rejection.
 	CodeCannotInviteSelf Code = "CANNOT_INVITE_SELF"
 
+	// CodeInvitationNoLongerValid is a 409 at the onboarding gate when the
+	// chosen invitation is no longer pending for the verified email — used or
+	// expired between the gate's read and the commit (ADR-0038 TOCTOU
+	// re-validation). The SPA refreshes the gate rather than treating it as a
+	// hard error.
+	CodeInvitationNoLongerValid Code = "INVITATION_NO_LONGER_VALID"
+
 	// CodeTagNameExists maps repo.ErrTagNameExists -> 409 — a Tag with that
 	// name (case-insensitive) already exists in the household.
 	CodeTagNameExists Code = "TAG_NAME_EXISTS"

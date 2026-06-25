@@ -100,8 +100,8 @@ func (h *Handlers) onboardingHandshake(w http.ResponseWriter, r *http.Request) (
 	return hs, true
 }
 
-// onboardingInvite is a joinable Household row on the gate. Empty in the
-// founder slice (#267); populated by the pending-invite lookup in #268.
+// onboardingInvite is a joinable Household row on the gate — one per distinct
+// Household the verified email has a pending invitation to (ADR-0038).
 type onboardingInvite struct {
 	InvitationID  uuid.UUID `json:"invitation_id"`
 	HouseholdID   uuid.UUID `json:"household_id"`
@@ -127,26 +127,61 @@ func (h *Handlers) handleOnboardingOptions(w http.ResponseWriter, r *http.Reques
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return
 	}
+
+	rows, err := h.q.ListPendingInvitationsForEmail(r.Context(), hs.Email)
+	if err != nil {
+		slog.Error("list pending invitations", "err", err)
+		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+		return
+	}
+	// A clicked `?invite=` link pre-highlights its Household — a hint, not the
+	// decision. Resolve the hinted invitation to its Household (it may itself
+	// have been deduped out in favour of a more recent invite to the same
+	// Household, so match on Household, not the exact invitation id).
+	var hintHousehold *uuid.UUID
+	if hs.HintInvitationID != nil {
+		if invite, err := h.q.GetInvitationByID(r.Context(), *hs.HintInvitationID); err == nil {
+			hintHousehold = &invite.HouseholdID
+		}
+	}
+
+	invites := make([]onboardingInvite, 0, len(rows))
+	for _, row := range rows {
+		invites = append(invites, onboardingInvite{
+			InvitationID:  row.InvitationID,
+			HouseholdID:   row.HouseholdID,
+			HouseholdName: row.HouseholdName,
+			InviterName:   row.InviterName,
+			Hint:          hintHousehold != nil && *hintHousehold == row.HouseholdID,
+		})
+	}
+
 	resp := onboardingOptionsResponse{
 		Email:         hs.Email,
 		DisplayName:   hs.DisplayName,
 		SuggestedName: hs.DisplayName + "'s Household",
-		Invitations:   []onboardingInvite{},
+		Invitations:   invites,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
 type onboardingChoiceReq struct {
-	// Found commits the deliberate founder path. Join + InvitationID land in
-	// the next slice (#268); this slice honours only the founder choice.
-	Found       bool    `json:"found"`
-	DisplayName *string `json:"display_name"`
+	// Exactly one of Found / Join is expected. Found commits the deliberate
+	// founder path (optional DisplayName household-name override); Join accepts
+	// a pending invitation identified by InvitationID (re-validated server-side
+	// against the handshake's verified email).
+	Found        bool       `json:"found"`
+	DisplayName  *string    `json:"display_name"`
+	Join         bool       `json:"join"`
+	InvitationID *uuid.UUID `json:"invitation_id"`
 }
 
 // handleOnboardingChoice commits the gate decision: it creates the account from
-// the handshake claims, issues the real session, and deletes the handshake.
-// This slice (#267) implements only the founder branch.
+// the handshake claims (founder → new Household; join → the invited Household
+// after a TOCTOU re-validation), issues the real session, and deletes the
+// handshake. The client's claim of which invitation is never trusted — the
+// chosen invite is re-checked against the verified email at commit (ADR-0038).
 func (h *Handlers) handleOnboardingChoice(w http.ResponseWriter, r *http.Request) {
 	hs, ok := h.onboardingHandshake(w, r)
 	if !ok {
@@ -159,9 +194,13 @@ func (h *Handlers) handleOnboardingChoice(w http.ResponseWriter, r *http.Request
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
 		return
 	}
+
+	if req.Join {
+		h.commitJoin(w, r, hs, req.InvitationID)
+		return
+	}
 	if !req.Found {
-		// Only the founder choice exists in this slice; anything else is a
-		// malformed request until the join path arrives (#268).
+		// Neither a join nor a found — a malformed choice.
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
 			"field": "found",
 			"rule":  "required",
@@ -195,15 +234,71 @@ func (h *Handlers) handleOnboardingChoice(w http.ResponseWriter, r *http.Request
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
 	}
+	h.finishOnboarding(w, r, hs.ID, user.ID)
+}
 
-	// The handshake has served its purpose; remove it before issuing the
-	// session so an interrupted commit can't leave a reusable gate token.
-	if err := h.q.DeleteOnboardingHandshake(r.Context(), hs.ID); err != nil {
+// commitJoin accepts a pending invitation at the gate. It re-validates the
+// chosen invitation server-side against the handshake's verified email (TOCTOU,
+// ADR-0038) — never trusting the client's id alone. If the invite is no longer
+// valid (used/expired between the gate's read and this write, or addressed to a
+// different email) it answers 409 so the SPA refreshes the gate; otherwise it
+// binds the new User to that Household, marks the invitation used, and finishes.
+func (h *Handlers) commitJoin(w http.ResponseWriter, r *http.Request, hs db.OnboardingHandshake, invitationID *uuid.UUID) {
+	if invitationID == nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
+			"field": "invitation_id",
+			"rule":  "required",
+		})
+		return
+	}
+	invite, err := h.q.GetValidInvitationForEmail(r.Context(), db.GetValidInvitationForEmailParams{
+		ID:           *invitationID,
+		InvitedEmail: hs.Email,
+	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Stale/used/expired or wrong email — bounce to a refreshed gate.
+			httperr.Write(w, http.StatusConflict, httperr.CodeInvitationNoLongerValid, nil)
+			return
+		}
+		slog.Error("revalidate invitation", "err", err)
+		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+		return
+	}
+
+	user, err := h.q.CreateUser(r.Context(), db.CreateUserParams{
+		HouseholdID: invite.HouseholdID,
+		DisplayName: hs.DisplayName,
+		Email:       hs.Email,
+		GoogleSub:   hs.GoogleSub,
+		Locale:      hs.SeedLocale,
+		TimeZone:    "Asia/Jakarta",
+		PictureUrl:  hs.PictureUrl,
+		CreatedBy:   &invite.CreatedBy,
+	})
+	if err != nil {
+		slog.Error("onboarding join household", "err", err)
+		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+		return
+	}
+	if err := h.q.MarkInvitationUsed(r.Context(), invite.ID); err != nil {
+		slog.Error("mark invitation used", "err", err)
+		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+		return
+	}
+	h.finishOnboarding(w, r, hs.ID, user.ID)
+}
+
+// finishOnboarding consumes the handshake and issues the real session, shared
+// by the founder and join commits. The handshake is deleted before the session
+// is issued so an interrupted commit can't leave a reusable gate token.
+func (h *Handlers) finishOnboarding(w http.ResponseWriter, r *http.Request, handshakeID string, userID uuid.UUID) {
+	if err := h.q.DeleteOnboardingHandshake(r.Context(), handshakeID); err != nil {
 		slog.Error("delete onboarding handshake", "err", err)
 	}
 	h.clearOnboardingCookie(w)
 
-	if err := h.IssueSession(r.Context(), w, user.ID, r.UserAgent()); err != nil {
+	if err := h.IssueSession(r.Context(), w, userID, r.UserAgent()); err != nil {
 		slog.Error("issue session", "err", err)
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return

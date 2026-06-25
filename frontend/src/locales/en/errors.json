@@ -48,6 +48,7 @@
       "gt": "must be greater than zero",
       "iso4217": "must be a valid currency code",
       "oneof": "is not one of the allowed values"
-    }
+    },
+    "INVITATION_NO_LONGER_VALID": "That invitation is no longer available. Please choose again."
   }
 }

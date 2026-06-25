@@ -51,6 +51,28 @@ func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationPara
 	return i, err
 }
 
+const getInvitationByID = `-- name: GetInvitationByID :one
+SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+FROM household_invitations
+WHERE id = $1
+`
+
+func (q *Queries) GetInvitationByID(ctx context.Context, id uuid.UUID) (HouseholdInvitation, error) {
+	row := q.db.QueryRow(ctx, getInvitationByID, id)
+	var i HouseholdInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.InvitedEmail,
+		&i.Token,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.UsedAt,
+	)
+	return i, err
+}
+
 const getInvitationByToken = `-- name: GetInvitationByToken :one
 SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
 FROM household_invitations
@@ -71,6 +93,97 @@ func (q *Queries) GetInvitationByToken(ctx context.Context, token string) (House
 		&i.UsedAt,
 	)
 	return i, err
+}
+
+const getValidInvitationForEmail = `-- name: GetValidInvitationForEmail :one
+SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+FROM household_invitations
+WHERE id = $1
+  AND invited_email = $2
+  AND used_at IS NULL
+  AND expires_at > now()
+`
+
+type GetValidInvitationForEmailParams struct {
+	ID           uuid.UUID `json:"id"`
+	InvitedEmail string    `json:"invited_email"`
+}
+
+// TOCTOU re-validation at commit (ADR-0038): the chosen invitation must still
+// be pending AND addressed to the handshake's verified email. Re-checking the
+// email here (not just the id) is the forwarded-link guard — the client's claim
+// of which invitation is never trusted.
+func (q *Queries) GetValidInvitationForEmail(ctx context.Context, arg GetValidInvitationForEmailParams) (HouseholdInvitation, error) {
+	row := q.db.QueryRow(ctx, getValidInvitationForEmail, arg.ID, arg.InvitedEmail)
+	var i HouseholdInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.InvitedEmail,
+		&i.Token,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.UsedAt,
+	)
+	return i, err
+}
+
+const listPendingInvitationsForEmail = `-- name: ListPendingInvitationsForEmail :many
+SELECT invitation_id, household_id, household_name, inviter_name
+FROM (
+    SELECT DISTINCT ON (hi.household_id)
+        hi.id                                 AS invitation_id,
+        hi.household_id                       AS household_id,
+        h.display_name                        AS household_name,
+        COALESCE(u.nickname, u.display_name)  AS inviter_name,
+        hi.created_at                         AS created_at
+    FROM household_invitations hi
+    JOIN households h ON h.id = hi.household_id
+    JOIN users u ON u.id = hi.created_by
+    WHERE hi.invited_email = $1
+      AND hi.used_at IS NULL
+      AND hi.expires_at > now()
+    ORDER BY hi.household_id, hi.created_at DESC
+) dedup
+ORDER BY created_at DESC
+`
+
+type ListPendingInvitationsForEmailRow struct {
+	InvitationID  uuid.UUID `json:"invitation_id"`
+	HouseholdID   uuid.UUID `json:"household_id"`
+	HouseholdName string    `json:"household_name"`
+	InviterName   string    `json:"inviter_name"`
+}
+
+// The onboarding gate's join rows (ADR-0038): pending invitations addressed to
+// the verified email, one row per distinct Household (same-Household
+// double-invites deduped, keeping the most-recent inviter), ordered
+// most-recently-invited first. Keyed by the *verified* email, never by which
+// link was clicked — so a forwarded link can't surface someone else's invites.
+func (q *Queries) ListPendingInvitationsForEmail(ctx context.Context, invitedEmail string) ([]ListPendingInvitationsForEmailRow, error) {
+	rows, err := q.db.Query(ctx, listPendingInvitationsForEmail, invitedEmail)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingInvitationsForEmailRow
+	for rows.Next() {
+		var i ListPendingInvitationsForEmailRow
+		if err := rows.Scan(
+			&i.InvitationID,
+			&i.HouseholdID,
+			&i.HouseholdName,
+			&i.InviterName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const markInvitationUsed = `-- name: MarkInvitationUsed :exec

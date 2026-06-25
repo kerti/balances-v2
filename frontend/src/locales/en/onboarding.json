@@ -1,6 +1,21 @@
 {
   "title": "Welcome to Balances",
   "subtitle": "Let's set up where your household's finances live.",
+  "invited": {
+    "title": "You've been invited",
+    "subtitle": "Join a household you were invited to, or start your own.",
+    "join": "Join {{household}}",
+    "invitedBy": "invited by {{inviter}}",
+    "joining": "Joining…",
+    "startOwnInstead": "Start your own instead",
+    "staleInvite": "That invitation is no longer available — we've refreshed your options."
+  },
+  "confirmFound": {
+    "title": "Start your own household?",
+    "descriptionOne": "You were invited to {{household}}. Start your own instead? This can't be undone — a person can belong to only one household.",
+    "descriptionMany": "You have pending invitations. Start your own instead? This can't be undone — a person can belong to only one household.",
+    "confirm": "Start my own"
+  },
   "founder": {
     "title": "Start your own household",
     "description": "Create a fresh household. You can invite the rest of your household later from Settings.",

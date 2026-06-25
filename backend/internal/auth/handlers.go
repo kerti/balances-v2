@@ -212,27 +212,20 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case errors.Is(err, pgx.ErrNoRows):
-		// Brand-new Google identity. With no invite token, the founder-vs-join
-		// decision moves *after* identity verification (ADR-0038): record a
-		// short-lived onboarding handshake and bounce to the SPA's gate instead
-		// of silently founding a household — no users/households row, no session
-		// yet. The invited-link path still joins directly here; moving it into
-		// the gate is the next slice (#268).
-		if inviteToken == "" {
-			if err := h.beginOnboarding(ctx, w, claims, resolveSeedLocale(localeHint), nil); err != nil {
-				slog.Error("begin onboarding", "err", err)
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-			http.Redirect(w, r, h.frontendURL+"/onboarding", http.StatusFound)
+		// Brand-new Google identity. The founder-vs-join decision moves *after*
+		// identity verification to an explicit gate (ADR-0038): record a
+		// short-lived onboarding handshake and bounce to the SPA instead of
+		// writing anything — no users/households row, no session yet. A clicked
+		// `?invite=` link degrades from *the decision* to a pre-selection hint;
+		// the gate's email-scoped lookup is authoritative.
+		hint := h.resolveInviteHint(ctx, inviteToken, claims.Email)
+		if err := h.beginOnboarding(ctx, w, claims, resolveSeedLocale(localeHint), hint); err != nil {
+			slog.Error("begin onboarding", "err", err)
+			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
-		user, err = h.bootstrapNewUser(ctx, claims, inviteToken, resolveSeedLocale(localeHint))
-		if err != nil {
-			slog.Error("bootstrap new user", "err", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
+		http.Redirect(w, r, h.frontendURL+"/onboarding", http.StatusFound)
+		return
 	default:
 		slog.Error("lookup user by google_sub", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -294,50 +287,29 @@ func equalStringPtr(a, b *string) bool {
 	return *a == *b
 }
 
-// bootstrapNewUser creates either a founder (new household + user, no
-// invitation) or a household member (existing household referenced by a valid
-// invitation). The invitation path verifies the Google-supplied email matches
-// the invitation's invited_email (per ADR-0017) so a forwarded link can't be
-// used by an unintended account.
-func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, inviteToken, seedLocale string) (db.User, error) {
+// resolveInviteHint maps a clicked `?invite=` token to the invitation it refers
+// to, but *only* when that invitation is still a valid pending invite for the
+// verified email — in which case its id pre-highlights that Household at the
+// gate (ADR-0038). An empty, unknown, used, expired, or wrong-email token
+// yields no hint (nil): the link degrades silently and the gate's email-scoped
+// lookup remains the authority. Never an error path — a bad hint just isn't a
+// hint.
+func (h *Handlers) resolveInviteHint(ctx context.Context, inviteToken, email string) *uuid.UUID {
 	if inviteToken == "" {
-		return h.createFounder(ctx, c, seedLocale, "")
+		return nil
 	}
-
 	invite, err := h.q.GetInvitationByToken(ctx, inviteToken)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return db.User{}, errors.New("invitation not found")
-		}
-		return db.User{}, err
+		return nil
 	}
-	if invite.UsedAt.Valid {
-		return db.User{}, errors.New("invitation already used")
+	if invite.InvitedEmail != email || invite.UsedAt.Valid {
+		return nil
 	}
 	if !invite.ExpiresAt.Valid || invite.ExpiresAt.Time.Before(time.Now()) {
-		return db.User{}, errors.New("invitation expired")
+		return nil
 	}
-	if c.Email != invite.InvitedEmail {
-		return db.User{}, errors.New("invitation email does not match google account")
-	}
-
-	user, err := h.q.CreateUser(ctx, db.CreateUserParams{
-		HouseholdID: invite.HouseholdID,
-		DisplayName: c.Name,
-		Email:       c.Email,
-		GoogleSub:   c.Sub,
-		Locale:      seedLocale,
-		TimeZone:    "Asia/Jakarta",
-		PictureUrl:  nullableString(c.Picture),
-		CreatedBy:   &invite.CreatedBy,
-	})
-	if err != nil {
-		return db.User{}, err
-	}
-	if err := h.q.MarkInvitationUsed(ctx, invite.ID); err != nil {
-		return db.User{}, err
-	}
-	return user, nil
+	id := invite.ID
+	return &id
 }
 
 // createFounder mints a new Household + User from verified Google claims. The

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -197,10 +196,19 @@ func TestHandleCallback_NewIdentityBeginsOnboarding(t *testing.T) {
 	}
 }
 
-// covers: INV-AUTH-07
-func TestHandleCallback_InvitedUser(t *testing.T) {
+// covers: INV-AUTH-12
+// A clicked invite link no longer joins silently in the callback (ADR-0038): a
+// brand-new invited identity is routed through the handshake + gate like every
+// other first sign-in, with the valid invitation recorded as the pre-selection
+// hint. No user is created and the invitation stays unused until the gate
+// commits a join (TestOnboardingChoice_Join).
+func TestHandleCallback_InvitedIdentityBeginsOnboarding(t *testing.T) {
 	h := newAuthHarness(t)
 	token := mustSeedInvitation(t, h, "invited2@example.com", time.Now().Add(24*time.Hour))
+	invite, err := h.q.GetInvitationByToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("GetInvitationByToken: %v", err)
+	}
 
 	h.installStubOAuth(&googleClaims{
 		Sub:           "new-google-sub-invited",
@@ -218,47 +226,72 @@ func TestHandleCallback_InvitedUser(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("status: want 302, got %d (body: %s)", rec.Code, rec.Body.String())
 	}
-
-	user, err := h.q.GetUserByGoogleSub(context.Background(), "new-google-sub-invited")
-	if err != nil {
-		t.Fatalf("GetUserByGoogleSub: %v", err)
-	}
-	if user.HouseholdID != h.user.HouseholdID {
-		t.Errorf("invited user should join harness household; want %s, got %s",
-			h.user.HouseholdID, user.HouseholdID)
+	if loc := rec.Header().Get("Location"); loc != h.h.frontendURL+"/onboarding" {
+		t.Errorf("redirect: want %q, got %q", h.h.frontendURL+"/onboarding", loc)
 	}
 
-	// Invitation should be marked used.
+	// No account created and the invitation is untouched until the gate commits.
+	if _, err := h.q.GetUserByGoogleSub(context.Background(), "new-google-sub-invited"); err == nil {
+		t.Error("expected no user row before the gate commits a join")
+	}
 	inv, err := h.q.GetInvitationByToken(context.Background(), token)
 	if err != nil {
 		t.Fatalf("GetInvitationByToken: %v", err)
 	}
-	if !inv.UsedAt.Valid {
-		t.Error("expected invitation to be marked used")
+	if inv.UsedAt.Valid {
+		t.Error("invitation should not be consumed at the callback")
+	}
+
+	// The valid clicked link is recorded as the handshake's pre-selection hint.
+	hsCookie := findCookie(rec, onboardingCookieName)
+	if hsCookie == nil || hsCookie.Value == "" {
+		t.Fatal("expected onboarding handshake cookie")
+	}
+	hs, err := h.q.GetOnboardingHandshake(context.Background(), hsCookie.Value)
+	if err != nil {
+		t.Fatalf("GetOnboardingHandshake: %v", err)
+	}
+	if hs.HintInvitationID == nil || *hs.HintInvitationID != invite.ID {
+		t.Errorf("hint_invitation_id: want %s, got %v", invite.ID, hs.HintInvitationID)
 	}
 }
 
-// covers: INV-AUTH-06
-func TestHandleCallback_InvitationError(t *testing.T) {
+// covers: INV-AUTH-08
+// A forwarded/invalid invite token degrades to no hint rather than blocking the
+// gate (ADR-0038): a token addressed to a different email leaves the handshake
+// hint-less, and the gate's email-scoped lookup never surfaces it. The identity
+// still reaches the gate (it can always found its own).
+func TestHandleCallback_ForwardedInviteTokenIsNoHint(t *testing.T) {
 	h := newAuthHarness(t)
+	// Invitation addressed to someone else; this identity clicked a forwarded link.
+	token := mustSeedInvitation(t, h, "intended@example.com", time.Now().Add(24*time.Hour))
+
 	h.installStubOAuth(&googleClaims{
 		Sub:           "new-google-sub-x",
-		Email:         "x@example.com",
+		Email:         "imposter@example.com",
 		EmailVerified: true,
 		Name:          "X",
 	}, nil)
 
 	req := callbackRequest("s", "the-code")
 	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "s"})
-	req.AddCookie(&http.Cookie{Name: oauthInviteCookieName, Value: "definitely-not-a-token"})
+	req.AddCookie(&http.Cookie{Name: oauthInviteCookieName, Value: token})
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusBadRequest {
-		t.Fatalf("status: want 400, got %d (body: %s)", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status: want 302, got %d (body: %s)", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "invitation") {
-		t.Errorf("body should mention 'invitation', got %q", rec.Body.String())
+	hsCookie := findCookie(rec, onboardingCookieName)
+	if hsCookie == nil || hsCookie.Value == "" {
+		t.Fatal("expected onboarding handshake cookie")
+	}
+	hs, err := h.q.GetOnboardingHandshake(context.Background(), hsCookie.Value)
+	if err != nil {
+		t.Fatalf("GetOnboardingHandshake: %v", err)
+	}
+	if hs.HintInvitationID != nil {
+		t.Errorf("a wrong-email token must not become a hint; got %v", hs.HintInvitationID)
 	}
 }
 

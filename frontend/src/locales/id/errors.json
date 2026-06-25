@@ -48,6 +48,7 @@
       "gt": "harus lebih besar dari nol",
       "iso4217": "harus berupa kode mata uang yang valid",
       "oneof": "bukan salah satu nilai yang diperbolehkan"
-    }
+    },
+    "INVITATION_NO_LONGER_VALID": "Undangan itu sudah tidak tersedia. Silakan pilih kembali."
   }
 }

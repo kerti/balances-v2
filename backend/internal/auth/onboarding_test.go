@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -18,17 +19,25 @@ import (
 // Bypasses the OAuth callback so tests control expires_at precisely.
 func mustBeginHandshake(t *testing.T, h *authHarness, sub, email, name string, expiresAt time.Time) string {
 	t.Helper()
+	return mustBeginHandshakeWithHint(t, h, sub, email, name, expiresAt, nil)
+}
+
+// mustBeginHandshakeWithHint is mustBeginHandshake with an optional clicked-link
+// pre-selection hint (hint_invitation_id).
+func mustBeginHandshakeWithHint(t *testing.T, h *authHarness, sub, email, name string, expiresAt time.Time, hint *uuid.UUID) string {
+	t.Helper()
 	token, err := randomSessionID()
 	if err != nil {
 		t.Fatalf("randomSessionID: %v", err)
 	}
 	_, err = h.q.CreateOnboardingHandshake(context.Background(), db.CreateOnboardingHandshakeParams{
-		ID:          token,
-		GoogleSub:   sub,
-		Email:       email,
-		DisplayName: name,
-		SeedLocale:  "en-GB",
-		ExpiresAt:   pgtype.Timestamptz{Time: expiresAt, Valid: true},
+		ID:               token,
+		GoogleSub:        sub,
+		Email:            email,
+		DisplayName:      name,
+		SeedLocale:       "en-GB",
+		HintInvitationID: hint,
+		ExpiresAt:        pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
 	if err != nil {
 		t.Fatalf("CreateOnboardingHandshake: %v", err)

@@ -42,8 +42,10 @@ func TestCreateInvitation_AcceptURLCarriesInviterLocale(t *testing.T) {
 
 // covers: INV-AUTH-10
 // An invited member's locale is seeded from the oauth_locale hint exactly like a
-// founder's (the id-ID hard-code on the invited path is gone), falling back to
-// en-GB when the hint is absent.
+// founder's, falling back to en-GB when the hint is absent. Under ADR-0038 the
+// invited path runs through the gate: the callback captures the hint into the
+// handshake's seed_locale, and the join commit applies it at account birth —
+// asserted end-to-end here.
 func TestHandleCallback_InvitedUserLocaleSeed(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -60,6 +62,10 @@ func TestHandleCallback_InvitedUserLocaleSeed(t *testing.T) {
 			h := newAuthHarness(t)
 			email := "invited-locale-" + string(rune('a'+i)) + "@example.com"
 			token := mustSeedInvitation(t, h, email, time.Now().Add(24*time.Hour))
+			invite, err := h.q.GetInvitationByToken(context.Background(), token)
+			if err != nil {
+				t.Fatalf("GetInvitationByToken: %v", err)
+			}
 
 			h.installStubOAuth(&googleClaims{
 				Sub:           "invited-locale-sub-" + string(rune('a'+i)),
@@ -80,6 +86,15 @@ func TestHandleCallback_InvitedUserLocaleSeed(t *testing.T) {
 			if rec.Code != http.StatusFound {
 				t.Fatalf("status: want 302, got %d (body: %s)", rec.Code, rec.Body.String())
 			}
+			hsCookie := findCookie(rec, onboardingCookieName)
+			if hsCookie == nil || hsCookie.Value == "" {
+				t.Fatal("expected onboarding handshake cookie")
+			}
+
+			// Commit the join at the gate; the seeded locale is applied at birth.
+			commit := h.onboardingRequest(t, "POST", "/onboarding/choice", hsCookie.Value,
+				`{"join":true,"invitation_id":"`+invite.ID.String()+`"}`)
+			requireStatus(t, commit, http.StatusNoContent)
 
 			user, err := h.q.GetUserByGoogleSub(context.Background(),
 				"invited-locale-sub-"+string(rune('a'+i)))

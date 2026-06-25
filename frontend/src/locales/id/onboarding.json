@@ -1,6 +1,21 @@
 {
   "title": "Selamat datang di Balances",
   "subtitle": "Mari siapkan tempat keuangan rumah tangga Anda.",
+  "invited": {
+    "title": "Anda telah diundang",
+    "subtitle": "Gabung ke rumah tangga yang mengundang Anda, atau mulai milik Anda sendiri.",
+    "join": "Gabung ke {{household}}",
+    "invitedBy": "diundang oleh {{inviter}}",
+    "joining": "Bergabung…",
+    "startOwnInstead": "Mulai milik Anda sendiri",
+    "staleInvite": "Undangan itu sudah tidak tersedia — pilihan Anda telah kami perbarui."
+  },
+  "confirmFound": {
+    "title": "Mulai rumah tangga Anda sendiri?",
+    "descriptionOne": "Anda diundang ke {{household}}. Mulai milik Anda sendiri? Tindakan ini tidak dapat dibatalkan — satu orang hanya dapat tergabung dalam satu rumah tangga.",
+    "descriptionMany": "Anda memiliki undangan yang tertunda. Mulai milik Anda sendiri? Tindakan ini tidak dapat dibatalkan — satu orang hanya dapat tergabung dalam satu rumah tangga.",
+    "confirm": "Mulai milik saya"
+  },
   "founder": {
     "title": "Mulai rumah tangga Anda sendiri",
     "description": "Buat rumah tangga baru. Anda dapat mengundang anggota lain nanti dari Pengaturan.",
