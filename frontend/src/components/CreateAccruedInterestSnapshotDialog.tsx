@@ -111,6 +111,16 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
     mutation.reset()
   }
 
+  // Re-seed the form from the *current* couponDisposition on each open. The
+  // dialog stays mounted, so the lazy useState initializer can't reflect a
+  // disposition the user changed after mount (e.g. editing the bond's
+  // disposition on the detail screen); seeding here keeps the accrued default
+  // (#66 pivot) in sync. The carryover path seeds its own form and bypasses this.
+  function openFresh() {
+    setForm(emptyForm(couponDisposition))
+    setOpen(true)
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault()
     mutation.mutate(
@@ -129,7 +139,7 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+    <Dialog open={open} onOpenChange={(o) => (o ? openFresh() : close())}>
       {carryover && (
         <Button
           type="button"
