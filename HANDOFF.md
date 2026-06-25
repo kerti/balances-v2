@@ -74,9 +74,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 - **Self-host #116 + #229 — ✅ DONE** (closed 2026-06-25). Full rehearsal matrix passed: localhost,
   Caddy turnkey on a real domain, **upgrade-across-migration** (`00006` on alpha.3 via `pull && up -d`),
   `pg_dump`→`pg_restore` roundtrip, and `EMAIL_ENABLED=true` (mailpit). The v1→v2 restore-upgrade path
-  (`transforms[1]` backfilling `coupon_disposition`) was also proven on dev. Open self-host tail (not
-  blockers): **#232** (dogfood `APP_URL` on preview), **#244** (e2e blind to the single-origin built-bundle
-  serving path — `needs-triage`), **#258** (a sibling restore-UX issue, partly shipped in alpha.3).
+  (`transforms[1]` backfilling `coupon_disposition`) was also proven on dev. **#232** (preview now
+  dogfoods a single `APP_URL`, deriving the three URL vars via ADR-0037) — ✅ DONE/closed 2026-06-25,
+  ops-only Fly-secret flip. Open self-host tail (not blockers): **#244** (e2e blind to the single-origin
+  built-bundle serving path — `needs-triage`), **#258** (a sibling restore-UX issue, partly shipped in alpha.3).
 
 1. **M7 = productization (now the active line).** Make it trustable by real households, not richer in
    domain features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in,
