@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,55 +8,55 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useUpdateLiability } from '@/hooks/useLiabilities'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { preferredName } from '@/lib/names'
-import { useSession } from '@/hooks/useSession'
-import { errorMessage } from '@/lib/errorMessage'
-import type { Liability } from '@/api/types'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useUpdateLiability } from "@/hooks/useLiabilities";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { preferredName } from "@/lib/names";
+import { useSession } from "@/hooks/useSession";
+import { errorMessage } from "@/lib/errorMessage";
+import type { Liability } from "@/api/types";
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  liability: Liability
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  liability: Liability;
+};
 
 function toForm(l: Liability) {
   return {
     display_name: l.display_name,
-    description: l.description ?? '',
+    description: l.description ?? "",
     ownership_type: l.ownership_type,
     sole_owner_user_id: l.sole_owner_user_id,
     counterparty_name: l.counterparty_name,
-    principal: l.principal ?? '',
-    interest_rate: l.interest_rate ?? '',
-    term_months: l.term_months !== null ? String(l.term_months) : '',
-    start_date: l.start_date ? l.start_date.slice(0, 10) : '',
-    maturity_date: l.maturity_date ? l.maturity_date.slice(0, 10) : '',
-  }
+    principal: l.principal ?? "",
+    interest_rate: l.interest_rate ?? "",
+    term_months: l.term_months !== null ? String(l.term_months) : "",
+    start_date: l.start_date ? l.start_date.slice(0, 10) : "",
+    maturity_date: l.maturity_date ? l.maturity_date.slice(0, 10) : "",
+  };
 }
 
 export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
-  const { t } = useTranslation(['liabilities', 'common'])
-  const mutation = useUpdateLiability(liability.id)
-  const { data: user } = useSession()
-  const { data: members } = useHouseholdMembers()
-  const [form, setForm] = useState(() => toForm(liability))
+  const { t } = useTranslation(["liabilities", "common"]);
+  const mutation = useUpdateLiability(liability.id);
+  const { data: user } = useSession();
+  const { data: members } = useHouseholdMembers();
+  const [form, setForm] = useState(() => toForm(liability));
 
-  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null
+  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     mutation.mutate(
       {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
         sole_owner_user_id:
-          form.ownership_type === 'sole' ? effectiveSoleOwnerID : null,
+          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         counterparty_name: form.counterparty_name,
         principal: form.principal || null,
         interest_rate: form.interest_rate || null,
@@ -65,21 +65,23 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
         maturity_date: form.maturity_date || null,
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('liabilities:editTitle')}</DialogTitle>
+          <DialogTitle>{t("liabilities:editTitle")}</DialogTitle>
           <DialogDescription>
-            {t('liabilities:editDescription')}
+            {t("liabilities:editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_l_display_name">{t('common:fields.displayName')}</Label>
+            <Label htmlFor="edit_l_display_name">
+              {t("common:fields.displayName")}
+            </Label>
             <Input
               id="edit_l_display_name"
               required
@@ -92,7 +94,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor="edit_l_counterparty">
-              {t('liabilities:fields.counterparty')}
+              {t("liabilities:fields.counterparty")}
             </Label>
             <Input
               id="edit_l_counterparty"
@@ -107,7 +109,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_l_principal">
-                {t('liabilities:fields.principalEdit')}
+                {t("liabilities:fields.principalEdit")}
               </Label>
               <Input
                 id="edit_l_principal"
@@ -120,7 +122,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_l_interest_rate">
-                {t('liabilities:fields.interestRateEdit')}
+                {t("liabilities:fields.interestRateEdit")}
               </Label>
               <Input
                 id="edit_l_interest_rate"
@@ -135,7 +137,9 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
 
           <div className="grid grid-cols-3 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="edit_l_term">{t('liabilities:fields.termEdit')}</Label>
+              <Label htmlFor="edit_l_term">
+                {t("liabilities:fields.termEdit")}
+              </Label>
               <Input
                 id="edit_l_term"
                 inputMode="numeric"
@@ -147,7 +151,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_l_start">
-                {t('liabilities:fields.startDateEdit')}
+                {t("liabilities:fields.startDateEdit")}
               </Label>
               <Input
                 id="edit_l_start"
@@ -161,7 +165,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_l_maturity">
-                {t('liabilities:fields.maturityDateEdit')}
+                {t("liabilities:fields.maturityDateEdit")}
               </Label>
               <Input
                 id="edit_l_maturity"
@@ -176,34 +180,34 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label>{t('common:fields.ownership')}</Label>
+            <Label>{t("common:fields.ownership")}</Label>
             <div className="flex gap-4 text-sm">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_l_ownership_type"
                   value="joint"
-                  checked={form.ownership_type === 'joint'}
-                  onChange={() => setForm({ ...form, ownership_type: 'joint' })}
+                  checked={form.ownership_type === "joint"}
+                  onChange={() => setForm({ ...form, ownership_type: "joint" })}
                 />
-                {t('common:ownership.joint')}
+                {t("common:ownership.joint")}
               </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_l_ownership_type"
                   value="sole"
-                  checked={form.ownership_type === 'sole'}
-                  onChange={() => setForm({ ...form, ownership_type: 'sole' })}
+                  checked={form.ownership_type === "sole"}
+                  onChange={() => setForm({ ...form, ownership_type: "sole" })}
                 />
-                {t('common:ownership.soleOwner')}
+                {t("common:ownership.soleOwner")}
               </label>
             </div>
-            {form.ownership_type === 'sole' && (
+            {form.ownership_type === "sole" && (
               <select
-                aria-label={t('common:ownership.soleOwner')}
+                aria-label={t("common:ownership.soleOwner")}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={effectiveSoleOwnerID ?? ''}
+                value={effectiveSoleOwnerID ?? ""}
                 onChange={(e) =>
                   setForm({ ...form, sole_owner_user_id: e.target.value })
                 }
@@ -211,7 +215,9 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
                 {(members ?? []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {preferredName(m)}
-                    {user && m.id === user.id ? t('common:ownership.youSuffix') : ''}
+                    {user && m.id === user.id
+                      ? t("common:ownership.youSuffix")
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -219,7 +225,9 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_l_description">{t('common:fields.description')}</Label>
+            <Label htmlFor="edit_l_description">
+              {t("common:fields.description")}
+            </Label>
             <Input
               id="edit_l_description"
               value={form.description}
@@ -241,16 +249,16 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

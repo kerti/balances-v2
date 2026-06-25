@@ -1,16 +1,16 @@
-import { useState, type ChangeEvent } from 'react'
-import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { useState, type ChangeEvent } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -18,57 +18,57 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { errorMessage } from '@/lib/errorMessage'
-import { useSession } from '@/hooks/useSession'
-import { useUpdateMe } from '@/hooks/useUpdateMe'
-import { useUpdateHouseholdSettings } from '@/hooks/useHouseholdSettings'
-import { SUPPORTED_LOCALES, type Locale } from '@/i18n'
-import { useLocale } from '@/i18n/useLocale'
-import { SUPPORTED_THEMES, type Theme } from '@/theme'
-import { useTheme } from '@/theme/useTheme'
+} from "@/components/ui/table";
+import { errorMessage } from "@/lib/errorMessage";
+import { useSession } from "@/hooks/useSession";
+import { useUpdateMe } from "@/hooks/useUpdateMe";
+import { useUpdateHouseholdSettings } from "@/hooks/useHouseholdSettings";
+import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
+import { useLocale } from "@/i18n/useLocale";
+import { SUPPORTED_THEMES, type Theme } from "@/theme";
+import { useTheme } from "@/theme/useTheme";
 import {
   SUPPORTED_CARRYOVER_DATE_MODES,
   type CarryoverDateMode,
-} from '@/lib/dateLimits'
+} from "@/lib/dateLimits";
 import {
   useFxRates,
   useCreateFxRate,
   useDeleteFxRate,
-} from '@/hooks/useFxRates'
-import { formatYearMonth } from '@/lib/format'
-import { InviteForm } from '@/components/InviteForm'
-import { TagsCard } from '@/components/TagsCard'
-import { BackupCard } from '@/components/BackupCard'
-import { RestoreCard } from '@/components/RestoreCard'
+} from "@/hooks/useFxRates";
+import { formatYearMonth } from "@/lib/format";
+import { InviteForm } from "@/components/InviteForm";
+import { TagsCard } from "@/components/TagsCard";
+import { BackupCard } from "@/components/BackupCard";
+import { RestoreCard } from "@/components/RestoreCard";
 
 export function SettingsScreen() {
-  const { t } = useTranslation(['settings', 'common'])
-  const { data: me } = useSession()
-  const updateSettings = useUpdateHouseholdSettings()
-  const [currency, setCurrency] = useState<string | null>(null)
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+  const [currency, setCurrency] = useState<string | null>(null);
 
-  if (!me) return null
+  if (!me) return null;
 
-  const reportingCurrency = (currency ?? me.reporting_currency).toUpperCase()
+  const reportingCurrency = (currency ?? me.reporting_currency).toUpperCase();
 
   const saveCurrency = () =>
     updateSettings.mutate({
       reporting_currency: reportingCurrency,
       multi_currency_enabled: me.multi_currency_enabled,
-    })
+    });
 
   const toggleMulti = (enabled: boolean) =>
     updateSettings.mutate({
       reporting_currency: me.reporting_currency,
       multi_currency_enabled: enabled,
-    })
+    });
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
       <NicknameCard />
@@ -83,14 +83,14 @@ export function SettingsScreen() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t('currency.title')}</CardTitle>
-          <CardDescription>{t('currency.description')}</CardDescription>
+          <CardTitle className="text-base">{t("currency.title")}</CardTitle>
+          <CardDescription>{t("currency.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-end gap-3">
             <div className="space-y-1">
               <Label htmlFor="reporting-currency">
-                {t('currency.reportingLabel')}
+                {t("currency.reportingLabel")}
               </Label>
               <Input
                 id="reporting-currency"
@@ -103,9 +103,11 @@ export function SettingsScreen() {
             <Button
               variant="outline"
               onClick={saveCurrency}
-              disabled={updateSettings.isPending || reportingCurrency.length !== 3}
+              disabled={
+                updateSettings.isPending || reportingCurrency.length !== 3
+              }
             >
-              {t('common:save')}
+              {t("common:save")}
             </Button>
           </div>
 
@@ -117,7 +119,7 @@ export function SettingsScreen() {
               disabled={updateSettings.isPending}
               onChange={(e) => toggleMulti(e.target.checked)}
             />
-            {t('currency.multiToggle')}
+            {t("currency.multiToggle")}
           </label>
 
           {updateSettings.isError && (
@@ -136,42 +138,42 @@ export function SettingsScreen() {
 
       <RestoreCard />
     </div>
-  )
+  );
 }
 
 function NicknameCard() {
-  const { t } = useTranslation(['settings', 'common'])
-  const { data: me } = useSession()
-  const updateMe = useUpdateMe()
-  const [draft, setDraft] = useState<string | null>(null)
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateMe = useUpdateMe();
+  const [draft, setDraft] = useState<string | null>(null);
 
-  if (!me) return null
+  if (!me) return null;
 
   // `draft ?? me.nickname ?? ''` — null draft means "untouched, show current";
   // once the user types, draft is a string (even "") and wins.
-  const value = draft ?? me.nickname ?? ''
-  const trimmed = value.trim()
-  const current = me.nickname ?? ''
-  const dirty = trimmed !== current
+  const value = draft ?? me.nickname ?? "";
+  const trimmed = value.trim();
+  const current = me.nickname ?? "";
+  const dirty = trimmed !== current;
 
   const save = () =>
     updateMe.mutate(
-      { nickname: trimmed === '' ? null : trimmed },
+      { nickname: trimmed === "" ? null : trimmed },
       { onSuccess: () => setDraft(null) },
-    )
+    );
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('nickname.title')}</CardTitle>
+        <CardTitle className="text-base">{t("nickname.title")}</CardTitle>
         <CardDescription>
-          {t('nickname.description', { displayName: me.display_name })}
+          {t("nickname.description", { displayName: me.display_name })}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="nickname">{t('nickname.label')}</Label>
+            <Label htmlFor="nickname">{t("nickname.label")}</Label>
             <Input
               id="nickname"
               className="w-56"
@@ -186,7 +188,7 @@ function NicknameCard() {
             onClick={save}
             disabled={updateMe.isPending || !dirty}
           >
-            {t('common:save')}
+            {t("common:save")}
           </Button>
         </div>
 
@@ -197,56 +199,56 @@ function NicknameCard() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // LANGUAGE_LABELS maps each supported BCP47 locale to its in-language display
 // name. The label is shown in the dropdown regardless of the current UI
 // language so a user reading the wrong language can still find their option.
 const LANGUAGE_LABELS: Record<Locale, string> = {
-  'en-GB': 'English',
-  'id-ID': 'Bahasa Indonesia',
-}
+  "en-GB": "English",
+  "id-ID": "Bahasa Indonesia",
+};
 
 function LanguageCard() {
-  const { t } = useTranslation('settings')
-  const { data: me } = useSession()
-  const { locale, setLocale } = useLocale()
-  const updateMe = useUpdateMe()
+  const { t } = useTranslation("settings");
+  const { data: me } = useSession();
+  const { locale, setLocale } = useLocale();
+  const updateMe = useUpdateMe();
 
-  if (!me) return null
+  if (!me) return null;
 
   // Buttonless autosave (issue #54, ADR-0032): the select mutates on change
   // with no Save button, so a toast confirms the write. Optimistically switch
   // the UI; on PATCH failure roll the language back and surface the error.
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value as Locale
-    const previous = locale as Locale
-    void setLocale(next)
+    const next = e.target.value as Locale;
+    const previous = locale as Locale;
+    void setLocale(next);
     updateMe.mutate(
       { locale: next },
       {
         // Resolve the confirmation in the newly-chosen language (`lng: next`),
         // not whatever i18next has finished switching to when the PATCH lands.
-        onSuccess: () => toast.success(t('language.saved', { lng: next })),
+        onSuccess: () => toast.success(t("language.saved", { lng: next })),
         onError: (err) => {
-          void setLocale(previous)
-          toast.error(errorMessage(err))
+          void setLocale(previous);
+          toast.error(errorMessage(err));
         },
       },
-    )
-  }
+    );
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('language.title')}</CardTitle>
-        <CardDescription>{t('language.description')}</CardDescription>
+        <CardTitle className="text-base">{t("language.title")}</CardTitle>
+        <CardDescription>{t("language.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="language">{t('language.label')}</Label>
+            <Label htmlFor="language">{t("language.label")}</Label>
             <select
               id="language"
               data-testid="settings-language-select"
@@ -265,7 +267,7 @@ function LanguageCard() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // ThemeCard mirrors LanguageCard: a two-option select bound to the active
@@ -274,41 +276,41 @@ function LanguageCard() {
 // choice server-side so it follows the user across devices. Labels come from
 // the catalog so they render in the current UI language.
 function ThemeCard() {
-  const { t } = useTranslation('settings')
-  const { data: me } = useSession()
-  const { theme, setTheme } = useTheme()
-  const updateMe = useUpdateMe()
+  const { t } = useTranslation("settings");
+  const { data: me } = useSession();
+  const { theme, setTheme } = useTheme();
+  const updateMe = useUpdateMe();
 
-  if (!me) return null
+  if (!me) return null;
 
   // Buttonless autosave (issue #54, ADR-0032): toast confirms the write; on
   // PATCH failure roll the theme back to its previous value.
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value as Theme
-    const previous = theme
-    setTheme(next)
+    const next = e.target.value as Theme;
+    const previous = theme;
+    setTheme(next);
     updateMe.mutate(
       { theme: next },
       {
-        onSuccess: () => toast.success(t('theme.saved')),
+        onSuccess: () => toast.success(t("theme.saved")),
         onError: (err) => {
-          setTheme(previous)
-          toast.error(errorMessage(err))
+          setTheme(previous);
+          toast.error(errorMessage(err));
         },
       },
-    )
-  }
+    );
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('theme.title')}</CardTitle>
-        <CardDescription>{t('theme.description')}</CardDescription>
+        <CardTitle className="text-base">{t("theme.title")}</CardTitle>
+        <CardDescription>{t("theme.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="theme">{t('theme.label')}</Label>
+            <Label htmlFor="theme">{t("theme.label")}</Label>
             <select
               id="theme"
               data-testid="settings-theme-select"
@@ -327,7 +329,7 @@ function ThemeCard() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // CarryoverDateCard mirrors LanguageCard: a select bound to the user's
@@ -338,34 +340,34 @@ function ThemeCard() {
 // confirmation, ADR-0032) refreshes it. Labels come from the catalog so they
 // render in the current UI language.
 function CarryoverDateCard() {
-  const { t } = useTranslation('settings')
-  const { data: me } = useSession()
-  const updateMe = useUpdateMe()
+  const { t } = useTranslation("settings");
+  const { data: me } = useSession();
+  const updateMe = useUpdateMe();
 
-  if (!me) return null
+  if (!me) return null;
 
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value as CarryoverDateMode
+    const next = e.target.value as CarryoverDateMode;
     updateMe.mutate(
       { carryover_date_mode: next },
       {
-        onSuccess: () => toast.success(t('carryoverDate.saved')),
+        onSuccess: () => toast.success(t("carryoverDate.saved")),
         onError: (err) => toast.error(errorMessage(err)),
       },
-    )
-  }
+    );
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('carryoverDate.title')}</CardTitle>
-        <CardDescription>{t('carryoverDate.description')}</CardDescription>
+        <CardTitle className="text-base">{t("carryoverDate.title")}</CardTitle>
+        <CardDescription>{t("carryoverDate.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="carryover-date-mode">
-              {t('carryoverDate.label')}
+              {t("carryoverDate.label")}
             </Label>
             <select
               id="carryover-date-mode"
@@ -385,45 +387,45 @@ function CarryoverDateCard() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function FxRatesCard() {
-  const { t } = useTranslation(['settings', 'common'])
-  const { data: rates, isPending } = useFxRates()
-  const createRate = useCreateFxRate()
-  const deleteRate = useDeleteFxRate()
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: rates, isPending } = useFxRates();
+  const createRate = useCreateFxRate();
+  const deleteRate = useDeleteFxRate();
 
-  const [month, setMonth] = useState('')
-  const [currency, setCurrency] = useState('')
-  const [rate, setRate] = useState('')
+  const [month, setMonth] = useState("");
+  const [currency, setCurrency] = useState("");
+  const [rate, setRate] = useState("");
 
   const add = () => {
     createRate.mutate(
       { year_month: month, currency: currency.toUpperCase(), rate },
       {
         onSuccess: () => {
-          setMonth('')
-          setCurrency('')
-          setRate('')
+          setMonth("");
+          setCurrency("");
+          setRate("");
         },
       },
-    )
-  }
+    );
+  };
 
   const canAdd =
-    month !== '' && currency.length === 3 && rate !== '' && Number(rate) > 0
+    month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('fx.title')}</CardTitle>
-        <CardDescription>{t('fx.description')}</CardDescription>
+        <CardTitle className="text-base">{t("fx.title")}</CardTitle>
+        <CardDescription>{t("fx.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="fx-month">{t('fx.month')}</Label>
+            <Label htmlFor="fx-month">{t("fx.month")}</Label>
             <Input
               id="fx-month"
               type="month"
@@ -433,31 +435,31 @@ function FxRatesCard() {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="fx-currency">{t('fx.currency')}</Label>
+            <Label htmlFor="fx-currency">{t("fx.currency")}</Label>
             <Input
               id="fx-currency"
               className="w-24 uppercase"
               maxLength={3}
               // ISO currency code — a data token, not translatable copy.
-              placeholder={'USD'}
+              placeholder={"USD"}
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="fx-rate">{t('fx.rate')}</Label>
+            <Label htmlFor="fx-rate">{t("fx.rate")}</Label>
             <Input
               id="fx-rate"
               inputMode="decimal"
               className="w-36"
               // Example numeric rate; not translatable copy.
-              placeholder={'16000'}
+              placeholder={"16000"}
               value={rate}
               onChange={(e) => setRate(e.target.value)}
             />
           </div>
           <Button onClick={add} disabled={!canAdd || createRate.isPending}>
-            {t('fx.addRate')}
+            {t("fx.addRate")}
           </Button>
         </div>
 
@@ -468,20 +470,20 @@ function FxRatesCard() {
         )}
 
         {isPending && (
-          <p className="text-sm text-muted-foreground">{t('common:loading')}</p>
+          <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
         )}
 
         {rates && rates.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t('fx.empty')}</p>
+          <p className="text-sm text-muted-foreground">{t("fx.empty")}</p>
         )}
 
         {rates && rates.length > 0 && (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('fx.month')}</TableHead>
-                <TableHead>{t('fx.currency')}</TableHead>
-                <TableHead>{t('fx.rate')}</TableHead>
+                <TableHead>{t("fx.month")}</TableHead>
+                <TableHead>{t("fx.currency")}</TableHead>
+                <TableHead>{t("fx.rate")}</TableHead>
                 <TableHead className="w-16"></TableHead>
               </TableRow>
             </TableHeader>
@@ -497,7 +499,7 @@ function FxRatesCard() {
                       size="sm"
                       onClick={() => deleteRate.mutate(r.id)}
                     >
-                      {t('common:delete')}
+                      {t("common:delete")}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -507,5 +509,5 @@ function FxRatesCard() {
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

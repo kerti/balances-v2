@@ -1,19 +1,19 @@
-import { ChevronDown, ChevronUp, ChevronsUpDown } from 'lucide-react'
-import { TableHead } from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
+import { TableHead } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
-export type SortDir = 'asc' | 'desc'
+export type SortDir = "asc" | "desc";
 
 type Props = {
-  label: string
+  label: string;
   // Whether this column is the active sort key.
-  active: boolean
-  dir: SortDir
-  onSort: () => void
-  align?: 'left' | 'right'
-  className?: string
-  testId?: string
-}
+  active: boolean;
+  dir: SortDir;
+  onSort: () => void;
+  align?: "left" | "right";
+  className?: string;
+  testId?: string;
+};
 
 // A clickable table header that drives single-column sorting. The neutral
 // (inactive) state shows an up/down chevron pair; the active column shows the
@@ -24,30 +24,37 @@ export function SortableHeader({
   active,
   dir,
   onSort,
-  align = 'left',
+  align = "left",
   className,
   testId,
 }: Props) {
-  const Icon = !active ? ChevronsUpDown : dir === 'asc' ? ChevronUp : ChevronDown
+  const Icon = !active
+    ? ChevronsUpDown
+    : dir === "asc"
+      ? ChevronUp
+      : ChevronDown;
   return (
     <TableHead
-      aria-sort={active ? (dir === 'asc' ? 'ascending' : 'descending') : 'none'}
-      className={cn(align === 'right' && 'text-right', className)}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      className={cn(align === "right" && "text-right", className)}
     >
       <button
         type="button"
         onClick={onSort}
         data-testid={testId}
         className={cn(
-          'inline-flex items-center gap-1 font-medium hover:text-foreground/70',
-          align === 'right' && 'w-full flex-row-reverse',
+          "inline-flex items-center gap-1 font-medium hover:text-foreground/70",
+          align === "right" && "w-full flex-row-reverse",
         )}
       >
         {label}
         <Icon
-          className={cn('size-3.5', active ? 'text-foreground' : 'text-muted-foreground')}
+          className={cn(
+            "size-3.5",
+            active ? "text-foreground" : "text-muted-foreground",
+          )}
         />
       </button>
     </TableHead>
-  )
+  );
 }

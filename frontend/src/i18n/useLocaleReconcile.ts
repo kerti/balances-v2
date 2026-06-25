@@ -10,30 +10,30 @@
 // account's locale is seeded server-side at birth from the picker's choice, so
 // by the time the user row loads here the DB is already correct and there is
 // nothing to negotiate.
-import { useEffect, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-import { LOCALSTORAGE_KEY, SUPPORTED_LOCALES, type Locale } from '@/i18n'
-import type { Me } from '@/hooks/useSession'
+import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { LOCALSTORAGE_KEY, SUPPORTED_LOCALES, type Locale } from "@/i18n";
+import type { Me } from "@/hooks/useSession";
 
 function isSupported(locale: string): locale is Locale {
-  return (SUPPORTED_LOCALES as readonly string[]).includes(locale)
+  return (SUPPORTED_LOCALES as readonly string[]).includes(locale);
 }
 
 export function useLocaleReconcile(user: Me | null | undefined) {
-  const { i18n } = useTranslation()
+  const { i18n } = useTranslation();
   // Fire once per mounted user; guard so a session refetch doesn't re-run.
-  const reconciled = useRef(false)
+  const reconciled = useRef(false);
 
   useEffect(() => {
-    if (!user || reconciled.current) return
-    reconciled.current = true
+    if (!user || reconciled.current) return;
+    reconciled.current = true;
 
-    const userLocale: Locale = isSupported(user.locale) ? user.locale : 'en-GB'
-    localStorage.setItem(LOCALSTORAGE_KEY, userLocale)
+    const userLocale: Locale = isSupported(user.locale) ? user.locale : "en-GB";
+    localStorage.setItem(LOCALSTORAGE_KEY, userLocale);
     if (i18n.language !== userLocale) {
-      void i18n.changeLanguage(userLocale)
+      void i18n.changeLanguage(userLocale);
     }
     // i18n is a stable reference; user is the trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user]);
 }

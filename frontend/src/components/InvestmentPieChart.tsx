@@ -9,32 +9,40 @@
 // red) — matches the existing P/L tone language (emerald gain,
 // destructive loss) and reads at a glance.
 
-import { Suspense } from 'react'
-import { lazyWithReload } from '@/lib/lazyWithReload'
+import { Suspense } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
 
 export type PieSlice = {
-  key: string
-  label: string
-  value: number
-  color: string
-}
+  key: string;
+  label: string;
+  value: number;
+  color: string;
+};
 
 type Props = {
-  slices: PieSlice[]
-  currency: string
-  legendPosition?: 'bottom' | 'right'
-}
+  slices: PieSlice[];
+  currency: string;
+  legendPosition?: "bottom" | "right";
+};
 
 const InvestmentPieChartImpl = lazyWithReload(
-  () => import('./InvestmentPieChartImpl'),
-)
+  () => import("./InvestmentPieChartImpl"),
+);
 
-export function InvestmentPieChart({ slices, currency, legendPosition = 'bottom' }: Props) {
-  const total = slices.reduce((s, sl) => s + sl.value, 0)
-  if (total <= 0) return null
+export function InvestmentPieChart({
+  slices,
+  currency,
+  legendPosition = "bottom",
+}: Props) {
+  const total = slices.reduce((s, sl) => s + sl.value, 0);
+  if (total <= 0) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
-      <InvestmentPieChartImpl slices={slices} currency={currency} legendPosition={legendPosition} />
+      <InvestmentPieChartImpl
+        slices={slices}
+        currency={currency}
+        legendPosition={legendPosition}
+      />
     </Suspense>
-  )
+  );
 }

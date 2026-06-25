@@ -3,37 +3,37 @@
 // of useAssetTimeSeries. Receivables carry no cost basis, so the backend
 // (`repo/receivable_time_series.go`) returns value series only.
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/api/client";
 
 export type ReceivableTimeSeriesItem = {
-  receivable_id: string
-  value_series: Array<{ year_month: string; amount: string }>
-}
+  receivable_id: string;
+  value_series: Array<{ year_month: string; amount: string }>;
+};
 
 export type ReceivablePositionSeries = {
-  snapshots: Array<{ year_month: string; amount: string }>
-}
+  snapshots: Array<{ year_month: string; amount: string }>;
+};
 
 export function useReceivableTimeSeries(): {
-  byId: Map<string, ReceivablePositionSeries>
-  isLoading: boolean
-  hasError: boolean
+  byId: Map<string, ReceivablePositionSeries>;
+  isLoading: boolean;
+  hasError: boolean;
 } {
   const query = useQuery({
-    queryKey: ['receivable-time-series'],
+    queryKey: ["receivable-time-series"],
     queryFn: () =>
-      api<ReceivableTimeSeriesItem[]>('/api/receivables/time-series'),
-  })
+      api<ReceivableTimeSeriesItem[]>("/api/receivables/time-series"),
+  });
 
   const byId = useMemo(() => {
-    const m = new Map<string, ReceivablePositionSeries>()
+    const m = new Map<string, ReceivablePositionSeries>();
     for (const it of query.data ?? []) {
-      m.set(it.receivable_id, { snapshots: it.value_series })
+      m.set(it.receivable_id, { snapshots: it.value_series });
     }
-    return m
-  }, [query.data])
+    return m;
+  }, [query.data]);
 
-  return { byId, isLoading: query.isPending, hasError: query.isError }
+  return { byId, isLoading: query.isPending, hasError: query.isError };
 }

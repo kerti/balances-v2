@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,76 +8,76 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useUpdateStock } from '@/hooks/useInvestments'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { preferredName } from '@/lib/names'
-import { useSession } from '@/hooks/useSession'
-import { errorMessage } from '@/lib/errorMessage'
-import { RiskProfileSelect } from '@/components/RiskProfileSelect'
-import type { Stock, StockListItem } from '@/api/types'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useUpdateStock } from "@/hooks/useInvestments";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { preferredName } from "@/lib/names";
+import { useSession } from "@/hooks/useSession";
+import { errorMessage } from "@/lib/errorMessage";
+import { RiskProfileSelect } from "@/components/RiskProfileSelect";
+import type { Stock, StockListItem } from "@/api/types";
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   // Accepts either the detail-page Stock or a list-row StockListItem so
   // both call sites can pass what they already have.
-  stock: Stock | StockListItem
-}
+  stock: Stock | StockListItem;
+};
 
 function toForm(s: Stock | StockListItem) {
   return {
     display_name: s.investment.display_name,
-    description: s.investment.description ?? '',
+    description: s.investment.description ?? "",
     ownership_type: s.investment.ownership_type,
     sole_owner_user_id: s.investment.sole_owner_user_id,
     risk_profile: s.investment.risk_profile,
     ticker: s.details.ticker,
     exchange: s.details.exchange,
-  }
+  };
 }
 
 export function EditStockDialog({ open, onOpenChange, stock }: Props) {
-  const { t } = useTranslation(['investments', 'common'])
-  const mutation = useUpdateStock(stock.investment.id)
-  const { data: user } = useSession()
-  const { data: members } = useHouseholdMembers()
-  const [form, setForm] = useState(() => toForm(stock))
+  const { t } = useTranslation(["investments", "common"]);
+  const mutation = useUpdateStock(stock.investment.id);
+  const { data: user } = useSession();
+  const { data: members } = useHouseholdMembers();
+  const [form, setForm] = useState(() => toForm(stock));
 
-  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null
+  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     mutation.mutate(
       {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
         sole_owner_user_id:
-          form.ownership_type === 'sole' ? effectiveSoleOwnerID : null,
+          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         ticker: form.ticker.toUpperCase(),
         exchange: form.exchange.toUpperCase(),
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('investments:stock.editTitle')}</DialogTitle>
+          <DialogTitle>{t("investments:stock.editTitle")}</DialogTitle>
           <DialogDescription>
-            {t('investments:stock.editDescription')}
+            {t("investments:stock.editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="edit_stock_display_name">
-              {t('common:fields.displayName')}
+              {t("common:fields.displayName")}
             </Label>
             <Input
               id="edit_stock_display_name"
@@ -92,7 +92,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_stock_ticker">
-                {t('investments:stock.fields.ticker')}
+                {t("investments:stock.fields.ticker")}
               </Label>
               <Input
                 id="edit_stock_ticker"
@@ -105,7 +105,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_stock_exchange">
-                {t('investments:stock.fields.exchange')}
+                {t("investments:stock.fields.exchange")}
               </Label>
               <Input
                 id="edit_stock_exchange"
@@ -119,34 +119,34 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label>{t('common:fields.ownership')}</Label>
+            <Label>{t("common:fields.ownership")}</Label>
             <div className="flex gap-4 text-sm">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_stock_ownership_type"
                   value="joint"
-                  checked={form.ownership_type === 'joint'}
-                  onChange={() => setForm({ ...form, ownership_type: 'joint' })}
+                  checked={form.ownership_type === "joint"}
+                  onChange={() => setForm({ ...form, ownership_type: "joint" })}
                 />
-                {t('investments:ownership.joint')}
+                {t("investments:ownership.joint")}
               </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_stock_ownership_type"
                   value="sole"
-                  checked={form.ownership_type === 'sole'}
-                  onChange={() => setForm({ ...form, ownership_type: 'sole' })}
+                  checked={form.ownership_type === "sole"}
+                  onChange={() => setForm({ ...form, ownership_type: "sole" })}
                 />
-                {t('investments:ownership.soleOwner')}
+                {t("investments:ownership.soleOwner")}
               </label>
             </div>
-            {form.ownership_type === 'sole' && (
+            {form.ownership_type === "sole" && (
               <select
-                aria-label={t('investments:ownership.soleOwnerAria')}
+                aria-label={t("investments:ownership.soleOwnerAria")}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={effectiveSoleOwnerID ?? ''}
+                value={effectiveSoleOwnerID ?? ""}
                 onChange={(e) =>
                   setForm({ ...form, sole_owner_user_id: e.target.value })
                 }
@@ -154,7 +154,9 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
                 {(members ?? []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {preferredName(m)}
-                    {user && m.id === user.id ? t('common:ownership.youSuffix') : ''}
+                    {user && m.id === user.id
+                      ? t("common:ownership.youSuffix")
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -163,7 +165,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor="edit_stock_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="edit_stock_description"
@@ -192,16 +194,16 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

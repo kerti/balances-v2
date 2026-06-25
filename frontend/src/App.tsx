@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -6,40 +6,40 @@ import {
   useNavigate,
   useParams,
   type NavigateFunction,
-} from 'react-router'
-import { useSession } from '@/hooks/useSession'
-import { routes } from '@/lib/routes'
-import { SignInScreen } from '@/components/SignInScreen'
-import { OnboardingScreen } from '@/components/OnboardingScreen'
-import { AppShell } from '@/components/AppShell'
-import { RouteErrorBoundary } from '@/components/RouteErrorBoundary'
-import { DashboardScreen } from '@/components/DashboardScreen'
-import { AssetsHome } from '@/components/AssetsHome'
-import { BankAccountsScreen } from '@/components/BankAccountsScreen'
-import { BankAccountDetail } from '@/components/BankAccountDetail'
-import { PropertiesScreen } from '@/components/PropertiesScreen'
-import { PropertyDetail } from '@/components/PropertyDetail'
-import { VehiclesScreen } from '@/components/VehiclesScreen'
-import { VehicleDetail } from '@/components/VehicleDetail'
-import { LiabilitiesHome } from '@/components/LiabilitiesHome'
-import { LiabilitiesScreen } from '@/components/LiabilitiesScreen'
-import { LiabilityDetail } from '@/components/LiabilityDetail'
-import { ReceivablesScreen } from '@/components/ReceivablesScreen'
-import { ReceivableDetail } from '@/components/ReceivableDetail'
-import { InvestmentsHome } from '@/components/InvestmentsHome'
-import { StocksScreen } from '@/components/StocksScreen'
-import { StockDetail } from '@/components/StockDetail'
-import { MutualFundsScreen } from '@/components/MutualFundsScreen'
-import { MutualFundDetail } from '@/components/MutualFundDetail'
-import { BondsScreen } from '@/components/BondsScreen'
-import { BondDetail } from '@/components/BondDetail'
-import { TimeDepositsScreen } from '@/components/TimeDepositsScreen'
-import { TimeDepositDetail } from '@/components/TimeDepositDetail'
-import { GoldsScreen } from '@/components/GoldsScreen'
-import { GoldDetail } from '@/components/GoldDetail'
-import { IncomeScreen } from '@/components/IncomeScreen'
-import { TagsScreen } from '@/components/TagsScreen'
-import { SettingsScreen } from '@/components/SettingsScreen'
+} from "react-router";
+import { useSession } from "@/hooks/useSession";
+import { routes } from "@/lib/routes";
+import { SignInScreen } from "@/components/SignInScreen";
+import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { AppShell } from "@/components/AppShell";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { DashboardScreen } from "@/components/DashboardScreen";
+import { AssetsHome } from "@/components/AssetsHome";
+import { BankAccountsScreen } from "@/components/BankAccountsScreen";
+import { BankAccountDetail } from "@/components/BankAccountDetail";
+import { PropertiesScreen } from "@/components/PropertiesScreen";
+import { PropertyDetail } from "@/components/PropertyDetail";
+import { VehiclesScreen } from "@/components/VehiclesScreen";
+import { VehicleDetail } from "@/components/VehicleDetail";
+import { LiabilitiesHome } from "@/components/LiabilitiesHome";
+import { LiabilitiesScreen } from "@/components/LiabilitiesScreen";
+import { LiabilityDetail } from "@/components/LiabilityDetail";
+import { ReceivablesScreen } from "@/components/ReceivablesScreen";
+import { ReceivableDetail } from "@/components/ReceivableDetail";
+import { InvestmentsHome } from "@/components/InvestmentsHome";
+import { StocksScreen } from "@/components/StocksScreen";
+import { StockDetail } from "@/components/StockDetail";
+import { MutualFundsScreen } from "@/components/MutualFundsScreen";
+import { MutualFundDetail } from "@/components/MutualFundDetail";
+import { BondsScreen } from "@/components/BondsScreen";
+import { BondDetail } from "@/components/BondDetail";
+import { TimeDepositsScreen } from "@/components/TimeDepositsScreen";
+import { TimeDepositDetail } from "@/components/TimeDepositDetail";
+import { GoldsScreen } from "@/components/GoldsScreen";
+import { GoldDetail } from "@/components/GoldDetail";
+import { IncomeScreen } from "@/components/IncomeScreen";
+import { TagsScreen } from "@/components/TagsScreen";
+import { SettingsScreen } from "@/components/SettingsScreen";
 
 // The list screens and detail pages predate the router: they take an
 // `onSelect(id)` / `onBack()` callback and the entity id as a prop, with no
@@ -50,18 +50,18 @@ import { SettingsScreen } from '@/components/SettingsScreen'
 function ListRoute({
   render,
 }: {
-  render: (nav: NavigateFunction) => ReactNode
+  render: (nav: NavigateFunction) => ReactNode;
 }) {
-  return <>{render(useNavigate())}</>
+  return <>{render(useNavigate())}</>;
 }
 
 function DetailRoute({
   render,
 }: {
-  render: (id: string, nav: NavigateFunction) => ReactNode
+  render: (id: string, nav: NavigateFunction) => ReactNode;
 }) {
-  const { id } = useParams()
-  return <>{render(id!, useNavigate())}</>
+  const { id } = useParams();
+  return <>{render(id!, useNavigate())}</>;
 }
 
 const router = createBrowserRouter([
@@ -75,9 +75,9 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardScreen /> },
 
       // Assets
-      { path: 'assets', element: <AssetsHome /> },
+      { path: "assets", element: <AssetsHome /> },
       {
-        path: 'assets/bank-accounts',
+        path: "assets/bank-accounts",
         element: (
           <ListRoute
             render={(nav) => (
@@ -89,7 +89,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'assets/bank-accounts/:id',
+        path: "assets/bank-accounts/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -102,7 +102,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'assets/properties',
+        path: "assets/properties",
         element: (
           <ListRoute
             render={(nav) => (
@@ -112,7 +112,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'assets/properties/:id',
+        path: "assets/properties/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -125,7 +125,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'assets/vehicles',
+        path: "assets/vehicles",
         element: (
           <ListRoute
             render={(nav) => (
@@ -135,7 +135,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'assets/vehicles/:id',
+        path: "assets/vehicles/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -146,22 +146,22 @@ const router = createBrowserRouter([
       },
 
       // Liabilities
-      { path: 'liabilities', element: <LiabilitiesHome /> },
+      { path: "liabilities", element: <LiabilitiesHome /> },
       {
-        path: 'liabilities/personal',
+        path: "liabilities/personal",
         element: (
           <ListRoute
             render={(nav) => (
               <LiabilitiesScreen
                 subtype="personal"
-                onSelect={(id) => nav(routes.liability('personal', id))}
+                onSelect={(id) => nav(routes.liability("personal", id))}
               />
             )}
           />
         ),
       },
       {
-        path: 'liabilities/personal/:id',
+        path: "liabilities/personal/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -174,20 +174,20 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'liabilities/institutional',
+        path: "liabilities/institutional",
         element: (
           <ListRoute
             render={(nav) => (
               <LiabilitiesScreen
                 subtype="institutional"
-                onSelect={(id) => nav(routes.liability('institutional', id))}
+                onSelect={(id) => nav(routes.liability("institutional", id))}
               />
             )}
           />
         ),
       },
       {
-        path: 'liabilities/institutional/:id',
+        path: "liabilities/institutional/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -202,17 +202,19 @@ const router = createBrowserRouter([
 
       // Receivables (flat)
       {
-        path: 'receivables',
+        path: "receivables",
         element: (
           <ListRoute
             render={(nav) => (
-              <ReceivablesScreen onSelect={(id) => nav(routes.receivable(id))} />
+              <ReceivablesScreen
+                onSelect={(id) => nav(routes.receivable(id))}
+              />
             )}
           />
         ),
       },
       {
-        path: 'receivables/:id',
+        path: "receivables/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -226,9 +228,9 @@ const router = createBrowserRouter([
       },
 
       // Investments
-      { path: 'investments', element: <InvestmentsHome /> },
+      { path: "investments", element: <InvestmentsHome /> },
       {
-        path: 'investments/stocks',
+        path: "investments/stocks",
         element: (
           <ListRoute
             render={(nav) => (
@@ -238,17 +240,20 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/stocks/:id',
+        path: "investments/stocks/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <StockDetail investmentId={id} onBack={() => nav(routes.stocks)} />
+              <StockDetail
+                investmentId={id}
+                onBack={() => nav(routes.stocks)}
+              />
             )}
           />
         ),
       },
       {
-        path: 'investments/mutual-funds',
+        path: "investments/mutual-funds",
         element: (
           <ListRoute
             render={(nav) => (
@@ -260,7 +265,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/mutual-funds/:id',
+        path: "investments/mutual-funds/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -273,7 +278,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/bonds',
+        path: "investments/bonds",
         element: (
           <ListRoute
             render={(nav) => (
@@ -283,7 +288,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/bonds/:id',
+        path: "investments/bonds/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -293,7 +298,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/time-deposits',
+        path: "investments/time-deposits",
         element: (
           <ListRoute
             render={(nav) => (
@@ -305,7 +310,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/time-deposits/:id',
+        path: "investments/time-deposits/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -319,7 +324,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/gold',
+        path: "investments/gold",
         element: (
           <ListRoute
             render={(nav) => (
@@ -329,7 +334,7 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: 'investments/gold/:id',
+        path: "investments/gold/:id",
         element: (
           <DetailRoute
             render={(id, nav) => (
@@ -340,28 +345,28 @@ const router = createBrowserRouter([
       },
 
       // Income (flat flow event)
-      { path: 'income', element: <IncomeScreen /> },
+      { path: "income", element: <IncomeScreen /> },
 
       // Tags breakdown report (flat, like Income — no detail pages).
-      { path: 'tags', element: <TagsScreen /> },
+      { path: "tags", element: <TagsScreen /> },
 
-      { path: 'settings', element: <SettingsScreen /> },
+      { path: "settings", element: <SettingsScreen /> },
 
       // Unknown path → dashboard.
-      { path: '*', element: <Navigate to={routes.dashboard} replace /> },
+      { path: "*", element: <Navigate to={routes.dashboard} replace /> },
     ],
   },
-])
+]);
 
 function App() {
-  const { data: user, isPending } = useSession()
+  const { data: user, isPending } = useSession();
 
   if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
         Loading…
       </div>
-    )
+    );
   }
 
   if (!user) {
@@ -371,12 +376,12 @@ function App() {
     // invalid one makes /onboarding/options answer 401, which OnboardingScreen
     // surfaces as a "sign in again" prompt.
     if (window.location.pathname === routes.onboarding) {
-      return <OnboardingScreen />
+      return <OnboardingScreen />;
     }
-    return <SignInScreen />
+    return <SignInScreen />;
   }
 
-  return <RouterProvider router={router} />
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default App;

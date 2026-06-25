@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { Archive } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Archive } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,31 +10,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { useUpdateLifecycle } from '@/hooks/useLifecycle'
-import { statusOptions, type LifecycleGroup } from '@/lib/lifecycle'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { useUpdateLifecycle } from "@/hooks/useLifecycle";
+import { statusOptions, type LifecycleGroup } from "@/lib/lifecycle";
 
 // todayISO returns YYYY-MM-DD in the local timezone. toISOString() would shift
 // users east of UTC into yesterday for the first hours of their day.
 function todayISO(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 type Props = {
-  group: LifecycleGroup
-  id: string
-  listKey: string
-  currentStatus: string
-  currentTerminatedAt: string | null
-  currentNote: string | null
-}
+  group: LifecycleGroup;
+  id: string;
+  listKey: string;
+  currentStatus: string;
+  currentTerminatedAt: string | null;
+  currentNote: string | null;
+};
 
 // Dedicated "change lifecycle status" dialog (ADR-0009): a separate action from
 // Edit, operating on the parent table via PATCH /{group}/{id}/lifecycle. The
@@ -49,44 +49,46 @@ export function TerminatePositionDialog({
   currentTerminatedAt,
   currentNote,
 }: Props) {
-  const { t } = useTranslation('common')
-  const [open, setOpen] = useState(false)
-  const mutation = useUpdateLifecycle(group, id, listKey)
+  const { t } = useTranslation("common");
+  const [open, setOpen] = useState(false);
+  const mutation = useUpdateLifecycle(group, id, listKey);
 
-  const [status, setStatus] = useState(currentStatus)
+  const [status, setStatus] = useState(currentStatus);
   const [terminatedAt, setTerminatedAt] = useState(
-    currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : '',
-  )
-  const [note, setNote] = useState(currentNote ?? '')
+    currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "",
+  );
+  const [note, setNote] = useState(currentNote ?? "");
 
-  const wasActive = currentStatus === 'active'
-  const isActive = status === 'active'
+  const wasActive = currentStatus === "active";
+  const isActive = status === "active";
 
   function reset() {
-    setStatus(currentStatus)
-    setTerminatedAt(currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : '')
-    setNote(currentNote ?? '')
-    mutation.reset()
+    setStatus(currentStatus);
+    setTerminatedAt(
+      currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "",
+    );
+    setNote(currentNote ?? "");
+    mutation.reset();
   }
 
   function close() {
-    setOpen(false)
-    reset()
+    setOpen(false);
+    reset();
   }
 
   function onStatusChange(next: string) {
-    setStatus(next)
+    setStatus(next);
     // Picking a terminal status auto-fills today (require + default today).
     // Going back to active clears the date so the biconditional holds.
-    if (next === 'active') {
-      setTerminatedAt('')
+    if (next === "active") {
+      setTerminatedAt("");
     } else if (!terminatedAt) {
-      setTerminatedAt(todayISO())
+      setTerminatedAt(todayISO());
     }
   }
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     mutation.mutate(
       {
         status,
@@ -94,7 +96,7 @@ export function TerminatePositionDialog({
         termination_note: note.trim() ? note.trim() : null,
       },
       { onSuccess: close },
-    )
+    );
   }
 
   return (
@@ -102,19 +104,21 @@ export function TerminatePositionDialog({
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Archive className="mr-1 size-4" />
-          {wasActive ? t('terminate.closeTrigger') : t('terminate.editTrigger')}
+          {wasActive ? t("terminate.closeTrigger") : t("terminate.editTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {wasActive ? t('terminate.closeTitle') : t('terminate.editTitle')}
+            {wasActive ? t("terminate.closeTitle") : t("terminate.editTitle")}
           </DialogTitle>
-          <DialogDescription>{t('terminate.description')}</DialogDescription>
+          <DialogDescription>{t("terminate.description")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="lifecycle_status">{t('terminate.statusLabel')}</Label>
+            <Label htmlFor="lifecycle_status">
+              {t("terminate.statusLabel")}
+            </Label>
             <select
               id="lifecycle_status"
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -132,7 +136,7 @@ export function TerminatePositionDialog({
           {!isActive && (
             <div className="grid gap-2">
               <Label htmlFor="lifecycle_terminated_at">
-                {t('terminate.terminatedOnLabel')}
+                {t("terminate.terminatedOnLabel")}
               </Label>
               <Input
                 id="lifecycle_terminated_at"
@@ -146,12 +150,12 @@ export function TerminatePositionDialog({
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="lifecycle_note">{t('terminate.noteLabel')}</Label>
+            <Label htmlFor="lifecycle_note">{t("terminate.noteLabel")}</Label>
             <Input
               id="lifecycle_note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={t('terminate.notePlaceholder')}
+              placeholder={t("terminate.notePlaceholder")}
             />
           </div>
 
@@ -163,14 +167,14 @@ export function TerminatePositionDialog({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
-              {t('cancel')}
+              {t("cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? t('actions.saving') : t('save')}
+              {mutation.isPending ? t("actions.saving") : t("save")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

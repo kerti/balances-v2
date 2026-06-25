@@ -13,52 +13,52 @@
 // + pie are active-only; the time + stack series include terminated positions
 // historically (capped at terminated_at), via the shared `aggregateGroupHome`.
 
-import { useMemo } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { SnapshotChart } from '@/components/SnapshotChart'
+} from "@/components/ui/card";
+import { SnapshotChart } from "@/components/SnapshotChart";
 import {
   GroupCategoryStackChart,
   type GroupStackCategory,
-} from '@/components/GroupCategoryStackChart'
+} from "@/components/GroupCategoryStackChart";
 import {
   InvestmentPieChart,
   type PieSlice,
-} from '@/components/InvestmentPieChart'
-import { useLiabilities } from '@/hooks/useLiabilities'
-import { useLiabilityTimeSeries } from '@/hooks/useLiabilityTimeSeries'
+} from "@/components/InvestmentPieChart";
+import { useLiabilities } from "@/hooks/useLiabilities";
+import { useLiabilityTimeSeries } from "@/hooks/useLiabilityTimeSeries";
 import {
   aggregateGroupHome,
   type GroupPosition,
-} from '@/lib/groupHomeAggregates'
-import { formatCurrency } from '@/lib/format'
+} from "@/lib/groupHomeAggregates";
+import { formatCurrency } from "@/lib/format";
 
-type LiabilityCategory = 'personal' | 'institutional'
+type LiabilityCategory = "personal" | "institutional";
 
-const LIABILITY_CATEGORIES: LiabilityCategory[] = ['personal', 'institutional']
+const LIABILITY_CATEGORIES: LiabilityCategory[] = ["personal", "institutional"];
 
 // Distinct hues, kept clear of the asset palette. Personal = violet,
 // institutional = rose.
 const CATEGORY_FILLS: Record<LiabilityCategory, string> = {
-  personal: '#8b5cf6', // violet-500
-  institutional: '#f43f5e', // rose-500
-}
+  personal: "#8b5cf6", // violet-500
+  institutional: "#f43f5e", // rose-500
+};
 
 export function LiabilitiesHome() {
-  const { t } = useTranslation(['common', 'liabilities', 'errors'])
-  const liabilities = useLiabilities()
-  const timeSeries = useLiabilityTimeSeries()
+  const { t } = useTranslation(["common", "liabilities", "errors"]);
+  const liabilities = useLiabilities();
+  const timeSeries = useLiabilityTimeSeries();
 
   const positions = useMemo<GroupPosition[]>(() => {
-    const out: GroupPosition[] = []
+    const out: GroupPosition[] = [];
     for (const it of liabilities.data ?? []) {
-      const ts = timeSeries.byId.get(it.liability.id)
+      const ts = timeSeries.byId.get(it.liability.id);
       out.push({
         id: it.liability.id,
         currency: it.liability.native_currency,
@@ -69,17 +69,17 @@ export function LiabilitiesHome() {
           : null,
         snapshots: ts?.snapshots ?? [],
         category: it.liability.subtype,
-      })
+      });
     }
-    return out
-  }, [liabilities.data, timeSeries.byId])
+    return out;
+  }, [liabilities.data, timeSeries.byId]);
 
   const aggregates = useMemo(
     () => aggregateGroupHome(positions, LIABILITY_CATEGORIES),
     [positions],
-  )
+  );
 
-  const currencies = aggregates.byCurrency.map((c) => c.currency)
+  const currencies = aggregates.byCurrency.map((c) => c.currency);
 
   const stackCategories: GroupStackCategory[] = LIABILITY_CATEGORIES.map(
     (c) => ({
@@ -87,26 +87,26 @@ export function LiabilitiesHome() {
       label: t(`liabilities:home.categoryLabel.${c}`),
       color: CATEGORY_FILLS[c],
     }),
-  )
+  );
 
   return (
     <div className="space-y-6" data-testid="liabilities-home">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {t('common:home.liabilities.title')}
+          {t("common:home.liabilities.title")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {t('liabilities:home.subtitle')}
+          {t("liabilities:home.subtitle")}
         </p>
       </div>
 
       {liabilities.isPending && (
-        <p className="text-sm text-muted-foreground">{t('common:loading')}</p>
+        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
       )}
 
       {liabilities.error && (
         <p className="text-sm text-destructive">
-          {t('errors:failedToLoad', {
+          {t("errors:failedToLoad", {
             message: (liabilities.error as Error).message,
           })}
         </p>
@@ -138,39 +138,39 @@ export function LiabilitiesHome() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
-type TFn = (key: string, opts?: Record<string, unknown>) => string
+type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
 function buildCategorySlices(
   pie: { category: string; value: number }[],
   t: TFn,
 ): PieSlice[] {
   return LIABILITY_CATEGORIES.map((c) => {
-    const found = pie.find((p) => p.category === c)
+    const found = pie.find((p) => p.category === c);
     return {
       key: c,
       label: t(`liabilities:home.categoryLabel.${c}`),
       value: found?.value ?? 0,
       color: CATEGORY_FILLS[c],
-    }
-  })
+    };
+  });
 }
 
 function TotalOwedCard({
   aggregates,
   count,
 }: {
-  aggregates: { currency: string; value: number }[]
-  count: number
+  aggregates: { currency: string; value: number }[];
+  count: number;
 }) {
-  const { t } = useTranslation('liabilities')
-  if (aggregates.length === 0) return null
+  const { t } = useTranslation("liabilities");
+  if (aggregates.length === 0) return null;
   return (
     <div className="rounded-lg border p-4" data-testid="home-total">
       <div className="text-sm text-muted-foreground">
-        {t('home.totalOwedTitle')}
+        {t("home.totalOwedTitle")}
       </div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
@@ -181,27 +181,27 @@ function TotalOwedCard({
         ))}
       </div>
       <div className="mt-1 text-xs text-muted-foreground">
-        {t('home.totalOwedCount', { count })}
+        {t("home.totalOwedCount", { count })}
       </div>
     </div>
-  )
+  );
 }
 
 function ValueCard({
   currency,
   series,
 }: {
-  currency: string
-  series: { year_month: string; value: number }[]
+  currency: string;
+  series: { year_month: string; value: number }[];
 }) {
-  const { t } = useTranslation('liabilities')
-  if (series.length < 2) return null
+  const { t } = useTranslation("liabilities");
+  if (series.length < 2) return null;
   return (
     <Card data-testid={`home-value-${currency}`}>
       <CardHeader>
-        <CardTitle>{t('home.valueChartTitle')}</CardTitle>
+        <CardTitle>{t("home.valueChartTitle")}</CardTitle>
         <CardDescription>
-          {t('home.valueChartDescription', { currency })}
+          {t("home.valueChartDescription", { currency })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -214,7 +214,7 @@ function ValueCard({
         />
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function CategoryStackCard({
@@ -222,18 +222,18 @@ function CategoryStackCard({
   series,
   categories,
 }: {
-  currency: string
-  series: Parameters<typeof GroupCategoryStackChart>[0]['series']
-  categories: GroupStackCategory[]
+  currency: string;
+  series: Parameters<typeof GroupCategoryStackChart>[0]["series"];
+  categories: GroupStackCategory[];
 }) {
-  const { t } = useTranslation('liabilities')
-  if (series.length < 2) return null
+  const { t } = useTranslation("liabilities");
+  if (series.length < 2) return null;
   return (
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
-        <CardTitle>{t('home.categoryStackTitle')}</CardTitle>
+        <CardTitle>{t("home.categoryStackTitle")}</CardTitle>
         <CardDescription>
-          {t('home.categoryStackDescription', { currency })}
+          {t("home.categoryStackDescription", { currency })}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -244,29 +244,29 @@ function CategoryStackCard({
         />
       </CardContent>
     </Card>
-  )
+  );
 }
 
 function CategoryPieCard({
   currency,
   slices,
 }: {
-  currency: string
-  slices: PieSlice[]
+  currency: string;
+  slices: PieSlice[];
 }) {
-  const { t } = useTranslation('liabilities')
-  if (slices.every((s) => s.value <= 0)) return null
+  const { t } = useTranslation("liabilities");
+  if (slices.every((s) => s.value <= 0)) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>
-        <CardTitle>{t('home.categoryPieTitle')}</CardTitle>
+        <CardTitle>{t("home.categoryPieTitle")}</CardTitle>
         <CardDescription>
-          {t('home.categoryPieDescription', { currency })}
+          {t("home.categoryPieDescription", { currency })}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <InvestmentPieChart slices={slices} currency={currency} />
       </CardContent>
     </Card>
-  )
+  );
 }

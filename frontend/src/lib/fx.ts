@@ -1,4 +1,4 @@
-import type { FxRate } from '@/api/types'
+import type { FxRate } from "@/api/types";
 
 // Q15c side-by-side display (ADR-0010): the monthly report stores every figure
 // in the household reporting currency. To show a figure in a second currency we
@@ -9,9 +9,9 @@ import type { FxRate } from '@/api/types'
 // the backend owns the authoritative converted totals (see lib/format.ts).
 
 export type DisplayRate = {
-  rate: number
-  rateMonth: string // year_month the rate is actually from (< M when carried forward)
-}
+  rate: number;
+  rateMonth: string; // year_month the rate is actually from (< M when carried forward)
+};
 
 // availableDisplayCurrencies lists currencies the user can project into: any
 // currency with at least one rate, minus the reporting currency (trivially 1:1,
@@ -20,11 +20,11 @@ export function availableDisplayCurrencies(
   rates: FxRate[],
   reportingCurrency: string,
 ): string[] {
-  const set = new Set<string>()
+  const set = new Set<string>();
   for (const r of rates) {
-    if (r.currency !== reportingCurrency) set.add(r.currency)
+    if (r.currency !== reportingCurrency) set.add(r.currency);
   }
-  return [...set].sort()
+  return [...set].sort();
 }
 
 // resolveDisplayRate finds the carry-forward rate for `currency` in month
@@ -36,21 +36,22 @@ export function resolveDisplayRate(
   currency: string,
   yearMonth: string,
 ): DisplayRate | null {
-  const m = yearMonth.slice(0, 7) // YYYY-MM
-  let best: FxRate | null = null
+  const m = yearMonth.slice(0, 7); // YYYY-MM
+  let best: FxRate | null = null;
   for (const r of rates) {
-    if (r.currency !== currency) continue
-    if (r.year_month.slice(0, 7) > m) continue
-    if (!best || r.year_month.slice(0, 7) > best.year_month.slice(0, 7)) best = r
+    if (r.currency !== currency) continue;
+    if (r.year_month.slice(0, 7) > m) continue;
+    if (!best || r.year_month.slice(0, 7) > best.year_month.slice(0, 7))
+      best = r;
   }
-  if (!best) return null
-  const rate = Number(best.rate)
-  if (!Number.isFinite(rate) || rate <= 0) return null
-  return { rate, rateMonth: best.year_month }
+  if (!best) return null;
+  const rate = Number(best.rate);
+  if (!Number.isFinite(rate) || rate <= 0) return null;
+  return { rate, rateMonth: best.year_month };
 }
 
 // convert projects a reporting-currency amount (string on the wire for
 // precision) into the display currency using a resolved rate.
 export function convert(reportingAmount: string, rate: number): number {
-  return Number(reportingAmount) / rate
+  return Number(reportingAmount) / rate;
 }

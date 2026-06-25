@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover'
-import { cn } from '@/lib/utils'
-import { formatYearMonth } from '@/lib/format'
-import type { MonthlyReport } from '@/api/types'
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { formatYearMonth } from "@/lib/format";
+import type { MonthlyReport } from "@/api/types";
 
 // MonthPickerPopover replaces a flat 120+-option <select> for the dashboard
 // month picker. Trigger shows the current month; popover shows a year nav
@@ -21,23 +21,33 @@ import type { MonthlyReport } from '@/api/types'
 // Month-label keys index into common.months.{jan…dec}. Order is fixed Jan→Dec
 // (calendar order), independent of locale.
 const MONTH_KEYS = [
-  'jan', 'feb', 'mar', 'apr', 'may', 'jun',
-  'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
-] as const
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "may",
+  "jun",
+  "jul",
+  "aug",
+  "sep",
+  "oct",
+  "nov",
+  "dec",
+] as const;
 
 // year_month is stored as "YYYY-MM-01T00:00:00Z" — UTC midnight. Use UTC
 // getters so local-timezone rollover never shifts the displayed month.
 function ymKey(iso: string): string {
-  const d = new Date(iso)
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 function yearOf(iso: string): number {
-  return new Date(iso).getUTCFullYear()
+  return new Date(iso).getUTCFullYear();
 }
 
 function monthIdxOf(iso: string): number {
-  return new Date(iso).getUTCMonth()
+  return new Date(iso).getUTCMonth();
 }
 
 export function MonthPickerPopover({
@@ -45,33 +55,35 @@ export function MonthPickerPopover({
   selected,
   onSelect,
 }: {
-  reports: MonthlyReport[]
-  selected: MonthlyReport
-  onSelect: (yearMonth: string) => void
+  reports: MonthlyReport[];
+  selected: MonthlyReport;
+  onSelect: (yearMonth: string) => void;
 }) {
-  const { t } = useTranslation(['dashboard', 'common'])
+  const { t } = useTranslation(["dashboard", "common"]);
   // ISO-by-key lookup so the cell click fires with the exact stored
   // year_month, not a re-synthesised one. Safer if the backend ever changes
   // the day/time component.
-  const isoByKey = new Map(reports.map((r) => [ymKey(r.year_month), r.year_month]))
-  const years = Array.from(new Set(reports.map((r) => yearOf(r.year_month)))).sort(
-    (a, b) => a - b,
-  )
-  const minYear = years[0]
-  const maxYear = years[years.length - 1]
+  const isoByKey = new Map(
+    reports.map((r) => [ymKey(r.year_month), r.year_month]),
+  );
+  const years = Array.from(
+    new Set(reports.map((r) => yearOf(r.year_month))),
+  ).sort((a, b) => a - b);
+  const minYear = years[0];
+  const maxYear = years[years.length - 1];
 
-  const selectedYear = yearOf(selected.year_month)
-  const selectedMonthIdx = monthIdxOf(selected.year_month)
+  const selectedYear = yearOf(selected.year_month);
+  const selectedMonthIdx = monthIdxOf(selected.year_month);
 
-  const [open, setOpen] = useState(false)
-  const [viewYear, setViewYear] = useState(selectedYear)
+  const [open, setOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(selectedYear);
 
   // Reset the year nav to the currently-selected year each time the popover
   // opens — otherwise re-opening shows whatever year the user last browsed,
   // which is confusing when the selection didn't change.
   function handleOpenChange(next: boolean) {
-    if (next) setViewYear(selectedYear)
-    setOpen(next)
+    if (next) setViewYear(selectedYear);
+    setOpen(next);
   }
 
   return (
@@ -95,7 +107,7 @@ export function MonthPickerPopover({
             data-testid="month-picker-year-prev"
             disabled={viewYear <= minYear}
             onClick={() => setViewYear((y) => Math.max(minYear, y - 1))}
-            aria-label={t('monthPicker.prevYear')}
+            aria-label={t("monthPicker.prevYear")}
           >
             <ChevronLeft className="size-4" />
           </Button>
@@ -111,41 +123,38 @@ export function MonthPickerPopover({
             data-testid="month-picker-year-next"
             disabled={viewYear >= maxYear}
             onClick={() => setViewYear((y) => Math.min(maxYear, y + 1))}
-            aria-label={t('monthPicker.nextYear')}
+            aria-label={t("monthPicker.nextYear")}
           >
             <ChevronRight className="size-4" />
           </Button>
         </div>
         <div className="grid grid-cols-4 gap-1">
           {MONTH_KEYS.map((monthKey, idx) => {
-            const key = `${viewYear}-${String(idx + 1).padStart(2, '0')}`
-            const iso = isoByKey.get(key)
-            const disabled = !iso
+            const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
+            const iso = isoByKey.get(key);
+            const disabled = !iso;
             const isSelected =
-              viewYear === selectedYear && idx === selectedMonthIdx
+              viewYear === selectedYear && idx === selectedMonthIdx;
             return (
               <Button
                 key={key}
-                variant={isSelected ? 'default' : 'ghost'}
+                variant={isSelected ? "default" : "ghost"}
                 size="sm"
                 data-testid={`month-picker-cell-${key}`}
                 disabled={disabled}
                 onClick={() => {
-                  if (!iso) return
-                  onSelect(iso)
-                  setOpen(false)
+                  if (!iso) return;
+                  onSelect(iso);
+                  setOpen(false);
                 }}
-                className={cn(
-                  'h-8',
-                  disabled && 'opacity-40',
-                )}
+                className={cn("h-8", disabled && "opacity-40")}
               >
                 {t(`common:months.${monthKey}`)}
               </Button>
-            )
+            );
           })}
         </div>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

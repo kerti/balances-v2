@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next'
-import { Label } from '@/components/ui/label'
-import type { RiskProfile } from '@/api/types'
+import { useTranslation } from "react-i18next";
+import { Label } from "@/components/ui/label";
+import type { RiskProfile } from "@/api/types";
 
 // Risk Profile select: required, no default. The empty placeholder "— select
 // —" forces the user to make a deliberate choice (per the M6 grilling — the
@@ -10,18 +10,18 @@ import type { RiskProfile } from '@/api/types'
 
 type Props = {
   /** Disambiguating prefix for the input id, e.g. "stock_create". */
-  idPrefix: string
+  idPrefix: string;
   /** Empty string means "not yet selected" — the parent should refuse submit. */
-  value: RiskProfile | ''
-  onChange: (next: RiskProfile) => void
-}
+  value: RiskProfile | "";
+  onChange: (next: RiskProfile) => void;
+};
 
 export function RiskProfileSelect({ idPrefix, value, onChange }: Props) {
-  const { t } = useTranslation('investments')
-  const id = `${idPrefix}_risk_profile`
+  const { t } = useTranslation("investments");
+  const id = `${idPrefix}_risk_profile`;
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>{t('riskProfile.selectLabel')}</Label>
+      <Label htmlFor={id}>{t("riskProfile.selectLabel")}</Label>
       <select
         id={id}
         required
@@ -30,12 +30,12 @@ export function RiskProfileSelect({ idPrefix, value, onChange }: Props) {
         onChange={(e) => onChange(e.target.value as RiskProfile)}
       >
         <option value="" disabled>
-          {t('riskProfile.selectPlaceholder')}
+          {t("riskProfile.selectPlaceholder")}
         </option>
-        <option value="low">{t('riskProfile.selectLow')}</option>
-        <option value="medium">{t('riskProfile.selectMedium')}</option>
-        <option value="high">{t('riskProfile.selectHigh')}</option>
+        <option value="low">{t("riskProfile.selectLow")}</option>
+        <option value="medium">{t("riskProfile.selectMedium")}</option>
+        <option value="high">{t("riskProfile.selectHigh")}</option>
       </select>
     </div>
-  )
+  );
 }

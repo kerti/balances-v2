@@ -1,4 +1,4 @@
-import type { InvestmentSnapshot, InvestmentTransaction } from '@/api/types'
+import type { InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 
 // Reconciliation per CONTEXT.md / ADR-0003:
 //   snapshot.quantity should equal Σ(Buy.qty) − Σ(Sell.qty) − Σ(Fee.qty_deducted)
@@ -10,35 +10,35 @@ import type { InvestmentSnapshot, InvestmentTransaction } from '@/api/types'
 // mismatch is a data-entry flag not a write block.
 
 export type ReconciliationResult = {
-  expected: number
-  actual: number
+  expected: number;
+  actual: number;
   // Allow tiny floating-point drift; treat anything within 1e-6 of expected
   // as a match. (Backend stores DECIMAL(20,8) so legitimate sub-unit deltas
   // round to zero at our display scale.)
-  matches: boolean
-}
+  matches: boolean;
+};
 
 export function reconcileQuantity(
   latestSnapshot: InvestmentSnapshot | null | undefined,
   transactions: InvestmentTransaction[] | undefined,
 ): ReconciliationResult | null {
-  if (!latestSnapshot || latestSnapshot.quantity === null) return null
-  if (!transactions || transactions.length === 0) return null
+  if (!latestSnapshot || latestSnapshot.quantity === null) return null;
+  if (!transactions || transactions.length === 0) return null;
 
   const expected = transactions.reduce((acc, t) => {
-    if (t.transaction_type === 'buy' && t.quantity) {
-      return acc + Number(t.quantity)
+    if (t.transaction_type === "buy" && t.quantity) {
+      return acc + Number(t.quantity);
     }
-    if (t.transaction_type === 'sell' && t.quantity) {
-      return acc - Number(t.quantity)
+    if (t.transaction_type === "sell" && t.quantity) {
+      return acc - Number(t.quantity);
     }
-    if (t.transaction_type === 'fee' && t.quantity) {
-      return acc - Number(t.quantity)
+    if (t.transaction_type === "fee" && t.quantity) {
+      return acc - Number(t.quantity);
     }
-    return acc
-  }, 0)
+    return acc;
+  }, 0);
 
-  const actual = Number(latestSnapshot.quantity)
-  const matches = Math.abs(expected - actual) < 1e-6
-  return { expected, actual, matches }
+  const actual = Number(latestSnapshot.quantity);
+  const matches = Math.abs(expected - actual) < 1e-6;
+  return { expected, actual, matches };
 }

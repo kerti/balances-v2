@@ -24,62 +24,62 @@ import {
   type CurrencyAggregate,
   type Position,
   type TimePoint,
-} from '@/lib/listAggregates'
-import { monthRange } from '@/lib/months'
+} from "@/lib/listAggregates";
+import { monthRange } from "@/lib/months";
 
 export type InvestmentCategory =
-  | 'stock'
-  | 'mutualFund'
-  | 'bond'
-  | 'timeDeposit'
-  | 'gold'
+  | "stock"
+  | "mutualFund"
+  | "bond"
+  | "timeDeposit"
+  | "gold";
 
-export type InvestmentRiskProfile = 'low' | 'medium' | 'high'
+export type InvestmentRiskProfile = "low" | "medium" | "high";
 
 export const INVESTMENT_CATEGORIES: InvestmentCategory[] = [
-  'stock',
-  'mutualFund',
-  'bond',
-  'timeDeposit',
-  'gold',
-]
+  "stock",
+  "mutualFund",
+  "bond",
+  "timeDeposit",
+  "gold",
+];
 
 export const INVESTMENT_RISK_PROFILES: InvestmentRiskProfile[] = [
-  'low',
-  'medium',
-  'high',
-]
+  "low",
+  "medium",
+  "high",
+];
 
 export type HomePosition = Position & {
-  category: InvestmentCategory
-  riskProfile: InvestmentRiskProfile
-}
+  category: InvestmentCategory;
+  riskProfile: InvestmentRiskProfile;
+};
 
 export type CategoryTimePoint = {
-  year_month: string
-  byCategory: Record<InvestmentCategory, number>
-}
+  year_month: string;
+  byCategory: Record<InvestmentCategory, number>;
+};
 
 export type CategorySlice = {
-  category: InvestmentCategory
-  value: number
-}
+  category: InvestmentCategory;
+  value: number;
+};
 
 export type RiskSlice = {
-  profile: InvestmentRiskProfile
-  value: number
-}
+  profile: InvestmentRiskProfile;
+  value: number;
+};
 
 export type HomeAggregates = {
-  byCurrency: CurrencyAggregate[]
-  timeSeriesByCurrency: Map<string, TimePoint[]>
-  categorySeriesByCurrency: Map<string, CategoryTimePoint[]>
-  categoryPieByCurrency: Map<string, CategorySlice[]>
-  riskPieByCurrency: Map<string, RiskSlice[]>
-  count: number
-}
+  byCurrency: CurrencyAggregate[];
+  timeSeriesByCurrency: Map<string, TimePoint[]>;
+  categorySeriesByCurrency: Map<string, CategoryTimePoint[]>;
+  categoryPieByCurrency: Map<string, CategorySlice[]>;
+  riskPieByCurrency: Map<string, RiskSlice[]>;
+  count: number;
+};
 
-const monthOf = (s: string) => s.slice(0, 7)
+const monthOf = (s: string) => s.slice(0, 7);
 
 const emptyByCategory = (): Record<InvestmentCategory, number> => ({
   stock: 0,
@@ -87,7 +87,7 @@ const emptyByCategory = (): Record<InvestmentCategory, number> => ({
   bond: 0,
   timeDeposit: 0,
   gold: 0,
-})
+});
 
 export function aggregateHomePositions(
   positions: HomePosition[],
@@ -106,36 +106,36 @@ export function aggregateHomePositions(
       snapshots: p.snapshots,
       costSeries: p.costSeries,
     })),
-  )
+  );
 
   // Category stack series includes closed positions historically (capped
   // at terminated_at). Pies are current-state only — closed positions
   // have no current value to attribute.
-  const byCurrencyAll = new Map<string, HomePosition[]>()
-  const byCurrencyActive = new Map<string, HomePosition[]>()
+  const byCurrencyAll = new Map<string, HomePosition[]>();
+  const byCurrencyActive = new Map<string, HomePosition[]>();
   for (const p of positions) {
-    if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, [])
-    byCurrencyAll.get(p.currency)!.push(p)
-    if (p.status === 'active') {
+    if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, []);
+    byCurrencyAll.get(p.currency)!.push(p);
+    if (p.status === "active") {
       if (!byCurrencyActive.has(p.currency))
-        byCurrencyActive.set(p.currency, [])
-      byCurrencyActive.get(p.currency)!.push(p)
+        byCurrencyActive.set(p.currency, []);
+      byCurrencyActive.get(p.currency)!.push(p);
     }
   }
 
-  const categorySeriesByCurrency = new Map<string, CategoryTimePoint[]>()
-  const categoryPieByCurrency = new Map<string, CategorySlice[]>()
-  const riskPieByCurrency = new Map<string, RiskSlice[]>()
+  const categorySeriesByCurrency = new Map<string, CategoryTimePoint[]>();
+  const categoryPieByCurrency = new Map<string, CategorySlice[]>();
+  const riskPieByCurrency = new Map<string, RiskSlice[]>();
 
   for (const [currency, ps] of byCurrencyAll) {
-    const series = aggregateMonthlyByCategory(ps)
+    const series = aggregateMonthlyByCategory(ps);
     if (series.length > 0) {
-      categorySeriesByCurrency.set(currency, series)
+      categorySeriesByCurrency.set(currency, series);
     }
   }
   for (const [currency, ps] of byCurrencyActive) {
-    categoryPieByCurrency.set(currency, currentCategoryPie(ps))
-    riskPieByCurrency.set(currency, currentRiskPie(ps))
+    categoryPieByCurrency.set(currency, currentCategoryPie(ps));
+    riskPieByCurrency.set(currency, currentRiskPie(ps));
   }
 
   return {
@@ -145,7 +145,7 @@ export function aggregateHomePositions(
     categoryPieByCurrency,
     riskPieByCurrency,
     count: base.count,
-  }
+  };
 }
 
 // Carry-forward monthly walk, same cursor pattern as listAggregates'
@@ -162,75 +162,75 @@ function aggregateMonthlyByCategory(
   positions: HomePosition[],
 ): CategoryTimePoint[] {
   type Sorted = {
-    category: InvestmentCategory
-    months: string[]
-    values: number[]
-    termMonth: string | null
-  }
+    category: InvestmentCategory;
+    months: string[];
+    values: number[];
+    termMonth: string | null;
+  };
   const sorted: Sorted[] = positions.map((p) => {
-    const termMonth = p.terminated_at ? monthOf(p.terminated_at) : null
+    const termMonth = p.terminated_at ? monthOf(p.terminated_at) : null;
     // Held only through the month before terminated_at — exclude the
     // termination month so a lone closed category doesn't crater to 0 at its
     // 0-close month and a same-month rollover doesn't double-count. The walk
     // cap below stops carry-forward leaking past termMonth. (See the longer
     // note in lib/listAggregates' aggregateMonthly.)
-    const live = (m: string) => termMonth === null || m < termMonth
-    const byMonth = new Map<string, number>()
+    const live = (m: string) => termMonth === null || m < termMonth;
+    const byMonth = new Map<string, number>();
     for (const s of p.snapshots) {
-      const m = monthOf(s.year_month)
-      if (!live(m)) continue
-      byMonth.set(m, Number(s.amount))
+      const m = monthOf(s.year_month);
+      if (!live(m)) continue;
+      byMonth.set(m, Number(s.amount));
     }
-    const months = [...byMonth.keys()].sort()
+    const months = [...byMonth.keys()].sort();
     return {
       category: p.category,
       months,
       values: months.map((m) => byMonth.get(m)!),
       termMonth,
-    }
-  })
+    };
+  });
 
-  const present = [...new Set(sorted.flatMap((s) => s.months))].sort()
-  if (present.length === 0) return []
+  const present = [...new Set(sorted.flatMap((s) => s.months))].sort();
+  if (present.length === 0) return [];
   // Continuous range so empty months stay on the timeline (#24); the
   // cursors below carry each category forward across the gaps.
-  const allMonths = monthRange(present[0], present[present.length - 1])
+  const allMonths = monthRange(present[0], present[present.length - 1]);
 
-  const out: CategoryTimePoint[] = []
-  const cursors = sorted.map(() => -1)
+  const out: CategoryTimePoint[] = [];
+  const cursors = sorted.map(() => -1);
   for (const month of allMonths) {
-    const byCategory = emptyByCategory()
+    const byCategory = emptyByCategory();
     for (let i = 0; i < sorted.length; i++) {
       if (sorted[i].termMonth !== null && month >= sorted[i].termMonth!) {
-        continue
+        continue;
       }
       while (
         cursors[i] + 1 < sorted[i].months.length &&
         sorted[i].months[cursors[i] + 1] <= month
       ) {
-        cursors[i]++
+        cursors[i]++;
       }
       if (cursors[i] >= 0) {
-        byCategory[sorted[i].category] += sorted[i].values[cursors[i]]
+        byCategory[sorted[i].category] += sorted[i].values[cursors[i]];
       }
     }
-    out.push({ year_month: month, byCategory })
+    out.push({ year_month: month, byCategory });
   }
-  return out
+  return out;
 }
 
 function currentCategoryPie(positions: HomePosition[]): CategorySlice[] {
-  const totals = emptyByCategory()
+  const totals = emptyByCategory();
   for (const p of positions) {
-    if (p.latestValue === null) continue
-    totals[p.category] += p.latestValue
+    if (p.latestValue === null) continue;
+    totals[p.category] += p.latestValue;
   }
   // Always emit all 5 keys, even at zero, so a chart legend can render a
   // stable order. Empty slices render as no arc.
   return INVESTMENT_CATEGORIES.map((category) => ({
     category,
     value: totals[category],
-  }))
+  }));
 }
 
 function currentRiskPie(positions: HomePosition[]): RiskSlice[] {
@@ -238,13 +238,13 @@ function currentRiskPie(positions: HomePosition[]): RiskSlice[] {
     low: 0,
     medium: 0,
     high: 0,
-  }
+  };
   for (const p of positions) {
-    if (p.latestValue === null) continue
-    totals[p.riskProfile] += p.latestValue
+    if (p.latestValue === null) continue;
+    totals[p.riskProfile] += p.latestValue;
   }
   return INVESTMENT_RISK_PROFILES.map((profile) => ({
     profile,
     value: totals[profile],
-  }))
+  }));
 }

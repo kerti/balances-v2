@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
-import { TagSelect } from '@/components/TagSelect'
-import { useAssignTag } from '@/hooks/useTags'
-import { errorMessage } from '@/lib/errorMessage'
-import type { TagGroup } from '@/api/types'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
+import { TagSelect } from "@/components/TagSelect";
+import { useAssignTag } from "@/hooks/useTags";
+import { errorMessage } from "@/lib/errorMessage";
+import type { TagGroup } from "@/api/types";
 
 // DetailTagControl is the position-side assignment surface (ADR-0028, slice 2):
 // a compact single-select Tag dropdown on each detail screen that writes
@@ -17,30 +17,30 @@ import type { TagGroup } from '@/api/types'
 // the write landed, so success and failure are reported via toast. On failure
 // the optimistic value is rolled back so the dropdown keeps showing the truth.
 type Props = {
-  group: TagGroup
-  positionId: string
-  currentTagId: string | null
-}
+  group: TagGroup;
+  positionId: string;
+  currentTagId: string | null;
+};
 
 export function DetailTagControl({ group, positionId, currentTagId }: Props) {
-  const { t } = useTranslation('tags')
-  const assign = useAssignTag()
-  const [value, setValue] = useState<string | null>(currentTagId)
+  const { t } = useTranslation("tags");
+  const assign = useAssignTag();
+  const [value, setValue] = useState<string | null>(currentTagId);
 
   const onChange = (tagId: string | null) => {
-    const previous = value
-    setValue(tagId)
+    const previous = value;
+    setValue(tagId);
     assign.mutate(
       { group, position_id: positionId, tag_id: tagId },
       {
-        onSuccess: () => toast.success(t('field.saved')),
+        onSuccess: () => toast.success(t("field.saved")),
         onError: (err) => {
-          setValue(previous)
-          toast.error(errorMessage(err))
+          setValue(previous);
+          toast.error(errorMessage(err));
         },
       },
-    )
-  }
+    );
+  };
 
   return (
     <div className="mt-2 max-w-[16rem]">
@@ -51,5 +51,5 @@ export function DetailTagControl({ group, positionId, currentTagId }: Props) {
         disabled={assign.isPending}
       />
     </div>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,30 +9,30 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { todayDate } from '@/lib/dateLimits'
-import type { InvestmentTransaction } from '@/api/types'
-import type { UpdateTransactionMutationVariables } from '@/components/EditTradeTransactionDialog'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { todayDate } from "@/lib/dateLimits";
+import type { InvestmentTransaction } from "@/api/types";
+import type { UpdateTransactionMutationVariables } from "@/components/EditTradeTransactionDialog";
 
 type Props<TResult> = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  transaction: InvestmentTransaction
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  transaction: InvestmentTransaction;
   mutation: UseMutationResult<
     TResult,
     unknown,
     UpdateTransactionMutationVariables
-  >
-}
+  >;
+};
 
 const TITLE_KEYS: Record<string, string> = {
-  coupon: 'investments:cashIncome.editCouponTitle',
-  dividend: 'investments:cashIncome.editDividendTitle',
-  distribution: 'investments:cashIncome.editDistributionTitle',
-}
+  coupon: "investments:cashIncome.editCouponTitle",
+  dividend: "investments:cashIncome.editDividendTitle",
+  distribution: "investments:cashIncome.editDistributionTitle",
+};
 
 export function EditCashIncomeTransactionDialog<TResult>({
   open,
@@ -40,20 +40,20 @@ export function EditCashIncomeTransactionDialog<TResult>({
   transaction,
   mutation,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
+  const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState({
     transaction_date: transaction.transaction_date.slice(0, 10),
-    amount: transaction.amount ?? '',
-    description: transaction.description ?? '',
-  })
+    amount: transaction.amount ?? "",
+    description: transaction.description ?? "",
+  });
 
   const titleKey =
     TITLE_KEYS[transaction.transaction_type] ??
-    'investments:cashIncome.editIncomeTitle'
+    "investments:cashIncome.editIncomeTitle";
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.amount) return
+    e.preventDefault();
+    if (!form.amount) return;
     mutation.mutate(
       {
         transactionId: transaction.id,
@@ -71,7 +71,7 @@ export function EditCashIncomeTransactionDialog<TResult>({
         },
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
@@ -80,14 +80,14 @@ export function EditCashIncomeTransactionDialog<TResult>({
         <DialogHeader>
           <DialogTitle>{t(titleKey)}</DialogTitle>
           <DialogDescription>
-            {t('investments:cashIncome.editDescription')}
+            {t("investments:cashIncome.editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_cash_date">
-                {t('investments:cashIncome.paymentDateLabel')}
+                {t("investments:cashIncome.paymentDateLabel")}
               </Label>
               <Input
                 id="edit_cash_date"
@@ -102,7 +102,7 @@ export function EditCashIncomeTransactionDialog<TResult>({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_cash_amount">
-                {t('investments:cashIncome.amountLabel', {
+                {t("investments:cashIncome.amountLabel", {
                   currency: transaction.currency,
                 })}
               </Label>
@@ -118,7 +118,7 @@ export function EditCashIncomeTransactionDialog<TResult>({
 
           <div className="grid gap-2">
             <Label htmlFor="edit_cash_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="edit_cash_description"
@@ -141,16 +141,16 @@ export function EditCashIncomeTransactionDialog<TResult>({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.amount}>
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

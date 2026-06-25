@@ -1,53 +1,53 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { MoreHorizontal } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { EditStockDialog } from '@/components/EditStockDialog'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { useDeleteStock } from '@/hooks/useInvestments'
-import { formatCurrency, formatYearMonth } from '@/lib/format'
-import { StatusBadge } from '@/components/StatusBadge'
-import { isActiveStatus } from '@/lib/lifecycle'
-import { cn } from '@/lib/utils'
-import { RiskProfileBadge } from '@/components/RiskProfileBadge'
-import { TransactionActivityCell } from '@/components/TransactionActivityCell'
-import type { StockListItem } from '@/api/types'
+} from "@/components/ui/dropdown-menu";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { EditStockDialog } from "@/components/EditStockDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useDeleteStock } from "@/hooks/useInvestments";
+import { formatCurrency, formatYearMonth } from "@/lib/format";
+import { StatusBadge } from "@/components/StatusBadge";
+import { isActiveStatus } from "@/lib/lifecycle";
+import { cn } from "@/lib/utils";
+import { RiskProfileBadge } from "@/components/RiskProfileBadge";
+import { TransactionActivityCell } from "@/components/TransactionActivityCell";
+import type { StockListItem } from "@/api/types";
 
 type Props = {
-  item: StockListItem
-  onSelect: (id: string) => void
-}
+  item: StockListItem;
+  onSelect: (id: string) => void;
+};
 
 export function StockListRow({ item, onSelect }: Props) {
-  const { t } = useTranslation(['investments', 'common'])
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const deleteMutation = useDeleteStock()
+  const { t } = useTranslation(["investments", "common"]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deleteMutation = useDeleteStock();
 
-  const terminated = !isActiveStatus(item.investment.status)
+  const terminated = !isActiveStatus(item.investment.status);
 
   function handleConfirmDelete() {
     deleteMutation.mutate(item.investment.id, {
       onSuccess: () => setDeleteOpen(false),
-    })
+    });
   }
 
   return (
     <>
       <TableRow
-        className={cn('cursor-pointer', terminated && 'text-muted-foreground')}
+        className={cn("cursor-pointer", terminated && "text-muted-foreground")}
         onClick={() => onSelect(item.investment.id)}
       >
         <TableCell>
           <div className="flex items-center gap-2">
-            <div className={cn('font-medium', terminated && 'font-normal')}>
+            <div className={cn("font-medium", terminated && "font-normal")}>
               {item.investment.display_name}
             </div>
             <RiskProfileBadge profile={item.investment.risk_profile} compact />
@@ -94,7 +94,7 @@ export function StockListRow({ item, onSelect }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t('investments:stock.rowActions')}
+                aria-label={t("investments:stock.rowActions")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="size-4" />
@@ -105,13 +105,13 @@ export function StockListRow({ item, onSelect }: Props) {
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                {t('common:actions.edit')}
+                {t("common:actions.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setDeleteOpen(true)}
                 variant="destructive"
               >
-                {t('common:delete')}
+                {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -128,15 +128,15 @@ export function StockListRow({ item, onSelect }: Props) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t('investments:stock.deleteTitle')}
-        description={t('investments:stock.deleteRowDescription', {
+        title={t("investments:stock.deleteTitle")}
+        description={t("investments:stock.deleteRowDescription", {
           name: item.investment.display_name,
         })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
     </>
-  )
+  );
 }

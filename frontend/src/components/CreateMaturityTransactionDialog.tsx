@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,14 +11,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { formatCurrency } from '@/lib/format'
-import { todayDate } from '@/lib/dateLimits'
-import type { CreateInvestmentTransactionPayload } from '@/hooks/useInvestmentTransactions'
-import type { Disposition, RolloverPolicy } from '@/api/types'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { formatCurrency } from "@/lib/format";
+import { todayDate } from "@/lib/dateLimits";
+import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
+import type { Disposition, RolloverPolicy } from "@/api/types";
 
 // Maturity shape (ADR-0009 §"Maturity transaction extension"). Records the
 // principal + interest at maturity plus a disposition for each:
@@ -31,21 +31,21 @@ import type { Disposition, RolloverPolicy } from '@/api/types'
 // rolloverPolicy (when supplied — TD has it, Bond doesn't) drives the
 // default dispositions. The user can override per event.
 type Props<TResult> = {
-  currency: string
-  rolloverPolicy?: RolloverPolicy
+  currency: string;
+  rolloverPolicy?: RolloverPolicy;
   // The instrument's term, YYYY-MM-DD (issue #62). The Maturity event happened
   // at maturityDate, so it seeds the date field and — together with
   // placementDate — bounds it: the backend confines a TimeDeposit's Maturity to
   // [placement, maturity]. Both optional; a Bond passes only maturityDate (no
   // placement → no lower bound, and the backend leaves bonds unbounded).
-  placementDate?: string
-  maturityDate?: string
+  placementDate?: string;
+  maturityDate?: string;
   mutation: UseMutationResult<
     TResult,
     unknown,
     CreateInvestmentTransactionPayload
-  >
-}
+  >;
+};
 
 // The Maturity event is dated at maturityDate, the day the deposit actually
 // matured — not at data-entry time. Defaulting to "today" would stamp
@@ -53,41 +53,42 @@ type Props<TResult> = {
 // rejected outright once maturityDate is in the past. Falls back to today when
 // the term has no maturityDate (shouldn't happen) or it is still in the future.
 function defaultMaturityDate(maturityDate?: string): string {
-  const today = todayDate()
-  return maturityDate && maturityDate <= today ? maturityDate : today
+  const today = todayDate();
+  return maturityDate && maturityDate <= today ? maturityDate : today;
 }
 
 // The latest selectable date: the term's maturity (the #62 hard upper bound),
 // but never in the future (the existing transaction future-date guard).
 function maxMaturityDate(maturityDate?: string): string {
-  const today = todayDate()
-  return maturityDate && maturityDate < today ? maturityDate : today
+  const today = todayDate();
+  return maturityDate && maturityDate < today ? maturityDate : today;
 }
 
-function defaultsForPolicy(
-  policy: RolloverPolicy | undefined,
-): { principal: Disposition; interest: Disposition } {
+function defaultsForPolicy(policy: RolloverPolicy | undefined): {
+  principal: Disposition;
+  interest: Disposition;
+} {
   switch (policy) {
-    case 'auto_renew_with_interest':
-      return { principal: 'rolled_to_new', interest: 'rolled_to_new' }
-    case 'auto_renew_principal':
-      return { principal: 'rolled_to_new', interest: 'cash_out' }
-    case 'no_rollover':
+    case "auto_renew_with_interest":
+      return { principal: "rolled_to_new", interest: "rolled_to_new" };
+    case "auto_renew_principal":
+      return { principal: "rolled_to_new", interest: "cash_out" };
+    case "no_rollover":
     default:
-      return { principal: 'cash_out', interest: 'cash_out' }
+      return { principal: "cash_out", interest: "cash_out" };
   }
 }
 
 function emptyForm(policy?: RolloverPolicy, maturityDate?: string) {
-  const d = defaultsForPolicy(policy)
+  const d = defaultsForPolicy(policy);
   return {
     transaction_date: defaultMaturityDate(maturityDate),
-    principal_amount: '',
-    interest_amount: '',
+    principal_amount: "",
+    interest_amount: "",
     principal_disposition: d.principal,
     interest_disposition: d.interest,
-    description: '',
-  }
+    description: "",
+  };
 }
 
 export function CreateMaturityTransactionDialog<TResult>({
@@ -97,29 +98,31 @@ export function CreateMaturityTransactionDialog<TResult>({
   maturityDate,
   mutation,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(() => emptyForm(rolloverPolicy, maturityDate))
+  const { t } = useTranslation(["investments", "common"]);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(() =>
+    emptyForm(rolloverPolicy, maturityDate),
+  );
 
   const totalReceived = (() => {
-    const p = Number(form.principal_amount)
-    const i = Number(form.interest_amount)
-    if (Number.isNaN(p) || Number.isNaN(i)) return null
-    return (p + i).toString()
-  })()
+    const p = Number(form.principal_amount);
+    const i = Number(form.interest_amount);
+    if (Number.isNaN(p) || Number.isNaN(i)) return null;
+    return (p + i).toString();
+  })();
 
   function close() {
-    setOpen(false)
-    setForm(emptyForm(rolloverPolicy, maturityDate))
-    mutation.reset()
+    setOpen(false);
+    setForm(emptyForm(rolloverPolicy, maturityDate));
+    mutation.reset();
   }
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.principal_amount || !form.interest_amount) return
+    e.preventDefault();
+    if (!form.principal_amount || !form.interest_amount) return;
     mutation.mutate(
       {
-        transaction_type: 'maturity',
+        transaction_type: "maturity",
         transaction_date: form.transaction_date,
         currency,
         description: form.description || null,
@@ -132,7 +135,7 @@ export function CreateMaturityTransactionDialog<TResult>({
         interest_disposition: form.interest_disposition,
       },
       { onSuccess: close },
-    )
+    );
   }
 
   return (
@@ -140,20 +143,20 @@ export function CreateMaturityTransactionDialog<TResult>({
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
           <Plus className="mr-1 size-4" />
-          {t('investments:maturityTxn.trigger')}
+          {t("investments:maturityTxn.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('investments:maturityTxn.createTitle')}</DialogTitle>
+          <DialogTitle>{t("investments:maturityTxn.createTitle")}</DialogTitle>
           <DialogDescription>
-            {t('investments:maturityTxn.createDescription')}
+            {t("investments:maturityTxn.createDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="mat_date">
-              {t('investments:maturityTxn.maturityDateLabel')}
+              {t("investments:maturityTxn.maturityDateLabel")}
             </Label>
             <Input
               id="mat_date"
@@ -171,7 +174,7 @@ export function CreateMaturityTransactionDialog<TResult>({
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="mat_principal">
-                {t('investments:maturityTxn.principalLabel', { currency })}
+                {t("investments:maturityTxn.principalLabel", { currency })}
               </Label>
               <Input
                 id="mat_principal"
@@ -181,12 +184,12 @@ export function CreateMaturityTransactionDialog<TResult>({
                 onChange={(e) =>
                   setForm({ ...form, principal_amount: e.target.value })
                 }
-                placeholder={t('investments:maturityTxn.principalPlaceholder')}
+                placeholder={t("investments:maturityTxn.principalPlaceholder")}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="mat_interest">
-                {t('investments:maturityTxn.interestLabel', { currency })}
+                {t("investments:maturityTxn.interestLabel", { currency })}
               </Label>
               <Input
                 id="mat_interest"
@@ -196,26 +199,26 @@ export function CreateMaturityTransactionDialog<TResult>({
                 onChange={(e) =>
                   setForm({ ...form, interest_amount: e.target.value })
                 }
-                placeholder={t('investments:maturityTxn.interestPlaceholder')}
+                placeholder={t("investments:maturityTxn.interestPlaceholder")}
               />
             </div>
           </div>
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t('investments:maturityTxn.totalAtMaturityLabel')}
-            </span>{' '}
+              {t("investments:maturityTxn.totalAtMaturityLabel")}
+            </span>{" "}
             <span className="font-medium">
               {totalReceived !== null
                 ? formatCurrency(totalReceived, currency)
-                : '—'}
+                : "—"}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="mat_principal_disp">
-                {t('investments:maturityTxn.principalDispositionLabel')}
+                {t("investments:maturityTxn.principalDispositionLabel")}
               </Label>
               <select
                 id="mat_principal_disp"
@@ -229,16 +232,16 @@ export function CreateMaturityTransactionDialog<TResult>({
                 }
               >
                 <option value="cash_out">
-                  {t('investments:disposition.cashOut')}
+                  {t("investments:disposition.cashOut")}
                 </option>
                 <option value="rolled_to_new">
-                  {t('investments:disposition.rolledToNew')}
+                  {t("investments:disposition.rolledToNew")}
                 </option>
               </select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="mat_interest_disp">
-                {t('investments:maturityTxn.interestDispositionLabel')}
+                {t("investments:maturityTxn.interestDispositionLabel")}
               </Label>
               <select
                 id="mat_interest_disp"
@@ -252,10 +255,10 @@ export function CreateMaturityTransactionDialog<TResult>({
                 }
               >
                 <option value="cash_out">
-                  {t('investments:disposition.cashOut')}
+                  {t("investments:disposition.cashOut")}
                 </option>
                 <option value="rolled_to_new">
-                  {t('investments:disposition.rolledToNew')}
+                  {t("investments:disposition.rolledToNew")}
                 </option>
               </select>
             </div>
@@ -263,7 +266,7 @@ export function CreateMaturityTransactionDialog<TResult>({
 
           <div className="grid gap-2">
             <Label htmlFor="mat_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="mat_description"
@@ -271,7 +274,7 @@ export function CreateMaturityTransactionDialog<TResult>({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder={t('investments:maturityTxn.descriptionPlaceholder')}
+              placeholder={t("investments:maturityTxn.descriptionPlaceholder")}
             />
           </div>
 
@@ -283,7 +286,7 @@ export function CreateMaturityTransactionDialog<TResult>({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button
               type="submit"
@@ -294,12 +297,12 @@ export function CreateMaturityTransactionDialog<TResult>({
               }
             >
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('investments:maturityTxn.recordMaturity')}
+                ? t("common:actions.saving")
+                : t("investments:maturityTxn.recordMaturity")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

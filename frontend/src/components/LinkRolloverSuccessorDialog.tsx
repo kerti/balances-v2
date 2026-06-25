@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Link2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,26 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   useTimeDeposits,
   useLinkRolloverSuccessor,
-} from '@/hooks/useInvestments'
-import { errorMessage } from '@/lib/errorMessage'
+} from "@/hooks/useInvestments";
+import { errorMessage } from "@/lib/errorMessage";
 
 type Props = {
   // The matured source deposit whose funds rolled over. The picked successor
   // gets stamped rolled_from = sourceId, clearing this position's callout.
-  sourceId: string
-}
+  sourceId: string;
+};
 
 export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
-  const { t } = useTranslation(['investments', 'common'])
-  const [open, setOpen] = useState(false)
-  const [selectedId, setSelectedId] = useState('')
-  const { data: deposits } = useTimeDeposits()
-  const mutation = useLinkRolloverSuccessor(sourceId)
+  const { t } = useTranslation(["investments", "common"]);
+  const [open, setOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState("");
+  const { data: deposits } = useTimeDeposits();
+  const mutation = useLinkRolloverSuccessor(sourceId);
 
   // Eligible successors: any other time deposit that isn't already the
   // successor of some deposit. The backend re-checks (self-link, cycles,
@@ -46,18 +46,18 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
           a.investment.display_name.localeCompare(b.investment.display_name),
         ),
     [deposits, sourceId],
-  )
+  );
 
   function close() {
-    setOpen(false)
-    setSelectedId('')
-    mutation.reset()
+    setOpen(false);
+    setSelectedId("");
+    mutation.reset();
   }
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedId) return
-    mutation.mutate(selectedId, { onSuccess: close })
+    e.preventDefault();
+    if (!selectedId) return;
+    mutation.mutate(selectedId, { onSuccess: close });
   }
 
   return (
@@ -65,26 +65,26 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" data-testid="rollover-link-trigger">
           <Link2 className="mr-1 size-4" />
-          {t('investments:timeDeposit.rollover.calloutLinkAction')}
+          {t("investments:timeDeposit.rollover.calloutLinkAction")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t('investments:timeDeposit.rollover.linkTitle')}
+            {t("investments:timeDeposit.rollover.linkTitle")}
           </DialogTitle>
           <DialogDescription>
-            {t('investments:timeDeposit.rollover.linkDescription')}
+            {t("investments:timeDeposit.rollover.linkDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="grid gap-2">
             <Label htmlFor="rollover_successor_select">
-              {t('investments:timeDeposit.rollover.linkLabel')}
+              {t("investments:timeDeposit.rollover.linkLabel")}
             </Label>
             {candidates.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {t('investments:timeDeposit.rollover.linkEmpty')}
+                {t("investments:timeDeposit.rollover.linkEmpty")}
               </p>
             ) : (
               <select
@@ -95,7 +95,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
                 onChange={(e) => setSelectedId(e.target.value)}
               >
                 <option value="" disabled>
-                  {t('investments:timeDeposit.rollover.linkPlaceholder')}
+                  {t("investments:timeDeposit.rollover.linkPlaceholder")}
                 </option>
                 {candidates.map((d) => (
                   <option key={d.investment.id} value={d.investment.id}>
@@ -114,7 +114,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button
               type="submit"
@@ -122,12 +122,12 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
               data-testid="rollover-link-submit"
             >
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('investments:timeDeposit.rollover.linkSubmit')}
+                ? t("common:actions.saving")
+                : t("investments:timeDeposit.rollover.linkSubmit")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

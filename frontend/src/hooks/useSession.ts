@@ -1,21 +1,21 @@
-import { useQuery } from '@tanstack/react-query'
-import { api, ApiError } from '@/api/client'
+import { useQuery } from "@tanstack/react-query";
+import { api, ApiError } from "@/api/client";
 
 export type Me = {
-  id: string
-  household_id: string
-  household_display_name: string
-  display_name: string
-  nickname: string | null
-  email: string
-  picture_url: string | null
-  locale: string
-  theme: string
-  carryover_date_mode: string
-  time_zone: string
-  reporting_currency: string
-  multi_currency_enabled: boolean
-}
+  id: string;
+  household_id: string;
+  household_display_name: string;
+  display_name: string;
+  nickname: string | null;
+  email: string;
+  picture_url: string | null;
+  locale: string;
+  theme: string;
+  carryover_date_mode: string;
+  time_zone: string;
+  reporting_currency: string;
+  multi_currency_enabled: boolean;
+};
 
 // useSession returns:
 //   isPending=true        — initial fetch in flight
@@ -24,18 +24,18 @@ export type Me = {
 //   error                 — a real error (network, 5xx, etc.)
 export function useSession() {
   return useQuery<Me | null>({
-    queryKey: ['session'],
+    queryKey: ["session"],
     queryFn: async () => {
       try {
-        return await api<Me>('/api/me')
+        return await api<Me>("/api/me");
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
-          return null
+          return null;
         }
-        throw err
+        throw err;
       }
     },
     staleTime: 60_000,
     refetchOnWindowFocus: true,
-  })
+  });
 }

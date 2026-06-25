@@ -2,24 +2,24 @@
 // boundary so the recharts + shadcn-chart code lands in a separate
 // chunk alongside the other home charts.
 
-import { Suspense } from 'react'
-import { lazyWithReload } from '@/lib/lazyWithReload'
-import type { CategoryTimePoint } from '@/lib/homeAggregates'
+import { Suspense } from "react";
+import { lazyWithReload } from "@/lib/lazyWithReload";
+import type { CategoryTimePoint } from "@/lib/homeAggregates";
 
 const CategoryStackChartImpl = lazyWithReload(
-  () => import('./CategoryStackChartImpl'),
-)
+  () => import("./CategoryStackChartImpl"),
+);
 
 type Props = {
-  series: CategoryTimePoint[]
-  currency: string
-}
+  series: CategoryTimePoint[];
+  currency: string;
+};
 
 export function CategoryStackChart({ series, currency }: Props) {
-  if (series.length < 2) return null
+  if (series.length < 2) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
       <CategoryStackChartImpl series={series} currency={currency} />
     </Suspense>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,50 +9,50 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { formatCurrency } from '@/lib/format'
-import { monthStartDate, monthEndDateCapped } from '@/lib/dateLimits'
-import type { UpdateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { formatCurrency } from "@/lib/format";
+import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
+import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type InvestmentSnapshotLike = {
-  id: string
-  year_month: string
-  amount: string
-  currency: string
-  quantity: string | null
-  price_per_unit: string | null
-  as_of_date: string | null
-  description: string | null
-}
+  id: string;
+  year_month: string;
+  amount: string;
+  currency: string;
+  quantity: string | null;
+  price_per_unit: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
 
 export type UpdateQuantityPriceSnapshotMutationVariables = {
-  snapshotId: string
-  payload: UpdateInvestmentSnapshotPayload
-}
+  snapshotId: string;
+  payload: UpdateInvestmentSnapshotPayload;
+};
 
 type Props<TResult> = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  snapshot: InvestmentSnapshotLike
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  snapshot: InvestmentSnapshotLike;
   // Mutation owned by the parent so the dialog works for any
   // M4.3a investment subtype (stock / mutual_fund / gold).
   mutation: UseMutationResult<
     TResult,
     unknown,
     UpdateQuantityPriceSnapshotMutationVariables
-  >
-}
+  >;
+};
 
 function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity)
-  const p = Number(pricePerUnit)
+  const q = Number(quantity);
+  const p = Number(pricePerUnit);
   if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null
+    return null;
   }
-  return (q * p).toString()
+  return (q * p).toString();
 }
 
 // year_month is not editable here (same constraint as the amount-shape edit
@@ -63,19 +63,19 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
   snapshot,
   mutation,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
+  const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState({
-    quantity: snapshot.quantity ?? '',
-    price_per_unit: snapshot.price_per_unit ?? '',
-    as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : '',
-    description: snapshot.description ?? '',
-  })
+    quantity: snapshot.quantity ?? "",
+    price_per_unit: snapshot.price_per_unit ?? "",
+    as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : "",
+    description: snapshot.description ?? "",
+  });
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit)
+  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (derivedAmount === null) return
+    e.preventDefault();
+    if (derivedAmount === null) return;
     mutation.mutate(
       {
         snapshotId: snapshot.id,
@@ -90,23 +90,25 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
         },
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('investments:quantityPriceSnapshot.editTitle')}</DialogTitle>
+          <DialogTitle>
+            {t("investments:quantityPriceSnapshot.editTitle")}
+          </DialogTitle>
           <DialogDescription>
-            {t('investments:quantityPriceSnapshot.editDescription')}
+            {t("investments:quantityPriceSnapshot.editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_inv_quantity">
-                {t('investments:quantityPriceSnapshot.quantityLabel')}
+                {t("investments:quantityPriceSnapshot.quantityLabel")}
               </Label>
               <Input
                 id="edit_inv_quantity"
@@ -118,7 +120,7 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_inv_price_per_unit">
-                {t('investments:quantityPriceSnapshot.pricePerUnitLabel', {
+                {t("investments:quantityPriceSnapshot.pricePerUnitLabel", {
                   currency: snapshot.currency,
                 })}
               </Label>
@@ -136,18 +138,18 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t('investments:quantityPriceSnapshot.totalValueLabel')}
-            </span>{' '}
+              {t("investments:quantityPriceSnapshot.totalValueLabel")}
+            </span>{" "}
             <span className="font-medium">
               {derivedAmount !== null
                 ? formatCurrency(derivedAmount, snapshot.currency)
-                : '—'}
+                : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="edit_inv_as_of_date">
-              {t('common:fields.statementDate')}
+              {t("common:fields.statementDate")}
             </Label>
             <Input
               id="edit_inv_as_of_date"
@@ -155,15 +157,13 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
               min={monthStartDate(snapshot.year_month)}
               max={monthEndDateCapped(snapshot.year_month)}
               value={form.as_of_date}
-              onChange={(e) =>
-                setForm({ ...form, as_of_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
             />
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="edit_inv_snap_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="edit_inv_snap_description"
@@ -186,19 +186,19 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || derivedAmount === null}
             >
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -7,55 +7,55 @@
 // Router.
 
 export const routes = {
-  dashboard: '/',
+  dashboard: "/",
 
   // Post-auth onboarding gate (ADR-0038). Rendered outside the authed router
   // (App.tsx) — the holder has a handshake cookie but no session yet.
-  onboarding: '/onboarding',
+  onboarding: "/onboarding",
 
   // Assets — home + three subtype lists, each with a detail under it.
-  assets: '/assets',
-  bankAccounts: '/assets/bank-accounts',
+  assets: "/assets",
+  bankAccounts: "/assets/bank-accounts",
   bankAccount: (id: string) => `/assets/bank-accounts/${id}`,
-  properties: '/assets/properties',
+  properties: "/assets/properties",
   property: (id: string) => `/assets/properties/${id}`,
-  vehicles: '/assets/vehicles',
+  vehicles: "/assets/vehicles",
   vehicle: (id: string) => `/assets/vehicles/${id}`,
 
   // Liabilities — home + two subtype lists. Detail nests under the subtype
   // (`/liabilities/personal/:id`) so the dynamic `:id` never overlaps the
   // literal `personal`/`institutional` segments. ADR-0025.
-  liabilities: '/liabilities',
-  liabilitiesPersonal: '/liabilities/personal',
-  liabilitiesInstitutional: '/liabilities/institutional',
-  liability: (subtype: 'personal' | 'institutional', id: string) =>
+  liabilities: "/liabilities",
+  liabilitiesPersonal: "/liabilities/personal",
+  liabilitiesInstitutional: "/liabilities/institutional",
+  liability: (subtype: "personal" | "institutional", id: string) =>
     `/liabilities/${subtype}/${id}`,
 
   // Receivables — flat group: the list is the root path, no home page.
-  receivables: '/receivables',
+  receivables: "/receivables",
   receivable: (id: string) => `/receivables/${id}`,
 
   // Investments — home + five subtype lists, each with a detail under it.
-  investments: '/investments',
-  stocks: '/investments/stocks',
+  investments: "/investments",
+  stocks: "/investments/stocks",
   stock: (id: string) => `/investments/stocks/${id}`,
-  mutualFunds: '/investments/mutual-funds',
+  mutualFunds: "/investments/mutual-funds",
   mutualFund: (id: string) => `/investments/mutual-funds/${id}`,
-  bonds: '/investments/bonds',
+  bonds: "/investments/bonds",
   bond: (id: string) => `/investments/bonds/${id}`,
-  timeDeposits: '/investments/time-deposits',
+  timeDeposits: "/investments/time-deposits",
   timeDeposit: (id: string) => `/investments/time-deposits/${id}`,
-  gold: '/investments/gold',
+  gold: "/investments/gold",
   goldItem: (id: string) => `/investments/gold/${id}`,
 
   // Income — flow event, not a position group: a flat list at its own path.
-  income: '/income',
+  income: "/income",
 
   // Tags — the cross-group breakdown report; flat, no detail pages.
-  tags: '/tags',
+  tags: "/tags",
 
-  settings: '/settings',
-} as const
+  settings: "/settings",
+} as const;
 
 // positionDetail resolves a position's detail-page path from the (group,
 // subtype) pair the report carries for stale positions (#50). Returns null for
@@ -68,37 +68,37 @@ export function positionDetail(
   id: string,
 ): string | null {
   switch (group) {
-    case 'asset':
+    case "asset":
       switch (subtype) {
-        case 'bank_account':
-          return routes.bankAccount(id)
-        case 'property':
-          return routes.property(id)
-        case 'vehicle':
-          return routes.vehicle(id)
+        case "bank_account":
+          return routes.bankAccount(id);
+        case "property":
+          return routes.property(id);
+        case "vehicle":
+          return routes.vehicle(id);
       }
-      return null
-    case 'liability':
-      if (subtype === 'personal' || subtype === 'institutional') {
-        return routes.liability(subtype, id)
+      return null;
+    case "liability":
+      if (subtype === "personal" || subtype === "institutional") {
+        return routes.liability(subtype, id);
       }
-      return null
-    case 'receivable':
-      return routes.receivable(id)
-    case 'investment':
+      return null;
+    case "receivable":
+      return routes.receivable(id);
+    case "investment":
       switch (subtype) {
-        case 'stock':
-          return routes.stock(id)
-        case 'mutual_fund':
-          return routes.mutualFund(id)
-        case 'bond':
-          return routes.bond(id)
-        case 'time_deposit':
-          return routes.timeDeposit(id)
-        case 'gold':
-          return routes.goldItem(id)
+        case "stock":
+          return routes.stock(id);
+        case "mutual_fund":
+          return routes.mutualFund(id);
+        case "bond":
+          return routes.bond(id);
+        case "time_deposit":
+          return routes.timeDeposit(id);
+        case "gold":
+          return routes.goldItem(id);
       }
-      return null
+      return null;
   }
-  return null
+  return null;
 }

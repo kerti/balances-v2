@@ -1,52 +1,52 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { MoreHorizontal } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { StatusBadge } from '@/components/StatusBadge'
-import { EditLiabilityDialog } from '@/components/EditLiabilityDialog'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { useDeleteLiability } from '@/hooks/useLiabilities'
-import { formatCurrency, formatYearMonth } from '@/lib/format'
-import { isActiveStatus } from '@/lib/lifecycle'
-import { cn } from '@/lib/utils'
-import type { LiabilityListItem } from '@/api/types'
+} from "@/components/ui/dropdown-menu";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { StatusBadge } from "@/components/StatusBadge";
+import { EditLiabilityDialog } from "@/components/EditLiabilityDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useDeleteLiability } from "@/hooks/useLiabilities";
+import { formatCurrency, formatYearMonth } from "@/lib/format";
+import { isActiveStatus } from "@/lib/lifecycle";
+import { cn } from "@/lib/utils";
+import type { LiabilityListItem } from "@/api/types";
 
 type Props = {
-  item: LiabilityListItem
+  item: LiabilityListItem;
   // Resolved by the screen (nickname ?? display_name, or "Joint").
-  ownerLabel: string
-  onSelect: (id: string) => void
-}
+  ownerLabel: string;
+  onSelect: (id: string) => void;
+};
 
 export function LiabilityListRow({ item, ownerLabel, onSelect }: Props) {
-  const { t } = useTranslation(['liabilities', 'common'])
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const deleteMutation = useDeleteLiability()
+  const { t } = useTranslation(["liabilities", "common"]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deleteMutation = useDeleteLiability();
 
-  const terminated = !isActiveStatus(item.liability.status)
+  const terminated = !isActiveStatus(item.liability.status);
 
   function handleConfirmDelete() {
     deleteMutation.mutate(item.liability.id, {
       onSuccess: () => setDeleteOpen(false),
-    })
+    });
   }
 
   return (
     <>
       <TableRow
-        className={cn('cursor-pointer', terminated && 'text-muted-foreground')}
+        className={cn("cursor-pointer", terminated && "text-muted-foreground")}
         onClick={() => onSelect(item.liability.id)}
       >
         <TableCell>
-          <div className={cn('font-medium', terminated && 'font-normal')}>
+          <div className={cn("font-medium", terminated && "font-normal")}>
             {item.liability.display_name}
           </div>
           <div className="text-xs text-muted-foreground">
@@ -71,7 +71,7 @@ export function LiabilityListRow({ item, ownerLabel, onSelect }: Props) {
               </div>
             </>
           ) : (
-            <span className="text-muted-foreground">{'—'}</span>
+            <span className="text-muted-foreground">{"—"}</span>
           )}
         </TableCell>
         <TableCell className="text-right">
@@ -80,21 +80,24 @@ export function LiabilityListRow({ item, ownerLabel, onSelect }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t('liabilities:rowActions')}
+                aria-label={t("liabilities:rowActions")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                {t('common:actions.edit')}
+                {t("common:actions.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setDeleteOpen(true)}
                 variant="destructive"
               >
-                {t('common:delete')}
+                {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -111,15 +114,15 @@ export function LiabilityListRow({ item, ownerLabel, onSelect }: Props) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t('liabilities:deleteTitle')}
-        description={t('liabilities:deleteRowDescription', {
+        title={t("liabilities:deleteTitle")}
+        description={t("liabilities:deleteRowDescription", {
           name: item.liability.display_name,
         })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
     </>
-  )
+  );
 }

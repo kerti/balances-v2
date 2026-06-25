@@ -1,4 +1,4 @@
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts'
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -6,18 +6,18 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from '@/components/ui/chart'
-import { formatChartMonth, formatCurrency } from '@/lib/format'
-import type { GroupCategoryTimePoint } from '@/lib/groupHomeAggregates'
-import type { GroupStackCategory } from './GroupCategoryStackChart'
+} from "@/components/ui/chart";
+import { formatChartMonth, formatCurrency } from "@/lib/format";
+import type { GroupCategoryTimePoint } from "@/lib/groupHomeAggregates";
+import type { GroupStackCategory } from "./GroupCategoryStackChart";
 
 type Props = {
-  series: GroupCategoryTimePoint[]
-  categories: GroupStackCategory[]
-  currency: string
-}
+  series: GroupCategoryTimePoint[];
+  categories: GroupStackCategory[];
+  currency: string;
+};
 
-type Row = { month: string } & Record<string, number | string>
+type Row = { month: string } & Record<string, number | string>;
 
 function toRows(
   series: GroupCategoryTimePoint[],
@@ -26,12 +26,12 @@ function toRows(
   return [...series]
     .sort((a, b) => a.year_month.localeCompare(b.year_month))
     .map((p) => {
-      const row: Row = { month: formatChartMonth(new Date(p.year_month)) }
+      const row: Row = { month: formatChartMonth(new Date(p.year_month)) };
       for (const c of categories) {
-        row[c.key] = p.byCategory[c.key] ?? 0
+        row[c.key] = p.byCategory[c.key] ?? 0;
       }
-      return row
-    })
+      return row;
+    });
 }
 
 export default function GroupCategoryStackChartImpl({
@@ -39,17 +39,17 @@ export default function GroupCategoryStackChartImpl({
   categories,
   currency,
 }: Props) {
-  const data = toRows(series, categories)
+  const data = toRows(series, categories);
 
   // Drop categories that are zero across every month — keeps the legend tight
   // for households that only hold one subtype.
   const present = categories.filter((c) =>
     data.some((row) => Number(row[c.key]) > 0),
-  )
+  );
 
   const chartConfig: ChartConfig = Object.fromEntries(
     present.map((c) => [c.key, { label: c.label, color: c.color }]),
-  )
+  );
 
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
@@ -85,13 +85,13 @@ export default function GroupCategoryStackChartImpl({
               // formatter's output when one is set, so it must supply the
               // indicator/label itself.)
               formatter={(value, name, item) => {
-                const key = String(name)
-                const seriesLabel = (chartConfig as ChartConfig)[key]?.label
+                const key = String(name);
+                const seriesLabel = (chartConfig as ChartConfig)[key]?.label;
                 const total = present.reduce(
                   (s, c) => s + (Number(item.payload[c.key]) || 0),
                   0,
-                )
-                const pct = total > 0 ? (Number(value) / total) * 100 : 0
+                );
+                const pct = total > 0 ? (Number(value) / total) * 100 : 0;
                 return (
                   <div className="flex w-full items-center justify-between gap-3">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -108,7 +108,7 @@ export default function GroupCategoryStackChartImpl({
                       </span>
                     </span>
                   </div>
-                )
+                );
               }}
             />
           }
@@ -128,5 +128,5 @@ export default function GroupCategoryStackChartImpl({
         <ChartLegend content={<ChartLegendContent />} />
       </AreaChart>
     </ChartContainer>
-  )
+  );
 }

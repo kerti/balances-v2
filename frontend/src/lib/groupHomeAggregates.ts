@@ -19,35 +19,35 @@ import {
   type CurrencyAggregate,
   type Position,
   type TimePoint,
-} from '@/lib/listAggregates'
-import { monthRange } from '@/lib/months'
+} from "@/lib/listAggregates";
+import { monthRange } from "@/lib/months";
 
 // A group position is a value-only `Position` (no cost / costSeries) tagged
 // with its subtype category — a free-form string so each group supplies its
 // own set (bankAccount/property/vehicle, personal/institutional, …).
-export type GroupPosition = Omit<Position, 'cost' | 'costSeries'> & {
-  category: string
-}
+export type GroupPosition = Omit<Position, "cost" | "costSeries"> & {
+  category: string;
+};
 
 export type GroupCategoryTimePoint = {
-  year_month: string
-  byCategory: Record<string, number>
-}
+  year_month: string;
+  byCategory: Record<string, number>;
+};
 
 export type GroupCategorySlice = {
-  category: string
-  value: number
-}
+  category: string;
+  value: number;
+};
 
 export type GroupHomeAggregates = {
-  byCurrency: CurrencyAggregate[]
-  timeSeriesByCurrency: Map<string, TimePoint[]>
-  categorySeriesByCurrency: Map<string, GroupCategoryTimePoint[]>
-  categoryPieByCurrency: Map<string, GroupCategorySlice[]>
-  count: number
-}
+  byCurrency: CurrencyAggregate[];
+  timeSeriesByCurrency: Map<string, TimePoint[]>;
+  categorySeriesByCurrency: Map<string, GroupCategoryTimePoint[]>;
+  categoryPieByCurrency: Map<string, GroupCategorySlice[]>;
+  count: number;
+};
 
-const monthOf = (s: string) => s.slice(0, 7)
+const monthOf = (s: string) => s.slice(0, 7);
 
 // aggregateGroupHome merges value-only positions into per-currency cards.
 // `categories` fixes the key order for the stack + pie (so a legend renders
@@ -67,28 +67,29 @@ export function aggregateGroupHome(
       latestValue: p.latestValue,
       snapshots: p.snapshots,
     })),
-  )
+  );
 
-  const byCurrencyAll = new Map<string, GroupPosition[]>()
-  const byCurrencyActive = new Map<string, GroupPosition[]>()
+  const byCurrencyAll = new Map<string, GroupPosition[]>();
+  const byCurrencyActive = new Map<string, GroupPosition[]>();
   for (const p of positions) {
-    if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, [])
-    byCurrencyAll.get(p.currency)!.push(p)
-    if (p.status === 'active') {
-      if (!byCurrencyActive.has(p.currency)) byCurrencyActive.set(p.currency, [])
-      byCurrencyActive.get(p.currency)!.push(p)
+    if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, []);
+    byCurrencyAll.get(p.currency)!.push(p);
+    if (p.status === "active") {
+      if (!byCurrencyActive.has(p.currency))
+        byCurrencyActive.set(p.currency, []);
+      byCurrencyActive.get(p.currency)!.push(p);
     }
   }
 
-  const categorySeriesByCurrency = new Map<string, GroupCategoryTimePoint[]>()
-  const categoryPieByCurrency = new Map<string, GroupCategorySlice[]>()
+  const categorySeriesByCurrency = new Map<string, GroupCategoryTimePoint[]>();
+  const categoryPieByCurrency = new Map<string, GroupCategorySlice[]>();
 
   for (const [currency, ps] of byCurrencyAll) {
-    const series = aggregateMonthlyByCategory(ps, categories)
-    if (series.length > 0) categorySeriesByCurrency.set(currency, series)
+    const series = aggregateMonthlyByCategory(ps, categories);
+    if (series.length > 0) categorySeriesByCurrency.set(currency, series);
   }
   for (const [currency, ps] of byCurrencyActive) {
-    categoryPieByCurrency.set(currency, currentCategoryPie(ps, categories))
+    categoryPieByCurrency.set(currency, currentCategoryPie(ps, categories));
   }
 
   return {
@@ -97,7 +98,7 @@ export function aggregateGroupHome(
     categorySeriesByCurrency,
     categoryPieByCurrency,
     count: base.count,
-  }
+  };
 }
 
 // Carry-forward monthly walk per category — the generic twin of
@@ -109,57 +110,57 @@ function aggregateMonthlyByCategory(
   categories: string[],
 ): GroupCategoryTimePoint[] {
   const emptyByCategory = (): Record<string, number> =>
-    Object.fromEntries(categories.map((c) => [c, 0]))
+    Object.fromEntries(categories.map((c) => [c, 0]));
 
   type Sorted = {
-    category: string
-    months: string[]
-    values: number[]
-    termMonth: string | null
-  }
+    category: string;
+    months: string[];
+    values: number[];
+    termMonth: string | null;
+  };
   const sorted: Sorted[] = positions.map((p) => {
-    const termMonth = p.terminated_at ? monthOf(p.terminated_at) : null
-    const live = (m: string) => termMonth === null || m < termMonth
-    const byMonth = new Map<string, number>()
+    const termMonth = p.terminated_at ? monthOf(p.terminated_at) : null;
+    const live = (m: string) => termMonth === null || m < termMonth;
+    const byMonth = new Map<string, number>();
     for (const s of p.snapshots) {
-      const m = monthOf(s.year_month)
-      if (!live(m)) continue
-      byMonth.set(m, Number(s.amount))
+      const m = monthOf(s.year_month);
+      if (!live(m)) continue;
+      byMonth.set(m, Number(s.amount));
     }
-    const months = [...byMonth.keys()].sort()
+    const months = [...byMonth.keys()].sort();
     return {
       category: p.category,
       months,
       values: months.map((m) => byMonth.get(m)!),
       termMonth,
-    }
-  })
+    };
+  });
 
-  const present = [...new Set(sorted.flatMap((s) => s.months))].sort()
-  if (present.length === 0) return []
-  const allMonths = monthRange(present[0], present[present.length - 1])
+  const present = [...new Set(sorted.flatMap((s) => s.months))].sort();
+  if (present.length === 0) return [];
+  const allMonths = monthRange(present[0], present[present.length - 1]);
 
-  const out: GroupCategoryTimePoint[] = []
-  const cursors = sorted.map(() => -1)
+  const out: GroupCategoryTimePoint[] = [];
+  const cursors = sorted.map(() => -1);
   for (const month of allMonths) {
-    const byCategory = emptyByCategory()
+    const byCategory = emptyByCategory();
     for (let i = 0; i < sorted.length; i++) {
       if (sorted[i].termMonth !== null && month >= sorted[i].termMonth!) {
-        continue
+        continue;
       }
       while (
         cursors[i] + 1 < sorted[i].months.length &&
         sorted[i].months[cursors[i] + 1] <= month
       ) {
-        cursors[i]++
+        cursors[i]++;
       }
       if (cursors[i] >= 0) {
-        byCategory[sorted[i].category] += sorted[i].values[cursors[i]]
+        byCategory[sorted[i].category] += sorted[i].values[cursors[i]];
       }
     }
-    out.push({ year_month: month, byCategory })
+    out.push({ year_month: month, byCategory });
   }
-  return out
+  return out;
 }
 
 function currentCategoryPie(
@@ -168,11 +169,11 @@ function currentCategoryPie(
 ): GroupCategorySlice[] {
   const totals: Record<string, number> = Object.fromEntries(
     categories.map((c) => [c, 0]),
-  )
+  );
   for (const p of positions) {
-    if (p.latestValue === null) continue
-    totals[p.category] += p.latestValue
+    if (p.latestValue === null) continue;
+    totals[p.category] += p.latestValue;
   }
   // Emit every key (even at zero) so the legend order is stable.
-  return categories.map((category) => ({ category, value: totals[category] }))
+  return categories.map((category) => ({ category, value: totals[category] }));
 }

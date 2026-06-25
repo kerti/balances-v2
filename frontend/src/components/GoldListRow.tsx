@@ -1,56 +1,56 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { MoreHorizontal } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { EditGoldDialog } from '@/components/EditGoldDialog'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { useDeleteGold } from '@/hooks/useInvestments'
-import { formatCurrency, formatYearMonth } from '@/lib/format'
-import { StatusBadge } from '@/components/StatusBadge'
-import { isActiveStatus } from '@/lib/lifecycle'
-import { cn } from '@/lib/utils'
-import { RiskProfileBadge } from '@/components/RiskProfileBadge'
-import { formatGoldPurity } from '@/lib/gold'
-import { TransactionActivityCell } from '@/components/TransactionActivityCell'
-import type { GoldListItem } from '@/api/types'
+} from "@/components/ui/dropdown-menu";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { EditGoldDialog } from "@/components/EditGoldDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useDeleteGold } from "@/hooks/useInvestments";
+import { formatCurrency, formatYearMonth } from "@/lib/format";
+import { StatusBadge } from "@/components/StatusBadge";
+import { isActiveStatus } from "@/lib/lifecycle";
+import { cn } from "@/lib/utils";
+import { RiskProfileBadge } from "@/components/RiskProfileBadge";
+import { formatGoldPurity } from "@/lib/gold";
+import { TransactionActivityCell } from "@/components/TransactionActivityCell";
+import type { GoldListItem } from "@/api/types";
 
 type Props = {
-  item: GoldListItem
-  onSelect: (id: string) => void
-}
+  item: GoldListItem;
+  onSelect: (id: string) => void;
+};
 
 export function GoldListRow({ item, onSelect }: Props) {
-  const { t } = useTranslation(['investments', 'common'])
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const deleteMutation = useDeleteGold()
+  const { t } = useTranslation(["investments", "common"]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deleteMutation = useDeleteGold();
 
-  const terminated = !isActiveStatus(item.investment.status)
+  const terminated = !isActiveStatus(item.investment.status);
 
   function handleConfirmDelete() {
     deleteMutation.mutate(item.investment.id, {
       onSuccess: () => setDeleteOpen(false),
-    })
+    });
   }
 
-  const formLabel = t(`investments:gold.goldForms.${item.details.form}`)
+  const formLabel = t(`investments:gold.goldForms.${item.details.form}`);
 
   return (
     <>
       <TableRow
-        className={cn('cursor-pointer', terminated && 'text-muted-foreground')}
+        className={cn("cursor-pointer", terminated && "text-muted-foreground")}
         onClick={() => onSelect(item.investment.id)}
       >
         <TableCell>
           <div className="flex items-center gap-2">
-            <div className={cn('font-medium', terminated && 'font-normal')}>
+            <div className={cn("font-medium", terminated && "font-normal")}>
               {item.investment.display_name}
             </div>
             <RiskProfileBadge profile={item.investment.risk_profile} compact />
@@ -97,7 +97,7 @@ export function GoldListRow({ item, onSelect }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t('investments:gold.rowActions')}
+                aria-label={t("investments:gold.rowActions")}
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="size-4" />
@@ -108,13 +108,13 @@ export function GoldListRow({ item, onSelect }: Props) {
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                {t('common:actions.edit')}
+                {t("common:actions.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setDeleteOpen(true)}
                 variant="destructive"
               >
-                {t('common:delete')}
+                {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -131,15 +131,15 @@ export function GoldListRow({ item, onSelect }: Props) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t('investments:gold.deleteTitle')}
-        description={t('investments:gold.deleteRowDescription', {
+        title={t("investments:gold.deleteTitle")}
+        description={t("investments:gold.deleteRowDescription", {
           name: item.investment.display_name,
         })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
     </>
-  )
+  );
 }

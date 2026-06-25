@@ -1,6 +1,6 @@
-import * as React from "react"
+import * as React from "react";
 
-const MOBILE_BREAKPOINT = 768
+const MOBILE_BREAKPOINT = 768;
 
 // useSyncExternalStore instead of the shadcn default (useEffect + setState):
 // a media query is exactly an external store, and this keeps the repo's
@@ -16,18 +16,18 @@ const MOBILE_BREAKPOINT = 768
 // flips, not on every resize tick.
 export function useIsMobile() {
   const subscribe = React.useCallback((onStoreChange: () => void) => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    mql.addEventListener("change", onStoreChange)
-    window.addEventListener("resize", onStoreChange)
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    mql.addEventListener("change", onStoreChange);
+    window.addEventListener("resize", onStoreChange);
     return () => {
-      mql.removeEventListener("change", onStoreChange)
-      window.removeEventListener("resize", onStoreChange)
-    }
-  }, [])
+      mql.removeEventListener("change", onStoreChange);
+      window.removeEventListener("resize", onStoreChange);
+    };
+  }, []);
 
   return React.useSyncExternalStore(
     subscribe,
     () => window.innerWidth < MOBILE_BREAKPOINT,
     () => false,
-  )
+  );
 }

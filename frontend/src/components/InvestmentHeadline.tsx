@@ -17,25 +17,25 @@
 // #17 had narrowed to sold-only back when Maturity wrote a fictional
 // principal+interest close snapshot — #25 removed that false row.
 
-import { useTranslation } from 'react-i18next'
-import { formatCurrency, formatDate } from '@/lib/format'
-import { cn } from '@/lib/utils'
+import { useTranslation } from "react-i18next";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Props = {
-  currency: string
+  currency: string;
   // Latest snapshot's amount (already in native currency). Null when
   // there are no snapshots yet.
-  latestValue: number | null
+  latestValue: number | null;
   // Cost basis as of "now" — caller computes via lib/costBasis based on
   // subtype quirks (ledger replay for stock/MF/gold/bond; flat principal for
   // time deposit — bonds always carry a Buy at placement now, issue #27).
-  totalCost: number
+  totalCost: number;
   // When set to a terminal status ('sold' | 'matured') with a
   // terminated_at, swaps the P/L block for "Sold on {date}" / "Matured on
   // {date}". Pass `investment.status` + `investment.terminated_at`.
-  status?: string | null
-  terminatedAt?: string | null
-}
+  status?: string | null;
+  terminatedAt?: string | null;
+};
 
 export function InvestmentHeadline({
   currency,
@@ -44,17 +44,17 @@ export function InvestmentHeadline({
   status,
   terminatedAt,
 }: Props) {
-  const { t } = useTranslation('investments')
+  const { t } = useTranslation("investments");
 
   const isClosed = !!(
-    (status === 'sold' || status === 'matured') &&
+    (status === "sold" || status === "matured") &&
     terminatedAt
-  )
+  );
   // P/L is meaningful only when we have a current value to compare cost
   // against. No snapshot → no P/L number to show.
-  const pl = latestValue !== null ? latestValue - totalCost : null
+  const pl = latestValue !== null ? latestValue - totalCost : null;
   const plPct =
-    pl !== null && Math.abs(totalCost) > 0 ? (pl / totalCost) * 100 : null
+    pl !== null && Math.abs(totalCost) > 0 ? (pl / totalCost) * 100 : null;
 
   return (
     <div
@@ -62,9 +62,7 @@ export function InvestmentHeadline({
       data-testid="investment-headline"
     >
       <div>
-        <span className="text-muted-foreground">
-          {t('headline.totalCost')}
-        </span>{' '}
+        <span className="text-muted-foreground">{t("headline.totalCost")}</span>{" "}
         <span className="tabular-nums">
           {formatCurrency(totalCost.toString(), currency)}
         </span>
@@ -73,25 +71,25 @@ export function InvestmentHeadline({
         <div data-testid="investment-headline-closed">
           <span className="text-muted-foreground">
             {t(
-              status === 'matured'
-                ? 'headline.closed.matured'
-                : 'headline.closed.sold',
+              status === "matured"
+                ? "headline.closed.matured"
+                : "headline.closed.sold",
             )}
-          </span>{' '}
+          </span>{" "}
           <span>{formatDate(terminatedAt)}</span>
         </div>
       ) : (
         <div>
           <span className="text-muted-foreground">
-            {t('headline.unrealizedPL')}
-          </span>{' '}
+            {t("headline.unrealizedPL")}
+          </span>{" "}
           {pl === null ? (
             <span className="text-muted-foreground">
-              {t('headline.unrealizedPLEmpty')}
+              {t("headline.unrealizedPLEmpty")}
             </span>
           ) : (
             <span
-              className={cn('tabular-nums', plColor(pl))}
+              className={cn("tabular-nums", plColor(pl))}
               data-testid="investment-headline-pl"
             >
               {formatPL(pl, plPct, currency)}
@@ -100,13 +98,13 @@ export function InvestmentHeadline({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function plColor(pl: number): string {
-  if (pl > 0) return 'text-emerald-600'
-  if (pl < 0) return 'text-destructive'
-  return 'text-muted-foreground'
+  if (pl > 0) return "text-emerald-600";
+  if (pl < 0) return "text-destructive";
+  return "text-muted-foreground";
 }
 
 // `+Rp 1,234,567 (+2.34%)` / `−Rp 234,567 (−1.50%)` / `+Rp 100` (when
@@ -114,9 +112,9 @@ function plColor(pl: number): string {
 // glyph "−" U+2212 (not hyphen) for the same reason the revaluation
 // helper does — it visually aligns with "+" on inline text.
 function formatPL(pl: number, plPct: number | null, currency: string): string {
-  const sign = pl > 0 ? '+' : pl < 0 ? '−' : ''
-  const amount = `${sign}${formatCurrency(Math.abs(pl).toString(), currency)}`
-  if (plPct === null) return amount
-  const pctSign = plPct > 0 ? '+' : plPct < 0 ? '−' : ''
-  return `${amount} (${pctSign}${Math.abs(plPct).toFixed(2)}%)`
+  const sign = pl > 0 ? "+" : pl < 0 ? "−" : "";
+  const amount = `${sign}${formatCurrency(Math.abs(pl).toString(), currency)}`;
+  if (plPct === null) return amount;
+  const pctSign = plPct > 0 ? "+" : plPct < 0 ? "−" : "";
+  return `${amount} (${pctSign}${Math.abs(plPct).toFixed(2)}%)`;
 }

@@ -1,16 +1,16 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
-import type { LifecycleGroup } from '@/lib/lifecycle'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/api/client";
+import type { LifecycleGroup } from "@/lib/lifecycle";
 
 // PATCH /api/{group}/{id}/lifecycle. The backend operates on the parent table
 // (4 groups, not the 10 subtypes), so every subtype detail page funnels through
 // the same endpoint — the caller passes its own list query-key so we can
 // invalidate both the list and the single-row cache after a status change.
 export type LifecyclePayload = {
-  status: string
-  terminated_at: string | null
-  termination_note: string | null
-}
+  status: string;
+  terminated_at: string | null;
+  termination_note: string | null;
+};
 
 // Query keys to invalidate after a lifecycle change. Always the list + the
 // single-row cache; for investments also the snapshot list, because an
@@ -24,11 +24,11 @@ export function lifecycleInvalidationKeys(
   id: string,
   listKey: string,
 ): unknown[][] {
-  const keys: unknown[][] = [[listKey], [listKey, id]]
-  if (group === 'investments') {
-    keys.push(['investment-snapshots', id])
+  const keys: unknown[][] = [[listKey], [listKey, id]];
+  if (group === "investments") {
+    keys.push(["investment-snapshots", id]);
   }
-  return keys
+  return keys;
 }
 
 export function useUpdateLifecycle(
@@ -36,17 +36,17 @@ export function useUpdateLifecycle(
   id: string,
   listKey: string,
 ) {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: LifecyclePayload) =>
       api(`/api/${group}/${id}/lifecycle`, {
-        method: 'PATCH',
+        method: "PATCH",
         body: JSON.stringify(payload),
       }),
     onSuccess: () => {
       for (const queryKey of lifecycleInvalidationKeys(group, id, listKey)) {
-        qc.invalidateQueries({ queryKey })
+        qc.invalidateQueries({ queryKey });
       }
     },
-  })
+  });
 }

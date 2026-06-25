@@ -20,44 +20,44 @@
 // Mirrors the i18n-call pattern in lib/lifecycle.ts: callers re-render via
 // useTranslation on locale change; this stays a pure function that pulls the
 // live catalog from the shared i18n instance.
-import i18n from '@/i18n'
-import { ApiError, isEnvelope } from '@/api/client'
+import i18n from "@/i18n";
+import { ApiError, isEnvelope } from "@/api/client";
 
 export function errorMessage(err: unknown, fallback?: string): string {
   if (err instanceof ApiError) {
     if (isEnvelope(err.body)) {
-      const env = err.body
+      const env = err.body;
       // VALIDATION is the one code whose `rule` arg is itself a translatable
       // token (`required`, `oneof`, `gt`, ...). We resolve the rule sub-key
       // first, then feed the human form into the outer template. JSON keys
       // can't be both string and object at the same level, so the rule subkeys
       // live under a sibling `VALIDATION_RULE.<rule>` rather than nested
       // under `VALIDATION` — a small structural deviation from the ADR sketch.
-      if (env.code === 'VALIDATION' && env.args) {
-        const ruleArg = String(env.args.rule ?? '')
+      if (env.code === "VALIDATION" && env.args) {
+        const ruleArg = String(env.args.rule ?? "");
         const rule = i18n.t(`errors:code.VALIDATION_RULE.${ruleArg}`, {
           defaultValue: ruleArg,
-        })
-        return i18n.t('errors:code.VALIDATION', {
-          field: String(env.args.field ?? ''),
+        });
+        return i18n.t("errors:code.VALIDATION", {
+          field: String(env.args.field ?? ""),
           rule,
-        })
+        });
       }
-      const key = `errors:code.${env.code}`
+      const key = `errors:code.${env.code}`;
       const translated = i18n.t(key, {
         ...(env.args ?? {}),
-        defaultValue: '',
-      })
-      if (translated) return translated
+        defaultValue: "",
+      });
+      if (translated) return translated;
       if (import.meta.env.DEV) {
         // Surface missing catalog entries during development without changing
         // the user-facing copy. Production stays silent.
-        console.warn('[errorMessage] missing catalog entry for', key, env.args)
+        console.warn("[errorMessage] missing catalog entry for", key, env.args);
       }
-      return i18n.t('errors:code.UNKNOWN')
+      return i18n.t("errors:code.UNKNOWN");
     }
-    return i18n.t('errors:code.UNKNOWN')
+    return i18n.t("errors:code.UNKNOWN");
   }
-  if (err instanceof Error) return err.message
-  return fallback ?? i18n.t('errors:code.UNKNOWN')
+  if (err instanceof Error) return err.message;
+  return fallback ?? i18n.t("errors:code.UNKNOWN");
 }

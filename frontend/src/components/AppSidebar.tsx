@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router'
-import { useTranslation } from 'react-i18next'
+import { Link, useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 import {
   Sidebar,
   SidebarContent,
@@ -14,74 +14,74 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { routes } from '@/lib/routes'
-import { AppLogo } from '@/components/AppLogo'
-import { AppInfo } from '@/components/AppInfo'
+} from "@/components/ui/sidebar";
+import { routes } from "@/lib/routes";
+import { AppLogo } from "@/components/AppLogo";
+import { AppInfo } from "@/components/AppInfo";
 
 // `labelKey` indexes into the `nav` namespace catalog rather than carrying the
 // EN string inline — keeps the structural NAV array translation-agnostic.
-type Leaf = { labelKey: string; to: string }
+type Leaf = { labelKey: string; to: string };
 // A top-level destination. With `children` it's a group: the button links to
 // the group home and the subtype lists render beneath it (always expanded — few
 // enough items that hiding them behind a collapse would only add a click).
-type Section = { labelKey: string; to: string; children?: Leaf[] }
+type Section = { labelKey: string; to: string; children?: Leaf[] };
 
 const NAV: Section[] = [
-  { labelKey: 'dashboard', to: routes.dashboard },
+  { labelKey: "dashboard", to: routes.dashboard },
   {
-    labelKey: 'assets',
+    labelKey: "assets",
     to: routes.assets,
     children: [
-      { labelKey: 'bankAccounts', to: routes.bankAccounts },
-      { labelKey: 'properties', to: routes.properties },
-      { labelKey: 'vehicles', to: routes.vehicles },
+      { labelKey: "bankAccounts", to: routes.bankAccounts },
+      { labelKey: "properties", to: routes.properties },
+      { labelKey: "vehicles", to: routes.vehicles },
     ],
   },
   {
-    labelKey: 'liabilities',
+    labelKey: "liabilities",
     to: routes.liabilities,
     children: [
-      { labelKey: 'personal', to: routes.liabilitiesPersonal },
-      { labelKey: 'institutional', to: routes.liabilitiesInstitutional },
+      { labelKey: "personal", to: routes.liabilitiesPersonal },
+      { labelKey: "institutional", to: routes.liabilitiesInstitutional },
     ],
   },
-  { labelKey: 'receivables', to: routes.receivables },
+  { labelKey: "receivables", to: routes.receivables },
   {
-    labelKey: 'investments',
+    labelKey: "investments",
     to: routes.investments,
     children: [
-      { labelKey: 'stocks', to: routes.stocks },
-      { labelKey: 'mutualFunds', to: routes.mutualFunds },
-      { labelKey: 'bonds', to: routes.bonds },
-      { labelKey: 'timeDeposits', to: routes.timeDeposits },
-      { labelKey: 'gold', to: routes.gold },
+      { labelKey: "stocks", to: routes.stocks },
+      { labelKey: "mutualFunds", to: routes.mutualFunds },
+      { labelKey: "bonds", to: routes.bonds },
+      { labelKey: "timeDeposits", to: routes.timeDeposits },
+      { labelKey: "gold", to: routes.gold },
     ],
   },
-  { labelKey: 'income', to: routes.income },
-  { labelKey: 'tags', to: routes.tags },
-  { labelKey: 'settings', to: routes.settings },
-]
+  { labelKey: "income", to: routes.income },
+  { labelKey: "tags", to: routes.tags },
+  { labelKey: "settings", to: routes.settings },
+];
 
 // Uses shadcn's default text-sm for both main and sub items so the menu reads at
 // a normal size; the active item uses the accent fill (set explicitly so the
 // active style is legible here rather than inherited from the cva).
 const navItemClass =
-  'data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground'
+  "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground";
 
 export function AppSidebar() {
-  const { pathname } = useLocation()
-  const { setOpenMobile } = useSidebar()
-  const { t } = useTranslation(['nav', 'common'])
+  const { pathname } = useLocation();
+  const { setOpenMobile } = useSidebar();
+  const { t } = useTranslation(["nav", "common"]);
   // Close the mobile drawer after a navigation; a no-op on desktop.
-  const close = () => setOpenMobile(false)
+  const close = () => setOpenMobile(false);
 
   // A leaf/childless destination stays highlighted while you're on it or any
   // detail page beneath it (e.g. Bank Accounts active on /assets/bank-accounts
   // and /assets/bank-accounts/:id). The dashboard's `/` is exact-only — the
   // prefix test below reduces to an equality check for it.
   const leafActive = (to: string) =>
-    pathname === to || pathname.startsWith(to + '/')
+    pathname === to || pathname.startsWith(to + "/");
 
   return (
     <Sidebar>
@@ -140,5 +140,5 @@ export function AppSidebar() {
         <AppInfo className="px-2 py-1" />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

@@ -10,32 +10,32 @@
 // own length-2 minimum on `SnapshotChart` handles the "not enough
 // data" case per currency.
 
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { SnapshotChart } from '@/components/SnapshotChart'
-import type { TimePoint } from '@/lib/listAggregates'
+} from "@/components/ui/card";
+import { SnapshotChart } from "@/components/SnapshotChart";
+import type { TimePoint } from "@/lib/listAggregates";
 
 type Props = {
-  timeSeriesByCurrency: Map<string, TimePoint[]>
-}
+  timeSeriesByCurrency: Map<string, TimePoint[]>;
+};
 
 export function ListTimeGraph({ timeSeriesByCurrency }: Props) {
-  const { t } = useTranslation('investments')
-  if (timeSeriesByCurrency.size === 0) return null
+  const { t } = useTranslation("investments");
+  if (timeSeriesByCurrency.size === 0) return null;
   return (
     <>
       {[...timeSeriesByCurrency.entries()].map(([currency, series]) => (
         <Card key={currency} data-testid={`list-time-graph-${currency}`}>
           <CardHeader>
-            <CardTitle>{t('list.chartTitle')}</CardTitle>
+            <CardTitle>{t("list.chartTitle")}</CardTitle>
             <CardDescription>
-              {t('list.chartDescription', { currency })}
+              {t("list.chartDescription", { currency })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -54,5 +54,5 @@ export function ListTimeGraph({ timeSeriesByCurrency }: Props) {
         </Card>
       ))}
     </>
-  )
+  );
 }

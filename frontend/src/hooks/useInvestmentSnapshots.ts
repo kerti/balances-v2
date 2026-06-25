@@ -1,11 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
-import type { InvestmentSnapshot } from '@/api/types'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/api/client";
+import type { InvestmentSnapshot } from "@/api/types";
 import {
   postSnapshotImport,
   snapshotImportTemplateUrl,
   type ImportArgs,
-} from './snapshotImport'
+} from "./snapshotImport";
 
 // Investment snapshots live under /api/investments/{id}/snapshots — one
 // shared table per ADR-0022. quantity + price_per_unit carry the value shape
@@ -18,111 +18,105 @@ import {
 // list (which inlines the latest snapshot per row).
 
 export type CreateInvestmentSnapshotPayload = {
-  year_month: string
-  amount: string
-  currency: string
-  quantity: string | null
-  price_per_unit: string | null
-  accrued_interest: string | null
-  as_of_date: string | null
-  description: string | null
-}
+  year_month: string;
+  amount: string;
+  currency: string;
+  quantity: string | null;
+  price_per_unit: string | null;
+  accrued_interest: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
 
 export type UpdateInvestmentSnapshotPayload = {
-  amount: string
-  currency: string
-  quantity: string | null
-  price_per_unit: string | null
-  accrued_interest: string | null
-  as_of_date: string | null
-  description: string | null
-}
+  amount: string;
+  currency: string;
+  quantity: string | null;
+  price_per_unit: string | null;
+  accrued_interest: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
 
 export type InvestmentListKey =
-  | 'stocks'
-  | 'mutual-funds'
-  | 'golds'
-  | 'bonds'
-  | 'time-deposits'
+  | "stocks"
+  | "mutual-funds"
+  | "golds"
+  | "bonds"
+  | "time-deposits";
 
 export function useInvestmentSnapshots(investmentId: string | null) {
   return useQuery({
-    queryKey: ['investment-snapshots', investmentId],
+    queryKey: ["investment-snapshots", investmentId],
     queryFn: () =>
-      api<InvestmentSnapshot[]>(
-        `/api/investments/${investmentId}/snapshots`,
-      ),
+      api<InvestmentSnapshot[]>(`/api/investments/${investmentId}/snapshots`),
     enabled: !!investmentId,
-  })
+  });
 }
 
 export function useCreateInvestmentSnapshot(
   investmentId: string,
   listKey: InvestmentListKey,
 ) {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateInvestmentSnapshotPayload) =>
-      api<InvestmentSnapshot>(
-        `/api/investments/${investmentId}/snapshots`,
-        {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        },
-      ),
+      api<InvestmentSnapshot>(`/api/investments/${investmentId}/snapshots`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: ['investment-snapshots', investmentId],
-      })
-      qc.invalidateQueries({ queryKey: [listKey] })
+        queryKey: ["investment-snapshots", investmentId],
+      });
+      qc.invalidateQueries({ queryKey: [listKey] });
     },
-  })
+  });
 }
 
 export function useUpdateInvestmentSnapshot(
   investmentId: string,
   listKey: InvestmentListKey,
 ) {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: {
-      snapshotId: string
-      payload: UpdateInvestmentSnapshotPayload
+      snapshotId: string;
+      payload: UpdateInvestmentSnapshotPayload;
     }) =>
       api<InvestmentSnapshot>(
         `/api/investments/${investmentId}/snapshots/${args.snapshotId}`,
         {
-          method: 'PATCH',
+          method: "PATCH",
           body: JSON.stringify(args.payload),
         },
       ),
     onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: ['investment-snapshots', investmentId],
-      })
-      qc.invalidateQueries({ queryKey: [listKey] })
+        queryKey: ["investment-snapshots", investmentId],
+      });
+      qc.invalidateQueries({ queryKey: [listKey] });
     },
-  })
+  });
 }
 
 export function useDeleteInvestmentSnapshot(
   investmentId: string,
   listKey: InvestmentListKey,
 ) {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (snapshotId: string) =>
-      api(
-        `/api/investments/${investmentId}/snapshots/${snapshotId}`,
-        { method: 'DELETE' },
-      ),
+      api(`/api/investments/${investmentId}/snapshots/${snapshotId}`, {
+        method: "DELETE",
+      }),
     onSuccess: () => {
       qc.invalidateQueries({
-        queryKey: ['investment-snapshots', investmentId],
-      })
-      qc.invalidateQueries({ queryKey: [listKey] })
+        queryKey: ["investment-snapshots", investmentId],
+      });
+      qc.invalidateQueries({ queryKey: [listKey] });
     },
-  })
+  });
 }
 
 // ----- bulk snapshot import (xlsx template) -------------------------------
@@ -131,7 +125,9 @@ export function useDeleteInvestmentSnapshot(
 // shape-agnostic — same dialog, same hook, for all five subtypes.
 
 export function investmentImportTemplateUrl(investmentId: string): string {
-  return snapshotImportTemplateUrl(`/api/investments/${investmentId}/snapshots`)
+  return snapshotImportTemplateUrl(
+    `/api/investments/${investmentId}/snapshots`,
+  );
 }
 
 // Per-subtype export URLs for the full position workbook (Detail + Snapshots +
@@ -139,30 +135,30 @@ export function investmentImportTemplateUrl(investmentId: string): string {
 // same-origin, like the import-template link. The route is subtype-specific
 // because the backend resolves the subtype-shaped Detail sheet.
 export function stockExportUrl(investmentId: string): string {
-  return `/api/investments/stocks/${investmentId}/export`
+  return `/api/investments/stocks/${investmentId}/export`;
 }
 
 export function mutualFundExportUrl(investmentId: string): string {
-  return `/api/investments/mutual-funds/${investmentId}/export`
+  return `/api/investments/mutual-funds/${investmentId}/export`;
 }
 
 export function bondExportUrl(investmentId: string): string {
-  return `/api/investments/bonds/${investmentId}/export`
+  return `/api/investments/bonds/${investmentId}/export`;
 }
 
 export function goldExportUrl(investmentId: string): string {
-  return `/api/investments/golds/${investmentId}/export`
+  return `/api/investments/golds/${investmentId}/export`;
 }
 
 export function timeDepositExportUrl(investmentId: string): string {
-  return `/api/investments/time-deposits/${investmentId}/export`
+  return `/api/investments/time-deposits/${investmentId}/export`;
 }
 
 export function useImportInvestmentSnapshots(
   investmentId: string,
   listKey: InvestmentListKey,
 ) {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: ImportArgs) =>
       postSnapshotImport(
@@ -174,10 +170,10 @@ export function useImportInvestmentSnapshots(
       // Only a real write should refresh the caches; a preview changed nothing.
       if (result.committed) {
         qc.invalidateQueries({
-          queryKey: ['investment-snapshots', investmentId],
-        })
-        qc.invalidateQueries({ queryKey: [listKey] })
+          queryKey: ["investment-snapshots", investmentId],
+        });
+        qc.invalidateQueries({ queryKey: [listKey] });
       }
     },
-  })
+  });
 }

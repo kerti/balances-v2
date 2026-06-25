@@ -1,51 +1,51 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, Repeat, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { MoreHorizontal, Repeat, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { TableCell, TableRow } from '@/components/ui/table'
-import { EditIncomeDialog } from '@/components/EditIncomeDialog'
+} from "@/components/ui/dropdown-menu";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { EditIncomeDialog } from "@/components/EditIncomeDialog";
 import {
   CreateIncomeDialog,
   type DuplicateSeed,
-} from '@/components/CreateIncomeDialog'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { useDeleteIncome } from '@/hooks/useIncome'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { useSession } from '@/hooks/useSession'
-import { formatCurrency, formatDate } from '@/lib/format'
-import { ownershipLabel } from '@/lib/ownership'
-import type { Income } from '@/api/types'
+} from "@/components/CreateIncomeDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useDeleteIncome } from "@/hooks/useIncome";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { useSession } from "@/hooks/useSession";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { ownershipLabel } from "@/lib/ownership";
+import type { Income } from "@/api/types";
 
 type Props = {
-  income: Income
-}
+  income: Income;
+};
 
 export function IncomeRow({ income }: Props) {
-  const { t } = useTranslation(['income', 'common'])
-  const [editOpen, setEditOpen] = useState(false)
-  const [duplicateOpen, setDuplicateOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const deleteMutation = useDeleteIncome()
-  const { data: members } = useHouseholdMembers()
-  const { data: currentUser } = useSession()
+  const { t } = useTranslation(["income", "common"]);
+  const [editOpen, setEditOpen] = useState(false);
+  const [duplicateOpen, setDuplicateOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deleteMutation = useDeleteIncome();
+  const { data: members } = useHouseholdMembers();
+  const { data: currentUser } = useSession();
 
   const ownerLabel = ownershipLabel(
     income.ownership_type,
     income.sole_owner_user_id,
     members,
     currentUser,
-  )
+  );
 
   function handleConfirmDelete() {
     deleteMutation.mutate(income.id, {
       onSuccess: () => setDeleteOpen(false),
-    })
+    });
   }
 
   const seed: DuplicateSeed = {
@@ -56,17 +56,19 @@ export function IncomeRow({ income }: Props) {
     ownership_type: income.ownership_type,
     sole_owner_user_id: income.sole_owner_user_id,
     regularity: income.regularity,
-  }
+  };
 
-  const isRoutine = income.regularity === 'routine'
-  const RegularityIcon = isRoutine ? Repeat : Sparkles
+  const isRoutine = income.regularity === "routine";
+  const RegularityIcon = isRoutine ? Repeat : Sparkles;
   // Short row-chip label for the category (Salary / Business / Rental / ...)
   // — distinct from the longer dropdown options ("Business income") so the
   // table cell stays compact.
-  const categoryChip = t(`income:categories.${income.category}`)
+  const categoryChip = t(`income:categories.${income.category}`);
   const regularityLabel = t(
-    isRoutine ? 'income:regularity.routineRowLabel' : 'income:regularity.incidentalRowLabel',
-  )
+    isRoutine
+      ? "income:regularity.routineRowLabel"
+      : "income:regularity.incidentalRowLabel",
+  );
 
   return (
     <>
@@ -93,7 +95,7 @@ export function IncomeRow({ income }: Props) {
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
           {income.description || (
-            <span className="text-muted-foreground/60">{'—'}</span>
+            <span className="text-muted-foreground/60">{"—"}</span>
           )}
         </TableCell>
         <TableCell className="text-xs text-muted-foreground">
@@ -105,23 +107,23 @@ export function IncomeRow({ income }: Props) {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label={t('income:rowActions')}
+                aria-label={t("income:rowActions")}
               >
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                {t('common:actions.edit')}
+                {t("common:actions.edit")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDuplicateOpen(true)}>
-                {t('income:actions.duplicate')}
+                {t("income:actions.duplicate")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setDeleteOpen(true)}
                 variant="destructive"
               >
-                {t('common:delete')}
+                {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -148,17 +150,17 @@ export function IncomeRow({ income }: Props) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t('income:deleteTitle')}
-        description={t('income:deleteDescription', {
+        title={t("income:deleteTitle")}
+        description={t("income:deleteDescription", {
           category: categoryChip,
           amount: formatCurrency(income.amount, income.currency),
           date: formatDate(income.date),
         })}
-        confirmLabel={t('common:delete')}
+        confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
     </>
-  )
+  );
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,52 +8,52 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useUpdateVehicle } from '@/hooks/useVehicles'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { preferredName } from '@/lib/names'
-import { useSession } from '@/hooks/useSession'
-import { errorMessage } from '@/lib/errorMessage'
-import type { Vehicle } from '@/api/types'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useUpdateVehicle } from "@/hooks/useVehicles";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { preferredName } from "@/lib/names";
+import { useSession } from "@/hooks/useSession";
+import { errorMessage } from "@/lib/errorMessage";
+import type { Vehicle } from "@/api/types";
 
 type Props = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  vehicle: Vehicle
-}
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  vehicle: Vehicle;
+};
 
 export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
-  const { t } = useTranslation(['assets', 'common'])
-  const mutation = useUpdateVehicle(vehicle.asset.id)
-  const { data: user } = useSession()
-  const { data: members } = useHouseholdMembers()
+  const { t } = useTranslation(["assets", "common"]);
+  const mutation = useUpdateVehicle(vehicle.asset.id);
+  const { data: user } = useSession();
+  const { data: members } = useHouseholdMembers();
 
   const [form, setForm] = useState({
     display_name: vehicle.asset.display_name,
-    description: vehicle.asset.description ?? '',
+    description: vehicle.asset.description ?? "",
     ownership_type: vehicle.asset.ownership_type,
     sole_owner_user_id: vehicle.asset.sole_owner_user_id,
     vehicle_type: vehicle.details.vehicle_type,
-    make: vehicle.details.make ?? '',
-    model: vehicle.details.model ?? '',
-    year: vehicle.details.year ? String(vehicle.details.year) : '',
-    plate_number: vehicle.details.plate_number ?? '',
-    annual_depreciation_rate: vehicle.details.annual_depreciation_rate ?? '',
-  })
+    make: vehicle.details.make ?? "",
+    model: vehicle.details.model ?? "",
+    year: vehicle.details.year ? String(vehicle.details.year) : "",
+    plate_number: vehicle.details.plate_number ?? "",
+    annual_depreciation_rate: vehicle.details.annual_depreciation_rate ?? "",
+  });
 
-  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null
+  const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     mutation.mutate(
       {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
         sole_owner_user_id:
-          form.ownership_type === 'sole' ? effectiveSoleOwnerID : null,
+          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         vehicle_type: form.vehicle_type,
         make: form.make || null,
         model: form.model || null,
@@ -62,21 +62,23 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         annual_depreciation_rate: form.annual_depreciation_rate || null,
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('assets:vehicle.editTitle')}</DialogTitle>
+          <DialogTitle>{t("assets:vehicle.editTitle")}</DialogTitle>
           <DialogDescription>
-            {t('assets:vehicle.editDescription')}
+            {t("assets:vehicle.editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="ev_display_name">{t('common:fields.displayName')}</Label>
+            <Label htmlFor="ev_display_name">
+              {t("common:fields.displayName")}
+            </Label>
             <Input
               id="ev_display_name"
               required
@@ -88,7 +90,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="ev_type">{t('assets:vehicle.fields.type')}</Label>
+            <Label htmlFor="ev_type">{t("assets:vehicle.fields.type")}</Label>
             <select
               id="ev_type"
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -100,17 +102,23 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
                 })
               }
             >
-              <option value="car">{t('assets:vehicle.vehicleTypes.car')}</option>
-              <option value="motorcycle">
-                {t('assets:vehicle.vehicleTypes.motorcycle')}
+              <option value="car">
+                {t("assets:vehicle.vehicleTypes.car")}
               </option>
-              <option value="other">{t('assets:vehicle.vehicleTypes.other')}</option>
+              <option value="motorcycle">
+                {t("assets:vehicle.vehicleTypes.motorcycle")}
+              </option>
+              <option value="other">
+                {t("assets:vehicle.vehicleTypes.other")}
+              </option>
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="ev_make">{t('assets:vehicle.fields.makeEdit')}</Label>
+              <Label htmlFor="ev_make">
+                {t("assets:vehicle.fields.makeEdit")}
+              </Label>
               <Input
                 id="ev_make"
                 value={form.make}
@@ -118,7 +126,9 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="ev_model">{t('assets:vehicle.fields.modelEdit')}</Label>
+              <Label htmlFor="ev_model">
+                {t("assets:vehicle.fields.modelEdit")}
+              </Label>
               <Input
                 id="ev_model"
                 value={form.model}
@@ -129,7 +139,9 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="ev_year">{t('assets:vehicle.fields.yearEdit')}</Label>
+              <Label htmlFor="ev_year">
+                {t("assets:vehicle.fields.yearEdit")}
+              </Label>
               <Input
                 id="ev_year"
                 type="number"
@@ -139,7 +151,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="ev_plate">
-                {t('assets:vehicle.fields.plateNumberEdit')}
+                {t("assets:vehicle.fields.plateNumberEdit")}
               </Label>
               <Input
                 id="ev_plate"
@@ -153,7 +165,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
 
           <div className="grid gap-2">
             <Label htmlFor="ev_depr">
-              {t('assets:vehicle.fields.depreciationRateEdit')}
+              {t("assets:vehicle.fields.depreciationRateEdit")}
             </Label>
             <Input
               id="ev_depr"
@@ -169,34 +181,34 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label>{t('common:fields.ownership')}</Label>
+            <Label>{t("common:fields.ownership")}</Label>
             <div className="flex gap-4 text-sm">
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_v_ownership_type"
                   value="joint"
-                  checked={form.ownership_type === 'joint'}
-                  onChange={() => setForm({ ...form, ownership_type: 'joint' })}
+                  checked={form.ownership_type === "joint"}
+                  onChange={() => setForm({ ...form, ownership_type: "joint" })}
                 />
-                {t('common:ownership.joint')}
+                {t("common:ownership.joint")}
               </label>
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
                   name="edit_v_ownership_type"
                   value="sole"
-                  checked={form.ownership_type === 'sole'}
-                  onChange={() => setForm({ ...form, ownership_type: 'sole' })}
+                  checked={form.ownership_type === "sole"}
+                  onChange={() => setForm({ ...form, ownership_type: "sole" })}
                 />
-                {t('common:ownership.soleOwner')}
+                {t("common:ownership.soleOwner")}
               </label>
             </div>
-            {form.ownership_type === 'sole' && (
+            {form.ownership_type === "sole" && (
               <select
-                aria-label={t('common:ownership.soleOwner')}
+                aria-label={t("common:ownership.soleOwner")}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={effectiveSoleOwnerID ?? ''}
+                value={effectiveSoleOwnerID ?? ""}
                 onChange={(e) =>
                   setForm({ ...form, sole_owner_user_id: e.target.value })
                 }
@@ -204,7 +216,9 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
                 {(members ?? []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {preferredName(m)}
-                    {user && m.id === user.id ? t('common:ownership.youSuffix') : ''}
+                    {user && m.id === user.id
+                      ? t("common:ownership.youSuffix")
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -212,7 +226,9 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="ev_description">{t('common:fields.description')}</Label>
+            <Label htmlFor="ev_description">
+              {t("common:fields.description")}
+            </Label>
             <Input
               id="ev_description"
               value={form.description}
@@ -234,16 +250,16 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

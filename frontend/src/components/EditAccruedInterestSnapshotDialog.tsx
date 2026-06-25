@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,47 +9,47 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { formatCurrency } from '@/lib/format'
-import { monthStartDate, monthEndDateCapped } from '@/lib/dateLimits'
-import type { UpdateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { formatCurrency } from "@/lib/format";
+import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
+import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type AccruedInterestSnapshotLike = {
-  id: string
-  year_month: string
-  amount: string
-  currency: string
-  accrued_interest: string | null
-  as_of_date: string | null
-  description: string | null
-}
+  id: string;
+  year_month: string;
+  amount: string;
+  currency: string;
+  accrued_interest: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
 
 export type UpdateAccruedInterestSnapshotMutationVariables = {
-  snapshotId: string
-  payload: UpdateInvestmentSnapshotPayload
-}
+  snapshotId: string;
+  payload: UpdateInvestmentSnapshotPayload;
+};
 
 type Props<TResult> = {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  snapshot: AccruedInterestSnapshotLike
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  snapshot: AccruedInterestSnapshotLike;
   mutation: UseMutationResult<
     TResult,
     unknown,
     UpdateAccruedInterestSnapshotMutationVariables
-  >
-}
+  >;
+};
 
 function derivePrincipal(amount: string, accrued: string): string | null {
-  const a = Number(amount)
-  const i = Number(accrued)
+  const a = Number(amount);
+  const i = Number(accrued);
   if (!amount || !accrued || Number.isNaN(a) || Number.isNaN(i)) {
-    return null
+    return null;
   }
-  return (a - i).toString()
+  return (a - i).toString();
 }
 
 export function EditAccruedInterestSnapshotDialog<TResult>({
@@ -58,18 +58,18 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
   snapshot,
   mutation,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
+  const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState({
     amount: snapshot.amount,
-    accrued_interest: snapshot.accrued_interest ?? '',
-    as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : '',
-    description: snapshot.description ?? '',
-  })
+    accrued_interest: snapshot.accrued_interest ?? "",
+    as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : "",
+    description: snapshot.description ?? "",
+  });
 
-  const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest)
+  const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest);
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     mutation.mutate(
       {
         snapshotId: snapshot.id,
@@ -84,23 +84,25 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
         },
       },
       { onSuccess: () => onOpenChange(false) },
-    )
+    );
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('investments:accruedInterestSnapshot.editTitle')}</DialogTitle>
+          <DialogTitle>
+            {t("investments:accruedInterestSnapshot.editTitle")}
+          </DialogTitle>
           <DialogDescription>
-            {t('investments:accruedInterestSnapshot.editDescription')}
+            {t("investments:accruedInterestSnapshot.editDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_ai_amount">
-                {t('investments:accruedInterestSnapshot.totalValueLabel', {
+                {t("investments:accruedInterestSnapshot.totalValueLabel", {
                   currency: snapshot.currency,
                 })}
               </Label>
@@ -114,7 +116,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_ai_accrued">
-                {t('investments:accruedInterestSnapshot.accruedLabel', {
+                {t("investments:accruedInterestSnapshot.accruedLabel", {
                   currency: snapshot.currency,
                 })}
               </Label>
@@ -132,18 +134,18 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t('investments:accruedInterestSnapshot.ofWhichPrincipalLabel')}
-            </span>{' '}
+              {t("investments:accruedInterestSnapshot.ofWhichPrincipalLabel")}
+            </span>{" "}
             <span className="font-medium">
               {derivedPrincipal !== null
                 ? formatCurrency(derivedPrincipal, snapshot.currency)
-                : '—'}
+                : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="edit_ai_as_of_date">
-              {t('common:fields.statementDate')}
+              {t("common:fields.statementDate")}
             </Label>
             <Input
               id="edit_ai_as_of_date"
@@ -151,15 +153,13 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
               min={monthStartDate(snapshot.year_month)}
               max={monthEndDateCapped(snapshot.year_month)}
               value={form.as_of_date}
-              onChange={(e) =>
-                setForm({ ...form, as_of_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
             />
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="edit_ai_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="edit_ai_description"
@@ -182,16 +182,16 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('common:actions.saveChanges')}
+                ? t("common:actions.saving")
+                : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

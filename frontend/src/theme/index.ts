@@ -7,21 +7,21 @@
 // Unlike locale (driven by i18next's own change events), theme has no library
 // emitting changes, so a small React context (ThemeProvider/useTheme) holds the
 // active value and re-renders consumers like AppLogo.
-import { createContext } from 'react'
+import { createContext } from "react";
 
-export const SUPPORTED_THEMES = ['light', 'dark'] as const
-export type Theme = (typeof SUPPORTED_THEMES)[number]
-export const LOCALSTORAGE_KEY = 'balances.theme'
+export const SUPPORTED_THEMES = ["light", "dark"] as const;
+export type Theme = (typeof SUPPORTED_THEMES)[number];
+export const LOCALSTORAGE_KEY = "balances.theme";
 
 export function isSupportedTheme(value: string): value is Theme {
-  return (SUPPORTED_THEMES as readonly string[]).includes(value)
+  return (SUPPORTED_THEMES as readonly string[]).includes(value);
 }
 
 // applyTheme reflects the choice onto <html>: the `dark` class drives the CSS
 // custom-property palette in index.css. Kept here so the boot script in
 // index.html and the React layer agree on the exact mechanism.
 export function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle('dark', theme === 'dark')
+  document.documentElement.classList.toggle("dark", theme === "dark");
 }
 
 // resolveBootTheme is the same precedence the inline boot script in index.html
@@ -30,20 +30,20 @@ export function applyTheme(theme: Theme) {
 // state matches whatever the boot script already painted — no flash, no
 // flip-on-hydrate.
 export function resolveBootTheme(): Theme {
-  const stored = localStorage.getItem(LOCALSTORAGE_KEY)
-  if (stored && isSupportedTheme(stored)) return stored
+  const stored = localStorage.getItem(LOCALSTORAGE_KEY);
+  if (stored && isSupportedTheme(stored)) return stored;
   if (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-color-scheme: light)').matches
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-color-scheme: light)").matches
   ) {
-    return 'light'
+    return "light";
   }
-  return 'dark'
+  return "dark";
 }
 
 export type ThemeContextValue = {
-  theme: Theme
-  setTheme: (next: Theme) => void
-}
+  theme: Theme;
+  setTheme: (next: Theme) => void;
+};
 
-export const ThemeContext = createContext<ThemeContextValue | null>(null)
+export const ThemeContext = createContext<ThemeContextValue | null>(null);

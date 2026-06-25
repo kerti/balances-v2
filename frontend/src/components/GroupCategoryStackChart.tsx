@@ -5,31 +5,31 @@
 // (personal/institutional) reuse one impl. Lazy boundary so recharts lands in
 // a separate chunk, matching the investment chart.
 
-import { lazy, Suspense } from 'react'
-import type { GroupCategoryTimePoint } from '@/lib/groupHomeAggregates'
+import { lazy, Suspense } from "react";
+import type { GroupCategoryTimePoint } from "@/lib/groupHomeAggregates";
 
 const GroupCategoryStackChartImpl = lazy(
-  () => import('./GroupCategoryStackChartImpl'),
-)
+  () => import("./GroupCategoryStackChartImpl"),
+);
 
 export type GroupStackCategory = {
-  key: string
-  label: string
-  color: string
-}
+  key: string;
+  label: string;
+  color: string;
+};
 
 type Props = {
-  series: GroupCategoryTimePoint[]
-  categories: GroupStackCategory[]
-  currency: string
-}
+  series: GroupCategoryTimePoint[];
+  categories: GroupStackCategory[];
+  currency: string;
+};
 
 export function GroupCategoryStackChart({
   series,
   categories,
   currency,
 }: Props) {
-  if (series.length < 2) return null
+  if (series.length < 2) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
       <GroupCategoryStackChartImpl
@@ -38,5 +38,5 @@ export function GroupCategoryStackChart({
         currency={currency}
       />
     </Suspense>
-  )
+  );
 }

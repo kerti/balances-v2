@@ -5,13 +5,13 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination'
+} from "@/components/ui/pagination";
 
 type Props = {
-  page: number
-  totalPages: number
-  onPageChange: (p: number) => void
-}
+  page: number;
+  totalPages: number;
+  onPageChange: (p: number) => void;
+};
 
 export function PaginationControls({ page, totalPages, onPageChange }: Props) {
   return (
@@ -21,11 +21,13 @@ export function PaginationControls({ page, totalPages, onPageChange }: Props) {
           <PaginationPrevious
             href="#"
             onClick={(e) => {
-              e.preventDefault()
-              if (page > 1) onPageChange(page - 1)
+              e.preventDefault();
+              if (page > 1) onPageChange(page - 1);
             }}
             aria-disabled={page === 1}
-            className={page === 1 ? 'pointer-events-none opacity-50' : undefined}
+            className={
+              page === 1 ? "pointer-events-none opacity-50" : undefined
+            }
           />
         </PaginationItem>
         {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -34,8 +36,8 @@ export function PaginationControls({ page, totalPages, onPageChange }: Props) {
               href="#"
               isActive={p === page}
               onClick={(e) => {
-                e.preventDefault()
-                onPageChange(p)
+                e.preventDefault();
+                onPageChange(p);
               }}
             >
               {p}
@@ -46,16 +48,16 @@ export function PaginationControls({ page, totalPages, onPageChange }: Props) {
           <PaginationNext
             href="#"
             onClick={(e) => {
-              e.preventDefault()
-              if (page < totalPages) onPageChange(page + 1)
+              e.preventDefault();
+              if (page < totalPages) onPageChange(page + 1);
             }}
             aria-disabled={page === totalPages}
             className={
-              page === totalPages ? 'pointer-events-none opacity-50' : undefined
+              page === totalPages ? "pointer-events-none opacity-50" : undefined
             }
           />
         </PaginationItem>
       </PaginationContent>
     </Pagination>
-  )
+  );
 }

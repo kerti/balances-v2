@@ -1,23 +1,23 @@
-import { useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { errorMessage } from '@/lib/errorMessage'
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { errorMessage } from "@/lib/errorMessage";
 import {
   isHouseholdEmpty,
   postRestoreCommit,
   postRestorePreview,
   totalRows,
   type RestorePreview,
-} from '@/lib/backup'
+} from "@/lib/backup";
 
 // RestoreCard is the import half of Settings → Data (ADR-0036, issue #175). It
 // is a two-step, deliberately heavy flow: pick a backup → preview the stakes
@@ -26,66 +26,66 @@ import {
 // data) → commit. The commit wipes the caller's session, so on success the app
 // reloads into the sign-in screen; the next Google login re-links by google_sub.
 export function RestoreCard() {
-  const { t } = useTranslation('settings')
-  const fileRef = useRef<HTMLInputElement>(null)
-  const [file, setFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<RestorePreview | null>(null)
-  const [previewing, setPreviewing] = useState(false)
-  const [committing, setCommitting] = useState(false)
-  const [ack, setAck] = useState(false)
-  const [eraseInput, setEraseInput] = useState('')
+  const { t } = useTranslation("settings");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<RestorePreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const [committing, setCommitting] = useState(false);
+  const [ack, setAck] = useState(false);
+  const [eraseInput, setEraseInput] = useState("");
 
-  const eraseWord = t('data.restore.eraseWord')
+  const eraseWord = t("data.restore.eraseWord");
 
   const reset = () => {
-    setFile(null)
-    setPreview(null)
-    setAck(false)
-    setEraseInput('')
-    if (fileRef.current) fileRef.current.value = ''
-  }
+    setFile(null);
+    setPreview(null);
+    setAck(false);
+    setEraseInput("");
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   const handlePick = async (picked: File) => {
-    setFile(picked)
-    setPreview(null)
-    setAck(false)
-    setEraseInput('')
-    setPreviewing(true)
+    setFile(picked);
+    setPreview(null);
+    setAck(false);
+    setEraseInput("");
+    setPreviewing(true);
     try {
-      setPreview(await postRestorePreview(picked))
+      setPreview(await postRestorePreview(picked));
     } catch (err) {
-      toast.error(errorMessage(err, t('data.restore.previewError')))
-      reset()
+      toast.error(errorMessage(err, t("data.restore.previewError")));
+      reset();
     } finally {
-      setPreviewing(false)
+      setPreviewing(false);
     }
-  }
+  };
 
-  const stakesEmpty = preview ? isHouseholdEmpty(preview.current) : true
+  const stakesEmpty = preview ? isHouseholdEmpty(preview.current) : true;
   const confirmed = stakesEmpty
     ? ack
-    : eraseInput.trim().toLocaleUpperCase() === eraseWord.toLocaleUpperCase()
+    : eraseInput.trim().toLocaleUpperCase() === eraseWord.toLocaleUpperCase();
 
   const handleCommit = async () => {
-    if (!file || !confirmed) return
-    setCommitting(true)
+    if (!file || !confirmed) return;
+    setCommitting(true);
     try {
-      await postRestoreCommit(file)
-      toast.success(t('data.restore.done'))
+      await postRestoreCommit(file);
+      toast.success(t("data.restore.done"));
       // The server re-issued our session, so we stay signed in. A full load of the
       // dashboard is the cleanest way to surface the wholly-replaced data set.
-      setTimeout(() => window.location.assign('/'), 1200)
+      setTimeout(() => window.location.assign("/"), 1200);
     } catch (err) {
-      setCommitting(false)
-      toast.error(errorMessage(err, t('data.restore.failed')))
+      setCommitting(false);
+      toast.error(errorMessage(err, t("data.restore.failed")));
     }
-  }
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{t('data.restore.title')}</CardTitle>
-        <CardDescription>{t('data.restore.description')}</CardDescription>
+        <CardTitle className="text-base">{t("data.restore.title")}</CardTitle>
+        <CardDescription>{t("data.restore.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <input
@@ -95,8 +95,8 @@ export function RestoreCard() {
           className="hidden"
           data-testid="restore-file-input"
           onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void handlePick(f)
+            const f = e.target.files?.[0];
+            if (f) void handlePick(f);
           }}
         />
 
@@ -108,9 +108,13 @@ export function RestoreCard() {
               disabled={previewing}
               data-testid="restore-choose-button"
             >
-              {previewing ? t('data.restore.checking') : t('data.restore.choose')}
+              {previewing
+                ? t("data.restore.checking")
+                : t("data.restore.choose")}
             </Button>
-            <p className="text-sm text-muted-foreground">{t('data.restore.chooseHint')}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("data.restore.chooseHint")}
+            </p>
           </div>
         )}
 
@@ -118,7 +122,7 @@ export function RestoreCard() {
           <div className="space-y-4" data-testid="restore-preview">
             <div className="rounded-md border p-3 text-sm">
               <p>
-                {t('data.restore.summary', {
+                {t("data.restore.summary", {
                   household: preview.backup.household_name,
                   count: totalRows(preview.backup.counts),
                 })}
@@ -131,7 +135,7 @@ export function RestoreCard() {
                 className="rounded-md border bg-muted p-3 text-sm text-muted-foreground"
                 data-testid="restore-older-version"
               >
-                {t('data.restore.olderVersionNote')}
+                {t("data.restore.olderVersionNote")}
               </div>
             )}
 
@@ -140,10 +144,10 @@ export function RestoreCard() {
               data-testid="restore-stakes"
             >
               {stakesEmpty ? (
-                <p>{t('data.restore.stakesEmpty')}</p>
+                <p>{t("data.restore.stakesEmpty")}</p>
               ) : (
                 <p className="font-medium text-destructive">
-                  {t('data.restore.stakesWarning', {
+                  {t("data.restore.stakesWarning", {
                     count: totalRows(preview.current),
                   })}
                 </p>
@@ -160,12 +164,12 @@ export function RestoreCard() {
                   onChange={(e) => setAck(e.target.checked)}
                   data-testid="restore-ack-checkbox"
                 />
-                <span>{t('data.restore.ack')}</span>
+                <span>{t("data.restore.ack")}</span>
               </label>
             ) : (
               <div className="space-y-1">
                 <label htmlFor="restore-erase" className="text-sm">
-                  {t('data.restore.erasePrompt', { word: eraseWord })}
+                  {t("data.restore.erasePrompt", { word: eraseWord })}
                 </label>
                 <Input
                   id="restore-erase"
@@ -185,21 +189,26 @@ export function RestoreCard() {
                 disabled={!confirmed || committing}
                 data-testid="restore-commit-button"
               >
-                {committing ? t('data.restore.restoring') : t('data.restore.commit')}
+                {committing
+                  ? t("data.restore.restoring")
+                  : t("data.restore.commit")}
               </Button>
               <Button variant="ghost" onClick={reset} disabled={committing}>
-                {t('data.restore.cancel')}
+                {t("data.restore.cancel")}
               </Button>
             </div>
 
             {committing && (
-              <p className="text-sm text-muted-foreground" data-testid="restore-progress">
-                {t('data.restore.dontClose')}
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="restore-progress"
+              >
+                {t("data.restore.dontClose")}
               </p>
             )}
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

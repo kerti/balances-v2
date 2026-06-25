@@ -17,13 +17,13 @@ export function deriveFeeQuantity(
   amount: string,
   pricePerUnit: string,
 ): string | null {
-  if (!amount || !pricePerUnit) return null
-  const a = Number(amount)
-  const p = Number(pricePerUnit)
-  if (!Number.isFinite(a) || !Number.isFinite(p)) return null
-  if (a <= 0 || p <= 0) return null
-  const q = a / p
+  if (!amount || !pricePerUnit) return null;
+  const a = Number(amount);
+  const p = Number(pricePerUnit);
+  if (!Number.isFinite(a) || !Number.isFinite(p)) return null;
+  if (a <= 0 || p <= 0) return null;
+  const q = a / p;
   // Round to 8dp (DECIMAL(20,8)); `toString()` drops the trailing zeros the
   // round introduces.
-  return (Math.round(q * 1e8) / 1e8).toString()
+  return (Math.round(q * 1e8) / 1e8).toString();
 }

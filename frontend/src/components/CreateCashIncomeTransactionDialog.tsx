@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,71 +11,71 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { todayDate } from '@/lib/dateLimits'
-import type { CreateInvestmentTransactionPayload } from '@/hooks/useInvestmentTransactions'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { todayDate } from "@/lib/dateLimits";
+import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 
 // CashIncome shape covers Coupon (bond), Dividend (stock), Distribution
 // (mutual fund). Cash received from the instrument; per ADR-0003 it does
 // NOT propagate to bank-account snapshots (the user reads the resulting
 // cash off the next bank statement).
-type CashIncomeType = 'coupon' | 'dividend' | 'distribution'
+type CashIncomeType = "coupon" | "dividend" | "distribution";
 
 type Props<TResult> = {
-  currency: string
-  txnType: CashIncomeType
+  currency: string;
+  txnType: CashIncomeType;
   mutation: UseMutationResult<
     TResult,
     unknown,
     CreateInvestmentTransactionPayload
-  >
-}
+  >;
+};
 
 function emptyForm() {
   return {
     transaction_date: todayDate(),
-    amount: '',
-    description: '',
-  }
+    amount: "",
+    description: "",
+  };
 }
 
 const TRIGGER_KEYS: Record<CashIncomeType, string> = {
-  coupon: 'investments:cashIncome.couponTrigger',
-  dividend: 'investments:cashIncome.dividendTrigger',
-  distribution: 'investments:cashIncome.distributionTrigger',
-}
+  coupon: "investments:cashIncome.couponTrigger",
+  dividend: "investments:cashIncome.dividendTrigger",
+  distribution: "investments:cashIncome.distributionTrigger",
+};
 const TITLE_KEYS: Record<CashIncomeType, string> = {
-  coupon: 'investments:cashIncome.couponTitle',
-  dividend: 'investments:cashIncome.dividendTitle',
-  distribution: 'investments:cashIncome.distributionTitle',
-}
+  coupon: "investments:cashIncome.couponTitle",
+  dividend: "investments:cashIncome.dividendTitle",
+  distribution: "investments:cashIncome.distributionTitle",
+};
 const RECORD_KEYS: Record<CashIncomeType, string> = {
-  coupon: 'investments:cashIncome.recordCoupon',
-  dividend: 'investments:cashIncome.recordDividend',
-  distribution: 'investments:cashIncome.recordDistribution',
-}
+  coupon: "investments:cashIncome.recordCoupon",
+  dividend: "investments:cashIncome.recordDividend",
+  distribution: "investments:cashIncome.recordDistribution",
+};
 
 export function CreateCashIncomeTransactionDialog<TResult>({
   currency,
   txnType,
   mutation,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(emptyForm)
+  const { t } = useTranslation(["investments", "common"]);
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
   function close() {
-    setOpen(false)
-    setForm(emptyForm())
-    mutation.reset()
+    setOpen(false);
+    setForm(emptyForm());
+    mutation.reset();
   }
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!form.amount) return
+    e.preventDefault();
+    if (!form.amount) return;
     mutation.mutate(
       {
         transaction_type: txnType,
@@ -91,7 +91,7 @@ export function CreateCashIncomeTransactionDialog<TResult>({
         interest_disposition: null,
       },
       { onSuccess: close },
-    )
+    );
   }
 
   return (
@@ -106,14 +106,14 @@ export function CreateCashIncomeTransactionDialog<TResult>({
         <DialogHeader>
           <DialogTitle>{t(TITLE_KEYS[txnType])}</DialogTitle>
           <DialogDescription>
-            {t('investments:cashIncome.createDescription')}
+            {t("investments:cashIncome.createDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="cash_date">
-                {t('investments:cashIncome.paymentDateLabel')}
+                {t("investments:cashIncome.paymentDateLabel")}
               </Label>
               <Input
                 id="cash_date"
@@ -128,7 +128,7 @@ export function CreateCashIncomeTransactionDialog<TResult>({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="cash_amount">
-                {t('investments:cashIncome.amountLabel', { currency })}
+                {t("investments:cashIncome.amountLabel", { currency })}
               </Label>
               <Input
                 id="cash_amount"
@@ -136,14 +136,14 @@ export function CreateCashIncomeTransactionDialog<TResult>({
                 inputMode="decimal"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                placeholder={t('investments:cashIncome.amountPlaceholder')}
+                placeholder={t("investments:cashIncome.amountPlaceholder")}
               />
             </div>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="cash_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="cash_description"
@@ -151,7 +151,7 @@ export function CreateCashIncomeTransactionDialog<TResult>({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder={t('investments:cashIncome.descriptionPlaceholder')}
+              placeholder={t("investments:cashIncome.descriptionPlaceholder")}
             />
           </div>
 
@@ -163,16 +163,16 @@ export function CreateCashIncomeTransactionDialog<TResult>({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.amount}>
               {mutation.isPending
-                ? t('common:actions.saving')
+                ? t("common:actions.saving")
                 : t(RECORD_KEYS[txnType])}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

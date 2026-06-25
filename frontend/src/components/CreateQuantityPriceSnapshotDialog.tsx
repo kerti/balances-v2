@@ -1,8 +1,8 @@
-import { useState } from 'react'
-import { CopyPlus, Plus } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import type { UseMutationResult } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { useState } from "react";
+import { CopyPlus, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { UseMutationResult } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -11,26 +11,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { errorMessage } from '@/lib/errorMessage'
-import { formatCurrency } from '@/lib/format'
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { errorMessage } from "@/lib/errorMessage";
+import { formatCurrency } from "@/lib/format";
 import {
   thisYearMonth,
   carryoverSeed,
   monthStartDate,
   monthEndDateCapped,
-} from '@/lib/dateLimits'
-import { useSession } from '@/hooks/useSession'
-import type { CarryoverDateMode } from '@/lib/dateLimits'
-import type { CreateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
+} from "@/lib/dateLimits";
+import { useSession } from "@/hooks/useSession";
+import type { CarryoverDateMode } from "@/lib/dateLimits";
+import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type Props<TResult> = {
-  currency: string
+  currency: string;
   // Optional sub-field guidance under the price input. Gold passes a
   // "use the buyback price" hint (issue #19); stock/mutual-fund omit it.
-  priceHint?: string
+  priceHint?: string;
   // Mutation is owned by the parent so the same dialog drives stocks,
   // mutual funds, and gold — each subtype's detail page wires its own
   // useCreateInvestmentSnapshot result in.
@@ -38,25 +38,25 @@ type Props<TResult> = {
     TResult,
     unknown,
     CreateInvestmentSnapshotPayload
-  >
+  >;
   // Latest snapshot's quantity + price, when one exists. Drives the "Copy
   // carryover" helper (issue #60): an unchanged month keeps the same factors,
   // so the derived total carries over too. Null hides the helper.
   carryover?: {
-    quantity: string | null
-    price_per_unit: string | null
-    lastSnapshotMonth: string
-  } | null
-}
+    quantity: string | null;
+    price_per_unit: string | null;
+    lastSnapshotMonth: string;
+  } | null;
+};
 
 function emptyForm() {
   return {
     year_month: thisYearMonth(),
-    quantity: '',
-    price_per_unit: '',
-    as_of_date: '',
-    description: '',
-  }
+    quantity: "",
+    price_per_unit: "",
+    as_of_date: "",
+    description: "",
+  };
 }
 
 // amount = quantity × price_per_unit. The backend re-validates and stores
@@ -64,12 +64,12 @@ function emptyForm() {
 // JS with Number — household scale is fine; precision-sensitive arithmetic
 // stays on the backend (decimal.Decimal).
 function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity)
-  const p = Number(pricePerUnit)
+  const q = Number(quantity);
+  const p = Number(pricePerUnit);
   if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null
+    return null;
   }
-  return (q * p).toString()
+  return (q * p).toString();
 }
 
 export function CreateQuantityPriceSnapshotDialog<TResult>({
@@ -78,39 +78,39 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
   mutation,
   carryover,
 }: Props<TResult>) {
-  const { t } = useTranslation(['investments', 'common'])
-  const { data: me } = useSession()
-  const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(emptyForm)
+  const { t } = useTranslation(["investments", "common"]);
+  const { data: me } = useSession();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm);
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit)
+  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
 
   // Seed the form from the last snapshot's factors and open the dialog. Month
   // resets to the current month; the statement date is seeded per the user's
   // carryover_date_mode preference (issue #105, default 'today').
   function startCarryover() {
-    if (!carryover) return
-    const mode = (me?.carryover_date_mode ?? 'today') as CarryoverDateMode
-    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth)
+    if (!carryover) return;
+    const mode = (me?.carryover_date_mode ?? "today") as CarryoverDateMode;
+    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth);
     setForm({
       year_month: seed.yearMonth,
-      quantity: carryover.quantity ?? '',
-      price_per_unit: carryover.price_per_unit ?? '',
+      quantity: carryover.quantity ?? "",
+      price_per_unit: carryover.price_per_unit ?? "",
       as_of_date: seed.asOfDate,
-      description: '',
-    })
-    setOpen(true)
+      description: "",
+    });
+    setOpen(true);
   }
 
   function close() {
-    setOpen(false)
-    setForm(emptyForm())
-    mutation.reset()
+    setOpen(false);
+    setForm(emptyForm());
+    mutation.reset();
   }
 
   function submit(e: React.FormEvent) {
-    e.preventDefault()
-    if (derivedAmount === null) return
+    e.preventDefault();
+    if (derivedAmount === null) return;
     mutation.mutate(
       {
         year_month: form.year_month,
@@ -123,7 +123,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
         description: form.description || null,
       },
       { onSuccess: close },
-    )
+    );
   }
 
   return (
@@ -137,28 +137,30 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
           data-testid="snapshot-carryover"
         >
           <CopyPlus className="mr-1 size-4" />
-          {t('investments:quantityPriceSnapshot.carryoverTrigger')}
+          {t("investments:quantityPriceSnapshot.carryoverTrigger")}
         </Button>
       )}
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="mr-1 size-4" />
-          {t('investments:quantityPriceSnapshot.trigger')}
+          {t("investments:quantityPriceSnapshot.trigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t('investments:quantityPriceSnapshot.createTitle')}
+            {t("investments:quantityPriceSnapshot.createTitle")}
           </DialogTitle>
           <DialogDescription>
-            {t('investments:quantityPriceSnapshot.createDescription', { currency })}
+            {t("investments:quantityPriceSnapshot.createDescription", {
+              currency,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="inv_year_month">{t('common:fields.month')}</Label>
+              <Label htmlFor="inv_year_month">{t("common:fields.month")}</Label>
               <Input
                 id="inv_year_month"
                 type="month"
@@ -172,7 +174,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="inv_as_of_date">
-                {t('common:fields.statementDate')}
+                {t("common:fields.statementDate")}
               </Label>
               <Input
                 id="inv_as_of_date"
@@ -190,7 +192,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
               <Label htmlFor="inv_quantity">
-                {t('investments:quantityPriceSnapshot.quantityLabel')}
+                {t("investments:quantityPriceSnapshot.quantityLabel")}
               </Label>
               <Input
                 id="inv_quantity"
@@ -198,12 +200,16 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                 inputMode="decimal"
                 value={form.quantity}
                 onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                placeholder={t('investments:quantityPriceSnapshot.quantityPlaceholder')}
+                placeholder={t(
+                  "investments:quantityPriceSnapshot.quantityPlaceholder",
+                )}
               />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="inv_price_per_unit">
-                {t('investments:quantityPriceSnapshot.pricePerUnitLabel', { currency })}
+                {t("investments:quantityPriceSnapshot.pricePerUnitLabel", {
+                  currency,
+                })}
               </Label>
               <Input
                 id="inv_price_per_unit"
@@ -213,7 +219,9 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                 onChange={(e) =>
                   setForm({ ...form, price_per_unit: e.target.value })
                 }
-                placeholder={t('investments:quantityPriceSnapshot.pricePerUnitPlaceholder')}
+                placeholder={t(
+                  "investments:quantityPriceSnapshot.pricePerUnitPlaceholder",
+                )}
               />
             </div>
           </div>
@@ -224,18 +232,18 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t('investments:quantityPriceSnapshot.totalValueLabel')}
-            </span>{' '}
+              {t("investments:quantityPriceSnapshot.totalValueLabel")}
+            </span>{" "}
             <span className="font-medium">
               {derivedAmount !== null
                 ? formatCurrency(derivedAmount, currency)
-                : '—'}
+                : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
             <Label htmlFor="inv_snap_description">
-              {t('common:fields.description')}
+              {t("common:fields.description")}
             </Label>
             <Input
               id="inv_snap_description"
@@ -243,7 +251,9 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder={t('investments:quantityPriceSnapshot.descriptionPlaceholder')}
+              placeholder={t(
+                "investments:quantityPriceSnapshot.descriptionPlaceholder",
+              )}
             />
           </div>
 
@@ -255,19 +265,19 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
-              {t('common:cancel')}
+              {t("common:cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || derivedAmount === null}
             >
               {mutation.isPending
-                ? t('common:actions.saving')
-                : t('investments:quantityPriceSnapshot.save')}
+                ? t("common:actions.saving")
+                : t("investments:quantityPriceSnapshot.save")}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

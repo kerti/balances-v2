@@ -1,5 +1,5 @@
-import { Toaster as Sonner, type ToasterProps } from 'sonner'
-import { useTheme } from '@/theme/useTheme'
+import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useTheme } from "@/theme/useTheme";
 
 // Toaster is the single toast viewport for the app (mounted once at the root).
 // It is the feedback surface for buttonless interactions — autosaving controls
@@ -11,7 +11,7 @@ import { useTheme } from '@/theme/useTheme'
 // light/dark choice, and maps sonner's CSS hooks onto the index.css custom
 // properties so toasts inherit the popover surface used elsewhere.
 export function Toaster(props: ToasterProps) {
-  const { theme } = useTheme()
+  const { theme } = useTheme();
 
   return (
     <Sonner
@@ -23,18 +23,18 @@ export function Toaster(props: ToasterProps) {
       // important modifier wins over sonner's own [data-sonner-toast] rules.
       toastOptions={{
         classNames: {
-          success: 'bg-primary! text-primary-foreground! border-primary!',
-          error: 'bg-destructive! text-white! border-destructive!',
+          success: "bg-primary! text-primary-foreground! border-primary!",
+          error: "bg-destructive! text-white! border-destructive!",
         },
       }}
       style={
         {
-          '--normal-bg': 'var(--popover)',
-          '--normal-text': 'var(--popover-foreground)',
-          '--normal-border': 'var(--border)',
+          "--normal-bg": "var(--popover)",
+          "--normal-text": "var(--popover-foreground)",
+          "--normal-border": "var(--border)",
         } as React.CSSProperties
       }
       {...props}
     />
-  )
+  );
 }

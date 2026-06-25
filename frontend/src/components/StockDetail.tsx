@@ -1,24 +1,24 @@
-import { useState } from 'react'
-import { Download, Pencil, Trash2 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { useState } from "react";
+import { Download, Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { PaginationControls } from '@/components/PaginationControls'
-import { useStock, useDeleteStock } from '@/hooks/useInvestments'
+} from "@/components/ui/table";
+import { PaginationControls } from "@/components/PaginationControls";
+import { useStock, useDeleteStock } from "@/hooks/useInvestments";
 import {
   useInvestmentSnapshots,
   useCreateInvestmentSnapshot,
@@ -27,161 +27,167 @@ import {
   useImportInvestmentSnapshots,
   investmentImportTemplateUrl,
   stockExportUrl,
-} from '@/hooks/useInvestmentSnapshots'
+} from "@/hooks/useInvestmentSnapshots";
 import {
   useInvestmentTransactions,
   useCreateInvestmentTransaction,
   useUpdateInvestmentTransaction,
   useDeleteInvestmentTransaction,
-} from '@/hooks/useInvestmentTransactions'
-import { CreateQuantityPriceSnapshotDialog } from '@/components/CreateQuantityPriceSnapshotDialog'
-import { ImportSnapshotsDialog } from '@/components/ImportSnapshotsDialog'
-import { CreateTradeTransactionDialog } from '@/components/CreateTradeTransactionDialog'
-import { CreateCashIncomeTransactionDialog } from '@/components/CreateCashIncomeTransactionDialog'
-import { CreateFeeTransactionDialog } from '@/components/CreateFeeTransactionDialog'
-import { TransactionRow } from '@/components/TransactionRow'
-import { TerminatePositionDialog } from '@/components/TerminatePositionDialog'
-import { StatusBadge } from '@/components/StatusBadge'
-import { isActiveStatus } from '@/lib/lifecycle'
-import { EditStockDialog } from '@/components/EditStockDialog'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { QuantityPriceSnapshotRow } from '@/components/QuantityPriceSnapshotRow'
-import { SnapshotChart } from '@/components/SnapshotChart'
-import { HelpTourButton, type TourStep } from '@/components/HelpTourButton'
-import { DetailTagControl } from '@/components/DetailTagControl'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { useSession } from '@/hooks/useSession'
-import { ownershipLabel } from '@/lib/ownership'
-import { reconcileQuantity } from '@/lib/reconciliation'
-import { matchesTxnSearch } from '@/lib/transactionSearch'
-import { computeCostBasis, costBasisSeries } from '@/lib/costBasis'
-import { InvestmentHeadline } from '@/components/InvestmentHeadline'
+} from "@/hooks/useInvestmentTransactions";
+import { CreateQuantityPriceSnapshotDialog } from "@/components/CreateQuantityPriceSnapshotDialog";
+import { ImportSnapshotsDialog } from "@/components/ImportSnapshotsDialog";
+import { CreateTradeTransactionDialog } from "@/components/CreateTradeTransactionDialog";
+import { CreateCashIncomeTransactionDialog } from "@/components/CreateCashIncomeTransactionDialog";
+import { CreateFeeTransactionDialog } from "@/components/CreateFeeTransactionDialog";
+import { TransactionRow } from "@/components/TransactionRow";
+import { TerminatePositionDialog } from "@/components/TerminatePositionDialog";
+import { StatusBadge } from "@/components/StatusBadge";
+import { isActiveStatus } from "@/lib/lifecycle";
+import { EditStockDialog } from "@/components/EditStockDialog";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { QuantityPriceSnapshotRow } from "@/components/QuantityPriceSnapshotRow";
+import { SnapshotChart } from "@/components/SnapshotChart";
+import { HelpTourButton, type TourStep } from "@/components/HelpTourButton";
+import { DetailTagControl } from "@/components/DetailTagControl";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { useSession } from "@/hooks/useSession";
+import { ownershipLabel } from "@/lib/ownership";
+import { reconcileQuantity } from "@/lib/reconciliation";
+import { matchesTxnSearch } from "@/lib/transactionSearch";
+import { computeCostBasis, costBasisSeries } from "@/lib/costBasis";
+import { InvestmentHeadline } from "@/components/InvestmentHeadline";
 
 type Props = {
-  investmentId: string
-  onBack: () => void
-}
+  investmentId: string;
+  onBack: () => void;
+};
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 12;
 
 export function StockDetail({ investmentId, onBack }: Props) {
-  const { t } = useTranslation(['investments', 'common', 'errors'])
-  const { data: stock, isPending, error } = useStock(investmentId)
-  const { data: snapshots } = useInvestmentSnapshots(investmentId)
-  const { data: transactions } = useInvestmentTransactions(investmentId)
-  const deleteMutation = useDeleteStock()
+  const { t } = useTranslation(["investments", "common", "errors"]);
+  const { data: stock, isPending, error } = useStock(investmentId);
+  const { data: snapshots } = useInvestmentSnapshots(investmentId);
+  const { data: transactions } = useInvestmentTransactions(investmentId);
+  const deleteMutation = useDeleteStock();
   const createSnapshotMutation = useCreateInvestmentSnapshot(
     investmentId,
-    'stocks',
-  )
+    "stocks",
+  );
   const updateSnapshotMutation = useUpdateInvestmentSnapshot(
     investmentId,
-    'stocks',
-  )
+    "stocks",
+  );
   const deleteSnapshotMutation = useDeleteInvestmentSnapshot(
     investmentId,
-    'stocks',
-  )
+    "stocks",
+  );
   const importSnapshotMutation = useImportInvestmentSnapshots(
     investmentId,
-    'stocks',
-  )
-  const createTransactionMutation = useCreateInvestmentTransaction(investmentId)
-  const updateTransactionMutation = useUpdateInvestmentTransaction(investmentId)
-  const deleteTransactionMutation = useDeleteInvestmentTransaction(investmentId)
-  const { data: members } = useHouseholdMembers()
-  const { data: currentUser } = useSession()
+    "stocks",
+  );
+  const createTransactionMutation =
+    useCreateInvestmentTransaction(investmentId);
+  const updateTransactionMutation =
+    useUpdateInvestmentTransaction(investmentId);
+  const deleteTransactionMutation =
+    useDeleteInvestmentTransaction(investmentId);
+  const { data: members } = useHouseholdMembers();
+  const { data: currentUser } = useSession();
 
-  const [editOpen, setEditOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [page, setPage] = useState(1)
-  const [txnPage, setTxnPage] = useState(1)
-  const [txnSearch, setTxnSearch] = useState('')
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [txnPage, setTxnPage] = useState(1);
+  const [txnSearch, setTxnSearch] = useState("");
 
   const totalPages = Math.max(
     1,
     Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  )
-  const effectivePage = Math.min(page, totalPages)
+  );
+  const effectivePage = Math.min(page, totalPages);
   const filteredTransactions = (transactions ?? []).filter((tx) =>
     matchesTxnSearch(tx, txnSearch),
-  )
+  );
   const totalTxnPages = Math.max(
     1,
     Math.ceil(filteredTransactions.length / PAGE_SIZE),
-  )
-  const effectiveTxnPage = Math.min(txnPage, totalTxnPages)
-  const latestSnapshot = snapshots && snapshots.length > 0 ? snapshots[0] : null
-  const recon = reconcileQuantity(latestSnapshot, transactions)
-  const quantityUnit = t('investments:stock.quantityUnit')
+  );
+  const effectiveTxnPage = Math.min(txnPage, totalTxnPages);
+  const latestSnapshot =
+    snapshots && snapshots.length > 0 ? snapshots[0] : null;
+  const recon = reconcileQuantity(latestSnapshot, transactions);
+  const quantityUnit = t("investments:stock.quantityUnit");
 
   function handleConfirmDelete() {
     deleteMutation.mutate(investmentId, {
       onSuccess: () => {
-        setDeleteOpen(false)
-        onBack()
+        setDeleteOpen(false);
+        onBack();
       },
-    })
+    });
   }
 
   if (isPending) {
-    return <p className="text-sm text-muted-foreground">{t('common:loading')}</p>
+    return (
+      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
+    );
   }
   if (error) {
     return (
       <p className="text-sm text-destructive">
-        {t('errors:failedToLoad', { message: (error as Error).message })}
+        {t("errors:failedToLoad", { message: (error as Error).message })}
       </p>
-    )
+    );
   }
-  if (!stock) return null
+  if (!stock) return null;
 
   const pageSnapshots = (snapshots ?? []).slice(
     (effectivePage - 1) * PAGE_SIZE,
     effectivePage * PAGE_SIZE,
-  )
+  );
   const pageTransactions = filteredTransactions.slice(
     (effectiveTxnPage - 1) * PAGE_SIZE,
     effectiveTxnPage * PAGE_SIZE,
-  )
+  );
 
   const tourSteps: TourStep[] = [
     {
       element: '[data-testid="tour-overview"]',
-      title: t('investments:stock.tour.overviewTitle'),
-      description: t('investments:stock.tour.overviewBody'),
+      title: t("investments:stock.tour.overviewTitle"),
+      description: t("investments:stock.tour.overviewBody"),
     },
     {
       element: '[data-testid="investment-headline"]',
-      title: t('investments:stock.tour.headlineTitle'),
-      description: t('investments:stock.tour.headlineBody'),
+      title: t("investments:stock.tour.headlineTitle"),
+      description: t("investments:stock.tour.headlineBody"),
     },
     {
       element: '[data-testid="tour-actions"]',
-      title: t('investments:stock.tour.actionsTitle'),
-      description: t('investments:stock.tour.actionsBody'),
+      title: t("investments:stock.tour.actionsTitle"),
+      description: t("investments:stock.tour.actionsBody"),
     },
     {
       element: '[data-testid="tour-details"]',
-      title: t('investments:stock.tour.detailsTitle'),
-      description: t('investments:stock.tour.detailsBody'),
+      title: t("investments:stock.tour.detailsTitle"),
+      description: t("investments:stock.tour.detailsBody"),
     },
     {
       element: '[data-testid="tour-chart"]',
-      title: t('investments:stock.tour.chartTitle'),
-      description: t('investments:stock.tour.chartBody'),
+      title: t("investments:stock.tour.chartTitle"),
+      description: t("investments:stock.tour.chartBody"),
     },
     {
       element: '[data-testid="tour-snapshots"]',
-      title: t('investments:stock.tour.snapshotsTitle'),
-      description: t('investments:stock.tour.snapshotsBody'),
+      title: t("investments:stock.tour.snapshotsTitle"),
+      description: t("investments:stock.tour.snapshotsBody"),
     },
     {
       element: '[data-testid="tour-transactions"]',
-      title: t('investments:stock.tour.transactionsTitle'),
-      description: t('investments:stock.tour.transactionsBody'),
+      title: t("investments:stock.tour.transactionsTitle"),
+      description: t("investments:stock.tour.transactionsBody"),
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
@@ -193,9 +199,12 @@ export function StockDetail({ investmentId, onBack }: Props) {
             onClick={onBack}
             className="-ml-2 mb-1"
           >
-            {t('common:actions.back')}
+            {t("common:actions.back")}
           </Button>
-          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
+          <h1
+            data-testid="tour-overview"
+            className="text-2xl font-semibold tracking-tight"
+          >
             {stock.investment.display_name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -208,13 +217,17 @@ export function StockDetail({ investmentId, onBack }: Props) {
             status={stock.investment.status}
             terminatedAt={stock.investment.terminated_at}
           />
-          <DetailTagControl group="investment" positionId={stock.investment.id} currentTagId={stock.investment.tag_id} />
+          <DetailTagControl
+            group="investment"
+            positionId={stock.investment.id}
+            currentTagId={stock.investment.tag_id}
+          />
         </div>
         <div data-testid="tour-actions" className="flex gap-2">
           <HelpTourButton steps={tourSteps} />
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="mr-1 size-4" />
-            {t('common:actions.edit')}
+            {t("common:actions.edit")}
           </Button>
           <TerminatePositionDialog
             group="investments"
@@ -230,16 +243,16 @@ export function StockDetail({ investmentId, onBack }: Props) {
             onClick={() => setDeleteOpen(true)}
           >
             <Trash2 className="mr-1 size-4" />
-            {t('common:delete')}
+            {t("common:delete")}
           </Button>
         </div>
       </div>
 
       <Card data-testid="tour-details">
         <CardHeader>
-          <CardTitle>{t('investments:stock.detailsCardTitle')}</CardTitle>
+          <CardTitle>{t("investments:stock.detailsCardTitle")}</CardTitle>
           <CardDescription>
-            {t('investments:stock.detailsCardLine', {
+            {t("investments:stock.detailsCardLine", {
               ownership: ownershipLabel(
                 stock.investment.ownership_type,
                 stock.investment.sole_owner_user_id,
@@ -247,7 +260,7 @@ export function StockDetail({ investmentId, onBack }: Props) {
                 currentUser,
               ),
               currency: stock.investment.native_currency,
-            })}{' '}
+            })}{" "}
             <StatusBadge group="investments" status={stock.investment.status} />
           </CardDescription>
         </CardHeader>
@@ -261,9 +274,9 @@ export function StockDetail({ investmentId, onBack }: Props) {
       {snapshots && snapshots.length >= 2 && (
         <Card data-testid="tour-chart">
           <CardHeader>
-            <CardTitle>{t('investments:snapshotsCard.chartTitle')}</CardTitle>
+            <CardTitle>{t("investments:snapshotsCard.chartTitle")}</CardTitle>
             <CardDescription>
-              {t('investments:snapshotsCard.chartDescription', {
+              {t("investments:snapshotsCard.chartDescription", {
                 currency: stock.investment.native_currency,
               })}
             </CardDescription>
@@ -283,9 +296,9 @@ export function StockDetail({ investmentId, onBack }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('investments:snapshotsCard.title')}</CardTitle>
+              <CardTitle>{t("investments:snapshotsCard.title")}</CardTitle>
               <CardDescription>
-                {t('investments:stock.snapshotsDescription')}
+                {t("investments:stock.snapshotsDescription")}
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -293,10 +306,15 @@ export function StockDetail({ investmentId, onBack }: Props) {
                   Transactions). Plain anchor download — session cookie rides
                   along same-origin. Available regardless of status so a
                   terminated position can still be backed up. */}
-              <Button asChild size="sm" variant="outline" data-testid="stock-export">
+              <Button
+                asChild
+                size="sm"
+                variant="outline"
+                data-testid="stock-export"
+              >
                 <a href={stockExportUrl(stock.investment.id)}>
                   <Download className="mr-1 size-4" />
-                  {t('common:export.trigger')}
+                  {t("common:export.trigger")}
                 </a>
               </Button>
               {isActiveStatus(stock.investment.status) && (
@@ -315,7 +333,9 @@ export function StockDetail({ investmentId, onBack }: Props) {
                     }
                   />
                   <ImportSnapshotsDialog
-                    templateUrl={investmentImportTemplateUrl(stock.investment.id)}
+                    templateUrl={investmentImportTemplateUrl(
+                      stock.investment.id,
+                    )}
                     mutation={importSnapshotMutation}
                     currency={stock.investment.native_currency}
                   />
@@ -327,18 +347,28 @@ export function StockDetail({ investmentId, onBack }: Props) {
         <CardContent className="p-0">
           {!snapshots || snapshots.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">
-              {t('investments:stock.snapshotsEmpty')}
+              {t("investments:stock.snapshotsEmpty")}
             </p>
           ) : (
             <>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('investments:snapshotsCard.monthHeader')}</TableHead>
-                    <TableHead className="text-right">{t('investments:stock.quantityHeader')}</TableHead>
-                    <TableHead className="text-right">{t('investments:stock.priceHeader')}</TableHead>
-                    <TableHead className="text-right">{t('investments:snapshotsCard.totalValueHeader')}</TableHead>
-                    <TableHead>{t('investments:snapshotsCard.notesHeader')}</TableHead>
+                    <TableHead>
+                      {t("investments:snapshotsCard.monthHeader")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("investments:stock.quantityHeader")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("investments:stock.priceHeader")}
+                    </TableHead>
+                    <TableHead className="text-right">
+                      {t("investments:snapshotsCard.totalValueHeader")}
+                    </TableHead>
+                    <TableHead>
+                      {t("investments:snapshotsCard.notesHeader")}
+                    </TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -372,9 +402,9 @@ export function StockDetail({ investmentId, onBack }: Props) {
         <CardHeader>
           <div className="flex items-center justify-between gap-4">
             <div>
-              <CardTitle>{t('investments:transactions.cardTitle')}</CardTitle>
+              <CardTitle>{t("investments:transactions.cardTitle")}</CardTitle>
               <CardDescription>
-                {t('investments:stock.transactionsDescription')}
+                {t("investments:stock.transactionsDescription")}
               </CardDescription>
             </div>
             {isActiveStatus(stock.investment.status) && (
@@ -408,7 +438,7 @@ export function StockDetail({ investmentId, onBack }: Props) {
         <CardContent className="p-0">
           {recon && !recon.matches && (
             <div className="mx-6 mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-              {t('investments:stock.reconcileWarning', {
+              {t("investments:stock.reconcileWarning", {
                 actual: recon.actual,
                 expected: recon.expected,
               })}
@@ -416,14 +446,14 @@ export function StockDetail({ investmentId, onBack }: Props) {
           )}
           {!transactions || transactions.length === 0 ? (
             <p className="p-6 text-sm text-muted-foreground">
-              {t('investments:stock.transactionsEmpty')}
+              {t("investments:stock.transactionsEmpty")}
             </p>
           ) : (
             <>
               <div className="border-b px-6 py-3">
                 <Input
                   data-testid="txn-search"
-                  placeholder={t('investments:transactions.searchPlaceholder')}
+                  placeholder={t("investments:transactions.searchPlaceholder")}
                   value={txnSearch}
                   onChange={(e) => setTxnSearch(e.target.value)}
                   className="max-w-xs"
@@ -431,17 +461,25 @@ export function StockDetail({ investmentId, onBack }: Props) {
               </div>
               {filteredTransactions.length === 0 ? (
                 <p className="p-6 text-sm text-muted-foreground">
-                  {t('investments:transactions.searchEmpty')}
+                  {t("investments:transactions.searchEmpty")}
                 </p>
               ) : (
                 <>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>{t('investments:transactions.dateHeader')}</TableHead>
-                        <TableHead>{t('investments:transactions.typeHeader')}</TableHead>
-                        <TableHead className="text-right">{t('investments:transactions.cashImpactHeader')}</TableHead>
-                        <TableHead>{t('investments:transactions.notesHeader')}</TableHead>
+                        <TableHead>
+                          {t("investments:transactions.dateHeader")}
+                        </TableHead>
+                        <TableHead>
+                          {t("investments:transactions.typeHeader")}
+                        </TableHead>
+                        <TableHead className="text-right">
+                          {t("investments:transactions.cashImpactHeader")}
+                        </TableHead>
+                        <TableHead>
+                          {t("investments:transactions.notesHeader")}
+                        </TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>
@@ -482,13 +520,13 @@ export function StockDetail({ investmentId, onBack }: Props) {
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t('investments:stock.deleteTitle')}
-        description={t('investments:stock.deleteDetailDescription')}
-        confirmLabel={t('common:delete')}
+        title={t("investments:stock.deleteTitle")}
+        description={t("investments:stock.deleteDetailDescription")}
+        confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
       />
     </div>
-  )
+  );
 }

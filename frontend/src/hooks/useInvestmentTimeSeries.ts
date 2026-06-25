@@ -10,36 +10,36 @@
 // The headline already reads `item.cost_basis` + `item.latest_snapshot` off
 // the list payload (#18), so this hook only feeds the time graph.
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/api/client";
 
 export type InvestmentTimeSeriesItem = {
-  investment_id: string
-  value_series: Array<{ year_month: string; amount: string }>
-  cost_series: Array<{ year_month: string; cost: string }>
-}
+  investment_id: string;
+  value_series: Array<{ year_month: string; amount: string }>;
+  cost_series: Array<{ year_month: string; cost: string }>;
+};
 
 // Shape consumed by `Position` in lib/listAggregates: `snapshots` (value by
 // month) + `costSeries` (cost by month, cost as a number).
 export type PositionSeries = {
-  snapshots: Array<{ year_month: string; amount: string }>
-  costSeries: Array<{ year_month: string; cost: number }>
-}
+  snapshots: Array<{ year_month: string; amount: string }>;
+  costSeries: Array<{ year_month: string; cost: number }>;
+};
 
 export function useInvestmentTimeSeries(): {
-  byId: Map<string, PositionSeries>
-  isLoading: boolean
-  hasError: boolean
+  byId: Map<string, PositionSeries>;
+  isLoading: boolean;
+  hasError: boolean;
 } {
   const query = useQuery({
-    queryKey: ['investment-time-series'],
+    queryKey: ["investment-time-series"],
     queryFn: () =>
-      api<InvestmentTimeSeriesItem[]>('/api/investments/time-series'),
-  })
+      api<InvestmentTimeSeriesItem[]>("/api/investments/time-series"),
+  });
 
   const byId = useMemo(() => {
-    const m = new Map<string, PositionSeries>()
+    const m = new Map<string, PositionSeries>();
     for (const it of query.data ?? []) {
       m.set(it.investment_id, {
         snapshots: it.value_series,
@@ -47,10 +47,10 @@ export function useInvestmentTimeSeries(): {
           year_month: c.year_month,
           cost: Number(c.cost),
         })),
-      })
+      });
     }
-    return m
-  }, [query.data])
+    return m;
+  }, [query.data]);
 
-  return { byId, isLoading: query.isPending, hasError: query.isError }
+  return { byId, isLoading: query.isPending, hasError: query.isError };
 }

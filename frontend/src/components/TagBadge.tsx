@@ -3,16 +3,16 @@
 // fail contrast across themes, so the dot carries the hue and the text stays
 // in the foreground colour.
 type Props = {
-  name: string
-  color: string
-  className?: string
-}
+  name: string;
+  color: string;
+  className?: string;
+};
 
 export function TagBadge({ name, color, className }: Props) {
   return (
     <span
       data-testid="tag-badge"
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${className ?? ''}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs ${className ?? ""}`}
     >
       <span
         className="size-2 shrink-0 rounded-full"
@@ -21,5 +21,5 @@ export function TagBadge({ name, color, className }: Props) {
       />
       {name}
     </span>
-  )
+  );
 }

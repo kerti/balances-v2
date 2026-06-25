@@ -1,6 +1,6 @@
-import { useTranslation } from 'react-i18next'
-import { Label } from '@/components/ui/label'
-import type { MutualFundType } from '@/api/types'
+import { useTranslation } from "react-i18next";
+import { Label } from "@/components/ui/label";
+import type { MutualFundType } from "@/api/types";
 
 // Fund Type select: required, no default (issue #20). The empty placeholder
 // "— select —" forces a deliberate choice, matching RiskProfileSelect. The
@@ -10,31 +10,31 @@ import type { MutualFundType } from '@/api/types'
 
 // Kept in DB-CHECK order so the dropdown reads asset-class → wrapper → other.
 const ORDER: MutualFundType[] = [
-  'money_market',
-  'fixed_income',
-  'equity',
-  'mixed',
-  'index',
-  'etf',
-  'target_date',
-  'commodity',
-  'other',
-]
+  "money_market",
+  "fixed_income",
+  "equity",
+  "mixed",
+  "index",
+  "etf",
+  "target_date",
+  "commodity",
+  "other",
+];
 
 type Props = {
   /** Disambiguating prefix for the input id, e.g. "mf_create". */
-  idPrefix: string
+  idPrefix: string;
   /** Empty string means "not yet selected" — the parent should refuse submit. */
-  value: MutualFundType | ''
-  onChange: (next: MutualFundType) => void
-}
+  value: MutualFundType | "";
+  onChange: (next: MutualFundType) => void;
+};
 
 export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
-  const { t } = useTranslation('investments')
-  const id = `${idPrefix}_fund_type`
+  const { t } = useTranslation("investments");
+  const id = `${idPrefix}_fund_type`;
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>{t('mutualFund.fundType.selectLabel')}</Label>
+      <Label htmlFor={id}>{t("mutualFund.fundType.selectLabel")}</Label>
       <select
         id={id}
         required
@@ -43,7 +43,7 @@ export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
         onChange={(e) => onChange(e.target.value as MutualFundType)}
       >
         <option value="" disabled>
-          {t('mutualFund.fundType.selectPlaceholder')}
+          {t("mutualFund.fundType.selectPlaceholder")}
         </option>
         {ORDER.map((ft) => (
           <option key={ft} value={ft}>
@@ -52,5 +52,5 @@ export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
         ))}
       </select>
     </div>
-  )
+  );
 }

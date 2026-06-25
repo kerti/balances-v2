@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
-import type { Me } from '@/hooks/useSession'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/api/client";
+import type { Me } from "@/hooks/useSession";
 
 // Updates the current user's own profile. Fields are independent: pass
 // `nickname` to set/clear the compact owner label (null/"" clears), pass
@@ -11,20 +11,20 @@ import type { Me } from '@/hooks/useSession'
 // Refreshes session (carries nickname for the "(you)" label, locale + theme for
 // boot detection) and household-members (picker labels resolve via nickname).
 export type UpdateMePayload = {
-  nickname?: string | null
-  locale?: string
-  theme?: string
-  carryover_date_mode?: string
-}
+  nickname?: string | null;
+  locale?: string;
+  theme?: string;
+  carryover_date_mode?: string;
+};
 
 export function useUpdateMe() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (p: UpdateMePayload) =>
-      api<Me>('/api/me', { method: 'PATCH', body: JSON.stringify(p) }),
+      api<Me>("/api/me", { method: "PATCH", body: JSON.stringify(p) }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['session'] })
-      qc.invalidateQueries({ queryKey: ['household-members'] })
+      qc.invalidateQueries({ queryKey: ["session"] });
+      qc.invalidateQueries({ queryKey: ["household-members"] });
     },
-  })
+  });
 }

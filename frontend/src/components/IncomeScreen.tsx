@@ -1,95 +1,120 @@
-import { useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { useIncome } from '@/hooks/useIncome'
-import { useHouseholdMembers } from '@/hooks/useHouseholdMembers'
-import { useSession } from '@/hooks/useSession'
-import { CreateIncomeDialog } from '@/components/CreateIncomeDialog'
-import { IncomeRow } from '@/components/IncomeRow'
-import { PaginationControls } from '@/components/PaginationControls'
-import { ownershipLabel } from '@/lib/ownership'
-import { formatCurrency, formatYearMonth } from '@/lib/format'
-import type { Income, IncomeCategory, Regularity } from '@/api/types'
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { useIncome } from "@/hooks/useIncome";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { useSession } from "@/hooks/useSession";
+import { CreateIncomeDialog } from "@/components/CreateIncomeDialog";
+import { IncomeRow } from "@/components/IncomeRow";
+import { PaginationControls } from "@/components/PaginationControls";
+import { ownershipLabel } from "@/lib/ownership";
+import { formatCurrency, formatYearMonth } from "@/lib/format";
+import type { Income, IncomeCategory, Regularity } from "@/api/types";
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 12;
 
-type RegularityFilter = 'all' | Regularity
+type RegularityFilter = "all" | Regularity;
 
-const FILTER_VALUES: RegularityFilter[] = ['all', 'routine', 'incidental']
+const FILTER_VALUES: RegularityFilter[] = ["all", "routine", "incidental"];
 
 type HeadlineCurrency = {
-  currency: string
-  total: number
-  routine: number
-  incidental: number
-  byUser: Array<{ label: string; amount: number }>
-  byCategory: Array<{ category: IncomeCategory; amount: number }>
-}
+  currency: string;
+  total: number;
+  routine: number;
+  incidental: number;
+  byUser: Array<{ label: string; amount: number }>;
+  byCategory: Array<{ category: IncomeCategory; amount: number }>;
+};
 
 function incomeYearMonth(r: Income): string {
-  return r.date.slice(0, 7)
+  return r.date.slice(0, 7);
 }
 
 export function IncomeScreen() {
-  const { t } = useTranslation(['income', 'common', 'errors'])
-  const { data, isPending, error } = useIncome()
-  const { data: members } = useHouseholdMembers()
-  const { data: currentUser } = useSession()
-  const [page, setPage] = useState(1)
-  const [regularityFilter, setRegularityFilter] = useState<RegularityFilter>('all')
+  const { t } = useTranslation(["income", "common", "errors"]);
+  const { data, isPending, error } = useIncome();
+  const { data: members } = useHouseholdMembers();
+  const { data: currentUser } = useSession();
+  const [page, setPage] = useState(1);
+  const [regularityFilter, setRegularityFilter] =
+    useState<RegularityFilter>("all");
   // undefined = not yet set by user → auto-picks most recent month once data loads
   // null = user explicitly chose "all months"
   // string = specific "YYYY-MM"
-  const [selectedMonth, setSelectedMonth] = useState<string | null | undefined>(undefined)
+  const [selectedMonth, setSelectedMonth] = useState<string | null | undefined>(
+    undefined,
+  );
 
   const availableMonths = useMemo(() => {
-    if (!data) return []
-    return [...new Set(data.map(incomeYearMonth))].sort((a, b) => b.localeCompare(a))
-  }, [data])
+    if (!data) return [];
+    return [...new Set(data.map(incomeYearMonth))].sort((a, b) =>
+      b.localeCompare(a),
+    );
+  }, [data]);
 
   const effectiveMonth: string | null =
-    selectedMonth !== undefined ? selectedMonth : (availableMonths[0] ?? null)
+    selectedMonth !== undefined ? selectedMonth : (availableMonths[0] ?? null);
 
   const monthFiltered = useMemo(() => {
-    if (!data) return []
-    if (effectiveMonth === null) return data
-    return data.filter((r) => incomeYearMonth(r) === effectiveMonth)
-  }, [data, effectiveMonth])
+    if (!data) return [];
+    if (effectiveMonth === null) return data;
+    return data.filter((r) => incomeYearMonth(r) === effectiveMonth);
+  }, [data, effectiveMonth]);
 
   const headlineStats = useMemo((): HeadlineCurrency[] => {
-    if (!monthFiltered.length) return []
-    const byCurrency = new Map<string, {
-      total: number; routine: number; incidental: number
-      byUser: Map<string, number>; byCategory: Map<IncomeCategory, number>
-    }>()
-    for (const r of monthFiltered) {
-      const amount = Number(r.amount)
-      if (!Number.isFinite(amount)) continue
-      let cur = byCurrency.get(r.currency)
-      if (!cur) {
-        cur = { total: 0, routine: 0, incidental: 0, byUser: new Map(), byCategory: new Map() }
-        byCurrency.set(r.currency, cur)
+    if (!monthFiltered.length) return [];
+    const byCurrency = new Map<
+      string,
+      {
+        total: number;
+        routine: number;
+        incidental: number;
+        byUser: Map<string, number>;
+        byCategory: Map<IncomeCategory, number>;
       }
-      cur.total += amount
-      if (r.regularity === 'routine') cur.routine += amount
-      else cur.incidental += amount
-      const userLabel = ownershipLabel(r.ownership_type, r.sole_owner_user_id, members, currentUser)
-      cur.byUser.set(userLabel, (cur.byUser.get(userLabel) ?? 0) + amount)
-      cur.byCategory.set(r.category, (cur.byCategory.get(r.category) ?? 0) + amount)
+    >();
+    for (const r of monthFiltered) {
+      const amount = Number(r.amount);
+      if (!Number.isFinite(amount)) continue;
+      let cur = byCurrency.get(r.currency);
+      if (!cur) {
+        cur = {
+          total: 0,
+          routine: 0,
+          incidental: 0,
+          byUser: new Map(),
+          byCategory: new Map(),
+        };
+        byCurrency.set(r.currency, cur);
+      }
+      cur.total += amount;
+      if (r.regularity === "routine") cur.routine += amount;
+      else cur.incidental += amount;
+      const userLabel = ownershipLabel(
+        r.ownership_type,
+        r.sole_owner_user_id,
+        members,
+        currentUser,
+      );
+      cur.byUser.set(userLabel, (cur.byUser.get(userLabel) ?? 0) + amount);
+      cur.byCategory.set(
+        r.category,
+        (cur.byCategory.get(r.category) ?? 0) + amount,
+      );
     }
     return Array.from(byCurrency.entries())
       .map(([currency, d]) => ({
@@ -104,65 +129,75 @@ export function IncomeScreen() {
           .map(([category, amount]) => ({ category, amount }))
           .sort((a, b) => b.amount - a.amount),
       }))
-      .sort((a, b) => a.currency.localeCompare(b.currency))
-  }, [monthFiltered, members, currentUser])
+      .sort((a, b) => a.currency.localeCompare(b.currency));
+  }, [monthFiltered, members, currentUser]);
 
   const filtered = useMemo(() => {
     const base =
-      regularityFilter === 'all'
+      regularityFilter === "all"
         ? monthFiltered
-        : monthFiltered.filter((r) => r.regularity === regularityFilter)
+        : monthFiltered.filter((r) => r.regularity === regularityFilter);
     return [...base].sort((a, b) => {
-      const uA = ownershipLabel(a.ownership_type, a.sole_owner_user_id, members, currentUser)
-      const uB = ownershipLabel(b.ownership_type, b.sole_owner_user_id, members, currentUser)
-      const cmp = uA.localeCompare(uB)
-      return cmp !== 0 ? cmp : a.date.localeCompare(b.date)
-    })
-  }, [monthFiltered, regularityFilter, members, currentUser])
+      const uA = ownershipLabel(
+        a.ownership_type,
+        a.sole_owner_user_id,
+        members,
+        currentUser,
+      );
+      const uB = ownershipLabel(
+        b.ownership_type,
+        b.sole_owner_user_id,
+        members,
+        currentUser,
+      );
+      const cmp = uA.localeCompare(uB);
+      return cmp !== 0 ? cmp : a.date.localeCompare(b.date);
+    });
+  }, [monthFiltered, regularityFilter, members, currentUser]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const effectivePage = Math.min(page, totalPages)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const effectivePage = Math.min(page, totalPages);
   const pageRows = filtered.slice(
     (effectivePage - 1) * PAGE_SIZE,
     effectivePage * PAGE_SIZE,
-  )
+  );
 
   const emptyKey =
-    regularityFilter === 'routine'
-      ? 'income:filter.emptyRoutine'
-      : regularityFilter === 'incidental'
-        ? 'income:filter.emptyIncidental'
-        : 'income:filter.emptyAll'
+    regularityFilter === "routine"
+      ? "income:filter.emptyRoutine"
+      : regularityFilter === "incidental"
+        ? "income:filter.emptyIncidental"
+        : "income:filter.emptyAll";
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {t('income:listTitle')}
+            {t("income:listTitle")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t('income:listSubtitle')}
+            {t("income:listSubtitle")}
           </p>
         </div>
         <CreateIncomeDialog />
       </div>
 
       {isPending && (
-        <p className="text-sm text-muted-foreground">{t('common:loading')}</p>
+        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
       )}
 
       {error && (
         <p className="text-sm text-destructive">
-          {t('errors:failedToLoad', { message: (error as Error).message })}
+          {t("errors:failedToLoad", { message: (error as Error).message })}
         </p>
       )}
 
       {data && data.length === 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t('income:emptyTitle')}</CardTitle>
-            <CardDescription>{t('income:emptyBody')}</CardDescription>
+            <CardTitle>{t("income:emptyTitle")}</CardTitle>
+            <CardDescription>{t("income:emptyBody")}</CardDescription>
           </CardHeader>
           <CardContent>
             <CreateIncomeDialog />
@@ -174,15 +209,15 @@ export function IncomeScreen() {
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <select
-              value={effectiveMonth ?? ''}
+              value={effectiveMonth ?? ""}
               onChange={(e) => {
-                setSelectedMonth(e.target.value === '' ? null : e.target.value)
-                setPage(1)
+                setSelectedMonth(e.target.value === "" ? null : e.target.value);
+                setPage(1);
               }}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               data-testid="month-filter"
             >
-              <option value="">{t('income:monthFilter.allMonths')}</option>
+              <option value="">{t("income:monthFilter.allMonths")}</option>
               {availableMonths.map((ym) => (
                 <option key={ym} value={ym}>
                   {formatYearMonth(`${ym}-01T12:00:00Z`)}
@@ -193,16 +228,16 @@ export function IncomeScreen() {
             <div
               className="flex gap-2"
               role="group"
-              aria-label={t('income:filter.ariaLabel')}
+              aria-label={t("income:filter.ariaLabel")}
             >
               {FILTER_VALUES.map((value) => (
                 <Button
                   key={value}
                   size="sm"
-                  variant={regularityFilter === value ? 'default' : 'outline'}
+                  variant={regularityFilter === value ? "default" : "outline"}
                   onClick={() => {
-                    setRegularityFilter(value)
-                    setPage(1)
+                    setRegularityFilter(value);
+                    setPage(1);
                   }}
                   data-testid={`regularity-filter-${value}`}
                 >
@@ -219,7 +254,7 @@ export function IncomeScreen() {
                   <CardContent className="pt-4 space-y-2">
                     <div>
                       <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {t('income:headline.total')}
+                        {t("income:headline.total")}
                       </div>
                       <div className="text-2xl font-semibold tabular-nums">
                         {formatCurrency(String(h.total), h.currency)}
@@ -227,33 +262,51 @@ export function IncomeScreen() {
                     </div>
                     <div className="flex flex-wrap gap-x-4 text-sm">
                       <span>
-                        <span className="text-muted-foreground">{t('income:headline.routine')}</span>{' '}
-                        <span className="tabular-nums">{formatCurrency(String(h.routine), h.currency)}</span>
+                        <span className="text-muted-foreground">
+                          {t("income:headline.routine")}
+                        </span>{" "}
+                        <span className="tabular-nums">
+                          {formatCurrency(String(h.routine), h.currency)}
+                        </span>
                       </span>
                       <span>
-                        <span className="text-muted-foreground">{t('income:headline.incidental')}</span>{' '}
-                        <span className="tabular-nums">{formatCurrency(String(h.incidental), h.currency)}</span>
+                        <span className="text-muted-foreground">
+                          {t("income:headline.incidental")}
+                        </span>{" "}
+                        <span className="tabular-nums">
+                          {formatCurrency(String(h.incidental), h.currency)}
+                        </span>
                       </span>
                     </div>
                     {h.byUser.length > 1 && (
                       <div className="text-sm">
-                        <span className="text-muted-foreground">{t('income:headline.byPerson')}{': '}</span>
+                        <span className="text-muted-foreground">
+                          {t("income:headline.byPerson")}
+                          {": "}
+                        </span>
                         {h.byUser.map((u, i) => (
                           <span key={u.label}>
-                            {i > 0 && ' · '}
-                            {u.label}{' '}
-                            <span className="tabular-nums">{formatCurrency(String(u.amount), h.currency)}</span>
+                            {i > 0 && " · "}
+                            {u.label}{" "}
+                            <span className="tabular-nums">
+                              {formatCurrency(String(u.amount), h.currency)}
+                            </span>
                           </span>
                         ))}
                       </div>
                     )}
                     <div className="text-sm">
-                      <span className="text-muted-foreground">{t('income:headline.byCategory')}{': '}</span>
+                      <span className="text-muted-foreground">
+                        {t("income:headline.byCategory")}
+                        {": "}
+                      </span>
                       {h.byCategory.map((c, i) => (
                         <span key={c.category}>
-                          {i > 0 && ' · '}
-                          {t(`income:categories.${c.category}`)}{' '}
-                          <span className="tabular-nums">{formatCurrency(String(c.amount), h.currency)}</span>
+                          {i > 0 && " · "}
+                          {t(`income:categories.${c.category}`)}{" "}
+                          <span className="tabular-nums">
+                            {formatCurrency(String(c.amount), h.currency)}
+                          </span>
                         </span>
                       ))}
                     </div>
@@ -271,14 +324,14 @@ export function IncomeScreen() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('income:tableHeaders.date')}</TableHead>
-                      <TableHead>{t('income:tableHeaders.category')}</TableHead>
-                      <TableHead>{t('income:tableHeaders.amount')}</TableHead>
+                      <TableHead>{t("income:tableHeaders.date")}</TableHead>
+                      <TableHead>{t("income:tableHeaders.category")}</TableHead>
+                      <TableHead>{t("income:tableHeaders.amount")}</TableHead>
                       <TableHead>
-                        {t('income:tableHeaders.description')}
+                        {t("income:tableHeaders.description")}
                       </TableHead>
                       <TableHead>
-                        {t('income:tableHeaders.ownership')}
+                        {t("income:tableHeaders.ownership")}
                       </TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
@@ -304,5 +357,5 @@ export function IncomeScreen() {
         </div>
       )}
     </div>
-  )
+  );
 }
