@@ -1,6 +1,6 @@
 # ADR index
 
-One line per decision so you can pick which to open without reading all 34. Read the full ADR before
+One line per decision so you can pick which to open without reading all 35. Read the full ADR before
 touching the area it governs.
 
 | ADR | Decision | Touches |
@@ -42,3 +42,4 @@ touching the area it governs.
 | [0035](0035-pre-auth-language-picker-locale-precedence-and-backend-email-i18n.md) | Pre-auth language picker; locale precedence; backend email i18n; default `en-GB` | i18n, auth |
 | [0036](0036-comprehensive-household-backup-and-restore.md) | Whole-Household backup as versioned `.json.gz`; restore = streaming preview→commit wipe-then-load into a fresh/wiped Household; identity re-link by Google `sub`; format immutability at release | backup, restore, portability |
 | [0037](0037-self-hostable-docker-compose-stack.md) | Operator self-host artifact: pull-based GHCR image + Postgres compose; one-shot migrate service; `APP_URL` origin collapse; 3 TLS topologies (localhost / BYO-proxy / bundled Caddy); `EMAIL_ENABLED` flag makes mail optional; Google-only auth | self-host, deploy, infra |
+| [0038](0038-post-auth-onboarding-gate.md) | First sign-in branches founder-vs-join on the **verified email** (not the invite link), after auth, via an explicit gate; pending identity held in a transient DB **onboarding handshake** (not a signed cookie); founding is deliberate; dangling invites left to expire | auth, onboarding |

@@ -134,11 +134,21 @@ lingua-franca fallback for an unknown visitor; an Indonesian browser is still ro
 `id-ID` by the pre-auth picker's navigator pre-fill), and `time_zone` ("current month"
 interpretation, default `Asia/Jakarta`).
 
-**Founder**: The User who bootstrapped a Household — the first sign-in with no pending invitation
-(`createFounder`, [[adr-0017]]). "Founder" denotes *creation lineage only, not a role or permission
-tier*: every User in a Household has equal full read/write access (see User). Contrast: an **invited
-member** joins an existing Household by accepting an email-token invitation. _Avoid_: Owner, Admin
-(imply a privilege the model doesn't grant).
+**Founder**: The User who bootstrapped a Household — the one who chose *Start your own household* at
+the Onboarding gate (`createFounder`, [[adr-0017]], [[adr-0038]]). Founding is a **deliberate choice**,
+not the absence of an invitation: pending invitations may have existed and been declined. "Founder"
+denotes *creation lineage only, not a role or permission tier*: every User in a Household has equal
+full read/write access (see User). Contrast: an **invited member** joins an existing Household by
+accepting an email-token invitation. _Avoid_: Owner, Admin (imply a privilege the model doesn't grant).
+
+**Onboarding**: The one-time resolution, on a brand-new Google identity's first sign-in, of *which
+Household this person belongs to* — join an existing Household they hold a pending invitation to, or
+found their own ([[adr-0038]]). The choice is made **after** Google verifies the identity (so the
+verified email can surface pending invitations the person never clicked a link for) and is
+**irreversible**: a User belongs to exactly one Household with no leave/switch (see User, [[adr-0017]]).
+Until the choice is committed no `users` row exists — the verified identity is held in a short-lived
+**onboarding handshake** (a transient, pre-account auth record, not Household data; never backed up).
+_Avoid_: signup, registration (overload the irreversible household-binding it carries).
 
 **Ownership** (Position attribute): Each Position carries an Ownership mode:
 
