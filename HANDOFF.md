@@ -71,27 +71,17 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 
 **M6 closed (alpha.5); M7 (productization) is open (latest release v0.7.0-alpha.3).** Next, in order:
 
-1. **Finish the self-host #116 rehearsal → close #229 + #116.** Stack + docs shipped (alpha.1), the
-   arm64/deep-route fixes (alpha.2), and the additive-migration vehicle (#66, alpha.3). Acceptance on
-   #229 is a **two-run matrix**; only the upgrade run remains:
-   - **Run 1 — localhost: ✅ PASSED** (2026-06-19/20): multi-arch pull, one-shot migrate, OAuth,
-     `EMAIL_ENABLED=false` copy-invite-link, `pg_dump`→`pg_restore` roundtrip. GHCR image is public out
-     of the box.
-   - **Run 2 — Caddy turnkey on a real domain: ✅ PASSED** (2026-06-20): HTTPS + `COOKIE_SECURE=true` +
-     https redirect URI + Let's Encrypt ACME. (`APP_URL` must be `https://…` — the callback scheme is
-     derived from it verbatim, not from `X-Forwarded-Proto`.)
-   - **Upgrade leg: ⏳ the one remaining box.** `00006` (additive) now rides alpha.3, so once the image
-     publishes: `BALANCES_TAG`→`v0.7.0-alpha.3` + `pull && up -d` the rehearsal stack across the
-     migration (watch `00006` apply), with `EMAIL_ENABLED=true` (mailpit) folded in. The **v1→v2
-     restore-upgrade path is already proven** (exercised on the dev stack this session — a v1 backup
-     restored clean, `transforms[1]` backfilled `pays_out`); the rehearsal upgrade is the last confirm.
-   - **Open tail:** issue **#244** (e2e blind to the single-origin built-bundle serving path — why
-     #190/#241 both shipped — plus cataloguing the serving invariant; `needs-triage`) — not in alpha.3,
-     still open. #258 spun a sibling restore-UX issue; **#245** (compose project-name pin) shipped in alpha.3.
-2. **Rest of M7 = productization.** Make it trustable by real households, not richer in domain
-   features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in, irreversible
-   — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
-3. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
+- **Self-host #116 + #229 — ✅ DONE** (closed 2026-06-25). Full rehearsal matrix passed: localhost,
+  Caddy turnkey on a real domain, **upgrade-across-migration** (`00006` on alpha.3 via `pull && up -d`),
+  `pg_dump`→`pg_restore` roundtrip, and `EMAIL_ENABLED=true` (mailpit). The v1→v2 restore-upgrade path
+  (`transforms[1]` backfilling `coupon_disposition`) was also proven on dev. Open self-host tail (not
+  blockers): **#232** (dogfood `APP_URL` on preview), **#244** (e2e blind to the single-origin built-bundle
+  serving path — `needs-triage`), **#258** (a sibling restore-UX issue, partly shipped in alpha.3).
+
+1. **M7 = productization (now the active line).** Make it trustable by real households, not richer in
+   domain features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in,
+   irreversible — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
+2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
 **Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 subdomain scheme
