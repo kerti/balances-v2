@@ -61,8 +61,8 @@ func TestOnboardingOptions_PendingInvites(t *testing.T) {
 	// Three Households invite charlie. Household A double-invites (two inviters).
 	hhA := h.user.HouseholdID // Alice
 	aliceTwo := seedMember(t, h, hhA, "AliceTwo")
-	bob := testutil_member(t, h, "Bob")
-	carol := testutil_member(t, h, "Carol")
+	bob := seedInviterHousehold(t, h, "Bob")
+	carol := seedInviterHousehold(t, h, "Carol")
 
 	// A: oldest by Alice, then a more-recent one by AliceTwo (the survivor).
 	hintInvite := seedInvitationAt(t, h, hhA, h.user.ID, email, now.Add(-4*time.Hour), exp)
@@ -226,9 +226,9 @@ func TestOnboardingChoice_Join_ForeignEmailRejected(t *testing.T) {
 	}
 }
 
-// testutil_member creates a fresh Household + founding user (a separate inviter
+// seedInviterHousehold creates a fresh Household + founding user (a separate inviter
 // in its own Household), for the multi-Household options test.
-func testutil_member(t *testing.T, h *authHarness, name string) db.User {
+func seedInviterHousehold(t *testing.T, h *authHarness, name string) db.User {
 	t.Helper()
 	hh, err := h.q.CreateHousehold(context.Background(), db.CreateHouseholdParams{
 		DisplayName:       name + "'s Household",
