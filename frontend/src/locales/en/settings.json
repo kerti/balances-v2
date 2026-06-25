@@ -83,6 +83,7 @@
       "previewError": "That file couldn't be read as a backup. Please try another.",
       "summary": "This backup holds {{count}} item from “{{household}}”.",
       "summary_other": "This backup holds {{count}} items from “{{household}}”.",
+      "olderVersionNote": "This backup was made by an older version of Balances. It'll be brought up to date automatically when you restore — nothing for you to do.",
       "stakesEmpty": "This household is empty, so nothing will be lost.",
       "stakesWarning": "This will permanently erase the {{count}} item currently in this household and replace it with the backup. This can't be undone.",
       "stakesWarning_other": "This will permanently erase the {{count}} items currently in this household and replace them with the backup. This can't be undone.",

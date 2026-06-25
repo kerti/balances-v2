@@ -132,6 +132,36 @@ func TestV1ToV2BackfillsCouponDisposition(t *testing.T) {
 	}
 }
 
+// covers: INV-BACKUP-06
+//
+// The restore preview must report the file's *on-disk* format version alongside
+// the migrated one (#258), so a v1 fixture parsed on this (v2) build surfaces
+// source=1, current=2 — the signal the UI turns into "made by an older version,
+// updated automatically". migrate() rewrites FormatVersion in place, so this
+// guards that the source is captured before that happens.
+func TestPreviewReportsSourceFormatVersion(t *testing.T) {
+	raw := readAnyGolden(t) // a frozen v1 fixture
+
+	env, err := Parse(bytes.NewReader(raw))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	sum, err := Validate(env, goldenSub)
+	if err != nil {
+		t.Fatalf("Validate: %v", err)
+	}
+	if sum.SourceFormatVersion != 1 {
+		t.Errorf("source_format_version = %d, want 1 (the on-disk version)", sum.SourceFormatVersion)
+	}
+	if sum.FormatVersion != FormatVersion {
+		t.Errorf("format_version = %d, want %d (migrated to current)", sum.FormatVersion, FormatVersion)
+	}
+	if sum.SourceFormatVersion >= sum.FormatVersion {
+		t.Errorf("a v1 file on a v%d build must read older: source %d < current %d",
+			FormatVersion, sum.SourceFormatVersion, sum.FormatVersion)
+	}
+}
+
 // goldenFiles lists the frozen fixtures, skipping any minting artifacts.
 func goldenFiles(t *testing.T) []string {
 	t.Helper()

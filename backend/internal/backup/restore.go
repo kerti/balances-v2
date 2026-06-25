@@ -98,6 +98,9 @@ func parseWith(r io.Reader, target int, chain map[int]transformFunc) (*Envelope,
 	if err := json.Unmarshal(raw, &env); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrInvalidBackupFile, err)
 	}
+	// Remember the on-disk version before migrate() rewrites FormatVersion to the
+	// current one, so the preview can tell the operator their file was upgraded (#258).
+	env.sourceFormatVersion = env.FormatVersion
 	if err := migrate(&env, target, chain); err != nil {
 		return nil, err
 	}
@@ -148,10 +151,15 @@ func assertCounts(env *Envelope) error {
 // Summary is the non-destructive preview returned before a restore commits — the
 // counts erased/loaded and the household name drive the confirmation screen.
 type Summary struct {
-	HouseholdName string         `json:"household_name"`
-	FormatVersion int            `json:"format_version"`
-	Fidelity      Fidelity       `json:"fidelity"`
-	Counts        map[string]int `json:"counts"`
+	HouseholdName string `json:"household_name"`
+	// FormatVersion is the version after migration (the version this build now
+	// holds the data at); SourceFormatVersion is the file's on-disk version. When
+	// Source < FormatVersion the file was made by an older build and upgraded on
+	// the way in (#258) — the preview surfaces a reassurance note.
+	FormatVersion       int            `json:"format_version"`
+	SourceFormatVersion int            `json:"source_format_version"`
+	Fidelity            Fidelity       `json:"fidelity"`
+	Counts              map[string]int `json:"counts"`
 }
 
 // Validate runs the full pre-commit checks: the object graph is internally
@@ -166,10 +174,11 @@ func Validate(env *Envelope, callerSub string) (*Summary, error) {
 		return nil, ErrNotMemberOfBackup
 	}
 	return &Summary{
-		HouseholdName: env.Household.Household.DisplayName,
-		FormatVersion: env.FormatVersion,
-		Fidelity:      env.Fidelity,
-		Counts:        env.Household.SectionCounts(),
+		HouseholdName:       env.Household.Household.DisplayName,
+		FormatVersion:       env.FormatVersion,
+		SourceFormatVersion: env.sourceFormatVersion,
+		Fidelity:            env.Fidelity,
+		Counts:              env.Household.SectionCounts(),
 	}, nil
 }
 

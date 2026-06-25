@@ -125,6 +125,16 @@ export function RestoreCard() {
               </p>
             </div>
 
+            {preview.backup.source_format_version <
+              preview.backup.format_version && (
+              <div
+                className="rounded-md border bg-muted p-3 text-sm text-muted-foreground"
+                data-testid="restore-older-version"
+              >
+                {t('data.restore.olderVersionNote')}
+              </div>
+            )}
+
             <div
               className="rounded-md border border-destructive/50 bg-destructive/5 p-3 text-sm"
               data-testid="restore-stakes"

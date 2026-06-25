@@ -7,7 +7,12 @@ import { ApiError, isEnvelope, type ErrorEnvelope } from '@/api/client'
 // RestoreSummary mirrors the backend backup.Summary: what a backup contains.
 export type RestoreSummary = {
   household_name: string
+  // format_version is the version after migration (what this build now holds the
+  // data at); source_format_version is the file's on-disk version. source <
+  // format means the file was made by an older Balances and upgraded on the way
+  // in (#258) — the preview surfaces a reassurance note.
   format_version: number
+  source_format_version: number
   fidelity: 'full' | 'compacted'
   counts: Record<string, number>
 }

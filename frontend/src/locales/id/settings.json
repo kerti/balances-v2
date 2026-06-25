@@ -83,6 +83,7 @@
       "previewError": "Berkas itu tidak dapat dibaca sebagai cadangan. Silakan coba berkas lain.",
       "summary": "Cadangan ini berisi {{count}} item dari “{{household}}”.",
       "summary_other": "Cadangan ini berisi {{count}} item dari “{{household}}”.",
+      "olderVersionNote": "Cadangan ini dibuat oleh versi Balances yang lebih lama. Saat dipulihkan, datanya akan diperbarui secara otomatis — tidak ada yang perlu Anda lakukan.",
       "stakesEmpty": "Rumah tangga ini kosong, jadi tidak ada yang akan hilang.",
       "stakesWarning": "Ini akan menghapus permanen {{count}} item yang ada di rumah tangga ini dan menggantinya dengan cadangan. Tindakan ini tidak dapat dibatalkan.",
       "stakesWarning_other": "Ini akan menghapus permanen {{count}} item yang ada di rumah tangga ini dan menggantinya dengan cadangan. Tindakan ini tidak dapat dibatalkan.",

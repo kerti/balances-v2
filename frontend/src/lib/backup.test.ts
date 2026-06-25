@@ -72,7 +72,7 @@ describe('restore stakes helpers', () => {
 describe('postRestore data layer', () => {
   it('preview uploads the file as multipart to the preview endpoint', async () => {
     const preview = {
-      backup: { household_name: 'Home', format_version: 1, fidelity: 'full', counts: { assets: 1 } },
+      backup: { household_name: 'Home', format_version: 1, source_format_version: 1, fidelity: 'full', counts: { assets: 1 } },
       current: { assets: 0 },
     }
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, preview))

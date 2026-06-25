@@ -64,6 +64,12 @@ type Envelope struct {
 	Fidelity      Fidelity       `json:"fidelity"`  // "full" | "compacted"
 	Counts        map[string]int `json:"counts"`    // per-section row counts (import integrity)
 	Household     HouseholdData  `json:"household"` // the payload
+
+	// sourceFormatVersion is the file's format_version as read off disk, captured
+	// before the transform chain migrates FormatVersion up to the current version
+	// (#258). Unexported, so it is never marshaled — it is not part of the wire
+	// format, only restore-preview signal (was this file made by an older build?).
+	sourceFormatVersion int
 }
 
 // HouseholdData is the Household payload in **parents-before-children** order
