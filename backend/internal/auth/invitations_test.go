@@ -24,6 +24,9 @@ func TestHandleCreateInvitation(t *testing.T) {
 		if !strings.Contains(body.AcceptURL, "invite=") {
 			t.Errorf("accept_url missing invite token: %q", body.AcceptURL)
 		}
+		if !body.EmailSent {
+			t.Error("email_sent: want true when the invite email sent cleanly")
+		}
 
 		// DB row exists by the token embedded in accept_url.
 		u, err := url.Parse(body.AcceptURL)

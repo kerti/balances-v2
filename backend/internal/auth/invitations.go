@@ -28,6 +28,12 @@ type createInvitationResp struct {
 	InvitedEmail string    `json:"invited_email"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	AcceptURL    string    `json:"accept_url"`
+	// EmailSent reports whether the best-effort invitation email went out, so the
+	// inviter can be nudged to share the AcceptURL manually when it didn't. False
+	// only when mailer.Send errored (e.g. a misconfigured sender); with email
+	// disabled the NoopMailer succeeds and this stays true — the copy-link panel
+	// is the designed affordance there (INV-NOTIFICATIONS-10/11).
+	EmailSent bool `json:"email_sent"`
 }
 
 func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request) {
@@ -89,11 +95,13 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 	// later in Settings.
 	acceptURL := h.backendURL + "/api/auth/google/start?invite=" + token + "&lng=" + inviter.Locale
 
+	emailSent := true
 	if err := h.sendInvitationEmail(ctx, inviter, household, invite, acceptURL); err != nil {
 		// Email delivery is best-effort: log the error but still return the
 		// invitation. The inviter can share the accept URL manually if email
-		// failed to deliver.
+		// failed to deliver — emailSent=false lets the UI nudge them to.
 		slog.Error("send invitation email", "err", err)
+		emailSent = false
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -103,6 +111,7 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 		InvitedEmail: invite.InvitedEmail,
 		ExpiresAt:    expiresAt,
 		AcceptURL:    acceptURL,
+		EmailSent:    emailSent,
 	})
 }
 

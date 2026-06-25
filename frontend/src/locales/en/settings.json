@@ -53,6 +53,7 @@
     "emailPlaceholder": "someone@example.com",
     "submit": "Send invitation",
     "sentTo": "Invitation sent to {{email}}",
+    "emailFailed": "Invite created — the email couldn't be sent. Share the link below instead.",
     "expires": "Expires {{when}}",
     "acceptUrl": "Accept URL:",
     "copyLink": "Copy link",

@@ -53,6 +53,7 @@
     "emailPlaceholder": "seseorang@contoh.com",
     "submit": "Kirim undangan",
     "sentTo": "Undangan terkirim ke {{email}}",
+    "emailFailed": "Undangan dibuat — email tidak dapat dikirim. Bagikan tautan di bawah ini sebagai gantinya.",
     "expires": "Kedaluwarsa {{when}}",
     "acceptUrl": "URL terima:",
     "copyLink": "Salin tautan",

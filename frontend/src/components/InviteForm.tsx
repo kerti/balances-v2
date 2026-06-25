@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,6 +21,7 @@ type InviteResp = {
   invited_email: string
   expires_at: string
   accept_url: string
+  email_sent: boolean
 }
 
 export function InviteForm() {
@@ -38,6 +40,14 @@ export function InviteForm() {
       setResult(data)
       setCopied(false)
       setEmail('')
+      // The invite + link are valid regardless; only nudge when the best-effort
+      // email actually failed to send (email enabled but the send errored — e.g.
+      // a misconfigured sender). With email disabled the backend reports
+      // email_sent=true and the always-visible link panel below is the
+      // affordance. See issue #212 / INV-NOTIFICATIONS-11.
+      if (!data.email_sent) {
+        toast.warning(t('invite.emailFailed'))
+      }
     },
   })
 
