@@ -24,6 +24,7 @@
     "submit": "Buat rumah tangga",
     "submitting": "Membuat…"
   },
+  "alreadyMember": "Anda sudah tergabung dalam {{household}} — undangan tidak dapat memindahkan Anda. Satu orang hanya dapat tergabung dalam satu rumah tangga.",
   "error": "Terjadi kesalahan saat menyiapkannya. Silakan coba lagi.",
   "expired": "Waktu masuk Anda habis sebelum selesai. Silakan masuk kembali.",
   "signInAgain": "Kembali ke halaman masuk"

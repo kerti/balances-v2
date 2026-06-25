@@ -4,6 +4,7 @@ import { api, ApiError } from '@/api/client'
 export type Me = {
   id: string
   household_id: string
+  household_display_name: string
   display_name: string
   nickname: string | null
   email: string

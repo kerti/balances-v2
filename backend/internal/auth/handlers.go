@@ -197,6 +197,13 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// inviteIgnored: an already-onboarded user arrived via a fresh invite link.
+	// A User belongs to exactly one Household with no leave/switch (ADR-0017), so
+	// the link can't move them — but rather than silently drop it, we carry a
+	// signal to the SPA to explain why (ADR-0038). Messaging only: no membership
+	// change, and the invitation is left untouched (not consumed).
+	inviteIgnored := false
+
 	user, err := h.q.GetUserByGoogleSub(ctx, claims.Sub)
 	switch {
 	case err == nil:
@@ -209,6 +216,13 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 				slog.Error("refresh user picture", "err", err)
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
+			}
+		}
+		// A non-empty token that names a real invitation triggers the notice; a
+		// stale cookie or garbage token is just ignored as before.
+		if inviteToken != "" {
+			if _, lookupErr := h.q.GetInvitationByToken(ctx, inviteToken); lookupErr == nil {
+				inviteIgnored = true
 			}
 		}
 	case errors.Is(err, pgx.ErrNoRows):
@@ -238,7 +252,11 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, h.frontendURL, http.StatusFound)
+	dest := h.frontendURL
+	if inviteIgnored {
+		dest += "/?notice=invite_ignored"
+	}
+	http.Redirect(w, r, dest, http.StatusFound)
 }
 
 // IssueSession mints a fresh session for userID and writes the session cookie.
@@ -371,6 +389,7 @@ func (h *Handlers) handleLogout(w http.ResponseWriter, r *http.Request) {
 type meResponse struct {
 	ID                   uuid.UUID `json:"id"`
 	HouseholdID          uuid.UUID `json:"household_id"`
+	HouseholdDisplayName string    `json:"household_display_name"`
 	DisplayName          string    `json:"display_name"`
 	Nickname             *string   `json:"nickname"`
 	Email                string    `json:"email"`
@@ -387,6 +406,7 @@ func meResponseFor(user db.User, hh db.Household) meResponse {
 	return meResponse{
 		ID:                   user.ID,
 		HouseholdID:          user.HouseholdID,
+		HouseholdDisplayName: hh.DisplayName,
 		DisplayName:          user.DisplayName,
 		Nickname:             user.Nickname,
 		Email:                user.Email,

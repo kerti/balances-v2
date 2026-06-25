@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/04-auth.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**13 / 13** invariants in this zone have at least one covering test (**13** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**14 / 14** invariants in this zone have at least one covering test (**14** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -21,3 +21,4 @@
 | INV-AUTH-11 | The invitation accept URL carries the inviter's locale as `?lng=` (a direct backend `/start` link), so an invitee inherits the household language by default; override is available later in Settings | `backend/internal/auth/invite_locale_test.go` |
 | INV-AUTH-12 | The onboarding handshake is a short-lived (≈15 min), opaque-token-in-cookie record of a verified-but-unaccounted identity; an unknown/expired/missing handshake never reaches the gate (401), it is swept by expiry, and an abandoned one leaves no `users`/`households` row | `backend/internal/auth/callback_test.go`<br>`backend/internal/auth/onboarding_test.go` |
 | INV-AUTH-13 | The deliberate founder choice at the gate creates the Household + User from the handshake claims (optional name override; `seed_locale` applied), issues the real session, deletes the handshake, and fires the welcome email — which therefore only fires on a deliberate founding | `backend/internal/auth/bootstrap_test.go`<br>`backend/internal/auth/onboarding_test.go` |
+| INV-AUTH-14 | An already-onboarded user who signs in via a fresh invite link is signed in normally but carried a non-blocking notice signal instead of having the link silently ignored; their Household membership is unchanged and the invitation is left unconsumed (one Household per person, ADR-0017) | `backend/internal/auth/callback_test.go` |

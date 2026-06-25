@@ -141,6 +141,58 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-14
+// An already-onboarded user who opens a fresh invite link is signed in as
+// normal but carried a non-blocking notice signal (ADR-0038): the link can't
+// move them between Households, so it is explained rather than silently
+// dropped. No membership change, and the invitation is left unconsumed.
+func TestHandleCallback_ExistingUserInviteIgnored(t *testing.T) {
+	h := newAuthHarness(t)
+	token := mustSeedInvitation(t, h, "someone-else@example.com", time.Now().Add(24*time.Hour))
+	originalHousehold := h.user.HouseholdID
+
+	h.installStubOAuth(&googleClaims{
+		Sub:           h.user.GoogleSub,
+		Email:         h.user.Email,
+		EmailVerified: true,
+		Name:          h.user.DisplayName,
+	}, nil)
+
+	req := callbackRequest("s", "the-code")
+	req.AddCookie(&http.Cookie{Name: oauthStateCookieName, Value: "s"})
+	req.AddCookie(&http.Cookie{Name: oauthInviteCookieName, Value: token})
+	rec := httptest.NewRecorder()
+	h.router.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status: want 302, got %d (body: %s)", rec.Code, rec.Body.String())
+	}
+	// The redirect carries the notice signal; the user still reaches the app.
+	if loc := rec.Header().Get("Location"); loc != h.h.frontendURL+"/?notice=invite_ignored" {
+		t.Errorf("redirect: want notice signal, got %q", loc)
+	}
+	if c := findCookie(rec, sessionCookieName); c == nil || c.Value == "" {
+		t.Error("expected a session cookie (sign-in still succeeds)")
+	}
+
+	// No membership change.
+	refreshed, err := h.q.GetUserByGoogleSub(context.Background(), h.user.GoogleSub)
+	if err != nil {
+		t.Fatalf("GetUserByGoogleSub: %v", err)
+	}
+	if refreshed.HouseholdID != originalHousehold {
+		t.Errorf("household must not change; want %s, got %s", originalHousehold, refreshed.HouseholdID)
+	}
+	// The invitation is not consumed.
+	inv, err := h.q.GetInvitationByToken(context.Background(), token)
+	if err != nil {
+		t.Fatalf("GetInvitationByToken: %v", err)
+	}
+	if inv.UsedAt.Valid {
+		t.Error("an ignored invite must stay unconsumed")
+	}
+}
+
 // covers: INV-AUTH-05, INV-AUTH-12
 // Empty-token first sign-in no longer founds a Household directly (ADR-0038):
 // it records an onboarding handshake and bounces to the gate, with NO

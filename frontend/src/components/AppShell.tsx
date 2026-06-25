@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 import { useSession } from '@/hooks/useSession'
+import { useInviteIgnoredNotice } from '@/hooks/useInviteIgnoredNotice'
 import { useLocaleReconcile } from '@/i18n/useLocaleReconcile'
 import { useThemeReconcile } from '@/theme/useThemeReconcile'
 import { api } from '@/api/client'
@@ -25,6 +26,7 @@ export function AppShell() {
   const { t } = useTranslation('common')
   useLocaleReconcile(user)
   useThemeReconcile(user)
+  useInviteIgnoredNotice(user)
 
   async function handleSignOut() {
     try {

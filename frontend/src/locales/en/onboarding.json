@@ -24,6 +24,7 @@
     "submit": "Create household",
     "submitting": "Creating…"
   },
+  "alreadyMember": "You're already in {{household}} — an invitation can't move you. A person can belong to only one household.",
   "error": "Something went wrong setting that up. Please try again.",
   "expired": "Your sign-in timed out before you finished. Please sign in again.",
   "signInAgain": "Back to sign in"
