@@ -26,7 +26,7 @@ func TestCreateFounder(t *testing.T) {
 		EmailVerified: true,
 		Name:          "Founder",
 	}
-	user, err := h.h.createFounder(context.Background(), claims, "en-GB")
+	user, err := h.h.createFounder(context.Background(), claims, "en-GB", "")
 	if err != nil {
 		t.Fatalf("createFounder: %v", err)
 	}

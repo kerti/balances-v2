@@ -1,0 +1,15 @@
+{
+  "title": "Selamat datang di Balances",
+  "subtitle": "Mari siapkan tempat keuangan rumah tangga Anda.",
+  "founder": {
+    "title": "Mulai rumah tangga Anda sendiri",
+    "description": "Buat rumah tangga baru. Anda dapat mengundang anggota lain nanti dari Pengaturan.",
+    "nameLabel": "Nama rumah tangga",
+    "namePlaceholder": "Rumah tangga Anda",
+    "submit": "Buat rumah tangga",
+    "submitting": "Membuat…"
+  },
+  "error": "Terjadi kesalahan saat menyiapkannya. Silakan coba lagi.",
+  "expired": "Waktu masuk Anda habis sebelum selesai. Silakan masuk kembali.",
+  "signInAgain": "Kembali ke halaman masuk"
+}

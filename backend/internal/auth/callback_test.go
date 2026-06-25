@@ -142,8 +142,12 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 	}
 }
 
-// covers: INV-AUTH-05
-func TestHandleCallback_NewFounder(t *testing.T) {
+// covers: INV-AUTH-05, INV-AUTH-12
+// Empty-token first sign-in no longer founds a Household directly (ADR-0038):
+// it records an onboarding handshake and bounces to the gate, with NO
+// users/households row and NO session created yet. The deliberate founding now
+// happens at the gate (TestOnboardingChoice_Found).
+func TestHandleCallback_NewIdentityBeginsOnboarding(t *testing.T) {
 	h := newAuthHarness(t)
 	const wantPicture = "https://lh3.googleusercontent.com/a/founder.jpg"
 	h.installStubOAuth(&googleClaims{
@@ -162,21 +166,34 @@ func TestHandleCallback_NewFounder(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("status: want 302, got %d (body: %s)", rec.Code, rec.Body.String())
 	}
+	if loc := rec.Header().Get("Location"); loc != h.h.frontendURL+"/onboarding" {
+		t.Errorf("redirect: want %q, got %q", h.h.frontendURL+"/onboarding", loc)
+	}
 
-	// Looking the user up by google_sub should now resolve to a real row in
-	// a brand-new household.
-	user, err := h.q.GetUserByGoogleSub(context.Background(), "new-google-sub-founder")
+	// No session is issued at the gate's threshold.
+	if c := findCookie(rec, sessionCookieName); c != nil && c.Value != "" {
+		t.Errorf("expected no session cookie, got %+v", c)
+	}
+	// No account exists yet — nothing is written until the choice commits.
+	if _, err := h.q.GetUserByGoogleSub(context.Background(), "new-google-sub-founder"); err == nil {
+		t.Error("expected no user row for an un-committed onboarding handshake")
+	}
+
+	// A handshake cookie identifies the verified-but-unaccounted identity, and
+	// the row carries the Google claims for the deferred account creation.
+	hsCookie := findCookie(rec, onboardingCookieName)
+	if hsCookie == nil || hsCookie.Value == "" {
+		t.Fatal("expected onboarding handshake cookie to be set")
+	}
+	hs, err := h.q.GetOnboardingHandshake(context.Background(), hsCookie.Value)
 	if err != nil {
-		t.Fatalf("GetUserByGoogleSub: %v", err)
+		t.Fatalf("GetOnboardingHandshake: %v", err)
 	}
-	if user.HouseholdID == h.user.HouseholdID {
-		t.Error("new founder should land in a different household than the harness user")
+	if hs.Email != "newfounder@example.com" {
+		t.Errorf("handshake email: got %q", hs.Email)
 	}
-	if user.Email != "newfounder@example.com" {
-		t.Errorf("email: got %q", user.Email)
-	}
-	if user.PictureUrl == nil || *user.PictureUrl != wantPicture {
-		t.Errorf("picture_url: want %q, got %v", wantPicture, user.PictureUrl)
+	if hs.PictureUrl == nil || *hs.PictureUrl != wantPicture {
+		t.Errorf("handshake picture_url: want %q, got %v", wantPicture, hs.PictureUrl)
 	}
 }
 

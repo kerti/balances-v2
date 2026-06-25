@@ -266,6 +266,18 @@ type MutualFundDetail struct {
 	FundType     string    `json:"fund_type"`
 }
 
+type OnboardingHandshake struct {
+	ID               string             `json:"id"`
+	GoogleSub        string             `json:"google_sub"`
+	Email            string             `json:"email"`
+	DisplayName      string             `json:"display_name"`
+	PictureUrl       *string            `json:"picture_url"`
+	SeedLocale       string             `json:"seed_locale"`
+	HintInvitationID *uuid.UUID         `json:"hint_invitation_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+}
+
 type PropertyDetail struct {
 	AssetID                uuid.UUID        `json:"asset_id"`
 	PropertyType           string           `json:"property_type"`

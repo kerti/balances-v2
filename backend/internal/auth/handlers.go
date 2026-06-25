@@ -98,6 +98,10 @@ func (h *Handlers) Mount(r chi.Router) {
 	r.Get("/auth/google/start", h.handleStart)
 	r.Get("/auth/google/callback", h.handleCallback)
 	r.Post("/auth/logout", h.handleLogout)
+	// Onboarding gate (ADR-0038): authenticated by the handshake cookie, not a
+	// session, so deliberately NOT behind RequireAuth.
+	r.Get("/onboarding/options", h.handleOnboardingOptions)
+	r.Post("/onboarding/choice", h.handleOnboardingChoice)
 	r.With(RequireAuth).Get("/me", h.handleMe)
 	r.With(RequireAuth).Patch("/me", h.handleUpdateMe)
 	r.With(RequireAuth).Get("/household/members", h.handleListHouseholdMembers)
@@ -208,6 +212,21 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case errors.Is(err, pgx.ErrNoRows):
+		// Brand-new Google identity. With no invite token, the founder-vs-join
+		// decision moves *after* identity verification (ADR-0038): record a
+		// short-lived onboarding handshake and bounce to the SPA's gate instead
+		// of silently founding a household — no users/households row, no session
+		// yet. The invited-link path still joins directly here; moving it into
+		// the gate is the next slice (#268).
+		if inviteToken == "" {
+			if err := h.beginOnboarding(ctx, w, claims, resolveSeedLocale(localeHint), nil); err != nil {
+				slog.Error("begin onboarding", "err", err)
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			http.Redirect(w, r, h.frontendURL+"/onboarding", http.StatusFound)
+			return
+		}
 		user, err = h.bootstrapNewUser(ctx, claims, inviteToken, resolveSeedLocale(localeHint))
 		if err != nil {
 			slog.Error("bootstrap new user", "err", err)
@@ -282,7 +301,7 @@ func equalStringPtr(a, b *string) bool {
 // used by an unintended account.
 func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, inviteToken, seedLocale string) (db.User, error) {
 	if inviteToken == "" {
-		return h.createFounder(ctx, c, seedLocale)
+		return h.createFounder(ctx, c, seedLocale, "")
 	}
 
 	invite, err := h.q.GetInvitationByToken(ctx, inviteToken)
@@ -321,9 +340,15 @@ func (h *Handlers) bootstrapNewUser(ctx context.Context, c *googleClaims, invite
 	return user, nil
 }
 
-func (h *Handlers) createFounder(ctx context.Context, c *googleClaims, seedLocale string) (db.User, error) {
+// createFounder mints a new Household + User from verified Google claims. The
+// householdName override lets the onboarding gate (ADR-0038) pass a
+// user-supplied name; an empty string derives the default "{Name}'s Household".
+func (h *Handlers) createFounder(ctx context.Context, c *googleClaims, seedLocale, householdName string) (db.User, error) {
+	if householdName == "" {
+		householdName = c.Name + "'s Household"
+	}
 	household, err := h.q.CreateHousehold(ctx, db.CreateHouseholdParams{
-		DisplayName:       c.Name + "'s Household",
+		DisplayName:       householdName,
 		ReportingCurrency: "IDR",
 	})
 	if err != nil {

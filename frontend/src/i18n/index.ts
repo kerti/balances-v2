@@ -23,6 +23,7 @@ import enIncome from '../locales/en/income.json'
 import enSettings from '../locales/en/settings.json'
 import enTags from '../locales/en/tags.json'
 import enErrors from '../locales/en/errors.json'
+import enOnboarding from '../locales/en/onboarding.json'
 
 import idCommon from '../locales/id/common.json'
 import idNav from '../locales/id/nav.json'
@@ -35,6 +36,7 @@ import idIncome from '../locales/id/income.json'
 import idSettings from '../locales/id/settings.json'
 import idTags from '../locales/id/tags.json'
 import idErrors from '../locales/id/errors.json'
+import idOnboarding from '../locales/id/onboarding.json'
 
 // Namespaces are split per feature so each extraction issue (issues #5–#11)
 // ships an independently translatable unit. The 'errors' namespace covers
@@ -51,6 +53,7 @@ export const NAMESPACES = [
   'settings',
   'tags',
   'errors',
+  'onboarding',
 ] as const
 
 // Locales are stored and exchanged as BCP47 strings (matching users.locale and
@@ -82,6 +85,7 @@ const resources = {
     settings: enSettings,
     tags: enTags,
     errors: enErrors,
+    onboarding: enOnboarding,
   },
   'id-ID': {
     common: idCommon,
@@ -95,6 +99,7 @@ const resources = {
     settings: idSettings,
     tags: idTags,
     errors: idErrors,
+    onboarding: idOnboarding,
   },
 }
 

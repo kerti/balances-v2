@@ -9,6 +9,10 @@
 export const routes = {
   dashboard: '/',
 
+  // Post-auth onboarding gate (ADR-0038). Rendered outside the authed router
+  // (App.tsx) — the holder has a handshake cookie but no session yet.
+  onboarding: '/onboarding',
+
   // Assets — home + three subtype lists, each with a detail under it.
   assets: '/assets',
   bankAccounts: '/assets/bank-accounts',

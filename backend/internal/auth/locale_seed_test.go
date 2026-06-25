@@ -47,6 +47,9 @@ func TestHandleStart_LocaleCookie(t *testing.T) {
 // TestHandleCallback_FounderLocaleSeed verifies a brand-new founder's locale is
 // seeded server-side from the oauth_locale cookie, falling back to en-GB (the
 // lingua-franca default, ADR-0035) when the hint is absent or unsupported.
+// Under ADR-0038 the founder is born at the gate commit, not the callback, so
+// the hint is captured into the handshake's seed_locale at the callback and
+// applied when the founder choice commits — asserted end-to-end here.
 func TestHandleCallback_FounderLocaleSeed(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -87,6 +90,24 @@ func TestHandleCallback_FounderLocaleSeed(t *testing.T) {
 			if c := findCookie(rec, oauthLocaleCookieName); c == nil || c.MaxAge >= 0 {
 				t.Errorf("expected oauth_locale cookie cleared, got %+v", c)
 			}
+
+			// The callback captures the resolved hint into the handshake; no
+			// account exists yet.
+			hsCookie := findCookie(rec, onboardingCookieName)
+			if hsCookie == nil || hsCookie.Value == "" {
+				t.Fatal("expected onboarding handshake cookie")
+			}
+			hs, err := h.q.GetOnboardingHandshake(context.Background(), hsCookie.Value)
+			if err != nil {
+				t.Fatalf("GetOnboardingHandshake: %v", err)
+			}
+			if hs.SeedLocale != tc.wantLocale {
+				t.Errorf("handshake seed_locale: want %q, got %q", tc.wantLocale, hs.SeedLocale)
+			}
+
+			// Committing the founder choice applies the seeded locale at birth.
+			commit := h.onboardingRequest(t, "POST", "/onboarding/choice", hsCookie.Value, `{"found":true}`)
+			requireStatus(t, commit, http.StatusNoContent)
 
 			user, err := h.q.GetUserByGoogleSub(context.Background(), sub)
 			if err != nil {

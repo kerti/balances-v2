@@ -10,6 +10,7 @@ import {
 import { useSession } from '@/hooks/useSession'
 import { routes } from '@/lib/routes'
 import { SignInScreen } from '@/components/SignInScreen'
+import { OnboardingScreen } from '@/components/OnboardingScreen'
 import { AppShell } from '@/components/AppShell'
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary'
 import { DashboardScreen } from '@/components/DashboardScreen'
@@ -364,6 +365,14 @@ function App() {
   }
 
   if (!user) {
+    // The post-auth onboarding gate (ADR-0038) lives before the authed router:
+    // its visitor holds a handshake cookie but has no session, so useSession
+    // returns null. The handshake — not the URL — is the real credential; an
+    // invalid one makes /onboarding/options answer 401, which OnboardingScreen
+    // surfaces as a "sign in again" prompt.
+    if (window.location.pathname === routes.onboarding) {
+      return <OnboardingScreen />
+    }
     return <SignInScreen />
   }
 

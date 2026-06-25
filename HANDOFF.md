@@ -83,7 +83,9 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 
 1. **M7 = productization (now the active line).** Make it trustable by real households, not richer in
    domain features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in,
-   irreversible — **design done, ADR-0038 merged; build sliced #267→#268→#269**), production
+   irreversible — **design done, ADR-0038 merged; #267 founder-path gate SHIPPED (handshake table
+   mig 00007 + gate endpoints + `/onboarding` SPA route; empty-token first sign-in now records a
+   handshake and bounces to the gate instead of silently founding); #268→#269 next**), production
    Resend domain, **#93** landing. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.

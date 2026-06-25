@@ -23,7 +23,7 @@ func TestWelcomeEmail_LocalizedByRecipientLocale(t *testing.T) {
 		EmailVerified: true,
 		Name:          "Budi",
 	}
-	if _, err := h.h.createFounder(context.Background(), claims, "id-ID"); err != nil {
+	if _, err := h.h.createFounder(context.Background(), claims, "id-ID", ""); err != nil {
 		t.Fatalf("createFounder: %v", err)
 	}
 
