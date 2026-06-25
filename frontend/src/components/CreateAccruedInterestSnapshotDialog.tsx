@@ -42,16 +42,21 @@ type Props<TResult> = {
     accrued_interest: string | null
     lastSnapshotMonth: string
   } | null
+  // The bond's coupon disposition (#66). 'accrues' bonds carry coupon inside the
+  // instrument, so the form starts the accrued field empty (force a real entry)
+  // and swaps to the accrue-oriented hint; 'pays_out' (and time deposits, which
+  // pass nothing) keep the historical accrued=0 default. Undefined ⇒ pays_out.
+  couponDisposition?: CouponDisposition
 }
 
-function emptyForm() {
-  // accrued defaults to 0: covers the common Indonesian-govt-primary case
-  // where coupons pay out to the bank account directly (no in-instrument
-  // accrual). Secondary-market bond + TimeDeposit users override.
+function emptyForm(couponDisposition?: CouponDisposition) {
+  // accrued defaults to 0 for the common pays-out case (coupons land in the bank
+  // account, no in-instrument accrual). An 'accrues' bond (#66) instead starts
+  // empty so the user enters the real accrued figure rather than skipping the 0.
   return {
     year_month: thisYearMonth(),
     amount: '',
-    accrued_interest: '0',
+    accrued_interest: couponDisposition === 'accrues' ? '' : '0',
     as_of_date: '',
     description: '',
   }
@@ -74,11 +79,12 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
   currency,
   mutation,
   carryover,
+  couponDisposition,
 }: Props<TResult>) {
   const { t } = useTranslation(['investments', 'common'])
   const { data: me } = useSession()
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState(emptyForm)
+  const [form, setForm] = useState(() => emptyForm(couponDisposition))
 
   const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest)
 
@@ -101,7 +107,7 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
 
   function close() {
     setOpen(false)
-    setForm(emptyForm())
+    setForm(emptyForm(couponDisposition))
     mutation.reset()
   }
 
@@ -226,7 +232,9 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
           </div>
 
           <p className="text-xs text-muted-foreground">
-            {t('investments:accruedInterestSnapshot.accruedHint')}
+            {couponDisposition === 'accrues'
+              ? t('investments:accruedInterestSnapshot.accruedHintAccrues')
+              : t('investments:accruedInterestSnapshot.accruedHint')}
           </p>
 
           <div className="grid gap-2">

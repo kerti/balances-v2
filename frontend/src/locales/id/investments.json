@@ -105,7 +105,8 @@
     "totalValuePlaceholder": "50250000",
     "accruedPlaceholder": "250000",
     "descriptionPlaceholder": "dari laporan bank",
-    "accruedHint": "Biarkan bunga berjalan 0 jika obligasi Anda membayar kupon langsung ke rekening bank tiap periode (obligasi ritel pemerintah Indonesia: ORI/SBR/SR/ST). Timpa untuk obligasi pasar sekunder dan deposito di mana bunga akrual di dalam instrumen."
+    "accruedHint": "Biarkan bunga berjalan 0 jika obligasi Anda membayar kupon langsung ke rekening bank tiap periode (obligasi ritel pemerintah Indonesia: ORI/SBR/SR/ST). Timpa untuk obligasi pasar sekunder dan deposito di mana bunga akrual di dalam instrumen.",
+    "accruedHintAccrues": "Obligasi ini diatur untuk mengakru kuponnya di dalam instrumen, jadi masukkan bunga berjalan yang termasuk dalam nilai total periode ini — baca dari laporan rekening Anda."
   },
   "trade": {
     "buyTrigger": "Beli",
@@ -399,6 +400,11 @@
       "semi_annual_short": "semesteran",
       "annual_short": "tahunan"
     },
+    "couponDisposition": {
+      "pays_out": "Dibayarkan ke rekening bank",
+      "accrues": "Terakru di dalam obligasi",
+      "hint": "Ke mana kupon disalurkan? “Dibayarkan” berarti kupon masuk ke rekening bank Anda tiap periode (kebanyakan obligasi ritel pemerintah Indonesia). “Terakru” berarti kupon menumpuk di dalam obligasi — pilih ini dan formulir nilai bulanan akan menanyakan jumlah bunga berjalan."
+    },
     "rowMeta": "{{type}} · {{issuer}} · {{rate}}% {{frequency}}",
     "fields": {
       "seriesCode": "Kode seri (opsional)",
@@ -408,6 +414,7 @@
       "placementDate": "Tanggal penempatan",
       "couponRate": "Suku bunga kupon (% per tahun)",
       "couponFrequency": "Frekuensi kupon",
+      "couponDisposition": "Penyaluran kupon",
       "maturityDate": "Tanggal jatuh tempo"
     },
     "placeholders": {

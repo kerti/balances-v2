@@ -369,6 +369,9 @@ export type CouponFrequency =
   | 'quarterly'
   | 'semi_annual'
   | 'annual'
+// Does the coupon pay out to the bank account or accrue inside the instrument
+// (#66)? Drives the accrued-interest snapshot form's default + copy.
+export type CouponDisposition = 'pays_out' | 'accrues'
 
 export type BondDetails = {
   investment_id: string
@@ -377,6 +380,7 @@ export type BondDetails = {
   issuer: string
   coupon_rate: string
   coupon_frequency: CouponFrequency
+  coupon_disposition: CouponDisposition
   maturity_date: string
 }
 

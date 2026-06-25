@@ -16,21 +16,22 @@ import (
 const createBondDetails = `-- name: CreateBondDetails :one
 INSERT INTO bond_details (
     investment_id, bond_type, series_code, issuer,
-    coupon_rate, coupon_frequency, maturity_date
+    coupon_rate, coupon_frequency, maturity_date, coupon_disposition
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7
+    $1, $2, $3, $4, $5, $6, $7, $8
 )
-RETURNING investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code
+RETURNING investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code, coupon_disposition
 `
 
 type CreateBondDetailsParams struct {
-	InvestmentID    uuid.UUID       `json:"investment_id"`
-	BondType        string          `json:"bond_type"`
-	SeriesCode      *string         `json:"series_code"`
-	Issuer          string          `json:"issuer"`
-	CouponRate      decimal.Decimal `json:"coupon_rate"`
-	CouponFrequency string          `json:"coupon_frequency"`
-	MaturityDate    time.Time       `json:"maturity_date"`
+	InvestmentID      uuid.UUID       `json:"investment_id"`
+	BondType          string          `json:"bond_type"`
+	SeriesCode        *string         `json:"series_code"`
+	Issuer            string          `json:"issuer"`
+	CouponRate        decimal.Decimal `json:"coupon_rate"`
+	CouponFrequency   string          `json:"coupon_frequency"`
+	MaturityDate      time.Time       `json:"maturity_date"`
+	CouponDisposition string          `json:"coupon_disposition"`
 }
 
 func (q *Queries) CreateBondDetails(ctx context.Context, arg CreateBondDetailsParams) (BondDetail, error) {
@@ -42,6 +43,7 @@ func (q *Queries) CreateBondDetails(ctx context.Context, arg CreateBondDetailsPa
 		arg.CouponRate,
 		arg.CouponFrequency,
 		arg.MaturityDate,
+		arg.CouponDisposition,
 	)
 	var i BondDetail
 	err := row.Scan(
@@ -52,12 +54,13 @@ func (q *Queries) CreateBondDetails(ctx context.Context, arg CreateBondDetailsPa
 		&i.CouponFrequency,
 		&i.MaturityDate,
 		&i.SeriesCode,
+		&i.CouponDisposition,
 	)
 	return i, err
 }
 
 const getBondDetailsByInvestmentID = `-- name: GetBondDetailsByInvestmentID :one
-SELECT investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code
+SELECT investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code, coupon_disposition
 FROM bond_details
 WHERE investment_id = $1
 `
@@ -73,12 +76,13 @@ func (q *Queries) GetBondDetailsByInvestmentID(ctx context.Context, investmentID
 		&i.CouponFrequency,
 		&i.MaturityDate,
 		&i.SeriesCode,
+		&i.CouponDisposition,
 	)
 	return i, err
 }
 
 const listBondDetailsByInvestmentIDs = `-- name: ListBondDetailsByInvestmentIDs :many
-SELECT investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code
+SELECT investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code, coupon_disposition
 FROM bond_details
 WHERE investment_id = ANY($1::uuid[])
 `
@@ -100,6 +104,7 @@ func (q *Queries) ListBondDetailsByInvestmentIDs(ctx context.Context, dollar_1 [
 			&i.CouponFrequency,
 			&i.MaturityDate,
 			&i.SeriesCode,
+			&i.CouponDisposition,
 		); err != nil {
 			return nil, err
 		}
@@ -113,24 +118,26 @@ func (q *Queries) ListBondDetailsByInvestmentIDs(ctx context.Context, dollar_1 [
 
 const updateBondDetails = `-- name: UpdateBondDetails :one
 UPDATE bond_details
-SET bond_type        = $2,
-    series_code      = $3,
-    issuer           = $4,
-    coupon_rate      = $5,
-    coupon_frequency = $6,
-    maturity_date    = $7
+SET bond_type          = $2,
+    series_code        = $3,
+    issuer             = $4,
+    coupon_rate        = $5,
+    coupon_frequency   = $6,
+    maturity_date      = $7,
+    coupon_disposition = $8
 WHERE investment_id = $1
-RETURNING investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code
+RETURNING investment_id, bond_type, issuer, coupon_rate, coupon_frequency, maturity_date, series_code, coupon_disposition
 `
 
 type UpdateBondDetailsParams struct {
-	InvestmentID    uuid.UUID       `json:"investment_id"`
-	BondType        string          `json:"bond_type"`
-	SeriesCode      *string         `json:"series_code"`
-	Issuer          string          `json:"issuer"`
-	CouponRate      decimal.Decimal `json:"coupon_rate"`
-	CouponFrequency string          `json:"coupon_frequency"`
-	MaturityDate    time.Time       `json:"maturity_date"`
+	InvestmentID      uuid.UUID       `json:"investment_id"`
+	BondType          string          `json:"bond_type"`
+	SeriesCode        *string         `json:"series_code"`
+	Issuer            string          `json:"issuer"`
+	CouponRate        decimal.Decimal `json:"coupon_rate"`
+	CouponFrequency   string          `json:"coupon_frequency"`
+	MaturityDate      time.Time       `json:"maturity_date"`
+	CouponDisposition string          `json:"coupon_disposition"`
 }
 
 func (q *Queries) UpdateBondDetails(ctx context.Context, arg UpdateBondDetailsParams) (BondDetail, error) {
@@ -142,6 +149,7 @@ func (q *Queries) UpdateBondDetails(ctx context.Context, arg UpdateBondDetailsPa
 		arg.CouponRate,
 		arg.CouponFrequency,
 		arg.MaturityDate,
+		arg.CouponDisposition,
 	)
 	var i BondDetail
 	err := row.Scan(
@@ -152,6 +160,7 @@ func (q *Queries) UpdateBondDetails(ctx context.Context, arg UpdateBondDetailsPa
 		&i.CouponFrequency,
 		&i.MaturityDate,
 		&i.SeriesCode,
+		&i.CouponDisposition,
 	)
 	return i, err
 }

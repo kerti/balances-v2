@@ -4,10 +4,11 @@
 <!-- Rows come from docs/qa/invariants/08-bonds.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**3 / 3** invariants in this zone have at least one covering test (**3** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**4 / 4** invariants in this zone have at least one covering test (**4** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
 | INV-BONDS-01 | Outstanding nominal round-trips through the ledger: a govt-primary bond created from `face_value` F seeds a placement Buy at par (quantity = F ÷ 1,000,000, price_per_unit = 1,000,000) and its outstanding face derives back to F via `outstandingFaceFromLedger` = (Σ buy_qty − Σ sell_qty) × 1,000,000 — no stored scalar, multi-tranche and partial-sell aware by construction | `backend/internal/investments/bonds_test.go` |
 | INV-BONDS-02 | A bond/time-deposit snapshot uses the accrued-interest shape — `amount` (total value, incl. accrued) plus `accrued_interest`, and not the quantity/price shape — per ADR-0022's value-column XOR | `backend/internal/investments/snapshots_test.go` |
 | INV-BONDS-03 | A time deposit's term is a non-empty forward window (maturity strictly after placement, else `ErrInvalidDepositTerm`/the migration CHECK), and it is enforced both ways: a snapshot's month must fall within placement..maturity (inclusive), the terminal Maturity transaction within placement..maturity to the day, and a term edit cannot be narrowed so it strands an existing snapshot or transaction outside the new window | `backend/internal/repo/time_deposit_term_bounds_test.go` |
+| INV-BONDS-04 | A bond's `coupon_disposition` is a per-bond enum (`pays_out` \ | `backend/internal/backup/transform_test.go`<br>`backend/internal/investments/bonds_test.go` |

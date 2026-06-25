@@ -321,6 +321,14 @@ export function BondDetail({ investmentId, onBack }: Props) {
             </span>{' '}
             {formatDate(bond.details.maturity_date)}
           </p>
+          <p>
+            <span className="text-muted-foreground">
+              {t('investments:bond.fields.couponDisposition')}
+            </span>{' '}
+            {t(
+              `investments:bond.couponDisposition.${bond.details.coupon_disposition}`,
+            )}
+          </p>
           {bond.investment.description && (
             <p className="pt-1">{bond.investment.description}</p>
           )}
@@ -371,6 +379,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                   <CreateAccruedInterestSnapshotDialog
                     currency={bond.investment.native_currency}
                     mutation={createSnapshotMutation}
+                    couponDisposition={bond.details.coupon_disposition}
                     carryover={
                       bondLatestSnapshot
                         ? {

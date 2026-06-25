@@ -55,13 +55,14 @@ type BankAccountDetail struct {
 }
 
 type BondDetail struct {
-	InvestmentID    uuid.UUID       `json:"investment_id"`
-	BondType        string          `json:"bond_type"`
-	Issuer          string          `json:"issuer"`
-	CouponRate      decimal.Decimal `json:"coupon_rate"`
-	CouponFrequency string          `json:"coupon_frequency"`
-	MaturityDate    time.Time       `json:"maturity_date"`
-	SeriesCode      *string         `json:"series_code"`
+	InvestmentID      uuid.UUID       `json:"investment_id"`
+	BondType          string          `json:"bond_type"`
+	Issuer            string          `json:"issuer"`
+	CouponRate        decimal.Decimal `json:"coupon_rate"`
+	CouponFrequency   string          `json:"coupon_frequency"`
+	MaturityDate      time.Time       `json:"maturity_date"`
+	SeriesCode        *string         `json:"series_code"`
+	CouponDisposition string          `json:"coupon_disposition"`
 }
 
 type FxRate struct {

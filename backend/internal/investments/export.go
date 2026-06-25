@@ -79,6 +79,7 @@ func (h *Handlers) handleExportBond(w http.ResponseWriter, r *http.Request) {
 		{Key: "issuer", Value: d.Issuer},
 		{Key: "coupon_rate", Value: d.CouponRate.String(), Note: "percent per year (e.g. 6.5)"},
 		{Key: "coupon_frequency", Value: d.CouponFrequency, Note: "monthly | quarterly | semi_annual | annual"},
+		{Key: "coupon_disposition", Value: d.CouponDisposition, Note: "pays_out | accrues"},
 		{Key: "maturity_date", Value: d.MaturityDate.Format("2006-01-02"), Note: "YYYY-MM-DD"},
 	})
 }

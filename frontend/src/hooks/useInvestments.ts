@@ -7,6 +7,7 @@ import type {
   BondListItem,
   BondType,
   CouponFrequency,
+  CouponDisposition,
   Gold,
   GoldListItem,
   MutualFund,
@@ -279,6 +280,7 @@ export type CreateBondPayload = {
   placement_date: string
   coupon_rate: string
   coupon_frequency: CouponFrequency
+  coupon_disposition: CouponDisposition
   maturity_date: string
 }
 
@@ -293,6 +295,7 @@ export type UpdateBondPayload = {
   issuer: string
   coupon_rate: string
   coupon_frequency: CouponFrequency
+  coupon_disposition: CouponDisposition
   maturity_date: string
 }
 

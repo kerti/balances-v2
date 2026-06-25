@@ -105,7 +105,8 @@
     "totalValuePlaceholder": "50250000",
     "accruedPlaceholder": "250000",
     "descriptionPlaceholder": "from bank statement",
-    "accruedHint": "Leave accrued at 0 if your bond pays coupons directly to your bank account each period (Indonesian govt-primary retail: ORI/SBR/SR/ST). Override for secondary-market bonds and time deposits where interest accrues inside the instrument."
+    "accruedHint": "Leave accrued at 0 if your bond pays coupons directly to your bank account each period (Indonesian govt-primary retail: ORI/SBR/SR/ST). Override for secondary-market bonds and time deposits where interest accrues inside the instrument.",
+    "accruedHintAccrues": "This bond is set to accrue its coupon inside the instrument, so enter the accrued interest carried in this period's total value — read it from your statement."
   },
   "trade": {
     "buyTrigger": "Buy",
@@ -399,6 +400,11 @@
       "semi_annual_short": "semi-annual",
       "annual_short": "annual"
     },
+    "couponDisposition": {
+      "pays_out": "Pays out to bank account",
+      "accrues": "Accrues inside the bond",
+      "hint": "Where does the coupon go? “Pays out” means it lands in your bank account each period (most Indonesian govt retail bonds). “Accrues” means it builds up inside the bond — pick this and the monthly value form will ask for the accrued amount."
+    },
     "rowMeta": "{{type}} · {{issuer}} · {{rate}}% {{frequency}}",
     "fields": {
       "seriesCode": "Series code (optional)",
@@ -408,6 +414,7 @@
       "placementDate": "Placement date",
       "couponRate": "Coupon rate (% per year)",
       "couponFrequency": "Coupon frequency",
+      "couponDisposition": "Coupon disposition",
       "maturityDate": "Maturity date"
     },
     "placeholders": {

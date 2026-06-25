@@ -199,19 +199,23 @@ func (h *Handlers) resolveBondDetail(ctx context.Context, detail map[string]stri
 
 	couponRate := importcreate.Decimal(detail, "coupon_rate", &fieldErrs)
 	maturityDate := importcreate.Date(detail, "maturity_date", &fieldErrs)
+	// coupon_disposition is a new optional column (#66); templates predating it
+	// omit the cell. An empty value is backfilled to the column default
+	// ('pays_out') in the repo, so it just passes through here.
 	req := createBondReq{
-		DisplayName:     strings.TrimSpace(detail["display_name"]),
-		Description:     importcreate.OptionalStr(detail["description"]),
-		OwnershipType:   strings.TrimSpace(detail["ownership_type"]),
-		SoleOwnerUserID: soleOwnerID,
-		NativeCurrency:  strings.TrimSpace(detail["native_currency"]),
-		RiskProfile:     strings.TrimSpace(detail["risk_profile"]),
-		BondType:        strings.TrimSpace(detail["bond_type"]),
-		SeriesCode:      importcreate.OptionalStr(detail["series_code"]),
-		Issuer:          strings.TrimSpace(detail["issuer"]),
-		CouponRate:      couponRate,
-		CouponFrequency: strings.TrimSpace(detail["coupon_frequency"]),
-		MaturityDate:    strings.TrimSpace(detail["maturity_date"]),
+		DisplayName:       strings.TrimSpace(detail["display_name"]),
+		Description:       importcreate.OptionalStr(detail["description"]),
+		OwnershipType:     strings.TrimSpace(detail["ownership_type"]),
+		SoleOwnerUserID:   soleOwnerID,
+		NativeCurrency:    strings.TrimSpace(detail["native_currency"]),
+		RiskProfile:       strings.TrimSpace(detail["risk_profile"]),
+		BondType:          strings.TrimSpace(detail["bond_type"]),
+		SeriesCode:        importcreate.OptionalStr(detail["series_code"]),
+		Issuer:            strings.TrimSpace(detail["issuer"]),
+		CouponRate:        couponRate,
+		CouponFrequency:   strings.TrimSpace(detail["coupon_frequency"]),
+		CouponDisposition: strings.TrimSpace(detail["coupon_disposition"]),
+		MaturityDate:      strings.TrimSpace(detail["maturity_date"]),
 	}
 	// The placement Buy lives on the Transactions sheet, so the bond export omits
 	// face_value/placement_date from Detail and the seed import never re-derives
@@ -225,18 +229,19 @@ func (h *Handlers) resolveBondDetail(ctx context.Context, detail map[string]stri
 	}
 
 	return repo.CreateBondParams{
-		DisplayName:     req.DisplayName,
-		Description:     req.Description,
-		OwnershipType:   req.OwnershipType,
-		SoleOwnerUserID: req.SoleOwnerUserID,
-		NativeCurrency:  req.NativeCurrency,
-		RiskProfile:     req.RiskProfile,
-		BondType:        req.BondType,
-		SeriesCode:      req.SeriesCode,
-		Issuer:          req.Issuer,
-		CouponRate:      decVal(couponRate),
-		CouponFrequency: req.CouponFrequency,
-		MaturityDate:    timeVal(maturityDate),
+		DisplayName:       req.DisplayName,
+		Description:       req.Description,
+		OwnershipType:     req.OwnershipType,
+		SoleOwnerUserID:   req.SoleOwnerUserID,
+		NativeCurrency:    req.NativeCurrency,
+		RiskProfile:       req.RiskProfile,
+		BondType:          req.BondType,
+		SeriesCode:        req.SeriesCode,
+		Issuer:            req.Issuer,
+		CouponRate:        decVal(couponRate),
+		CouponFrequency:   req.CouponFrequency,
+		CouponDisposition: req.CouponDisposition,
+		MaturityDate:      timeVal(maturityDate),
 	}, tagID, fieldErrs, nil
 }
 

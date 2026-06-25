@@ -22,6 +22,7 @@ import type {
   BondListItem,
   BondType,
   CouponFrequency,
+  CouponDisposition,
 } from '@/api/types'
 
 type Props = {
@@ -44,6 +45,7 @@ function toForm(bond: Bond | BondListItem) {
     issuer: d.issuer,
     coupon_rate: d.coupon_rate,
     coupon_frequency: d.coupon_frequency,
+    coupon_disposition: d.coupon_disposition,
     maturity_date: d.maturity_date ? d.maturity_date.slice(0, 10) : '',
   }
 }
@@ -72,6 +74,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
         issuer: form.issuer,
         coupon_rate: form.coupon_rate,
         coupon_frequency: form.coupon_frequency,
+        coupon_disposition: form.coupon_disposition,
         maturity_date: form.maturity_date,
       },
       { onSuccess: () => onOpenChange(false) },
@@ -213,6 +216,32 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
                   </option>
                 </select>
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="edit_bond_coupon_disposition">
+                {t('investments:bond.fields.couponDisposition')}
+              </Label>
+              <select
+                id="edit_bond_coupon_disposition"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={form.coupon_disposition}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    coupon_disposition: e.target.value as CouponDisposition,
+                  })
+                }
+              >
+                <option value="pays_out">
+                  {t('investments:bond.couponDisposition.pays_out')}
+                </option>
+                <option value="accrues">
+                  {t('investments:bond.couponDisposition.accrues')}
+                </option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {t('investments:bond.couponDisposition.hint')}
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="edit_bond_maturity">

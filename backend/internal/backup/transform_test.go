@@ -105,6 +105,33 @@ func TestGoldenFixturesStillParse(t *testing.T) {
 	}
 }
 
+// covers: INV-BONDS-04
+//
+// The first *real* format transform (v1→v2, #66): a v1 backup predates the
+// bond_details.coupon_disposition column, so each bond entry decodes with an
+// empty disposition. transforms[1] must backfill the column DEFAULT ('pays_out')
+// — otherwise the empty value would restore as NULL into a NOT NULL column — and
+// must leave an already-set disposition untouched.
+func TestV1ToV2BackfillsCouponDisposition(t *testing.T) {
+	env := &Envelope{
+		Household: HouseholdData{
+			Bonds: []db.BondDetail{
+				{CouponDisposition: ""},        // a v1 entry: key absent → decodes to ""
+				{CouponDisposition: "accrues"}, // a value the operator set: must survive
+			},
+		},
+	}
+	if err := transforms[1](env); err != nil {
+		t.Fatalf("transforms[1]: %v", err)
+	}
+	if got := env.Household.Bonds[0].CouponDisposition; got != "pays_out" {
+		t.Errorf("empty disposition backfilled to %q, want pays_out", got)
+	}
+	if got := env.Household.Bonds[1].CouponDisposition; got != "accrues" {
+		t.Errorf("set disposition mutated to %q, want accrues", got)
+	}
+}
+
 // goldenFiles lists the frozen fixtures, skipping any minting artifacts.
 func goldenFiles(t *testing.T) []string {
 	t.Helper()

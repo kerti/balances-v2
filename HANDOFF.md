@@ -74,8 +74,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    - **Run 2 — Caddy turnkey on a real domain: ⏳ NOT RUN** — HTTPS + `COOKIE_SECURE=true` + https
      redirect URI + Let's Encrypt ACME. **Gated on a public VM + domain (ports 80/443).** This is the
      cold-start resume point — the user will provide infra.
-   - **Upgrade leg: ⏳ BLOCKED** — needs a 2nd tag carrying an additive migration (none pending);
-     exercise it whenever the next migration rides a tag.
+   - **Upgrade leg: ⏳ in flight** — **#66** (per-bond coupon disposition) is the additive-migration
+     vehicle: mig `00006` + backup `format_version`→2 (`transforms[1]` backfills `coupon_disposition`,
+     the chain's first real transform). Ship it on alpha.3, then `pull && up -d` the throwaway self-host
+     across the migration to clear this box. `EMAIL_ENABLED=true` (mailpit) folds into the same run.
    - **In flight:** PR **#245** (pin `COMPOSE_PROJECT_NAME` so the operator stack can't collide with
      the in-repo dev `postgres_data` volume — a rehearsal finding) awaits merge; issue **#244** filed
      (e2e is blind to the single-origin built-bundle serving path — why #190/#241 both shipped — plus
@@ -297,8 +299,9 @@ suites. `make help` lists every target.
 
 Tracked in GitHub now, not here — filter the [`backlog`](https://github.com/kerti/balances-v2/labels/backlog)
 and [`security`](https://github.com/kerti/balances-v2/labels/security) labels. Migrated from this doc
-on 2026-06-10: #65 (link existing TD as rollover successor), #66 (per-bond coupon disposition),
-#67 (transaction-list aggregations), #68 (gold purity UX), #69 (component tests RTL/MSW),
+on 2026-06-10: #65 (link existing TD as rollover successor), #66 (per-bond coupon disposition — pulled
+forward as the #229 upgrade-leg migration vehicle), #67 (transaction-list aggregations), #68 (gold
+purity UX), #69 (component tests RTL/MSW),
 #70 (pre-alpha security hardening — e2e-in-CI / SHA-pin actions / gitleaks). Full original wording of
 already-resolved items is in `docs/history/CHANGELOG-pre-alpha.md`.
 

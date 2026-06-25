@@ -35,11 +35,13 @@ friends) or **institutional** (formal — mortgage, bank loan, outstanding credi
 (purchased on the secondary market, may trade before maturity). Coupon frequency is one of `monthly
 | quarterly | semi_annual | annual` — Indonesian retail (ORI/SBR/SR/ST) pays monthly; tradeable govt
 FR series and most corporates pay semi-annually. For floating-rate instruments (SBR, ST) the stored
-coupon rate is the *current* rate; the user edits it on each reset. **Coupon disposition** varies:
-Indonesian govt-primary retail coupons pay out *directly to the user's bank account* each period
-(tracked as a Coupon Transaction; the bond's accrued component at any snapshot is structurally 0).
-Secondary-market and corporate bonds typically *accrue* between coupon dates (accrued > 0 between
-coupons, resets at each coupon). The Snapshot model accommodates both: accrued is a breakdown column,
+coupon rate is the *current* rate; the user edits it on each reset. **Coupon disposition** is a stored
+per-bond enum (`bond_details.coupon_disposition`, `pays_out | accrues`, default `pays_out`, #66):
+`pays_out` — Indonesian govt-primary retail coupons pay out *directly to the user's bank account* each
+period (tracked as a Coupon Transaction; the bond's accrued component at any snapshot is structurally
+0); `accrues` — secondary-market and corporate bonds typically *accrue* between coupon dates (accrued
+> 0 between coupons, resets at each coupon). It drives the accrued-interest snapshot form's default
+(0 vs a forced entry) and copy. The Snapshot model accommodates both: accrued is a breakdown column,
 0 is valid. _Avoid_: Obligation, Obligasi.
 
 **Gold**: A position in physical or paper gold, tracked by quantity (typically grams).

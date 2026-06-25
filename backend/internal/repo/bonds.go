@@ -13,6 +13,21 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
 
+// CouponDispositionPaysOut is the default coupon disposition (#66): coupons pay
+// out to the bank account, no in-instrument accrual — the common Indonesian
+// govt-primary case and the historical (pre-#66) behaviour.
+const CouponDispositionPaysOut = "pays_out"
+
+// defaultCouponDisposition backfills an empty disposition to the column default,
+// so callers that omit it (older API clients, import templates predating #66)
+// never push an empty string into the NOT NULL/CHECK-constrained column.
+func defaultCouponDisposition(s string) string {
+	if s == "" {
+		return CouponDispositionPaysOut
+	}
+	return s
+}
+
 // Bond is the aggregate returned by Get/Create — the core investment row
 // joined with its bond_details extension.
 type Bond struct {
@@ -52,7 +67,10 @@ type CreateBondParams struct {
 	Issuer          string
 	CouponRate      decimal.Decimal
 	CouponFrequency string // "monthly" | "quarterly" | "semi_annual" | "annual"
-	MaturityDate    time.Time
+	// CouponDisposition is whether the coupon pays out to the bank account or
+	// accrues inside the instrument (#66): "pays_out" | "accrues".
+	CouponDisposition string
+	MaturityDate      time.Time
 	// FaceValue + PlacementDate seed the first Buy for a govt_primary bond
 	// (issue #27): qty = FaceValue / 1,000,000, price_per_unit = 1,000,000 at
 	// par. Ignored for secondary_market, where the user records the actual Buy
@@ -62,17 +80,18 @@ type CreateBondParams struct {
 }
 
 type UpdateBondParams struct {
-	DisplayName     string
-	Description     *string
-	OwnershipType   string
-	SoleOwnerUserID *uuid.UUID
-	RiskProfile     string
-	BondType        string
-	SeriesCode      *string
-	Issuer          string
-	CouponRate      decimal.Decimal
-	CouponFrequency string
-	MaturityDate    time.Time
+	DisplayName       string
+	Description       *string
+	OwnershipType     string
+	SoleOwnerUserID   *uuid.UUID
+	RiskProfile       string
+	BondType          string
+	SeriesCode        *string
+	Issuer            string
+	CouponRate        decimal.Decimal
+	CouponFrequency   string
+	CouponDisposition string
+	MaturityDate      time.Time
 }
 
 func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*Bond, error) {
@@ -80,6 +99,7 @@ func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*B
 	if err != nil {
 		return nil, err
 	}
+	p.CouponDisposition = defaultCouponDisposition(p.CouponDisposition)
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -104,13 +124,14 @@ func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*B
 	}
 
 	details, err := qtx.CreateBondDetails(ctx, db.CreateBondDetailsParams{
-		InvestmentID:    inv.ID,
-		BondType:        p.BondType,
-		SeriesCode:      p.SeriesCode,
-		Issuer:          p.Issuer,
-		CouponRate:      p.CouponRate,
-		CouponFrequency: p.CouponFrequency,
-		MaturityDate:    p.MaturityDate,
+		InvestmentID:      inv.ID,
+		BondType:          p.BondType,
+		SeriesCode:        p.SeriesCode,
+		Issuer:            p.Issuer,
+		CouponRate:        p.CouponRate,
+		CouponFrequency:   p.CouponFrequency,
+		CouponDisposition: p.CouponDisposition,
+		MaturityDate:      p.MaturityDate,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create bond_details: %w", err)
@@ -254,6 +275,8 @@ func (r *InvestmentRepo) UpdateBond(ctx context.Context, id uuid.UUID, p UpdateB
 		return nil, err
 	}
 
+	p.CouponDisposition = defaultCouponDisposition(p.CouponDisposition)
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
@@ -282,13 +305,14 @@ func (r *InvestmentRepo) UpdateBond(ctx context.Context, id uuid.UUID, p UpdateB
 	}
 
 	details, err := qtx.UpdateBondDetails(ctx, db.UpdateBondDetailsParams{
-		InvestmentID:    inv.ID,
-		BondType:        p.BondType,
-		SeriesCode:      p.SeriesCode,
-		Issuer:          p.Issuer,
-		CouponRate:      p.CouponRate,
-		CouponFrequency: p.CouponFrequency,
-		MaturityDate:    p.MaturityDate,
+		InvestmentID:      inv.ID,
+		BondType:          p.BondType,
+		SeriesCode:        p.SeriesCode,
+		Issuer:            p.Issuer,
+		CouponRate:        p.CouponRate,
+		CouponFrequency:   p.CouponFrequency,
+		CouponDisposition: p.CouponDisposition,
+		MaturityDate:      p.MaturityDate,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("update bond_details: %w", err)

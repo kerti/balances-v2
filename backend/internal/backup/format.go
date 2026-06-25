@@ -26,10 +26,13 @@ import (
 
 // FormatVersion is the standalone backup-format version (ADR-0036), decoupled
 // from the goose migration number and the app SemVer. It bumps only when the
-// backup *shape* changes. There is exactly one version today, so there is
-// nothing to migrate yet; the transform chain + its fixtures arrive with the
-// restore slices (#175/#177).
-const FormatVersion = 1
+// backup *shape* changes.
+//
+// v1 → v2 (#66): bond_details gained a NOT NULL coupon_disposition column. A v1
+// file has no such key on its bond entries, which would restore as NULL and trip
+// the column's NOT NULL/CHECK constraint, so transforms[1] backfills 'pays_out'
+// (the column's DEFAULT, reproducing pre-#66 behaviour).
+const FormatVersion = 2
 
 // Fidelity selects what a backup carries (ADR-0036).
 type Fidelity string

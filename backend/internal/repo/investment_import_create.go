@@ -213,6 +213,7 @@ func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p
 // ledger already carries every transaction (including any placement Buy), so
 // re-seeding it here would double the cost basis.
 func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p CreateBondParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*Bond, error) {
+	p.CouponDisposition = defaultCouponDisposition(p.CouponDisposition)
 	var out *Bond
 	err := r.createInvestmentWithHistory(ctx, "bond", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
@@ -230,13 +231,14 @@ func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)
 		}
 		details, err := qtx.CreateBondDetails(ctx, db.CreateBondDetailsParams{
-			InvestmentID:    inv.ID,
-			BondType:        p.BondType,
-			SeriesCode:      p.SeriesCode,
-			Issuer:          p.Issuer,
-			CouponRate:      p.CouponRate,
-			CouponFrequency: p.CouponFrequency,
-			MaturityDate:    p.MaturityDate,
+			InvestmentID:      inv.ID,
+			BondType:          p.BondType,
+			SeriesCode:        p.SeriesCode,
+			Issuer:            p.Issuer,
+			CouponRate:        p.CouponRate,
+			CouponFrequency:   p.CouponFrequency,
+			CouponDisposition: p.CouponDisposition,
+			MaturityDate:      p.MaturityDate,
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create bond_details: %w", err)

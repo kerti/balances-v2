@@ -38,10 +38,22 @@ var (
 type transformFunc func(*Envelope) error
 
 // transforms is the format-version migration chain (ADR-0036): key N migrates
-// N→N+1. Empty at v1 — there is exactly one version, so nothing to migrate yet.
-// The first real format change registers transforms[1]; the test suite exercises
-// the chain with a synthetic transform + golden fixture (#177).
-var transforms = map[int]transformFunc{}
+// N→N+1.
+//
+// transforms[1] (v1→v2, #66) backfills bond_details.coupon_disposition: a v1 file
+// predates the column, so each bond entry is missing the key (decodes to "") and
+// would otherwise restore as NULL into a NOT NULL column. Defaulting to
+// 'pays_out' reproduces the column DEFAULT and pre-#66 behaviour.
+var transforms = map[int]transformFunc{
+	1: func(e *Envelope) error {
+		for i := range e.Household.Bonds {
+			if e.Household.Bonds[i].CouponDisposition == "" {
+				e.Household.Bonds[i].CouponDisposition = "pays_out"
+			}
+		}
+		return nil
+	},
+}
 
 // Parse reads a backup artifact (gzip or plain JSON), decodes the envelope,
 // migrates it to the current format_version, and verifies integrity. It does not

@@ -20,7 +20,7 @@ import { preferredName } from '@/lib/names'
 import { errorMessage } from '@/lib/errorMessage'
 import { RiskProfileSelect } from '@/components/RiskProfileSelect'
 import type { RiskProfile } from '@/api/types'
-import type { BondType, CouponFrequency } from '@/api/types'
+import type { BondType, CouponFrequency, CouponDisposition } from '@/api/types'
 
 function emptyForm() {
   return {
@@ -37,6 +37,7 @@ function emptyForm() {
     placement_date: '',
     coupon_rate: '',
     coupon_frequency: 'monthly' as CouponFrequency,
+    coupon_disposition: 'pays_out' as CouponDisposition,
     maturity_date: '',
   }
 }
@@ -77,6 +78,7 @@ export function CreateBondDialog() {
         placement_date: form.placement_date,
         coupon_rate: form.coupon_rate,
         coupon_frequency: form.coupon_frequency,
+        coupon_disposition: form.coupon_disposition,
         maturity_date: form.maturity_date,
       },
       { onSuccess: close },
@@ -287,6 +289,33 @@ export function CreateBondDialog() {
                   </option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="bond_coupon_disposition">
+                {t('investments:bond.fields.couponDisposition')}
+              </Label>
+              <select
+                id="bond_coupon_disposition"
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={form.coupon_disposition}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    coupon_disposition: e.target.value as CouponDisposition,
+                  })
+                }
+              >
+                <option value="pays_out">
+                  {t('investments:bond.couponDisposition.pays_out')}
+                </option>
+                <option value="accrues">
+                  {t('investments:bond.couponDisposition.accrues')}
+                </option>
+              </select>
+              <p className="text-xs text-muted-foreground">
+                {t('investments:bond.couponDisposition.hint')}
+              </p>
             </div>
 
             <div className="grid gap-2">

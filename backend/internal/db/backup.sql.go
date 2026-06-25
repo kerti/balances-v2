@@ -184,7 +184,7 @@ func (q *Queries) ListBankAccountsForExport(ctx context.Context, arg ListBankAcc
 }
 
 const listBondsForExport = `-- name: ListBondsForExport :many
-SELECT d.investment_id, d.bond_type, d.issuer, d.coupon_rate, d.coupon_frequency, d.maturity_date, d.series_code FROM bond_details d
+SELECT d.investment_id, d.bond_type, d.issuer, d.coupon_rate, d.coupon_frequency, d.maturity_date, d.series_code, d.coupon_disposition FROM bond_details d
 JOIN investments i ON i.id = d.investment_id
 WHERE i.household_id = $1
   AND (i.deleted_at IS NULL OR $2::bool)
@@ -213,6 +213,7 @@ func (q *Queries) ListBondsForExport(ctx context.Context, arg ListBondsForExport
 			&i.CouponFrequency,
 			&i.MaturityDate,
 			&i.SeriesCode,
+			&i.CouponDisposition,
 		); err != nil {
 			return nil, err
 		}

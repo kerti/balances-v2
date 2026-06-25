@@ -28,6 +28,62 @@ func (h *handlerHarness) createBond(t *testing.T, displayName string) *repo.Bond
 	return decodeBody[*repo.Bond](t, rec)
 }
 
+// covers: INV-BONDS-04
+//
+// coupon_disposition (#66) is a per-bond enum that round-trips through create and
+// defaults to pays_out when the client omits it (older clients, the historical
+// behaviour); a non-empty value outside the enum is rejected.
+func TestBondHandlers_CouponDisposition(t *testing.T) {
+	h := newHarness(t)
+
+	t.Run("accrues persists and round-trips", func(t *testing.T) {
+		rec := h.do(t, "POST", "/investments/bonds", map[string]any{
+			"display_name":       "FR-accrues",
+			"ownership_type":     "joint",
+			"native_currency":    "IDR",
+			"bond_type":          "secondary_market",
+			"issuer":             "Govt of Indonesia",
+			"coupon_rate":        "6.25",
+			"coupon_frequency":   "semi_annual",
+			"coupon_disposition": "accrues",
+			"maturity_date":      "2030-01-01",
+			"risk_profile":       "medium",
+		})
+		requireStatus(t, rec, http.StatusCreated)
+		body := decodeBody[*repo.Bond](t, rec)
+		if body.Details.CouponDisposition != "accrues" {
+			t.Errorf("coupon_disposition: got %q, want accrues", body.Details.CouponDisposition)
+		}
+		got := decodeBody[*repo.Bond](t, h.do(t, "GET", "/investments/bonds/"+body.Investment.ID.String(), nil))
+		if got.Details.CouponDisposition != "accrues" {
+			t.Errorf("after GET: got %q, want accrues", got.Details.CouponDisposition)
+		}
+	})
+
+	t.Run("omitted defaults to pays_out", func(t *testing.T) {
+		b := h.createBond(t, "FR-default") // helper omits coupon_disposition
+		if b.Details.CouponDisposition != "pays_out" {
+			t.Errorf("coupon_disposition default: got %q, want pays_out", b.Details.CouponDisposition)
+		}
+	})
+
+	t.Run("400 invalid disposition enum", func(t *testing.T) {
+		rec := h.do(t, "POST", "/investments/bonds", map[string]any{
+			"display_name":       "X",
+			"ownership_type":     "joint",
+			"native_currency":    "IDR",
+			"bond_type":          "secondary_market",
+			"issuer":             "Y",
+			"coupon_rate":        "5",
+			"coupon_frequency":   "annual",
+			"coupon_disposition": "reinvests",
+			"maturity_date":      "2027-01-01",
+			"risk_profile":       "medium",
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+}
+
 // covers: INV-BONDS-01
 func TestBondHandlers_Create(t *testing.T) {
 	h := newHarness(t)
