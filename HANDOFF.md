@@ -19,8 +19,8 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.2` is
-the latest DEPLOYED** release (M7 line; six batched alphas preceded it on the 0.6 line)
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.3` is
+the latest release** (M7 line; six batched alphas preceded it on the 0.6 line)
 on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
@@ -59,29 +59,35 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   was amd64-only, broke arm64 `docker compose up`) and the **`/assets/*` deep-route 404 on hard
   refresh** (#241, narrows the #190 chunk-404 to extension-bearing paths so client routes under
   `/assets/` fall back to the SPA shell). No migration. Detail in the v0.7.0-alpha.2 Release notes.
+- **v0.7.0-alpha.3** — **the self-host upgrade-leg batch.** Per-bond **coupon disposition** (#66): stored
+  `bond_details.coupon_disposition` enum driving the accrued-snapshot form's default/copy, carried end to
+  end (CRUD + import/export + backup) — and the **first real backup format transform** (`format_version`
+  1→2, mig `00006`, `transforms[1]` backfills `pays_out`). The **restore preview now reassures** when a
+  file is older-format (#258). The **failed-invite-email toast** (#212). Plus the `COMPOSE_PROJECT_NAME`
+  pin isolating the operator stack (#245) and an ADR-0030 amendment (#255). **Migration: additive** (`00006`).
+  Detail in the v0.7.0-alpha.3 Release notes.
 
 ## What's next
 
-**M6 closed (alpha.5); M7 (productization) is open (latest deploy v0.7.0-alpha.2).** Next, in order:
+**M6 closed (alpha.5); M7 (productization) is open (latest release v0.7.0-alpha.3).** Next, in order:
 
-1. **Finish the self-host #116 rehearsal → close #229 + #116.** Stack + docs shipped (alpha.1) and the
-   arm64/deep-route fixes the rehearsal surfaced shipped (alpha.2). Acceptance on #229 is a **two-run
-   matrix**; status:
+1. **Finish the self-host #116 rehearsal → close #229 + #116.** Stack + docs shipped (alpha.1), the
+   arm64/deep-route fixes (alpha.2), and the additive-migration vehicle (#66, alpha.3). Acceptance on
+   #229 is a **two-run matrix**; only the upgrade run remains:
    - **Run 1 — localhost: ✅ PASSED** (2026-06-19/20): multi-arch pull, one-shot migrate, OAuth,
-     `EMAIL_ENABLED=false` copy-invite-link (no mail), `pg_dump`→`pg_restore` roundtrip. The GHCR image
-     is **public** out of the box (inherits from the public repo — the feared private→public flip never
-     fired).
-   - **Run 2 — Caddy turnkey on a real domain: ⏳ NOT RUN** — HTTPS + `COOKIE_SECURE=true` + https
-     redirect URI + Let's Encrypt ACME. **Gated on a public VM + domain (ports 80/443).** This is the
-     cold-start resume point — the user will provide infra.
-   - **Upgrade leg: ⏳ in flight** — **#66** (per-bond coupon disposition) is the additive-migration
-     vehicle: mig `00006` + backup `format_version`→2 (`transforms[1]` backfills `coupon_disposition`,
-     the chain's first real transform). Ship it on alpha.3, then `pull && up -d` the throwaway self-host
-     across the migration to clear this box. `EMAIL_ENABLED=true` (mailpit) folds into the same run.
-   - **In flight:** PR **#245** (pin `COMPOSE_PROJECT_NAME` so the operator stack can't collide with
-     the in-repo dev `postgres_data` volume — a rehearsal finding) awaits merge; issue **#244** filed
-     (e2e is blind to the single-origin built-bundle serving path — why #190/#241 both shipped — plus
-     cataloguing the serving invariant; needs-triage). Both ride alpha.3.
+     `EMAIL_ENABLED=false` copy-invite-link, `pg_dump`→`pg_restore` roundtrip. GHCR image is public out
+     of the box.
+   - **Run 2 — Caddy turnkey on a real domain: ✅ PASSED** (2026-06-20): HTTPS + `COOKIE_SECURE=true` +
+     https redirect URI + Let's Encrypt ACME. (`APP_URL` must be `https://…` — the callback scheme is
+     derived from it verbatim, not from `X-Forwarded-Proto`.)
+   - **Upgrade leg: ⏳ the one remaining box.** `00006` (additive) now rides alpha.3, so once the image
+     publishes: `BALANCES_TAG`→`v0.7.0-alpha.3` + `pull && up -d` the rehearsal stack across the
+     migration (watch `00006` apply), with `EMAIL_ENABLED=true` (mailpit) folded in. The **v1→v2
+     restore-upgrade path is already proven** (exercised on the dev stack this session — a v1 backup
+     restored clean, `transforms[1]` backfilled `pays_out`); the rehearsal upgrade is the last confirm.
+   - **Open tail:** issue **#244** (e2e blind to the single-origin built-bundle serving path — why
+     #190/#241 both shipped — plus cataloguing the serving invariant; `needs-triage`) — not in alpha.3,
+     still open. #258 spun a sibling restore-UX issue; **#245** (compose project-name pin) shipped in alpha.3.
 2. **Rest of M7 = productization.** Make it trustable by real households, not richer in domain
    features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in, irreversible
    — needs grill+ADR), production Resend domain, **#93** landing. See ROADMAP M7.
