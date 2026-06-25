@@ -25,6 +25,7 @@ import {
 import type { CarryoverDateMode } from '@/lib/dateLimits'
 import { useSession } from '@/hooks/useSession'
 import type { CreateInvestmentSnapshotPayload } from '@/hooks/useInvestmentSnapshots'
+import type { CouponDisposition } from '@/api/types'
 
 type Props<TResult> = {
   currency: string
