@@ -76,8 +76,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   `pg_dump`→`pg_restore` roundtrip, and `EMAIL_ENABLED=true` (mailpit). The v1→v2 restore-upgrade path
   (`transforms[1]` backfilling `coupon_disposition`) was also proven on dev. **#232** (preview now
   dogfoods a single `APP_URL`, deriving the three URL vars via ADR-0037) — ✅ DONE/closed 2026-06-25,
-  ops-only Fly-secret flip. Open self-host tail (not blockers): **#244** (e2e blind to the single-origin
-  built-bundle serving path — `needs-triage`), **#258** (a sibling restore-UX issue, partly shipped in alpha.3).
+  ops-only Fly-secret flip. **Self-host tail now closed:** **#244** (the single-origin serving path is
+  guarded by a Go integration test through the real router — deep-route fallback, chunk-404, and the
+  `/*`-doesn't-shadow-`/api` precedence the Vite-dev e2e harness was blind to — plus a new **SERVING**
+  QA zone, #21) and **#258** (restore-preview format-version reassurance) both shipped/closed.
 
 1. **M7 = productization (now the active line).** Make it trustable by real households, not richer in
    domain features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in,

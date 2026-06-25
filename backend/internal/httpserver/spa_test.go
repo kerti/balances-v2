@@ -8,6 +8,7 @@ import (
 	"testing"
 )
 
+// covers: INV-SERVING-01, INV-SERVING-02, INV-SERVING-03, INV-SERVING-05
 func TestSPAHandler(t *testing.T) {
 	dir := t.TempDir()
 	mustWrite(t, filepath.Join(dir, "index.html"), "INDEX")
