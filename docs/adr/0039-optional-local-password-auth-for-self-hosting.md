@@ -59,6 +59,16 @@ as Google ([[adr-0038]]): no `users`/`households` row until the person commits t
 Founder email is **not** independently verified — the operator controls the instance; requiring a
 verification round-trip on the very first account of a fresh self-host is friction with no adversary.
 
+The accepted risk: on an instance the operator exposes to a network, the **first** local registration
+founds the household, so whoever reaches the sign-up page first becomes Founder — there is no
+out-of-band proof that the registrant owns the email they typed. This is a deliberate trade for
+zero-dependency bootstrap, and it is bounded: it is a *first-run* window (once a household exists,
+further local accounts are invite-only, §"Invited user, local"), and on the canonical SBC posture the
+instance is reachable only on the operator's LAN / VPN. **Operators who expose a fresh instance to an
+untrusted network before founding it must be warned** to register immediately, or to keep the instance
+private until the founder account exists. This warning is an operator-doc deliverable, not a code
+behaviour ([[adr-0037]] self-host docs); see Consequences.
+
 **Invited user, local.** The invitation already carries a single-use token emailed to
 `invited_email` ([[adr-0017]]). For a local account, **possession of the invite link proves email
 control** — the invitee follows the link and sets a password, and the account is created bound to
@@ -160,6 +170,11 @@ financial data and are sensitive; the hashes raise the stakes of a leaked file o
 - New config keys (`AUTH_GOOGLE_ENABLED`, `AUTH_LOCAL_ENABLED`, Argon2id cost params) join the env
   surface ([[adr-0020]]); self-host docs ([[adr-0037]]) document the local-only recipe as the
   default SBC path.
+- **Operator-facing security note is a required deliverable** in the self-host docs ([[adr-0037]]),
+  not just code: the first-run founder window (unverified first local registration founds the
+  household), the guidance to found before exposing the instance to an untrusted network, and the
+  reminder that backup files now contain password hashes and must be treated as secrets. Without
+  this, the founder-verification trade-off is undocumented risk on the operator.
 - Frontend gains an email/password form and conditional provider rendering driven by the public
   methods endpoint. Backend-owner's weak spot — AI-led, tracked in the issue.
 - **Invariants:** new QA rows for "at least one credential per live User", "local-only boot needs no
