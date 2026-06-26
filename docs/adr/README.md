@@ -1,6 +1,6 @@
 # ADR index
 
-One line per decision so you can pick which to open without reading all 35. Read the full ADR before
+One line per decision so you can pick which to open without reading all 36. Read the full ADR before
 touching the area it governs.
 
 | ADR | Decision | Touches |
@@ -43,3 +43,4 @@ touching the area it governs.
 | [0036](0036-comprehensive-household-backup-and-restore.md) | Whole-Household backup as versioned `.json.gz`; restore = streaming preview→commit wipe-then-load into a fresh/wiped Household; identity re-link by Google `sub`; format immutability at release | backup, restore, portability |
 | [0037](0037-self-hostable-docker-compose-stack.md) | Operator self-host artifact: pull-based GHCR image + Postgres compose; one-shot migrate service; `APP_URL` origin collapse; 3 TLS topologies (localhost / BYO-proxy / bundled Caddy); `EMAIL_ENABLED` flag makes mail optional; Google-only auth | self-host, deploy, infra |
 | [0038](0038-post-auth-onboarding-gate.md) | First sign-in branches founder-vs-join on the **verified email** (not the invite link), after auth, via an explicit gate; pending identity held in a transient DB **onboarding handshake** (not a signed cookie); founding is deliberate; dangling invites left to expire | auth, onboarding |
+| [0039](0039-optional-local-password-auth-for-self-hosting.md) | Optional email+password (Argon2id) auth alongside Google, selected by boot flags (`AUTH_GOOGLE_ENABLED`/`AUTH_LOCAL_ENABLED`); `google_sub` nullable + `password_hash` + at-least-one-credential CHECK; local-only self-host needs no Google project / no OIDC call; reuses sessions + onboarding gate; invite link = email proof | auth, self-host |
