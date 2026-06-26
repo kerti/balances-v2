@@ -140,6 +140,10 @@ not the absence of an invitation: pending invitations may have existed and been 
 denotes *creation lineage only, not a role or permission tier*: every User in a Household has equal
 full read/write access (see User). Contrast: an **invited member** joins an existing Household by
 accepting an email-token invitation. _Avoid_: Owner, Admin (imply a privilege the model doesn't grant).
+The one carve-out ([[adr-0039]]): on a local-auth self-host, the founder/first account may **reactivate a
+_dormant_ member** (a row with no credential, e.g. after a restore) by issuing a one-time set-password
+secret. This is operator **bring-up**, not a standing power — it cannot touch a member who already holds
+a credential, so it is not impersonation and does not breach the equal-peers model.
 
 **Onboarding**: The one-time resolution, on a brand-new Google identity's first sign-in, of *which
 Household this person belongs to* — join an existing Household they hold a pending invitation to, or
