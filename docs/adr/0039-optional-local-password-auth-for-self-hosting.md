@@ -136,20 +136,40 @@ serializing a password hash into the backup file.**
   `reset-password <email>`, or self-serves the emailed reset when `EMAIL_ENABLED=true`. For a
   household of a few people this is a couple of resets after a disaster-recovery restore — the price
   of keeping secrets out of the file.
-- **Membership guard + restorer continuity, no hash needed.** The wipe-then-load is destructive, so
-  the caller must be a member of the backup. The restorer **authenticates live** on the target
-  instance first (registering the bootstrap local account on a fresh box, or already signed in), so
-  their password is **supplied in-session, never read from the file**. The guard matches them to a
-  backup User row: `google_sub` for Google users (no email OR-fallback, per [[adr-0036]]); for the
+- **Membership guard.** The wipe-then-load is destructive, so the caller must be a member of the
+  backup. The restorer **authenticates first** on the target instance (registering the bootstrap
+  account on a fresh box, or already signed in), then the guard matches them to a backup User row by
+  **stable identity**: `google_sub` for Google users (no email OR-fallback, per [[adr-0036]]); for the
   **null-`google_sub`** case, by **email** — scoped exactly to the absent-sub branch [[adr-0036]]
   foresaw. Confidentiality still rests where it already does: **possession of the backup file is the
-  boundary** (the file *is* the data; matching by email grants nothing to someone who lacks it). At
-  commit, just as [[adr-0036]] re-issues the caller's session, we **re-bind the caller's live password
-  to their restored row** (write one `local_credentials` row from the in-session password) so the
-  restorer stays logged in without a self-reset.
+  boundary** (the file *is* the data; matching by email grants nothing to someone who lacks it).
 
-**Net:** local-only backup→restore needs no OAuth and puts **no password hash in the file**. The only
-secret a backup holds remains the household's financial data itself — unchanged from [[adr-0036]].
+- **Reconciling the bootstrap UUID — the fresh one is discarded, not merged.** To authenticate, the
+  restorer must exist as a User before the restore, so they get a **fresh UUID** (and, on a fresh
+  deployment, a just-founded empty Household). The backup carries the member's **original UUID**. These
+  are never reconciled by id; reconciliation is by the stable key above, exactly as [[adr-0036]]
+  already does for Google. The restore is a single transaction that **deletes the bootstrap rows
+  before inserting the backup rows**, so the backup's original UUID lands intact and the
+  delete-before-insert dodges the unique-key collision (`google_sub` for Google; `email` for local) —
+  the same collision-dodge [[adr-0036]] notes for the Google bootstrap. This is lossless: a
+  just-created bootstrap account **owns no domain data** (zero Positions/snapshots — it is seconds
+  old), so its fresh UUID and all FKs vanish with the wipe with nothing to carry. Every restored FK
+  (`sole_owner_user_id`, tags, snapshots, txns) references **backup** UUIDs, which load verbatim, so
+  the graph stays internally consistent. After load, the caller's session is re-issued against the
+  **restored (original) UUID**.
+
+- **Restorer continuity, no hash from the file.** For Google the re-issued session re-links by
+  `google_sub` automatically. For local, the caller's credential is **carried across the wipe inside
+  the transaction**: stash the bootstrap row's `local_credentials.password_hash` before the wipe, then
+  re-insert it against the restored UUID at commit. The hash moves DB-row→DB-row on the same box and
+  is **never read from or written to the file**; no plaintext is retained and the restorer stays
+  logged in without a self-reset. (A simpler variant — re-prompt for the password at the destructive
+  confirm and hash it fresh — is equivalent and also requires nothing from the file; the stash avoids
+  the extra prompt.) Other local members remain dormant → `reset-password`, as above.
+
+**Net:** local-only backup→restore needs no OAuth and puts **no password hash in the file**. The fresh
+bootstrap UUID is throwaway; the backup's original UUID always wins; the only secret a backup holds
+remains the household's financial data itself — unchanged from [[adr-0036]].
 
 ## Considered alternatives
 
@@ -196,8 +216,10 @@ secret a backup holds remains the household's financial data itself — unchange
   is both the email-off reset path **and** the post-restore activation path for dormant local members;
   it shares the token-minting logic with the emailed-token handler.
 - Backup export/restore is **unchanged** by this ADR — `local_credentials` is excluded like
-  `sessions`, so no new sensitive field enters the file. Restore gains a small step: re-bind the
-  caller's in-session password to their matched row at commit (one `local_credentials` insert).
+  `sessions`, so no new sensitive field enters the file. Restore gains two small steps for the local
+  case: match the caller by email (not just `google_sub`), and carry their credential across the wipe
+  in-transaction (stash the bootstrap row's `password_hash`, re-insert it against the restored UUID at
+  commit) so the throwaway bootstrap UUID is cleanly discarded and the caller stays logged in.
 - New config keys (`AUTH_GOOGLE_ENABLED`, `AUTH_LOCAL_ENABLED`, Argon2id cost params) join the env
   surface ([[adr-0020]]); self-host docs ([[adr-0037]]) document the local-only recipe as the
   default SBC path.
@@ -213,8 +235,9 @@ secret a backup holds remains the household's financial data itself — unchange
   possession is the email proof for a local invitee", "local-only + `EMAIL_ENABLED=false` exercises
   every auth path (register / login / invite copy-link / CLI reset) with no outbound dependency", "a
   backup file never contains a credential secret (`local_credentials` excluded)", "a local-only
-  household round-trips through backup→restore with ownership intact and the caller re-bound", and
-  login rate-limiting. Annotated when the tests land.
+  household round-trips through backup→restore with ownership intact, the bootstrap UUID discarded
+  (backup's original UUID wins, no unique-key collision), and the caller re-bound to the restored
+  row", and login rate-limiting. Annotated when the tests land.
 - **Security surface we now own** (the cost [[adr-0017]] declined): password storage, reset,
   rate-limiting/lockout, and breach response — scoped to self-host, where the operator also owns the
   box. Hosted Balances stays Google-only and carries none of this unless `AUTH_LOCAL_ENABLED` is
