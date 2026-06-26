@@ -89,6 +89,36 @@ works: founder register/login locally; add a member via the copy-link invite pan
 recover access via the operator CLI reset. Welcome and restore mails simply no-op. This is the
 recommended SBC default and a tested configuration.
 
+## Backup and restore (amends [[adr-0036]])
+
+[[adr-0036]] re-links a backup's members to the new instance by Google's stable `sub` and explicitly
+left the non-Google case open: *"A future non-Google IdP, where no `google_sub` exists, would add an
+identity match scoped to that absent-sub case — not a parallel email key."* This ADR is that IdP, so
+two things resolve:
+
+- **Position ownership re-links automatically and is unaffected.** Ownership and audit references
+  (`sole_owner_user_id`, `created_by`/`updated_by`, tag assignment) are FKs to the User **UUID**,
+  which [[adr-0036]] preserves verbatim. They never keyed on the auth identity, so a local-only
+  household round-trips with every owner/tag reference intact, exactly as a Google one does. No
+  change.
+- **The backup carries `password_hash` (alongside `google_sub`).** A restored local member must
+  satisfy this ADR's `CHECK (google_sub IS NOT NULL OR password_hash IS NOT NULL)` at load; carrying
+  the hash keeps the row valid and preserves the member's existing credential across instances. This
+  is a backup-format addition to the Users section — permitted because backup-format immutability only
+  begins at the first **production** release ([[adr-0036]]/[[adr-0033]]) and we are pre-`1.0`.
+
+- **Membership guard for a local restorer.** The guard (who may trigger the destructive wipe-then-
+  load) matches the caller to a backup User row. For Google users it stays `google_sub`-only — **no**
+  email OR-fallback, per [[adr-0036]]. For a user with **null `google_sub`** (local), the match is
+  scoped to that absent-sub case: the restorer authenticates by **email + verifying their password
+  against the carried `password_hash`**. That is *possession of the credential*, the local analog of
+  "presents the same stable sub" — not a coincidental-address match, which is the failure mode
+  [[adr-0036]] guarded against. After commit, re-login re-issues the session by the same key.
+
+**Consequence:** backup files now contain Argon2id hashes. They already carry the household's full
+financial data and are sensitive; the hashes raise the stakes of a leaked file only marginally
+(Argon2id is built to be stored), but self-host docs must reinforce treating the backup as a secret.
+
 ## Considered alternatives
 
 - **Keep OAuth-only; document a "bring your own Google project" setup for self-hosters.** Rejected —
@@ -106,6 +136,13 @@ recommended SBC default and a tested configuration.
 - **A single `auth_provider` enum column instead of nullable credential columns.** Rejected — an
   enum fights the (non-breaking, future) both-credentials-on-one-User case; nullable columns + a
   CHECK express "at least one method" directly.
+- **Omit `password_hash` from the backup; provision restored local members via the operator CLI.**
+  Rejected — a restored local row with neither credential violates the at-least-one-credential CHECK
+  at load, and the member loses their existing password. Carrying the hash keeps the row valid and
+  the round-trip exact.
+- **Email OR-fallback in the membership guard for all users.** Rejected — reintroduces exactly the
+  coincidental-address risk [[adr-0036]] rejected for Google users. Email-keyed matching is scoped
+  strictly to the null-`google_sub` (local) case, and even there gated by password verification.
 
 ## Consequences
 
@@ -128,8 +165,9 @@ recommended SBC default and a tested configuration.
 - **Invariants:** new QA rows for "at least one credential per live User", "local-only boot needs no
   Google creds / makes no OIDC call", "invite link possession is the email proof for a local
   invitee", "local-only + `EMAIL_ENABLED=false` exercises every auth path (register / login / invite
-  copy-link / CLI reset) with no outbound dependency", and login rate-limiting. Annotated when the
-  tests land.
+  copy-link / CLI reset) with no outbound dependency", "a local-only household round-trips through
+  backup→restore with ownership and the membership guard intact", and login rate-limiting. Annotated
+  when the tests land.
 - **Security surface we now own** (the cost [[adr-0017]] declined): password storage, reset,
   rate-limiting/lockout, and breach response — scoped to self-host, where the operator also owns the
   box. Hosted Balances stays Google-only and carries none of this unless `AUTH_LOCAL_ENABLED` is
