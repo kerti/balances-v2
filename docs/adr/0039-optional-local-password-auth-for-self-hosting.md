@@ -69,9 +69,25 @@ link-forwarding loophole the original ADR cared about.
 rate-limited (per-IP and per-email) to blunt online guessing; lockout policy is deliberately light
 (backoff, not hard lock) to avoid a self-host footgun.
 
-**Password reset, local.** Emailed single-use token → set new password. Depends on the mailer that
-self-host already requires ([[adr-0037]]); this is a thin, well-trodden slice and may land as a
-follow-up after the core login path, but is in scope for the feature.
+**Password reset, local.** Two-pronged, by mail posture:
+
+- **`EMAIL_ENABLED=true`** — self-service: emailed single-use token → set new password.
+- **`EMAIL_ENABLED=false`** ([[adr-0037]] `NoopMailer`) — no mail to send the token through, so reset
+  is an **operator CLI** subcommand on the binary (e.g. `balances reset-password <email>`) that
+  prints a one-time set-password link (or sets a temporary password). The operator owns the box, so
+  an out-of-band, operator-mediated reset is the natural airgapped path — the same shape as the
+  email-off **invite** flow, where the `AcceptURL` is copied from the UI panel and handed over by
+  hand. The emailed token is the convenience layer, not the only door.
+
+Either prong is a thin slice and may land after the core login path, but reset is in scope.
+
+### Local-only with mail off is fully functional
+
+A self-host running `AUTH_LOCAL_ENABLED=true`, `AUTH_GOOGLE_ENABLED=false`, `EMAIL_ENABLED=false` —
+the minimal airgapped Pi posture — has **no remaining external dependency** and every auth path
+works: founder register/login locally; add a member via the copy-link invite panel (no mail);
+recover access via the operator CLI reset. Welcome and restore mails simply no-op. This is the
+recommended SBC default and a tested configuration.
 
 ## Considered alternatives
 
@@ -102,6 +118,8 @@ follow-up after the core login path, but is in scope for the feature.
 - `internal/auth` grows local-auth handlers (`register`, `login`, `reset`) beside the Google ones;
   `Handlers.New` stops hard-failing when Google config is absent and instead branches on the enable
   flags. The `googleOAuthClient` seam is untouched.
+- The binary gains an **operator CLI** subcommand for password reset (`reset-password <email>`), the
+  email-off reset path; it shares the token-minting logic with the emailed-token handler.
 - New config keys (`AUTH_GOOGLE_ENABLED`, `AUTH_LOCAL_ENABLED`, Argon2id cost params) join the env
   surface ([[adr-0020]]); self-host docs ([[adr-0037]]) document the local-only recipe as the
   default SBC path.
@@ -109,7 +127,9 @@ follow-up after the core login path, but is in scope for the feature.
   methods endpoint. Backend-owner's weak spot — AI-led, tracked in the issue.
 - **Invariants:** new QA rows for "at least one credential per live User", "local-only boot needs no
   Google creds / makes no OIDC call", "invite link possession is the email proof for a local
-  invitee", and login rate-limiting. Annotated when the tests land.
+  invitee", "local-only + `EMAIL_ENABLED=false` exercises every auth path (register / login / invite
+  copy-link / CLI reset) with no outbound dependency", and login rate-limiting. Annotated when the
+  tests land.
 - **Security surface we now own** (the cost [[adr-0017]] declined): password storage, reset,
   rate-limiting/lockout, and breach response — scoped to self-host, where the operator also owns the
   box. Hosted Balances stays Google-only and carries none of this unless `AUTH_LOCAL_ENABLED` is
