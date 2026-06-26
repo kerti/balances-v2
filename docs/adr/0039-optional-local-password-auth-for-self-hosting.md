@@ -15,17 +15,30 @@ local-only, Google-only, or both.
 
 ### Identity model
 
-A User is identified by **at least one** credential, of either kind:
+**Identity and credential are separated.** The `users` row is *who a household member is* (domain
+data, portable across instances); a *credential* is *how they prove it on this instance* — and a
+password is a **secret that must never leave the box**. The two live apart:
 
-- `users.google_sub` becomes **nullable** (was `NOT NULL`). Still the immutable key for
-  Google-authenticated users; null for local-only users.
-- `users.password_hash` (text, nullable) — Argon2id hash for local users; null for Google-only users.
-- A row-level `CHECK (google_sub IS NOT NULL OR password_hash IS NOT NULL)` keeps every live User
-  reachable by some method.
+- `users.google_sub` becomes **nullable** (was `NOT NULL`). It stays **on `users`** because it is an
+  *identifier, not a secret*: authentication happens at Google, so the stored value grants nothing on
+  its own, and carrying it is what lets a Google member re-link automatically across instances
+  ([[adr-0036]]). Null for local-only users.
+- **Local password credentials live in a separate `local_credentials` table** (`user_id` FK,
+  `password_hash`, salt/params in the PHC string), **not** as a column on `users`. This table is
+  *instance-local auth state* — grouped with `sessions`, and like them **excluded from backup**
+  (next section). Putting the hash in its own table makes "never serialize the secret" **structural**:
+  the whole table is out of the export, so there is no per-column "remember to omit" footgun (e.g. a
+  `SELECT *` in `backup.sql`).
+
+A User is *reachable* when they have a `google_sub` **or** a `local_credentials` row. This is an
+application-layer invariant, **not** a single-row CHECK — because a User can legitimately exist with
+neither and be **dormant**: present in the data, owning Positions, but unable to authenticate until a
+credential is (re)established. [[adr-0036]] already accepts exactly this state for a Google member who
+has never signed into a new instance; local members post-restore reuse it (next section).
 
 `users.email` stays the human-facing handle and the invitation-match key, exactly as in
 [[adr-0017]]. A future account-linking flow (one User, both credentials) is non-breaking under this
-shape; it is **out of scope** here.
+shape — a second `local_credentials` row beside a `google_sub`; it is **out of scope** here.
 
 ### Password hashing
 
@@ -103,31 +116,40 @@ recommended SBC default and a tested configuration.
 
 [[adr-0036]] re-links a backup's members to the new instance by Google's stable `sub` and explicitly
 left the non-Google case open: *"A future non-Google IdP, where no `google_sub` exists, would add an
-identity match scoped to that absent-sub case — not a parallel email key."* This ADR is that IdP, so
-two things resolve:
+identity match scoped to that absent-sub case — not a parallel email key."* This ADR is that IdP. The
+design goal here: do the restore dance for local-only households **without OAuth and without ever
+serializing a password hash into the backup file.**
 
 - **Position ownership re-links automatically and is unaffected.** Ownership and audit references
   (`sole_owner_user_id`, `created_by`/`updated_by`, tag assignment) are FKs to the User **UUID**,
   which [[adr-0036]] preserves verbatim. They never keyed on the auth identity, so a local-only
   household round-trips with every owner/tag reference intact, exactly as a Google one does. No
   change.
-- **The backup carries `password_hash` (alongside `google_sub`).** A restored local member must
-  satisfy this ADR's `CHECK (google_sub IS NOT NULL OR password_hash IS NOT NULL)` at load; carrying
-  the hash keeps the row valid and preserves the member's existing credential across instances. This
-  is a backup-format addition to the Users section — permitted because backup-format immutability only
-  begins at the first **production** release ([[adr-0036]]/[[adr-0033]]) and we are pre-`1.0`.
+- **The backup carries no credential secret — `local_credentials` is excluded**, exactly as
+  `sessions` and pending invitations are ([[adr-0036]]). The export is unchanged: identity (`users`,
+  including the non-secret `google_sub`) goes in the file; the secret stays on the old box. **The
+  backup format does not change**, and there is no at-load CHECK to satisfy because the credential
+  invariant is dormancy-tolerant (see Identity model).
+- **Restored local members are dormant, then (re)activated — symmetric with Google.** A Google member
+  re-links on next sign-in (carried `google_sub`); a local member, having no carried secret, lands
+  **dormant** (row present, owns data, no `local_credentials`) and is activated by the operator CLI
+  `reset-password <email>`, or self-serves the emailed reset when `EMAIL_ENABLED=true`. For a
+  household of a few people this is a couple of resets after a disaster-recovery restore — the price
+  of keeping secrets out of the file.
+- **Membership guard + restorer continuity, no hash needed.** The wipe-then-load is destructive, so
+  the caller must be a member of the backup. The restorer **authenticates live** on the target
+  instance first (registering the bootstrap local account on a fresh box, or already signed in), so
+  their password is **supplied in-session, never read from the file**. The guard matches them to a
+  backup User row: `google_sub` for Google users (no email OR-fallback, per [[adr-0036]]); for the
+  **null-`google_sub`** case, by **email** — scoped exactly to the absent-sub branch [[adr-0036]]
+  foresaw. Confidentiality still rests where it already does: **possession of the backup file is the
+  boundary** (the file *is* the data; matching by email grants nothing to someone who lacks it). At
+  commit, just as [[adr-0036]] re-issues the caller's session, we **re-bind the caller's live password
+  to their restored row** (write one `local_credentials` row from the in-session password) so the
+  restorer stays logged in without a self-reset.
 
-- **Membership guard for a local restorer.** The guard (who may trigger the destructive wipe-then-
-  load) matches the caller to a backup User row. For Google users it stays `google_sub`-only — **no**
-  email OR-fallback, per [[adr-0036]]. For a user with **null `google_sub`** (local), the match is
-  scoped to that absent-sub case: the restorer authenticates by **email + verifying their password
-  against the carried `password_hash`**. That is *possession of the credential*, the local analog of
-  "presents the same stable sub" — not a coincidental-address match, which is the failure mode
-  [[adr-0036]] guarded against. After commit, re-login re-issues the session by the same key.
-
-**Consequence:** backup files now contain Argon2id hashes. They already carry the household's full
-financial data and are sensitive; the hashes raise the stakes of a leaked file only marginally
-(Argon2id is built to be stored), but self-host docs must reinforce treating the backup as a secret.
+**Net:** local-only backup→restore needs no OAuth and puts **no password hash in the file**. The only
+secret a backup holds remains the household's financial data itself — unchanged from [[adr-0036]].
 
 ## Considered alternatives
 
@@ -143,46 +165,56 @@ financial data and are sensitive; the hashes raise the stakes of a leaked file o
   additive layer ([[adr-0017]] already flagged it); not the minimum that unblocks self-host.
 - **bcrypt instead of Argon2id.** Rejected — Argon2id is the current best-practice default and lets
   us tune memory cost for SBC hardware.
-- **A single `auth_provider` enum column instead of nullable credential columns.** Rejected — an
-  enum fights the (non-breaking, future) both-credentials-on-one-User case; nullable columns + a
-  CHECK express "at least one method" directly.
-- **Omit `password_hash` from the backup; provision restored local members via the operator CLI.**
-  Rejected — a restored local row with neither credential violates the at-least-one-credential CHECK
-  at load, and the member loses their existing password. Carrying the hash keeps the row valid and
-  the round-trip exact.
-- **Email OR-fallback in the membership guard for all users.** Rejected — reintroduces exactly the
-  coincidental-address risk [[adr-0036]] rejected for Google users. Email-keyed matching is scoped
-  strictly to the null-`google_sub` (local) case, and even there gated by password verification.
+- **A single `auth_provider` enum column.** Rejected — fights the (non-breaking, future)
+  both-credentials-on-one-User case; the identity/credential split expresses "any number of methods"
+  directly.
+- **`password_hash` as a column on `users` with a row-level `CHECK (google_sub OR password_hash)`.**
+  Rejected — it forces the backup to either carry the hash (serialize a secret) or emit rows that
+  fail the CHECK at load. The separate, backup-excluded `local_credentials` table sidesteps both: no
+  secret in the file, and a dormancy-tolerant invariant instead of a hard CHECK.
+- **Carry `password_hash` in the backup so members keep their password across instances.** Rejected —
+  it puts an (offline-crackable) secret into a file users copy around, for the marginal convenience of
+  skipping a post-restore reset. Disaster recovery for a few-person household tolerates a couple of
+  operator resets; keeping the secret on the box is the better trade.
+- **Email OR-fallback in the membership guard for all users.** Rejected — reintroduces the
+  coincidental-address risk [[adr-0036]] rejected for Google users. Email matching is scoped strictly
+  to the null-`google_sub` (local) case; confidentiality rests on possession of the backup file, not
+  on the email.
 
 ## Consequences
 
-- **Migration** (additive, then a constraint change): add nullable `password_hash`; **drop the
-  `NOT NULL` on `google_sub`**; add the `CHECK (google_sub IS NOT NULL OR password_hash IS NOT
-  NULL)`; the existing soft-delete-aware unique index on `google_sub` must tolerate nulls (partial /
-  `WHERE google_sub IS NOT NULL`). The email-uniqueness story for local accounts needs the same
-  soft-delete-aware treatment. Labelled `needs-migration` / `migration:additive` (the `NOT NULL`
-  drop is widening, not destructive).
+- **Migration** (additive + one widening): **drop the `NOT NULL` on `users.google_sub`**; the
+  soft-delete-aware unique index on `google_sub` must tolerate nulls (partial / `WHERE google_sub IS
+  NOT NULL`); add the `local_credentials` table (`user_id` FK, `password_hash`, timestamps); give
+  local accounts a soft-delete-aware unique on `users.email`. No `password_hash` column on `users` and
+  no at-least-one-credential CHECK (replaced by the dormancy-tolerant app invariant). Labelled
+  `needs-migration` / `migration:additive` (the `NOT NULL` drop is widening, not destructive).
 - `internal/auth` grows local-auth handlers (`register`, `login`, `reset`) beside the Google ones;
   `Handlers.New` stops hard-failing when Google config is absent and instead branches on the enable
   flags. The `googleOAuthClient` seam is untouched.
-- The binary gains an **operator CLI** subcommand for password reset (`reset-password <email>`), the
-  email-off reset path; it shares the token-minting logic with the emailed-token handler.
+- The binary gains an **operator CLI** subcommand for password reset (`reset-password <email>`), which
+  is both the email-off reset path **and** the post-restore activation path for dormant local members;
+  it shares the token-minting logic with the emailed-token handler.
+- Backup export/restore is **unchanged** by this ADR — `local_credentials` is excluded like
+  `sessions`, so no new sensitive field enters the file. Restore gains a small step: re-bind the
+  caller's in-session password to their matched row at commit (one `local_credentials` insert).
 - New config keys (`AUTH_GOOGLE_ENABLED`, `AUTH_LOCAL_ENABLED`, Argon2id cost params) join the env
   surface ([[adr-0020]]); self-host docs ([[adr-0037]]) document the local-only recipe as the
   default SBC path.
 - **Operator-facing security note is a required deliverable** in the self-host docs ([[adr-0037]]),
   not just code: the first-run founder window (unverified first local registration founds the
   household), the guidance to found before exposing the instance to an untrusted network, and the
-  reminder that backup files now contain password hashes and must be treated as secrets. Without
+  post-restore step that local members are dormant until reactivated via `reset-password`. Without
   this, the founder-verification trade-off is undocumented risk on the operator.
 - Frontend gains an email/password form and conditional provider rendering driven by the public
   methods endpoint. Backend-owner's weak spot — AI-led, tracked in the issue.
-- **Invariants:** new QA rows for "at least one credential per live User", "local-only boot needs no
-  Google creds / makes no OIDC call", "invite link possession is the email proof for a local
-  invitee", "local-only + `EMAIL_ENABLED=false` exercises every auth path (register / login / invite
-  copy-link / CLI reset) with no outbound dependency", "a local-only household round-trips through
-  backup→restore with ownership and the membership guard intact", and login rate-limiting. Annotated
-  when the tests land.
+- **Invariants:** new QA rows for "a reachable User has a `google_sub` or a `local_credentials` row
+  (else dormant)", "local-only boot needs no Google creds / makes no OIDC call", "invite link
+  possession is the email proof for a local invitee", "local-only + `EMAIL_ENABLED=false` exercises
+  every auth path (register / login / invite copy-link / CLI reset) with no outbound dependency", "a
+  backup file never contains a credential secret (`local_credentials` excluded)", "a local-only
+  household round-trips through backup→restore with ownership intact and the caller re-bound", and
+  login rate-limiting. Annotated when the tests land.
 - **Security surface we now own** (the cost [[adr-0017]] declined): password storage, reset,
   rate-limiting/lockout, and breach response — scoped to self-host, where the operator also owns the
   box. Hosted Balances stays Google-only and carries none of this unless `AUTH_LOCAL_ENABLED` is
