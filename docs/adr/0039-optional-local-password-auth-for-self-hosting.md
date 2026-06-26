@@ -92,25 +92,38 @@ link-forwarding loophole the original ADR cared about.
 rate-limited (per-IP and per-email) to blunt online guessing; lockout policy is deliberately light
 (backoff, not hard lock) to avoid a self-host footgun.
 
-**Password reset, local.** Two-pronged, by mail posture:
+**Password reset / member reactivation, local.** Three paths, by mail posture and who acts:
 
-- **`EMAIL_ENABLED=true`** — self-service: emailed single-use token → set new password.
-- **`EMAIL_ENABLED=false`** ([[adr-0037]] `NoopMailer`) — no mail to send the token through, so reset
-  is an **operator CLI** subcommand on the binary (e.g. `balances reset-password <email>`) that
-  prints a one-time set-password link (or sets a temporary password). The operator owns the box, so
-  an out-of-band, operator-mediated reset is the natural airgapped path — the same shape as the
-  email-off **invite** flow, where the `AcceptURL` is copied from the UI panel and handed over by
-  hand. The emailed token is the convenience layer, not the only door.
+- **`EMAIL_ENABLED=true`, self-service** — emailed single-use token → set new password.
+- **`EMAIL_ENABLED=false`, in-app, founder-assisted** — the founder/first account reactivates a member
+  from the UI **without the CLI**. This is the friction-reducer for the no-mail home deploy: stand up
+  the instance, restore, then help each household member back in from a screen. **Strictly scoped to
+  reactivation:** it acts **only on a dormant member** (one with no `local_credentials` row), and it
+  mints a **per-member random one-time set-password secret/link**, shown to the founder once to relay
+  out-of-band — the same shape as the copy-link invite. It is **not** a standing "reset anyone"
+  power: once a member holds their own credential, no member can silently re-set it in-app. This keeps
+  the peer model ([[adr-0017]]: *Founder is lineage only, never a privilege*) — reactivating a
+  credential-less row is operator bring-up, not impersonation of an active account.
+- **Operator CLI** (`balances reset-password <email>`) — the out-of-band escape hatch, and the **only**
+  way to reset an **active** member (one who already has a credential), since the in-app path
+  deliberately refuses that. Available regardless of mail.
 
-Either prong is a thin slice and may land after the core login path, but reset is in scope.
+Rejected: a **shared/known default password** for reactivated members. A public default leaves each
+account open until the member first logs in and changes it — an account-takeover window that
+"home = LAN-only" wrongly assumes away (self-host includes VPN/Tailscale and occasionally exposed
+setups). A per-member random one-time secret is no more friction and has no open window. A
+force-change-on-first-login may be layered on but is not the safety mechanism.
+
+Any path is a thin slice and may land after the core login path, but reset/reactivation is in scope.
 
 ### Local-only with mail off is fully functional
 
 A self-host running `AUTH_LOCAL_ENABLED=true`, `AUTH_GOOGLE_ENABLED=false`, `EMAIL_ENABLED=false` —
 the minimal airgapped Pi posture — has **no remaining external dependency** and every auth path
 works: founder register/login locally; add a member via the copy-link invite panel (no mail);
-recover access via the operator CLI reset. Welcome and restore mails simply no-op. This is the
-recommended SBC default and a tested configuration.
+reactivate or recover a member in-app, founder-assisted, with no CLI (the operator CLI remains the
+escape hatch). Welcome and restore mails simply no-op. This is the recommended SBC default and a
+tested configuration.
 
 ## Backup and restore (amends [[adr-0036]])
 
@@ -132,10 +145,11 @@ serializing a password hash into the backup file.**
   invariant is dormancy-tolerant (see Identity model).
 - **Restored local members are dormant, then (re)activated — symmetric with Google.** A Google member
   re-links on next sign-in (carried `google_sub`); a local member, having no carried secret, lands
-  **dormant** (row present, owns data, no `local_credentials`) and is activated by the operator CLI
-  `reset-password <email>`, or self-serves the emailed reset when `EMAIL_ENABLED=true`. For a
-  household of a few people this is a couple of resets after a disaster-recovery restore — the price
-  of keeping secrets out of the file.
+  **dormant** (row present, owns data, no `local_credentials`) and is reactivated by the
+  **founder-assisted in-app** flow (per-member one-time secret, no CLI — see "Password reset / member
+  reactivation"), the operator CLI, or a self-served emailed reset when `EMAIL_ENABLED=true`. For a
+  household of a few people this is a couple of reactivations after a disaster-recovery restore — the
+  price of keeping secrets out of the file.
 - **Membership guard.** The wipe-then-load is destructive, so the caller must be a member of the
   backup. The restorer **authenticates first** on the target instance (registering the bootstrap
   account on a fresh box, or already signed in), then the guard matches them to a backup User row by
@@ -195,7 +209,16 @@ remains the household's financial data itself — unchanged from [[adr-0036]].
 - **Carry `password_hash` in the backup so members keep their password across instances.** Rejected —
   it puts an (offline-crackable) secret into a file users copy around, for the marginal convenience of
   skipping a post-restore reset. Disaster recovery for a few-person household tolerates a couple of
-  operator resets; keeping the secret on the box is the better trade.
+  reactivations; keeping the secret on the box is the better trade.
+- **Reactivate members to a shared/known default password (members change it on first login).**
+  Rejected — a public default leaves every reactivated account open until first login, an
+  account-takeover window that the "home = LAN-only" assumption wrongly dismisses (self-host includes
+  VPN/Tailscale and occasionally exposed instances). A per-member random one-time secret is no more
+  friction and has no open window.
+- **In-app "reset any member's password" as a founder power.** Rejected — setting an *active*
+  member's credential is impersonation and breaks the peer model ([[adr-0017]]). The in-app path is
+  scoped to **dormant** (credential-less) members only — bring-up, not takeover; the CLI is the
+  escape hatch for an active member.
 - **Email OR-fallback in the membership guard for all users.** Rejected — reintroduces the
   coincidental-address risk [[adr-0036]] rejected for Google users. Email matching is scoped strictly
   to the null-`google_sub` (local) case; confidentiality rests on possession of the backup file, not
@@ -212,9 +235,10 @@ remains the household's financial data itself — unchanged from [[adr-0036]].
 - `internal/auth` grows local-auth handlers (`register`, `login`, `reset`) beside the Google ones;
   `Handlers.New` stops hard-failing when Google config is absent and instead branches on the enable
   flags. The `googleOAuthClient` seam is untouched.
-- The binary gains an **operator CLI** subcommand for password reset (`reset-password <email>`), which
-  is both the email-off reset path **and** the post-restore activation path for dormant local members;
-  it shares the token-minting logic with the emailed-token handler.
+- `internal/auth` gains a **founder-assisted in-app reactivation** handler scoped to dormant members
+  (mints a per-member one-time set-password secret; refuses members who already hold a credential),
+  plus an **operator CLI** subcommand (`reset-password <email>`) that is the email-off escape hatch
+  and the only path to reset an **active** member. All three reset paths share the token-minting core.
 - Backup export/restore is **unchanged** by this ADR — `local_credentials` is excluded like
   `sessions`, so no new sensitive field enters the file. Restore gains two small steps for the local
   case: match the caller by email (not just `google_sub`), and carry their credential across the wipe
@@ -226,18 +250,20 @@ remains the household's financial data itself — unchanged from [[adr-0036]].
 - **Operator-facing security note is a required deliverable** in the self-host docs ([[adr-0037]]),
   not just code: the first-run founder window (unverified first local registration founds the
   household), the guidance to found before exposing the instance to an untrusted network, and the
-  post-restore step that local members are dormant until reactivated via `reset-password`. Without
-  this, the founder-verification trade-off is undocumented risk on the operator.
+  post-restore step that local members are dormant until reactivated (in-app founder-assisted, or
+  CLI). Without this, the founder-verification trade-off is undocumented risk on the operator.
 - Frontend gains an email/password form and conditional provider rendering driven by the public
   methods endpoint. Backend-owner's weak spot — AI-led, tracked in the issue.
 - **Invariants:** new QA rows for "a reachable User has a `google_sub` or a `local_credentials` row
   (else dormant)", "local-only boot needs no Google creds / makes no OIDC call", "invite link
   possession is the email proof for a local invitee", "local-only + `EMAIL_ENABLED=false` exercises
-  every auth path (register / login / invite copy-link / CLI reset) with no outbound dependency", "a
-  backup file never contains a credential secret (`local_credentials` excluded)", "a local-only
-  household round-trips through backup→restore with ownership intact, the bootstrap UUID discarded
-  (backup's original UUID wins, no unique-key collision), and the caller re-bound to the restored
-  row", and login rate-limiting. Annotated when the tests land.
+  every auth path (register / login / invite copy-link / in-app reactivation) with no outbound
+  dependency", "in-app reactivation acts only on a dormant member and refuses one who already holds a
+  credential (no in-app reset of an active account)", "a backup file never contains a credential
+  secret (`local_credentials` excluded)", "a local-only household round-trips through backup→restore
+  with ownership intact, the bootstrap UUID discarded (backup's original UUID wins, no unique-key
+  collision), and the caller re-bound to the restored row", and login rate-limiting. Annotated when
+  the tests land.
 - **Security surface we now own** (the cost [[adr-0017]] declined): password storage, reset,
   rate-limiting/lockout, and breach response — scoped to self-host, where the operator also owns the
   box. Hosted Balances stays Google-only and carries none of this unless `AUTH_LOCAL_ENABLED` is
