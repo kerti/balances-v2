@@ -20,3 +20,7 @@
 
 # Local PII denylist for the pre-commit pii-guard (the real terms are the PII)
 .pii-patterns
+
+# Per-machine Claude Code settings (hooks/permissions); shared assets live in
+# .claude/skills/ and are committed normally
+.claude/settings.local.json
