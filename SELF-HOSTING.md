@@ -4,13 +4,14 @@ Balances runs as a small Docker Compose stack: the published application image, 
 database, and — optionally — a reverse proxy for HTTPS. There is nothing to build. You pull a
 released image and bring it up.
 
-This guide is the operator's entry point. It covers three ways to run the stack, the one genuinely
-manual step (a Google OAuth client), how upgrades work, how to back up your database, and what to do
-when something goes wrong.
+This guide is the operator's entry point. It covers three ways to run the stack, how users sign in
+(Google, local email+password, or both), how upgrades work, how to back up your database, and what to
+do when something goes wrong.
 
-> **Sign-in is Google-only.** Every user signs in with a Google account; there is no local-password
-> option. Creating a Google OAuth client is therefore the one setup step you cannot skip. It is
-> walked through in full below — [Google OAuth client](#google-oauth-client).
+> **Two ways to sign in.** By default users sign in with a Google account, which means creating a
+> Google OAuth client (the one manual step) — [Google OAuth client](#google-oauth-client). If you'd
+> rather avoid Google entirely, turn on **local email + password** accounts and skip the OAuth client
+> altogether — [Local accounts (no Google)](#local-accounts-no-google). You can run either or both.
 
 ## Contents
 
@@ -20,6 +21,7 @@ when something goes wrong.
   - [2. Bring your own proxy](#2-bring-your-own-proxy)
   - [3. Bundled turnkey HTTPS (Caddy)](#3-bundled-turnkey-https-caddy)
 - [Google OAuth client](#google-oauth-client)
+- [Local accounts (no Google)](#local-accounts-no-google)
 - [Email (optional)](#email-optional)
 - [The upgrade contract](#the-upgrade-contract)
 - [Backup and restore](#backup-and-restore)
@@ -194,6 +196,45 @@ cannot be automated. It takes about five minutes and you never have to touch it 
 The first person to sign in **founds** the household; everyone else joins by invitation from inside
 the app.
 
+## Local accounts (no Google)
+
+If you'd rather not create a Google OAuth client, turn on **local email + password** accounts. Two
+flags select which sign-in methods are live:
+
+```env
+AUTH_GOOGLE_ENABLED=false    # default true
+AUTH_LOCAL_ENABLED=true      # default false
+```
+
+With Google off and local on — the recommended posture for a home server on a Raspberry Pi — the app
+needs **no Google credentials** and makes **no outbound calls to Google** at all. Combined with
+`EMAIL_ENABLED=false`, this is a fully self-contained instance with no third-party dependency: founder
+registers and logs in locally, members join via the copy-invite-link panel, and there is nothing
+external to configure. You can also leave **both** providers on (`AUTH_GOOGLE_ENABLED=true` and
+`AUTH_LOCAL_ENABLED=true`) — the sign-in screen then shows the Google button **and** the email/password
+form. The server refuses to start if you disable both (there would be no way to sign in).
+
+Passwords are stored hashed with Argon2id (never in plaintext, never in a backup file) and must be at
+least 10 characters and not a commonly-breached password. Login is rate-limited to slow down guessing,
+but never hard-locks an account — you can't accidentally lock yourself or a housemate out.
+
+> ### ⚠️ Found the household before exposing the instance
+>
+> With local accounts, **the first person to register founds the household** — and on a fresh
+> instance there is no way to verify that whoever reaches the sign-up page first actually owns the
+> email address they type. This is a deliberate trade for zero-dependency bring-up, and it is a
+> **first-run window only**: once the household exists, every further local account is invite-only.
+>
+> The safe sequence is: **stand the instance up privately (LAN / VPN / Tailscale), register the
+> founder account immediately, and only then expose it** to any wider network. Do **not** put a
+> freshly-deployed, unfounded local-auth instance on the public internet and walk away — register
+> first. (Google-only deployments are not affected: Google verifies the email.)
+>
+> After a backup **restore**, local members land **dormant** — their identity and data are present,
+> but their password did not travel in the backup file (secrets never do). Reactivate each member
+> from the app (founder-assisted) or with the `reset-password` operator command. This is expected and
+> is the price of keeping password hashes out of the portable backup.
+
 ## Email (optional)
 
 Email is **off by default** (`EMAIL_ENABLED=false`). The stack runs perfectly with no mail server:
@@ -348,7 +389,9 @@ actually touch:
 | `COOKIE_SECURE` | `false` | `true` once HTTPS is in front; `false` only for an http localhost trial. |
 | `CADDY_DOMAIN` | _(empty)_ | Domain for the bundled Caddy proxy profile. Leave empty unless using `--profile proxy`. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `balances` | Bundled database credentials. **Change the password** beyond a trial. `DATABASE_URL` is assembled from these — you do not set it. |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | _(empty)_ | Your Google OAuth client. Required. |
+| `AUTH_GOOGLE_ENABLED` | `true` | Google sign-in. Set `false` to run without a Google OAuth client. |
+| `AUTH_LOCAL_ENABLED` | `false` | `true` to enable local email + password accounts. The server refuses to start if both providers are disabled. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | _(empty)_ | Your Google OAuth client. Required when `AUTH_GOOGLE_ENABLED=true`. |
 | `EMAIL_ENABLED` | `false` | `true` to send mail (then set `SMTP_*`). Off = copy-invite-link fallback. |
 | `SESSION_TTL` | `720h` | How long a sign-in lasts (default 30 days). |
 | `LOG_FORMAT` | `json` | `json` or `text` application logs. |

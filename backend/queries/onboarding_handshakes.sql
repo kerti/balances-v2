@@ -1,8 +1,8 @@
 -- name: CreateOnboardingHandshake :one
 INSERT INTO onboarding_handshakes (
-    id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, expires_at
+    id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, password_hash, expires_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
 RETURNING *;
 

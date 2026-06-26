@@ -127,20 +127,28 @@ func serveCmd() error {
 		mailer = email.NewNoopMailer()
 	}
 
-	authH, err := auth.New(ctx, queries, auth.Config{
-		Google: auth.GoogleConfig{
+	// Google config is only consulted when AUTH_GOOGLE_ENABLED is true; auth.New
+	// constructs no OAuth client (and makes no OIDC discovery call) otherwise, so
+	// a local-only self-host needs no Google credentials (ADR-0039).
+	authCfg := auth.Config{
+		GoogleEnabled: cfg.AuthGoogleEnabled,
+		LocalEnabled:  cfg.AuthLocalEnabled,
+		SessionTTL:    cfg.SessionTTL,
+		CookieSecure:  cfg.CookieSecure,
+		FrontendURL:   cfg.FrontendURL,
+		BackendURL:    cfg.BackendURL,
+		EmailFrom:     cfg.EmailFromAddress,
+		Mailer:        mailer,
+	}
+	if cfg.AuthGoogleEnabled {
+		authCfg.Google = auth.GoogleConfig{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
 			RedirectURL:  cfg.OAuthRedirectURL,
 			IssuerURL:    cfg.OIDCIssuerURL,
-		},
-		SessionTTL:   cfg.SessionTTL,
-		CookieSecure: cfg.CookieSecure,
-		FrontendURL:  cfg.FrontendURL,
-		BackendURL:   cfg.BackendURL,
-		EmailFrom:    cfg.EmailFromAddress,
-		Mailer:       mailer,
-	})
+		}
+	}
+	authH, err := auth.New(ctx, queries, authCfg)
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}

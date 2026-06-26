@@ -88,7 +88,10 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    sign-ins route through the gate — invited links degrade to a pre-selection hint, joins keyed off the
    verified email with TOCTOU re-validation, found-while-invited needs explicit confirm; an
    already-onboarded user opening an invite link gets a non-blocking notice, not a silent ignore)**),
-   production
+   **optional local password auth** (#277, ADR-0039 — drop the Google-OAuth dependency for self-host;
+   being sliced, **core slice #280 in progress**: nullable `google_sub` + `local_credentials` (mig
+   00008), `AUTH_LOCAL_ENABLED`/`AUTH_GOOGLE_ENABLED` flags, `/auth/methods` + local register-via-gate
+   /login, Argon2id + rate-limit + no-enumeration; INV-AUTH-15/16/17), production
    Resend domain, **#93** landing. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.

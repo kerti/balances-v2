@@ -3,7 +3,16 @@
   "signIn": {
     "tagline": "Track your household net worth without itemising every transaction.",
     "languageLabel": "Language",
-    "withGoogle": "Continue with Google"
+    "withGoogle": "Continue with Google",
+    "or": "or",
+    "local": {
+      "signInTab": "Sign in",
+      "registerTab": "Create account",
+      "displayName": "Your name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHint": "At least 10 characters. Avoid common passwords."
+    }
   },
   "signOut": "Sign out",
   "save": "Save",

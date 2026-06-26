@@ -89,7 +89,7 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 	// Harness user already has google_sub "test-sub-Alice" from the fixture.
 	const wantPicture = "https://lh3.googleusercontent.com/a/alice.jpg"
 	h.installStubOAuth(&googleClaims{
-		Sub:           h.user.GoogleSub,
+		Sub:           stringOrEmpty(h.user.GoogleSub),
 		Email:         h.user.Email,
 		EmailVerified: true,
 		Name:          h.user.DisplayName,
@@ -132,7 +132,7 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 
 	// The login should have backfilled the Google picture onto the existing
 	// user row (the fixture user starts with no picture).
-	refreshed, err := h.q.GetUserByGoogleSub(context.Background(), h.user.GoogleSub)
+	refreshed, err := h.q.GetUserByGoogleSub(context.Background(), stringOrEmpty(h.user.GoogleSub))
 	if err != nil {
 		t.Fatalf("GetUserByGoogleSub: %v", err)
 	}
@@ -152,7 +152,7 @@ func TestHandleCallback_ExistingUserInviteIgnored(t *testing.T) {
 	originalHousehold := h.user.HouseholdID
 
 	h.installStubOAuth(&googleClaims{
-		Sub:           h.user.GoogleSub,
+		Sub:           stringOrEmpty(h.user.GoogleSub),
 		Email:         h.user.Email,
 		EmailVerified: true,
 		Name:          h.user.DisplayName,
@@ -176,7 +176,7 @@ func TestHandleCallback_ExistingUserInviteIgnored(t *testing.T) {
 	}
 
 	// No membership change.
-	refreshed, err := h.q.GetUserByGoogleSub(context.Background(), h.user.GoogleSub)
+	refreshed, err := h.q.GetUserByGoogleSub(context.Background(), stringOrEmpty(h.user.GoogleSub))
 	if err != nil {
 		t.Fatalf("GetUserByGoogleSub: %v", err)
 	}
@@ -366,7 +366,7 @@ func TestHandleCallback_FreshSession(t *testing.T) {
 	}
 
 	h.installStubOAuth(&googleClaims{
-		Sub:           h.user.GoogleSub,
+		Sub:           stringOrEmpty(h.user.GoogleSub),
 		Email:         h.user.Email,
 		EmailVerified: true,
 		Name:          h.user.DisplayName,

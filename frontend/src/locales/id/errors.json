@@ -49,6 +49,10 @@
       "iso4217": "harus berupa kode mata uang yang valid",
       "oneof": "bukan salah satu nilai yang diperbolehkan"
     },
-    "INVITATION_NO_LONGER_VALID": "Undangan itu sudah tidak tersedia. Silakan pilih kembali."
+    "INVITATION_NO_LONGER_VALID": "Undangan itu sudah tidak tersedia. Silakan pilih kembali.",
+    "EMAIL_TAKEN": "Email itu sudah terdaftar. Coba masuk saja.",
+    "WEAK_PASSWORD": "Pilih kata sandi yang lebih kuat: minimal 10 karakter dan bukan kata sandi yang umum.",
+    "INVALID_CREDENTIALS": "Email atau kata sandi salah.",
+    "TOO_MANY_ATTEMPTS": "Terlalu banyak percobaan. Mohon tunggu sebentar lalu coba lagi."
   }
 }

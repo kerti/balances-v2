@@ -47,31 +47,50 @@ func resolveSeedLocale(hint string) string {
 }
 
 type Config struct {
-	Google       GoogleConfig
-	SessionTTL   time.Duration
-	CookieSecure bool
-	FrontendURL  string
-	BackendURL   string
-	EmailFrom    string
-	Mailer       email.Mailer
+	// GoogleEnabled / LocalEnabled select the live identity providers (ADR-0039).
+	// When GoogleEnabled is false, New constructs no Google OAuth client and makes
+	// no OIDC discovery call, so a local-only self-host needs no Google creds.
+	GoogleEnabled bool
+	LocalEnabled  bool
+	Google        GoogleConfig
+	SessionTTL    time.Duration
+	CookieSecure  bool
+	FrontendURL   string
+	BackendURL    string
+	EmailFrom     string
+	Mailer        email.Mailer
 }
 
 type Handlers struct {
-	q            *db.Queries
-	googleOAuth  googleOAuthClient
-	mailer       email.Mailer
-	validate     *validator.Validate
-	sessionTTL   time.Duration
-	cookieSecure bool
-	frontendURL  string
-	backendURL   string
-	emailFrom    string
+	q             *db.Queries
+	googleOAuth   googleOAuthClient
+	googleEnabled bool
+	localEnabled  bool
+	limiter       *loginLimiter
+	mailer        email.Mailer
+	validate      *validator.Validate
+	sessionTTL    time.Duration
+	cookieSecure  bool
+	frontendURL   string
+	backendURL    string
+	emailFrom     string
 }
 
 func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
-	g, err := newGoogleOAuth(ctx, cfg.Google)
-	if err != nil {
-		return nil, err
+	if !cfg.GoogleEnabled && !cfg.LocalEnabled {
+		return nil, errors.New("auth: no provider enabled (set GoogleEnabled and/or LocalEnabled)")
+	}
+	// Construct the Google OAuth client only when Google is enabled — the
+	// newGoogleOAuth call performs OIDC discovery (an outbound network call), so a
+	// local-only boot must skip it entirely (ADR-0039). googleOAuth stays nil and
+	// the Google routes are never mounted.
+	var g googleOAuthClient
+	if cfg.GoogleEnabled {
+		concrete, err := newGoogleOAuth(ctx, cfg.Google)
+		if err != nil {
+			return nil, err
+		}
+		g = concrete
 	}
 	if cfg.Mailer == nil {
 		return nil, errors.New("auth: mailer is required")
@@ -80,23 +99,35 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		return nil, errors.New("auth: backend url is required")
 	}
 	return &Handlers{
-		q:            q,
-		googleOAuth:  g,
-		mailer:       cfg.Mailer,
-		validate:     httperr.NewValidator(),
-		sessionTTL:   cfg.SessionTTL,
-		cookieSecure: cfg.CookieSecure,
-		frontendURL:  cfg.FrontendURL,
-		backendURL:   cfg.BackendURL,
-		emailFrom:    cfg.EmailFrom,
+		q:             q,
+		googleOAuth:   g,
+		googleEnabled: cfg.GoogleEnabled,
+		localEnabled:  cfg.LocalEnabled,
+		limiter:       newLoginLimiter(),
+		mailer:        cfg.Mailer,
+		validate:      httperr.NewValidator(),
+		sessionTTL:    cfg.SessionTTL,
+		cookieSecure:  cfg.CookieSecure,
+		frontendURL:   cfg.FrontendURL,
+		backendURL:    cfg.BackendURL,
+		emailFrom:     cfg.EmailFrom,
 	}, nil
 }
 
 // Mount registers auth routes under the provided router. The caller is expected
 // to apply SessionMiddleware at a higher level so /api/me sees the user.
 func (h *Handlers) Mount(r chi.Router) {
-	r.Get("/auth/google/start", h.handleStart)
-	r.Get("/auth/google/callback", h.handleCallback)
+	// The SPA reads which providers are live from here before rendering the
+	// sign-in screen (ADR-0039) — always available, even pre-auth.
+	r.Get("/auth/methods", h.handleAuthMethods)
+	if h.googleEnabled {
+		r.Get("/auth/google/start", h.handleStart)
+		r.Get("/auth/google/callback", h.handleCallback)
+	}
+	if h.localEnabled {
+		r.Post("/auth/local/register", h.handleLocalRegister)
+		r.Post("/auth/local/login", h.handleLocalLogin)
+	}
 	r.Post("/auth/logout", h.handleLogout)
 	// Onboarding gate (ADR-0038): authenticated by the handshake cookie, not a
 	// session, so deliberately NOT behind RequireAuth.

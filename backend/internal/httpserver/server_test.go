@@ -1,27 +1,34 @@
 package httpserver_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/config"
+	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/email"
 	"github.com/kerti/balances-v2/backend/internal/httpserver"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
 // TestServer_Healthz exercises New → buildRouter → Handler → handleHealthz end
-// to end with a real pool. The route handlers are passed nil: buildRouter and
-// each Mount only register method values (e.g. `r.Get("/", h.handleX)`), which
-// is valid Go on a nil receiver and never dereferences the handler. The request
-// carries no session cookie, so SessionMiddleware short-circuits before it would
-// touch authH.q. /healthz is the one route that depends solely on the pool, so
-// it proves the wiring without standing up the OIDC-discovering auth.New.
+// to end with a real pool. The auth handler is built local-only (no Google), so
+// auth.New constructs no OAuth client and makes no OIDC discovery call — keeping
+// the test offline while still mounting the real router. The other section
+// handlers are nil: their Mount only registers method values (valid on a nil
+// receiver) and no request below reaches them. The request carries no session
+// cookie, so SessionMiddleware short-circuits before any handler runs. /healthz
+// is the one route that depends solely on the pool, proving the wiring.
 func TestServer_Healthz(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 
-	s := httpserver.New(tdb.Pool, &config.Config{}, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+	s := httpserver.New(tdb.Pool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -44,4 +51,20 @@ func TestServer_Healthz(t *testing.T) {
 	if body.DBTime == "" {
 		t.Errorf("db_time empty, want a timestamp from SELECT now()")
 	}
+}
+
+// localOnlyAuth builds a real but offline auth handler for router-wiring tests:
+// local-only (Google off) means auth.New constructs no OAuth client and makes no
+// OIDC discovery call, so the router mounts intact without touching the network.
+func localOnlyAuth(t *testing.T, pool *pgxpool.Pool) *auth.Handlers {
+	t.Helper()
+	authH, err := auth.New(context.Background(), db.New(pool), auth.Config{
+		LocalEnabled: true,
+		Mailer:       email.NewNoopMailer(),
+		BackendURL:   "http://localhost:8080",
+	})
+	if err != nil {
+		t.Fatalf("auth.New: %v", err)
+	}
+	return authH
 }

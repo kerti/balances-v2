@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/AppLogo";
 import { AppInfo } from "@/components/AppInfo";
+import { LocalAuthForm } from "@/components/LocalAuthForm";
+import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import {
@@ -31,6 +33,13 @@ export function SignInScreen() {
   // locale always wins after sign-in. The initial value is navigator-derived by
   // i18next's language detector, so the picker arrives pre-filled.
   const { locale, setLocale } = useLocale();
+
+  // Which identity providers this instance offers (ADR-0039). Until it resolves
+  // we render no provider affordance; on a fetch failure we fall back to showing
+  // Google so a transient blip never strands a hosted user at a blank door.
+  const { data: methods, isError: methodsError } = useAuthMethods();
+  const showGoogle = methods ? methods.google : methodsError;
+  const showLocal = methods ? methods.local : false;
 
   const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
     void setLocale(e.target.value as Locale);
@@ -60,14 +69,31 @@ export function SignInScreen() {
               ))}
             </select>
           </div>
-          <Button asChild className="w-full">
-            <a
-              href={`/api/auth/google/start?lng=${encodeURIComponent(locale)}`}
-              data-testid="signin-google"
+          {showGoogle && (
+            <Button asChild className="w-full">
+              <a
+                href={`/api/auth/google/start?lng=${encodeURIComponent(locale)}`}
+                data-testid="signin-google"
+              >
+                {t("signIn.withGoogle")}
+              </a>
+            </Button>
+          )}
+
+          {showGoogle && showLocal && (
+            <div
+              className="flex items-center gap-2"
+              data-testid="signin-divider"
             >
-              {t("signIn.withGoogle")}
-            </a>
-          </Button>
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs uppercase text-muted-foreground">
+                {t("signIn.or")}
+              </span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          )}
+
+          {showLocal && <LocalAuthForm />}
         </CardContent>
         {/* Same identity block as the sidebar footer (issue #123) so an
             unauthenticated visitor can still see the version, deploy target,

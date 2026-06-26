@@ -49,6 +49,10 @@
       "iso4217": "must be a valid currency code",
       "oneof": "is not one of the allowed values"
     },
-    "INVITATION_NO_LONGER_VALID": "That invitation is no longer available. Please choose again."
+    "INVITATION_NO_LONGER_VALID": "That invitation is no longer available. Please choose again.",
+    "EMAIL_TAKEN": "That email is already registered. Try signing in instead.",
+    "WEAK_PASSWORD": "Choose a stronger password: at least 10 characters and not a commonly-used one.",
+    "INVALID_CREDENTIALS": "Incorrect email or password.",
+    "TOO_MANY_ATTEMPTS": "Too many attempts. Please wait a moment and try again."
   }
 }

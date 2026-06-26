@@ -189,11 +189,23 @@ func Validate(env *Envelope, callerSub string) (*Summary, error) {
 // whole-household restore would be a (narrow) impersonation hole.
 func callerInBackup(env *Envelope, callerSub string) bool {
 	for _, u := range env.Household.Users {
-		if callerSub != "" && u.GoogleSub == callerSub {
+		if callerSub != "" && u.GoogleSub != nil && *u.GoogleSub == callerSub {
 			return true
 		}
 	}
 	return false
+}
+
+// derefStr returns the pointed-to string, or "" when nil. google_sub went
+// nullable with local password auth (ADR-0039); a local-only caller has none.
+// Passing "" through the membership guard makes such a caller fail the
+// google_sub match — local restore matches by email, a later slice (#285) —
+// rather than spuriously matching an empty subject.
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // validateGraph checks referential integrity across the payload: every position

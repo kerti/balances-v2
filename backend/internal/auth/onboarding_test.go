@@ -32,7 +32,7 @@ func mustBeginHandshakeWithHint(t *testing.T, h *authHarness, sub, email, name s
 	}
 	_, err = h.q.CreateOnboardingHandshake(context.Background(), db.CreateOnboardingHandshakeParams{
 		ID:               token,
-		GoogleSub:        sub,
+		GoogleSub:        &sub,
 		Email:            email,
 		DisplayName:      name,
 		SeedLocale:       "en-GB",

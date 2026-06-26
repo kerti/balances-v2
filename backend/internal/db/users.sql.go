@@ -11,11 +11,67 @@ import (
 	"github.com/google/uuid"
 )
 
+const createLocalUser = `-- name: CreateLocalUser :one
+INSERT INTO users (
+    household_id, display_name, email, locale, time_zone, picture_url, created_by, updated_by
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $7
+)
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+`
+
+type CreateLocalUserParams struct {
+	HouseholdID uuid.UUID  `json:"household_id"`
+	DisplayName string     `json:"display_name"`
+	Email       string     `json:"email"`
+	Locale      string     `json:"locale"`
+	TimeZone    string     `json:"time_zone"`
+	PictureUrl  *string    `json:"picture_url"`
+	CreatedBy   *uuid.UUID `json:"created_by"`
+}
+
+// The local-password create path (ADR-0039): no google_sub (left NULL — a
+// local-only User is identified by email and proves it with a local_credentials
+// row). Mirrors CreateUser otherwise. The credential row is written separately
+// (UpsertLocalCredential) so the secret never rides the identity insert.
+func (q *Queries) CreateLocalUser(ctx context.Context, arg CreateLocalUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createLocalUser,
+		arg.HouseholdID,
+		arg.DisplayName,
+		arg.Email,
+		arg.Locale,
+		arg.TimeZone,
+		arg.PictureUrl,
+		arg.CreatedBy,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.DisplayName,
+		&i.Email,
+		&i.GoogleSub,
+		&i.Locale,
+		&i.TimeZone,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Nickname,
+		&i.PictureUrl,
+		&i.Theme,
+		&i.CarryoverDateMode,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     household_id, display_name, email, google_sub, locale, time_zone, picture_url, created_by, updated_by
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $8
+    $1, $2, $3, $4::text,
+    $5, $6, $7, $8, $8
 )
 RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
 `
@@ -31,6 +87,10 @@ type CreateUserParams struct {
 	CreatedBy   *uuid.UUID `json:"created_by"`
 }
 
+// The Google-identity create path: google_sub is the verified subject, always
+// present. The ::text cast keeps the param a plain (non-null) string so the many
+// existing callers are unaffected by google_sub going nullable (ADR-0039); the
+// local-only path uses CreateLocalUser, which leaves google_sub NULL.
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.HouseholdID,
@@ -64,14 +124,52 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+FROM users
+WHERE email = $1 AND deleted_at IS NULL
+`
+
+// Email is the human-facing handle and (since ADR-0039) the lookup key for local
+// password login. Soft-delete-aware and unique (users_email_idx), so it returns
+// at most one live row. Callers must treat a miss as a generic auth failure —
+// never leak whether the email exists (no user enumeration on login).
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.DisplayName,
+		&i.Email,
+		&i.GoogleSub,
+		&i.Locale,
+		&i.TimeZone,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Nickname,
+		&i.PictureUrl,
+		&i.Theme,
+		&i.CarryoverDateMode,
+	)
+	return i, err
+}
+
 const getUserByGoogleSub = `-- name: GetUserByGoogleSub :one
 SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
 FROM users
-WHERE google_sub = $1 AND deleted_at IS NULL
+WHERE google_sub = $1::text AND deleted_at IS NULL
 `
 
-func (q *Queries) GetUserByGoogleSub(ctx context.Context, googleSub string) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByGoogleSub, googleSub)
+// The ::text cast keeps the lookup parameter a plain (non-null) string even
+// though google_sub is nullable since ADR-0039 — callers always have a concrete
+// subject to look up, never NULL, and this avoids a *string param rippling
+// through every caller. A NULL column value simply never equals the arg.
+func (q *Queries) GetUserByGoogleSub(ctx context.Context, dollar_1 string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByGoogleSub, dollar_1)
 	var i User
 	err := row.Scan(
 		&i.ID,

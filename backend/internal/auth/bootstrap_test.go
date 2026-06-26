@@ -33,8 +33,8 @@ func TestCreateFounder(t *testing.T) {
 	if user.Email != claims.Email {
 		t.Errorf("email: want %q, got %q", claims.Email, user.Email)
 	}
-	if user.GoogleSub != claims.Sub {
-		t.Errorf("google_sub: want %q, got %q", claims.Sub, user.GoogleSub)
+	if stringOrEmpty(user.GoogleSub) != claims.Sub {
+		t.Errorf("google_sub: want %q, got %q", claims.Sub, stringOrEmpty(user.GoogleSub))
 	}
 	if user.HouseholdID == h.user.HouseholdID {
 		t.Error("founder should land in a new household, not the harness one")

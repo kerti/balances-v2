@@ -46,7 +46,7 @@ func (h *Handlers) beginOnboarding(ctx context.Context, w http.ResponseWriter, c
 	expiresAt := time.Now().Add(onboardingHandshakeTTL)
 	if _, err := h.q.CreateOnboardingHandshake(ctx, db.CreateOnboardingHandshakeParams{
 		ID:               token,
-		GoogleSub:        c.Sub,
+		GoogleSub:        &c.Sub,
 		Email:            c.Email,
 		DisplayName:      c.Name,
 		PictureUrl:       nullableString(c.Picture),
@@ -222,19 +222,69 @@ func (h *Handlers) handleOnboardingChoice(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	claims := &googleClaims{
-		Sub:     hs.GoogleSub,
-		Email:   hs.Email,
-		Name:    hs.DisplayName,
-		Picture: stringOrEmpty(hs.PictureUrl),
+	// A credential-bearing handshake is a local founder (ADR-0039): create the
+	// User with no google_sub and a local_credentials row from the stashed hash.
+	// Otherwise it is the Google path. Both create the Household + User from the
+	// handshake claims and fire the best-effort welcome email.
+	var user db.User
+	var err error
+	if hs.PasswordHash != nil {
+		user, err = h.createLocalFounder(r.Context(), hs, householdName)
+	} else {
+		claims := &googleClaims{
+			Sub:     stringOrEmpty(hs.GoogleSub),
+			Email:   hs.Email,
+			Name:    hs.DisplayName,
+			Picture: stringOrEmpty(hs.PictureUrl),
+		}
+		user, err = h.createFounder(r.Context(), claims, hs.SeedLocale, householdName)
 	}
-	user, err := h.createFounder(r.Context(), claims, hs.SeedLocale, householdName)
 	if err != nil {
 		slog.Error("onboarding found household", "err", err)
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
 	}
 	h.finishOnboarding(w, r, hs.ID, user.ID)
+}
+
+// createLocalFounder mints a new Household + local (google_sub-less) User from a
+// credential-bearing handshake, then writes the local_credentials row from the
+// hash the register step stashed (ADR-0039). The hash moves handshake-row →
+// credentials-row inside the same instance and is never re-derived from a
+// plaintext we no longer hold. Mirrors createFounder's best-effort welcome email.
+func (h *Handlers) createLocalFounder(ctx context.Context, hs db.OnboardingHandshake, householdName string) (db.User, error) {
+	if householdName == "" {
+		householdName = hs.DisplayName + "'s Household"
+	}
+	household, err := h.q.CreateHousehold(ctx, db.CreateHouseholdParams{
+		DisplayName:       householdName,
+		ReportingCurrency: "IDR",
+	})
+	if err != nil {
+		return db.User{}, err
+	}
+	user, err := h.q.CreateLocalUser(ctx, db.CreateLocalUserParams{
+		HouseholdID: household.ID,
+		DisplayName: hs.DisplayName,
+		Email:       hs.Email,
+		Locale:      hs.SeedLocale,
+		TimeZone:    "Asia/Jakarta",
+		PictureUrl:  nil,
+		CreatedBy:   nil,
+	})
+	if err != nil {
+		return db.User{}, err
+	}
+	if _, err := h.q.UpsertLocalCredential(ctx, db.UpsertLocalCredentialParams{
+		UserID:       user.ID,
+		PasswordHash: *hs.PasswordHash,
+	}); err != nil {
+		return db.User{}, err
+	}
+	if err := h.sendWelcomeEmail(ctx, user); err != nil {
+		slog.Error("send welcome email", "err", err, "user_id", user.ID)
+	}
+	return user, nil
 }
 
 // commitJoin accepts a pending invitation at the gate. It re-validates the
@@ -270,7 +320,7 @@ func (h *Handlers) commitJoin(w http.ResponseWriter, r *http.Request, hs db.Onbo
 		HouseholdID: invite.HouseholdID,
 		DisplayName: hs.DisplayName,
 		Email:       hs.Email,
-		GoogleSub:   hs.GoogleSub,
+		GoogleSub:   stringOrEmpty(hs.GoogleSub),
 		Locale:      hs.SeedLocale,
 		TimeZone:    "Asia/Jakarta",
 		PictureUrl:  hs.PictureUrl,

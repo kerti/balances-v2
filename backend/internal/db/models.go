@@ -227,6 +227,13 @@ type LiabilitySnapshot struct {
 	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
+type LocalCredential struct {
+	UserID       uuid.UUID          `json:"user_id"`
+	PasswordHash string             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type MonthlyReport struct {
 	ID                          uuid.UUID          `json:"id"`
 	HouseholdID                 uuid.UUID          `json:"household_id"`
@@ -268,7 +275,7 @@ type MutualFundDetail struct {
 
 type OnboardingHandshake struct {
 	ID               string             `json:"id"`
-	GoogleSub        string             `json:"google_sub"`
+	GoogleSub        *string            `json:"google_sub"`
 	Email            string             `json:"email"`
 	DisplayName      string             `json:"display_name"`
 	PictureUrl       *string            `json:"picture_url"`
@@ -276,6 +283,7 @@ type OnboardingHandshake struct {
 	HintInvitationID *uuid.UUID         `json:"hint_invitation_id"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	PasswordHash     *string            `json:"password_hash"`
 }
 
 type PropertyDetail struct {
@@ -366,7 +374,7 @@ type User struct {
 	HouseholdID       uuid.UUID          `json:"household_id"`
 	DisplayName       string             `json:"display_name"`
 	Email             string             `json:"email"`
-	GoogleSub         string             `json:"google_sub"`
+	GoogleSub         *string            `json:"google_sub"`
 	Locale            string             `json:"locale"`
 	TimeZone          string             `json:"time_zone"`
 	CreatedBy         *uuid.UUID         `json:"created_by"`

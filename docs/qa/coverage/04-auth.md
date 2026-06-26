@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/04-auth.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**14 / 14** invariants in this zone have at least one covering test (**14** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**17 / 17** invariants in this zone have at least one covering test (**17** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -22,3 +22,6 @@
 | INV-AUTH-12 | The onboarding handshake is a short-lived (≈15 min), opaque-token-in-cookie record of a verified-but-unaccounted identity; an unknown/expired/missing handshake never reaches the gate (401), it is swept by expiry, and an abandoned one leaves no `users`/`households` row | `backend/internal/auth/callback_test.go`<br>`backend/internal/auth/onboarding_test.go` |
 | INV-AUTH-13 | The deliberate founder choice at the gate creates the Household + User from the handshake claims (optional name override; `seed_locale` applied), issues the real session, deletes the handshake, and fires the welcome email — which therefore only fires on a deliberate founding | `backend/internal/auth/bootstrap_test.go`<br>`backend/internal/auth/onboarding_test.go` |
 | INV-AUTH-14 | An already-onboarded user who signs in via a fresh invite link is signed in normally but carried a non-blocking notice signal instead of having the link silently ignored; their Household membership is unchanged and the invitation is left unconsumed (one Household per person, ADR-0017) | `backend/internal/auth/callback_test.go` |
+| INV-AUTH-15 | A reachable User has a `google_sub` **or** a `local_credentials` row; a User with neither is legitimately **dormant** (owns data, cannot yet authenticate) — an app-layer invariant, not a single-row CHECK. The local founder register routes through the same onboarding gate as Google (no `users`/`households` row until the founder choice commits), then creates a `google_sub`-less User plus a `local_credentials` row from the password the register step hashed and stashed in the handshake | `backend/internal/auth/local_test.go`<br>`frontend/e2e/local-auth.spec.ts` |
+| INV-AUTH-16 | A local-only boot (`AUTH_LOCAL_ENABLED`, `AUTH_GOOGLE_ENABLED=false`) constructs **no** Google OAuth client and makes **no** outbound OIDC discovery call, so a self-host needs no Google credentials; `New` fails fast if neither provider is enabled | `backend/internal/auth/new_test.go` |
+| INV-AUTH-17 | Local password login is hardened: per-IP **and** per-email soft exponential backoff (never a hard lockout — a household instance can't lock itself out), no user enumeration (unknown email, dormant/Google-only user, and wrong password all return the same generic 401, constant-time compare, dummy-hash on the absent paths so timing can't distinguish), and a fresh session id minted on every success; passwords are Argon2id (PHC string, per-hash salt) and must clear the floor (≥10 chars, breached-reject) | `backend/internal/auth/local_test.go`<br>`backend/internal/auth/password_test.go` |

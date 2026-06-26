@@ -90,7 +90,7 @@ func TestRestoreParseValidate(t *testing.T) {
 		if env.FormatVersion != FormatVersion {
 			t.Errorf("format_version = %d", env.FormatVersion)
 		}
-		sum, err := Validate(env, alice.GoogleSub)
+		sum, err := Validate(env, derefStr(alice.GoogleSub))
 		if err != nil {
 			t.Fatalf("Validate: %v", err)
 		}
@@ -139,7 +139,7 @@ func TestRestoreParseValidate(t *testing.T) {
 			AssetID:   uuid.New(), // points at no asset in the payload
 			YearMonth: time.Now(),
 		})
-		_, err := Validate(env, alice.GoogleSub)
+		_, err := Validate(env, derefStr(alice.GoogleSub))
 		if !errors.Is(err, ErrValidationFailed) {
 			t.Errorf("err = %v, want ErrValidationFailed", err)
 		}
@@ -188,7 +188,7 @@ func TestRestoreCommit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Parse: %v", err)
 		}
-		if _, err := Validate(env, alice.GoogleSub); err != nil {
+		if _, err := Validate(env, derefStr(alice.GoogleSub)); err != nil {
 			t.Fatalf("Validate: %v", err)
 		}
 		if err := Commit(context.Background(), tdb.Pool, env, alice.HouseholdID); err != nil {

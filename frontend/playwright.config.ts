@@ -49,6 +49,9 @@ export default defineConfig({
         // redirects to the e2e frontend — mirroring the real dev wiring.
         OAUTH_REDIRECT_URL: `http://localhost:${E2E_BACKEND_PORT}/api/auth/google/callback`,
         FRONTEND_URL: `http://localhost:${E2E_FRONTEND_PORT}`,
+        // Enable local password auth alongside Google (ADR-0039) so the
+        // local-auth @smoke spec can register a founder and sign back in.
+        AUTH_LOCAL_ENABLED: 'true',
       },
       url: `http://localhost:${E2E_BACKEND_PORT}/healthz`,
       reuseExistingServer: !process.env.CI,

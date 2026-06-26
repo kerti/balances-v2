@@ -14,21 +14,22 @@ import (
 
 const createOnboardingHandshake = `-- name: CreateOnboardingHandshake :one
 INSERT INTO onboarding_handshakes (
-    id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, expires_at
+    id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, password_hash, expires_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $9
 )
-RETURNING id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, created_at, expires_at
+RETURNING id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, created_at, expires_at, password_hash
 `
 
 type CreateOnboardingHandshakeParams struct {
 	ID               string             `json:"id"`
-	GoogleSub        string             `json:"google_sub"`
+	GoogleSub        *string            `json:"google_sub"`
 	Email            string             `json:"email"`
 	DisplayName      string             `json:"display_name"`
 	PictureUrl       *string            `json:"picture_url"`
 	SeedLocale       string             `json:"seed_locale"`
 	HintInvitationID *uuid.UUID         `json:"hint_invitation_id"`
+	PasswordHash     *string            `json:"password_hash"`
 	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
 }
 
@@ -41,6 +42,7 @@ func (q *Queries) CreateOnboardingHandshake(ctx context.Context, arg CreateOnboa
 		arg.PictureUrl,
 		arg.SeedLocale,
 		arg.HintInvitationID,
+		arg.PasswordHash,
 		arg.ExpiresAt,
 	)
 	var i OnboardingHandshake
@@ -54,6 +56,7 @@ func (q *Queries) CreateOnboardingHandshake(ctx context.Context, arg CreateOnboa
 		&i.HintInvitationID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.PasswordHash,
 	)
 	return i, err
 }
@@ -77,7 +80,7 @@ func (q *Queries) DeleteOnboardingHandshake(ctx context.Context, id string) erro
 }
 
 const getOnboardingHandshake = `-- name: GetOnboardingHandshake :one
-SELECT id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, created_at, expires_at
+SELECT id, google_sub, email, display_name, picture_url, seed_locale, hint_invitation_id, created_at, expires_at, password_hash
 FROM onboarding_handshakes
 WHERE id = $1 AND expires_at > now()
 `
@@ -95,6 +98,7 @@ func (q *Queries) GetOnboardingHandshake(ctx context.Context, id string) (Onboar
 		&i.HintInvitationID,
 		&i.CreatedAt,
 		&i.ExpiresAt,
+		&i.PasswordHash,
 	)
 	return i, err
 }

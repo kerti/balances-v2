@@ -16,6 +16,7 @@ import (
 var configEnvKeys = []string{
 	"DATABASE_URL", "PORT", "LOG_FORMAT",
 	"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OIDC_ISSUER_URL",
+	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
 	"SESSION_TTL", "COOKIE_SECURE",
 	"EMAIL_ENABLED",
@@ -80,6 +81,43 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.OAuthRedirectURL != "http://localhost:8080/api/auth/google/callback" {
 		t.Errorf("OAuthRedirectURL = %q, want default localhost callback", cfg.OAuthRedirectURL)
+	}
+	// Hosted posture by default (ADR-0039): Google on, local off.
+	if !cfg.AuthGoogleEnabled {
+		t.Errorf("AuthGoogleEnabled = false, want default true")
+	}
+	if cfg.AuthLocalEnabled {
+		t.Errorf("AuthLocalEnabled = true, want default false")
+	}
+}
+
+// TestLoad_FailsFastWhenNoProviderEnabled guards the boot check: a server with
+// both identity providers disabled cannot sign anyone in, so Load errors rather
+// than returning a config that boots a dead instance (ADR-0039).
+func TestLoad_FailsFastWhenNoProviderEnabled(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("AUTH_GOOGLE_ENABLED", "false")
+	t.Setenv("AUTH_LOCAL_ENABLED", "false")
+
+	if _, err := config.Load(); err == nil {
+		t.Fatal("Load: expected an error when no auth provider is enabled")
+	}
+}
+
+// TestLoad_LocalOnly is the minimal self-host posture: local on, Google off.
+func TestLoad_LocalOnly(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("AUTH_GOOGLE_ENABLED", "false")
+	t.Setenv("AUTH_LOCAL_ENABLED", "true")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.AuthGoogleEnabled || !cfg.AuthLocalEnabled {
+		t.Errorf("local-only: got Google=%v Local=%v", cfg.AuthGoogleEnabled, cfg.AuthLocalEnabled)
 	}
 }
 

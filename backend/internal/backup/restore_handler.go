@@ -38,7 +38,7 @@ func (h *Handlers) handleRestorePreview(w http.ResponseWriter, r *http.Request) 
 		writeRestoreErr(w, err)
 		return
 	}
-	summary, err := Validate(env, user.GoogleSub)
+	summary, err := Validate(env, derefStr(user.GoogleSub))
 	if err != nil {
 		writeRestoreErr(w, err)
 		return
@@ -88,7 +88,7 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 		writeRestoreErr(w, err)
 		return
 	}
-	summary, err := Validate(env, user.GoogleSub)
+	summary, err := Validate(env, derefStr(user.GoogleSub))
 	if err != nil {
 		writeRestoreErr(w, err)
 		return
@@ -107,7 +107,7 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 	// user a sudden, alarming logout. Best-effort: the destructive work already
 	// committed, so on any failure here we just let them sign in again rather than
 	// fail a successful restore. Must precede writeJSON (it sets a cookie header).
-	if restored, err := h.q.GetUserByGoogleSub(r.Context(), user.GoogleSub); err != nil {
+	if restored, err := h.q.GetUserByGoogleSub(r.Context(), derefStr(user.GoogleSub)); err != nil {
 		slog.Warn("restore: lookup restored caller for re-login", "err", err)
 	} else {
 		if err := h.sessions.IssueSession(r.Context(), w, restored.ID, r.UserAgent()); err != nil {

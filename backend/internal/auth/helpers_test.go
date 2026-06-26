@@ -71,7 +71,10 @@ func newAuthHarness(t *testing.T) *authHarness {
 
 	mailer := &stubMailer{}
 	h := &Handlers{
-		q: q,
+		q:             q,
+		googleEnabled: true,
+		localEnabled:  true,
+		limiter:       newLoginLimiter(),
 		googleOAuth: &googleOAuth{
 			// cfg is enough for handleStart (AuthCodeURL). verifier stays nil
 			// because we don't exercise exchange in this test phase.

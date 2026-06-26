@@ -4,15 +4,45 @@ FROM users
 WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: GetUserByGoogleSub :one
+-- The ::text cast keeps the lookup parameter a plain (non-null) string even
+-- though google_sub is nullable since ADR-0039 — callers always have a concrete
+-- subject to look up, never NULL, and this avoids a *string param rippling
+-- through every caller. A NULL column value simply never equals the arg.
 SELECT *
 FROM users
-WHERE google_sub = $1 AND deleted_at IS NULL;
+WHERE google_sub = $1::text AND deleted_at IS NULL;
+
+-- name: GetUserByEmail :one
+-- Email is the human-facing handle and (since ADR-0039) the lookup key for local
+-- password login. Soft-delete-aware and unique (users_email_idx), so it returns
+-- at most one live row. Callers must treat a miss as a generic auth failure —
+-- never leak whether the email exists (no user enumeration on login).
+SELECT *
+FROM users
+WHERE email = $1 AND deleted_at IS NULL;
 
 -- name: CreateUser :one
+-- The Google-identity create path: google_sub is the verified subject, always
+-- present. The ::text cast keeps the param a plain (non-null) string so the many
+-- existing callers are unaffected by google_sub going nullable (ADR-0039); the
+-- local-only path uses CreateLocalUser, which leaves google_sub NULL.
 INSERT INTO users (
     household_id, display_name, email, google_sub, locale, time_zone, picture_url, created_by, updated_by
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $8
+    sqlc.arg(household_id), sqlc.arg(display_name), sqlc.arg(email), sqlc.arg(google_sub)::text,
+    sqlc.arg(locale), sqlc.arg(time_zone), sqlc.narg(picture_url), sqlc.narg(created_by), sqlc.narg(created_by)
+)
+RETURNING *;
+
+-- name: CreateLocalUser :one
+-- The local-password create path (ADR-0039): no google_sub (left NULL — a
+-- local-only User is identified by email and proves it with a local_credentials
+-- row). Mirrors CreateUser otherwise. The credential row is written separately
+-- (UpsertLocalCredential) so the secret never rides the identity insert.
+INSERT INTO users (
+    household_id, display_name, email, locale, time_zone, picture_url, created_by, updated_by
+) VALUES (
+    $1, $2, $3, $4, $5, $6, $7, $7
 )
 RETURNING *;
 

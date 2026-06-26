@@ -166,4 +166,25 @@ const (
 	// internally inconsistent (a dangling foreign key, a row in the wrong
 	// Household) — backup.ErrValidationFailed (ADR-0036).
 	CodeBackupValidationFailed Code = "BACKUP_VALIDATION_FAILED"
+
+	// CodeEmailTaken is a 409 when a local registration uses an email already
+	// belonging to a live user (ADR-0039). Registration is the founder/self-serve
+	// path, so revealing "this email is in use" here is acceptable (unlike login,
+	// which must never enumerate).
+	CodeEmailTaken Code = "EMAIL_TAKEN"
+
+	// CodeWeakPassword is a 400 when a local password fails the policy floor
+	// (ADR-0039): below the minimum length, or among commonly-breached passwords.
+	// Args carry a `reason` (`min` | `breached`) for a specific FE message.
+	CodeWeakPassword Code = "WEAK_PASSWORD"
+
+	// CodeInvalidCredentials is the single, deliberately-generic 401 for every
+	// local login failure — unknown email, no credential (dormant/Google-only
+	// user), or wrong password all return it identically, so login never reveals
+	// whether an email exists (no user enumeration, ADR-0039).
+	CodeInvalidCredentials Code = "INVALID_CREDENTIALS"
+
+	// CodeTooManyAttempts is a 429 when login is in rate-limit backoff (ADR-0039).
+	// Soft, never a hard lock: a Retry-After header tells the client when to retry.
+	CodeTooManyAttempts Code = "TOO_MANY_ATTEMPTS"
 )

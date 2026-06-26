@@ -37,6 +37,15 @@ type Config struct {
 	GoogleClientSecret string `env:"GOOGLE_CLIENT_SECRET"`
 	OIDCIssuerURL      string `env:"OIDC_ISSUER_URL" envDefault:"https://accounts.google.com"`
 
+	// AuthGoogleEnabled / AuthLocalEnabled select which identity providers are
+	// live (ADR-0039). Both default to the hosted posture — Google on, local off —
+	// so existing deployments are unchanged. A self-hoster flips them: local-only
+	// (Google off) needs no Google credentials and makes no OIDC discovery call.
+	// Load fails fast if neither is enabled (a server with no way to sign in is a
+	// misconfiguration, not a runtime surprise).
+	AuthGoogleEnabled bool `env:"AUTH_GOOGLE_ENABLED" envDefault:"true"`
+	AuthLocalEnabled  bool `env:"AUTH_LOCAL_ENABLED" envDefault:"false"`
+
 	// AppURL is the operator-facing single-origin URL for a self-host deployment
 	// (ADR-0037). When set, it supplies the default origin for FrontendURL and
 	// BackendURL and derives OAuthRedirectURL as AppURL + the callback path —
@@ -72,6 +81,9 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
 		return nil, fmt.Errorf("env parse: %w", err)
+	}
+	if !cfg.AuthGoogleEnabled && !cfg.AuthLocalEnabled {
+		return nil, fmt.Errorf("no auth provider enabled: set AUTH_GOOGLE_ENABLED and/or AUTH_LOCAL_ENABLED")
 	}
 	applyURLDefaults(&cfg)
 	return &cfg, nil

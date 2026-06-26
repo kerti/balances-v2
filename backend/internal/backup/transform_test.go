@@ -209,8 +209,8 @@ func TestMintGoldenFixture(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	if alice.GoogleSub != goldenSub {
-		t.Fatalf("seeded sub %q != goldenSub %q — update goldenSub", alice.GoogleSub, goldenSub)
+	if derefStr(alice.GoogleSub) != goldenSub {
+		t.Fatalf("seeded sub %q != goldenSub %q — update goldenSub", derefStr(alice.GoogleSub), goldenSub)
 	}
 	ctx := auth.WithUser(context.Background(), alice)
 	seedHousehold(ctx, t, tdb.Pool, alice)

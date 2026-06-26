@@ -3,7 +3,16 @@
   "signIn": {
     "tagline": "Pantau kekayaan bersih rumah tangga tanpa mencatat setiap transaksi.",
     "languageLabel": "Bahasa",
-    "withGoogle": "Lanjutkan dengan Google"
+    "withGoogle": "Lanjutkan dengan Google",
+    "or": "atau",
+    "local": {
+      "signInTab": "Masuk",
+      "registerTab": "Buat akun",
+      "displayName": "Nama Anda",
+      "email": "Email",
+      "password": "Kata sandi",
+      "passwordHint": "Minimal 10 karakter. Hindari kata sandi yang umum."
+    }
   },
   "signOut": "Keluar",
   "save": "Simpan",
