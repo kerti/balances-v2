@@ -100,7 +100,7 @@ type HouseholdInvitation struct {
 	ID           uuid.UUID          `json:"id"`
 	HouseholdID  uuid.UUID          `json:"household_id"`
 	InvitedEmail string             `json:"invited_email"`
-	Token        string             `json:"token"`
+	TokenHash    string             `json:"token_hash"`
 	CreatedBy    uuid.UUID          `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`

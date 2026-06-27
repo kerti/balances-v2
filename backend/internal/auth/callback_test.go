@@ -184,9 +184,9 @@ func TestHandleCallback_ExistingUserInviteIgnored(t *testing.T) {
 		t.Errorf("household must not change; want %s, got %s", originalHousehold, refreshed.HouseholdID)
 	}
 	// The invitation is not consumed.
-	inv, err := h.q.GetInvitationByToken(context.Background(), token)
+	inv, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 	if err != nil {
-		t.Fatalf("GetInvitationByToken: %v", err)
+		t.Fatalf("GetInvitationByTokenHash: %v", err)
 	}
 	if inv.UsedAt.Valid {
 		t.Error("an ignored invite must stay unconsumed")
@@ -257,9 +257,9 @@ func TestHandleCallback_NewIdentityBeginsOnboarding(t *testing.T) {
 func TestHandleCallback_InvitedIdentityBeginsOnboarding(t *testing.T) {
 	h := newAuthHarness(t)
 	token := mustSeedInvitation(t, h, "invited2@example.com", time.Now().Add(24*time.Hour))
-	invite, err := h.q.GetInvitationByToken(context.Background(), token)
+	invite, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 	if err != nil {
-		t.Fatalf("GetInvitationByToken: %v", err)
+		t.Fatalf("GetInvitationByTokenHash: %v", err)
 	}
 
 	h.installStubOAuth(&googleClaims{
@@ -286,9 +286,9 @@ func TestHandleCallback_InvitedIdentityBeginsOnboarding(t *testing.T) {
 	if _, err := h.q.GetUserByGoogleSub(context.Background(), "new-google-sub-invited"); err == nil {
 		t.Error("expected no user row before the gate commits a join")
 	}
-	inv, err := h.q.GetInvitationByToken(context.Background(), token)
+	inv, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 	if err != nil {
-		t.Fatalf("GetInvitationByToken: %v", err)
+		t.Fatalf("GetInvitationByTokenHash: %v", err)
 	}
 	if inv.UsedAt.Valid {
 		t.Error("invitation should not be consumed at the callback")

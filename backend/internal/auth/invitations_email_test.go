@@ -39,7 +39,7 @@ func TestHandleCreateInvitation_MailFailureIsBestEffort(t *testing.T) {
 	// Creation succeeds despite the mail failure.
 	requireStatus(t, rec, http.StatusCreated)
 	body := decodeBody[createInvitationResp](t, rec)
-	if !strings.Contains(body.AcceptURL, "invite=") {
+	if !strings.Contains(body.AcceptURL, "token=") {
 		t.Errorf("accept_url missing invite token: %q", body.AcceptURL)
 	}
 	if body.EmailSent {
@@ -51,13 +51,13 @@ func TestHandleCreateInvitation_MailFailureIsBestEffort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse accept_url: %v", err)
 	}
-	token := u.Query().Get("invite")
+	token := u.Query().Get("token")
 	if token == "" {
 		t.Fatal("accept_url missing invite query param")
 	}
-	row, err := h.q.GetInvitationByToken(context.Background(), token)
+	row, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 	if err != nil {
-		t.Fatalf("GetInvitationByToken: %v", err)
+		t.Fatalf("GetInvitationByTokenHash: %v", err)
 	}
 	if row.ID != body.ID {
 		t.Errorf("db row id: want %s, got %s", body.ID, row.ID)

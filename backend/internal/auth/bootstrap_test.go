@@ -54,14 +54,14 @@ func TestCreateFounder(t *testing.T) {
 // (the handler always sets it to +invitationTTL).
 func mustSeedInvitation(t *testing.T, h *authHarness, email string, expiresAt time.Time) string {
 	t.Helper()
-	token, err := randomInvitationToken()
+	token, tokenHash, err := GenerateToken()
 	if err != nil {
-		t.Fatalf("randomInvitationToken: %v", err)
+		t.Fatalf("GenerateToken: %v", err)
 	}
 	_, err = h.q.CreateInvitation(context.Background(), db.CreateInvitationParams{
 		HouseholdID:  h.user.HouseholdID,
 		InvitedEmail: email,
-		Token:        token,
+		TokenHash:    tokenHash,
 		CreatedBy:    h.user.ID,
 		ExpiresAt:    pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})

@@ -13,6 +13,12 @@ export const routes = {
   // (App.tsx) — the holder has a handshake cookie but no session yet.
   onboarding: "/onboarding",
 
+  // Local-invite accept (ADR-0039/#281). Where an invite link lands a local
+  // invitee: they set a password and the account is created bound to the
+  // invited email. Rendered outside the authed router — the holder has neither a
+  // session nor a handshake, only the single-use token in the URL.
+  accept: "/accept",
+
   // Assets — home + three subtype lists, each with a detail under it.
   assets: "/assets",
   bankAccounts: "/assets/bank-accounts",

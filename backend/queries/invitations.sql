@@ -1,15 +1,34 @@
 -- name: CreateInvitation :one
+-- token_hash is the SHA-256 of the ≥256-bit random link token (ADR-0039/#281);
+-- the plaintext lives only in the emailed link, never at rest.
 INSERT INTO household_invitations (
-    household_id, invited_email, token, created_by, expires_at
+    household_id, invited_email, token_hash, created_by, expires_at
 ) VALUES (
     $1, $2, $3, $4, $5
 )
 RETURNING *;
 
--- name: GetInvitationByToken :one
+-- name: GetInvitationByTokenHash :one
+-- Read-only resolve by hashed token: callers hash the presented plaintext, then
+-- look up by hash. Used by the Google `?invite=` hint (handlers) and the local
+-- accept screen's GET preview — neither consumes the invite (validity is checked
+-- by the caller); the atomic consume is ConsumeInvitationByTokenHash.
 SELECT *
 FROM household_invitations
-WHERE token = $1;
+WHERE token_hash = $1;
+
+-- name: ConsumeInvitationByTokenHash :one
+-- Single-use atomic consume for the local set-password accept (#281): marks the
+-- invitation used iff it is still pending AND unexpired, returning the row. A
+-- consumed/expired/forwarded-after-use link matches zero rows (pgx.ErrNoRows),
+-- so it can never create a second account — the guard is the WHERE, not a prior
+-- read. Mirrors MarkInvitationUsed but conditional and by hash.
+UPDATE household_invitations
+SET used_at = now()
+WHERE token_hash = $1
+  AND used_at IS NULL
+  AND expires_at > now()
+RETURNING *;
 
 -- name: GetInvitationByID :one
 SELECT *

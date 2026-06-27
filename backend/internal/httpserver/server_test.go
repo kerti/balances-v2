@@ -60,6 +60,7 @@ func localOnlyAuth(t *testing.T, pool *pgxpool.Pool) *auth.Handlers {
 	t.Helper()
 	authH, err := auth.New(context.Background(), db.New(pool), auth.Config{
 		LocalEnabled: true,
+		Pool:         pool,
 		Mailer:       email.NewNoopMailer(),
 		BackendURL:   "http://localhost:8080",
 	})

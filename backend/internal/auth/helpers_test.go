@@ -72,6 +72,7 @@ func newAuthHarness(t *testing.T) *authHarness {
 	mailer := &stubMailer{}
 	h := &Handlers{
 		q:             q,
+		pool:          tdb.Pool,
 		googleEnabled: true,
 		localEnabled:  true,
 		limiter:       newLoginLimiter(),

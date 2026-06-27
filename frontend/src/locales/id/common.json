@@ -14,6 +14,15 @@
       "passwordHint": "Minimal 10 karakter. Hindari kata sandi yang umum."
     }
   },
+  "invite": {
+    "title": "Atur kata sandi Anda",
+    "subtitle": "Anda diundang untuk bergabung dengan {{household}}. Pilih kata sandi untuk menyelesaikan penyiapan akun Anda.",
+    "emailLabel": "Email Anda",
+    "passwordLabel": "Kata sandi",
+    "submit": "Buat akun",
+    "invalid": "Tautan undangan ini sudah tidak berlaku. Minta orang yang mengundang Anda untuk mengirim yang baru.",
+    "goToSignIn": "Ke halaman masuk"
+  },
   "signOut": "Keluar",
   "save": "Simpan",
   "cancel": "Batal",

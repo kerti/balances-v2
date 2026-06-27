@@ -11,8 +11,9 @@ import (
 
 // covers: INV-AUTH-11
 // The invitation accept URL carries the inviter's locale as ?lng= so the invitee
-// inherits the household language by default (ADR-0035). The accept link is a
-// direct backend /start URL, so this ?lng= becomes the oauth_locale seed hint.
+// inherits the household language by default (ADR-0035). With local auth enabled
+// (this harness), the link is the SPA /accept route; ?lng= seeds the language on
+// that screen exactly as it seeded the oauth_locale hint on the Google /start URL.
 func TestCreateInvitation_AcceptURLCarriesInviterLocale(t *testing.T) {
 	h := newAuthHarness(t)
 
@@ -24,7 +25,7 @@ func TestCreateInvitation_AcceptURLCarriesInviterLocale(t *testing.T) {
 		if !strings.Contains(body.AcceptURL, "lng=id-ID") {
 			t.Errorf("accept_url missing lng=id-ID: %q", body.AcceptURL)
 		}
-		if !strings.Contains(body.AcceptURL, "invite=") {
+		if !strings.Contains(body.AcceptURL, "token=") {
 			t.Errorf("accept_url missing invite token: %q", body.AcceptURL)
 		}
 	})
@@ -62,9 +63,9 @@ func TestHandleCallback_InvitedUserLocaleSeed(t *testing.T) {
 			h := newAuthHarness(t)
 			email := "invited-locale-" + string(rune('a'+i)) + "@example.com"
 			token := mustSeedInvitation(t, h, email, time.Now().Add(24*time.Hour))
-			invite, err := h.q.GetInvitationByToken(context.Background(), token)
+			invite, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 			if err != nil {
-				t.Fatalf("GetInvitationByToken: %v", err)
+				t.Fatalf("GetInvitationByTokenHash: %v", err)
 			}
 
 			h.installStubOAuth(&googleClaims{

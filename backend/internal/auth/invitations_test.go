@@ -21,7 +21,7 @@ func TestHandleCreateInvitation(t *testing.T) {
 		if body.InvitedEmail != "guest@example.com" {
 			t.Errorf("invited_email: got %q", body.InvitedEmail)
 		}
-		if !strings.Contains(body.AcceptURL, "invite=") {
+		if !strings.Contains(body.AcceptURL, "token=") {
 			t.Errorf("accept_url missing invite token: %q", body.AcceptURL)
 		}
 		if !body.EmailSent {
@@ -33,13 +33,13 @@ func TestHandleCreateInvitation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("parse accept_url: %v", err)
 		}
-		token := u.Query().Get("invite")
+		token := u.Query().Get("token")
 		if token == "" {
 			t.Fatal("accept_url missing invite query param")
 		}
-		row, err := h.q.GetInvitationByToken(context.Background(), token)
+		row, err := h.q.GetInvitationByTokenHash(context.Background(), HashToken(token))
 		if err != nil {
-			t.Fatalf("GetInvitationByToken: %v", err)
+			t.Fatalf("GetInvitationByTokenHash: %v", err)
 		}
 		if row.ID != body.ID {
 			t.Errorf("db row id: want %s, got %s", body.ID, row.ID)
@@ -117,12 +117,12 @@ func TestHtmlEscape(t *testing.T) {
 func TestRandomInvitationToken(t *testing.T) {
 	seen := make(map[string]bool, 16)
 	for range 16 {
-		tok, err := randomInvitationToken()
+		tok, hash, err := GenerateToken()
 		if err != nil {
-			t.Fatalf("randomInvitationToken: %v", err)
+			t.Fatalf("GenerateToken: %v", err)
 		}
-		if tok == "" {
-			t.Fatal("empty token")
+		if tok == "" || hash == "" {
+			t.Fatal("empty token or hash")
 		}
 		if seen[tok] {
 			t.Errorf("duplicate token %q", tok)

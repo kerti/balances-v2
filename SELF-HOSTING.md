@@ -218,6 +218,13 @@ Passwords are stored hashed with Argon2id (never in plaintext, never in a backup
 least 10 characters and not a commonly-breached password. Login is rate-limited to slow down guessing,
 but never hard-locks an account — you can't accidentally lock yourself or a housemate out.
 
+**Inviting a member who has no Google account.** Send them their **invite link** (the "copy invite
+link" button, or the invitation email when mail is on). Following the link lands them on a *set your
+password* page bound to the email you invited — they pick a password and are signed straight in, no
+Google needed. The link is **single-use and time-limited**: once it has been used (or it expires) it
+can't create a second account, and a forwarded-after-use link is inert. If a link is spent or stale,
+just send a fresh invitation.
+
 > ### ⚠️ Found the household before exposing the instance
 >
 > With local accounts, **the first person to register founds the household** — and on a fresh

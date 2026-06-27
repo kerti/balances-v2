@@ -133,6 +133,7 @@ func serveCmd() error {
 	authCfg := auth.Config{
 		GoogleEnabled: cfg.AuthGoogleEnabled,
 		LocalEnabled:  cfg.AuthLocalEnabled,
+		Pool:          pool,
 		SessionTTL:    cfg.SessionTTL,
 		CookieSecure:  cfg.CookieSecure,
 		FrontendURL:   cfg.FrontendURL,

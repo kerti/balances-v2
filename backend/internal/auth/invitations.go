@@ -2,8 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -66,7 +64,10 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := randomInvitationToken()
+	// One random token, two representations (ADR-0039/#281): the plaintext rides
+	// the link, only the hash is stored. The plaintext is never persisted or
+	// logged below.
+	token, tokenHash, err := GenerateToken()
 	if err != nil {
 		slog.Error("generate invitation token", "err", err)
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
@@ -78,7 +79,7 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 	invite, err := h.q.CreateInvitation(ctx, db.CreateInvitationParams{
 		HouseholdID:  inviter.HouseholdID,
 		InvitedEmail: req.Email,
-		Token:        token,
+		TokenHash:    tokenHash,
 		CreatedBy:    inviter.ID,
 		ExpiresAt:    pgtype.Timestamptz{Time: expiresAt, Valid: true},
 	})
@@ -88,12 +89,7 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// Carry the inviter's locale on the accept link so the invitee inherits the
-	// household language by default (ADR-0035): the link is a direct backend
-	// /start URL, so ?lng= becomes the oauth_locale seed hint. inviter.Locale is
-	// always a supported value (users.locale CHECK). The invitee can change it
-	// later in Settings.
-	acceptURL := h.backendURL + "/api/auth/google/start?invite=" + token + "&lng=" + inviter.Locale
+	acceptURL := h.inviteAcceptURL(token, inviter.Locale)
 
 	emailSent := true
 	if err := h.sendInvitationEmail(ctx, inviter, household, invite, acceptURL); err != nil {
@@ -140,12 +136,26 @@ func (h *Handlers) sendInvitationEmail(ctx context.Context, inviter db.User, hou
 	})
 }
 
-func randomInvitationToken() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+// inviteAcceptURL builds the link an invitee follows. The routing depends on
+// which identity providers the instance runs (ADR-0039, decision in #281):
+//
+//   - local enabled → a method-neutral SPA accept route (/accept?token=…). The
+//     screen resolves the token and offers a set-password form (and, if Google
+//     is also live, a "continue with Google" button). A local-only self-host has
+//     no Google /start to send the invitee to, so this is the only workable
+//     landing.
+//   - local disabled (the hosted, Google-only posture) → the unchanged backend
+//     /start URL. Possession of the link is still only a hint there; Google's
+//     email-match at the onboarding gate remains the proof (#159, ADR-0038).
+//
+// Either way the inviter's locale rides the link (ADR-0035) so the invitee
+// inherits the household language by default; it is always a supported value
+// (users.locale CHECK) and changeable later in Settings.
+func (h *Handlers) inviteAcceptURL(token, locale string) string {
+	if h.localEnabled {
+		return h.frontendURL + "/accept?token=" + token + "&lng=" + locale
 	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	return h.backendURL + "/api/auth/google/start?invite=" + token + "&lng=" + locale
 }
 
 // htmlEscape is intentionally minimal — display_name comes from Google's

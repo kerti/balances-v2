@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
@@ -52,17 +53,22 @@ type Config struct {
 	// no OIDC discovery call, so a local-only self-host needs no Google creds.
 	GoogleEnabled bool
 	LocalEnabled  bool
-	Google        GoogleConfig
-	SessionTTL    time.Duration
-	CookieSecure  bool
-	FrontendURL   string
-	BackendURL    string
-	EmailFrom     string
-	Mailer        email.Mailer
+	// Pool backs the multi-statement local-invite accept (#281), which consumes
+	// the invitation and creates the User+credential in one transaction so a
+	// failure can't burn the single-use link without minting an account.
+	Pool         *pgxpool.Pool
+	Google       GoogleConfig
+	SessionTTL   time.Duration
+	CookieSecure bool
+	FrontendURL  string
+	BackendURL   string
+	EmailFrom    string
+	Mailer       email.Mailer
 }
 
 type Handlers struct {
 	q             *db.Queries
+	pool          *pgxpool.Pool
 	googleOAuth   googleOAuthClient
 	googleEnabled bool
 	localEnabled  bool
@@ -100,6 +106,7 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 	}
 	return &Handlers{
 		q:             q,
+		pool:          cfg.Pool,
 		googleOAuth:   g,
 		googleEnabled: cfg.GoogleEnabled,
 		localEnabled:  cfg.LocalEnabled,
@@ -127,6 +134,13 @@ func (h *Handlers) Mount(r chi.Router) {
 	if h.localEnabled {
 		r.Post("/auth/local/register", h.handleLocalRegister)
 		r.Post("/auth/local/login", h.handleLocalLogin)
+		// Local invite accept (ADR-0039/#281): the invitee follows their link and
+		// sets a password — possession of the single-use link IS the email proof,
+		// so this path mints a session directly and never re-enters the ADR-0038
+		// onboarding gate. Public (the invitee has no session yet); the hashed
+		// token in the body is the credential.
+		r.Get("/auth/local/invite", h.handleLocalInvitePreview)
+		r.Post("/auth/local/invite/accept", h.handleLocalInviteAccept)
 	}
 	r.Post("/auth/logout", h.handleLogout)
 	// Onboarding gate (ADR-0038): authenticated by the handshake cookie, not a
@@ -252,7 +266,7 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 		// A non-empty token that names a real invitation triggers the notice; a
 		// stale cookie or garbage token is just ignored as before.
 		if inviteToken != "" {
-			if _, lookupErr := h.q.GetInvitationByToken(ctx, inviteToken); lookupErr == nil {
+			if _, lookupErr := h.q.GetInvitationByTokenHash(ctx, HashToken(inviteToken)); lookupErr == nil {
 				inviteIgnored = true
 			}
 		}
@@ -347,7 +361,7 @@ func (h *Handlers) resolveInviteHint(ctx context.Context, inviteToken, email str
 	if inviteToken == "" {
 		return nil
 	}
-	invite, err := h.q.GetInvitationByToken(ctx, inviteToken)
+	invite, err := h.q.GetInvitationByTokenHash(ctx, HashToken(inviteToken))
 	if err != nil {
 		return nil
 	}

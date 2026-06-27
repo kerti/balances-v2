@@ -12,28 +12,60 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const consumeInvitationByTokenHash = `-- name: ConsumeInvitationByTokenHash :one
+UPDATE household_invitations
+SET used_at = now()
+WHERE token_hash = $1
+  AND used_at IS NULL
+  AND expires_at > now()
+RETURNING id, household_id, invited_email, token_hash, created_by, created_at, expires_at, used_at
+`
+
+// Single-use atomic consume for the local set-password accept (#281): marks the
+// invitation used iff it is still pending AND unexpired, returning the row. A
+// consumed/expired/forwarded-after-use link matches zero rows (pgx.ErrNoRows),
+// so it can never create a second account — the guard is the WHERE, not a prior
+// read. Mirrors MarkInvitationUsed but conditional and by hash.
+func (q *Queries) ConsumeInvitationByTokenHash(ctx context.Context, tokenHash string) (HouseholdInvitation, error) {
+	row := q.db.QueryRow(ctx, consumeInvitationByTokenHash, tokenHash)
+	var i HouseholdInvitation
+	err := row.Scan(
+		&i.ID,
+		&i.HouseholdID,
+		&i.InvitedEmail,
+		&i.TokenHash,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.ExpiresAt,
+		&i.UsedAt,
+	)
+	return i, err
+}
+
 const createInvitation = `-- name: CreateInvitation :one
 INSERT INTO household_invitations (
-    household_id, invited_email, token, created_by, expires_at
+    household_id, invited_email, token_hash, created_by, expires_at
 ) VALUES (
     $1, $2, $3, $4, $5
 )
-RETURNING id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+RETURNING id, household_id, invited_email, token_hash, created_by, created_at, expires_at, used_at
 `
 
 type CreateInvitationParams struct {
 	HouseholdID  uuid.UUID          `json:"household_id"`
 	InvitedEmail string             `json:"invited_email"`
-	Token        string             `json:"token"`
+	TokenHash    string             `json:"token_hash"`
 	CreatedBy    uuid.UUID          `json:"created_by"`
 	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
 }
 
+// token_hash is the SHA-256 of the ≥256-bit random link token (ADR-0039/#281);
+// the plaintext lives only in the emailed link, never at rest.
 func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationParams) (HouseholdInvitation, error) {
 	row := q.db.QueryRow(ctx, createInvitation,
 		arg.HouseholdID,
 		arg.InvitedEmail,
-		arg.Token,
+		arg.TokenHash,
 		arg.CreatedBy,
 		arg.ExpiresAt,
 	)
@@ -42,7 +74,7 @@ func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationPara
 		&i.ID,
 		&i.HouseholdID,
 		&i.InvitedEmail,
-		&i.Token,
+		&i.TokenHash,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ExpiresAt,
@@ -52,7 +84,7 @@ func (q *Queries) CreateInvitation(ctx context.Context, arg CreateInvitationPara
 }
 
 const getInvitationByID = `-- name: GetInvitationByID :one
-SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+SELECT id, household_id, invited_email, token_hash, created_by, created_at, expires_at, used_at
 FROM household_invitations
 WHERE id = $1
 `
@@ -64,7 +96,7 @@ func (q *Queries) GetInvitationByID(ctx context.Context, id uuid.UUID) (Househol
 		&i.ID,
 		&i.HouseholdID,
 		&i.InvitedEmail,
-		&i.Token,
+		&i.TokenHash,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ExpiresAt,
@@ -73,20 +105,24 @@ func (q *Queries) GetInvitationByID(ctx context.Context, id uuid.UUID) (Househol
 	return i, err
 }
 
-const getInvitationByToken = `-- name: GetInvitationByToken :one
-SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+const getInvitationByTokenHash = `-- name: GetInvitationByTokenHash :one
+SELECT id, household_id, invited_email, token_hash, created_by, created_at, expires_at, used_at
 FROM household_invitations
-WHERE token = $1
+WHERE token_hash = $1
 `
 
-func (q *Queries) GetInvitationByToken(ctx context.Context, token string) (HouseholdInvitation, error) {
-	row := q.db.QueryRow(ctx, getInvitationByToken, token)
+// Read-only resolve by hashed token: callers hash the presented plaintext, then
+// look up by hash. Used by the Google `?invite=` hint (handlers) and the local
+// accept screen's GET preview — neither consumes the invite (validity is checked
+// by the caller); the atomic consume is ConsumeInvitationByTokenHash.
+func (q *Queries) GetInvitationByTokenHash(ctx context.Context, tokenHash string) (HouseholdInvitation, error) {
+	row := q.db.QueryRow(ctx, getInvitationByTokenHash, tokenHash)
 	var i HouseholdInvitation
 	err := row.Scan(
 		&i.ID,
 		&i.HouseholdID,
 		&i.InvitedEmail,
-		&i.Token,
+		&i.TokenHash,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ExpiresAt,
@@ -96,7 +132,7 @@ func (q *Queries) GetInvitationByToken(ctx context.Context, token string) (House
 }
 
 const getValidInvitationForEmail = `-- name: GetValidInvitationForEmail :one
-SELECT id, household_id, invited_email, token, created_by, created_at, expires_at, used_at
+SELECT id, household_id, invited_email, token_hash, created_by, created_at, expires_at, used_at
 FROM household_invitations
 WHERE id = $1
   AND invited_email = $2
@@ -120,7 +156,7 @@ func (q *Queries) GetValidInvitationForEmail(ctx context.Context, arg GetValidIn
 		&i.ID,
 		&i.HouseholdID,
 		&i.InvitedEmail,
-		&i.Token,
+		&i.TokenHash,
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.ExpiresAt,

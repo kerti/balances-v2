@@ -11,6 +11,7 @@ import { useSession } from "@/hooks/useSession";
 import { routes } from "@/lib/routes";
 import { SignInScreen } from "@/components/SignInScreen";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { InviteAcceptScreen } from "@/components/InviteAcceptScreen";
 import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
@@ -377,6 +378,11 @@ function App() {
     // surfaces as a "sign in again" prompt.
     if (window.location.pathname === routes.onboarding) {
       return <OnboardingScreen />;
+    }
+    // Local-invite accept (ADR-0039/#281): the invitee holds only the URL token,
+    // no session or handshake — the screen resolves it and sets a password.
+    if (window.location.pathname === routes.accept) {
+      return <InviteAcceptScreen />;
     }
     return <SignInScreen />;
   }

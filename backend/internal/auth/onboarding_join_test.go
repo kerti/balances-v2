@@ -16,17 +16,17 @@ import (
 // invited first) can be asserted deterministically. Returns the invitation id.
 func seedInvitationAt(t *testing.T, h *authHarness, householdID, inviterID uuid.UUID, email string, createdAt, expiresAt time.Time) uuid.UUID {
 	t.Helper()
-	token, err := randomInvitationToken()
+	_, tokenHash, err := GenerateToken()
 	if err != nil {
-		t.Fatalf("randomInvitationToken: %v", err)
+		t.Fatalf("GenerateToken: %v", err)
 	}
 	var id uuid.UUID
 	err = h.pool.QueryRow(context.Background(),
 		`INSERT INTO household_invitations
-		   (household_id, invited_email, token, created_by, created_at, expires_at)
+		   (household_id, invited_email, token_hash, created_by, created_at, expires_at)
 		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id`,
-		householdID, email, token, inviterID, createdAt, expiresAt).Scan(&id)
+		householdID, email, tokenHash, inviterID, createdAt, expiresAt).Scan(&id)
 	if err != nil {
 		t.Fatalf("seed invitation: %v", err)
 	}
