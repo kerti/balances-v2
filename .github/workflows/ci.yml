@@ -29,6 +29,15 @@ jobs:
         with:
           version: v2.12.2
           working-directory: backend
+          # Don't reuse golangci-lint's analysis cache across runs. Incremental
+          # reanalysis mixes stale cross-file staticcheck facts with fresh
+          # results, which surfaced as phantom SA5011 (possible-nil-deref) reports
+          # on an arbitrary subset of identical `c := findCookie(); if c == nil {
+          # t.Fatal }; c.Value` test patterns — flagged in three files while the
+          # byte-identical pattern in session_test.go went unreported, and never
+          # reproducible on a clean local cache. A full recompute (~40s here) is
+          # cheap insurance against these false positives.
+          skip-cache: true
 
   backend-test:
     name: Backend test
