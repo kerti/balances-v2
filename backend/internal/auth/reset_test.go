@@ -300,3 +300,128 @@ func TestPasswordReset_RequestRateLimited(t *testing.T) {
 		t.Error("repeated reset requests never hit the rate limit")
 	}
 }
+
+// TestPasswordReset_RequestMalformedJSON asserts a non-JSON request body is a
+// clean 400 rather than a 500.
+func TestPasswordReset_RequestMalformedJSON(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := h.doRaw(t, http.MethodPost, "/auth/local/reset/request", "{not json", nil)
+	requireStatus(t, rec, http.StatusBadRequest)
+	if code := envelopeCode(t, rec); code != string(httperr.CodeInvalidJSONBody) {
+		t.Errorf("malformed request body code = %q, want INVALID_JSON_BODY", code)
+	}
+}
+
+// TestPasswordReset_RequestInvalidEmailNoOp asserts a request whose email does
+// not parse is still the generic 204 and mints no token / sends no mail — garbage
+// input is handled as enumeration-safely as an unknown address.
+//
+// covers: INV-AUTH-19
+func TestPasswordReset_RequestInvalidEmailNoOp(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := h.post(t, "/auth/local/reset/request", map[string]string{"email": "not-an-email"})
+	requireStatus(t, rec, http.StatusNoContent)
+
+	if msgs := h.mailer.sent(); len(msgs) != 0 {
+		t.Errorf("invalid email: no mail should be sent, got %d", len(msgs))
+	}
+	var count int
+	if err := h.pool.QueryRow(context.Background(),
+		"SELECT count(*) FROM password_reset_tokens").Scan(&count); err != nil {
+		t.Fatalf("count tokens: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("invalid email: no token should be minted, got %d", count)
+	}
+}
+
+// TestPasswordReset_RequestEmailFailureStillGeneric asserts that when the emailed
+// link fails to send, the request is STILL a generic 204 (the send is
+// best-effort and off the response path) and the token was minted — a delivery
+// failure never leaks back to the caller.
+//
+// covers: INV-AUTH-19
+func TestPasswordReset_RequestEmailFailureStillGeneric(t *testing.T) {
+	h := newAuthHarness(t)
+	h.h.mailer = failingMailer{}
+	const email = "sendfail@example.com"
+	user := h.seedLocalUser(t, email, "the-original-passphrase")
+
+	rec := h.post(t, "/auth/local/reset/request", map[string]string{"email": email})
+	requireStatus(t, rec, http.StatusNoContent)
+
+	// The token is still persisted even though delivery failed.
+	var count int
+	if err := h.pool.QueryRow(context.Background(),
+		"SELECT count(*) FROM password_reset_tokens WHERE user_id = $1", user.ID).Scan(&count); err != nil {
+		t.Fatalf("count tokens: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("token should be minted despite send failure, got %d", count)
+	}
+}
+
+// TestPasswordReset_PreviewMissingToken asserts the preview rejects an empty
+// token with a 400 rather than treating "" as a lookup.
+func TestPasswordReset_PreviewMissingToken(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := h.doRaw(t, http.MethodGet, "/auth/local/reset", nil, nil)
+	requireStatus(t, rec, http.StatusBadRequest)
+	if code := envelopeCode(t, rec); code != string(httperr.CodeValidation) {
+		t.Errorf("missing-token preview code = %q, want VALIDATION", code)
+	}
+}
+
+// TestPasswordReset_PreviewUsedToken asserts a token that has been marked used
+// (but not yet swept) previews as the generic 409 — the used-token arm of the
+// preview's validity check.
+//
+// covers: INV-AUTH-19
+func TestPasswordReset_PreviewUsedToken(t *testing.T) {
+	h := newAuthHarness(t)
+	user := h.seedLocalUser(t, "usedtoken@example.com", "the-original-passphrase")
+
+	token, tokenHash, err := GenerateToken()
+	if err != nil {
+		t.Fatalf("generate token: %v", err)
+	}
+	if _, err := h.q.CreatePasswordResetToken(context.Background(), db.CreatePasswordResetTokenParams{
+		TokenHash: tokenHash,
+		UserID:    user.ID,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
+	}); err != nil {
+		t.Fatalf("seed token: %v", err)
+	}
+	// Mark it used without deleting it, so the preview sees a present-but-spent row.
+	if _, err := h.pool.Exec(context.Background(),
+		"UPDATE password_reset_tokens SET used_at = now() WHERE token_hash = $1", tokenHash); err != nil {
+		t.Fatalf("mark token used: %v", err)
+	}
+
+	rec := h.doRaw(t, http.MethodGet, "/auth/local/reset?token="+token, nil, nil)
+	requireStatus(t, rec, http.StatusConflict)
+	if code := envelopeCode(t, rec); code != string(httperr.CodeResetLinkNoLongerValid) {
+		t.Errorf("used-token preview code = %q, want RESET_LINK_NO_LONGER_VALID", code)
+	}
+}
+
+// TestPasswordReset_SetMalformedJSON asserts a non-JSON set body is a clean 400.
+func TestPasswordReset_SetMalformedJSON(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := h.doRaw(t, http.MethodPost, "/auth/local/reset", "{not json", nil)
+	requireStatus(t, rec, http.StatusBadRequest)
+	if code := envelopeCode(t, rec); code != string(httperr.CodeInvalidJSONBody) {
+		t.Errorf("malformed set body code = %q, want INVALID_JSON_BODY", code)
+	}
+}
+
+// TestPasswordReset_SetMissingToken asserts the set path rejects an empty token
+// (before touching the password) with a 400.
+func TestPasswordReset_SetMissingToken(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := h.post(t, "/auth/local/reset", map[string]string{"password": "a-brand-new-passphrase"})
+	requireStatus(t, rec, http.StatusBadRequest)
+	if code := envelopeCode(t, rec); code != string(httperr.CodeValidation) {
+		t.Errorf("missing-token set code = %q, want VALIDATION", code)
+	}
+}
