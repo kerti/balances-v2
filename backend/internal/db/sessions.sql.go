@@ -65,6 +65,18 @@ func (q *Queries) DeleteSession(ctx context.Context, id string) error {
 	return err
 }
 
+const deleteSessionsForUser = `-- name: DeleteSessionsForUser :exec
+DELETE FROM sessions WHERE user_id = $1
+`
+
+// Revoke every session a user holds. Called on a successful password reset so
+// the reset boots any other (possibly attacker) session before the fresh one is
+// minted — the "reset because compromised" guarantee (ADR-0039, #282).
+func (q *Queries) DeleteSessionsForUser(ctx context.Context, userID uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteSessionsForUser, userID)
+	return err
+}
+
 const getSessionByID = `-- name: GetSessionByID :one
 SELECT id, user_id, created_at, expires_at, last_seen_at, user_agent
 FROM sessions

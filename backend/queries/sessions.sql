@@ -19,5 +19,11 @@ WHERE id = $2;
 -- name: DeleteSession :exec
 DELETE FROM sessions WHERE id = $1;
 
+-- name: DeleteSessionsForUser :exec
+-- Revoke every session a user holds. Called on a successful password reset so
+-- the reset boots any other (possibly attacker) session before the fresh one is
+-- minted — the "reset because compromised" guarantee (ADR-0039, #282).
+DELETE FROM sessions WHERE user_id = $1;
+
 -- name: DeleteExpiredSessions :exec
 DELETE FROM sessions WHERE expires_at <= now();

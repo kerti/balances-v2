@@ -187,4 +187,10 @@ const (
 	// CodeTooManyAttempts is a 429 when login is in rate-limit backoff (ADR-0039).
 	// Soft, never a hard lock: a Retry-After header tells the client when to retry.
 	CodeTooManyAttempts Code = "TOO_MANY_ATTEMPTS"
+
+	// CodeResetLinkNoLongerValid is a 409 when an emailed password-reset link is
+	// unknown, already used, or expired — one generic answer for every invalid
+	// state so the reset-set screen shows a single "this link is no longer valid"
+	// message (ADR-0039, #282). Mirrors CodeInvitationNoLongerValid.
+	CodeResetLinkNoLongerValid Code = "RESET_LINK_NO_LONGER_VALID"
 )

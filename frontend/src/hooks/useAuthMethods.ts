@@ -8,6 +8,10 @@ import { api } from "@/api/client";
 export type AuthMethods = {
   google: boolean;
   local: boolean;
+  // Whether emailed self-service password reset is available (#282): true only
+  // when local auth and outbound email are both on. The sign-in form hides its
+  // "Forgot password?" link when false.
+  password_reset: boolean;
 };
 
 // useAuthMethods fetches the enabled providers. It is safe to call pre-auth and

@@ -12,6 +12,8 @@ import { routes } from "@/lib/routes";
 import { SignInScreen } from "@/components/SignInScreen";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { InviteAcceptScreen } from "@/components/InviteAcceptScreen";
+import { ResetRequestScreen } from "@/components/ResetRequestScreen";
+import { ResetSetScreen } from "@/components/ResetSetScreen";
 import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
@@ -383,6 +385,15 @@ function App() {
     // no session or handshake — the screen resolves it and sets a password.
     if (window.location.pathname === routes.accept) {
       return <InviteAcceptScreen />;
+    }
+    // Emailed password reset (ADR-0039/#282): the request form, and the set
+    // screen where the emailed link lands with its single-use token in the URL.
+    // Both are pre-session, so they live here beside the other unauth screens.
+    if (window.location.pathname === routes.forgotPassword) {
+      return <ResetRequestScreen />;
+    }
+    if (window.location.pathname === routes.resetPassword) {
+      return <ResetSetScreen />;
     }
     return <SignInScreen />;
   }

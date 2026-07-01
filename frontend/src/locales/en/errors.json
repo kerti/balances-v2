@@ -50,6 +50,7 @@
       "oneof": "is not one of the allowed values"
     },
     "INVITATION_NO_LONGER_VALID": "That invitation is no longer available. Please choose again.",
+    "RESET_LINK_NO_LONGER_VALID": "This reset link is no longer valid. Request a new one to continue.",
     "EMAIL_TAKEN": "That email is already registered. Try signing in instead.",
     "WEAK_PASSWORD": "Choose a stronger password: at least 10 characters and not a commonly-used one.",
     "INVALID_CREDENTIALS": "Incorrect email or password.",

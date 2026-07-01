@@ -28,6 +28,10 @@ const (
 	oauthInviteCookieName = "oauth_invite"
 	oauthLocaleCookieName = "oauth_locale"
 	invitationTTL         = 72 * time.Hour
+	// passwordResetTTL is deliberately short relative to the 72h invite: a reset
+	// link is a live key to an existing account, so its window of replay is kept
+	// tight (#282, ADR-0039).
+	passwordResetTTL = 1 * time.Hour
 )
 
 // defaultSeedLocale is the lingua-franca fallback for a brand-new account when
@@ -53,6 +57,12 @@ type Config struct {
 	// no OIDC discovery call, so a local-only self-host needs no Google creds.
 	GoogleEnabled bool
 	LocalEnabled  bool
+	// EmailEnabled mirrors the boot EMAIL_ENABLED (ADR-0037). It gates the emailed
+	// password-reset path (#282): with mail off there is no way to deliver a reset
+	// link, so the methods endpoint advertises reset as unavailable and the request
+	// endpoint is a no-op (the mail-off reset paths are #283 reactivation / #284
+	// operator CLI). The Mailer itself is already a NoopMailer when this is false.
+	EmailEnabled bool
 	// Pool backs the multi-statement local-invite accept (#281), which consumes
 	// the invitation and creates the User+credential in one transaction so a
 	// failure can't burn the single-use link without minting an account.
@@ -72,6 +82,7 @@ type Handlers struct {
 	googleOAuth   googleOAuthClient
 	googleEnabled bool
 	localEnabled  bool
+	emailEnabled  bool
 	limiter       *loginLimiter
 	mailer        email.Mailer
 	validate      *validator.Validate
@@ -80,6 +91,11 @@ type Handlers struct {
 	frontendURL   string
 	backendURL    string
 	emailFrom     string
+	// dispatch runs a background task. In production it spawns a goroutine; the
+	// reset-request path uses it to send the email *off* the request goroutine so
+	// the SMTP round-trip never lands in the response timing (the no-enumeration
+	// timing guarantee, #282). Tests swap in a synchronous variant for determinism.
+	dispatch func(func())
 }
 
 func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
@@ -110,6 +126,7 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		googleOAuth:   g,
 		googleEnabled: cfg.GoogleEnabled,
 		localEnabled:  cfg.LocalEnabled,
+		emailEnabled:  cfg.EmailEnabled,
 		limiter:       newLoginLimiter(),
 		mailer:        cfg.Mailer,
 		validate:      httperr.NewValidator(),
@@ -118,6 +135,7 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		frontendURL:   cfg.FrontendURL,
 		backendURL:    cfg.BackendURL,
 		emailFrom:     cfg.EmailFrom,
+		dispatch:      func(fn func()) { go fn() },
 	}, nil
 }
 
@@ -141,6 +159,16 @@ func (h *Handlers) Mount(r chi.Router) {
 		// token in the body is the credential.
 		r.Get("/auth/local/invite", h.handleLocalInvitePreview)
 		r.Post("/auth/local/invite/accept", h.handleLocalInviteAccept)
+		// Emailed self-service password reset (ADR-0039/#282): a member requests a
+		// reset, receives a single-use emailed token, and sets a new password. The
+		// request endpoint never reveals whether the email maps to an account (no
+		// enumeration); the GET preview validates a token without consuming it; the
+		// set endpoint consumes the token, replaces the credential, revokes the
+		// member's other sessions, and signs them in. Public (the holder has no
+		// session yet); the token in the body is the credential.
+		r.Post("/auth/local/reset/request", h.handleLocalResetRequest)
+		r.Get("/auth/local/reset", h.handleLocalResetPreview)
+		r.Post("/auth/local/reset", h.handleLocalResetSet)
 	}
 	r.Post("/auth/logout", h.handleLogout)
 	// Onboarding gate (ADR-0038): authenticated by the handshake cookie, not a

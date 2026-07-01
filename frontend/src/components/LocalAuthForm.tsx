@@ -7,6 +7,7 @@ import { routes } from "@/lib/routes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { useLocale } from "@/i18n/useLocale";
 
 type Mode = "signin" | "register";
@@ -19,6 +20,11 @@ type Mode = "signin" | "register";
 export function LocalAuthForm() {
   const { t } = useTranslation("common");
   const { locale } = useLocale();
+  // Emailed reset is only offered when the instance has both local auth and
+  // outbound email (#282). With mail off the link is hidden — recovery there is
+  // operator-assisted (#283/#284), not self-service.
+  const { data: methods } = useAuthMethods();
+  const showReset = methods ? methods.password_reset : false;
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -153,6 +159,16 @@ export function LocalAuthForm() {
             ? t("signIn.local.signInTab")
             : t("signIn.local.registerTab")}
       </Button>
+
+      {mode === "signin" && showReset && (
+        <a
+          href={routes.forgotPassword}
+          data-testid="local-forgot-password"
+          className="block text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
+        >
+          {t("signIn.local.forgotPassword")}
+        </a>
+      )}
     </form>
   );
 }

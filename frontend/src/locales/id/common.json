@@ -11,7 +11,8 @@
       "displayName": "Nama Anda",
       "email": "Email",
       "password": "Kata sandi",
-      "passwordHint": "Minimal 10 karakter. Hindari kata sandi yang umum."
+      "passwordHint": "Minimal 10 karakter. Hindari kata sandi yang umum.",
+      "forgotPassword": "Lupa kata sandi Anda?"
     }
   },
   "invite": {
@@ -22,6 +23,23 @@
     "submit": "Buat akun",
     "invalid": "Tautan undangan ini sudah tidak berlaku. Minta orang yang mengundang Anda untuk mengirim yang baru.",
     "goToSignIn": "Ke halaman masuk"
+  },
+  "resetRequest": {
+    "title": "Setel ulang kata sandi Anda",
+    "subtitle": "Masukkan email Anda dan kami akan mengirimkan tautan untuk menetapkan kata sandi baru.",
+    "emailLabel": "Email Anda",
+    "submit": "Kirim tautan setel ulang",
+    "sent": "Jika ada akun untuk email tersebut, kami telah mengirimkan tautan untuk menyetel ulang kata sandi Anda. Periksa kotak masuk Anda.",
+    "backToSignIn": "Kembali ke halaman masuk"
+  },
+  "resetSet": {
+    "title": "Tetapkan kata sandi baru",
+    "subtitle": "Pilih kata sandi baru untuk akun Anda.",
+    "emailLabel": "Email Anda",
+    "passwordLabel": "Kata sandi baru",
+    "submit": "Tetapkan kata sandi baru",
+    "invalid": "Tautan setel ulang ini sudah tidak berlaku. Minta yang baru untuk melanjutkan.",
+    "requestNew": "Minta tautan baru"
   },
   "signOut": "Keluar",
   "save": "Simpan",

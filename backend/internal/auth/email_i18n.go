@@ -68,6 +68,37 @@ var invitationCatalog = map[string]invitationCopy{
 	},
 }
 
+// passwordResetCopy is the emailed self-service password-reset link (#282,
+// ADR-0039). greeting carries one %s (the member display name); the body warns
+// the link is single-use and short-lived; expiry carries the formatted window.
+type passwordResetCopy struct {
+	subject  string
+	greeting string // %s = member display name
+	body     string
+	linkText string
+	expiry   string // %s = formatted expiry timestamp
+	ignore   string // "didn't request this" reassurance
+}
+
+var passwordResetCatalog = map[string]passwordResetCopy{
+	"en-GB": {
+		subject:  "Reset your Balances password",
+		greeting: "Hi, %s,",
+		body:     "We received a request to reset the password for your Balances account. Use the link below to set a new one.",
+		linkText: "Reset your password",
+		expiry:   "This link can be used once and expires on %s.",
+		ignore:   "If you didn't request this, you can safely ignore this email — your password stays unchanged.",
+	},
+	"id-ID": {
+		subject:  "Setel ulang kata sandi Balances Anda",
+		greeting: "Halo, %s,",
+		body:     "Kami menerima permintaan untuk menyetel ulang kata sandi akun Balances Anda. Gunakan tautan di bawah untuk menetapkan yang baru.",
+		linkText: "Setel ulang kata sandi Anda",
+		expiry:   "Tautan ini hanya dapat digunakan sekali dan kedaluwarsa pada %s.",
+		ignore:   "Jika Anda tidak meminta ini, Anda dapat mengabaikan email ini dengan aman — kata sandi Anda tetap tidak berubah.",
+	},
+}
+
 // restoreConfirmCopy is the restorer's "restore complete" confirmation email
 // (#176, ADR-0036). greeting carries one %s (the restorer display name); intro
 // carries one %d (the total item count) as a sanity check.

@@ -75,6 +75,7 @@ func newAuthHarness(t *testing.T) *authHarness {
 		pool:          tdb.Pool,
 		googleEnabled: true,
 		localEnabled:  true,
+		emailEnabled:  true,
 		limiter:       newLoginLimiter(),
 		googleOAuth: &googleOAuth{
 			// cfg is enough for handleStart (AuthCodeURL). verifier stays nil
@@ -94,6 +95,11 @@ func newAuthHarness(t *testing.T) *authHarness {
 		frontendURL:  "http://localhost:5173",
 		backendURL:   "http://localhost:8080",
 		emailFrom:    "test@example.com",
+		// Synchronous dispatch so the reset email is captured by the time the
+		// request returns — no goroutine race in assertions. Production spawns a
+		// goroutine (keeping SMTP off the response timing); the test cares about the
+		// behaviour, not the off-thread scheduling.
+		dispatch: func(fn func()) { fn() },
 	}
 
 	r := chi.NewRouter()

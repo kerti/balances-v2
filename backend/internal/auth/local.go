@@ -24,11 +24,20 @@ import (
 type authMethodsResponse struct {
 	Google bool `json:"google"`
 	Local  bool `json:"local"`
+	// PasswordReset reports whether emailed self-service reset is available — true
+	// only when local auth and outbound email are both on (#282). The SPA hides the
+	// "Forgot password?" affordance when false, so a mail-off self-host doesn't lead
+	// the member to a dead end (the mail-off recovery paths are #283/#284).
+	PasswordReset bool `json:"password_reset"`
 }
 
 func (h *Handlers) handleAuthMethods(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(authMethodsResponse{Google: h.googleEnabled, Local: h.localEnabled})
+	_ = json.NewEncoder(w).Encode(authMethodsResponse{
+		Google:        h.googleEnabled,
+		Local:         h.localEnabled,
+		PasswordReset: h.localEnabled && h.emailEnabled,
+	})
 }
 
 type localRegisterReq struct {

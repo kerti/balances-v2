@@ -11,7 +11,8 @@
       "displayName": "Your name",
       "email": "Email",
       "password": "Password",
-      "passwordHint": "At least 10 characters. Avoid common passwords."
+      "passwordHint": "At least 10 characters. Avoid common passwords.",
+      "forgotPassword": "Forgot your password?"
     }
   },
   "invite": {
@@ -22,6 +23,23 @@
     "submit": "Create account",
     "invalid": "This invitation link is no longer valid. Ask whoever invited you to send a new one.",
     "goToSignIn": "Go to sign in"
+  },
+  "resetRequest": {
+    "title": "Reset your password",
+    "subtitle": "Enter your email and we'll send you a link to set a new password.",
+    "emailLabel": "Your email",
+    "submit": "Send reset link",
+    "sent": "If an account exists for that email, we've sent a link to reset your password. Check your inbox.",
+    "backToSignIn": "Back to sign in"
+  },
+  "resetSet": {
+    "title": "Set a new password",
+    "subtitle": "Choose a new password for your account.",
+    "emailLabel": "Your email",
+    "passwordLabel": "New password",
+    "submit": "Set new password",
+    "invalid": "This reset link is no longer valid. Request a new one to continue.",
+    "requestNew": "Request a new link"
   },
   "signOut": "Sign out",
   "save": "Save",

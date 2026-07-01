@@ -286,6 +286,14 @@ type OnboardingHandshake struct {
 	PasswordHash     *string            `json:"password_hash"`
 }
 
+type PasswordResetToken struct {
+	TokenHash string             `json:"token_hash"`
+	UserID    uuid.UUID          `json:"user_id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+}
+
 type PropertyDetail struct {
 	AssetID                uuid.UUID        `json:"asset_id"`
 	PropertyType           string           `json:"property_type"`

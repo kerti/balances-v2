@@ -19,6 +19,13 @@ export const routes = {
   // session nor a handshake, only the single-use token in the URL.
   accept: "/accept",
 
+  // Emailed password reset (ADR-0039/#282). forgotPassword is the request form
+  // (reached from the sign-in screen's "Forgot password?" link); resetPassword
+  // is where the emailed link lands, carrying the single-use token in the URL.
+  // Both render outside the authed router — the holder has no session.
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset",
+
   // Assets — home + three subtype lists, each with a detail under it.
   assets: "/assets",
   bankAccounts: "/assets/bank-accounts",
