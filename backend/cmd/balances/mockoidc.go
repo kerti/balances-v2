@@ -38,7 +38,43 @@ const (
 	mockOIDCDefaultClientID     = "e2e-client"
 	mockOIDCDefaultClientSecret = "e2e-secret"
 	mockOIDCKeyID               = "e2e-key-1"
+
+	// mockOIDCSubCookie lets an E2E request a brand-new, never-seeded identity.
+	// The default flow issues the seeded Alice (sub=e2e-alice), so every sign-in
+	// takes the existing-user branch and can never reach the onboarding gate
+	// (#274). When this cookie is set on the mock-oidc origin — the browser sends
+	// it on the top-level redirect to /authorize — its value becomes the id_token
+	// `sub` and the email/name are derived, guaranteeing GetUserByGoogleSub misses
+	// so the callback falls through to the ADR-0038 gate. Test-only; never in the
+	// app binary's request path (see the file header). onboarding.spec.ts drives it.
+	mockOIDCSubCookie = "mock_oidc_sub"
 )
+
+// mockIdentity is the set of claims the mock issues in an id_token. The seeded
+// Alice is the default; a cookie-selected fresh `sub` derives the rest.
+type mockIdentity struct {
+	sub, email, name, picture string
+}
+
+// identityFromRequest resolves which identity /authorize should mint a code for.
+// A `mock_oidc_sub` cookie selects a brand-new identity (email/name derived from
+// the sub so it is guaranteed unseeded); its absence yields the seeded Alice.
+func identityFromRequest(r *http.Request) mockIdentity {
+	if c, err := r.Cookie(mockOIDCSubCookie); err == nil && c.Value != "" {
+		return mockIdentity{
+			sub:     c.Value,
+			email:   c.Value + "@e2e.example.com",
+			name:    "E2E Newcomer",
+			picture: e2eAlicePictureURL,
+		}
+	}
+	return mockIdentity{
+		sub:     e2eAliceGoogleSub,
+		email:   e2eAliceEmail,
+		name:    e2eAliceName,
+		picture: e2eAlicePictureURL,
+	}
+}
 
 type mockOIDC struct {
 	issuer       string
@@ -48,7 +84,7 @@ type mockOIDC struct {
 	signer       jose.Signer
 
 	mu    sync.Mutex
-	codes map[string]struct{} // outstanding single-use authorization codes
+	codes map[string]mockIdentity // outstanding single-use codes → the identity to mint
 }
 
 func seedE2EEnv(key, def string) string {
@@ -79,7 +115,7 @@ func newMockOIDC() (*mockOIDC, error) {
 		clientSecret: seedE2EEnv("MOCK_OIDC_CLIENT_SECRET", mockOIDCDefaultClientSecret),
 		priv:         priv,
 		signer:       signer,
-		codes:        make(map[string]struct{}),
+		codes:        make(map[string]mockIdentity),
 	}, nil
 }
 
@@ -160,7 +196,7 @@ func (m *mockOIDC) handleAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	m.mu.Lock()
-	m.codes[code] = struct{}{}
+	m.codes[code] = identityFromRequest(r)
 	m.mu.Unlock()
 
 	dest, _ := url.Parse(redirectURI)
@@ -192,7 +228,7 @@ func (m *mockOIDC) handleToken(w http.ResponseWriter, r *http.Request) {
 
 	code := r.PostFormValue("code")
 	m.mu.Lock()
-	_, ok := m.codes[code]
+	identity, ok := m.codes[code]
 	delete(m.codes, code)
 	m.mu.Unlock()
 	if !ok {
@@ -200,7 +236,7 @@ func (m *mockOIDC) handleToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idToken, err := m.signIDToken()
+	idToken, err := m.signIDToken(identity)
 	if err != nil {
 		slog.Error("mock-oidc sign id_token", "err", err)
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -214,20 +250,20 @@ func (m *mockOIDC) handleToken(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (m *mockOIDC) signIDToken() (string, error) {
+func (m *mockOIDC) signIDToken(id mockIdentity) (string, error) {
 	now := time.Now()
 	claims := map[string]any{
 		"iss":            m.issuer,
 		"aud":            m.clientID,
-		"sub":            e2eAliceGoogleSub,
-		"email":          e2eAliceEmail,
+		"sub":            id.sub,
+		"email":          id.email,
 		"email_verified": true,
-		"name":           e2eAliceName,
+		"name":           id.name,
 		// `picture` is the optional Google claim the OAuth callback persists via
 		// SetUserPicture. Including it here lets picture.spec.ts assert the
 		// backfill end-to-end: seeded Alice (picture_url NULL) → sign in →
 		// avatar renders the image instead of initials.
-		"picture": e2eAlicePictureURL,
+		"picture": id.picture,
 		"iat":     now.Unix(),
 		"exp":     now.Add(time.Hour).Unix(),
 	}
