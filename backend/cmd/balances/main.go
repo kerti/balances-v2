@@ -356,6 +356,22 @@ func seedE2ECmd() error {
 		return fmt.Errorf("create user bob: %w", err)
 	}
 
+	// Carol is a DORMANT member (ADR-0039/#283): a local user with neither a
+	// google_sub nor a local_credentials row — the state a local member lands in
+	// after a backup→restore. She gives the founder-assisted reactivation e2e a
+	// real target to bring back in (local-reactivation.spec.ts). created_by is
+	// Alice, so she reads as an invited member, not a founder.
+	if _, err := q.CreateLocalUser(ctx, db.CreateLocalUserParams{
+		HouseholdID: household.ID,
+		DisplayName: "Carol",
+		Email:       "carol@example.com",
+		Locale:      "en-GB",
+		TimeZone:    "Asia/Jakarta",
+		CreatedBy:   &alice.ID,
+	}); err != nil {
+		return fmt.Errorf("create user carol: %w", err)
+	}
+
 	userAgent := "e2e"
 	if _, err := q.CreateSession(ctx, db.CreateSessionParams{
 		ID:        e2eSessionID,
@@ -366,7 +382,7 @@ func seedE2ECmd() error {
 		return fmt.Errorf("create session: %w", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "seeded %s: household=%s, users Alice (%s) + Bob, active session for Alice\n",
+	fmt.Fprintf(os.Stderr, "seeded %s: household=%s, users Alice (%s) + Bob + Carol (dormant), active session for Alice\n",
 		e2eDatabaseName, household.ID, alice.ID)
 	// Sole stdout line, machine-readable for Playwright global-setup.
 	fmt.Printf("SESSION_ID=%s\n", e2eSessionID)

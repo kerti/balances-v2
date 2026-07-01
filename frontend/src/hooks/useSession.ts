@@ -15,6 +15,10 @@ export type Me = {
   time_zone: string;
   reporting_currency: string;
   multi_currency_enabled: boolean;
+  // True for the household's lineage root (created_by IS NULL). Not a privilege
+  // in the domain (ADR-0017); the SPA uses it only to surface the founder-scoped
+  // in-app member reactivation affordance (ADR-0039/#283).
+  is_founder: boolean;
 };
 
 // useSession returns:

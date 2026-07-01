@@ -29,6 +29,61 @@ func (q *Queries) GetLocalCredentialByUserID(ctx context.Context, userID uuid.UU
 	return i, err
 }
 
+const listDormantMembersByHousehold = `-- name: ListDormantMembersByHousehold :many
+SELECT u.id, u.household_id, u.display_name, u.email, u.google_sub, u.locale, u.time_zone, u.created_by, u.created_at, u.updated_by, u.updated_at, u.deleted_at, u.nickname, u.picture_url, u.theme, u.carryover_date_mode
+FROM users u
+LEFT JOIN local_credentials lc ON lc.user_id = u.id
+WHERE u.household_id = $1
+  AND u.deleted_at IS NULL
+  AND u.google_sub IS NULL
+  AND lc.user_id IS NULL
+ORDER BY u.display_name ASC
+`
+
+// Founder-assisted reactivation (ADR-0039, #283): the members a founder may
+// reactivate — the DORMANT ones. A member is dormant when they are unreachable:
+// no google_sub (can't sign in with Google) AND no local_credentials row (no
+// password). Post-restore local members land exactly here (ADR-0036/0039). The
+// LEFT JOIN + `lc.user_id IS NULL` is the has-no-credential test; `google_sub IS
+// NULL` excludes Google members (reachable, not dormant); soft-deleted rows are
+// skipped. The founder themselves is always reachable, so never appears here.
+func (q *Queries) ListDormantMembersByHousehold(ctx context.Context, householdID uuid.UUID) ([]User, error) {
+	rows, err := q.db.Query(ctx, listDormantMembersByHousehold, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.HouseholdID,
+			&i.DisplayName,
+			&i.Email,
+			&i.GoogleSub,
+			&i.Locale,
+			&i.TimeZone,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Nickname,
+			&i.PictureUrl,
+			&i.Theme,
+			&i.CarryoverDateMode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const upsertLocalCredential = `-- name: UpsertLocalCredential :one
 INSERT INTO local_credentials (user_id, password_hash)
 VALUES ($1, $2)

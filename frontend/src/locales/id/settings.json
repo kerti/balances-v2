@@ -59,6 +59,18 @@
     "copyLink": "Salin tautan",
     "copied": "Tersalin!"
   },
+  "reactivation": {
+    "title": "Aktifkan kembali anggota rumah tangga",
+    "description": "Anggota yang dipulihkan dari cadangan tidak dapat masuk sampai Anda memberi mereka tautan penyetelan kata sandi. Ini mencantumkan siapa saja yang menunggu.",
+    "empty": "Tidak ada anggota yang menunggu untuk diaktifkan kembali.",
+    "reactivate": "Buat tautan",
+    "linkFor": "Tautan penyetelan kata sandi untuk {{email}}",
+    "expires": "Kedaluwarsa {{when}}",
+    "linkLabel": "Tautan penyetelan kata sandi:",
+    "hint": "Bagikan tautan ini kepada mereka secara langsung. Tautan hanya berlaku sekali dan akan kedaluwarsa; jangan digunakan ulang.",
+    "copyLink": "Salin tautan",
+    "copied": "Tersalin!"
+  },
   "data": {
     "title": "Cadangan",
     "description": "Unduh seluruh data rumah tangga Anda sebagai satu berkas. Simpan di tempat aman, atau gunakan untuk memindahkan data ke perangkat lain.",

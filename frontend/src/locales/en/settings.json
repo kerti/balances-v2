@@ -59,6 +59,18 @@
     "copyLink": "Copy link",
     "copied": "Copied!"
   },
+  "reactivation": {
+    "title": "Reactivate a household member",
+    "description": "Members restored from a backup can't sign in until you give them a set-password link. This lists anyone waiting for one.",
+    "empty": "No members are waiting to be reactivated.",
+    "reactivate": "Create link",
+    "linkFor": "Set-password link for {{email}}",
+    "expires": "Expires {{when}}",
+    "linkLabel": "Set-password link:",
+    "hint": "Share this link with them out-of-band. It works once and expires; don't reuse it.",
+    "copyLink": "Copy link",
+    "copied": "Copied!"
+  },
   "data": {
     "title": "Backup",
     "description": "Download your entire household as a single file. Keep it somewhere safe, or use it to move your data to another device.",

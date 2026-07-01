@@ -97,8 +97,12 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    email proof, no second gate; INV-AUTH-18) · **✅ #282 emailed self-service reset** (`EMAIL_ENABLED=true`:
    `password_reset_tokens` mig 00010, `/auth/local/reset/request|GET preview|set`; generic-204 no-enumeration +
    off-thread send, single-use atomic consume, revokes other sessions on set, `/auth/methods.password_reset`
-   gates the "Forgot password?" link + `/forgot-password`+`/reset` SPA screens; INV-AUTH-19) · next:
-   reactivation #283 / CLI #284 / backup #285), production
+   gates the "Forgot password?" link + `/forgot-password`+`/reset` SPA screens; INV-AUTH-19) · **✅ #283
+   founder-assisted in-app reactivation** (no-mail recovery, no migration: founder-only + dormant-only
+   `/auth/local/reactivation` mints a one-time set-password link for a credential-less member — reuses the
+   `/reset` consume path + `password_reset_tokens`; refuses active/Google members (409 `MEMBER_NOT_DORMANT`)
+   and non-founders (403 `FORBIDDEN`); `me.is_founder` gates a Settings `ReactivationCard`; INV-AUTH-20) · next:
+   CLI #284 / backup #285), production
    Resend domain, **#93** landing. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.

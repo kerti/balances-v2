@@ -38,6 +38,7 @@ import {
 } from "@/hooks/useFxRates";
 import { formatYearMonth } from "@/lib/format";
 import { InviteForm } from "@/components/InviteForm";
+import { ReactivationCard } from "@/components/ReactivationCard";
 import { TagsCard } from "@/components/TagsCard";
 import { BackupCard } from "@/components/BackupCard";
 import { RestoreCard } from "@/components/RestoreCard";
@@ -133,6 +134,8 @@ export function SettingsScreen() {
       {me.multi_currency_enabled && <FxRatesCard />}
 
       <InviteForm />
+
+      <ReactivationCard />
 
       <BackupCard />
 

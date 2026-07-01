@@ -169,6 +169,14 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Post("/auth/local/reset/request", h.handleLocalResetRequest)
 		r.Get("/auth/local/reset", h.handleLocalResetPreview)
 		r.Post("/auth/local/reset", h.handleLocalResetSet)
+		// Founder-assisted in-app member reactivation (ADR-0039/#283): the no-mail
+		// recovery path. The founder lists dormant members and mints a one-time
+		// set-password link for one, shown once to relay out-of-band. Founder-only
+		// (enforced in-handler) and scoped to dormant members — an active member is
+		// refused (the operator CLI is the escape hatch). Behind RequireAuth: the
+		// caller must be the signed-in founder.
+		r.With(RequireAuth).Get("/auth/local/reactivation/members", h.handleListDormantMembers)
+		r.With(RequireAuth).Post("/auth/local/reactivation", h.handleReactivateMember)
 	}
 	r.Post("/auth/logout", h.handleLogout)
 	// Onboarding gate (ADR-0038): authenticated by the handshake cookie, not a
@@ -473,6 +481,12 @@ type meResponse struct {
 	TimeZone             string    `json:"time_zone"`
 	ReportingCurrency    string    `json:"reporting_currency"`
 	MultiCurrencyEnabled bool      `json:"multi_currency_enabled"`
+	// IsFounder marks the household's lineage root (created_by IS NULL). Not a
+	// privilege in the domain (ADR-0017: Founder is lineage only) — the SPA uses it
+	// only to surface the founder-scoped operator affordance, in-app member
+	// reactivation (ADR-0039/#283); the backend independently enforces the same
+	// check on those routes.
+	IsFounder bool `json:"is_founder"`
 }
 
 func meResponseFor(user db.User, hh db.Household) meResponse {
@@ -486,6 +500,7 @@ func meResponseFor(user db.User, hh db.Household) meResponse {
 		PictureURL:           user.PictureUrl,
 		Locale:               user.Locale,
 		Theme:                user.Theme,
+		IsFounder:            user.CreatedBy == nil,
 		CarryoverDateMode:    user.CarryoverDateMode,
 		TimeZone:             user.TimeZone,
 		ReportingCurrency:    hh.ReportingCurrency,

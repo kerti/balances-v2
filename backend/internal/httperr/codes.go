@@ -193,4 +193,18 @@ const (
 	// state so the reset-set screen shows a single "this link is no longer valid"
 	// message (ADR-0039, #282). Mirrors CodeInvitationNoLongerValid.
 	CodeResetLinkNoLongerValid Code = "RESET_LINK_NO_LONGER_VALID"
+
+	// CodeForbidden is a 403 when an authenticated caller lacks the privilege the
+	// route requires. Used by the founder-assisted reactivation routes (ADR-0039,
+	// #283): only the founder (the lineage root, created_by IS NULL) may list or
+	// reactivate dormant members; any other member is refused here.
+	CodeForbidden Code = "FORBIDDEN"
+
+	// CodeMemberNotDormant is a 409 when founder-assisted reactivation targets a
+	// member who is not dormant — one who already holds a credential (google_sub or
+	// a local_credentials row). Reactivation is scoped to credential-less bring-up
+	// only; resetting an active member's password is impersonation and is refused
+	// here (the operator CLI is the escape hatch for an active member) (ADR-0039,
+	// #283).
+	CodeMemberNotDormant Code = "MEMBER_NOT_DORMANT"
 )
