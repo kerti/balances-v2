@@ -167,6 +167,13 @@ const (
 	// Household) — backup.ErrValidationFailed (ADR-0036).
 	CodeBackupValidationFailed Code = "BACKUP_VALIDATION_FAILED"
 
+	// CodeRestoreStrandsLocalMembers is a 422 when a backup carrying local-only
+	// members (no google_sub) is restored onto an instance with local auth
+	// disabled: those members could never sign in again. The operator is told to
+	// enable AUTH_LOCAL_ENABLED rather than silently strand them
+	// (backup.ErrStrandsLocalMembers, ADR-0039).
+	CodeRestoreStrandsLocalMembers Code = "RESTORE_STRANDS_LOCAL_MEMBERS"
+
 	// CodeEmailTaken is a 409 when a local registration uses an email already
 	// belonging to a live user (ADR-0039). Registration is the founder/self-serve
 	// path, so revealing "this email is in use" here is acceptable (unlike login,

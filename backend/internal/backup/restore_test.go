@@ -78,7 +78,7 @@ func TestRestoreParseValidate(t *testing.T) {
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{})
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
 
 	gzipped := exportBytes(aliceCtx, t, h)
 
@@ -90,7 +90,7 @@ func TestRestoreParseValidate(t *testing.T) {
 		if env.FormatVersion != FormatVersion {
 			t.Errorf("format_version = %d", env.FormatVersion)
 		}
-		sum, err := Validate(env, derefStr(alice.GoogleSub))
+		sum, err := Validate(env, callerFrom(alice))
 		if err != nil {
 			t.Fatalf("Validate: %v", err)
 		}
@@ -117,18 +117,20 @@ func TestRestoreParseValidate(t *testing.T) {
 
 	t.Run("non-member is refused", func(t *testing.T) {
 		env, _ := Parse(bytes.NewReader(gzipped))
-		_, err := Validate(env, "stranger-sub")
+		_, err := Validate(env, googleCaller("stranger-sub"))
 		if !errors.Is(err, ErrNotMemberOfBackup) {
 			t.Errorf("err = %v, want ErrNotMemberOfBackup", err)
 		}
 	})
 
-	t.Run("a matching email is not enough — membership is google_sub only", func(t *testing.T) {
+	t.Run("a matching email is not enough for a Google caller — membership is google_sub only", func(t *testing.T) {
 		env, _ := Parse(bytes.NewReader(gzipped))
-		// Same human email, different Google subject: must be refused, because email
-		// is mutable/reassignable and can't gate a destructive restore.
-		if _, err := Validate(env, "different-sub"); !errors.Is(err, ErrNotMemberOfBackup) {
-			t.Errorf("err = %v, want ErrNotMemberOfBackup (email must not match)", err)
+		// A Google caller (sub set) with a different subject but Alice's email must
+		// be refused: for a Google account, email is mutable/reassignable and can't
+		// gate a destructive restore (the email branch is scoped to null-sub callers).
+		caller := Caller{GoogleSub: strptr("different-sub"), Email: alice.Email}
+		if _, err := Validate(env, caller); !errors.Is(err, ErrNotMemberOfBackup) {
+			t.Errorf("err = %v, want ErrNotMemberOfBackup (email must not match for a Google caller)", err)
 		}
 	})
 
@@ -139,7 +141,7 @@ func TestRestoreParseValidate(t *testing.T) {
 			AssetID:   uuid.New(), // points at no asset in the payload
 			YearMonth: time.Now(),
 		})
-		_, err := Validate(env, derefStr(alice.GoogleSub))
+		_, err := Validate(env, callerFrom(alice))
 		if !errors.Is(err, ErrValidationFailed) {
 			t.Errorf("err = %v, want ErrValidationFailed", err)
 		}
@@ -156,7 +158,7 @@ func TestRestoreCommit(t *testing.T) {
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise — must survive untouched
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{})
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
 
 	// The golden backup, captured before any mutation.
 	before, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
@@ -188,10 +190,10 @@ func TestRestoreCommit(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Parse: %v", err)
 		}
-		if _, err := Validate(env, derefStr(alice.GoogleSub)); err != nil {
+		if _, err := Validate(env, callerFrom(alice)); err != nil {
 			t.Fatalf("Validate: %v", err)
 		}
-		if err := Commit(context.Background(), tdb.Pool, env, alice.HouseholdID); err != nil {
+		if _, err := Commit(context.Background(), tdb.Pool, env, callerFrom(alice)); err != nil {
 			t.Fatalf("Commit: %v", err)
 		}
 
@@ -236,7 +238,7 @@ func TestRestoreCommit(t *testing.T) {
 		// checked): the FK insert fails mid-load, after the wipe has already run.
 		bad := uuid.New()
 		env.Household.AssetSnapshots[0].CreatedBy = &bad
-		if err := Commit(context.Background(), tdb.Pool, env, alice.HouseholdID); err == nil {
+		if _, err := Commit(context.Background(), tdb.Pool, env, callerFrom(alice)); err == nil {
 			t.Fatal("Commit succeeded, want a foreign-key failure")
 		}
 
@@ -251,6 +253,24 @@ func TestRestoreCommit(t *testing.T) {
 			t.Errorf("asset_snapshots after rollback = %d, want 2", got)
 		}
 	})
+}
+
+// googleCaller builds a Caller for a Google-authenticated user with the given
+// subject — the identity the membership guard matches by google_sub.
+func googleCaller(sub string) Caller {
+	return Caller{GoogleSub: strptr(sub)}
+}
+
+// strptr returns a pointer to s — for building a nullable google_sub in a Caller.
+func strptr(s string) *string { return &s }
+
+// derefStr returns the pointed-to string, or "" when nil — a test convenience
+// for comparing a nullable google_sub (ADR-0039).
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // multipartBackup wraps raw backup bytes as a multipart body with a "file"
@@ -293,7 +313,7 @@ func TestRestoreEndpoints(t *testing.T) {
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	notifier := &stubNotifier{}
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier, false)
 	gzipped := exportBytes(aliceCtx, t, h)
 
 	t.Run("preview returns the stakes summary", func(t *testing.T) {

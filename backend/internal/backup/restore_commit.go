@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -17,31 +18,74 @@ import (
 // validated backup verbatim — adopting the backup's Household UUID. Any failure
 // rolls the whole thing back, leaving the caller's data exactly as it was
 // ("nothing was changed"). The wipe includes the caller's sessions, so a
-// successful restore forces re-login; the next Google sign-in re-links by
-// google_sub to the restored user row (ADR-0017).
+// successful restore forces re-login; the returned restored UUID is the caller's
+// original id in the backup, which the handler re-issues a session against.
+//
+// For a local (password) caller the credential is carried across the wipe inside
+// this transaction (ADR-0039): the bootstrap row's password hash is stashed
+// before the wipe and re-inserted against the restored UUID after load, so the
+// hash moves DB-row→DB-row and is never read from or written to the backup file.
+// A Google caller has no local credential and re-links by google_sub, so nothing
+// is carried.
 //
 // Callers MUST Parse + Validate the envelope first — Commit trusts that the
 // graph is internally consistent and that the caller belongs to the backup.
-func Commit(ctx context.Context, pool *pgxpool.Pool, env *Envelope, callerHouseholdID uuid.UUID) error {
+func Commit(ctx context.Context, pool *pgxpool.Pool, env *Envelope, caller Caller) (uuid.UUID, error) {
 	tx, err := pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("restore: begin tx: %w", err)
+		return uuid.Nil, fmt.Errorf("restore: begin tx: %w", err)
 	}
 	// Rollback is a no-op once Commit succeeds; on any early return it undoes the
 	// whole wipe+load so the caller's data is left untouched.
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	if err := wipeHousehold(ctx, tx, callerHouseholdID); err != nil {
-		return err
+	q := db.New(tx)
+
+	// Stash the local caller's password hash before the wipe deletes it. A Google
+	// caller (or a local caller who somehow lacks a credential row) carries
+	// nothing — pgx.ErrNoRows is not an error here.
+	var stashedHash *string
+	if caller.GoogleSub == nil {
+		cred, e := q.GetLocalCredentialByUserID(ctx, caller.UserID)
+		switch {
+		case e == nil:
+			stashedHash = &cred.PasswordHash
+		case errors.Is(e, pgx.ErrNoRows):
+			// no credential to carry
+		default:
+			return uuid.Nil, fmt.Errorf("restore: stash credential: %w", e)
+		}
+	}
+
+	if err := wipeHousehold(ctx, tx, caller.HouseholdID); err != nil {
+		return uuid.Nil, err
 	}
 	if err := loadHousehold(ctx, tx, &env.Household); err != nil {
-		return err
+		return uuid.Nil, err
+	}
+
+	// The caller's restored (backup's original) UUID. Validate already proved the
+	// match, so a miss here is defensive.
+	restoredID, ok := matchCaller(env, caller)
+	if !ok {
+		return uuid.Nil, ErrNotMemberOfBackup
+	}
+
+	// Re-bind the carried credential to the restored UUID so a local restorer keeps
+	// their password (DB-row→DB-row, nothing from the file — ADR-0039).
+	if stashedHash != nil {
+		if _, err := q.UpsertLocalCredential(ctx, db.UpsertLocalCredentialParams{
+			UserID:       restoredID,
+			PasswordHash: *stashedHash,
+		}); err != nil {
+			return uuid.Nil, fmt.Errorf("restore: re-bind credential: %w", err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("restore: commit tx: %w", err)
+		return uuid.Nil, fmt.Errorf("restore: commit tx: %w", err)
 	}
-	return nil
+	return restoredID, nil
 }
 
 // wipeDeletes empties one Household in strict child→parent order. The schema has

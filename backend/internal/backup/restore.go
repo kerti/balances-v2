@@ -32,6 +32,12 @@ var (
 	// ErrValidationFailed — the object graph is internally inconsistent (a dangling
 	// foreign key, a row in the wrong household).
 	ErrValidationFailed = errors.New("backup validation failed")
+	// ErrStrandsLocalMembers — the backup carries local-only members (no
+	// google_sub) but this instance has local auth disabled, so restoring would
+	// leave them permanently unable to sign in (no Google, no way to set a
+	// password). Refuse rather than silently strand them; the operator is told to
+	// enable AUTH_LOCAL_ENABLED (ADR-0039).
+	ErrStrandsLocalMembers = errors.New("restore would strand local members")
 )
 
 // transformFunc migrates an envelope from format_version N to N+1, in place.
@@ -162,15 +168,28 @@ type Summary struct {
 	Counts              map[string]int `json:"counts"`
 }
 
+// Caller is the live-authenticated user attempting a restore, reduced to the
+// identity the membership guard and post-restore continuity need. GoogleSub is
+// nil for a local (password) account (ADR-0039); Email is the match key for such
+// a caller. HouseholdID is the caller's current household — the one the wipe
+// empties — and UserID is their current (bootstrap) row, the source of the
+// carried local credential.
+type Caller struct {
+	HouseholdID uuid.UUID
+	UserID      uuid.UUID
+	GoogleSub   *string
+	Email       string
+}
+
 // Validate runs the full pre-commit checks: the object graph is internally
 // consistent, and the caller is a member of the backup's household (the security
 // guard — you can only restore a household you belong to). Returns the preview
 // Summary on success.
-func Validate(env *Envelope, callerSub string) (*Summary, error) {
+func Validate(env *Envelope, caller Caller) (*Summary, error) {
 	if err := validateGraph(env); err != nil {
 		return nil, err
 	}
-	if !callerInBackup(env, callerSub) {
+	if _, ok := matchCaller(env, caller); !ok {
 		return nil, ErrNotMemberOfBackup
 	}
 	return &Summary{
@@ -182,30 +201,47 @@ func Validate(env *Envelope, callerSub string) (*Summary, error) {
 	}, nil
 }
 
-// callerInBackup reports whether the caller's Google subject names a user in the
-// backup — the membership guard (ADR-0036/ADR-0017). Match is by google_sub
+// matchCaller finds the backup User row that IS the caller and returns its
+// backup UUID (the restored user's original id) — the membership guard
+// (ADR-0036/ADR-0039). A Google caller (GoogleSub set) matches by google_sub
 // only: it is Google's immutable subject id, whereas email is mutable and can be
-// reassigned to a different person, so trusting it for a destructive
-// whole-household restore would be a (narrow) impersonation hole.
-func callerInBackup(env *Envelope, callerSub string) bool {
+// reassigned, so trusting it for a Google account would be a (narrow)
+// impersonation hole. A local caller (GoogleSub nil, ADR-0039) has no sub, so
+// matches by email — the null-sub branch ADR-0036 foresaw; a Google-origin row
+// is a valid target (the blessed Google→local migration path). Confidentiality
+// still rests on possession of the backup file, not on the email match.
+func matchCaller(env *Envelope, caller Caller) (uuid.UUID, bool) {
 	for _, u := range env.Household.Users {
-		if callerSub != "" && u.GoogleSub != nil && *u.GoogleSub == callerSub {
-			return true
+		if caller.GoogleSub != nil {
+			if u.GoogleSub != nil && *u.GoogleSub == *caller.GoogleSub {
+				return u.ID, true
+			}
+			continue
+		}
+		if caller.Email != "" && u.Email == caller.Email {
+			return u.ID, true
 		}
 	}
-	return false
+	return uuid.Nil, false
 }
 
-// derefStr returns the pointed-to string, or "" when nil. google_sub went
-// nullable with local password auth (ADR-0039); a local-only caller has none.
-// Passing "" through the membership guard makes such a caller fail the
-// google_sub match — local restore matches by email, a later slice (#285) —
-// rather than spuriously matching an empty subject.
-func derefStr(s *string) string {
-	if s == nil {
-		return ""
+// checkStranding refuses a backup that would leave local-only members unable to
+// ever sign in (ADR-0039). A member with no google_sub can only authenticate via
+// a local password; on an instance with local auth disabled they have no Google
+// identity and no way to set one, so a restore would strand them permanently. We
+// guard rather than silently proceed — the operator is directed to enable local
+// auth. When local auth is enabled (or the backup has no local members), there
+// is nothing to strand.
+func checkStranding(env *Envelope, authLocalEnabled bool) error {
+	if authLocalEnabled {
+		return nil
 	}
-	return *s
+	for _, u := range env.Household.Users {
+		if u.GoogleSub == nil {
+			return ErrStrandsLocalMembers
+		}
+	}
+	return nil
 }
 
 // validateGraph checks referential integrity across the payload: every position

@@ -39,6 +39,7 @@
     "BACKUP_FORMAT_TOO_NEW": "This backup was made by a newer version. Please update before restoring it.",
     "NOT_A_MEMBER_OF_BACKUP": "You can only restore a backup of your own household.",
     "BACKUP_VALIDATION_FAILED": "This backup is internally inconsistent and can't be restored.",
+    "RESTORE_STRANDS_LOCAL_MEMBERS": "This backup has members who sign in with a password, but password sign-in is turned off here. Enable AUTH_LOCAL_ENABLED before restoring, or those members won't be able to sign in.",
     "VALIDATION": "{{field}} {{rule}}.",
     "VALIDATION_RULE": {
       "required": "is required",

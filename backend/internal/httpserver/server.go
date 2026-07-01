@@ -69,7 +69,7 @@ func New(
 		// the instance URL (stamped into the envelope), and the auth handler to
 		// re-issue the caller's session after a restore wipes it and to send the
 		// best-effort post-restore notifications (#176).
-		backupH: backup.New(pool, cfg.BackendURL, authH, authH),
+		backupH: backup.New(pool, cfg.BackendURL, authH, authH, cfg.AuthLocalEnabled),
 	}
 	s.router = s.buildRouter()
 	return s

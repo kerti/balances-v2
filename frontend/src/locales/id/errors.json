@@ -39,6 +39,7 @@
     "BACKUP_FORMAT_TOO_NEW": "Cadangan ini dibuat oleh versi yang lebih baru. Mohon perbarui sebelum memulihkannya.",
     "NOT_A_MEMBER_OF_BACKUP": "Anda hanya dapat memulihkan cadangan rumah tangga Anda sendiri.",
     "BACKUP_VALIDATION_FAILED": "Cadangan ini tidak konsisten dan tidak dapat dipulihkan.",
+    "RESTORE_STRANDS_LOCAL_MEMBERS": "Cadangan ini memiliki anggota yang masuk dengan kata sandi, tetapi masuk dengan kata sandi dimatikan di sini. Aktifkan AUTH_LOCAL_ENABLED sebelum memulihkan, atau anggota tersebut tidak akan dapat masuk.",
     "VALIDATION": "{{field}} {{rule}}.",
     "VALIDATION_RULE": {
       "required": "wajib diisi",

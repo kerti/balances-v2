@@ -252,10 +252,13 @@ and it only applies to local accounts — a Google member has no password to res
 > freshly-deployed, unfounded local-auth instance on the public internet and walk away — register
 > first. (Google-only deployments are not affected: Google verifies the email.)
 >
-> After a backup **restore**, local members land **dormant** — their identity and data are present,
-> but their password did not travel in the backup file (secrets never do). Reactivate each member
-> from the app (founder-assisted) or with the `reset-password` operator command. This is expected and
-> is the price of keeping password hashes out of the portable backup.
+> After a backup **restore**, the member who ran the restore stays signed in (their password is
+> carried across on the same box — never through the file), but **other** local members land
+> **dormant**: their identity and data are present, but their password did not travel in the backup
+> file (secrets never do). Reactivate each one from the app (founder-assisted) or with the
+> `reset-password` operator command. See [Backup and restore](#backup-and-restore) for the full
+> local-restore behaviour. This is expected and is the price of keeping password hashes out of the
+> portable backup.
 
 ## Email (optional)
 
@@ -320,6 +323,26 @@ There are **two** distinct kinds of backup; don't confuse them:
   product feature, not an ops task.
 - **PostgreSQL volume backup** (below) — a full database dump at the infrastructure level. This is
   your disaster-recovery safety net and what you take before every upgrade.
+
+### In-app restore on a local-auth instance
+
+The portable backup **never contains any password hash** — credentials are instance-local, so they
+stay on the old box. That shapes what happens when you restore a household onto a fresh local-auth
+instance:
+
+- **You (the restorer) stay signed in.** Stand the new instance up, register a bootstrap account
+  **with the same email** you used on the old box, then restore. The restore matches you to your row
+  in the backup by that email, adopts the backup's data, and carries your just-set password across —
+  so you land in the restored household still logged in, with the password you just chose. (On a
+  Google instance the same happens automatically via your Google identity.)
+- **Every other local member lands dormant** — their identity and data are present, but their password
+  didn't travel in the file. Reactivate each one from the app (founder-assisted), with the
+  `reset-password` operator command, or via the emailed *Forgot password?* flow if `EMAIL_ENABLED=true`.
+  This is expected, and is the price of keeping password hashes out of a file you copy around.
+- **Restoring onto a Google-only instance is refused** if the backup has local (password) members:
+  with `AUTH_LOCAL_ENABLED=false` those members would have no way to ever sign in. Set
+  `AUTH_LOCAL_ENABLED=true` before restoring so they can be reactivated. (A Google-origin backup
+  restored onto a local-only instance is fine — those members reactivate by email.)
 
 The database lives in the named Docker volume `postgres_data`. Dump and restore it through the running
 `postgres` service so you never have to hand-write connection details.

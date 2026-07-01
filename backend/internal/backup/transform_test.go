@@ -71,7 +71,7 @@ func TestSyntheticV1ToV2Transform(t *testing.T) {
 	}
 	// The migrated graph is still internally consistent and the baked-in member
 	// still validates — a transform that corrupted references would fail here.
-	if _, err := Validate(env, goldenSub); err != nil {
+	if _, err := Validate(env, googleCaller(goldenSub)); err != nil {
 		t.Fatalf("migrated graph failed validation: %v", err)
 	}
 }
@@ -146,7 +146,7 @@ func TestPreviewReportsSourceFormatVersion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse: %v", err)
 	}
-	sum, err := Validate(env, goldenSub)
+	sum, err := Validate(env, googleCaller(goldenSub))
 	if err != nil {
 		t.Fatalf("Validate: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestMintGoldenFixture(t *testing.T) {
 	}
 	ctx := auth.WithUser(context.Background(), alice)
 	seedHousehold(ctx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://golden.local", &stubIssuer{}, &stubNotifier{})
+	h := New(tdb.Pool, "http://golden.local", &stubIssuer{}, &stubNotifier{}, false)
 
 	gzipped := exportBytes(ctx, t, h)
 	if err := os.MkdirAll(goldenDir, 0o755); err != nil {

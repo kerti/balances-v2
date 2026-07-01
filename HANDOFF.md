@@ -106,7 +106,16 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    local account regardless of `EMAIL_ENABLED` and is the **only** path that can reset an **active** member —
    the in-app path refuses one; reuses the shared relay token + `/reset` consume path via
    `auth.MintResetPasswordLink`, refuses Google accounts, gated on `AUTH_LOCAL_ENABLED`; `docker compose run
-   --rm app reset-password …`; INV-AUTH-21) · next: backup #285), production
+   --rm app reset-password …`; INV-AUTH-21) · **✅ #285 local-only backup/restore** (no migration:
+   `local_credentials` stays excluded so the backup format is unchanged and no hash ever serializes;
+   the restore membership guard gains the null-`google_sub` **email branch** — local caller matched by
+   email, incl. onto a Google-origin row for the blessed Google→local migration; Google caller still
+   `google_sub`-only. `Commit` carries the restorer's credential DB-row→DB-row **inside the tx** (stash
+   pre-wipe, re-insert against the restored/original UUID post-load) and re-binds the session to that
+   UUID so the restorer stays logged in; other local members land dormant. A local-member backup onto a
+   Google-only instance (`AUTH_LOCAL_ENABLED=false`) is refused `422 RESTORE_STRANDS_LOCAL_MEMBERS`
+   ahead of the membership guard; `SELF-HOSTING.md` documents the post-restore dormancy;
+   INV-AUTH-22/23/24/25) — **local-auth epic #277 COMPLETE**), production
    Resend domain, **#93** landing. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.

@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 )
 
@@ -38,7 +39,14 @@ func (h *Handlers) handleRestorePreview(w http.ResponseWriter, r *http.Request) 
 		writeRestoreErr(w, err)
 		return
 	}
-	summary, err := Validate(env, derefStr(user.GoogleSub))
+	// Refuse before the membership guard so a local-member backup on a Google-only
+	// instance gets the actionable "enable local auth" error rather than a generic
+	// not-a-member (ADR-0039).
+	if err := checkStranding(env, h.authLocalEnabled); err != nil {
+		writeRestoreErr(w, err)
+		return
+	}
+	summary, err := Validate(env, callerFrom(user))
 	if err != nil {
 		writeRestoreErr(w, err)
 		return
@@ -88,13 +96,18 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 		writeRestoreErr(w, err)
 		return
 	}
-	summary, err := Validate(env, derefStr(user.GoogleSub))
+	if err := checkStranding(env, h.authLocalEnabled); err != nil {
+		writeRestoreErr(w, err)
+		return
+	}
+	summary, err := Validate(env, callerFrom(user))
 	if err != nil {
 		writeRestoreErr(w, err)
 		return
 	}
 
-	if err := Commit(r.Context(), h.pool, env, user.HouseholdID); err != nil {
+	restoredID, err := Commit(r.Context(), h.pool, env, callerFrom(user))
+	if err != nil {
 		// Validate already passed, so a failure here is infrastructural (DB error
 		// or an FK the graph check doesn't police). The transaction rolled back, so
 		// the caller's data is intact — report a generic 500.
@@ -103,27 +116,38 @@ func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The wipe deleted every session, so re-issue one for the restored caller —
-	// re-linked by google_sub (already proven a member) — to spare a non-technical
-	// user a sudden, alarming logout. Best-effort: the destructive work already
-	// committed, so on any failure here we just let them sign in again rather than
-	// fail a successful restore. Must precede writeJSON (it sets a cookie header).
-	if restored, err := h.q.GetUserByGoogleSub(r.Context(), derefStr(user.GoogleSub)); err != nil {
-		slog.Warn("restore: lookup restored caller for re-login", "err", err)
-	} else {
-		if err := h.sessions.IssueSession(r.Context(), w, restored.ID, r.UserAgent()); err != nil {
-			slog.Warn("restore: re-issue caller session", "err", err)
-		}
-		// Best-effort post-restore emails (#176): a confirmation to the restorer
-		// and a relocation/security notice to every other live member. The
-		// notifier swallows its own send failures — a mail outage must never
-		// reflect on the restore that already committed — so this fires after the
-		// commit succeeded and is deliberately not on the error path. The restored
-		// caller carries the adopted (backup's) Household UUID, so its household is
-		// the one to enumerate. summaryItemCount is the restorer's sanity-check tally.
-		h.notifier.NotifyRestore(r.Context(), restored.HouseholdID, restored.ID, summaryItemCount(summary))
+	// bound to their restored (backup's original) UUID — to spare a non-technical
+	// user a sudden, alarming logout. For a local caller the credential was carried
+	// across the wipe inside the commit (ADR-0039), so the re-issued session and a
+	// future password login both resolve to this same row. Best-effort: the
+	// destructive work already committed, so on any failure here we just let them
+	// sign in again rather than fail a successful restore. Must precede writeJSON
+	// (it sets a cookie header).
+	if err := h.sessions.IssueSession(r.Context(), w, restoredID, r.UserAgent()); err != nil {
+		slog.Warn("restore: re-issue caller session", "err", err)
 	}
+	// Best-effort post-restore emails (#176): a confirmation to the restorer and a
+	// relocation/security notice to every other live member. The notifier swallows
+	// its own send failures — a mail outage must never reflect on the restore that
+	// already committed — so this fires after the commit succeeded and is
+	// deliberately not on the error path. The restored caller now belongs to the
+	// adopted (backup's) Household, so that is the household to enumerate;
+	// summaryItemCount is the restorer's sanity-check tally.
+	h.notifier.NotifyRestore(r.Context(), env.Household.Household.ID, restoredID, summaryItemCount(summary))
 
 	writeJSON(w, http.StatusOK, restoreResult{Restored: true, Summary: summary})
+}
+
+// callerFrom reduces the authenticated user to the identity the restore guard and
+// continuity need (ADR-0039). GoogleSub is nil for a local account, which routes
+// the membership match to email and the credential carry on.
+func callerFrom(u db.User) Caller {
+	return Caller{
+		HouseholdID: u.HouseholdID,
+		UserID:      u.ID,
+		GoogleSub:   u.GoogleSub,
+		Email:       u.Email,
+	}
 }
 
 // restoreResult is the commit response. Restored is always true on a 2xx (a
@@ -192,6 +216,8 @@ func writeRestoreErr(w http.ResponseWriter, err error) {
 		httperr.Write(w, http.StatusForbidden, httperr.CodeNotMemberOfBackup, nil)
 	case errors.Is(err, ErrValidationFailed):
 		httperr.Write(w, http.StatusUnprocessableEntity, httperr.CodeBackupValidationFailed, nil)
+	case errors.Is(err, ErrStrandsLocalMembers):
+		httperr.Write(w, http.StatusUnprocessableEntity, httperr.CodeRestoreStrandsLocalMembers, nil)
 	default:
 		httperr.WriteRepo(w, "backup restore", err)
 	}

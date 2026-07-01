@@ -22,11 +22,12 @@ import (
 // through a repo — household scoping is enforced by passing the caller's
 // HouseholdID into every query (the same tenancy boundary the repos use).
 type Handlers struct {
-	pool     *pgxpool.Pool
-	q        *db.Queries
-	instance string          // this instance's public URL, stamped into the envelope
-	sessions SessionIssuer   // re-issues the caller's session after a restore
-	notifier RestoreNotifier // best-effort post-restore emails (#176)
+	pool             *pgxpool.Pool
+	q                *db.Queries
+	instance         string          // this instance's public URL, stamped into the envelope
+	sessions         SessionIssuer   // re-issues the caller's session after a restore
+	notifier         RestoreNotifier // best-effort post-restore emails (#176)
+	authLocalEnabled bool            // gates the stranding guard: a local-member backup can't restore onto a Google-only instance (ADR-0039)
 }
 
 // SessionIssuer mints a fresh session + cookie for a user. The restore flow uses
@@ -45,8 +46,15 @@ type RestoreNotifier interface {
 	NotifyRestore(ctx context.Context, householdID, restorerID uuid.UUID, itemCount int)
 }
 
-func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier) *Handlers {
-	return &Handlers{pool: pool, q: db.New(pool), instance: instanceURL, sessions: sessions, notifier: notifier}
+func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier, authLocalEnabled bool) *Handlers {
+	return &Handlers{
+		pool:             pool,
+		q:                db.New(pool),
+		instance:         instanceURL,
+		sessions:         sessions,
+		notifier:         notifier,
+		authLocalEnabled: authLocalEnabled,
+	}
 }
 
 func (h *Handlers) Mount(r chi.Router) {
