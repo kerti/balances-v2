@@ -220,8 +220,8 @@ function DashboardHeader({
           </label>
         )}
         <MonthPickerPopover
-          reports={reports}
-          selected={selected}
+          months={reports.map((r) => r.year_month)}
+          selected={selected.year_month}
           onSelect={onSelect}
         />
       </div>

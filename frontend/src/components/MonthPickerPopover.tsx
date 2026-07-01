@@ -10,13 +10,14 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatYearMonth } from "@/lib/format";
-import type { MonthlyReport } from "@/api/types";
 
-// MonthPickerPopover replaces a flat 120+-option <select> for the dashboard
-// month picker. Trigger shows the current month; popover shows a year nav
-// (clamped to the [min, max] year span of `reports`) plus a 4×3 month grid
-// with cells disabled for months without a report. Selecting a cell fires
-// onSelect with the exact ISO `year_month` of the matched report.
+// MonthPickerPopover replaces a flat 120+-option <select> for a month picker
+// (dashboard net-worth report, income filter). Trigger shows the current
+// month; popover shows a year nav (clamped to the [min, max] year span of
+// `months`) plus a 4×3 month grid with cells disabled for months without an
+// entry. Selecting a cell fires onSelect with the exact string it was handed
+// in `months` — the caller keeps whatever key shape it uses (full ISO
+// `year_month` for the dashboard, `"YYYY-MM"` for income).
 
 // Month-label keys index into common.months.{jan…dec}. Order is fixed Jan→Dec
 // (calendar order), independent of locale.
@@ -51,29 +52,32 @@ function monthIdxOf(iso: string): number {
 }
 
 export function MonthPickerPopover({
-  reports,
+  months,
   selected,
   onSelect,
 }: {
-  reports: MonthlyReport[];
-  selected: MonthlyReport;
+  months: string[];
+  selected: string;
   onSelect: (yearMonth: string) => void;
 }) {
   const { t } = useTranslation(["dashboard", "common"]);
-  // ISO-by-key lookup so the cell click fires with the exact stored
-  // year_month, not a re-synthesised one. Safer if the backend ever changes
-  // the day/time component.
-  const isoByKey = new Map(
-    reports.map((r) => [ymKey(r.year_month), r.year_month]),
-  );
-  const years = Array.from(
-    new Set(reports.map((r) => yearOf(r.year_month))),
-  ).sort((a, b) => a - b);
+  // Key-by-month lookup so the cell click fires with the exact string the
+  // caller handed in, not a re-synthesised one. Safer if the backend ever
+  // changes the day/time component.
+  const isoByKey = new Map(months.map((m) => [ymKey(m), m]));
+  const years = Array.from(new Set(months.map(yearOf))).sort((a, b) => a - b);
   const minYear = years[0];
   const maxYear = years[years.length - 1];
 
-  const selectedYear = yearOf(selected.year_month);
-  const selectedMonthIdx = monthIdxOf(selected.year_month);
+  const selectedYear = yearOf(selected);
+  const selectedMonthIdx = monthIdxOf(selected);
+
+  // Format the trigger label from the UTC parts via a canonical noon-UTC ISO
+  // so a local-timezone rollover never shifts the displayed month (the raw
+  // `selected` may be a bare "YYYY-MM" or a midnight-Z ISO).
+  const selectedLabel = formatYearMonth(
+    `${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, "0")}-01T12:00:00Z`,
+  );
 
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(selectedYear);
@@ -95,7 +99,7 @@ export function MonthPickerPopover({
           data-testid="month-picker-trigger"
           className="justify-between gap-2"
         >
-          {formatYearMonth(selected.year_month)}
+          {selectedLabel}
           <ChevronDown className="size-4 opacity-60" />
         </Button>
       </PopoverTrigger>

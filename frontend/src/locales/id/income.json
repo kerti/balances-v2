@@ -9,9 +9,6 @@
   },
   "deleteTitle": "Hapus entri pemasukan ini?",
   "deleteDescription": "{{category}} · {{amount}} pada {{date}} akan disembunyikan dari daftar dan laporan. Bisa dipulihkan via database, belum via UI.",
-  "monthFilter": {
-    "allMonths": "Semua bulan"
-  },
   "headline": {
     "total": "Total",
     "byPerson": "Per orang",

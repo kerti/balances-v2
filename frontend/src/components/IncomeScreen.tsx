@@ -20,9 +20,10 @@ import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { CreateIncomeDialog } from "@/components/CreateIncomeDialog";
 import { IncomeRow } from "@/components/IncomeRow";
+import { MonthPickerPopover } from "@/components/MonthPickerPopover";
 import { PaginationControls } from "@/components/PaginationControls";
 import { ownershipLabel } from "@/lib/ownership";
-import { formatCurrency, formatYearMonth } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import type { Income, IncomeCategory, Regularity } from "@/api/types";
 
 const PAGE_SIZE = 12;
@@ -53,9 +54,8 @@ export function IncomeScreen() {
   const [regularityFilter, setRegularityFilter] =
     useState<RegularityFilter>("all");
   // undefined = not yet set by user → auto-picks most recent month once data loads
-  // null = user explicitly chose "all months"
   // string = specific "YYYY-MM"
-  const [selectedMonth, setSelectedMonth] = useState<string | null | undefined>(
+  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(
     undefined,
   );
 
@@ -66,12 +66,11 @@ export function IncomeScreen() {
     );
   }, [data]);
 
-  const effectiveMonth: string | null =
-    selectedMonth !== undefined ? selectedMonth : (availableMonths[0] ?? null);
+  const effectiveMonth: string | undefined =
+    selectedMonth ?? availableMonths[0];
 
   const monthFiltered = useMemo(() => {
-    if (!data) return [];
-    if (effectiveMonth === null) return data;
+    if (!data || !effectiveMonth) return [];
     return data.filter((r) => incomeYearMonth(r) === effectiveMonth);
   }, [data, effectiveMonth]);
 
@@ -208,22 +207,16 @@ export function IncomeScreen() {
       {data && data.length > 0 && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={effectiveMonth ?? ""}
-              onChange={(e) => {
-                setSelectedMonth(e.target.value === "" ? null : e.target.value);
-                setPage(1);
-              }}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              data-testid="month-filter"
-            >
-              <option value="">{t("income:monthFilter.allMonths")}</option>
-              {availableMonths.map((ym) => (
-                <option key={ym} value={ym}>
-                  {formatYearMonth(`${ym}-01T12:00:00Z`)}
-                </option>
-              ))}
-            </select>
+            {effectiveMonth && (
+              <MonthPickerPopover
+                months={availableMonths}
+                selected={effectiveMonth}
+                onSelect={(ym) => {
+                  setSelectedMonth(ym);
+                  setPage(1);
+                }}
+              />
+            )}
 
             <div
               className="flex gap-2"
