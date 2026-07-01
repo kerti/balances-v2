@@ -766,12 +766,15 @@ type householdSettings struct {
 }
 
 type updateHouseholdSettingsReq struct {
+	DisplayName          string `json:"display_name"`
 	ReportingCurrency    string `json:"reporting_currency"`
 	MultiCurrencyEnabled bool   `json:"multi_currency_enabled"`
 }
 
-// handleUpdateHouseholdSettings sets the reporting currency + multi-currency
-// toggle (ADR-0002). Turning multi-currency off is blocked while positions in a
+// handleUpdateHouseholdSettings sets the Household's display name (#265, any
+// member — Founder is creation-lineage only, not a permission tier), reporting
+// currency, and multi-currency toggle (ADR-0002) together as one full-replace
+// PATCH. Turning multi-currency off is blocked while positions in a
 // non-reporting currency still exist — their values would silently be summed as
 // reporting currency.
 func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.Request) {
@@ -783,6 +786,21 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 	var req updateHouseholdSettingsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
+		return
+	}
+	displayName := strings.TrimSpace(req.DisplayName)
+	if displayName == "" {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
+			"field": "display_name",
+			"rule":  "required",
+		})
+		return
+	}
+	if utf8.RuneCountInString(displayName) > maxHouseholdNameLen {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
+			"field": "display_name",
+			"rule":  "max",
+		})
 		return
 	}
 	if len(req.ReportingCurrency) != 3 {
@@ -809,6 +827,7 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 	}
 	hh, err := h.q.UpdateHouseholdSettings(r.Context(), db.UpdateHouseholdSettingsParams{
 		ID:                   user.HouseholdID,
+		DisplayName:          displayName,
 		ReportingCurrency:    req.ReportingCurrency,
 		MultiCurrencyEnabled: req.MultiCurrencyEnabled,
 		UpdatedBy:            &user.ID,

@@ -14,7 +14,7 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("200 enable multi-currency", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
 		})
 		requireStatus(t, rec, http.StatusOK)
 		body := decodeBody[householdSettings](t, rec)
@@ -25,7 +25,7 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("400 bad reporting currency", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"reporting_currency": "RUPIAH", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "RUPIAH", "multi_currency_enabled": true,
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
@@ -38,16 +38,64 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 			t.Fatalf("seed USD asset: %v", err)
 		}
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"reporting_currency": "IDR", "multi_currency_enabled": false,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": false,
 		})
 		requireStatus(t, rec, http.StatusConflict)
 	})
 
 	t.Run("401 unauthenticated", func(t *testing.T) {
 		rec := h.doRaw(t, "PATCH", "/household/settings", map[string]any{
-			"reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
 		}, nil)
 		requireStatus(t, rec, http.StatusUnauthorized)
+	})
+
+	t.Run("200 renames the household", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "The Newlyweds", "reporting_currency": "IDR", "multi_currency_enabled": true,
+		})
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[householdSettings](t, rec)
+		if body.DisplayName != "The Newlyweds" {
+			t.Fatalf("display_name: got %q, want \"The Newlyweds\"", body.DisplayName)
+		}
+		meRec := h.do(t, "GET", "/me", nil)
+		requireStatus(t, meRec, http.StatusOK)
+		if got := decodeBody[meResponse](t, meRec).HouseholdDisplayName; got != "The Newlyweds" {
+			t.Errorf("persisted household_display_name: got %q, want \"The Newlyweds\"", got)
+		}
+	})
+
+	t.Run("200 trims surrounding whitespace", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "  Spaced Out  ", "reporting_currency": "IDR", "multi_currency_enabled": true,
+		})
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[householdSettings](t, rec)
+		if body.DisplayName != "Spaced Out" {
+			t.Fatalf("display_name: got %q, want \"Spaced Out\"", body.DisplayName)
+		}
+	})
+
+	t.Run("400 empty display name", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "   ", "reporting_currency": "IDR", "multi_currency_enabled": false,
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("400 display name over 60 chars", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": strings.Repeat("a", 61), "reporting_currency": "IDR", "multi_currency_enabled": false,
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("200 exactly 60 chars", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": strings.Repeat("a", 60), "reporting_currency": "IDR", "multi_currency_enabled": true,
+		})
+		requireStatus(t, rec, http.StatusOK)
 	})
 }
 

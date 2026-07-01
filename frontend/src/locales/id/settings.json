@@ -6,6 +6,11 @@
     "description": "Nama panggilan singkat yang muncul di label kepemilikan dan pemilih pemilik. Kosongkan untuk memakai nama lengkap ({{displayName}}).",
     "label": "Nama panggilan"
   },
+  "householdName": {
+    "title": "Nama rumah tangga",
+    "description": "Ditampilkan kepada siapa pun yang Anda undang dan dalam konfirmasi pemulihan. Semua anggota dapat mengubahnya.",
+    "label": "Nama rumah tangga"
+  },
   "language": {
     "title": "Bahasa",
     "description": "Bahasa yang dipakai untuk menu, label, dan format tanggal / angka.",

@@ -90,9 +90,10 @@ func (q *Queries) GetHouseholdByID(ctx context.Context, id uuid.UUID) (Household
 
 const updateHouseholdSettings = `-- name: UpdateHouseholdSettings :one
 UPDATE households
-SET reporting_currency     = $2,
-    multi_currency_enabled = $3,
-    updated_by             = $4,
+SET display_name           = $2,
+    reporting_currency     = $3,
+    multi_currency_enabled = $4,
+    updated_by             = $5,
     updated_at             = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled
@@ -100,6 +101,7 @@ RETURNING id, display_name, reporting_currency, created_by, created_at, updated_
 
 type UpdateHouseholdSettingsParams struct {
 	ID                   uuid.UUID  `json:"id"`
+	DisplayName          string     `json:"display_name"`
 	ReportingCurrency    string     `json:"reporting_currency"`
 	MultiCurrencyEnabled bool       `json:"multi_currency_enabled"`
 	UpdatedBy            *uuid.UUID `json:"updated_by"`
@@ -108,6 +110,7 @@ type UpdateHouseholdSettingsParams struct {
 func (q *Queries) UpdateHouseholdSettings(ctx context.Context, arg UpdateHouseholdSettingsParams) (Household, error) {
 	row := q.db.QueryRow(ctx, updateHouseholdSettings,
 		arg.ID,
+		arg.DisplayName,
 		arg.ReportingCurrency,
 		arg.MultiCurrencyEnabled,
 		arg.UpdatedBy,

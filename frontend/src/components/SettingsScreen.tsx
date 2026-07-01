@@ -55,12 +55,14 @@ export function SettingsScreen() {
 
   const saveCurrency = () =>
     updateSettings.mutate({
+      display_name: me.household_display_name,
       reporting_currency: reportingCurrency,
       multi_currency_enabled: me.multi_currency_enabled,
     });
 
   const toggleMulti = (enabled: boolean) =>
     updateSettings.mutate({
+      display_name: me.household_display_name,
       reporting_currency: me.reporting_currency,
       multi_currency_enabled: enabled,
     });
@@ -73,6 +75,8 @@ export function SettingsScreen() {
       </div>
 
       <NicknameCard />
+
+      <HouseholdNameCard />
 
       <LanguageCard />
 
@@ -198,6 +202,70 @@ function NicknameCard() {
         {updateMe.isError && (
           <p className="text-sm text-destructive">
             {errorMessage(updateMe.error)}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// HouseholdNameCard mirrors NicknameCard: a button-driven rename, editable by
+// any member (#265 — Founder is creation-lineage only, per CONTEXT, not a
+// permission tier). It rides the same full-replace PATCH as the currency card,
+// so the mutation carries the household's current currency settings through
+// unchanged.
+function HouseholdNameCard() {
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+  const [draft, setDraft] = useState<string | null>(null);
+
+  if (!me) return null;
+
+  const value = draft ?? me.household_display_name;
+  const trimmed = value.trim();
+  const dirty = trimmed !== me.household_display_name && trimmed !== "";
+
+  const save = () =>
+    updateSettings.mutate(
+      {
+        display_name: trimmed,
+        reporting_currency: me.reporting_currency,
+        multi_currency_enabled: me.multi_currency_enabled,
+      },
+      { onSuccess: () => setDraft(null) },
+    );
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("householdName.title")}</CardTitle>
+        <CardDescription>{t("householdName.description")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="household-name">{t("householdName.label")}</Label>
+            <Input
+              id="household-name"
+              className="w-56"
+              maxLength={60}
+              value={value}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={save}
+            disabled={updateSettings.isPending || !dirty}
+          >
+            {t("common:save")}
+          </Button>
+        </div>
+
+        {updateSettings.isError && (
+          <p className="text-sm text-destructive">
+            {errorMessage(updateSettings.error)}
           </p>
         )}
       </CardContent>

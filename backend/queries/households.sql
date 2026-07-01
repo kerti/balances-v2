@@ -13,9 +13,10 @@ RETURNING *;
 
 -- name: UpdateHouseholdSettings :one
 UPDATE households
-SET reporting_currency     = $2,
-    multi_currency_enabled = $3,
-    updated_by             = $4,
+SET display_name           = $2,
+    reporting_currency     = $3,
+    multi_currency_enabled = $4,
+    updated_by             = $5,
     updated_at             = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;

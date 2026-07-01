@@ -6,6 +6,11 @@
     "description": "A short nickname shown in ownership labels and owner pickers. Leave it blank to use your full name ({{displayName}}).",
     "label": "Nickname"
   },
+  "householdName": {
+    "title": "Household name",
+    "description": "Shown to anyone you invite and in restore confirmations. Any member can change it.",
+    "label": "Household name"
+  },
   "language": {
     "title": "Language",
     "description": "The language used for menus, labels, and date / number formatting.",
