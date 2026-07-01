@@ -225,6 +225,21 @@ Google needed. The link is **single-use and time-limited**: once it has been use
 can't create a second account, and a forwarded-after-use link is inert. If a link is spent or stale,
 just send a fresh invitation.
 
+**Resetting a password from the command line.** When a member is locked out and neither the emailed
+*Forgot password?* flow (needs `EMAIL_ENABLED=true`) nor the in-app founder-assisted reactivation is
+available — including resetting an **active** member, which the in-app path deliberately refuses — mint
+a one-time set-password link straight from the server:
+
+```bash
+docker compose run --rm app reset-password member@example.com
+```
+
+It prints a single `.../reset?token=…` link (the surrounding lines go to stderr). Hand that link to the
+member out-of-band; following it sets a new password and signs them in. The link is single-use,
+short-lived, and never logged — treat it like a password. This works whether or not `EMAIL_ENABLED` is
+set, but requires `AUTH_LOCAL_ENABLED=true` (a set-password link is useless on a Google-only instance),
+and it only applies to local accounts — a Google member has no password to reset.
+
 > ### ⚠️ Found the household before exposing the instance
 >
 > With local accounts, **the first person to register founds the household** — and on a fresh

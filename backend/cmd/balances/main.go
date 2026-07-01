@@ -52,6 +52,11 @@ func main() {
 			slog.Error("migrate failed", "err", err)
 			os.Exit(1)
 		}
+	case "reset-password":
+		if err := resetPasswordCmd(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, "reset-password:", err)
+			os.Exit(1)
+		}
 	case "seed-e2e":
 		if err := seedE2ECmd(); err != nil {
 			fmt.Fprintln(os.Stderr, "seed-e2e failed:", err)
@@ -78,6 +83,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  migrate down       roll back one migration")
 	fmt.Fprintln(os.Stderr, "  migrate status     show migration status")
 	fmt.Fprintln(os.Stderr, "  migrate version    show current revision")
+	fmt.Fprintln(os.Stderr, "  reset-password <email>  mint a one-time set-password link for a local account")
 	fmt.Fprintln(os.Stderr, "  seed-e2e           reset the balances_e2e DB with Playwright fixtures")
 	fmt.Fprintln(os.Stderr, "  mock-oidc          run the E2E fake OIDC provider (ADR-0024)")
 }

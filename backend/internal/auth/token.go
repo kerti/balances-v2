@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
+	"time"
 )
 
 // Shared set-password-token primitive (ADR-0039, #281). One mechanism backs the
@@ -22,6 +23,14 @@ import (
 
 // setPasswordTokenBytes is 32 random bytes = 256 bits of entropy, the ADR floor.
 const setPasswordTokenBytes = 32
+
+// RelayTokenTTL is the validity window for a set-password link that is relayed
+// out-of-band by a human — the founder-assisted reactivation link (#283) and the
+// operator-CLI reset link (#284). It is generous relative to the 1h emailed-reset
+// TTL because the operator/founder must hand the link over by hand (copy-paste,
+// chat, in person) before the member follows it; the token's single-use +
+// hashed-at-rest discipline (not a short clock) is what bounds its blast radius.
+const RelayTokenTTL = 72 * time.Hour
 
 // GenerateToken returns a fresh random set-password token: the URL-safe plaintext
 // to put in the link, and the hash to store. The plaintext is the only copy that

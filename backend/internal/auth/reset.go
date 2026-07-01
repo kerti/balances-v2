@@ -306,7 +306,15 @@ func resetTokenUsable(row db.PasswordResetToken) bool {
 // method-neutral SPA route (/reset?token=…); the inviter-locale convention rides
 // along as ?lng= (ADR-0035) so the email and the screen speak the same language.
 func (h *Handlers) resetURL(token, locale string) string {
-	return h.frontendURL + "/reset?token=" + token + "&lng=" + locale
+	return ResetURL(h.frontendURL, token, locale)
+}
+
+// ResetURL is the same set-password link builder as the resetURL method, exposed
+// for callers outside a request (the operator CLI, #284) that hold the frontend
+// origin from config rather than a *Handlers. Kept as the single source of the
+// /reset?token=…&lng=… shape so the emailed, in-app, and CLI links can't drift.
+func ResetURL(frontendURL, token, locale string) string {
+	return frontendURL + "/reset?token=" + token + "&lng=" + locale
 }
 
 func (h *Handlers) sendResetEmail(ctx context.Context, user db.User, resetURL string, expiresAt time.Time) error {

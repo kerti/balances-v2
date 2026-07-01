@@ -41,8 +41,8 @@ import (
 // The token rides the shared primitive (token.go): a single-use, short-TTL,
 // ≥256-bit random token stored only as a SHA-256 hash. Unlike the emailed reset,
 // the plaintext is returned to the founder to relay by hand (never emailed,
-// never logged), so its TTL matches the copy-link invite's, not the 1h email TTL.
-const reactivationTTL = 72 * time.Hour
+// never logged), so its TTL is the shared RelayTokenTTL (token.go) — the
+// copy-link relay window, not the 1h email TTL.
 
 // requireFounder resolves the authenticated caller and asserts they are the
 // household founder (created_by IS NULL). Returns false and writes the response
@@ -179,7 +179,7 @@ func (h *Handlers) handleReactivateMember(w http.ResponseWriter, r *http.Request
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
 	}
-	expiresAt := time.Now().Add(reactivationTTL)
+	expiresAt := time.Now().Add(RelayTokenTTL)
 	if _, err := h.q.CreatePasswordResetToken(ctx, db.CreatePasswordResetTokenParams{
 		TokenHash: tokenHash,
 		UserID:    target.ID,

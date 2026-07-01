@@ -101,8 +101,12 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
    founder-assisted in-app reactivation** (no-mail recovery, no migration: founder-only + dormant-only
    `/auth/local/reactivation` mints a one-time set-password link for a credential-less member — reuses the
    `/reset` consume path + `password_reset_tokens`; refuses active/Google members (409 `MEMBER_NOT_DORMANT`)
-   and non-founders (403 `FORBIDDEN`); `me.is_founder` gates a Settings `ReactivationCard`; INV-AUTH-20) · next:
-   CLI #284 / backup #285), production
+   and non-founders (403 `FORBIDDEN`); `me.is_founder` gates a Settings `ReactivationCard`; INV-AUTH-20) · **✅ #284
+   operator CLI** (`balances reset-password <email>`, no migration: mints a one-time set-password link for a
+   local account regardless of `EMAIL_ENABLED` and is the **only** path that can reset an **active** member —
+   the in-app path refuses one; reuses the shared relay token + `/reset` consume path via
+   `auth.MintResetPasswordLink`, refuses Google accounts, gated on `AUTH_LOCAL_ENABLED`; `docker compose run
+   --rm app reset-password …`; INV-AUTH-21) · next: backup #285), production
    Resend domain, **#93** landing. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
