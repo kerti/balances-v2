@@ -125,7 +125,19 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview migrated, issue stays open
 for prod/demo standup. #216 single Resend sending domain — **DONE & closed**. #217 demo readiness
 (email sink / guest auth / nightly reset / OAuth publish), #218 Neon prod-project isolation + backup
-retention. Feeds M7.
+retention (now also carries the erasure-purge window, see below). Feeds M7.
+
+**Production SaaS data-protection decision (2026-07-02):** #222 (originally: maintainer structurally
+unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
+core server-side aggregation (monthly reports) and isn't what GDPR requires. Decided: ordinary GDPR
+compliance is sufficient — lawful basis, privacy policy naming subprocessors, honoring access/erasure
+requests, bounded breach process. Rescoped into **#299** (privacy policy — subprocessors, retention,
+signup consent, breach process, EU cross-border-transfer call given historical Fly `sin` region) and
+**#300** (household erasure "DELETE ME" — hard delete, founder-gated, reuses #52's export as the
+pre-delete backup path). Access/portability already satisfied by the backup/export epic (#52).
+Self-host (#116) remains the zero-exposure option for anyone unwilling to accept hosted SaaS. This
+unblocks the "production Resend domain" + "non-disposable environment" M7 gate items, pending
+#299/#300/#217/#218/#215.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
 unclosable), #163 (email wordmark raster).
