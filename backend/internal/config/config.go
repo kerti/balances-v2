@@ -46,6 +46,16 @@ type Config struct {
 	AuthGoogleEnabled bool `env:"AUTH_GOOGLE_ENABLED" envDefault:"true"`
 	AuthLocalEnabled  bool `env:"AUTH_LOCAL_ENABLED" envDefault:"false"`
 
+	// FoundingDisabled gates the onboarding gate's founder step, not identity
+	// verification (#302) — the next defense-in-depth layer after "found the
+	// household before exposing the instance" (SELF-HOSTING.md). Default open
+	// so a fresh empty instance can still found its first household; an
+	// operator flips it after founding to freeze the instance's household
+	// population (e.g. a preview that has onboarded its known testers).
+	// Invite-based joining is untouched — this only blocks brand-new,
+	// zero-invite identities from founding a new household.
+	FoundingDisabled bool `env:"FOUNDING_DISABLED" envDefault:"false"`
+
 	// AppURL is the operator-facing single-origin URL for a self-host deployment
 	// (ADR-0037). When set, it supplies the default origin for FrontendURL and
 	// BackendURL and derives OAuthRedirectURL as AppURL + the callback path —

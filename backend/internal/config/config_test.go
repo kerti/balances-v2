@@ -16,7 +16,7 @@ import (
 var configEnvKeys = []string{
 	"DATABASE_URL", "PORT", "LOG_FORMAT",
 	"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OIDC_ISSUER_URL",
-	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED",
+	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED", "FOUNDING_DISABLED",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
 	"SESSION_TTL", "COOKIE_SECURE",
 	"EMAIL_ENABLED",
@@ -88,6 +88,28 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.AuthLocalEnabled {
 		t.Errorf("AuthLocalEnabled = true, want default false")
+	}
+	// Open by default (#302): a fresh instance must still be able to found its
+	// first household.
+	if cfg.FoundingDisabled {
+		t.Errorf("FoundingDisabled = true, want default false")
+	}
+}
+
+// TestLoad_FoundingDisabled: an operator flips FOUNDING_DISABLED after founding
+// the instance's household(s), freezing further founding while joins stay open
+// (#302).
+func TestLoad_FoundingDisabled(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("FOUNDING_DISABLED", "true")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.FoundingDisabled {
+		t.Error("FoundingDisabled = false, want true")
 	}
 }
 

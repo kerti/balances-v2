@@ -51,6 +51,7 @@
       "oneof": "bukan salah satu nilai yang diperbolehkan"
     },
     "INVITATION_NO_LONGER_VALID": "Undangan itu sudah tidak tersedia. Silakan pilih kembali.",
+    "FOUNDING_DISABLED": "Instans ini tidak terbuka untuk rumah tangga baru saat ini.",
     "RESET_LINK_NO_LONGER_VALID": "Tautan setel ulang ini sudah tidak berlaku. Minta yang baru untuk melanjutkan.",
     "FORBIDDEN": "Anda tidak memiliki izin untuk melakukan itu.",
     "MEMBER_NOT_DORMANT": "Anggota itu sudah memiliki cara untuk masuk, jadi tidak dapat diaktifkan kembali di sini.",

@@ -216,6 +216,78 @@ func TestOnboardingChoice_Found(t *testing.T) {
 	})
 }
 
+// covers: INV-AUTH-26
+func TestOnboardingChoice_FoundingDisabled(t *testing.T) {
+	t.Run("found is blocked and creates no user, handshake survives", func(t *testing.T) {
+		h := newAuthHarness(t)
+		h.h.foundingDisabled = true
+		token := mustBeginHandshake(t, h, "sub-blocked", "blocked@example.com", "Lena", time.Now().Add(onboardingHandshakeTTL))
+
+		rec := h.onboardingRequest(t, "POST", "/onboarding/choice", token, `{"found":true}`)
+		requireStatus(t, rec, http.StatusForbidden)
+		if body := decodeBody[struct {
+			Code string `json:"code"`
+		}](t, rec); body.Code != "FOUNDING_DISABLED" {
+			t.Errorf("code: want FOUNDING_DISABLED, got %q", body.Code)
+		}
+
+		if _, err := h.q.GetUserByGoogleSub(context.Background(), "sub-blocked"); err == nil {
+			t.Error("expected no user row on a blocked found")
+		}
+		if _, err := h.q.GetOnboardingHandshake(context.Background(), token); err != nil {
+			t.Errorf("handshake should survive a blocked found: %v", err)
+		}
+		if len(h.mailer.sent()) != 0 {
+			t.Errorf("welcome email must not fire on a blocked found; got %d", len(h.mailer.sent()))
+		}
+	})
+
+	t.Run("join is unaffected by the flag", func(t *testing.T) {
+		h := newAuthHarness(t)
+		h.h.foundingDisabled = true
+		const email = "joiner-blocked@example.com"
+		inviteID := seedInvitationAt(t, h, h.user.HouseholdID, h.user.ID, email, time.Now(), time.Now().Add(24*time.Hour))
+		token := mustBeginHandshake(t, h, "sub-joiner-blocked", email, "Mona", time.Now().Add(onboardingHandshakeTTL))
+
+		rec := h.onboardingRequest(t, "POST", "/onboarding/choice", token, `{"join":true,"invitation_id":"`+inviteID.String()+`"}`)
+		requireStatus(t, rec, http.StatusNoContent)
+
+		user, err := h.q.GetUserByGoogleSub(context.Background(), "sub-joiner-blocked")
+		if err != nil {
+			t.Fatalf("GetUserByGoogleSub: %v", err)
+		}
+		if user.HouseholdID != h.user.HouseholdID {
+			t.Errorf("joiner should bind to the inviting household even with founding disabled")
+		}
+	})
+}
+
+// covers: INV-AUTH-26
+func TestOnboardingOptions_FoundingDisabled(t *testing.T) {
+	t.Run("mirrors the flag when disabled", func(t *testing.T) {
+		h := newAuthHarness(t)
+		h.h.foundingDisabled = true
+		token := mustBeginHandshake(t, h, "sub-opt-blocked", "opt-blocked@example.com", "Nia", time.Now().Add(onboardingHandshakeTTL))
+
+		rec := h.onboardingRequest(t, "GET", "/onboarding/options", token, "")
+		requireStatus(t, rec, http.StatusOK)
+		if resp := decodeBody[onboardingOptionsResponse](t, rec); !resp.FoundingDisabled {
+			t.Error("expected founding_disabled: true in the options response")
+		}
+	})
+
+	t.Run("mirrors the flag when open (default)", func(t *testing.T) {
+		h := newAuthHarness(t)
+		token := mustBeginHandshake(t, h, "sub-opt-open", "opt-open@example.com", "Omar", time.Now().Add(onboardingHandshakeTTL))
+
+		rec := h.onboardingRequest(t, "GET", "/onboarding/options", token, "")
+		requireStatus(t, rec, http.StatusOK)
+		if resp := decodeBody[onboardingOptionsResponse](t, rec); resp.FoundingDisabled {
+			t.Error("expected founding_disabled: false by default")
+		}
+	})
+}
+
 // covers: INV-AUTH-12
 // An abandoned/expired handshake leaves no partial state, and the sweep removes
 // it — re-auth simply shows the gate again (idempotent, ADR-0038).

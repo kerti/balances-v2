@@ -137,16 +137,17 @@ func serveCmd() error {
 	// constructs no OAuth client (and makes no OIDC discovery call) otherwise, so
 	// a local-only self-host needs no Google credentials (ADR-0039).
 	authCfg := auth.Config{
-		GoogleEnabled: cfg.AuthGoogleEnabled,
-		LocalEnabled:  cfg.AuthLocalEnabled,
-		EmailEnabled:  cfg.EmailEnabled,
-		Pool:          pool,
-		SessionTTL:    cfg.SessionTTL,
-		CookieSecure:  cfg.CookieSecure,
-		FrontendURL:   cfg.FrontendURL,
-		BackendURL:    cfg.BackendURL,
-		EmailFrom:     cfg.EmailFromAddress,
-		Mailer:        mailer,
+		GoogleEnabled:    cfg.AuthGoogleEnabled,
+		LocalEnabled:     cfg.AuthLocalEnabled,
+		EmailEnabled:     cfg.EmailEnabled,
+		FoundingDisabled: cfg.FoundingDisabled,
+		Pool:             pool,
+		SessionTTL:       cfg.SessionTTL,
+		CookieSecure:     cfg.CookieSecure,
+		FrontendURL:      cfg.FrontendURL,
+		BackendURL:       cfg.BackendURL,
+		EmailFrom:        cfg.EmailFromAddress,
+		Mailer:           mailer,
 	}
 	if cfg.AuthGoogleEnabled {
 		authCfg.Google = auth.GoogleConfig{

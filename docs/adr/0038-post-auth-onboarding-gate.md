@@ -110,3 +110,14 @@ you, one Household per person") instead of the previous silent ignore.
   email (#160).
 - Editing a Household's `display_name` after founding is **out of scope** here (a reversible Settings
   affordance, any member) and tracked separately (#265).
+
+## Hardening: FOUNDING_DISABLED (#302)
+
+An operator-only `.env` boolean, default open, gates the gate's **found** commit specifically — not
+identity verification, so it applies uniformly to both providers ([[adr-0039]]). When set, `Found`
+answers 403 and the options response carries `founding_disabled: true` so the SPA hides the "start
+your own household" affordance before it's ever offered. The **join** commit and every invite-flow
+invariant above are untouched: an operator can still invite members into an existing Household after
+flipping the flag. Lets a preview/self-host instance freeze its household population once its known
+users are onboarded, without inventing a new "public vs private instance mode" — see SELF-HOSTING.md's
+"found the household before exposing the instance" for the sequencing this slots into.

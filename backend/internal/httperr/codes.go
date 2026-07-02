@@ -116,6 +116,15 @@ const (
 	// hard error.
 	CodeInvitationNoLongerValid Code = "INVITATION_NO_LONGER_VALID"
 
+	// CodeFoundingDisabled is a 403 at the onboarding gate when the operator has
+	// set FOUNDING_DISABLED and the chosen action is "found" — a brand-new,
+	// zero-invite identity trying to start a household on an instance that has
+	// frozen its population (#302). Invite-based joining is unaffected. The
+	// options response also carries founding_disabled so the SPA hides/relabels
+	// the affordance before it's ever clicked; this is the server-side guard for
+	// a stale client or a flag flip mid-session.
+	CodeFoundingDisabled Code = "FOUNDING_DISABLED"
+
 	// CodeTagNameExists maps repo.ErrTagNameExists -> 409 — a Tag with that
 	// name (case-insensitive) already exists in the household.
 	CodeTagNameExists Code = "TAG_NAME_EXISTS"

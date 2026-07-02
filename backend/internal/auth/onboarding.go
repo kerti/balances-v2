@@ -115,6 +115,11 @@ type onboardingOptionsResponse struct {
 	DisplayName   string             `json:"display_name"`
 	SuggestedName string             `json:"suggested_household_name"`
 	Invitations   []onboardingInvite `json:"invitations"`
+	// FoundingDisabled mirrors the operator's FOUNDING_DISABLED flag (#302) so
+	// the gate can hide/relabel the founder affordance before it's ever
+	// clicked, rather than letting a zero-invite stranger pick an option that
+	// then dead-ends on the commit. Invite-based joining is unaffected.
+	FoundingDisabled bool `json:"founding_disabled"`
 }
 
 // handleOnboardingOptions returns what the gate can offer the holder of a valid
@@ -157,10 +162,11 @@ func (h *Handlers) handleOnboardingOptions(w http.ResponseWriter, r *http.Reques
 	}
 
 	resp := onboardingOptionsResponse{
-		Email:         hs.Email,
-		DisplayName:   hs.DisplayName,
-		SuggestedName: hs.DisplayName + "'s Household",
-		Invitations:   invites,
+		Email:            hs.Email,
+		DisplayName:      hs.DisplayName,
+		SuggestedName:    hs.DisplayName + "'s Household",
+		Invitations:      invites,
+		FoundingDisabled: h.foundingDisabled,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(resp)
@@ -205,6 +211,14 @@ func (h *Handlers) handleOnboardingChoice(w http.ResponseWriter, r *http.Request
 			"field": "found",
 			"rule":  "required",
 		})
+		return
+	}
+	if h.foundingDisabled {
+		// The operator has frozen this instance's household population (#302).
+		// Applies uniformly to Google and local: both funnel through this one
+		// commit path. Invite-based joining (the req.Join branch above) is
+		// untouched.
+		httperr.Write(w, http.StatusForbidden, httperr.CodeFoundingDisabled, nil)
 		return
 	}
 

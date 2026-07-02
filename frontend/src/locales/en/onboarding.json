@@ -24,6 +24,10 @@
     "submit": "Create household",
     "submitting": "Creating…"
   },
+  "foundingDisabled": {
+    "title": "Not accepting new households",
+    "message": "This instance isn't open to new households right now. If you were expecting an invitation, ask the person who invited you to send one."
+  },
   "alreadyMember": "You're already in {{household}} — an invitation can't move you. A person can belong to only one household.",
   "error": "Something went wrong setting that up. Please try again.",
   "expired": "Your sign-in timed out before you finished. Please sign in again.",

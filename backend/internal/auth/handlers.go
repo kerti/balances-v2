@@ -57,6 +57,11 @@ type Config struct {
 	// no OIDC discovery call, so a local-only self-host needs no Google creds.
 	GoogleEnabled bool
 	LocalEnabled  bool
+	// FoundingDisabled gates the onboarding gate's founder step (#302) — see
+	// config.Config.FoundingDisabled for the full rationale. Applies uniformly
+	// to both providers since it guards handleOnboardingChoice, not
+	// per-provider identity verification.
+	FoundingDisabled bool
 	// EmailEnabled mirrors the boot EMAIL_ENABLED (ADR-0037). It gates the emailed
 	// password-reset path (#282): with mail off there is no way to deliver a reset
 	// link, so the methods endpoint advertises reset as unavailable and the request
@@ -77,20 +82,21 @@ type Config struct {
 }
 
 type Handlers struct {
-	q             *db.Queries
-	pool          *pgxpool.Pool
-	googleOAuth   googleOAuthClient
-	googleEnabled bool
-	localEnabled  bool
-	emailEnabled  bool
-	limiter       *loginLimiter
-	mailer        email.Mailer
-	validate      *validator.Validate
-	sessionTTL    time.Duration
-	cookieSecure  bool
-	frontendURL   string
-	backendURL    string
-	emailFrom     string
+	q                *db.Queries
+	pool             *pgxpool.Pool
+	googleOAuth      googleOAuthClient
+	googleEnabled    bool
+	localEnabled     bool
+	emailEnabled     bool
+	foundingDisabled bool
+	limiter          *loginLimiter
+	mailer           email.Mailer
+	validate         *validator.Validate
+	sessionTTL       time.Duration
+	cookieSecure     bool
+	frontendURL      string
+	backendURL       string
+	emailFrom        string
 	// dispatch runs a background task. In production it spawns a goroutine; the
 	// reset-request path uses it to send the email *off* the request goroutine so
 	// the SMTP round-trip never lands in the response timing (the no-enumeration
@@ -121,21 +127,22 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		return nil, errors.New("auth: backend url is required")
 	}
 	return &Handlers{
-		q:             q,
-		pool:          cfg.Pool,
-		googleOAuth:   g,
-		googleEnabled: cfg.GoogleEnabled,
-		localEnabled:  cfg.LocalEnabled,
-		emailEnabled:  cfg.EmailEnabled,
-		limiter:       newLoginLimiter(),
-		mailer:        cfg.Mailer,
-		validate:      httperr.NewValidator(),
-		sessionTTL:    cfg.SessionTTL,
-		cookieSecure:  cfg.CookieSecure,
-		frontendURL:   cfg.FrontendURL,
-		backendURL:    cfg.BackendURL,
-		emailFrom:     cfg.EmailFrom,
-		dispatch:      func(fn func()) { go fn() },
+		q:                q,
+		pool:             cfg.Pool,
+		googleOAuth:      g,
+		googleEnabled:    cfg.GoogleEnabled,
+		localEnabled:     cfg.LocalEnabled,
+		emailEnabled:     cfg.EmailEnabled,
+		foundingDisabled: cfg.FoundingDisabled,
+		limiter:          newLoginLimiter(),
+		mailer:           cfg.Mailer,
+		validate:         httperr.NewValidator(),
+		sessionTTL:       cfg.SessionTTL,
+		cookieSecure:     cfg.CookieSecure,
+		frontendURL:      cfg.FrontendURL,
+		backendURL:       cfg.BackendURL,
+		emailFrom:        cfg.EmailFrom,
+		dispatch:         func(fn func()) { go fn() },
 	}, nil
 }
 

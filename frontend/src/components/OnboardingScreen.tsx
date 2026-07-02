@@ -32,6 +32,10 @@ type OnboardingOptions = {
   display_name: string;
   suggested_household_name: string;
   invitations: OnboardingInvite[];
+  // founding_disabled mirrors the operator's FOUNDING_DISABLED flag (#302) —
+  // the instance is no longer accepting brand-new households. Invite-based
+  // joining is unaffected.
+  founding_disabled: boolean;
 };
 
 // OnboardingScreen is the post-auth gate (ADR-0038), rendered by App.tsx for a
@@ -62,6 +66,7 @@ export function OnboardingScreen() {
 
   const invitations = options.data?.invitations ?? [];
   const hasInvites = invitations.length > 0;
+  const foundingDisabled = options.data?.founding_disabled ?? false;
   const householdName =
     override ?? options.data?.suggested_household_name ?? "";
 
@@ -104,7 +109,12 @@ export function OnboardingScreen() {
 
   // Founder form is shown directly when there are no invitations; when there
   // are, it appears only after the explicit "start your own instead" confirm.
-  const founderView = !hasInvites || showFounder;
+  // Never shown at all when the operator has disabled founding (#302) — a
+  // zero-invite stranger sees the blocked message below instead of a form
+  // that would dead-end on submit.
+  const founderView = (!hasInvites || showFounder) && !foundingDisabled;
+  // A zero-invite identity with nothing else to do at this gate.
+  const foundingBlocked = foundingDisabled && !hasInvites;
 
   const confirmDescription =
     invitations.length === 1
@@ -119,10 +129,18 @@ export function OnboardingScreen() {
         <CardHeader>
           <AppLogo className="w-full h-auto" />
           <CardTitle className="pt-2">
-            {hasInvites && !showFounder ? t("invited.title") : t("title")}
+            {foundingBlocked
+              ? t("foundingDisabled.title")
+              : hasInvites && !showFounder
+                ? t("invited.title")
+                : t("title")}
           </CardTitle>
           <CardDescription>
-            {hasInvites && !showFounder ? t("invited.subtitle") : t("subtitle")}
+            {foundingBlocked
+              ? t("foundingDisabled.message")
+              : hasInvites && !showFounder
+                ? t("invited.subtitle")
+                : t("subtitle")}
           </CardDescription>
         </CardHeader>
 
@@ -134,6 +152,8 @@ export function OnboardingScreen() {
                 <a href="/">{t("signInAgain")}</a>
               </Button>
             </div>
+          ) : foundingBlocked ? (
+            <div data-testid="onboarding-founding-disabled" />
           ) : (
             <>
               {hasInvites && !showFounder && (
@@ -176,16 +196,18 @@ export function OnboardingScreen() {
                       </span>
                     </button>
                   ))}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    data-testid="onboarding-start-own"
-                    disabled={join.isPending}
-                    onClick={() => setConfirmFound(true)}
-                  >
-                    {t("invited.startOwnInstead")}
-                  </Button>
+                  {!foundingDisabled && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full"
+                      data-testid="onboarding-start-own"
+                      disabled={join.isPending}
+                      onClick={() => setConfirmFound(true)}
+                    >
+                      {t("invited.startOwnInstead")}
+                    </Button>
+                  )}
                 </div>
               )}
 

@@ -253,6 +253,11 @@ and it only applies to local accounts — a Google member has no password to res
 > freshly-deployed, unfounded local-auth instance on the public internet and walk away — register
 > first. (Google-only deployments are not affected: Google verifies the email.)
 >
+> Once you've founded every household this instance is meant to host, set `FOUNDING_DISABLED=true`
+> as the next layer of that same sequence: it freezes the instance's household population — no
+> brand-new identity can found another one, for either provider — while inviting members into an
+> existing household keeps working exactly as before.
+>
 > After a backup **restore**, the member who ran the restore stays signed in (their password is
 > carried across on the same box — never through the file), but **other** local members land
 > **dormant**: their identity and data are present, but their password did not travel in the backup
@@ -447,6 +452,7 @@ actually touch:
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `balances` | Bundled database credentials. **Change the password** beyond a trial. `DATABASE_URL` is assembled from these — you do not set it. |
 | `AUTH_GOOGLE_ENABLED` | `true` | Google sign-in. Set `false` to run without a Google OAuth client. |
 | `AUTH_LOCAL_ENABLED` | `false` | `true` to enable local email + password accounts. The server refuses to start if both providers are disabled. |
+| `FOUNDING_DISABLED` | `false` | `true` to stop the instance from founding any *new* household — the next defense-in-depth layer after "found the household before exposing the instance" below. Inviting members into an existing household is unaffected. |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | _(empty)_ | Your Google OAuth client. Required when `AUTH_GOOGLE_ENABLED=true`. |
 | `EMAIL_ENABLED` | `false` | `true` to send mail (then set `SMTP_*`). Off = copy-invite-link fallback. |
 | `SESSION_TTL` | `720h` | How long a sign-in lasts (default 30 days). |
