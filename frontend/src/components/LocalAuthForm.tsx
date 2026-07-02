@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
@@ -30,17 +30,23 @@ export function LocalAuthForm() {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
 
-  // Public demo (ADR-0041, #217): pre-fill the shared demo login so a visitor can
-  // just click Sign in. The caption below repeats the same credentials in plain
-  // text as a fail-safe against the visitor's typing clobbering these fields —
-  // there is no confidentiality cost, every visitor shares this one identity
-  // regardless of whether the values are shown.
-  useEffect(() => {
-    if (methods?.demo_mode) {
+  // Public demo (ADR-0041, #217): pre-fill the shared demo login once methods
+  // loads, so a visitor can just click Sign in. The caption below repeats the
+  // same credentials in plain text as a fail-safe against the visitor's typing
+  // clobbering these fields — there is no confidentiality cost, every visitor
+  // shares this one identity regardless of whether the values are shown.
+  //
+  // Adjusted during render (React's documented pattern for syncing state from
+  // a prop/query that resolves later) rather than in an effect, so it applies
+  // before the first paint instead of flashing empty fields then refilling.
+  const [demoPrefilled, setDemoPrefilled] = useState(false);
+  if (!demoPrefilled && methods) {
+    setDemoPrefilled(true);
+    if (methods.demo_mode) {
       setEmail(methods.demo_email ?? "");
       setPassword(methods.demo_password ?? "");
     }
-  }, [methods]);
+  }
 
   const login = useMutation({
     mutationFn: () =>
