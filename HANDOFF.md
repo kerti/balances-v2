@@ -85,8 +85,12 @@ Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared
 `enhancement`/`bug`/`documentation`/`dependencies`. Test-only and CI/dev/build tooling PRs go under
 **`enhancement`** (decided 2026-06-17 — no dedicated `chore`/`test` label).
 
-**demo / production** — first prod = `v1.0.0`; SemVer = operator upgrade contract, not the "Balances"
-brand; migrations immutable from `1.0.0`; self-host compose stack is a `1.0.0` blocker (#116, ADR-0033).
+**demo / production** — first prod is **not** pinned to `v1.0.0` (ADR-0033 amended 2026-07-02): it
+lands on whatever `0.x` minor is current when prod actually unparks. SemVer = operator upgrade
+contract, not the "Balances" brand; migration immutability + major-vs-minor discipline switch on at
+*first production deploy*, not a specific number. Self-host (#116, the prior blocker) is done/closed.
+Milestone-close still rolls to the next minor's alpha (M6→M7 precedent) unless a milestone happens to
+coincide with dropping the suffix for a real production cut.
 
 **Deploying:** push a SemVer tag — `*-alpha.N` → `preview`, `*-rc.N`/`*-beta.N` → `demo` (both auto).
 `deploy.yml` routes by tag and runs `flyctl deploy` (builds the SPA+API image, `goose up` via

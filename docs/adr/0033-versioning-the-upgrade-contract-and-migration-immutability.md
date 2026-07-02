@@ -9,6 +9,25 @@ human identity is just **"Balances"** and is decoupled from the number. First pr
 This builds on [[adr-0029]] (release strategy), [[adr-0030]] (hosting), and [[adr-0031]] (baseline
 squash), and resolves the versioning questions those left open for production.
 
+## Amended (2026-07-02)
+
+Production may now launch on a `0.x` minor, not necessarily `v1.0.0`. Prod was deferred indefinitely
+(2026-07-02, see HANDOFF) and self-hosting (#116, the one blocker this ADR named below) has since
+shipped and closed — nothing structural is left pinning first-production to a specific number. Every
+rule below that reads "at `1.0.0`" now reads **"at the first tag that deploys to `production`,
+whatever that version turns out to be"**:
+
+- **Migration immutability** begins at the first production deploy, not literally at `1.0.0`.
+- **Major-vs-minor discipline** switches on at the same point.
+- **The last in-repo squash** happens right before that tag, not specifically before `1.0.0`.
+- `1.0.0` is not reserved for anything — it may land on first production, or it may end up meaning
+  nothing at all if prod ships at, say, `0.8.0`. No separate "1.0" branding milestone is implied or
+  promised.
+
+Everything else below — the operator-upgrade-contract framing, the squash rules once the boundary is
+crossed, the repo-boundary logic — is unchanged; only the trigger's *name* moves from a fixed number
+to an event.
+
 ## Why now
 
 [[adr-0029]] started the line at `v0.6.0-alpha.1` and called `0.x` "unstable schema/API, honestly,"
