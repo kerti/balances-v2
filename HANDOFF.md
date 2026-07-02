@@ -19,7 +19,7 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.3` is
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.4` is
 the latest release** (M7 line; six batched alphas preceded it on the 0.6 line)
 on the `preview` environment
 (`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
@@ -66,57 +66,26 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   file is older-format (#258). The **failed-invite-email toast** (#212). Plus the `COMPOSE_PROJECT_NAME`
   pin isolating the operator stack (#245) and an ADR-0030 amendment (#255). **Migration: additive** (`00006`).
   Detail in the v0.7.0-alpha.3 Release notes.
+- **v0.7.0-alpha.4** — **the M7 identity/trust batch.** **Onboarding gate** (#158, ADR-0038 — #267
+  founder-path + #268 invite-join + #269 already-member notice, mig `00007`): every first sign-in
+  routes through an explicit found-vs-join decision. **Optional local password auth** — epic #277
+  COMPLETE (ADR-0039, migs `00008`–`00010`): #280 core (email+password beside Google, Argon2id) ·
+  #281 invite-link set-password · #282 emailed self-service reset · #283 founder-assisted reactivation
+  · #284 operator CLI (`balances reset-password`) · #285 local-only backup/restore. **Household
+  erasure** "DELETE ME" (#300, ADR-0040): founder-only hard delete reusing restore's wipe primitive.
+  **`FOUNDING_DISABLED`** env flag (#302) freezing an instance's household population. Plus
+  display-name edit in Settings (#265), income month-picker parity (#294), import-error dialog
+  footer fix (#132). **Migration: additive** (`00007`–`00010`). Detail in the v0.7.0-alpha.4 Release
+  notes.
 
 ## What's next
 
-**M6 closed (alpha.5); M7 (productization) is open (latest release v0.7.0-alpha.3).** Next, in order:
+**M6 closed (alpha.5); M7 (productization) is open (latest release v0.7.0-alpha.4).** Next, in order:
 
-- **Self-host #116 + #229 — ✅ DONE** (closed 2026-06-25). Full rehearsal matrix passed: localhost,
-  Caddy turnkey on a real domain, **upgrade-across-migration** (`00006` on alpha.3 via `pull && up -d`),
-  `pg_dump`→`pg_restore` roundtrip, and `EMAIL_ENABLED=true` (mailpit). The v1→v2 restore-upgrade path
-  (`transforms[1]` backfilling `coupon_disposition`) was also proven on dev. **#232** (preview now
-  dogfoods a single `APP_URL`, deriving the three URL vars via ADR-0037) — ✅ DONE/closed 2026-06-25,
-  ops-only Fly-secret flip. **Self-host tail now closed:** **#244** (the single-origin serving path is
-  guarded by a Go integration test through the real router — deep-route fallback, chunk-404, and the
-  `/*`-doesn't-shadow-`/api` precedence the Vite-dev e2e harness was blind to — plus a new **SERVING**
-  QA zone, #21) and **#258** (restore-preview format-version reassurance) both shipped/closed.
-
-1. **M7 = productization (now the active line).** Make it trustable by real households, not richer in
-   domain features: a non-disposable env, **#158** onboarding (invite-vs-found at first sign-in,
-   irreversible — **✅ DONE/closed: #267 founder-path gate + #268 invite-join + #269 already-member
-   notice (ADR-0038; handshake table mig 00007 + gate endpoints + `/onboarding` SPA route; ALL first
-   sign-ins route through the gate — invited links degrade to a pre-selection hint, joins keyed off the
-   verified email with TOCTOU re-validation, found-while-invited needs explicit confirm; an
-   already-onboarded user opening an invite link gets a non-blocking notice, not a silent ignore)**),
-   **optional local password auth** (#277, ADR-0039 — drop the Google-OAuth dependency for self-host;
-   being sliced: **✅ #280 core** (nullable `google_sub` + `local_credentials` mig 00008,
-   `AUTH_LOCAL_ENABLED`/`AUTH_GOOGLE_ENABLED` flags, `/auth/methods` + local register-via-gate /login,
-   Argon2id + rate-limit + no-enumeration; INV-AUTH-15/16/17) · **✅ #281 local invite-link set-password**
-   (shared hashed/single-use/short-TTL set-password-token: invite token now stored as SHA-256, mig 00009
-   `token`→`token_hash`; `/accept` SPA route + `/auth/local/invite` preview + accept; link-possession =
-   email proof, no second gate; INV-AUTH-18) · **✅ #282 emailed self-service reset** (`EMAIL_ENABLED=true`:
-   `password_reset_tokens` mig 00010, `/auth/local/reset/request|GET preview|set`; generic-204 no-enumeration +
-   off-thread send, single-use atomic consume, revokes other sessions on set, `/auth/methods.password_reset`
-   gates the "Forgot password?" link + `/forgot-password`+`/reset` SPA screens; INV-AUTH-19) · **✅ #283
-   founder-assisted in-app reactivation** (no-mail recovery, no migration: founder-only + dormant-only
-   `/auth/local/reactivation` mints a one-time set-password link for a credential-less member — reuses the
-   `/reset` consume path + `password_reset_tokens`; refuses active/Google members (409 `MEMBER_NOT_DORMANT`)
-   and non-founders (403 `FORBIDDEN`); `me.is_founder` gates a Settings `ReactivationCard`; INV-AUTH-20) · **✅ #284
-   operator CLI** (`balances reset-password <email>`, no migration: mints a one-time set-password link for a
-   local account regardless of `EMAIL_ENABLED` and is the **only** path that can reset an **active** member —
-   the in-app path refuses one; reuses the shared relay token + `/reset` consume path via
-   `auth.MintResetPasswordLink`, refuses Google accounts, gated on `AUTH_LOCAL_ENABLED`; `docker compose run
-   --rm app reset-password …`; INV-AUTH-21) · **✅ #285 local-only backup/restore** (no migration:
-   `local_credentials` stays excluded so the backup format is unchanged and no hash ever serializes;
-   the restore membership guard gains the null-`google_sub` **email branch** — local caller matched by
-   email, incl. onto a Google-origin row for the blessed Google→local migration; Google caller still
-   `google_sub`-only. `Commit` carries the restorer's credential DB-row→DB-row **inside the tx** (stash
-   pre-wipe, re-insert against the restored/original UUID post-load) and re-binds the session to that
-   UUID so the restorer stays logged in; other local members land dormant. A local-member backup onto a
-   Google-only instance (`AUTH_LOCAL_ENABLED=false`) is refused `422 RESTORE_STRANDS_LOCAL_MEMBERS`
-   ahead of the membership guard; `SELF-HOSTING.md` documents the post-restore dormancy;
-   INV-AUTH-22/23/24/25) — **local-auth epic #277 COMPLETE**), production
-   Resend domain, **#93** landing. See ROADMAP M7.
+1. **M7 = productization (now the active line).** Onboarding gate, local password auth, and household
+   erasure all shipped in alpha.4 (see above) — remaining M7 gate items: **demo standup** (below),
+   production Resend domain, **#93** landing. Prod itself is **deferred indefinitely** (2026-07-02) —
+   see the data-protection note below. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
@@ -129,33 +98,23 @@ with prod; demo instead follows ADR-0030's already-decided single-project-per-en
 isolation): Neon `demo` branch, Fly app `balances-demo`, GitHub Environment `demo` all provisioned.
 #217 demo readiness — OAuth consolidated under one new GCP project (dev/preview/demo clients,
 consent screen **published to Production**, preview re-verified on the new client first) — **DONE**;
-email sink / guest auth / nightly reset still open. DNS + remaining Fly secrets (`DATABASE_URL`,
-OAuth) being set directly by the maintainer. Feeds M7.
+`balances-demo` Fly secrets (`APP_URL`, `COOKIE_SECURE`, `DATABASE_URL`, `EMAIL_ENABLED=false`,
+`GOOGLE_CLIENT_ID`/`SECRET`, `SESSION_TTL`) set by the maintainer, staged pending demo's first
+deploy. Guest auth / nightly reset still open. DNS (`demo.balances.<domain>`) being set directly by
+the maintainer. Feeds M7.
 
 **Production SaaS data-protection decision (2026-07-02):** #222 (originally: maintainer structurally
 unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
 core server-side aggregation (monthly reports) and isn't what GDPR requires. Decided: ordinary GDPR
 compliance is sufficient — lawful basis, privacy policy naming subprocessors, honoring access/erasure
-requests, bounded breach process. Rescoped into **#299** (privacy policy — subprocessors, retention,
-signup consent, breach process, EU cross-border-transfer call given historical Fly `sin` region) and
-**#300** (household erasure "DELETE ME" — hard delete, founder-gated, reuses #52's export as the
-pre-delete backup path) — **✅ #300 DONE** (ADR-0040): a founder-only, server-enforced
-confirm-by-name endpoint (`POST /api/backup/erase`) reuses restore's `wipeHousehold` primitive
-verbatim with nothing loaded after ("restore with no load") — every table it reaches is purged,
-including sessions and, via `ON DELETE CASCADE`, `local_credentials`/`password_reset_tokens`; a
-best-effort founder-confirmation + peer-deletion-notice email pair (`NotifyErasure`) fires with the
-member list captured *before* the wipe; the session cookie is cleared (not re-issued) and the caller
-lands on a dedicated `/erased` screen, not sign-in. Access/portability already satisfied by the
-backup/export epic (#52). Self-host (#116) remains the zero-exposure option for anyone unwilling to
-accept hosted SaaS. This unblocks the "production Resend domain" + "non-disposable environment" M7
-gate items, pending #299/#217/#218/#215. **✅ #302 DONE** (PR #306): `FOUNDING_DISABLED` env flag
-closes the "preview becomes an accidental permanent soft-prod" gap — an operator-only boolean,
-default open, that gates only the onboarding gate's founder commit (uniformly for Google + local),
-freezing an instance's household population while invite-based joining stays untouched; narrower
-follow-on to the DB-backed allow-list #263 rejected as wontfix. ADR-0038 append; INV-AUTH-26.
+requests, bounded breach process. Rescoped into **#299** (privacy policy — still open) and **#300**
+(household erasure "DELETE ME" — shipped alpha.4, see above, ADR-0040). Access/portability already
+satisfied by the backup/export epic (#52). Self-host (#116) remains the zero-exposure option for
+anyone unwilling to accept hosted SaaS. **Prod itself stays deferred indefinitely** — the
+"non-disposable environment" M7 gate item doesn't apply until prod is unparked; demo (below) is the
+closest thing to a public-facing env for now.
 
-Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
-unclosable), #163 (email wordmark raster).
+Smaller open items ride a convenient batch, not their own cut: #163 (email wordmark raster).
 Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
 
 **Label convention (release notes):** every PR carries exactly one type label at merge —
@@ -165,10 +124,10 @@ Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared
 **demo / production** — first prod = `v1.0.0`; SemVer = operator upgrade contract, not the "Balances"
 brand; migrations immutable from `1.0.0`; self-host compose stack is a `1.0.0` blocker (#116, ADR-0033).
 
-**Deploying:** push a SemVer tag — `v0.6.0-alpha.N` → `preview` (auto). `deploy.yml` routes by tag and
-runs `flyctl deploy` (builds the SPA+API image, `goose up` via `release_command`, rolls out). Backend
-runtime secrets live on Fly (`fly secrets`); only `FLY_API_TOKEN` is in the GitHub `preview`
-environment.
+**Deploying:** push a SemVer tag — `*-alpha.N` → `preview`, `*-rc.N`/`*-beta.N` → `demo` (both auto).
+`deploy.yml` routes by tag and runs `flyctl deploy` (builds the SPA+API image, `goose up` via
+`release_command`, rolls out). Backend runtime secrets live on Fly (`fly secrets`); only
+`FLY_API_TOKEN` is in each env's GitHub Environment (`preview`, `demo`).
 
 Don't auto-start the next item — the user pauses between items to direct. The deferred backlog below
 holds the smaller, optional items.
