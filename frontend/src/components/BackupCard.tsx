@@ -9,23 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { filenameFromDisposition } from "@/lib/backup";
-
-type Fidelity = "full" | "compacted";
-
-// triggerDownload saves a blob to disk via a transient object URL + anchor —
-// the standard browser-download dance, since the export endpoint streams a file
-// rather than JSON the api() client could parse.
-function triggerDownload(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
+import { downloadBackup, type Fidelity } from "@/lib/backup";
 
 // BackupCard is the export half of Settings → Data (ADR-0036, issue #174). The
 // fidelity toggle chooses a full (lossless, carries deleted items) or compacted
@@ -39,13 +23,7 @@ export function BackupCard() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/backup/export?fidelity=${fidelity}`);
-      if (!res.ok) throw new Error(`export failed (${res.status})`);
-      const blob = await res.blob();
-      triggerDownload(
-        blob,
-        filenameFromDisposition(res.headers.get("Content-Disposition")),
-      );
+      await downloadBackup(fidelity);
       toast.success(t("data.exported"));
     } catch {
       toast.error(t("data.exportError"));

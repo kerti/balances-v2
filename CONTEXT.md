@@ -143,7 +143,9 @@ accepting an email-token invitation. _Avoid_: Owner, Admin (imply a privilege th
 The one carve-out ([[adr-0039]]): on a local-auth self-host, the founder/first account may **reactivate a
 _dormant_ member** (a row with no credential, e.g. after a restore) by issuing a one-time set-password
 secret. This is operator **bring-up**, not a standing power — it cannot touch a member who already holds
-a credential, so it is not impersonation and does not breach the equal-peers model.
+a credential, so it is not impersonation and does not breach the equal-peers model. A second carve-out
+([[adr-0040]]): only the founder may trigger whole-Household **Erasure** — the one irreversible action
+that ends every member's access at once, not a privilege exercised over peers individually.
 
 **Onboarding**: The one-time resolution, on a brand-new Google identity's first sign-in, of *which
 Household this person belongs to* — join an existing Household they hold a pending invitation to, or
@@ -252,6 +254,14 @@ next sign-in — no re-invitation. Any member named in the Backup may restore (g
 confirmation, not by Founder lineage). Restore never resurrects soft-deleted rows — resurrecting from
 the Recycle Bin is a separate, unbuilt feature. _Avoid_: Import (reserved for the per-position
 spreadsheet flow).
+
+**Erasure**: Permanent, whole-Household **hard delete** — the GDPR Art. 17 right-to-erasure path
+([[adr-0040]]). Founder-only, gated by typing the Household's exact name back to confirm. Reuses the
+same wipe primitive Restore uses to clear a Household before loading, just with nothing loaded
+after — every member's data, credentials, and sessions are gone, not soft-deleted or recoverable.
+Exporting a Backup first is strongly suggested (the confirm dialog offers it) but not enforced —
+there is no way to verify a file was actually saved off-device. _Avoid_: Delete (too generic — used
+loosely elsewhere for soft-delete), Deactivate (implies reversible).
 
 ## Relationships
 

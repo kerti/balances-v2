@@ -9,10 +9,14 @@ token's randomness / single-use / email-match-on-acceptance; this zone owns the
 tests exercise. The app has three transactional senders: the invitation email
 (`Handlers.sendInvitationEmail`, `internal/auth/invitations.go`), the founder
 **welcome email** (`Handlers.sendWelcomeEmail`, `internal/auth/welcome_email.go`),
-and the **restore notifications** (`Handlers.NotifyRestore`,
+the **restore notifications** (`Handlers.NotifyRestore`,
 `internal/auth/restore_email.go` — a restorer confirmation + a member
 relocation/security notice, fired best-effort from the backup commit handler
-after a successful restore). All render through the shared `email.Layout` shell.
+after a successful restore), and the **erasure notifications**
+(`Handlers.NotifyErasure`, `internal/auth/erasure_email.go` — a founder
+"deleted" confirmation + a member deletion notice, fired best-effort from the
+backup erase handler after a successful hard delete, ADR-0040). All render
+through the shared `email.Layout` shell.
 The best-effort contract (INV-NOTIFICATIONS-02) is shared; addressing and
 escaping are pinned per sender.
 The zone grows as new senders land. The catalog bar
@@ -34,14 +38,18 @@ ADR-0020 (mailer interface), ADR-0017 (invitations).
 | INV-NOTIFICATIONS-09 | Locale-rendered restore emails — each recipient's restore email (confirmation or notice) renders in **their own** `user.locale`, not the restorer's, with the en-GB fallback and literal brand name. The per-recipient re-pin of INV-NOTIFICATIONS-06/07 for the restore senders — a member reading the security notice in the wrong language is the bar | ADR-0035 / ADR-0036 / restore_email.go | Medium |
 | INV-NOTIFICATIONS-10 | Mail is gated by `EMAIL_ENABLED` (default true) — when false, `main` wires `email.NoopMailer` and skips SMTP construction entirely, so the app boots with no SMTP config; `NoopMailer.Send` returns nil for any payload, so every best-effort sender (invitation, welcome, restore) no-ops cleanly and the invitation still persists + returns its AcceptURL, which the **copy-invite-link** UI affordance surfaces for manual sharing. The self-host no-mail path ([[adr-0037]]); the SMTP wiring is unchanged when the flag is true | ADR-0037 | Medium |
 | INV-NOTIFICATIONS-11 | Send outcome is reported to the inviter — the `201` from `POST /api/invitations` carries `email_sent`, set `false` **only** when `mailer.Send` errored (a misconfigured sender / transient outage) and `true` otherwise. The frontend nudges the inviter to share the AcceptURL with a non-blocking toast when `false`, so a silently-lost invite email (the bad-`EMAIL_FROM_ADDRESS` class split out of #195) no longer goes unnoticed by the one user who is watching. With email **disabled** the NoopMailer succeeds so `email_sent` stays `true` and the always-visible copy-link panel (INV-NOTIFICATIONS-10) is the affordance — the toast is specifically the enabled-but-failed surprise. Best-effort still holds: `email_sent=false` never blocks creation (INV-NOTIFICATIONS-02) | ADR-0020 / invitations.go | Medium |
+| INV-NOTIFICATIONS-12 | Erasure notification addressing & roles — after a successful erasure, `NotifyErasure` mails exactly the members it was handed (captured by the caller **before** the wipe, since there is nothing left to query afterwards): the **founder** who triggered it gets the "deleted" confirmation, every **other** member gets the deletion notice. Misrouting a role is the bar this row guards; fires on wipe success only | ADR-0040 / erasure_email.go | Medium |
+| INV-NOTIFICATIONS-13 | Locale-rendered erasure emails — each recipient's erasure email (confirmation or notice) renders in **their own** `user.locale`, with the en-GB fallback and literal brand name. The per-recipient re-pin of INV-NOTIFICATIONS-06/07 for the erasure senders | ADR-0035 / ADR-0040 / erasure_email.go | Medium |
 
 > _Next sender to catalogue when it lands: today's senders are the invitation
-> email, the founder welcome email, and the restore notifications (restorer
-> confirmation + member relocation/security notice). When a fourth ships (e.g. a
-> maturity / staleness digest), seed its rows here against its own call site —
-> the Mailer interface and the best-effort contract (INV-NOTIFICATIONS-02)
-> generalise, but the addressing and escaping rows are per-message and must be
-> re-pinned. INV-NOTIFICATIONS-10 is cross-cutting (the `EMAIL_ENABLED` gate over
-> every sender), not a new sender. INV-NOTIFICATIONS-11 is the inviter-facing
+> email, the founder welcome email, the restore notifications (restorer
+> confirmation + member relocation/security notice), and the erasure
+> notifications (founder confirmation + member deletion notice). When a fifth
+> ships (e.g. a maturity / staleness digest), seed its rows here against its own
+> call site — the Mailer interface and the best-effort contract
+> (INV-NOTIFICATIONS-02) generalise, but the addressing and escaping rows are
+> per-message and must be re-pinned. INV-NOTIFICATIONS-10 is cross-cutting (the
+> `EMAIL_ENABLED` gate over every sender), not a new sender. INV-NOTIFICATIONS-11
+> is the inviter-facing
 > *report* of the best-effort outcome (not a new sender either — it rides the
 > invitation send site). This zone is complete at 11/11._

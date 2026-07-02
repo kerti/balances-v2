@@ -41,6 +41,11 @@
     "invalid": "Tautan setel ulang ini sudah tidak berlaku. Minta yang baru untuk melanjutkan.",
     "requestNew": "Minta tautan baru"
   },
+  "erased": {
+    "title": "Rumah tangga telah dihapus",
+    "body": "Rumah tangga Anda beserta seluruh isinya telah dihapus secara permanen. Peramban ini telah keluar dari akun Anda.",
+    "backToSignIn": "Kembali ke halaman masuk"
+  },
   "signOut": "Keluar",
   "save": "Simpan",
   "cancel": "Batal",

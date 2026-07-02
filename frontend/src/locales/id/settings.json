@@ -113,6 +113,19 @@
       "dontClose": "Memulihkan data Anda — mohon jangan tutup jendela ini.",
       "done": "Pemulihan selesai. Memuat data Anda…",
       "failed": "Pemulihan gagal — tidak ada yang diubah."
+    },
+    "erase": {
+      "title": "Hapus rumah tangga ini",
+      "description": "Hapus permanen rumah tangga ini beserta seluruh isinya — setiap posisi, snapshot, transaksi, dan akun anggota. Tindakan ini tidak dapat dibatalkan.",
+      "exportFirst": "Pertimbangkan untuk mengunduh cadangan terlebih dahulu — setelah dihapus, data ini tidak dapat dipulihkan.",
+      "exportNow": "Unduh cadangan",
+      "open": "Hapus rumah tangga ini…",
+      "confirmPrompt": "Ketik nama rumah tangga Anda, “{{household}}”, untuk konfirmasi.",
+      "confirmPlaceholder": "Nama rumah tangga",
+      "commit": "Hapus secara permanen",
+      "deleting": "Menghapus…",
+      "cancel": "Batal",
+      "failed": "Rumah tangga tidak dapat dihapus. Silakan coba lagi."
     }
   }
 }

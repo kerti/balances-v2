@@ -30,20 +30,29 @@ type Handlers struct {
 	authLocalEnabled bool            // gates the stranding guard: a local-member backup can't restore onto a Google-only instance (ADR-0039)
 }
 
-// SessionIssuer mints a fresh session + cookie for a user. The restore flow uses
-// it to keep the caller signed in across the session-wiping commit; satisfied by
+// SessionIssuer mints a fresh session + cookie for a user, or clears one. The
+// restore flow re-issues a session to keep the caller signed in across the
+// session-wiping commit; the erasure flow (ADR-0040) has no household left to
+// re-issue one against, so it clears the cookie instead. Satisfied by
 // *auth.Handlers.
 type SessionIssuer interface {
 	IssueSession(ctx context.Context, w http.ResponseWriter, userID uuid.UUID, userAgent string) error
+	ClearSessionCookie(w http.ResponseWriter)
 }
 
 // RestoreNotifier fires the best-effort, per-recipient-localized emails that
-// follow a successful restore (#176, ADR-0036): a confirmation to the restorer
-// and a relocation/security notice to every other live member. It is fully
-// best-effort and self-logging — it returns nothing, so a mail outage can never
-// reflect on the restore that already committed. Satisfied by *auth.Handlers.
+// follow a successful restore (#176, ADR-0036) or erasure (#300, ADR-0040): a
+// confirmation to the restorer/founder and a relocation/deletion notice to
+// every other live member. It is fully best-effort and self-logging — it
+// returns nothing, so a mail outage can never reflect on a destructive action
+// that already committed. Satisfied by *auth.Handlers.
 type RestoreNotifier interface {
 	NotifyRestore(ctx context.Context, householdID, restorerID uuid.UUID, itemCount int)
+
+	// NotifyErasure fires the erasure emails. members must be captured by the
+	// caller BEFORE the wipe runs — unlike restore, there is nothing left in the
+	// database to query afterwards.
+	NotifyErasure(ctx context.Context, members []db.User, founderID uuid.UUID, householdName string)
 }
 
 func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier, authLocalEnabled bool) *Handlers {
@@ -69,6 +78,10 @@ func (h *Handlers) Mount(r chi.Router) {
 		// inside Validate means a member can only restore their own Household.
 		r.Post("/restore/preview", h.handleRestorePreview)
 		r.Post("/restore/commit", h.handleRestoreCommit)
+		// Erasure is founder-only (ADR-0040) — the handler itself enforces this
+		// (unlike export/restore, which are equal-access), since it is a
+		// permanent, whole-Household hard delete.
+		r.Post("/erase", h.handleEraseHousehold)
 	})
 }
 

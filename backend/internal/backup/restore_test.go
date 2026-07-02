@@ -23,8 +23,13 @@ import (
 
 // stubIssuer is a test double for SessionIssuer that records the user it was
 // asked to re-sign-in and writes a marker cookie, so a test can assert the
-// post-restore re-login happened.
-type stubIssuer struct{ lastUserID uuid.UUID }
+// post-restore re-login happened. It also records whether the cookie was
+// cleared instead — the erasure path (ADR-0040), which has no household left
+// to re-issue a session against.
+type stubIssuer struct {
+	lastUserID uuid.UUID
+	cleared    bool
+}
 
 func (s *stubIssuer) IssueSession(_ context.Context, w http.ResponseWriter, userID uuid.UUID, _ string) error {
 	s.lastUserID = userID
@@ -32,19 +37,36 @@ func (s *stubIssuer) IssueSession(_ context.Context, w http.ResponseWriter, user
 	return nil
 }
 
+func (s *stubIssuer) ClearSessionCookie(w http.ResponseWriter) {
+	s.cleared = true
+	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/", MaxAge: -1})
+}
+
 // stubNotifier is a no-op RestoreNotifier for tests that don't exercise the
 // post-restore emails (the notifier's own behaviour is covered in the auth
 // package). It records the household/restorer it was handed so a test can assert
-// the commit handler fired it after a successful restore.
+// the commit handler fired it after a successful restore. It also records the
+// erasure call (ADR-0040) — members are captured by the caller before the wipe,
+// so the stub just echoes back whatever it was handed.
 type stubNotifier struct {
 	householdID uuid.UUID
 	restorerID  uuid.UUID
 	itemCount   int
 	calls       int
+
+	eraseMembers       []db.User
+	eraseFounderID     uuid.UUID
+	eraseHouseholdName string
+	eraseCalls         int
 }
 
 func (s *stubNotifier) NotifyRestore(_ context.Context, householdID, restorerID uuid.UUID, itemCount int) {
 	s.householdID, s.restorerID, s.itemCount, s.calls = householdID, restorerID, itemCount, s.calls+1
+}
+
+func (s *stubNotifier) NotifyErasure(_ context.Context, members []db.User, founderID uuid.UUID, householdName string) {
+	s.eraseMembers, s.eraseFounderID, s.eraseHouseholdName = members, founderID, householdName
+	s.eraseCalls++
 }
 
 func exportBytes(ctx context.Context, t *testing.T, h *Handlers) []byte {

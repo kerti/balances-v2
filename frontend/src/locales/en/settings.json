@@ -113,6 +113,19 @@
       "dontClose": "Restoring your data — please don't close this window.",
       "done": "Restore complete. Loading your data…",
       "failed": "Restore failed — nothing was changed."
+    },
+    "erase": {
+      "title": "Delete this household",
+      "description": "Permanently delete this household and everything in it — every position, snapshot, transaction, and member account. This cannot be undone.",
+      "exportFirst": "Consider downloading a backup first — once deleted, this data can't be recovered.",
+      "exportNow": "Download backup",
+      "open": "Delete this household…",
+      "confirmPrompt": "Type your household's name, “{{household}}”, to confirm.",
+      "confirmPlaceholder": "Household name",
+      "commit": "Permanently delete",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "failed": "Couldn't delete this household. Please try again."
     }
   }
 }

@@ -163,6 +163,56 @@ var restoreNoticeCatalog = map[string]restoreNoticeCopy{
 	},
 }
 
+// erasureConfirmCopy is the founder's "erasure complete" confirmation email
+// (#300, ADR-0040). greeting carries one %s (the founder display name); body
+// carries the erased Household's name (%s) as a sanity check.
+type erasureConfirmCopy struct {
+	subject  string
+	greeting string // %s = founder display name
+	body     string // %s = household name
+	signoff  string // plain-text part only
+}
+
+var erasureConfirmCatalog = map[string]erasureConfirmCopy{
+	"en-GB": {
+		subject:  "Your Balances household has been deleted",
+		greeting: "Hi, %s,",
+		body:     "You've permanently deleted your Balances household \"%s\". Every position, snapshot, transaction, and member account has been erased and cannot be recovered.",
+		signoff:  "— the Balances team",
+	},
+	"id-ID": {
+		subject:  "Rumah tangga Balances Anda telah dihapus",
+		greeting: "Halo, %s,",
+		body:     "Anda telah menghapus rumah tangga Balances \"%s\" secara permanen. Setiap posisi, snapshot, transaksi, dan akun anggota telah dihapus dan tidak dapat dipulihkan.",
+		signoff:  "— tim Balances",
+	},
+}
+
+// erasureNoticeCopy is the notice sent to every *other* live member after a
+// founder erases the Household (#300, ADR-0040) — their account no longer
+// exists. body carries the Household name (%s).
+type erasureNoticeCopy struct {
+	subject  string
+	greeting string // %s = member display name
+	body     string // %s = household name
+	signoff  string // plain-text part only
+}
+
+var erasureNoticeCatalog = map[string]erasureNoticeCopy{
+	"en-GB": {
+		subject:  "Your Balances household has been deleted",
+		greeting: "Hi, %s,",
+		body:     "Your Balances household \"%s\" has been permanently deleted by its founder. Your account and all its data no longer exist.",
+		signoff:  "— the Balances team",
+	},
+	"id-ID": {
+		subject:  "Rumah tangga Balances Anda telah dihapus",
+		greeting: "Halo, %s,",
+		body:     "Rumah tangga Balances \"%s\" telah dihapus secara permanen oleh pendirinya. Akun Anda dan semua datanya tidak lagi ada.",
+		signoff:  "— tim Balances",
+	},
+}
+
 // localizedEmail returns the catalog entry for a recipient locale, falling back
 // to the en-GB default when the locale has no entry (ADR-0035).
 func localizedEmail[T any](catalog map[string]T, locale string) T {

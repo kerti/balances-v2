@@ -214,4 +214,10 @@ const (
 	// here (the operator CLI is the escape hatch for an active member) (ADR-0039,
 	// #283).
 	CodeMemberNotDormant Code = "MEMBER_NOT_DORMANT"
+
+	// CodeHouseholdNameMismatch is a 400 when a household-erasure request's typed
+	// confirmation name doesn't match the caller's Household display_name — the
+	// server-enforced half of the confirm-by-name gate, checked before any wipe
+	// (ADR-0040, #300).
+	CodeHouseholdNameMismatch Code = "HOUSEHOLD_NAME_MISMATCH"
 )

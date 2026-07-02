@@ -42,6 +42,7 @@ import { ReactivationCard } from "@/components/ReactivationCard";
 import { TagsCard } from "@/components/TagsCard";
 import { BackupCard } from "@/components/BackupCard";
 import { RestoreCard } from "@/components/RestoreCard";
+import { EraseCard } from "@/components/EraseCard";
 
 export function SettingsScreen() {
   const { t } = useTranslation(["settings", "common"]);
@@ -144,6 +145,8 @@ export function SettingsScreen() {
       <BackupCard />
 
       <RestoreCard />
+
+      <EraseCard />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/client";
 import {
+  downloadBackup,
   filenameFromDisposition,
   isHouseholdEmpty,
   postRestoreCommit,
@@ -75,6 +76,48 @@ describe("restore stakes helpers", () => {
     expect(isHouseholdEmpty({})).toBe(true);
     expect(isHouseholdEmpty({ assets: 0, income: 0 })).toBe(true);
     expect(isHouseholdEmpty({ assets: 0, income: 1 })).toBe(false);
+  });
+});
+
+// covers: INV-BACKUP-01
+describe("downloadBackup", () => {
+  it("fetches the export endpoint at the given fidelity and saves the blob", async () => {
+    const res = new Response(new Blob(["gzipped"]), {
+      status: 200,
+      headers: {
+        "Content-Disposition":
+          'attachment; filename="household-backup-2026-01-02.json.gz"',
+      },
+    });
+    const fetchMock = vi.fn().mockResolvedValue(res);
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => "blob:mock"),
+      revokeObjectURL: vi.fn(),
+    });
+    // This file runs under the node-environment vitest runner (no DOM, per the
+    // top-of-file note) — stub just enough of `document` for triggerDownload's
+    // anchor-click dance to run without throwing.
+    const anchor = { click: vi.fn(), href: "", download: "" };
+    vi.stubGlobal("document", {
+      createElement: vi.fn(() => anchor),
+      body: { appendChild: vi.fn(), removeChild: vi.fn() },
+    });
+    (anchor as unknown as { remove: () => void }).remove = vi.fn();
+
+    await downloadBackup("compacted");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/backup/export?fidelity=compacted",
+    );
+  });
+
+  it("throws when the export endpoint answers non-2xx", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("", { status: 500 })),
+    );
+    await expect(downloadBackup()).rejects.toThrow("export failed (500)");
   });
 });
 

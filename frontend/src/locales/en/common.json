@@ -41,6 +41,11 @@
     "invalid": "This reset link is no longer valid. Request a new one to continue.",
     "requestNew": "Request a new link"
   },
+  "erased": {
+    "title": "Household deleted",
+    "body": "Your household and everything in it has been permanently deleted. This browser has been signed out.",
+    "backToSignIn": "Back to sign in"
+  },
   "signOut": "Sign out",
   "save": "Save",
   "cancel": "Cancel",

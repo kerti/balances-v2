@@ -43,6 +43,13 @@ func (h *Handlers) setSessionCookie(w http.ResponseWriter, sessionID string, exp
 	})
 }
 
+// ClearSessionCookie expires the session cookie client-side. Exported for the
+// backup package's erasure flow (ADR-0040), which has no household left to
+// re-issue a session against once the wipe commits.
+func (h *Handlers) ClearSessionCookie(w http.ResponseWriter) {
+	h.clearSessionCookie(w)
+}
+
 func (h *Handlers) clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookieName,

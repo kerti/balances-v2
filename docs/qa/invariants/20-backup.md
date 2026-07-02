@@ -12,9 +12,12 @@ format-version transform chain (#177) shipped and extend this zone; the
 destructive wipe-then-load commit lands in `restore_commit.go`, and the
 transform chain + its frozen golden fixtures live in `restore.go`
 (`migrate`/`parseWith`) with the proof in `transform_test.go` +
-`testdata/golden/`. Code:
-`internal/backup/{format,export,restore,restore_commit}.go`, `queries/backup.sql`;
-the frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
+`testdata/golden/`. Erasure (whole-Household hard delete, #300, ADR-0040) is
+"restore with no load" — it reuses `wipeHousehold` directly from `erase.go`,
+gated founder-only + server-enforced confirm-by-name. Code:
+`internal/backup/{format,export,restore,restore_commit,erase}.go`,
+`queries/backup.sql`; the frontend export lives in `components/BackupCard.tsx`
++ `lib/backup.ts`.
 
 | ID | Invariant | Source | Severity |
 |----|-----------|--------|----------|
@@ -29,3 +32,5 @@ the frontend export lives in `components/BackupCard.tsx` + `lib/backup.ts`.
 | INV-BACKUP-09 | Restore commit is **all-or-nothing**: the wipe (caller's current Household, children→parents, incl. sessions/invitations/derived reports not in the backup) and the verbatim load run in one transaction, so any failure rolls back and the caller's data is left exactly as it was ("nothing was changed") | ADR-0036 | Critical |
 | INV-BACKUP-10 | Restore loads the backup **verbatim, adopting the backup's Household UUID** — a full-fidelity export→restore→re-export is an exact round-trip (every section count and soft-deleted row preserved). The load never touches another Household's rows (cross-tenant isolation holds through the destructive path) | ADR-0005, ADR-0036 | Critical |
 | INV-BACKUP-11 | Backwards-compat is **fixture-locked**: every historical golden backup fixture (`internal/backup/testdata/golden/`) still parses (decode → migrate → count-integrity) and validates against the live code, and the transform chain is honoured top-to-bottom — an older file migrates into a newer importer through the registered `N→N+1` transforms, a gap in the chain is refused (not half-migrated), and a transform that errors aborts the load. The process commitment (ADR-0036): every future format change ships its `N→N+1` transform **and** a frozen golden `vN` fixture, so an old backup can never silently stop loading. Shipped product is now at `format_version` 2 — `transforms[1]` (v1→v2, #66) is the first real transform, exercised end-to-end as the frozen v1 golden migrates into the v2 importer through `Parse`; the injectable `parseWith` seam additionally drives a synthetic chain to prove an arbitrary `N→N+1` step | ADR-0036, ADR-0033 | High |
+| INV-BACKUP-12 | Erasure (whole-Household hard delete, #300) is gated twice before any wipe: **founder-only** (a peer member, `created_by` set, is refused 403) and **server-enforced confirm-by-name** (the request's `household_name` must match the Household's `display_name` exactly, or it's refused 400 `HOUSEHOLD_NAME_MISMATCH`) — a mismatch or non-founder caller never touches the household | ADR-0040 | Critical |
+| INV-BACKUP-13 | Erasure reuses `wipeHousehold` verbatim (the same primitive restore uses to clear a Household before loading) with nothing loaded after — every table it reaches is gone, including sessions and, via `ON DELETE CASCADE` on `users.id`, `local_credentials`/`password_reset_tokens`. A different Household's rows survive untouched (cross-tenant isolation holds through this destructive path too) | ADR-0005, ADR-0036, ADR-0040 | Critical |

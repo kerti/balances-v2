@@ -134,10 +134,16 @@ compliance is sufficient — lawful basis, privacy policy naming subprocessors, 
 requests, bounded breach process. Rescoped into **#299** (privacy policy — subprocessors, retention,
 signup consent, breach process, EU cross-border-transfer call given historical Fly `sin` region) and
 **#300** (household erasure "DELETE ME" — hard delete, founder-gated, reuses #52's export as the
-pre-delete backup path). Access/portability already satisfied by the backup/export epic (#52).
-Self-host (#116) remains the zero-exposure option for anyone unwilling to accept hosted SaaS. This
-unblocks the "production Resend domain" + "non-disposable environment" M7 gate items, pending
-#299/#300/#217/#218/#215.
+pre-delete backup path) — **✅ #300 DONE** (ADR-0040): a founder-only, server-enforced
+confirm-by-name endpoint (`POST /api/backup/erase`) reuses restore's `wipeHousehold` primitive
+verbatim with nothing loaded after ("restore with no load") — every table it reaches is purged,
+including sessions and, via `ON DELETE CASCADE`, `local_credentials`/`password_reset_tokens`; a
+best-effort founder-confirmation + peer-deletion-notice email pair (`NotifyErasure`) fires with the
+member list captured *before* the wipe; the session cookie is cleared (not re-issued) and the caller
+lands on a dedicated `/erased` screen, not sign-in. Access/portability already satisfied by the
+backup/export epic (#52). Self-host (#116) remains the zero-exposure option for anyone unwilling to
+accept hosted SaaS. This unblocks the "production Resend domain" + "non-disposable environment" M7
+gate items, pending #299/#217/#218/#215.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
 unclosable), #163 (email wordmark raster).

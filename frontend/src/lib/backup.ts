@@ -31,6 +31,38 @@ export type RestoreResult = {
   summary: RestoreSummary;
 };
 
+export type Fidelity = "full" | "compacted";
+
+// triggerDownload saves a blob to disk via a transient object URL + anchor —
+// the standard browser-download dance, since the export endpoint streams a
+// file rather than JSON the api() client could parse.
+function triggerDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+// downloadBackup fetches and saves a household backup. Shared by BackupCard
+// (the export feature itself) and EraseCard (the "download a backup first"
+// nudge on the erasure confirm step, ADR-0040) — both just want the file on
+// disk, not a preview of its contents.
+export async function downloadBackup(
+  fidelity: Fidelity = "full",
+): Promise<void> {
+  const res = await fetch(`/api/backup/export?fidelity=${fidelity}`);
+  if (!res.ok) throw new Error(`export failed (${res.status})`);
+  const blob = await res.blob();
+  triggerDownload(
+    blob,
+    filenameFromDisposition(res.headers.get("Content-Disposition")),
+  );
+}
+
 // totalRows sums a section-count map — the single headline number the UI shows
 // ("12 items") instead of enumerating every section.
 export function totalRows(counts: Record<string, number>): number {

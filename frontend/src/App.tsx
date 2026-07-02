@@ -14,6 +14,7 @@ import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { InviteAcceptScreen } from "@/components/InviteAcceptScreen";
 import { ResetRequestScreen } from "@/components/ResetRequestScreen";
 import { ResetSetScreen } from "@/components/ResetSetScreen";
+import { HouseholdErasedScreen } from "@/components/HouseholdErasedScreen";
 import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
@@ -394,6 +395,12 @@ function App() {
     }
     if (window.location.pathname === routes.resetPassword) {
       return <ResetSetScreen />;
+    }
+    // Post-erasure landing (ADR-0040/#300): the erase commit cleared the
+    // session cookie, so this is reached the same way as the other
+    // pre-session screens above — by pathname, before the sign-in fallback.
+    if (window.location.pathname === routes.erased) {
+      return <HouseholdErasedScreen />;
     }
     return <SignInScreen />;
   }

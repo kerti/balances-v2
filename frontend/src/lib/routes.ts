@@ -26,6 +26,14 @@ export const routes = {
   forgotPassword: "/forgot-password",
   resetPassword: "/reset",
 
+  // Post-erasure landing (ADR-0040/#300). Where the founder lands right after
+  // deleting their household — the erase commit clears the session cookie
+  // instead of re-issuing one (there's no household left to sign back into),
+  // so this renders outside the authed router like the other pre-session
+  // screens. Deliberately not the sign-in screen: signing back in would just
+  // re-trigger onboarding as if nothing happened.
+  erased: "/erased",
+
   // Assets — home + three subtype lists, each with a detail under it.
   assets: "/assets",
   bankAccounts: "/assets/bank-accounts",

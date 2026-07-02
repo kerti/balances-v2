@@ -118,6 +118,7 @@ the choice is non-obvious.
 | Invite (verb) | Undang | — |
 | Sign in | Masuk | — |
 | Sign out | Keluar | — |
+| Erasure (whole-household hard delete, ADR-0040) | Hapus (rumah tangga) | Rendered as a plain verb phrase ("Hapus rumah tangga ini"), not a noun loanword — matches Restore's existing informal treatment ("Pulihkan"/"cadangan" have no dedicated glossary row either). _Avoid_: Penghapusan (correct but reads bureaucratic for a destructive-action button). |
 
 ## Risk and regularity
 

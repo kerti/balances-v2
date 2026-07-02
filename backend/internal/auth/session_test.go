@@ -256,4 +256,18 @@ func TestSessionCookieHelpers(t *testing.T) {
 			t.Errorf("MaxAge: want <0, got %d", c.MaxAge)
 		}
 	})
+
+	// ClearSessionCookie is the exported wrapper the backup package's erasure
+	// flow calls (ADR-0040) — it must behave identically to the private helper.
+	t.Run("ClearSessionCookie (exported) sets MaxAge<0", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		h.h.ClearSessionCookie(rec)
+		c := findCookie(rec, sessionCookieName)
+		if c == nil {
+			t.Fatal("no clear cookie set")
+		}
+		if c.MaxAge >= 0 {
+			t.Errorf("MaxAge: want <0, got %d", c.MaxAge)
+		}
+	})
 }

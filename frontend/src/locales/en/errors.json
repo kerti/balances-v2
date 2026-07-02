@@ -57,6 +57,7 @@
     "EMAIL_TAKEN": "That email is already registered. Try signing in instead.",
     "WEAK_PASSWORD": "Choose a stronger password: at least 10 characters and not a commonly-used one.",
     "INVALID_CREDENTIALS": "Incorrect email or password.",
-    "TOO_MANY_ATTEMPTS": "Too many attempts. Please wait a moment and try again."
+    "TOO_MANY_ATTEMPTS": "Too many attempts. Please wait a moment and try again.",
+    "HOUSEHOLD_NAME_MISMATCH": "That doesn't match your household's name. Please type it exactly to confirm."
   }
 }
