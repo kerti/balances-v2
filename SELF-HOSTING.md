@@ -25,6 +25,7 @@ do when something goes wrong.
 - [Email (optional)](#email-optional)
 - [The upgrade contract](#the-upgrade-contract)
 - [Backup and restore](#backup-and-restore)
+- [Data ownership and legal responsibility](#data-ownership-and-legal-responsibility)
 - [Troubleshooting](#troubleshooting)
 - [Reference: configuration](#reference-configuration)
 
@@ -375,6 +376,16 @@ Notes:
 - Keep dumps off the server (copy them elsewhere). A backup on the same disk that dies with the disk
   is not a backup.
 - Take a dump **before every upgrade**, including patches.
+
+## Data ownership and legal responsibility
+
+Running this stack makes **you** the operator, and the data controller, for whatever household data
+lives on your instance — Balances ships software, not a hosted service. Any data-protection law that
+applies to you and your users (GDPR, Indonesia's PDP Law, or your own jurisdiction's equivalent) is
+yours to satisfy: lawful basis for processing, a privacy notice for household members who aren't you,
+honoring access/erasure requests, and any local registration your jurisdiction requires of an
+electronic system that processes personal data. The maintainers of this project are not a data
+processor or controller for self-hosted instances and have no visibility into what you run.
 
 ## Troubleshooting
 
