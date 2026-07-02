@@ -229,4 +229,11 @@ const (
 	// server-enforced half of the confirm-by-name gate, checked before any wipe
 	// (ADR-0040, #300).
 	CodeHouseholdNameMismatch Code = "HOUSEHOLD_NAME_MISMATCH"
+
+	// CodeErasureDisabledDemo is a 403 for household erasure when the operator has
+	// set DEMO_MODE (ADR-0041, #217): every visitor to the demo shares one
+	// identity, so a single click would lock out every subsequent visitor until
+	// the next nightly reset. Every other mutation stays live; only this
+	// irreversible one is blocked.
+	CodeErasureDisabledDemo Code = "ERASURE_DISABLED_DEMO"
 )

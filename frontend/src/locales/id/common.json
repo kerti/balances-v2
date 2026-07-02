@@ -12,7 +12,8 @@
       "email": "Email",
       "password": "Kata sandi",
       "passwordHint": "Minimal 10 karakter. Hindari kata sandi yang umum.",
-      "forgotPassword": "Lupa kata sandi Anda?"
+      "forgotPassword": "Lupa kata sandi Anda?",
+      "demoHint": "Ini akun demo bersama — cukup klik Masuk. Email: {{email}}, kata sandi: {{password}}"
     }
   },
   "invite": {

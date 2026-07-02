@@ -17,6 +17,7 @@ var configEnvKeys = []string{
 	"DATABASE_URL", "PORT", "LOG_FORMAT",
 	"GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "OIDC_ISSUER_URL",
 	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED", "FOUNDING_DISABLED",
+	"DEMO_MODE", "DEMO_RESET_TOKEN", "DEMO_EMAIL", "DEMO_PASSWORD",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
 	"SESSION_TTL", "COOKIE_SECURE",
 	"EMAIL_ENABLED",
@@ -124,6 +125,39 @@ func TestLoad_FailsFastWhenNoProviderEnabled(t *testing.T) {
 
 	if _, err := config.Load(); err == nil {
 		t.Fatal("Load: expected an error when no auth provider is enabled")
+	}
+}
+
+// TestLoad_DemoModeRequiresResetToken guards the boot check: DEMO_MODE with no
+// DEMO_RESET_TOKEN would mount an open reset endpoint, so Load refuses to boot
+// rather than exposing it unauthenticated (ADR-0041).
+func TestLoad_DemoModeRequiresResetToken(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("DEMO_MODE", "true")
+
+	if _, err := config.Load(); err == nil {
+		t.Fatal("Load: expected an error when DEMO_MODE is set with no DEMO_RESET_TOKEN")
+	}
+}
+
+// TestLoad_DemoMode: the operator-set posture for the public demo (#217,
+// ADR-0041) — DEMO_MODE plus its token boots cleanly.
+func TestLoad_DemoMode(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("DEMO_MODE", "true")
+	t.Setenv("DEMO_RESET_TOKEN", "test-token")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.DemoMode {
+		t.Error("DemoMode = false, want true")
+	}
+	if cfg.DemoResetToken != "test-token" {
+		t.Errorf("DemoResetToken = %q, want %q", cfg.DemoResetToken, "test-token")
 	}
 }
 

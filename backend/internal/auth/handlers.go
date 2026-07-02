@@ -62,6 +62,11 @@ type Config struct {
 	// to both providers since it guards handleOnboardingChoice, not
 	// per-provider identity verification.
 	FoundingDisabled bool
+	// DemoMode/DemoEmail/DemoPassword expose the shared demo login on the public
+	// auth-methods endpoint (ADR-0041, #217) — see config.Config.DemoMode.
+	DemoMode     bool
+	DemoEmail    string
+	DemoPassword string
 	// EmailEnabled mirrors the boot EMAIL_ENABLED (ADR-0037). It gates the emailed
 	// password-reset path (#282): with mail off there is no way to deliver a reset
 	// link, so the methods endpoint advertises reset as unavailable and the request
@@ -89,6 +94,9 @@ type Handlers struct {
 	localEnabled     bool
 	emailEnabled     bool
 	foundingDisabled bool
+	demoMode         bool
+	demoEmail        string
+	demoPassword     string
 	limiter          *loginLimiter
 	mailer           email.Mailer
 	validate         *validator.Validate
@@ -134,6 +142,9 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		localEnabled:     cfg.LocalEnabled,
 		emailEnabled:     cfg.EmailEnabled,
 		foundingDisabled: cfg.FoundingDisabled,
+		demoMode:         cfg.DemoMode,
+		demoEmail:        cfg.DemoEmail,
+		demoPassword:     cfg.DemoPassword,
 		limiter:          newLoginLimiter(),
 		mailer:           cfg.Mailer,
 		validate:         httperr.NewValidator(),

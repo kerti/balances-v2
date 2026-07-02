@@ -12,7 +12,8 @@
       "email": "Email",
       "password": "Password",
       "passwordHint": "At least 10 characters. Avoid common passwords.",
-      "forgotPassword": "Forgot your password?"
+      "forgotPassword": "Forgot your password?",
+      "demoHint": "This is a shared demo account — just click Sign in. Email: {{email}}, password: {{password}}"
     }
   },
   "invite": {

@@ -214,7 +214,7 @@ func TestMintGoldenFixture(t *testing.T) {
 	}
 	ctx := auth.WithUser(context.Background(), alice)
 	seedHousehold(ctx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://golden.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://golden.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	gzipped := exportBytes(ctx, t, h)
 	if err := os.MkdirAll(goldenDir, 0o755); err != nil {

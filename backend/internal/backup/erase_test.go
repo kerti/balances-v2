@@ -57,7 +57,7 @@ func TestEraseHousehold_HappyPath(t *testing.T) {
 
 	issuer := &stubIssuer{}
 	notifier := &stubNotifier{}
-	h := New(tdb.Pool, "http://test.local", issuer, notifier, false)
+	h := New(tdb.Pool, "http://test.local", issuer, notifier, false, DemoConfig{})
 
 	before, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
 	if err != nil {
@@ -141,6 +141,33 @@ func TestEraseHousehold_HappyPath(t *testing.T) {
 	}
 }
 
+// covers: INV-BACKUP-14
+func TestEraseHousehold_DemoModeForbidden(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	aliceCtx := auth.WithUser(context.Background(), alice)
+	seedHousehold(aliceCtx, t, tdb.Pool, alice)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{Enabled: true})
+
+	rec := eraseReq(aliceCtx, t, h.handleEraseHousehold, eraseHouseholdReq{HouseholdName: "whatever"})
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403, body=%s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(string(httperr.CodeErasureDisabledDemo))) {
+		t.Errorf("body = %s, want %s", rec.Body.String(), httperr.CodeErasureDisabledDemo)
+	}
+
+	var remaining int
+	if err := tdb.Pool.QueryRow(context.Background(),
+		"SELECT count(*) FROM households WHERE id = $1", alice.HouseholdID).Scan(&remaining); err != nil {
+		t.Fatalf("count households: %v", err)
+	}
+	if remaining != 1 {
+		t.Errorf("households remaining = %d, want 1 (untouched)", remaining)
+	}
+}
+
 // covers: INV-BACKUP-12
 func TestEraseHousehold_NonFounderForbidden(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
@@ -159,7 +186,7 @@ func TestEraseHousehold_NonFounderForbidden(t *testing.T) {
 		t.Fatalf("seed peer: %v", err)
 	}
 	seedHousehold(auth.WithUser(context.Background(), alice), t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	peerCtx := auth.WithUser(context.Background(), peer)
 	rec := eraseReq(peerCtx, t, h.handleEraseHousehold, eraseHouseholdReq{HouseholdName: "whatever"})
@@ -187,7 +214,7 @@ func TestEraseHousehold_NameMismatch(t *testing.T) {
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	rec := eraseReq(aliceCtx, t, h.handleEraseHousehold, eraseHouseholdReq{HouseholdName: "Not The Real Name"})
 	if rec.Code != http.StatusBadRequest {
@@ -209,7 +236,7 @@ func TestEraseHousehold_NameMismatch(t *testing.T) {
 
 // covers: INV-BACKUP-12
 func TestEraseHousehold_Unauthenticated(t *testing.T) {
-	h := New(nil, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(nil, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 	rec := eraseReq(context.Background(), t, h.handleEraseHousehold, eraseHouseholdReq{HouseholdName: "anything"})
 	if rec.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", rec.Code)
@@ -221,7 +248,7 @@ func TestEraseHousehold_BadRequest(t *testing.T) {
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/backup/erase", bytes.NewReader([]byte("{not-json"))).WithContext(aliceCtx)
 	rec := httptest.NewRecorder()

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "@/api/client";
@@ -29,6 +29,18 @@ export function LocalAuthForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+
+  // Public demo (ADR-0041, #217): pre-fill the shared demo login so a visitor can
+  // just click Sign in. The caption below repeats the same credentials in plain
+  // text as a fail-safe against the visitor's typing clobbering these fields —
+  // there is no confidentiality cost, every visitor shares this one identity
+  // regardless of whether the values are shown.
+  useEffect(() => {
+    if (methods?.demo_mode) {
+      setEmail(methods.demo_email ?? "");
+      setPassword(methods.demo_password ?? "");
+    }
+  }, [methods]);
 
   const login = useMutation({
     mutationFn: () =>
@@ -94,6 +106,18 @@ export function LocalAuthForm() {
           {t("signIn.local.registerTab")}
         </button>
       </div>
+
+      {mode === "signin" && methods?.demo_mode && (
+        <p
+          data-testid="local-demo-hint"
+          className="text-xs text-muted-foreground"
+        >
+          {t("signIn.local.demoHint", {
+            email: methods.demo_email,
+            password: methods.demo_password,
+          })}
+        </p>
+      )}
 
       {mode === "register" && (
         <div className="space-y-1">

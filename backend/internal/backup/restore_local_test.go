@@ -149,7 +149,7 @@ func TestRestoreLocalRoundTripCarriesCredential(t *testing.T) {
 	orig := createLocalHouseholdWithUser(t, q, "Restorer", email, oldBoxHash)
 	origCtx := auth.WithUser(context.Background(), orig)
 	seedHousehold(origCtx, t, tdb.Pool, orig)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 	gzipped := exportBytes(origCtx, t, h)
 
 	env, err := Parse(bytes.NewReader(gzipped))
@@ -218,7 +218,7 @@ func TestBackupExcludesLocalCredential(t *testing.T) {
 	u := createLocalHouseholdWithUser(t, q, "Solo", "solo@example.com", secret)
 	ctx := auth.WithUser(context.Background(), u)
 	seedHousehold(ctx, t, tdb.Pool, u)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 
 	raw := gunzip(t, exportBytes(ctx, t, h))
 	for _, needle := range []string{secret, "password_hash", "local_credential"} {
@@ -261,7 +261,7 @@ func TestRestoreStrandingEndpoint(t *testing.T) {
 	local := createLocalHouseholdWithUser(t, q, "Local", "local@example.com", "argon2id$H")
 	localCtx := auth.WithUser(context.Background(), local)
 	seedHousehold(localCtx, t, tdb.Pool, local)
-	exporter := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true)
+	exporter := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 	gzipped := exportBytes(localCtx, t, exporter)
 
 	// A Google-only instance (local auth disabled) refuses it. The caller is a
@@ -269,7 +269,7 @@ func TestRestoreStrandingEndpoint(t *testing.T) {
 	// membership, so any authenticated caller trips it.
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
 	bobCtx := auth.WithUser(context.Background(), bob)
-	googleOnly := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	googleOnly := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	for _, ep := range []struct {
 		name string

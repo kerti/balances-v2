@@ -29,15 +29,29 @@ type authMethodsResponse struct {
 	// "Forgot password?" affordance when false, so a mail-off self-host doesn't lead
 	// the member to a dead end (the mail-off recovery paths are #283/#284).
 	PasswordReset bool `json:"password_reset"`
+	// DemoMode and the two fields below are the public demo posture (ADR-0041,
+	// #217). When true, DemoEmail/DemoPassword carry the shared demo login so the
+	// SPA can pre-fill the local-login form — there is no confidentiality cost to
+	// exposing them here, since every demo visitor authenticates as this same
+	// identity regardless of whether the SPA shows them.
+	DemoMode     bool   `json:"demo_mode"`
+	DemoEmail    string `json:"demo_email,omitempty"`
+	DemoPassword string `json:"demo_password,omitempty"`
 }
 
 func (h *Handlers) handleAuthMethods(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(authMethodsResponse{
+	resp := authMethodsResponse{
 		Google:        h.googleEnabled,
 		Local:         h.localEnabled,
 		PasswordReset: h.localEnabled && h.emailEnabled,
-	})
+		DemoMode:      h.demoMode,
+	}
+	if h.demoMode {
+		resp.DemoEmail = h.demoEmail
+		resp.DemoPassword = h.demoPassword
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 type localRegisterReq struct {

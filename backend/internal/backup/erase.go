@@ -58,6 +58,14 @@ func (h *Handlers) handleEraseHousehold(w http.ResponseWriter, r *http.Request) 
 		httperr.Write(w, http.StatusForbidden, httperr.CodeForbidden, nil)
 		return
 	}
+	if h.demoMode {
+		// Every demo visitor shares one identity (ADR-0041, #217) — a single click
+		// here would lock out every subsequent visitor until the next nightly
+		// reset, so Erasure is blocked outright while every other mutation stays
+		// live.
+		httperr.Write(w, http.StatusForbidden, httperr.CodeErasureDisabledDemo, nil)
+		return
+	}
 
 	var req eraseHouseholdReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

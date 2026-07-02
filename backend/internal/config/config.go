@@ -56,6 +56,19 @@ type Config struct {
 	// zero-invite identities from founding a new household.
 	FoundingDisabled bool `env:"FOUNDING_DISABLED" envDefault:"false"`
 
+	// DemoMode is the umbrella flag for the public demo posture (ADR-0041, #217):
+	// it blocks household Erasure, exposes the shared demo credentials on the
+	// public auth-methods endpoint so the SPA can pre-fill the sign-in form, and
+	// mounts the nightly reset endpoint. Not bundled with FoundingDisabled — that
+	// flag is general-purpose (any operator may freeze founding); this one is
+	// demo-exclusive. DemoResetToken authenticates the reset endpoint's caller
+	// (a scheduled CI job) and must be set whenever DemoMode is — an on-but-open
+	// reset endpoint is a worse misconfiguration than refusing to boot.
+	DemoMode       bool   `env:"DEMO_MODE" envDefault:"false"`
+	DemoResetToken string `env:"DEMO_RESET_TOKEN"`
+	DemoEmail      string `env:"DEMO_EMAIL" envDefault:"demo@balances.local"`
+	DemoPassword   string `env:"DEMO_PASSWORD" envDefault:"BalancesDemo!2026"`
+
 	// AppURL is the operator-facing single-origin URL for a self-host deployment
 	// (ADR-0037). When set, it supplies the default origin for FrontendURL and
 	// BackendURL and derives OAuthRedirectURL as AppURL + the callback path —
@@ -94,6 +107,9 @@ func Load() (*Config, error) {
 	}
 	if !cfg.AuthGoogleEnabled && !cfg.AuthLocalEnabled {
 		return nil, fmt.Errorf("no auth provider enabled: set AUTH_GOOGLE_ENABLED and/or AUTH_LOCAL_ENABLED")
+	}
+	if cfg.DemoMode && cfg.DemoResetToken == "" {
+		return nil, fmt.Errorf("DEMO_MODE is set but DEMO_RESET_TOKEN is empty")
 	}
 	applyURLDefaults(&cfg)
 	return &cfg, nil

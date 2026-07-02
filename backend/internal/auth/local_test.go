@@ -48,6 +48,30 @@ func TestAuthMethods_ReportsEnabledProviders(t *testing.T) {
 	if !got.Google || !got.Local {
 		t.Errorf("methods: want both enabled, got %+v", got)
 	}
+	if got.DemoMode {
+		t.Errorf("methods: want demo_mode false by default, got %+v", got)
+	}
+	if got.DemoEmail != "" || got.DemoPassword != "" {
+		t.Errorf("methods: want no demo credentials when demo_mode is off, got %+v", got)
+	}
+}
+
+// covers: INV-AUTH-27
+func TestAuthMethods_DemoModeExposesSharedCredentials(t *testing.T) {
+	h := newAuthHarness(t)
+	h.h.demoMode = true
+	h.h.demoEmail = "demo@balances.local"
+	h.h.demoPassword = "BalancesDemo!2026"
+
+	rec := h.doRaw(t, http.MethodGet, "/auth/methods", nil, nil)
+	requireStatus(t, rec, http.StatusOK)
+	got := decodeBody[authMethodsResponse](t, rec)
+	if !got.DemoMode {
+		t.Errorf("methods: want demo_mode true, got %+v", got)
+	}
+	if got.DemoEmail != "demo@balances.local" || got.DemoPassword != "BalancesDemo!2026" {
+		t.Errorf("methods: want the shared demo credentials exposed, got %+v", got)
+	}
 }
 
 // TestLocalFounder_RegisterThroughGateThenLogin is the founder tracer bullet

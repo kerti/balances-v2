@@ -100,7 +100,7 @@ func TestRestoreParseValidate(t *testing.T) {
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	aliceCtx := auth.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	gzipped := exportBytes(aliceCtx, t, h)
 
@@ -180,7 +180,7 @@ func TestRestoreCommit(t *testing.T) {
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise — must survive untouched
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	// The golden backup, captured before any mutation.
 	before, err := h.buildEnvelope(context.Background(), alice.HouseholdID, FidelityFull)
@@ -335,7 +335,7 @@ func TestRestoreEndpoints(t *testing.T) {
 	bobCtx := auth.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	notifier := &stubNotifier{}
-	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier, false)
+	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier, false, DemoConfig{})
 	gzipped := exportBytes(aliceCtx, t, h)
 
 	t.Run("preview returns the stakes summary", func(t *testing.T) {

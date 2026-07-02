@@ -12,6 +12,12 @@ export type AuthMethods = {
   // when local auth and outbound email are both on. The sign-in form hides its
   // "Forgot password?" link when false.
   password_reset: boolean;
+  // The public demo posture (ADR-0041, #217). When true, demo_email/demo_password
+  // carry the shared demo login — the sign-in form pre-fills them so a visitor can
+  // just click Sign in. Absent (not merely empty) when demo_mode is false.
+  demo_mode: boolean;
+  demo_email?: string;
+  demo_password?: string;
 };
 
 // useAuthMethods fetches the enabled providers. It is safe to call pre-auth and

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/04-auth.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**26 / 26** invariants in this zone have at least one covering test (**26** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**27 / 27** invariants in this zone have at least one covering test (**27** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -34,3 +34,4 @@
 | INV-AUTH-24 | A backup carrying local-only members (any User with no `google_sub`) is **refused** when restored onto an instance with local auth disabled (`AUTH_LOCAL_ENABLED=false`): those members could never sign in again (no Google identity, no way to set a password), so the restore fails `422 RESTORE_STRANDS_LOCAL_MEMBERS` at **both** preview and commit, **ahead of** the membership guard (the operator gets an actionable "enable local auth" error, not a generic not-a-member). When local auth is enabled, or the backup has no local members, there is nothing to strand | `backend/internal/backup/restore_local_test.go` |
 | INV-AUTH-25 | The portable backup contains **no credential secret**: `local_credentials` is excluded from the export exactly like `sessions`, so no `password_hash` ever serializes into the file and the **backup format is unchanged**. The non-secret identity (including a null `google_sub`) still round-trips, so a local member is present in the file and reconstructable — dormant until reactivated — without the secret ever leaving the box | `backend/internal/backup/restore_local_test.go` |
 | INV-AUTH-26 | `FOUNDING_DISABLED` gates only the gate's **found** commit, uniformly across both providers (the same `handleOnboardingChoice` path); a zero-invite identity is blocked (403 `FOUNDING_DISABLED`) with no `users`/`households` row created and the handshake left intact, while the invite-based **join** commit is completely unaffected. The options response mirrors the flag (`founding_disabled`) so the gate hides the affordance before it's ever clicked; default is open (unset), so a fresh instance can still found its first household | `backend/internal/auth/onboarding_test.go` |
+| INV-AUTH-27 | `GET /api/auth/methods` reports `demo_mode` (default false) and, only when true, the shared demo login (`demo_email`/`demo_password`) so the SPA can pre-fill the sign-in form (ADR-0041, #217) — with `demo_mode` false the credential fields are absent, not merely blank | `backend/internal/auth/local_test.go` |

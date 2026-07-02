@@ -73,7 +73,7 @@ func TestHandleExportRequiresUser(t *testing.T) {
 	// No authenticated user in context (the middleware is bypassed in this direct
 	// call) → 401 before any household is touched. nil pool is safe: the guard
 	// returns first.
-	h := New(nil, "http://test.local", &stubIssuer{}, &stubNotifier{}, false)
+	h := New(nil, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 	req := httptest.NewRequest(http.MethodGet, "/api/backup/export", nil).WithContext(context.Background())
 	rec := httptest.NewRecorder()
 	h.handleExport(rec, req)

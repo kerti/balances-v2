@@ -28,6 +28,21 @@ type Handlers struct {
 	sessions         SessionIssuer   // re-issues the caller's session after a restore
 	notifier         RestoreNotifier // best-effort post-restore emails (#176)
 	authLocalEnabled bool            // gates the stranding guard: a local-member backup can't restore onto a Google-only instance (ADR-0039)
+	demoMode         bool            // blocks Erasure and mounts the reset endpoint (ADR-0041, #217)
+	demoResetToken   string          // bearer-auths the reset endpoint's caller (a scheduled CI job)
+	demoEmail        string          // the shared demo login's email; also the reset endpoint's household lookup key
+	demoPassword     string          // the shared demo login's password, reseeded fresh on every reset
+}
+
+// DemoConfig is the public-demo posture (ADR-0041, #217): Enabled blocks
+// Erasure and mounts the reset endpoint; ResetToken authenticates that
+// endpoint's caller; Email/Password are the shared demo login, reseeded on
+// every reset.
+type DemoConfig struct {
+	Enabled    bool
+	ResetToken string
+	Email      string
+	Password   string
 }
 
 // SessionIssuer mints a fresh session + cookie for a user, or clears one. The
@@ -55,7 +70,7 @@ type RestoreNotifier interface {
 	NotifyErasure(ctx context.Context, members []db.User, founderID uuid.UUID, householdName string)
 }
 
-func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier, authLocalEnabled bool) *Handlers {
+func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifier RestoreNotifier, authLocalEnabled bool, demo DemoConfig) *Handlers {
 	return &Handlers{
 		pool:             pool,
 		q:                db.New(pool),
@@ -63,6 +78,10 @@ func New(pool *pgxpool.Pool, instanceURL string, sessions SessionIssuer, notifie
 		sessions:         sessions,
 		notifier:         notifier,
 		authLocalEnabled: authLocalEnabled,
+		demoMode:         demo.Enabled,
+		demoResetToken:   demo.ResetToken,
+		demoEmail:        demo.Email,
+		demoPassword:     demo.Password,
 	}
 }
 
@@ -83,6 +102,9 @@ func (h *Handlers) Mount(r chi.Router) {
 		// permanent, whole-Household hard delete.
 		r.Post("/erase", h.handleEraseHousehold)
 	})
+	if h.demoMode {
+		h.mountDemoReset(r)
+	}
 }
 
 // handleExport streams the caller's entire Household as a gzipped JSON backup
