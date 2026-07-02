@@ -26,57 +26,21 @@ on the `preview` environment
 one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
 Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
 
-- **M1–M5** — walking skeleton → OAuth + invites → all four position groups + five investment
+- **M1–M5** (closed) — walking skeleton → OAuth + invites → all four position groups + five investment
   subtypes + transaction ledger + Income + position lifecycle → materialized monthly net-worth report
   + dashboard. All tenancy-tested. Detail in closed issues + Release notes.
-- **M6** — v1 polish + approachability, shipped across alpha.1/alpha.2. Themes: xlsx importer + owner
-  UX; React Router + shadcn Sidebar (ADR-0025); EN+ID i18n (#5–#12, `docs/glossary-id.md`); error-code
-  envelope (ADR-0027); investment analytics + correctness (ADR-0008/0009 amended); valuations/taxonomy;
-  driver.js help tours; per-user theming + brand; position Tags (ADR-0028); migration baseline
-  (ADR-0031); CodeQL/govulncheck/Dependabot + path-gated CI; sidebar footer; autosave toasts
-  (ADR-0032); unrecorded-position drill-down. Per-item detail lives in the closed issues + the
-  alpha.1/alpha.2 GitHub Release notes (ADR-0029).
-- **alpha.3** — three epics on top of M6: **i18n round-out** (#159, ADR-0035, migs 00002–00005);
-  **whole-household backup/restore** (epic #52 complete, ADR-0036, PRs #174–186); the **QA invariant
-  matrix** (19 zones, 103 invariants, `make qa-matrix`). Plus xlsx create-from-list import fan-out,
-  founder welcome email, brand canonicalization, and the #70 security tail (SHA-pin / e2e-in-CI /
-  gitleaks). Detail in the closed issues + the alpha.3 GitHub Release notes.
-- **alpha.4** — unplanned single-fix patch cut: transactional email was 501-ing at the relay because a
-  display-name `From` was used as the SMTP envelope reverse-path; now split (bare envelope, display-name
-  header), un-breaking restore/welcome/invite mail on preview (#192/#193). No migration.
-- **alpha.5** — **closes M6.** The group-Home parity epic (#204): Assets + Liabilities home pages
-  (total / over-time / subtype-stack / pie, matching InvestmentsHome) and a Receivables total-over-time
-  chart (#200→#202). Plus the QA matrix tier-aware CI gate (#196), stale-chunk reload onto a fresh
-  bundle (#191), 100%-stacked tooltip band labels (#214), and a fix tail — snapshot-list refresh on
-  manual terminal flip (#56), `/assets/*` 404 vs SPA-fallback (#190), restore non-JSON error surfacing
-  (#185), SMTP-From CR/LF hardening (#195). No migration. Detail in the alpha.5 GitHub Release notes.
-- **v0.7.0-alpha.1** — **opens M7 (productization).** The whole self-host stack (#116, ADR-0037,
-  slices #224–229): pull-based `docker-compose.yml` (published GHCR image + Postgres + one-shot
-  `migrate`), `APP_URL` single-origin collapse, `EMAIL_ENABLED` no-op mailer + copy-invite-link
-  fallback, Caddy/BYO-proxy TLS topologies, and the `SELF-HOSTING.md` operator guide. No migration.
-  Detail in the v0.7.0-alpha.1 GitHub Release notes.
-- **v0.7.0-alpha.2** — self-host rehearsal fix tail: **multi-arch GHCR image** (amd64+arm64, #242 —
-  was amd64-only, broke arm64 `docker compose up`) and the **`/assets/*` deep-route 404 on hard
-  refresh** (#241, narrows the #190 chunk-404 to extension-bearing paths so client routes under
-  `/assets/` fall back to the SPA shell). No migration. Detail in the v0.7.0-alpha.2 Release notes.
-- **v0.7.0-alpha.3** — **the self-host upgrade-leg batch.** Per-bond **coupon disposition** (#66): stored
-  `bond_details.coupon_disposition` enum driving the accrued-snapshot form's default/copy, carried end to
-  end (CRUD + import/export + backup) — and the **first real backup format transform** (`format_version`
-  1→2, mig `00006`, `transforms[1]` backfills `pays_out`). The **restore preview now reassures** when a
-  file is older-format (#258). The **failed-invite-email toast** (#212). Plus the `COMPOSE_PROJECT_NAME`
-  pin isolating the operator stack (#245) and an ADR-0030 amendment (#255). **Migration: additive** (`00006`).
-  Detail in the v0.7.0-alpha.3 Release notes.
-- **v0.7.0-alpha.4** — **the M7 identity/trust batch.** **Onboarding gate** (#158, ADR-0038 — #267
-  founder-path + #268 invite-join + #269 already-member notice, mig `00007`): every first sign-in
-  routes through an explicit found-vs-join decision. **Optional local password auth** — epic #277
-  COMPLETE (ADR-0039, migs `00008`–`00010`): #280 core (email+password beside Google, Argon2id) ·
-  #281 invite-link set-password · #282 emailed self-service reset · #283 founder-assisted reactivation
-  · #284 operator CLI (`balances reset-password`) · #285 local-only backup/restore. **Household
-  erasure** "DELETE ME" (#300, ADR-0040): founder-only hard delete reusing restore's wipe primitive.
-  **`FOUNDING_DISABLED`** env flag (#302) freezing an instance's household population. Plus
-  display-name edit in Settings (#265), income month-picker parity (#294), import-error dialog
-  footer fix (#132). **Migration: additive** (`00007`–`00010`). Detail in the v0.7.0-alpha.4 Release
-  notes.
+- **M6** (closed at alpha.5) — v1 polish + approachability: xlsx importer, React Router + shadcn
+  Sidebar (ADR-0025), EN+ID i18n (ADR-0035), error-code envelope (ADR-0027), investment analytics
+  (ADR-0008/0009), position Tags (ADR-0028), migration baseline (ADR-0031), whole-household
+  backup/restore (epic #52, ADR-0036), QA invariant matrix (19 zones/103 invariants), group-Home
+  parity (#204). Migrations: `00002`–`00005` (additive). Detail in closed issues + the
+  alpha.1–alpha.5 Release notes.
+- **M7** (open, productization) — one line per tag; full detail lives in each tag's Release notes:
+  - `v0.7.0-alpha.1` — self-host stack, `docker-compose.yml` + `APP_URL` collapse (#116, ADR-0037). No migration.
+  - `v0.7.0-alpha.2` — self-host rehearsal fixes: multi-arch image, deep-route 404 (#241/#242). No migration.
+  - `v0.7.0-alpha.3` — coupon disposition + first backup format transform (#66). Migration: additive (`00006`).
+  - `v0.7.0-alpha.4` — onboarding gate (#158, ADR-0038), local password auth epic (#277, ADR-0039),
+    household erasure (#300, ADR-0040), `FOUNDING_DISABLED` (#302). Migration: additive (`00007`–`00010`).
 
 ## What's next
 
