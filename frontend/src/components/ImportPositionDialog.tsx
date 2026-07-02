@@ -21,6 +21,11 @@ import type {
   CreateImportResult,
 } from "@/hooks/snapshotImport";
 
+// Past this many rows, the list scrolls in its own boundary and the rest
+// collapse into a "N more errors" line instead of stretching the dialog
+// past the footer (#132).
+const MAX_VISIBLE_ERRORS = 8;
+
 type Props = {
   // noun + mutation are owned by the parent so the same dialog can drive
   // create-from-file import for any position group (bank account first).
@@ -98,6 +103,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   const fieldErrors = result?.field_errors ?? [];
   const rowErrors = result?.errors ?? [];
   const hasErrors = fieldErrors.length > 0 || rowErrors.length > 0;
+  const errorCount = fieldErrors.length + rowErrors.length;
+  const visibleFieldErrors = fieldErrors.slice(0, MAX_VISIBLE_ERRORS);
+  const visibleRowErrors = rowErrors.slice(
+    0,
+    Math.max(0, MAX_VISIBLE_ERRORS - visibleFieldErrors.length),
+  );
   const cleanPreview = result?.mode === "preview" && result.would_create;
   const committed = result?.committed === true;
 
@@ -179,14 +190,14 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                 <div className="space-y-1">
                   <p className="text-destructive">
                     {t("importCreate.needsFixing", {
-                      count: fieldErrors.length + rowErrors.length,
+                      count: errorCount,
                     })}
                   </p>
                   <ul
-                    className="list-disc space-y-0.5 pl-5 text-destructive"
+                    className="max-h-48 list-disc space-y-0.5 overflow-y-auto pl-5 text-destructive"
                     data-testid="import-errors"
                   >
-                    {fieldErrors.map((e) => (
+                    {visibleFieldErrors.map((e) => (
                       <li key={`f-${e.field}`}>
                         {t("importCreate.fieldError", {
                           field: e.field,
@@ -194,7 +205,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                         })}
                       </li>
                     ))}
-                    {rowErrors.map((e) => (
+                    {visibleRowErrors.map((e) => (
                       <li key={`r-${e.row}`}>
                         {t("import.rowError", {
                           row: e.row,
@@ -203,6 +214,16 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                       </li>
                     ))}
                   </ul>
+                  {errorCount > MAX_VISIBLE_ERRORS && (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="import-errors-more"
+                    >
+                      {t("import.moreErrors", {
+                        count: errorCount - MAX_VISIBLE_ERRORS,
+                      })}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="text-muted-foreground">

@@ -200,6 +200,8 @@
     "needsFixing_one": "{{count}} baris perlu diperbaiki — tidak ada yang diimpor:",
     "needsFixing_other": "{{count}} baris perlu diperbaiki — tidak ada yang diimpor:",
     "rowError": "Baris {{row}}: {{message}}",
+    "moreErrors_one": "…dan {{count}} error lagi dalam file.",
+    "moreErrors_other": "…dan {{count}} error lagi dalam file.",
     "emptyPreview": "Tidak ada baris ditemukan dalam file. Tambahkan saldo lalu unggah ulang.",
     "preview": "Siap: {{insert}} baru, {{update}} diperbarui. Belum disimpan — tekan Impor untuk konfirmasi.",
     "committed_one": "Diimpor {{insert}} baru + {{update}} diperbarui bulan.",

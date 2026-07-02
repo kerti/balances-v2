@@ -200,6 +200,8 @@
     "needsFixing_one": "{{count}} row needs fixing — nothing was imported:",
     "needsFixing_other": "{{count}} rows need fixing — nothing was imported:",
     "rowError": "Row {{row}}: {{message}}",
+    "moreErrors_one": "…and {{count}} more error in the file.",
+    "moreErrors_other": "…and {{count}} more errors in the file.",
     "emptyPreview": "No rows found in the file. Add some balances and re-upload.",
     "preview": "Ready: {{insert}} new, {{update}} updated. Nothing saved yet — press Import to confirm.",
     "committed_one": "Imported {{insert}} new + {{update}} updated month.",

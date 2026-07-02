@@ -18,6 +18,11 @@ import { fileFromDrop } from "@/lib/importDrop";
 import { cn } from "@/lib/utils";
 import type { ImportArgs, ImportResult } from "@/hooks/snapshotImport";
 
+// Past this many rows, the list scrolls in its own boundary and the rest
+// collapse into a "N more errors" line instead of stretching the dialog
+// past the footer (#132).
+const MAX_VISIBLE_ERRORS = 8;
+
 type Props = {
   // templateUrl + mutation are owned by the parent so the same dialog drives
   // import for any amount-shape position group (asset/liability/receivable).
@@ -198,10 +203,10 @@ export function ImportSnapshotsDialog({
                     {t("import.needsFixing", { count: result.errors.length })}
                   </p>
                   <ul
-                    className="list-disc space-y-0.5 pl-5 text-destructive"
+                    className="max-h-48 list-disc space-y-0.5 overflow-y-auto pl-5 text-destructive"
                     data-testid="import-errors"
                   >
-                    {result.errors.map((e) => (
+                    {result.errors.slice(0, MAX_VISIBLE_ERRORS).map((e) => (
                       <li key={e.row}>
                         {t("import.rowError", {
                           row: e.row,
@@ -210,6 +215,16 @@ export function ImportSnapshotsDialog({
                       </li>
                     ))}
                   </ul>
+                  {result.errors.length > MAX_VISIBLE_ERRORS && (
+                    <p
+                      className="text-xs text-muted-foreground"
+                      data-testid="import-errors-more"
+                    >
+                      {t("import.moreErrors", {
+                        count: result.errors.length - MAX_VISIBLE_ERRORS,
+                      })}
+                    </p>
+                  )}
                 </div>
               ) : emptyPreview ? (
                 <p className="text-muted-foreground">
