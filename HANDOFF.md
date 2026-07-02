@@ -120,12 +120,17 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
-**Demo/prod launch prep (parked until after alpha.5, discussed 2026-06-18):** #215 subdomain scheme
-— **decided: nested product subtree** (`app.balances.<domain>` prod unmarked, `balances.<domain>`
-landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview migrated, issue stays open
-for prod/demo standup. #216 single Resend sending domain — **DONE & closed**. #217 demo readiness
-(email sink / guest auth / nightly reset / OAuth publish), #218 Neon prod-project isolation + backup
-retention (now also carries the erasure-purge window, see below). Feeds M7.
+**Demo/prod launch prep (prod deferred indefinitely as of 2026-07-02; demo is the active line):** #215
+subdomain scheme — **decided: nested product subtree** (`app.balances.<domain>` prod unmarked,
+`balances.<domain>` landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview
+migrated, demo DNS in progress. #216 single Resend sending domain — **DONE & closed**. #218 rescoped
+2026-07-02 — prod's Neon-isolation + PITR-retention decision (incl. the erasure-purge window) parks
+with prod; demo instead follows ADR-0030's already-decided single-project-per-env-branch shape (no
+isolation): Neon `demo` branch, Fly app `balances-demo`, GitHub Environment `demo` all provisioned.
+#217 demo readiness — OAuth consolidated under one new GCP project (dev/preview/demo clients,
+consent screen **published to Production**, preview re-verified on the new client first) — **DONE**;
+email sink / guest auth / nightly reset still open. DNS + remaining Fly secrets (`DATABASE_URL`,
+OAuth) being set directly by the maintainer. Feeds M7.
 
 **Production SaaS data-protection decision (2026-07-02):** #222 (originally: maintainer structurally
 unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
