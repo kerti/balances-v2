@@ -143,7 +143,11 @@ member list captured *before* the wipe; the session cookie is cleared (not re-is
 lands on a dedicated `/erased` screen, not sign-in. Access/portability already satisfied by the
 backup/export epic (#52). Self-host (#116) remains the zero-exposure option for anyone unwilling to
 accept hosted SaaS. This unblocks the "production Resend domain" + "non-disposable environment" M7
-gate items, pending #299/#217/#218/#215.
+gate items, pending #299/#217/#218/#215. **✅ #302 DONE** (PR #306): `FOUNDING_DISABLED` env flag
+closes the "preview becomes an accidental permanent soft-prod" gap — an operator-only boolean,
+default open, that gates only the onboarding gate's founder commit (uniformly for Google + local),
+freezing an instance's household population while invite-based joining stays untouched; narrower
+follow-on to the DB-backed allow-list #263 rejected as wontfix. ADR-0038 append; INV-AUTH-26.
 
 Smaller open items ride a convenient batch, not their own cut: #132 (import-error dialog grows
 unclosable), #163 (email wordmark raster).
