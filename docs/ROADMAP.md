@@ -66,7 +66,7 @@ polish-then-snapshot is the correct order. The **remaining M6 done-when item is 
 dashboard-polish epic (#204)**; a production Resend domain is prod-gated and moves to M7; "production
 DB backup/restore documented" is a short ops note still owed.
 
-## Milestone 7 — Productization / beta
+## Milestone 7 — Productization / beta — ✅ shipped
 
 **Goal:** make Balances trustable by real households, not richer in domain features. The bet: a large,
 safe surface has shipped with **zero external feedback** (preview-only, OAuth Testing mode, no prod) —
@@ -84,7 +84,18 @@ real usage, not more building, drives M8.
 Opens at `v0.7.0-alpha.1` — the minor bump marks the milestone boundary (ADR-0033; "milestone =
 minor" convention).
 
+**Status (2026-07-03):** self-hosting (#116), onboarding (#158), and the non-disposable-environment
+bullet (self-host satisfies "hosted beta or self-host" — no separate hosted beta needed) are all done.
+#93 landing/docs is consciously deferred to near-RC (trigger: app domain costs), satisfying its own
+"or deferred" clause. The one bullet that doesn't literally close — **a production Resend domain** —
+is gated on a production launch that is itself now **deferred indefinitely** (2026-07-02; ADR-0033
+amendment unpinned first-prod from any version or date). Rather than hold M7 open on a decision that's
+been shelved, that bullet carries forward with prod: it lands whenever prod actually unparks, tracked
+via #218 (prod Neon isolation) and #299's remaining GDPR scope — not its own milestone. M7 closes here.
+
 ## Milestone 8 — Next domain features
+
+**Status (2026-07-03):** now the active milestone — M7 closed above.
 
 **Goal:** the next wave of domain capability, **prioritized by real-user feedback from M7**, not
 pre-specified here. Candidates currently parked in the backlog (#66 per-bond coupon disposition, #145
@@ -94,3 +105,6 @@ expected-coupon projection, #69 component tests, etc.) compete on observed signa
 - **PDF export (#187)** — pivoted here from M6 (2026-06-17). Re-scoped to a downloadable/emailable
   *polished* monthly report, building on the now-parity group Homes (epic #204); deferred so the PDF
   snapshots a finished dashboard, not a half-built one.
+- **Riding along, not domain features** — small M7 leftovers that don't gate anything, moved here so
+  M7 could close clean: **#299** (privacy policy — preview-scoped note + breach runbook, not blocked
+  on prod) and **#163** (email hosted-wordmark raster).

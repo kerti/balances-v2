@@ -19,9 +19,9 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5 (the 0.6 line). CI is green.
-**`v0.7.0-alpha.5` is the latest preview release**; **`v0.7.0-rc.1` is demo's current release** (M7
-line) on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
+M1–M6 complete; **M6 (v1 polish)** and **M7 (productization) are both closed** — M7 closed 2026-07-03.
+CI is green. **`v0.7.0-alpha.5` is the latest preview release**; **`v0.7.0-rc.2` is demo's current
+release** on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
 `https://demo.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
 mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -35,7 +35,7 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
   backup/restore (epic #52, ADR-0036), QA invariant matrix (19 zones/103 invariants), group-Home
   parity (#204). Migrations: `00002`–`00005` (additive). Detail in closed issues + the
   alpha.1–alpha.5 Release notes.
-- **M7** (open, productization) — one line per tag; full detail lives in each tag's Release notes:
+- **M7** (closed, productization) — one line per tag; full detail lives in each tag's Release notes:
   - `v0.7.0-alpha.1` — self-host stack, `docker-compose.yml` + `APP_URL` collapse (#116, ADR-0037). No migration.
   - `v0.7.0-alpha.2` — self-host rehearsal fixes: multi-arch image, deep-route 404 (#241/#242). No migration.
   - `v0.7.0-alpha.3` — coupon disposition + first backup format transform (#66). Migration: additive (`00006`).
@@ -50,15 +50,18 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 
 ## What's next
 
-**M6 closed (alpha.5, the 0.6 line); M7 (productization) is open (latest preview release
-v0.7.0-alpha.5; latest demo release v0.7.0-rc.2).** Next, in order:
+**M7 closed (2026-07-03) — productization done: self-host (#116), onboarding (#158), and the
+non-disposable-environment bullet (self-host satisfies it) all shipped; #93 landing stays consciously
+deferred to near-RC. Latest preview release v0.7.0-alpha.5; latest demo release v0.7.0-rc.2.** Next,
+in order:
 
-1. **M7 = productization (now the active line).** Onboarding gate, local password auth, household
-   erasure, and demo standup (#217) all shipped — remaining M7 gate items: production Resend domain,
-   **#93** landing. Prod itself is **deferred indefinitely** (2026-07-02) — see the data-protection
-   note below. See ROADMAP M7.
-2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
-   Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
+1. **M8 = next domain features (now the active line)**, prioritized by real-user feedback from M7
+   (not pre-specified). Includes the M6→M8 pivot of **PDF export (#187)**. Also riding along: #299
+   (privacy policy, not blocked on prod) and #163 (email wordmark raster) — small M7 leftovers that
+   didn't gate anything, moved here so M7 could close clean. See ROADMAP M8.
+2. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
+   eventual standup, tracked via #218 (Neon isolation) and #299's remaining GDPR scope, not its own
+   milestone. Prod itself stays deferred indefinitely.
 
 **Demo/prod launch prep (prod deferred indefinitely as of 2026-07-02; demo is the active line):** #215
 subdomain scheme — **decided: nested product subtree** (`app.balances.<domain>` prod unmarked,
@@ -67,6 +70,8 @@ demo both migrated. #216 single Resend sending domain — **DONE & closed**. #21
 2026-07-02 — prod's Neon-isolation + PITR-retention decision (incl. the erasure-purge window) parks
 with prod; demo instead follows ADR-0030's already-decided single-project-per-env-branch shape (no
 isolation): Neon `demo` branch, Fly app `balances-demo`, GitHub Environment `demo` all provisioned.
+De-milestoned from M7 2026-07-03 — parked-with-prod items don't carry a milestone (matches #279's
+earlier treatment).
 #217 demo readiness — **DONE & closed** (2026-07-03): OAuth consolidated under one new GCP project,
 consent screen published to Production, shared-account auth + Erasure block + nightly-reset endpoint
 shipped (`v0.7.0-alpha.5`/`rc.2`, ADR-0041), GitHub Actions cron wired and verified live against demo.
@@ -76,14 +81,16 @@ DNS (`demo.balances.<domain>`) set. Demo standup complete.
 unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
 core server-side aggregation (monthly reports) and isn't what GDPR requires. Decided: ordinary GDPR
 compliance is sufficient — lawful basis, privacy policy naming subprocessors, honoring access/erasure
-requests, bounded breach process. Rescoped into **#299** (privacy policy — still open) and **#300**
-(household erasure "DELETE ME" — shipped alpha.4, see above, ADR-0040). Access/portability already
-satisfied by the backup/export epic (#52). Self-host (#116) remains the zero-exposure option for
-anyone unwilling to accept hosted SaaS. **Prod itself stays deferred indefinitely** — the
-"non-disposable environment" M7 gate item doesn't apply until prod is unparked; demo (below) is the
-closest thing to a public-facing env for now.
+requests, bounded breach process. Rescoped into **#299** (privacy policy — open, moved to M8, not
+blocked on prod) and **#300** (household erasure "DELETE ME" — shipped alpha.4, see above, ADR-0040).
+Access/portability already satisfied by the backup/export epic (#52). Self-host (#116) remains the
+zero-exposure option for anyone unwilling to accept hosted SaaS. **Prod itself stays deferred
+indefinitely.** (Correction 2026-07-03: the "non-disposable environment" M7 gate item is in fact
+satisfied by self-host — #116 shipped and closed — not blocked on prod; see ROADMAP M7 status. Demo
+remains the closest thing to a public-facing env for real-usage feedback, independent of that gate.)
 
-Smaller open items ride a convenient batch, not their own cut: #163 (email wordmark raster).
+Smaller open items ride a convenient batch, not their own cut: #163 (email wordmark raster, now under
+M8).
 Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
 
 **Label convention (release notes):** every PR carries exactly one type label at merge —
