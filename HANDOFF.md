@@ -44,36 +44,33 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
   - `v0.7.0-rc.1` — demo's first release; promotes the `alpha.4` commit verbatim, no changes. First
     cut on the `*-rc.N` → `demo` routing.
   - `v0.7.0-alpha.5` — demo shared-account auth + Erasure block + nightly-reset endpoint (#217,
-    ADR-0041). No migration. Pending: promote to `rc.2` for demo, GitHub Actions nightly-reset cron,
-    end-to-end verify (see below).
+    ADR-0041). No migration.
+  - `v0.7.0-rc.2` — promotes the `alpha.5` commit verbatim, no changes. Demo standup complete (#217
+    closed) — see below.
 
 ## What's next
 
 **M6 closed (alpha.5, the 0.6 line); M7 (productization) is open (latest preview release
-v0.7.0-alpha.5; latest demo release v0.7.0-rc.1).** Next, in order:
+v0.7.0-alpha.5; latest demo release v0.7.0-rc.2).** Next, in order:
 
-1. **M7 = productization (now the active line).** Onboarding gate, local password auth, and household
-   erasure all shipped in alpha.4 (see above) — remaining M7 gate items: **demo standup** (below),
-   production Resend domain, **#93** landing. Prod itself is **deferred indefinitely** (2026-07-02) —
-   see the data-protection note below. See ROADMAP M7.
+1. **M7 = productization (now the active line).** Onboarding gate, local password auth, household
+   erasure, and demo standup (#217) all shipped — remaining M7 gate items: production Resend domain,
+   **#93** landing. Prod itself is **deferred indefinitely** (2026-07-02) — see the data-protection
+   note below. See ROADMAP M7.
 2. **M8 = next domain features**, prioritized by real-user feedback from M7 (not pre-specified).
    Includes the M6→M8 pivot of **PDF export (#187)**. See ROADMAP M8.
 
 **Demo/prod launch prep (prod deferred indefinitely as of 2026-07-02; demo is the active line):** #215
 subdomain scheme — **decided: nested product subtree** (`app.balances.<domain>` prod unmarked,
-`balances.<domain>` landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview
-migrated, demo DNS in progress. #216 single Resend sending domain — **DONE & closed**. #218 rescoped
+`balances.<domain>` landing, `preview.`/`demo.` siblings), **DNS-only never proxied**; preview and
+demo both migrated. #216 single Resend sending domain — **DONE & closed**. #218 rescoped
 2026-07-02 — prod's Neon-isolation + PITR-retention decision (incl. the erasure-purge window) parks
 with prod; demo instead follows ADR-0030's already-decided single-project-per-env-branch shape (no
 isolation): Neon `demo` branch, Fly app `balances-demo`, GitHub Environment `demo` all provisioned.
-#217 demo readiness — OAuth consolidated under one new GCP project (dev/preview/demo clients,
-consent screen **published to Production**, preview re-verified on the new client first) — **DONE**.
-Guest auth / nightly reset (shared-account auth, Erasure block, `DEMO_MODE`, reset endpoint) shipped
-in code at `v0.7.0-alpha.5` (ADR-0041) — demo Household founded with the shared local-auth
-credentials, `FOUNDING_DISABLED`/`DEMO_MODE`/`DEMO_RESET_TOKEN`/`AUTH_LOCAL_ENABLED` Fly secrets set on
-`balances-demo`, but **inert until promoted to demo** (the running build still predates this code).
-Remaining: promote to `rc.2`, write the GitHub Actions nightly-reset cron, verify end-to-end, then
-close #217. DNS (`demo.balances.<domain>`) set. Feeds M7.
+#217 demo readiness — **DONE & closed** (2026-07-03): OAuth consolidated under one new GCP project,
+consent screen published to Production, shared-account auth + Erasure block + nightly-reset endpoint
+shipped (`v0.7.0-alpha.5`/`rc.2`, ADR-0041), GitHub Actions cron wired and verified live against demo.
+DNS (`demo.balances.<domain>`) set. Demo standup complete.
 
 **Production SaaS data-protection decision (2026-07-02):** #222 (originally: maintainer structurally
 unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
