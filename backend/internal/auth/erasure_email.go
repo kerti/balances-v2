@@ -44,7 +44,7 @@ func (h *Handlers) erasureConfirmMessage(user db.User, householdName string) ema
 	bodyHTML := fmt.Sprintf(c.body, htmlEscape(householdName))
 	bodyText := fmt.Sprintf(c.body, householdName)
 
-	html := email.Layout(fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
 <p style="margin:0;">%s</p>`, greetingHTML, bodyHTML))
 	text := fmt.Sprintf("%s\n\n%s\n\n%s\n", greetingText, bodyText, c.signoff)
 
@@ -60,7 +60,7 @@ func (h *Handlers) erasureNoticeMessage(user db.User, householdName string) emai
 	bodyHTML := fmt.Sprintf(c.body, htmlEscape(householdName))
 	bodyText := fmt.Sprintf(c.body, householdName)
 
-	html := email.Layout(fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
 <p style="margin:0;">%s</p>`, greetingHTML, bodyHTML))
 	text := fmt.Sprintf("%s\n\n%s\n\n%s\n", greetingText, bodyText, c.signoff)
 

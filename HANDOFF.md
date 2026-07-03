@@ -83,7 +83,7 @@ anyone unwilling to accept hosted SaaS. **Prod itself stays deferred indefinitel
 "non-disposable environment" M7 gate item doesn't apply until prod is unparked; demo (below) is the
 closest thing to a public-facing env for now.
 
-Smaller open items ride a convenient batch, not their own cut: #163 (email wordmark raster).
+Smaller open items ride a convenient batch, not their own cut.
 Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
 
 **Label convention (release notes):** every PR carries exactly one type label at merge —

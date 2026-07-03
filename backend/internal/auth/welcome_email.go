@@ -19,7 +19,7 @@ func (h *Handlers) sendWelcomeEmail(ctx context.Context, user db.User) error {
 	greetingHTML := fmt.Sprintf(c.greeting, htmlEscape(user.DisplayName))
 	greetingText := fmt.Sprintf(c.greeting, user.DisplayName)
 
-	html := email.Layout(fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
 <p style="margin:0 0 16px;">%s</p>
 <p style="margin:0 0 20px;">%s</p>
 <p style="margin:0;"><a href="%s" style="display:inline-block;background:#6366F1;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>`,
