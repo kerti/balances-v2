@@ -1,0 +1,28 @@
+# Nightly demo reset (ADR-0041, #217): wipes and reseeds the shared demo
+# Household so every day starts from the same clean toy dataset. Targets the
+# app's default balances-demo.fly.dev hostname (stable regardless of custom
+# domain config) rather than a real domain name. The reset endpoint itself
+# only exists when DEMO_MODE is set (ADR-0041) — everywhere else this would
+# 404, so there is no environment-routing logic to get wrong here.
+name: demo-reset
+on:
+  schedule:
+    # 19:00 UTC = 02:00 Asia/Jakarta — a low-traffic hour for the app's
+    # default locale/timezone (ADR-0035).
+    - cron: '0 19 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    environment: demo # scopes access to the demo Environment's DEMO_RESET_TOKEN
+    steps:
+      - name: Trigger demo reset
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+            https://balances-demo.fly.dev/api/admin/demo-reset \
+            -H "Authorization: Bearer ${{ secrets.DEMO_RESET_TOKEN }}")
+          if [ "$status" != "204" ]; then
+            echo "::error::demo reset failed with status $status"
+            exit 1
+          fi
