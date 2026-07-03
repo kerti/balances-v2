@@ -19,12 +19,12 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5. CI is green. **`v0.7.0-alpha.4` is
-the latest release** (M7 line; six batched alphas preceded it on the 0.6 line)
-on the `preview` environment
-(`https://preview.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin:
-one Fly app (region `sin`) serves the SPA + `/api`; Neon Postgres (preview branch), Resend mail,
-Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-managed TLS.
+M1–M5 complete; **M6 (v1 polish) is closed** — fully landed with alpha.5 (the 0.6 line). CI is green.
+**`v0.7.0-alpha.5` is the latest preview release**; **`v0.7.0-rc.1` is demo's current release** (M7
+line) on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
+`https://demo.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin: one
+Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
+mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with Fly-managed TLS.
 
 - **M1–M5** (closed) — walking skeleton → OAuth + invites → all four position groups + five investment
   subtypes + transaction ledger + Income + position lifecycle → materialized monthly net-worth report
@@ -41,10 +41,16 @@ Google OAuth (Testing mode). Custom domain on Cloudflare DNS-only with Fly-manag
   - `v0.7.0-alpha.3` — coupon disposition + first backup format transform (#66). Migration: additive (`00006`).
   - `v0.7.0-alpha.4` — onboarding gate (#158, ADR-0038), local password auth epic (#277, ADR-0039),
     household erasure (#300, ADR-0040), `FOUNDING_DISABLED` (#302). Migration: additive (`00007`–`00010`).
+  - `v0.7.0-rc.1` — demo's first release; promotes the `alpha.4` commit verbatim, no changes. First
+    cut on the `*-rc.N` → `demo` routing.
+  - `v0.7.0-alpha.5` — demo shared-account auth + Erasure block + nightly-reset endpoint (#217,
+    ADR-0041). No migration. Pending: promote to `rc.2` for demo, GitHub Actions nightly-reset cron,
+    end-to-end verify (see below).
 
 ## What's next
 
-**M6 closed (alpha.5); M7 (productization) is open (latest release v0.7.0-alpha.4).** Next, in order:
+**M6 closed (alpha.5, the 0.6 line); M7 (productization) is open (latest preview release
+v0.7.0-alpha.5; latest demo release v0.7.0-rc.1).** Next, in order:
 
 1. **M7 = productization (now the active line).** Onboarding gate, local password auth, and household
    erasure all shipped in alpha.4 (see above) — remaining M7 gate items: **demo standup** (below),
@@ -61,11 +67,13 @@ migrated, demo DNS in progress. #216 single Resend sending domain — **DONE & c
 with prod; demo instead follows ADR-0030's already-decided single-project-per-env-branch shape (no
 isolation): Neon `demo` branch, Fly app `balances-demo`, GitHub Environment `demo` all provisioned.
 #217 demo readiness — OAuth consolidated under one new GCP project (dev/preview/demo clients,
-consent screen **published to Production**, preview re-verified on the new client first) — **DONE**;
-`balances-demo` Fly secrets (`APP_URL`, `COOKIE_SECURE`, `DATABASE_URL`, `EMAIL_ENABLED=false`,
-`GOOGLE_CLIENT_ID`/`SECRET`, `SESSION_TTL`) set by the maintainer, staged pending demo's first
-deploy. Guest auth / nightly reset still open. DNS (`demo.balances.<domain>`) being set directly by
-the maintainer. Feeds M7.
+consent screen **published to Production**, preview re-verified on the new client first) — **DONE**.
+Guest auth / nightly reset (shared-account auth, Erasure block, `DEMO_MODE`, reset endpoint) shipped
+in code at `v0.7.0-alpha.5` (ADR-0041) — demo Household founded with the shared local-auth
+credentials, `FOUNDING_DISABLED`/`DEMO_MODE`/`DEMO_RESET_TOKEN`/`AUTH_LOCAL_ENABLED` Fly secrets set on
+`balances-demo`, but **inert until promoted to demo** (the running build still predates this code).
+Remaining: promote to `rc.2`, write the GitHub Actions nightly-reset cron, verify end-to-end, then
+close #217. DNS (`demo.balances.<domain>`) set. Feeds M7.
 
 **Production SaaS data-protection decision (2026-07-02):** #222 (originally: maintainer structurally
 unable to read any user data — zero-knowledge encryption) closed as disproportionate; conflicts with
