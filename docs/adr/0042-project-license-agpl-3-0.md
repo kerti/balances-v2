@@ -42,7 +42,7 @@ source-available scheme like BSL. The deciding constraints, from grilling:
 - **AGPL → permissive is the safe relicense direction, not the reverse.** Sole ownership means the
   *future* license can change at will (e.g. to Apache-2.0, if wider adoption ever outweighs the
   anti-strip-mining goal); already-released versions stay available under AGPL to whoever received
-  them (can't be clawed back), but that's a acceptable one-way ratchet. Going the other direction
+  them (can't be clawed back), but that's an acceptable one-way ratchet. Going the other direction
   (permissive → copyleft) would not be safe, since permissively-licensed code already in the wild
   can never be pulled back under new restrictions. This asymmetry is why AGPL was chosen as the
   starting point over Apache-2.0, keeping the option open rather than the reverse.
