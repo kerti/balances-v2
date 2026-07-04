@@ -57,8 +57,8 @@ in order:
 
 1. **M8 = next domain features (now the active line)**, prioritized by real-user feedback from M7
    (not pre-specified). Includes the M6→M8 pivot of **PDF export (#187)**. Also riding along: #299
-   (privacy policy, not blocked on prod) and #163 (email wordmark raster) — small M7 leftovers that
-   didn't gate anything, moved here so M7 could close clean. See ROADMAP M8.
+   (privacy policy, not blocked on prod) — small M7 leftover that didn't gate anything, moved here so
+   M7 could close clean. #163 (email wordmark raster) shipped separately (`#315`). See ROADMAP M8.
 2. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
    eventual standup, tracked via #218 (Neon isolation) and #299's remaining GDPR scope, not its own
    milestone. Prod itself stays deferred indefinitely.
@@ -89,8 +89,7 @@ indefinitely.** (Correction 2026-07-03: the "non-disposable environment" M7 gate
 satisfied by self-host — #116 shipped and closed — not blocked on prod; see ROADMAP M7 status. Demo
 remains the closest thing to a public-facing env for real-usage feedback, independent of that gate.)
 
-Smaller open items ride a convenient batch, not their own cut: #163 (email wordmark raster, now under
-M8).
+Smaller open items ride a convenient batch, not their own cut.
 Hardening follow-ups: `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
 
 **Label convention (release notes):** every PR carries exactly one type label at merge —

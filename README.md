@@ -9,6 +9,8 @@ transaction.
 The domain glossary lives in `CONTEXT.md`. The decisions behind the design and tech stack live in
 `docs/adr/`. The implementation outline lives in `docs/ROADMAP.md`.
 
+Licensed under [AGPL-3.0](LICENSE) (ADR-0042).
+
 ## Local development
 
 Prerequisites: Docker (OrbStack recommended on macOS), Go 1.26.4+, Node 22+.

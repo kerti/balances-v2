@@ -2,26 +2,24 @@ package email
 
 import "testing"
 
-// Layout is the shared branded shell both transactional senders render through.
-// It must embed the caller's body verbatim and carry the inline "Balances"
-// wordmark (the inline-branding decision — no image to block).
+// Layout is the shared branded shell every transactional sender renders through.
+// It must embed the caller's body verbatim and carry the hosted "Balances"
+// wordmark image with a styled-text alt fallback (#163): best case the real
+// letterforms, worst case (blocked/failed image) the brand name in plain text.
 func TestLayout(t *testing.T) {
-	out := Layout(`<p>hello body</p>`)
+	const frontendURL = "https://app.example.test"
+	out := Layout(frontendURL, `<p>hello body</p>`)
 
 	for _, want := range []string{
 		"<!DOCTYPE html>",
-		">Balances<",        // inline wordmark header (no <img>)
-		"<p>hello body</p>", // caller fragment embedded verbatim
-		brandIndigo,         // brand accent applied
+		"<img ",                               // hosted wordmark raster
+		frontendURL + "/brand/email-logo.png", // served by the single-origin app (ADR-0030)
+		`alt="Balances"`,                      // alt is the styled wordmark name — the fallback
+		"<p>hello body</p>",                   // caller fragment embedded verbatim
 	} {
 		if !contains(out, want) {
 			t.Errorf("Layout output missing %q", want)
 		}
-	}
-
-	// Inline branding by design: no remote/SVG/data-URI image to be blocked.
-	if contains(out, "<img") {
-		t.Error("Layout should carry no <img> (inline branding); found one")
 	}
 }
 
