@@ -1,7 +1,12 @@
 # Balances
 
 [![CI](https://github.com/kerti/balances-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/kerti/balances-v2/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/kerti/balances-v2/graph/badge.svg)](https://codecov.io/gh/kerti/balances-v2)
+[![codecov backend](https://codecov.io/gh/kerti/balances-v2/branch/main/graph/badge.svg?flag=backend)](https://codecov.io/gh/kerti/balances-v2)
+[![codecov frontend](https://codecov.io/gh/kerti/balances-v2/branch/main/graph/badge.svg?flag=frontend)](https://codecov.io/gh/kerti/balances-v2)
+
+The frontend number is scoped to `src/lib/**` and `src/components/positionList/**`
+(`frontend/vitest.config.ts`), not the whole frontend — most components and hooks aren't
+in the denominator yet.
 
 A snapshot-based personal-finance app for tracking household net worth without itemising every
 transaction.
