@@ -24,6 +24,7 @@ var configEnvKeys = []string{
 	"EMAIL_ENABLED",
 	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
 	"EMAIL_FROM_ADDRESS",
+	"DB_MAX_CONNS", "DB_STATEMENT_TIMEOUT",
 }
 
 func clearConfigEnv(t *testing.T) {
@@ -68,6 +69,12 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.IdleTimeout != 120*time.Second {
 		t.Errorf("IdleTimeout = %v, want default 120s", cfg.IdleTimeout)
+	}
+	if cfg.DBMaxConns != 10 {
+		t.Errorf("DBMaxConns = %d, want default 10", cfg.DBMaxConns)
+	}
+	if cfg.DBStatementTimeout != 30*time.Second {
+		t.Errorf("DBStatementTimeout = %v, want default 30s", cfg.DBStatementTimeout)
 	}
 	if cfg.CookieSecure {
 		t.Errorf("CookieSecure = true, want default false")
