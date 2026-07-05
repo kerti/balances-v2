@@ -93,6 +93,34 @@ func gunzip(t *testing.T, b []byte) []byte {
 	return raw
 }
 
+// zeroReader streams infinite zero bytes — paired with a byte count via
+// io.CopyN, it lets a test build a gzip bomb (tiny compressed size, huge
+// decompressed size) without ever materializing the decompressed payload in
+// memory.
+type zeroReader struct{}
+
+func (zeroReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = 0
+	}
+	return len(p), nil
+}
+
+// gzipZeros gzip-compresses n zero bytes, streamed rather than buffered, so
+// building a decompressed payload past maxDecompressedBackup stays cheap.
+func gzipZeros(t *testing.T, n int64) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	if _, err := io.CopyN(gw, zeroReader{}, n); err != nil {
+		t.Fatalf("write zeros: %v", err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatalf("close gzip writer: %v", err)
+	}
+	return buf.Bytes()
+}
+
 // covers: INV-BACKUP-06, INV-BACKUP-07, INV-BACKUP-08
 func TestRestoreParseValidate(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
@@ -132,6 +160,15 @@ func TestRestoreParseValidate(t *testing.T) {
 
 	t.Run("truncated gzip is corrupt", func(t *testing.T) {
 		_, err := Parse(bytes.NewReader(gzipped[:len(gzipped)-5]))
+		if !errors.Is(err, ErrCorruptBackup) {
+			t.Errorf("err = %v, want ErrCorruptBackup", err)
+		}
+	})
+
+	// covers: INV-BACKUP-07
+	t.Run("gzip bomb past the decompressed ceiling is corrupt, not OOM", func(t *testing.T) {
+		bomb := gzipZeros(t, maxDecompressedBackup+1)
+		_, err := Parse(bytes.NewReader(bomb))
 		if !errors.Is(err, ErrCorruptBackup) {
 			t.Errorf("err = %v, want ErrCorruptBackup", err)
 		}
