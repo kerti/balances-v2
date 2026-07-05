@@ -20,6 +20,13 @@ type Props = {
   /** Footer submit-button label while the mutation is in flight. */
   pendingLabel: string;
   isPending: boolean;
+  /**
+   * Extra disable condition for the submit button (e.g. an inline validation
+   * like time-deposit's term check). ORs with `isPending` for the disabled
+   * state only — the button label still tracks `isPending`, so a merely-invalid
+   * form keeps its rest label rather than flipping to the pending label.
+   */
+  submitDisabled?: boolean;
   /** The mutation error, if any; rendered via the shared error envelope. */
   error: unknown;
   /**
@@ -32,6 +39,11 @@ type Props = {
   children: React.ReactNode;
   /** Optional DialogContent class override (e.g. tall investment forms). */
   contentClassName?: string;
+  /**
+   * Optional `<form>` class override. Defaults to `space-y-3`; the sectioned
+   * bond/time-deposit forms pass `space-y-4` to keep their group spacing.
+   */
+  formClassName?: string;
   // --- Create mode: pass `trigger`; the scaffold owns open state. ---
   /** Trigger element (e.g. the "+ Add" button). Presence selects create mode. */
   trigger?: React.ReactNode;
@@ -56,10 +68,12 @@ export function PositionFormDialog({
   submitLabel,
   pendingLabel,
   isPending,
+  submitDisabled = false,
   error,
   onSubmit,
   children,
   contentClassName,
+  formClassName = "space-y-3",
   trigger,
   onClosed,
   open: controlledOpen,
@@ -103,7 +117,7 @@ export function PositionFormDialog({
             e.preventDefault();
             onSubmit(close);
           }}
-          className="space-y-3"
+          className={formClassName}
         >
           {children}
 
@@ -115,7 +129,7 @@ export function PositionFormDialog({
             <Button type="button" variant="outline" onClick={close}>
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending || submitDisabled}>
               {isPending ? pendingLabel : submitLabel}
             </Button>
           </DialogFooter>

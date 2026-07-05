@@ -120,6 +120,32 @@ describe("PositionFormDialog", () => {
   });
 
   // covers: INV-PRESENTATION-06
+  it("submitDisabled disables submit but keeps the rest label (not pending)", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PositionFormDialog
+        trigger={<button>Add thing</button>}
+        title="Create thing"
+        description="A new thing"
+        submitLabel="Create"
+        pendingLabel="Creating…"
+        isPending={false}
+        submitDisabled
+        error={null}
+        onSubmit={() => {}}
+      >
+        <input aria-label="thing name" />
+      </PositionFormDialog>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Add thing" }));
+    // Label stays "Create" (a merely-invalid form must not read as in-flight),
+    // but the button is disabled.
+    const submit = await screen.findByRole("button", { name: "Create" });
+    expect(submit).toBeDisabled();
+  });
+
+  // covers: INV-PRESENTATION-06
   it("edit mode: renders open without a trigger and Cancel calls onOpenChange(false)", async () => {
     const user = userEvent.setup();
     function Harness() {
