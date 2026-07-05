@@ -20,6 +20,7 @@ var configEnvKeys = []string{
 	"DEMO_MODE", "DEMO_RESET_TOKEN", "DEMO_EMAIL", "DEMO_PASSWORD",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
 	"SESSION_TTL", "COOKIE_SECURE",
+	"HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT",
 	"EMAIL_ENABLED",
 	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
 	"EMAIL_FROM_ADDRESS",
@@ -58,6 +59,15 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.SessionTTL != 720*time.Hour {
 		t.Errorf("SessionTTL = %v, want 720h", cfg.SessionTTL)
+	}
+	if cfg.ReadTimeout != 30*time.Second {
+		t.Errorf("ReadTimeout = %v, want default 30s", cfg.ReadTimeout)
+	}
+	if cfg.WriteTimeout != 60*time.Second {
+		t.Errorf("WriteTimeout = %v, want default 60s", cfg.WriteTimeout)
+	}
+	if cfg.IdleTimeout != 120*time.Second {
+		t.Errorf("IdleTimeout = %v, want default 120s", cfg.IdleTimeout)
 	}
 	if cfg.CookieSecure {
 		t.Errorf("CookieSecure = true, want default false")

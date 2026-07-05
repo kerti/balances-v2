@@ -33,6 +33,18 @@ type Config struct {
 	// restarts can use a short grace period; production keeps a longer one.
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
 
+	// ReadTimeout / WriteTimeout / IdleTimeout close the remaining "client
+	// holds a goroutine forever" gap that ReadHeaderTimeout (headers-only,
+	// hardcoded 5s in main.go) doesn't cover: a slow-body request, a slow
+	// reader on the response, or an idle keep-alive connection. Self-host has
+	// no fronting proxy, so these are the only line of defense there.
+	// WriteTimeout is sized above the largest legitimate response — the
+	// in-app whole-Household backup export/restore (ADR-0036), not a typical
+	// request.
+	ReadTimeout  time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"30s"`
+	WriteTimeout time.Duration `env:"HTTP_WRITE_TIMEOUT" envDefault:"60s"`
+	IdleTimeout  time.Duration `env:"HTTP_IDLE_TIMEOUT" envDefault:"120s"`
+
 	GoogleClientID     string `env:"GOOGLE_CLIENT_ID"`
 	GoogleClientSecret string `env:"GOOGLE_CLIENT_SECRET"`
 	OIDCIssuerURL      string `env:"OIDC_ISSUER_URL" envDefault:"https://accounts.google.com"`
