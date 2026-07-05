@@ -35,13 +35,13 @@ import { LiabilityDetail } from "@/components/LiabilityDetail";
 import { receivableDescriptor } from "@/components/positionList/descriptors/receivable";
 import { ReceivableDetail } from "@/components/ReceivableDetail";
 import { InvestmentsHome } from "@/components/InvestmentsHome";
-import { StocksScreen } from "@/components/StocksScreen";
+import { stockDescriptor } from "@/components/positionList/descriptors/stock";
 import { StockDetail } from "@/components/StockDetail";
-import { MutualFundsScreen } from "@/components/MutualFundsScreen";
+import { mutualFundDescriptor } from "@/components/positionList/descriptors/mutualFund";
 import { MutualFundDetail } from "@/components/MutualFundDetail";
-import { BondsScreen } from "@/components/BondsScreen";
+import { bondDescriptor } from "@/components/positionList/descriptors/bond";
 import { BondDetail } from "@/components/BondDetail";
-import { TimeDepositsScreen } from "@/components/TimeDepositsScreen";
+import { timeDepositDescriptor } from "@/components/positionList/descriptors/timeDeposit";
 import { TimeDepositDetail } from "@/components/TimeDepositDetail";
 import { goldDescriptor } from "@/components/positionList/descriptors/gold";
 import { GoldDetail } from "@/components/GoldDetail";
@@ -250,7 +250,10 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <StocksScreen onSelect={(id) => nav(routes.stock(id))} />
+              <PositionListScreen
+                descriptor={stockDescriptor}
+                onSelect={(id) => nav(routes.stock(id))}
+              />
             )}
           />
         ),
@@ -273,7 +276,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <MutualFundsScreen
+              <PositionListScreen
+                descriptor={mutualFundDescriptor}
                 onSelect={(id) => nav(routes.mutualFund(id))}
               />
             )}
@@ -298,7 +302,10 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <BondsScreen onSelect={(id) => nav(routes.bond(id))} />
+              <PositionListScreen
+                descriptor={bondDescriptor}
+                onSelect={(id) => nav(routes.bond(id))}
+              />
             )}
           />
         ),
@@ -318,7 +325,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <TimeDepositsScreen
+              <PositionListScreen
+                descriptor={timeDepositDescriptor}
                 onSelect={(id) => nav(routes.timeDeposit(id))}
               />
             )}

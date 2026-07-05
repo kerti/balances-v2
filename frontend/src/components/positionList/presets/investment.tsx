@@ -59,6 +59,9 @@ export type InvestmentConfig<T> = {
   activity: (item: T) => { count: number; lastDate: string | null };
   // Subtype-specific columns between name and status (gold's form+purity).
   mainColumns?: PositionExtraColumn<T, void>[];
+  // An extra badge beside the name after the risk pill (the mutual-fund
+  // fund-type chip).
+  titleAccessory?: (item: T) => ReactNode;
   deleteDescription: (item: T, t: TFunction) => string;
   headlineTestId: string;
   renderCreateDialog: () => ReactNode;
@@ -172,7 +175,10 @@ export function investmentDescriptor<T>(
     deleteDescription: config.deleteDescription,
     extraColumns: [...(config.mainColumns ?? []), activityColumn],
     renderTitleAccessory: (item) => (
-      <RiskProfileBadge profile={config.entity(item).risk_profile} compact />
+      <>
+        <RiskProfileBadge profile={config.entity(item).risk_profile} compact />
+        {config.titleAccessory?.(item)}
+      </>
     ),
     renderHeadline: (items) => (
       <InvestmentHeadline items={items} config={config} />
