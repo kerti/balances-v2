@@ -19,7 +19,8 @@ import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
 import { AssetsHome } from "@/components/AssetsHome";
-import { BankAccountsScreen } from "@/components/BankAccountsScreen";
+import { PositionListScreen } from "@/components/positionList/PositionListScreen";
+import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
 import { BankAccountDetail } from "@/components/BankAccountDetail";
 import { PropertiesScreen } from "@/components/PropertiesScreen";
 import { PropertyDetail } from "@/components/PropertyDetail";
@@ -85,7 +86,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <BankAccountsScreen
+              <PositionListScreen
+                descriptor={bankAccountDescriptor}
                 onSelect={(id) => nav(routes.bankAccount(id))}
               />
             )}
