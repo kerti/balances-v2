@@ -43,7 +43,7 @@ import { BondsScreen } from "@/components/BondsScreen";
 import { BondDetail } from "@/components/BondDetail";
 import { TimeDepositsScreen } from "@/components/TimeDepositsScreen";
 import { TimeDepositDetail } from "@/components/TimeDepositDetail";
-import { GoldsScreen } from "@/components/GoldsScreen";
+import { goldDescriptor } from "@/components/positionList/descriptors/gold";
 import { GoldDetail } from "@/components/GoldDetail";
 import { IncomeScreen } from "@/components/IncomeScreen";
 import { TagsScreen } from "@/components/TagsScreen";
@@ -344,7 +344,10 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <GoldsScreen onSelect={(id) => nav(routes.goldItem(id))} />
+              <PositionListScreen
+                descriptor={goldDescriptor}
+                onSelect={(id) => nav(routes.goldItem(id))}
+              />
             )}
           />
         ),

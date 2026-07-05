@@ -115,6 +115,9 @@ export type PositionListDescriptor<T, Ctx = void> = {
   extraColumns: PositionExtraColumn<T, Ctx>[];
 
   // Slots the core calls but never inspects.
+  // An optional inline accessory beside the display name in the title cell
+  // (the investment risk-profile badge). Absent for types without one.
+  renderTitleAccessory?: (item: T, ctx: Ctx) => ReactNode;
   renderHeadline: (items: T[]) => ReactNode;
   renderCreateDialog: () => ReactNode;
   renderEditDialog: (

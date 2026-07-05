@@ -93,10 +93,15 @@ export function PositionListScreen<T, Ctx>({
       mobileVisible: true,
       cell: (row) => (
         <>
-          <div className={cn("font-medium", row.terminated && "font-normal")}>
-            {row.name}
+          <div className="flex items-center gap-2">
+            <div className={cn("font-medium", row.terminated && "font-normal")}>
+              {row.name}
+            </div>
+            {descriptor.renderTitleAccessory?.(row.item, ctx)}
           </div>
-          <div className="text-xs text-muted-foreground">{row.secondary}</div>
+          {row.secondary ? (
+            <div className="text-xs text-muted-foreground">{row.secondary}</div>
+          ) : null}
         </>
       ),
     };
