@@ -209,3 +209,7 @@ Two layers, in order of convenience:
 
 - **Close any issues** the release finishes that weren't auto-closed by their PR `closes #n`.
 - Confirm HANDOFF reflects post-tag state (pruned, next-up only).
+- **Bump the self-host operator default tag.** If this cut is the new recommended self-hostable
+  version, update `BALANCES_TAG` in `.env.example` and the three mirrors in `SELF-HOSTING.md`
+  (image-tag example, quickstart snippet, config-reference table) to the new tag — it drifts
+  silently otherwise (#353).

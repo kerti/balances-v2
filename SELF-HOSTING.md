@@ -52,7 +52,7 @@ do when something goes wrong.
   separate.
 
 - A pinned release tag. The image is published to the GitHub Container Registry as
-  `ghcr.io/kerti/balances:<tag>` (e.g. `v1.0.0`). **No `latest` tag is published** — you always pin a
+  `ghcr.io/kerti/balances:<tag>` (e.g. `v0.7.0-rc.2`). **No `latest` tag is published** — you always pin a
   real version so upgrades are deliberate. Browse releases at
   <https://github.com/kerti/balances-v2/releases>.
 
@@ -65,7 +65,7 @@ hosted deployment.
 All three start from the same `.env`. Open it and set, at minimum:
 
 ```sh
-BALANCES_TAG=v1.0.0          # the release you want to run
+BALANCES_TAG=v0.7.0-rc.2     # the release you want to run
 POSTGRES_PASSWORD=...        # change this for anything past a localhost trial
 GOOGLE_CLIENT_ID=...         # see "Google OAuth client" below
 GOOGLE_CLIENT_SECRET=...
@@ -444,7 +444,7 @@ actually touch:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `BALANCES_TAG` | `v1.0.0` | Released image tag to run. Pin a real version; bump to upgrade. |
+| `BALANCES_TAG` | `v0.7.0-rc.2` | Released image tag to run. Pin a real version; bump to upgrade. |
 | `APP_PORT` | `8080` | Host port the single origin (SPA + `/api`) is published on. |
 | `APP_URL` | `http://localhost:8080` | The one origin the app is reached on. Derives frontend/backend URLs and the OAuth callback. |
 | `COOKIE_SECURE` | `false` | `true` once HTTPS is in front; `false` only for an http localhost trial. |
