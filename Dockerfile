@@ -29,13 +29,17 @@ RUN npm run build   # -> /web/dist
 FROM --platform=$BUILDPLATFORM golang:1.26 AS build
 ARG TARGETOS
 ARG TARGETARCH
+# Same release tag as the SPA's VITE_APP_VERSION (issue #75), baked into the Go
+# binary so /healthz can report exactly what rolled out (#355).
+ARG APP_VERSION=dev
 WORKDIR /src
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 COPY backend/ ./
 # -tags timetzdata embeds the zoneinfo DB (distroless static has none).
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags timetzdata \
-    -ldflags="-s -w" -o /out/balances ./cmd/balances
+    -ldflags="-s -w -X github.com/kerti/balances-v2/backend/internal/httpserver.appVersion=${APP_VERSION}" \
+    -o /out/balances ./cmd/balances
 
 # ---- run ----
 FROM gcr.io/distroless/static-debian12:nonroot

@@ -39,8 +39,9 @@ func TestServer_Healthz(t *testing.T) {
 	}
 
 	var body struct {
-		OK     bool   `json:"ok"`
-		DBTime string `json:"db_time"`
+		OK      bool   `json:"ok"`
+		DBTime  string `json:"db_time"`
+		Version string `json:"version"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v (raw: %s)", err, rec.Body.String())
@@ -50,6 +51,10 @@ func TestServer_Healthz(t *testing.T) {
 	}
 	if body.DBTime == "" {
 		t.Errorf("db_time empty, want a timestamp from SELECT now()")
+	}
+	// appVersion defaults to "dev" absent the build-time -ldflags -X (#355).
+	if body.Version != "dev" {
+		t.Errorf("version = %q, want default %q", body.Version, "dev")
 	}
 }
 
