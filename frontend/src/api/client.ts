@@ -38,6 +38,13 @@ export class ApiError extends Error {
   }
 }
 
+// DEFAULT_TIMEOUT_MS bounds every request against a hung connection or a
+// backend that never responds (#360) — nothing else on the client side was
+// giving up on a stalled fetch. Comfortably under the server's own
+// HTTP_READ_TIMEOUT/HTTP_WRITE_TIMEOUT defaults (30s/60s) so the client times
+// out and surfaces an error before the server would have anyway.
+const DEFAULT_TIMEOUT_MS = 20_000;
+
 export async function api<T = unknown>(
   input: string,
   init: RequestInit = {},
@@ -47,7 +54,12 @@ export async function api<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(input, { ...init, headers });
+  const timeoutSignal = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
+  const signal = init.signal
+    ? AbortSignal.any([init.signal, timeoutSignal])
+    : timeoutSignal;
+
+  const res = await fetch(input, { ...init, headers, signal });
 
   if (!res.ok) {
     let body: ErrorEnvelope | string | undefined;

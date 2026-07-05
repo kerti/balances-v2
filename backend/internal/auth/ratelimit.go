@@ -102,6 +102,21 @@ func (l *loginLimiter) recordSuccess(keys ...string) {
 	}
 }
 
+// evictExpired drops every entry whose backoff window has already elapsed,
+// bounding the map's size against a low-and-slow attacker cycling through
+// unique IPs/emails (each miss is a delay, never a permanent block, so an
+// elapsed entry carries no remaining protective value — see #360).
+func (l *loginLimiter) evictExpired() {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := l.now()
+	for k, e := range l.entries {
+		if !e.blockedUntil.After(now) {
+			delete(l.entries, k)
+		}
+	}
+}
+
 // backoff computes the wait for a given failure count: 0 on the first failure
 // (gentle for a typo), then base doubling up to cap.
 func (l *loginLimiter) backoff(failures int) time.Duration {

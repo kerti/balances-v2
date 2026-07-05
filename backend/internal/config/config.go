@@ -110,6 +110,16 @@ type Config struct {
 	SMTPUsername     string `env:"SMTP_USERNAME"`
 	SMTPPassword     string `env:"SMTP_PASSWORD"`
 	EmailFromAddress string `env:"EMAIL_FROM_ADDRESS" envDefault:"noreply@balances.local"`
+
+	// DBMaxConns bounds the pgxpool's pool size explicitly rather than leaving
+	// it at pgx's default (4x GOMAXPROCS), which has no notion of a managed
+	// Postgres provider's own connection ceiling (e.g. Neon's pooled-connection
+	// limit) — an unbounded pool from several app instances can exhaust it.
+	// DBStatementTimeout is a server-side backstop (applied via the connection's
+	// statement_timeout runtime param) so a runaway query can't hold a
+	// connection — and the request goroutine waiting on it — forever.
+	DBMaxConns         int32         `env:"DB_MAX_CONNS" envDefault:"10"`
+	DBStatementTimeout time.Duration `env:"DB_STATEMENT_TIMEOUT" envDefault:"30s"`
 }
 
 func Load() (*Config, error) {

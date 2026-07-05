@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -103,7 +104,7 @@ func serveCmd() error {
 		return fmt.Errorf("migrate: %w", err)
 	}
 
-	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	pool, err := newPool(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("connect db: %w", err)
 	}
@@ -164,6 +165,7 @@ func serveCmd() error {
 	if err != nil {
 		return fmt.Errorf("auth: %w", err)
 	}
+	go authH.StartHousekeeping(ctx, sessionHousekeepingInterval)
 
 	assetRepo := repo.NewAssetRepo(pool)
 	assetsH := assets.New(assetRepo)
@@ -219,6 +221,27 @@ func serveCmd() error {
 	case err := <-errCh:
 		return err
 	}
+}
+
+// sessionHousekeepingInterval is how often auth.Handlers.StartHousekeeping
+// sweeps expired sessions/handshakes/reset-tokens and evicts the login
+// rate-limiter's stale entries (#360). Hourly is frequent enough to bound
+// unbounded growth without adding meaningful DB load.
+const sessionHousekeepingInterval = 1 * time.Hour
+
+// newPool builds the serving pool with an explicit size ceiling and a
+// server-side statement timeout (#360) — pgxpool's own default (4x
+// GOMAXPROCS) has no notion of a managed Postgres provider's connection
+// limit, and an unbounded query has nothing else stopping it from holding a
+// connection (and the request goroutine waiting on it) forever.
+func newPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
+	poolCfg, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	if err != nil {
+		return nil, fmt.Errorf("parse database url: %w", err)
+	}
+	poolCfg.MaxConns = cfg.DBMaxConns
+	poolCfg.ConnConfig.RuntimeParams["statement_timeout"] = strconv.FormatInt(cfg.DBStatementTimeout.Milliseconds(), 10)
+	return pgxpool.NewWithConfig(ctx, poolCfg)
 }
 
 func applyMigrations(ctx context.Context, dsn string) error {

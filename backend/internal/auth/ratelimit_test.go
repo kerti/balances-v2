@@ -69,6 +69,40 @@ func TestLimiter_NoHardLockout(t *testing.T) {
 	}
 }
 
+// TestLimiter_EvictExpired asserts evictExpired frees an entry whose backoff
+// window has elapsed but keeps one still actively blocked, bounding map growth
+// without touching live protection (#360).
+func TestLimiter_EvictExpired(t *testing.T) {
+	l, now := newTestLimiter()
+	elapsedKey := "ip:elapsed"
+	activeKey := "ip:active"
+
+	l.recordFailure(elapsedKey)
+	l.recordFailure(elapsedKey) // 2 failures -> base (1s) wait
+
+	l.recordFailure(activeKey)
+	l.recordFailure(activeKey)
+	l.recordFailure(activeKey) // 3 failures -> 2s wait
+
+	// Advance just past the shorter window: elapsedKey's wait has passed,
+	// activeKey's has not.
+	*now = now.Add(1100 * time.Millisecond)
+
+	l.evictExpired()
+
+	l.mu.Lock()
+	_, elapsedStillThere := l.entries[elapsedKey]
+	_, activeStillThere := l.entries[activeKey]
+	l.mu.Unlock()
+
+	if elapsedStillThere {
+		t.Error("entry whose backoff window elapsed should have been evicted")
+	}
+	if !activeStillThere {
+		t.Error("entry still within its backoff window should not have been evicted")
+	}
+}
+
 func TestLimiter_KeysIndependent(t *testing.T) {
 	l, _ := newTestLimiter()
 	l.recordFailure("ip:1.1.1.1")
