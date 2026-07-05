@@ -59,7 +59,7 @@ func TestSyntheticV1ToV2Transform(t *testing.T) {
 		},
 	}
 
-	env, err := parseWith(bytes.NewReader(raw), 2, chain)
+	env, err := parseWith(bytes.NewReader(raw), 2, chain, maxDecompressedBackup)
 	if err != nil {
 		t.Fatalf("parseWith(target=2): %v", err)
 	}

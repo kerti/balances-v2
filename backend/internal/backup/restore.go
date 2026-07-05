@@ -73,16 +73,18 @@ const maxDecompressedBackup = 500 << 20 // 500 MB
 // migrates it to the current format_version, and verifies integrity. It does not
 // touch the database — preview and commit both start here.
 func Parse(r io.Reader) (*Envelope, error) {
-	return parseWith(r, FormatVersion, transforms)
+	return parseWith(r, FormatVersion, transforms, maxDecompressedBackup)
 }
 
-// parseWith is Parse with the target format version and transform chain injected
-// rather than read from the package globals. Product code always parses against
-// the build's FormatVersion + the real (empty-at-v1) transforms via Parse; the
-// seam exists so the test suite can prove an older file migrates into a *newer*
-// importer — the genuine "v1 file into a v2 system" proof (#177) — without
-// shipping a synthetic v2 in product code.
-func parseWith(r io.Reader, target int, chain map[int]transformFunc) (*Envelope, error) {
+// parseWith is Parse with the target format version, transform chain, and
+// decompression ceiling injected rather than read from the package globals.
+// Product code always parses against the build's FormatVersion, the real
+// (empty-at-v1) transforms, and maxDecompressedBackup via Parse; the seam
+// exists so the test suite can prove an older file migrates into a *newer*
+// importer — the genuine "v1 file into a v2 system" proof (#177) — and can
+// exercise the gzip-bomb ceiling (#359) with a tiny payload instead of
+// actually allocating hundreds of MB per test run.
+func parseWith(r io.Reader, target int, chain map[int]transformFunc, ceiling int64) (*Envelope, error) {
 	br := bufio.NewReader(r)
 	gzipped := false
 	if magic, _ := br.Peek(2); len(magic) == 2 && magic[0] == 0x1f && magic[1] == 0x8b {
@@ -102,12 +104,12 @@ func parseWith(r io.Reader, target int, chain map[int]transformFunc) (*Envelope,
 		// The LimitReader bounds decompression (gzip-bomb defense, #359): a
 		// stream that hits the +1 sentinel byte is treated the same as any
 		// other corrupt backup, rather than being read unbounded into memory.
-		limited := io.LimitReader(gz, maxDecompressedBackup+1)
+		limited := io.LimitReader(gz, ceiling+1)
 		if raw, err = io.ReadAll(limited); err != nil {
 			return nil, fmt.Errorf("%w: %v", ErrCorruptBackup, err)
 		}
-		if len(raw) > maxDecompressedBackup {
-			return nil, fmt.Errorf("%w: decompressed backup exceeds %d bytes", ErrCorruptBackup, maxDecompressedBackup)
+		if int64(len(raw)) > ceiling {
+			return nil, fmt.Errorf("%w: decompressed backup exceeds %d bytes", ErrCorruptBackup, ceiling)
 		}
 	} else {
 		if raw, err = io.ReadAll(br); err != nil {
