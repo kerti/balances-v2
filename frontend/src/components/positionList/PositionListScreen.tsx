@@ -56,6 +56,9 @@ export function PositionListScreen<T, Ctx>({
   const { keys } = descriptor;
   const noun = t(keys.noun);
   const nounPlural = t(keys.nounPlural);
+  // Interpolation for copy that varies by a runtime parameter (liability
+  // subtype); empty for types whose copy is static.
+  const copyArgs = descriptor.copyArgs?.(t) ?? {};
 
   const rows = useMemo<RowView<T>[]>(
     () =>
@@ -207,10 +210,10 @@ export function PositionListScreen<T, Ctx>({
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {t(keys.listTitle)}
+            {t(keys.listTitle, copyArgs)}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {t(keys.listSubtitle)}
+            {t(keys.listSubtitle, copyArgs)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -236,8 +239,8 @@ export function PositionListScreen<T, Ctx>({
       {data && data.length === 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>{t(keys.emptyTitle)}</CardTitle>
-            <CardDescription>{t(keys.emptyBody)}</CardDescription>
+            <CardTitle>{t(keys.emptyTitle, copyArgs)}</CardTitle>
+            <CardDescription>{t(keys.emptyBody, copyArgs)}</CardDescription>
           </CardHeader>
           <CardContent>{descriptor.renderCreateDialog()}</CardContent>
         </Card>

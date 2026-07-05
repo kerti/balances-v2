@@ -90,6 +90,10 @@ export type PositionListDescriptor<T, Ctx = void> = {
     rowActions: string; // aria-label on the ⋮ trigger
     deleteTitle: string;
   };
+  // Optional interpolation values merged into the title/subtitle/empty-state
+  // `t()` calls, for copy that varies by a runtime parameter (e.g. a liability
+  // screen's subtype noun). Keys absent from a given string are ignored.
+  copyArgs?: (t: TFunction) => Record<string, unknown>;
 
   // Data wiring.
   useList: () => PositionListQuery<T>;

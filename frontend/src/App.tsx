@@ -22,14 +22,17 @@ import { AssetsHome } from "@/components/AssetsHome";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
 import { BankAccountDetail } from "@/components/BankAccountDetail";
-import { PropertiesScreen } from "@/components/PropertiesScreen";
+import { propertyDescriptor } from "@/components/positionList/descriptors/property";
 import { PropertyDetail } from "@/components/PropertyDetail";
-import { VehiclesScreen } from "@/components/VehiclesScreen";
+import { vehicleDescriptor } from "@/components/positionList/descriptors/vehicle";
 import { VehicleDetail } from "@/components/VehicleDetail";
 import { LiabilitiesHome } from "@/components/LiabilitiesHome";
-import { LiabilitiesScreen } from "@/components/LiabilitiesScreen";
+import {
+  liabilityPersonalDescriptor,
+  liabilityInstitutionalDescriptor,
+} from "@/components/positionList/descriptors/liability";
 import { LiabilityDetail } from "@/components/LiabilityDetail";
-import { ReceivablesScreen } from "@/components/ReceivablesScreen";
+import { receivableDescriptor } from "@/components/positionList/descriptors/receivable";
 import { ReceivableDetail } from "@/components/ReceivableDetail";
 import { InvestmentsHome } from "@/components/InvestmentsHome";
 import { StocksScreen } from "@/components/StocksScreen";
@@ -112,7 +115,10 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <PropertiesScreen onSelect={(id) => nav(routes.property(id))} />
+              <PositionListScreen
+                descriptor={propertyDescriptor}
+                onSelect={(id) => nav(routes.property(id))}
+              />
             )}
           />
         ),
@@ -135,7 +141,10 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <VehiclesScreen onSelect={(id) => nav(routes.vehicle(id))} />
+              <PositionListScreen
+                descriptor={vehicleDescriptor}
+                onSelect={(id) => nav(routes.vehicle(id))}
+              />
             )}
           />
         ),
@@ -158,8 +167,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <LiabilitiesScreen
-                subtype="personal"
+              <PositionListScreen
+                descriptor={liabilityPersonalDescriptor}
                 onSelect={(id) => nav(routes.liability("personal", id))}
               />
             )}
@@ -184,8 +193,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <LiabilitiesScreen
-                subtype="institutional"
+              <PositionListScreen
+                descriptor={liabilityInstitutionalDescriptor}
                 onSelect={(id) => nav(routes.liability("institutional", id))}
               />
             )}
@@ -212,7 +221,8 @@ const router = createBrowserRouter([
         element: (
           <ListRoute
             render={(nav) => (
-              <ReceivablesScreen
+              <PositionListScreen
+                descriptor={receivableDescriptor}
                 onSelect={(id) => nav(routes.receivable(id))}
               />
             )}
