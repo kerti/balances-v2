@@ -1,21 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUpdateReceivable } from "@/hooks/useReceivables";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { preferredName } from "@/lib/names";
 import { useSession } from "@/hooks/useSession";
-import { errorMessage } from "@/lib/errorMessage";
+import { PositionFormDialog } from "@/components/PositionFormDialog";
 import type { Receivable } from "@/api/types";
 
 type Props = {
@@ -48,8 +39,7 @@ export function EditReceivableDialog({
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function submit(close: () => void) {
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -60,141 +50,116 @@ export function EditReceivableDialog({
         counterparty_name: form.counterparty_name,
         due_date: form.due_date || null,
       },
-      { onSuccess: () => onOpenChange(false) },
+      { onSuccess: close },
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("receivables:editTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("receivables:editDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_r_display_name">
-              {t("common:fields.displayName")}
-            </Label>
-            <Input
-              id="edit_r_display_name"
-              required
-              value={form.display_name}
-              onChange={(e) =>
-                setForm({ ...form, display_name: e.target.value })
-              }
+    <PositionFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title={t("receivables:editTitle")}
+      description={t("receivables:editDescription")}
+      submitLabel={t("common:actions.saveChanges")}
+      pendingLabel={t("common:actions.saving")}
+      isPending={mutation.isPending}
+      error={mutation.error}
+      onSubmit={submit}
+    >
+      <div className="grid gap-2">
+        <Label htmlFor="edit_r_display_name">
+          {t("common:fields.displayName")}
+        </Label>
+        <Input
+          id="edit_r_display_name"
+          required
+          value={form.display_name}
+          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="edit_r_counterparty">
+          {t("receivables:fields.counterparty")}
+        </Label>
+        <Input
+          id="edit_r_counterparty"
+          required
+          value={form.counterparty_name}
+          onChange={(e) =>
+            setForm({ ...form, counterparty_name: e.target.value })
+          }
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="edit_r_due_date">
+          {t("receivables:fields.dueDate")}
+        </Label>
+        <Input
+          id="edit_r_due_date"
+          type="date"
+          max="9999-12-31"
+          value={form.due_date}
+          onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label>{t("common:fields.ownership")}</Label>
+        <div className="flex gap-4 text-sm">
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="edit_r_ownership_type"
+              value="joint"
+              checked={form.ownership_type === "joint"}
+              onChange={() => setForm({ ...form, ownership_type: "joint" })}
             />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_r_counterparty">
-              {t("receivables:fields.counterparty")}
-            </Label>
-            <Input
-              id="edit_r_counterparty"
-              required
-              value={form.counterparty_name}
-              onChange={(e) =>
-                setForm({ ...form, counterparty_name: e.target.value })
-              }
+            {t("common:ownership.joint")}
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="radio"
+              name="edit_r_ownership_type"
+              value="sole"
+              checked={form.ownership_type === "sole"}
+              onChange={() => setForm({ ...form, ownership_type: "sole" })}
             />
-          </div>
+            {t("common:ownership.soleOwner")}
+          </label>
+        </div>
+        {form.ownership_type === "sole" && (
+          <select
+            aria-label={t("common:ownership.soleOwner")}
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            value={effectiveSoleOwnerID ?? ""}
+            onChange={(e) =>
+              setForm({ ...form, sole_owner_user_id: e.target.value })
+            }
+          >
+            {(members ?? []).map((m) => (
+              <option key={m.id} value={m.id}>
+                {preferredName(m)}
+                {user && m.id === user.id
+                  ? t("common:ownership.youSuffix")
+                  : ""}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="edit_r_due_date">
-              {t("receivables:fields.dueDate")}
-            </Label>
-            <Input
-              id="edit_r_due_date"
-              type="date"
-              max="9999-12-31"
-              value={form.due_date}
-              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label>{t("common:fields.ownership")}</Label>
-            <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="edit_r_ownership_type"
-                  value="joint"
-                  checked={form.ownership_type === "joint"}
-                  onChange={() => setForm({ ...form, ownership_type: "joint" })}
-                />
-                {t("common:ownership.joint")}
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="edit_r_ownership_type"
-                  value="sole"
-                  checked={form.ownership_type === "sole"}
-                  onChange={() => setForm({ ...form, ownership_type: "sole" })}
-                />
-                {t("common:ownership.soleOwner")}
-              </label>
-            </div>
-            {form.ownership_type === "sole" && (
-              <select
-                aria-label={t("common:ownership.soleOwner")}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={effectiveSoleOwnerID ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, sole_owner_user_id: e.target.value })
-                }
-              >
-                {(members ?? []).map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {preferredName(m)}
-                    {user && m.id === user.id
-                      ? t("common:ownership.youSuffix")
-                      : ""}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_r_description">
-              {t("common:fields.description")}
-            </Label>
-            <Input
-              id="edit_r_description"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-          </div>
-
-          {mutation.error && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
-          )}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("common:cancel")}
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <div className="grid gap-2">
+        <Label htmlFor="edit_r_description">
+          {t("common:fields.description")}
+        </Label>
+        <Input
+          id="edit_r_description"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+        />
+      </div>
+    </PositionFormDialog>
   );
 }
