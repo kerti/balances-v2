@@ -7,17 +7,14 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
-	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
 // handleDemoReset wipes and reseeds the shared demo Household (ADR-0041, #217).
@@ -125,80 +122,20 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 	// SoleOwner/Joint ownership attribution has someone besides "Demo" to point
 	// at in the UI. Dormant in the ADR-0039 sense: a real row, no
 	// local_credentials, created_by ties it to the demo user as the founder.
-	if _, err := q.CreateLocalUser(ctx, db.CreateLocalUserParams{
+	member2, err := q.CreateLocalUser(ctx, db.CreateLocalUserParams{
 		HouseholdID: household.ID,
 		DisplayName: "Alex",
 		Email:       "alex+" + email,
 		Locale:      "en-GB",
 		TimeZone:    "Asia/Jakarta",
 		CreatedBy:   &demoUser.ID,
-	}); err != nil {
+	})
+	if err != nil {
 		return fmt.Errorf("demo reset: create second member: %w", err)
 	}
 
-	if err := seedDemoPositions(auth.WithUser(ctx, demoUser), pool, demoUser.ID); err != nil {
+	if err := seedDemoData(auth.WithUser(ctx, demoUser), pool, demoUser.ID, member2.ID); err != nil {
 		return err
 	}
 	return nil
-}
-
-// seedDemoPositions creates a handful of toy positions spanning multiple
-// position groups so the demo dashboard isn't empty on first visit (ADR-0041).
-// Deliberately minimal for now — one bank account, one stock — expandable if a
-// wider spread turns out to matter once the demo is actually live.
-func seedDemoPositions(ctx context.Context, pool *pgxpool.Pool, ownerID uuid.UUID) error {
-	yearMonth := currentYearMonth()
-
-	assets := repo.NewAssetRepo(pool)
-	acct, err := assets.CreateBankAccount(ctx, repo.CreateBankAccountParams{
-		DisplayName:     "Everyday checking",
-		OwnershipType:   "sole",
-		SoleOwnerUserID: &ownerID,
-		NativeCurrency:  "IDR",
-		BankName:        "Demo Bank",
-		AccountNumber:   "1234567890",
-		AccountType:     "savings",
-	})
-	if err != nil {
-		return fmt.Errorf("demo reset: seed bank account: %w", err)
-	}
-	if _, err := assets.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
-		AssetID:   acct.Asset.ID,
-		YearMonth: yearMonth,
-		Amount:    decimal.RequireFromString("15000000"),
-		Currency:  "IDR",
-	}); err != nil {
-		return fmt.Errorf("demo reset: seed bank snapshot: %w", err)
-	}
-
-	investments := repo.NewInvestmentRepo(pool)
-	stock, err := investments.CreateStock(ctx, repo.CreateStockParams{
-		DisplayName:    "Demo Index Fund",
-		OwnershipType:  "joint",
-		NativeCurrency: "IDR",
-		RiskProfile:    "medium",
-		Ticker:         "DEMO",
-		Exchange:       "IDX",
-	})
-	if err != nil {
-		return fmt.Errorf("demo reset: seed stock: %w", err)
-	}
-	qty := decimal.RequireFromString("100")
-	price := decimal.RequireFromString("15000")
-	if _, err := investments.CreateInvestmentSnapshot(ctx, repo.CreateInvestmentSnapshotParams{
-		InvestmentID: stock.Investment.ID,
-		YearMonth:    yearMonth,
-		Amount:       qty.Mul(price),
-		Currency:     "IDR",
-		Quantity:     &qty,
-		PricePerUnit: &price,
-	}); err != nil {
-		return fmt.Errorf("demo reset: seed stock snapshot: %w", err)
-	}
-	return nil
-}
-
-func currentYearMonth() time.Time {
-	now := time.Now().UTC()
-	return time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 }
