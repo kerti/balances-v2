@@ -8,13 +8,7 @@ import { LocalAuthForm } from "@/components/LocalAuthForm";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card";
 
 // In-language display names, shown regardless of the active UI language so a
 // visitor reading the wrong language can still find their option. Mirrors the
@@ -81,14 +75,9 @@ export function SignInScreen() {
           )}
 
           {showGoogle && showLocal && (
-            <div
-              className="flex items-center gap-2"
-              data-testid="signin-divider"
-            >
+            <div className="flex items-center gap-2" data-testid="signin-divider">
               <div className="h-px flex-1 bg-border" />
-              <span className="text-xs uppercase text-muted-foreground">
-                {t("signIn.or")}
-              </span>
+              <span className="text-xs uppercase text-muted-foreground">{t("signIn.or")}</span>
               <div className="h-px flex-1 bg-border" />
             </div>
           )}

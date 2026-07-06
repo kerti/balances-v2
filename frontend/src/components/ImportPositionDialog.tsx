@@ -16,10 +16,7 @@ import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
 import { cn } from "@/lib/utils";
-import type {
-  CreateImportArgs,
-  CreateImportResult,
-} from "@/hooks/snapshotImport";
+import type { CreateImportArgs, CreateImportResult } from "@/hooks/snapshotImport";
 
 // Past this many rows, the list scrolls in its own boundary and the rest
 // collapse into a "N more errors" line instead of stretching the dialog
@@ -115,11 +112,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          data-testid="import-position-trigger"
-        >
+        <Button size="sm" variant="outline" data-testid="import-position-trigger">
           <Upload className="mr-1 size-4" />
           {t("importCreate.trigger")}
         </Button>
@@ -127,16 +120,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("importCreate.title", { noun })}</DialogTitle>
-          <DialogDescription>
-            {t("importCreate.description", { noun })}
-          </DialogDescription>
+          <DialogDescription>{t("importCreate.description", { noun })}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="import-create-file">
-              {t("importCreate.uploadLabel")}
-            </Label>
+            <Label htmlFor="import-create-file">{t("importCreate.uploadLabel")}</Label>
             <div
               onDragOver={onDragOver}
               onDragLeave={onDragLeave}
@@ -145,9 +134,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
               data-drag-active={dragActive}
               className={cn(
                 "grid gap-2 rounded-md border-2 border-dashed p-4 transition-colors",
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-input bg-muted/30",
+                dragActive ? "border-primary bg-primary/5" : "border-input bg-muted/30",
               )}
             >
               <p className="text-sm text-muted-foreground">
@@ -167,18 +154,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
               {t("importCreate.formatHint", { noun })}
             </p>
             {invalid && (
-              <p
-                className="text-sm text-destructive"
-                data-testid="import-invalid-file"
-              >
+              <p className="text-sm text-destructive" data-testid="import-invalid-file">
                 {t("import.invalidFile")}
               </p>
             )}
             {file && !invalid && (
-              <p
-                className="text-xs text-muted-foreground"
-                data-testid="import-selected-file"
-              >
+              <p className="text-xs text-muted-foreground" data-testid="import-selected-file">
                 {file.name}
               </p>
             )}
@@ -215,10 +196,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                     ))}
                   </ul>
                   {errorCount > MAX_VISIBLE_ERRORS && (
-                    <p
-                      className="text-xs text-muted-foreground"
-                      data-testid="import-errors-more"
-                    >
+                    <p className="text-xs text-muted-foreground" data-testid="import-errors-more">
                       {t("import.moreErrors", {
                         count: errorCount - MAX_VISIBLE_ERRORS,
                       })}
@@ -240,9 +218,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
           )}
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
         </div>
 
@@ -263,9 +239,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                 onClick={() => run("preview")}
                 data-testid="import-check-btn"
               >
-                {mutation.isPending && !committed
-                  ? t("actions.checking")
-                  : t("import.checkFile")}
+                {mutation.isPending && !committed ? t("actions.checking") : t("import.checkFile")}
               </Button>
               <Button
                 type="button"

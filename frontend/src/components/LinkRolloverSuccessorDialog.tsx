@@ -12,10 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  useTimeDeposits,
-  useLinkRolloverSuccessor,
-} from "@/hooks/useInvestments";
+import { useTimeDeposits, useLinkRolloverSuccessor } from "@/hooks/useInvestments";
 import { errorMessage } from "@/lib/errorMessage";
 
 type Props = {
@@ -37,14 +34,8 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
   const candidates = useMemo(
     () =>
       (deposits ?? [])
-        .filter(
-          (d) =>
-            d.investment.id !== sourceId &&
-            !d.investment.rolled_from_investment_id,
-        )
-        .sort((a, b) =>
-          a.investment.display_name.localeCompare(b.investment.display_name),
-        ),
+        .filter((d) => d.investment.id !== sourceId && !d.investment.rolled_from_investment_id)
+        .sort((a, b) => a.investment.display_name.localeCompare(b.investment.display_name)),
     [deposits, sourceId],
   );
 
@@ -70,9 +61,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("investments:timeDeposit.rollover.linkTitle")}
-          </DialogTitle>
+          <DialogTitle>{t("investments:timeDeposit.rollover.linkTitle")}</DialogTitle>
           <DialogDescription>
             {t("investments:timeDeposit.rollover.linkDescription")}
           </DialogDescription>
@@ -107,9 +96,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
           </div>
 
           {mutation.error && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>

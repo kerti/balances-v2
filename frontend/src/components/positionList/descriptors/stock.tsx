@@ -1,10 +1,6 @@
 import { CreateStockDialog } from "@/components/CreateStockDialog";
 import { EditStockDialog } from "@/components/EditStockDialog";
-import {
-  useStocks,
-  useDeleteStock,
-  useImportCreateStock,
-} from "@/hooks/useInvestments";
+import { useStocks, useDeleteStock, useImportCreateStock } from "@/hooks/useInvestments";
 import { investmentDescriptor } from "@/components/positionList/presets/investment";
 import type { StockListItem } from "@/api/types";
 
@@ -43,9 +39,7 @@ export const stockDescriptor = investmentDescriptor<StockListItem>({
       render: (item) => (
         <>
           <div className="font-mono text-sm">{item.details.ticker}</div>
-          <div className="text-xs text-muted-foreground">
-            {item.details.exchange}
-          </div>
+          <div className="text-xs text-muted-foreground">{item.details.exchange}</div>
         </>
       ),
     },

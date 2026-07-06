@@ -7,11 +7,7 @@
 // pure functions but pick up the live translation each render.
 import i18n from "@/i18n";
 
-export type LifecycleGroup =
-  | "assets"
-  | "liabilities"
-  | "receivables"
-  | "investments";
+export type LifecycleGroup = "assets" | "liabilities" | "receivables" | "investments";
 
 export type StatusOption = { value: string; label: string };
 

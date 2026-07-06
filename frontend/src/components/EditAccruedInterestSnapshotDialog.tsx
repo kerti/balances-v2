@@ -36,11 +36,7 @@ type Props<TResult> = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   snapshot: AccruedInterestSnapshotLike;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateAccruedInterestSnapshotMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateAccruedInterestSnapshotMutationVariables>;
 };
 
 function derivePrincipal(amount: string, accrued: string): string | null {
@@ -91,9 +87,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("investments:accruedInterestSnapshot.editTitle")}
-          </DialogTitle>
+          <DialogTitle>{t("investments:accruedInterestSnapshot.editTitle")}</DialogTitle>
           <DialogDescription>
             {t("investments:accruedInterestSnapshot.editDescription")}
           </DialogDescription>
@@ -125,9 +119,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.accrued_interest}
-                onChange={(e) =>
-                  setForm({ ...form, accrued_interest: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, accrued_interest: e.target.value })}
               />
             </div>
           </div>
@@ -144,9 +136,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_ai_as_of_date">
-              {t("common:fields.statementDate")}
-            </Label>
+            <Label htmlFor="edit_ai_as_of_date">{t("common:fields.statementDate")}</Label>
             <Input
               id="edit_ai_as_of_date"
               type="date"
@@ -158,36 +148,24 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_ai_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_ai_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_ai_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

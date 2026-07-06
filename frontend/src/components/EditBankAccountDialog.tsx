@@ -41,8 +41,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         bank_name: form.bank_name,
         account_number: form.account_number,
         account_type: form.account_type,
@@ -64,9 +63,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_display_name"
           required
@@ -76,9 +73,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_bank_name">
-          {t("assets:bankAccount.fields.bankName")}
-        </Label>
+        <Label htmlFor="edit_bank_name">{t("assets:bankAccount.fields.bankName")}</Label>
         <Input
           id="edit_bank_name"
           required
@@ -88,9 +83,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_account_number">
-          {t("assets:bankAccount.fields.accountNumber")}
-        </Label>
+        <Label htmlFor="edit_account_number">{t("assets:bankAccount.fields.accountNumber")}</Label>
         <Input
           id="edit_account_number"
           required
@@ -100,9 +93,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_account_type">
-          {t("assets:bankAccount.fields.accountType")}
-        </Label>
+        <Label htmlFor="edit_account_type">{t("assets:bankAccount.fields.accountType")}</Label>
         <select
           id="edit_account_type"
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -114,15 +105,9 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
             })
           }
         >
-          <option value="savings">
-            {t("assets:bankAccount.accountTypes.savings")}
-          </option>
-          <option value="current">
-            {t("assets:bankAccount.accountTypes.current")}
-          </option>
-          <option value="other">
-            {t("assets:bankAccount.accountTypes.other")}
-          </option>
+          <option value="savings">{t("assets:bankAccount.accountTypes.savings")}</option>
+          <option value="current">{t("assets:bankAccount.accountTypes.current")}</option>
+          <option value="other">{t("assets:bankAccount.accountTypes.other")}</option>
         </select>
       </div>
 
@@ -155,16 +140,12 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -172,9 +153,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_description"
           value={form.description}

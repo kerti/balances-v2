@@ -6,10 +6,7 @@
 import i18n from "@/i18n";
 import type { InvestmentTransaction } from "@/api/types";
 
-export function matchesTxnSearch(
-  tx: InvestmentTransaction,
-  query: string,
-): boolean {
+export function matchesTxnSearch(tx: InvestmentTransaction, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   const typeLabel = i18n

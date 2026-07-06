@@ -1,13 +1,5 @@
 import { useTranslation } from "react-i18next";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  Line,
-  ReferenceDot,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, CartesianGrid, Line, ReferenceDot, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -16,11 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import {
-  formatChartMonth,
-  formatCompactNumber,
-  formatCurrency,
-} from "@/lib/format";
+import { formatChartMonth, formatCompactNumber, formatCurrency } from "@/lib/format";
 import { monthRange } from "@/lib/months";
 
 // Generic snapshot shape — all four position groups (asset, liability,
@@ -79,12 +67,7 @@ function toChartData(snapshots: SnapshotLike[], costSeries?: CostPoint[]) {
   });
 }
 
-export default function SnapshotChartImpl({
-  snapshots,
-  currency,
-  costSeries,
-  status,
-}: Props) {
+export default function SnapshotChartImpl({ snapshots, currency, costSeries, status }: Props) {
   const { t } = useTranslation("dashboard");
   const data = toChartData(snapshots, costSeries);
 
@@ -102,10 +85,7 @@ export default function SnapshotChartImpl({
       ? {
           month: data[data.length - 1].month,
           amount: data[data.length - 1].amount,
-          label:
-            status === "matured"
-              ? t("chart.maturedMarker")
-              : t("chart.soldMarker"),
+          label: status === "matured" ? t("chart.maturedMarker") : t("chart.soldMarker"),
         }
       : null;
 
@@ -138,13 +118,7 @@ export default function SnapshotChartImpl({
         margin={{ left: 0, right: 12, top: marker ? 28 : 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          fontSize={12}
-        />
+        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
         <YAxis
           tickLine={false}
           axisLine={false}

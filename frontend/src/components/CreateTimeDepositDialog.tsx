@@ -69,9 +69,7 @@ export function CreateTimeDepositDialog({
   // placement. Mirrors the server's ErrInvalidDepositTerm so the user gets the
   // feedback inline instead of round-tripping a 400.
   const termInvalid =
-    !!form.placement_date &&
-    !!form.maturity_date &&
-    form.maturity_date <= form.placement_date;
+    !!form.placement_date && !!form.maturity_date && form.maturity_date <= form.placement_date;
 
   function setPlacement(v: string) {
     const months = Number(form.term_months);
@@ -87,8 +85,7 @@ export function CreateTimeDepositDialog({
     setForm({
       ...form,
       term_months: v,
-      maturity_date:
-        addMonths(form.placement_date, months) || form.maturity_date,
+      maturity_date: addMonths(form.placement_date, months) || form.maturity_date,
     });
   }
 
@@ -101,8 +98,7 @@ export function CreateTimeDepositDialog({
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
         bank_name: form.bank_name,
@@ -112,9 +108,7 @@ export function CreateTimeDepositDialog({
         placement_date: form.placement_date,
         maturity_date: form.maturity_date,
         rollover_policy: form.rollover_policy,
-        ...(rolledFromInvestmentId
-          ? { rolled_from_investment_id: rolledFromInvestmentId }
-          : {}),
+        ...(rolledFromInvestmentId ? { rolled_from_investment_id: rolledFromInvestmentId } : {}),
       },
       { onSuccess: close },
     );
@@ -145,9 +139,7 @@ export function CreateTimeDepositDialog({
     >
       <div className="space-y-3">
         <div className="grid gap-2">
-          <Label htmlFor="td_display_name">
-            {t("common:fields.displayName")}
-          </Label>
+          <Label htmlFor="td_display_name">{t("common:fields.displayName")}</Label>
           <Input
             id="td_display_name"
             required
@@ -157,9 +149,7 @@ export function CreateTimeDepositDialog({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="td_description">
-            {t("common:fields.description")}
-          </Label>
+          <Label htmlFor="td_description">{t("common:fields.description")}</Label>
           <Input
             id="td_description"
             value={form.description}
@@ -171,9 +161,7 @@ export function CreateTimeDepositDialog({
       <div className="space-y-3 border-t pt-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
-            <Label htmlFor="td_bank_name">
-              {t("investments:timeDeposit.fields.bankName")}
-            </Label>
+            <Label htmlFor="td_bank_name">{t("investments:timeDeposit.fields.bankName")}</Label>
             <Input
               id="td_bank_name"
               required
@@ -200,9 +188,7 @@ export function CreateTimeDepositDialog({
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="td_principal">
-            {t("investments:timeDeposit.fields.principal")}
-          </Label>
+          <Label htmlFor="td_principal">{t("investments:timeDeposit.fields.principal")}</Label>
           <Input
             id="td_principal"
             required
@@ -225,18 +211,12 @@ export function CreateTimeDepositDialog({
               required
               inputMode="decimal"
               value={form.interest_rate}
-              onChange={(e) =>
-                setForm({ ...form, interest_rate: e.target.value })
-              }
-              placeholder={t(
-                "investments:timeDeposit.placeholders.interestRate",
-              )}
+              onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+              placeholder={t("investments:timeDeposit.placeholders.interestRate")}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="td_term_months">
-              {t("investments:timeDeposit.fields.termMonths")}
-            </Label>
+            <Label htmlFor="td_term_months">{t("investments:timeDeposit.fields.termMonths")}</Label>
             <Input
               id="td_term_months"
               required
@@ -272,9 +252,7 @@ export function CreateTimeDepositDialog({
               min={form.placement_date || undefined}
               max="9999-12-31"
               value={form.maturity_date}
-              onChange={(e) =>
-                setForm({ ...form, maturity_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
             />
           </div>
         </div>
@@ -305,9 +283,7 @@ export function CreateTimeDepositDialog({
               {t("investments:timeDeposit.rolloverPolicy.auto_renew_principal")}
             </option>
             <option value="auto_renew_with_interest">
-              {t(
-                "investments:timeDeposit.rolloverPolicy.auto_renew_with_interest",
-              )}
+              {t("investments:timeDeposit.rolloverPolicy.auto_renew_with_interest")}
             </option>
             <option value="no_rollover">
               {t("investments:timeDeposit.rolloverPolicy.no_rollover")}
@@ -349,16 +325,12 @@ export function CreateTimeDepositDialog({
               aria-label={t("investments:ownership.soleOwnerAria")}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={effectiveSoleOwnerID ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, sole_owner_user_id: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
             >
               {(members ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {preferredName(m)}
-                  {user && m.id === user.id
-                    ? t("common:ownership.youSuffix")
-                    : ""}
+                  {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
                 </option>
               ))}
             </select>

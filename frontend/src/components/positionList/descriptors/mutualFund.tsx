@@ -45,9 +45,7 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
         <>
           <div className="font-mono text-sm">{item.details.fund_code}</div>
           {item.details.fund_manager && (
-            <div className="text-xs text-muted-foreground">
-              {item.details.fund_manager}
-            </div>
+            <div className="text-xs text-muted-foreground">{item.details.fund_manager}</div>
           )}
         </>
       ),
@@ -58,9 +56,7 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
       className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground"
       data-testid="mf-fund-type"
     >
-      {i18n.t(
-        `investments:mutualFund.fundType.short.${item.details.fund_type}`,
-      )}
+      {i18n.t(`investments:mutualFund.fundType.short.${item.details.fund_type}`)}
     </span>
   ),
   deleteDescription: (item, t) =>
@@ -70,10 +66,6 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
   headlineTestId: "mutual-funds-total",
   renderCreateDialog: () => <CreateMutualFundDialog />,
   renderEditDialog: (item, props) => (
-    <EditMutualFundDialog
-      key={item.investment.id}
-      mutualFund={item}
-      {...props}
-    />
+    <EditMutualFundDialog key={item.investment.id} mutualFund={item} {...props} />
   ),
 });

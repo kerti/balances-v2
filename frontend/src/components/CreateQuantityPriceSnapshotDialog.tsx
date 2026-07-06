@@ -16,12 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { formatCurrency } from "@/lib/format";
-import {
-  thisYearMonth,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
@@ -34,11 +29,7 @@ type Props<TResult> = {
   // Mutation is owned by the parent so the same dialog drives stocks,
   // mutual funds, and gold — each subtype's detail page wires its own
   // useCreateInvestmentSnapshot result in.
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentSnapshotPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentSnapshotPayload>;
   // Latest snapshot's quantity + price, when one exists. Drives the "Copy
   // carryover" helper (issue #60): an unchanged month keeps the same factors,
   // so the derived total carries over too. Null hides the helper.
@@ -148,9 +139,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("investments:quantityPriceSnapshot.createTitle")}
-          </DialogTitle>
+          <DialogTitle>{t("investments:quantityPriceSnapshot.createTitle")}</DialogTitle>
           <DialogDescription>
             {t("investments:quantityPriceSnapshot.createDescription", {
               currency,
@@ -167,24 +156,18 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                 required
                 max={thisYearMonth()}
                 value={form.year_month}
-                onChange={(e) =>
-                  setForm({ ...form, year_month: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, year_month: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="inv_as_of_date">
-                {t("common:fields.statementDate")}
-              </Label>
+              <Label htmlFor="inv_as_of_date">{t("common:fields.statementDate")}</Label>
               <Input
                 id="inv_as_of_date"
                 type="date"
                 min={monthStartDate(form.year_month)}
                 max={monthEndDateCapped(form.year_month)}
                 value={form.as_of_date}
-                onChange={(e) =>
-                  setForm({ ...form, as_of_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
               />
             </div>
           </div>
@@ -200,9 +183,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                 inputMode="decimal"
                 value={form.quantity}
                 onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                placeholder={t(
-                  "investments:quantityPriceSnapshot.quantityPlaceholder",
-                )}
+                placeholder={t("investments:quantityPriceSnapshot.quantityPlaceholder")}
               />
             </div>
             <div className="grid gap-2">
@@ -216,61 +197,42 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.price_per_unit}
-                onChange={(e) =>
-                  setForm({ ...form, price_per_unit: e.target.value })
-                }
-                placeholder={t(
-                  "investments:quantityPriceSnapshot.pricePerUnitPlaceholder",
-                )}
+                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
+                placeholder={t("investments:quantityPriceSnapshot.pricePerUnitPlaceholder")}
               />
             </div>
           </div>
 
-          {priceHint && (
-            <p className="text-xs text-muted-foreground">{priceHint}</p>
-          )}
+          {priceHint && <p className="text-xs text-muted-foreground">{priceHint}</p>}
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
               {t("investments:quantityPriceSnapshot.totalValueLabel")}
             </span>{" "}
             <span className="font-medium">
-              {derivedAmount !== null
-                ? formatCurrency(derivedAmount, currency)
-                : "—"}
+              {derivedAmount !== null ? formatCurrency(derivedAmount, currency) : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="inv_snap_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="inv_snap_description">{t("common:fields.description")}</Label>
             <Input
               id="inv_snap_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              placeholder={t(
-                "investments:quantityPriceSnapshot.descriptionPlaceholder",
-              )}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder={t("investments:quantityPriceSnapshot.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || derivedAmount === null}
-            >
+            <Button type="submit" disabled={mutation.isPending || derivedAmount === null}>
               {mutation.isPending
                 ? t("common:actions.saving")
                 : t("investments:quantityPriceSnapshot.save")}

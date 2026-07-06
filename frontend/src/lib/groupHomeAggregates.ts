@@ -75,8 +75,7 @@ export function aggregateGroupHome(
     if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, []);
     byCurrencyAll.get(p.currency)!.push(p);
     if (p.status === "active") {
-      if (!byCurrencyActive.has(p.currency))
-        byCurrencyActive.set(p.currency, []);
+      if (!byCurrencyActive.has(p.currency)) byCurrencyActive.set(p.currency, []);
       byCurrencyActive.get(p.currency)!.push(p);
     }
   }
@@ -167,9 +166,7 @@ function currentCategoryPie(
   positions: GroupPosition[],
   categories: string[],
 ): GroupCategorySlice[] {
-  const totals: Record<string, number> = Object.fromEntries(
-    categories.map((c) => [c, 0]),
-  );
+  const totals: Record<string, number> = Object.fromEntries(categories.map((c) => [c, 0]));
   for (const p of positions) {
     if (p.latestValue === null) continue;
     totals[p.category] += p.latestValue;

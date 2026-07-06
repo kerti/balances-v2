@@ -11,13 +11,7 @@
 // data" case per currency.
 
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import type { TimePoint } from "@/lib/listAggregates";
 
@@ -34,9 +28,7 @@ export function ListTimeGraph({ timeSeriesByCurrency }: Props) {
         <Card key={currency} data-testid={`list-time-graph-${currency}`}>
           <CardHeader>
             <CardTitle>{t("list.chartTitle")}</CardTitle>
-            <CardDescription>
-              {t("list.chartDescription", { currency })}
-            </CardDescription>
+            <CardDescription>{t("list.chartDescription", { currency })}</CardDescription>
           </CardHeader>
           <CardContent>
             <SnapshotChart

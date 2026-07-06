@@ -52,9 +52,7 @@ export function ResetRequestScreen() {
         <CardContent className="space-y-4">
           {request.isSuccess ? (
             <div className="space-y-3" data-testid="reset-request-sent">
-              <p className="text-sm text-muted-foreground">
-                {t("resetRequest.sent")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("resetRequest.sent")}</p>
               <Button asChild variant="outline" className="w-full">
                 <a href="/" data-testid="reset-request-back">
                   {t("resetRequest.backToSignIn")}
@@ -62,15 +60,9 @@ export function ResetRequestScreen() {
               </Button>
             </div>
           ) : (
-            <form
-              onSubmit={onSubmit}
-              className="space-y-3"
-              data-testid="reset-request-form"
-            >
+            <form onSubmit={onSubmit} className="space-y-3" data-testid="reset-request-form">
               <div className="space-y-1">
-                <Label htmlFor="reset-request-email">
-                  {t("resetRequest.emailLabel")}
-                </Label>
+                <Label htmlFor="reset-request-email">{t("resetRequest.emailLabel")}</Label>
                 <Input
                   id="reset-request-email"
                   data-testid="reset-request-email"
@@ -83,10 +75,7 @@ export function ResetRequestScreen() {
               </div>
 
               {request.isError && (
-                <p
-                  data-testid="reset-request-error"
-                  className="text-sm text-destructive"
-                >
+                <p data-testid="reset-request-error" className="text-sm text-destructive">
                   {errorMessage(request.error)}
                 </p>
               )}

@@ -50,8 +50,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         description: form.description || null,
         subtype: form.subtype,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         counterparty_name: form.counterparty_name,
         principal: form.principal || null,
@@ -110,12 +109,8 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
               })
             }
           >
-            <option value="personal">
-              {t("liabilities:subtypes.personal")}
-            </option>
-            <option value="institutional">
-              {t("liabilities:subtypes.institutional")}
-            </option>
+            <option value="personal">{t("liabilities:subtypes.personal")}</option>
+            <option value="institutional">{t("liabilities:subtypes.institutional")}</option>
           </select>
         </div>
         <div className="grid gap-2">
@@ -137,16 +132,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="counterparty_name">
-          {t("liabilities:fields.counterparty")}
-        </Label>
+        <Label htmlFor="counterparty_name">{t("liabilities:fields.counterparty")}</Label>
         <Input
           id="counterparty_name"
           required
           value={form.counterparty_name}
-          onChange={(e) =>
-            setForm({ ...form, counterparty_name: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, counterparty_name: e.target.value })}
           placeholder={t("liabilities:placeholders.counterparty")}
         />
       </div>
@@ -163,16 +154,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="interest_rate">
-            {t("liabilities:fields.interestRate")}
-          </Label>
+          <Label htmlFor="interest_rate">{t("liabilities:fields.interestRate")}</Label>
           <Input
             id="interest_rate"
             inputMode="decimal"
             value={form.interest_rate}
-            onChange={(e) =>
-              setForm({ ...form, interest_rate: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
             placeholder={t("liabilities:placeholders.interestRate")}
           />
         </div>
@@ -190,9 +177,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="start_date">
-            {t("liabilities:fields.startDate")}
-          </Label>
+          <Label htmlFor="start_date">{t("liabilities:fields.startDate")}</Label>
           <Input
             id="start_date"
             type="date"
@@ -202,17 +187,13 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="maturity_date">
-            {t("liabilities:fields.maturityDate")}
-          </Label>
+          <Label htmlFor="maturity_date">{t("liabilities:fields.maturityDate")}</Label>
           <Input
             id="maturity_date"
             type="date"
             max="9999-12-31"
             value={form.maturity_date}
-            onChange={(e) =>
-              setForm({ ...form, maturity_date: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
           />
         </div>
       </div>
@@ -246,16 +227,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>

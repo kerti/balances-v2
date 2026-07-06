@@ -92,27 +92,19 @@ describe("formatDateTime", () => {
 
 describe("formatShortYearMonth", () => {
   it("en renders short month + full year", () => {
-    expect(
-      formatShortYearMonth(new Date("2024-05-15T12:00:00Z"), "en-GB"),
-    ).toBe("May 2024");
+    expect(formatShortYearMonth(new Date("2024-05-15T12:00:00Z"), "en-GB")).toBe("May 2024");
   });
   it("id renders the Indonesian short month + full year", () => {
-    expect(
-      formatShortYearMonth(new Date("2024-05-15T12:00:00Z"), "id-ID"),
-    ).toBe("Mei 2024");
+    expect(formatShortYearMonth(new Date("2024-05-15T12:00:00Z"), "id-ID")).toBe("Mei 2024");
   });
 });
 
 describe("formatChartMonth", () => {
   it("en renders short month + 2-digit year", () => {
-    expect(formatChartMonth(new Date("2024-05-15T12:00:00Z"), "en-GB")).toBe(
-      "May 24",
-    );
+    expect(formatChartMonth(new Date("2024-05-15T12:00:00Z"), "en-GB")).toBe("May 24");
   });
   it("id renders the Indonesian short month + 2-digit year", () => {
-    expect(formatChartMonth(new Date("2024-05-15T12:00:00Z"), "id-ID")).toBe(
-      "Mei 24",
-    );
+    expect(formatChartMonth(new Date("2024-05-15T12:00:00Z"), "id-ID")).toBe("Mei 24");
   });
 });
 

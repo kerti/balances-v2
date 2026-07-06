@@ -21,9 +21,7 @@ describe("routes builders", () => {
 
   it("builds the liability detail under its subtype segment", () => {
     expect(routes.liability("personal", "l1")).toBe("/liabilities/personal/l1");
-    expect(routes.liability("institutional", "l2")).toBe(
-      "/liabilities/institutional/l2",
-    );
+    expect(routes.liability("institutional", "l2")).toBe("/liabilities/institutional/l2");
   });
 
   it("exposes the static group/list paths", () => {
@@ -40,35 +38,19 @@ describe("routes builders", () => {
 // builders produce, and unknown pairs must degrade to null (plain label).
 describe("positionDetail", () => {
   it("resolves every (group, subtype) the report can emit", () => {
-    expect(positionDetail("asset", "bank_account", "a1")).toBe(
-      routes.bankAccount("a1"),
-    );
-    expect(positionDetail("asset", "property", "p1")).toBe(
-      routes.property("p1"),
-    );
+    expect(positionDetail("asset", "bank_account", "a1")).toBe(routes.bankAccount("a1"));
+    expect(positionDetail("asset", "property", "p1")).toBe(routes.property("p1"));
     expect(positionDetail("asset", "vehicle", "v1")).toBe(routes.vehicle("v1"));
-    expect(positionDetail("liability", "personal", "l1")).toBe(
-      routes.liability("personal", "l1"),
-    );
+    expect(positionDetail("liability", "personal", "l1")).toBe(routes.liability("personal", "l1"));
     expect(positionDetail("liability", "institutional", "l2")).toBe(
       routes.liability("institutional", "l2"),
     );
-    expect(positionDetail("receivable", "", "r1")).toBe(
-      routes.receivable("r1"),
-    );
-    expect(positionDetail("investment", "stock", "s1")).toBe(
-      routes.stock("s1"),
-    );
-    expect(positionDetail("investment", "mutual_fund", "m1")).toBe(
-      routes.mutualFund("m1"),
-    );
+    expect(positionDetail("receivable", "", "r1")).toBe(routes.receivable("r1"));
+    expect(positionDetail("investment", "stock", "s1")).toBe(routes.stock("s1"));
+    expect(positionDetail("investment", "mutual_fund", "m1")).toBe(routes.mutualFund("m1"));
     expect(positionDetail("investment", "bond", "b1")).toBe(routes.bond("b1"));
-    expect(positionDetail("investment", "time_deposit", "t1")).toBe(
-      routes.timeDeposit("t1"),
-    );
-    expect(positionDetail("investment", "gold", "g1")).toBe(
-      routes.goldItem("g1"),
-    );
+    expect(positionDetail("investment", "time_deposit", "t1")).toBe(routes.timeDeposit("t1"));
+    expect(positionDetail("investment", "gold", "g1")).toBe(routes.goldItem("g1"));
   });
 
   it("returns null for unknown group/subtype pairs", () => {

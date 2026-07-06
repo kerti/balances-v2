@@ -69,10 +69,7 @@ export function aggregateListPositions(positions: Position[]): ListAggregates {
   const active = positions.filter((p) => p.status === "active");
 
   // Per-currency current totals.
-  const currencyMap = new Map<
-    string,
-    { value: number; cost: number; count: number }
-  >();
+  const currencyMap = new Map<string, { value: number; cost: number; count: number }>();
   for (const p of active) {
     const entry = currencyMap.get(p.currency) ?? {
       value: 0,

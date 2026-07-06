@@ -60,9 +60,7 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
 
   // Drop categories that are zero across every month — keeps the legend
   // tight for households that only hold a few subtypes.
-  const presentCategories = INVESTMENT_CATEGORIES.filter((c) =>
-    data.some((row) => row[c] > 0),
-  );
+  const presentCategories = INVESTMENT_CATEGORIES.filter((c) => data.some((row) => row[c] > 0));
 
   const chartConfig: ChartConfig = Object.fromEntries(
     presentCategories.map((c) => [
@@ -82,13 +80,7 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
         margin={{ left: 0, right: 12, top: 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          fontSize={12}
-        />
+        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
         <YAxis
           tickLine={false}
           axisLine={false}
@@ -110,10 +102,7 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
               formatter={(value, name, item) => {
                 const key = String(name);
                 const seriesLabel = (chartConfig as ChartConfig)[key]?.label;
-                const total = presentCategories.reduce(
-                  (s, c) => s + (item.payload[c] ?? 0),
-                  0,
-                );
+                const total = presentCategories.reduce((s, c) => s + (item.payload[c] ?? 0), 0);
                 const pct = total > 0 ? (Number(value) / total) * 100 : 0;
                 return (
                   <div className="flex w-full items-center justify-between gap-3">

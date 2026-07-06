@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportArgs,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Property, PropertyListItem } from "@/api/types";
 
 export type CreatePropertyPayload = {
@@ -95,8 +92,7 @@ export function useImportCreateProperty() {
 export function useDeleteProperty() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/properties/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/properties/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
     },

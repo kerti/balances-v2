@@ -1,9 +1,4 @@
-import type {
-  InvestmentTransaction,
-  RiskProfile,
-  RolloverPolicy,
-  TimeDeposit,
-} from "@/api/types";
+import type { InvestmentTransaction, RiskProfile, RolloverPolicy, TimeDeposit } from "@/api/types";
 
 // Shape of the CreateTimeDepositDialog form. Lives here (not in the dialog) so
 // the rollover helper can describe a prefill without the dialog depending on
@@ -48,19 +43,13 @@ export function maturityRolloverPrefill(
   // prompt; only helper-created ones carry the back-reference.
   if (td.rolled_to) return null;
 
-  const maturity = (transactions ?? []).find(
-    (tx) => tx.transaction_type === "maturity",
-  );
+  const maturity = (transactions ?? []).find((tx) => tx.transaction_type === "maturity");
   if (!maturity) return null;
 
   const rolledPrincipal =
-    maturity.principal_disposition === "rolled_to_new"
-      ? Number(maturity.principal_amount ?? 0)
-      : 0;
+    maturity.principal_disposition === "rolled_to_new" ? Number(maturity.principal_amount ?? 0) : 0;
   const rolledInterest =
-    maturity.interest_disposition === "rolled_to_new"
-      ? Number(maturity.interest_amount ?? 0)
-      : 0;
+    maturity.interest_disposition === "rolled_to_new" ? Number(maturity.interest_amount ?? 0) : 0;
   const rolledAmount = rolledPrincipal + rolledInterest;
   if (!(rolledAmount > 0)) return null;
 

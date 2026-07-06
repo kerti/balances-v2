@@ -72,10 +72,7 @@ describe("aggregateTagBreakdown", () => {
   });
 
   it("separates currencies into their own breakdowns, ordered by code", () => {
-    const rows = [
-      row("t1", "asset", "USD", "5"),
-      row("t1", "asset", "IDR", "5"),
-    ];
+    const rows = [row("t1", "asset", "USD", "5"), row("t1", "asset", "IDR", "5")];
     const out = aggregateTagBreakdown(rows, tags, "Untagged");
     expect(out.map((b) => b.currency)).toEqual(["IDR", "USD"]);
   });

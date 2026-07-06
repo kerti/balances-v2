@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/api/client";
@@ -68,9 +62,7 @@ export function EraseCard() {
   return (
     <Card className="border-destructive/50">
       <CardHeader>
-        <CardTitle className="text-base text-destructive">
-          {t("data.erase.title")}
-        </CardTitle>
+        <CardTitle className="text-base text-destructive">{t("data.erase.title")}</CardTitle>
         <CardDescription>{t("data.erase.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

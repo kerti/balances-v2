@@ -1,19 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
@@ -51,23 +39,17 @@ export function IncomeScreen() {
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
   const [page, setPage] = useState(1);
-  const [regularityFilter, setRegularityFilter] =
-    useState<RegularityFilter>("all");
+  const [regularityFilter, setRegularityFilter] = useState<RegularityFilter>("all");
   // undefined = not yet set by user → auto-picks most recent month once data loads
   // string = specific "YYYY-MM"
-  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(
-    undefined,
-  );
+  const [selectedMonth, setSelectedMonth] = useState<string | undefined>(undefined);
 
   const availableMonths = useMemo(() => {
     if (!data) return [];
-    return [...new Set(data.map(incomeYearMonth))].sort((a, b) =>
-      b.localeCompare(a),
-    );
+    return [...new Set(data.map(incomeYearMonth))].sort((a, b) => b.localeCompare(a));
   }, [data]);
 
-  const effectiveMonth: string | undefined =
-    selectedMonth ?? availableMonths[0];
+  const effectiveMonth: string | undefined = selectedMonth ?? availableMonths[0];
 
   const monthFiltered = useMemo(() => {
     if (!data || !effectiveMonth) return [];
@@ -110,10 +92,7 @@ export function IncomeScreen() {
         currentUser,
       );
       cur.byUser.set(userLabel, (cur.byUser.get(userLabel) ?? 0) + amount);
-      cur.byCategory.set(
-        r.category,
-        (cur.byCategory.get(r.category) ?? 0) + amount,
-      );
+      cur.byCategory.set(r.category, (cur.byCategory.get(r.category) ?? 0) + amount);
     }
     return Array.from(byCurrency.entries())
       .map(([currency, d]) => ({
@@ -137,18 +116,8 @@ export function IncomeScreen() {
         ? monthFiltered
         : monthFiltered.filter((r) => r.regularity === regularityFilter);
     return [...base].sort((a, b) => {
-      const uA = ownershipLabel(
-        a.ownership_type,
-        a.sole_owner_user_id,
-        members,
-        currentUser,
-      );
-      const uB = ownershipLabel(
-        b.ownership_type,
-        b.sole_owner_user_id,
-        members,
-        currentUser,
-      );
+      const uA = ownershipLabel(a.ownership_type, a.sole_owner_user_id, members, currentUser);
+      const uB = ownershipLabel(b.ownership_type, b.sole_owner_user_id, members, currentUser);
       const cmp = uA.localeCompare(uB);
       return cmp !== 0 ? cmp : a.date.localeCompare(b.date);
     });
@@ -156,10 +125,7 @@ export function IncomeScreen() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
-  const pageRows = filtered.slice(
-    (effectivePage - 1) * PAGE_SIZE,
-    effectivePage * PAGE_SIZE,
-  );
+  const pageRows = filtered.slice((effectivePage - 1) * PAGE_SIZE, effectivePage * PAGE_SIZE);
 
   const emptyKey =
     regularityFilter === "routine"
@@ -172,19 +138,13 @@ export function IncomeScreen() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("income:listTitle")}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t("income:listSubtitle")}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("income:listTitle")}</h1>
+          <p className="text-sm text-muted-foreground">{t("income:listSubtitle")}</p>
         </div>
         <CreateIncomeDialog />
       </div>
 
-      {isPending && (
-        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-      )}
+      {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
       {error && (
         <p className="text-sm text-destructive">
@@ -218,11 +178,7 @@ export function IncomeScreen() {
               />
             )}
 
-            <div
-              className="flex gap-2"
-              role="group"
-              aria-label={t("income:filter.ariaLabel")}
-            >
+            <div className="flex gap-2" role="group" aria-label={t("income:filter.ariaLabel")}>
               {FILTER_VALUES.map((value) => (
                 <Button
                   key={value}
@@ -320,12 +276,8 @@ export function IncomeScreen() {
                       <TableHead>{t("income:tableHeaders.date")}</TableHead>
                       <TableHead>{t("income:tableHeaders.category")}</TableHead>
                       <TableHead>{t("income:tableHeaders.amount")}</TableHead>
-                      <TableHead>
-                        {t("income:tableHeaders.description")}
-                      </TableHead>
-                      <TableHead>
-                        {t("income:tableHeaders.ownership")}
-                      </TableHead>
+                      <TableHead>{t("income:tableHeaders.description")}</TableHead>
+                      <TableHead>{t("income:tableHeaders.ownership")}</TableHead>
                       <TableHead className="w-12"></TableHead>
                     </TableRow>
                   </TableHeader>

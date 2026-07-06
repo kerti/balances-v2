@@ -2,20 +2,8 @@ import { useState } from "react";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useLiability, useDeleteLiability } from "@/hooks/useLiabilities";
 import {
@@ -66,10 +54,7 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [page, setPage] = useState(1);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
 
   function handleConfirmDelete() {
@@ -82,9 +67,7 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
   }
 
   if (isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
   }
   if (error) {
     return (
@@ -143,18 +126,10 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
-          <h1
-            data-testid="tour-overview"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
             {liability.display_name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -183,11 +158,7 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
             currentTerminatedAt={liability.terminated_at}
             currentNote={liability.termination_note}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-1 size-4" />
             {t("common:delete")}
           </Button>
@@ -214,17 +185,13 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
           <CardContent className="text-sm space-y-1">
             {liability.principal && (
               <p>
-                <span className="text-muted-foreground">
-                  {t("liabilities:principalLabel")}
-                </span>{" "}
+                <span className="text-muted-foreground">{t("liabilities:principalLabel")}</span>{" "}
                 {formatCurrency(liability.principal, liability.native_currency)}
               </p>
             )}
             {liability.interest_rate && (
               <p>
-                <span className="text-muted-foreground">
-                  {t("liabilities:interestRateLabel")}
-                </span>{" "}
+                <span className="text-muted-foreground">{t("liabilities:interestRateLabel")}</span>{" "}
                 {t("liabilities:interestRateValue", {
                   rate: Number(liability.interest_rate).toFixed(2),
                 })}
@@ -232,30 +199,22 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
             )}
             {liability.term_months !== null && (
               <p>
-                <span className="text-muted-foreground">
-                  {t("liabilities:termLabel")}
-                </span>{" "}
+                <span className="text-muted-foreground">{t("liabilities:termLabel")}</span>{" "}
                 {t("liabilities:termValue", { count: liability.term_months })}
               </p>
             )}
             {(liability.start_date || liability.maturity_date) && (
               <p>
-                <span className="text-muted-foreground">
-                  {t("liabilities:periodLabel")}
-                </span>{" "}
+                <span className="text-muted-foreground">{t("liabilities:periodLabel")}</span>{" "}
                 {t("liabilities:periodValue", {
-                  start: liability.start_date
-                    ? formatDate(liability.start_date)
-                    : periodMissing,
+                  start: liability.start_date ? formatDate(liability.start_date) : periodMissing,
                   end: liability.maturity_date
                     ? formatDate(liability.maturity_date)
                     : periodMissing,
                 })}
               </p>
             )}
-            {liability.description && (
-              <p className="pt-1">{liability.description}</p>
-            )}
+            {liability.description && <p className="pt-1">{liability.description}</p>}
           </CardContent>
         )}
       </Card>
@@ -271,10 +230,7 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SnapshotChart
-              snapshots={snapshots}
-              currency={liability.native_currency}
-            />
+            <SnapshotChart snapshots={snapshots} currency={liability.native_currency} />
           </CardContent>
         </Card>
       )}
@@ -284,21 +240,14 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("liabilities:snapshotsTitle")}</CardTitle>
-              <CardDescription>
-                {t("liabilities:snapshotsDescription")}
-              </CardDescription>
+              <CardDescription>{t("liabilities:snapshotsDescription")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Export the full position workbook (Detail + Snapshots). Plain
                   anchor download — session cookie rides along same-origin, like
                   the import template link. Available regardless of status so a
                   terminated position can still be backed up. */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                data-testid="liability-export"
-              >
+              <Button asChild size="sm" variant="outline" data-testid="liability-export">
                 <a href={liabilityExportUrl(liability.id)}>
                   <Download className="mr-1 size-4" />
                   {t("common:export.trigger")}
@@ -330,9 +279,7 @@ export function LiabilityDetail({ liabilityId, onBack }: Props) {
         </CardHeader>
         <CardContent className="p-0">
           {!snapshots || snapshots.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              {t("liabilities:snapshotsEmpty")}
-            </p>
+            <p className="p-6 text-sm text-muted-foreground">{t("liabilities:snapshotsEmpty")}</p>
           ) : (
             <>
               <Table>

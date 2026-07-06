@@ -6,11 +6,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppLogo } from "@/components/AppLogo";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSession } from "@/hooks/useSession";
 import { useInviteIgnoredNotice } from "@/hooks/useInviteIgnoredNotice";
 import { useLocaleReconcile } from "@/i18n/useLocaleReconcile";
@@ -59,15 +55,10 @@ export function AppShell() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <UserAvatar
-                name={user.display_name}
-                pictureUrl={user.picture_url}
-              />
+              <UserAvatar name={user.display_name} pictureUrl={user.picture_url} />
               <div className="hidden text-sm sm:block">
                 <div className="text-foreground">{user.display_name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {user.email}
-                </div>
+                <div className="text-xs text-muted-foreground">{user.email}</div>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={handleSignOut}>

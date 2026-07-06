@@ -54,16 +54,12 @@ test(
 
     // The form is bound to the invited email and shown read-only.
     await expect(inviteePage.getByTestId("invite-accept-form")).toBeVisible();
-    await expect(inviteePage.getByTestId("invite-email")).toHaveValue(
-      inviteeEmail,
-    );
+    await expect(inviteePage.getByTestId("invite-email")).toHaveValue(inviteeEmail);
 
     // 4. Set a password — the account is created and a session minted directly.
     await inviteePage.getByTestId("invite-password").fill(inviteePassword);
     await inviteePage.getByTestId("invite-submit").click();
-    await expect(
-      inviteePage.getByRole("button", { name: "Sign out" }),
-    ).toBeVisible();
+    await expect(inviteePage.getByRole("button", { name: "Sign out" })).toBeVisible();
 
     // 5. The single-use link is now spent: reopening it shows the invalid notice.
     await inviteePage.context().clearCookies();

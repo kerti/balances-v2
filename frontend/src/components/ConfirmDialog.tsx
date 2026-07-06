@@ -46,18 +46,14 @@ export function ConfirmDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
-          {description && (
-            <AlertDialogDescription>{description}</AlertDialogDescription>
-          )}
+          {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>{cancel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={pending}
-            className={
-              destructive ? "bg-destructive hover:bg-destructive/90" : undefined
-            }
+            className={destructive ? "bg-destructive hover:bg-destructive/90" : undefined}
           >
             {pending ? t("working") : confirm}
           </AlertDialogAction>

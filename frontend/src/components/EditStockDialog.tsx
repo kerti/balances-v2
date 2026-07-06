@@ -45,8 +45,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         ticker: form.ticker.toUpperCase(),
         exchange: form.exchange.toUpperCase(),
@@ -69,9 +68,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_stock_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_stock_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_stock_display_name"
           required
@@ -82,29 +79,21 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_stock_ticker">
-            {t("investments:stock.fields.ticker")}
-          </Label>
+          <Label htmlFor="edit_stock_ticker">{t("investments:stock.fields.ticker")}</Label>
           <Input
             id="edit_stock_ticker"
             required
             value={form.ticker}
-            onChange={(e) =>
-              setForm({ ...form, ticker: e.target.value.toUpperCase() })
-            }
+            onChange={(e) => setForm({ ...form, ticker: e.target.value.toUpperCase() })}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_stock_exchange">
-            {t("investments:stock.fields.exchange")}
-          </Label>
+          <Label htmlFor="edit_stock_exchange">{t("investments:stock.fields.exchange")}</Label>
           <Input
             id="edit_stock_exchange"
             required
             value={form.exchange}
-            onChange={(e) =>
-              setForm({ ...form, exchange: e.target.value.toUpperCase() })
-            }
+            onChange={(e) => setForm({ ...form, exchange: e.target.value.toUpperCase() })}
           />
         </div>
       </div>
@@ -138,16 +127,12 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
             aria-label={t("investments:ownership.soleOwnerAria")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -155,9 +140,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_stock_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_stock_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_stock_description"
           value={form.description}

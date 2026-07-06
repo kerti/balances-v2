@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -10,6 +10,14 @@ export
 # repo-root docker-compose.yml is the operator self-host stack (ADR-0037).
 DEV_COMPOSE := docker-compose.dev.yml
 
+# Pin the compose project name so container names (and thus PG_CONTAINER below)
+# are deterministic regardless of the clone directory name — without this,
+# Compose derives the project name from the containing folder, so cloning
+# under anything other than `balances-v2` silently breaks `docker exec
+# $(PG_CONTAINER)` (e2e-db-create, session-token) with a confusing "no such
+# container" error (issue #369).
+COMPOSE_PROJECT_NAME := balances-v2
+
 # Background dev-server logs. tail -f to follow.
 BACKEND_LOG  := /tmp/balances-backend.log
 FRONTEND_LOG := /tmp/balances-frontend.log
@@ -19,7 +27,8 @@ FRONTEND_LOG := /tmp/balances-frontend.log
 BACKEND_PORT := $(or $(PORT),8080)
 
 # E2E (ADR-0024): a dedicated database in the same Postgres container, plus the
-# backend pointed at it. PG_CONTAINER / PG_USER match docker-compose defaults.
+# backend pointed at it. PG_CONTAINER / PG_USER match docker-compose defaults
+# (name fixed by COMPOSE_PROJECT_NAME above, not the clone directory).
 # E2E_DATABASE_URL is DATABASE_URL with the db name swapped to balances_e2e, so
 # it inherits host/port/credentials from .env without duplicating them.
 PG_CONTAINER := balances-v2-postgres-1
@@ -77,6 +86,7 @@ help:
 	@echo "  qa-gaps                 list within-zone test files that carry no covers: annotation"
 	@echo "  session-token           print a live session token for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
+	@echo "  setup                   first-clone entry point: hooks-install + frontend-install + seed .env"
 
 up:
 	docker compose -f $(DEV_COMPOSE) up -d
@@ -297,6 +307,7 @@ check:
 	@fail=0; \
 	printf '%-14s' 'golangci-lint'; (cd backend && golangci-lint run) >/tmp/balances-check-be-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-lint.log'; fail=1; }; \
 	printf '%-14s' 'eslint';        (cd frontend && npm run -s lint)   >/tmp/balances-check-fe-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-lint.log'; fail=1; }; \
+	printf '%-14s' 'prettier';      (cd frontend && npm run -s format:check) >/tmp/balances-check-fe-fmt.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-fmt.log'; fail=1; }; \
 	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >/tmp/balances-check-fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-tsc.log';  fail=1; }; \
 	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
 	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
@@ -347,3 +358,13 @@ hooks-install:
 	  echo "hooks-install: seeded .pii-patterns (gitignored) from template + git identity"; \
 	fi
 	@echo "✓ git hooks installed (core.hooksPath=.githooks); pre-commit pii-guard active"
+
+# First-clone entry point (issue #369): bundles the two separate, missable
+# install steps (git hooks + frontend deps) and seeds .env, so a fresh clone
+# is one command away from `make up`. Idempotent — safe to re-run.
+setup: hooks-install frontend-install
+	@if [ ! -f .env ]; then \
+	  cp .env.dev.example .env; \
+	  echo "setup: created .env from .env.dev.example"; \
+	fi
+	@echo "✓ setup complete — next: make up && make backend-migrate-up && make backend-run"

@@ -19,10 +19,7 @@ type Props = {
 
 type Row = { month: string } & Record<string, number | string>;
 
-function toRows(
-  series: GroupCategoryTimePoint[],
-  categories: GroupStackCategory[],
-): Row[] {
+function toRows(series: GroupCategoryTimePoint[], categories: GroupStackCategory[]): Row[] {
   return [...series]
     .sort((a, b) => a.year_month.localeCompare(b.year_month))
     .map((p) => {
@@ -34,18 +31,12 @@ function toRows(
     });
 }
 
-export default function GroupCategoryStackChartImpl({
-  series,
-  categories,
-  currency,
-}: Props) {
+export default function GroupCategoryStackChartImpl({ series, categories, currency }: Props) {
   const data = toRows(series, categories);
 
   // Drop categories that are zero across every month — keeps the legend tight
   // for households that only hold one subtype.
-  const present = categories.filter((c) =>
-    data.some((row) => Number(row[c.key]) > 0),
-  );
+  const present = categories.filter((c) => data.some((row) => Number(row[c.key]) > 0));
 
   const chartConfig: ChartConfig = Object.fromEntries(
     present.map((c) => [c.key, { label: c.label, color: c.color }]),
@@ -59,13 +50,7 @@ export default function GroupCategoryStackChartImpl({
         margin={{ left: 0, right: 12, top: 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis
-          dataKey="month"
-          tickLine={false}
-          axisLine={false}
-          tickMargin={8}
-          fontSize={12}
-        />
+        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
         <YAxis
           tickLine={false}
           axisLine={false}
@@ -87,10 +72,7 @@ export default function GroupCategoryStackChartImpl({
               formatter={(value, name, item) => {
                 const key = String(name);
                 const seriesLabel = (chartConfig as ChartConfig)[key]?.label;
-                const total = present.reduce(
-                  (s, c) => s + (Number(item.payload[c.key]) || 0),
-                  0,
-                );
+                const total = present.reduce((s, c) => s + (Number(item.payload[c.key]) || 0), 0);
                 const pct = total > 0 ? (Number(value) / total) * 100 : 0;
                 return (
                   <div className="flex w-full items-center justify-between gap-3">

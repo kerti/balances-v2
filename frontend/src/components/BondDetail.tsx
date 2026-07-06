@@ -3,20 +3,8 @@ import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useBond, useDeleteBond } from "@/hooks/useInvestments";
 import {
@@ -71,30 +59,13 @@ export function BondDetail({ investmentId, onBack }: Props) {
   const { data: snapshots } = useInvestmentSnapshots(investmentId);
   const { data: transactions } = useInvestmentTransactions(investmentId);
   const deleteMutation = useDeleteBond();
-  const createSnapshotMutation = useCreateInvestmentSnapshot(
-    investmentId,
-    "bonds",
-  );
-  const updateSnapshotMutation = useUpdateInvestmentSnapshot(
-    investmentId,
-    "bonds",
-  );
-  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(
-    investmentId,
-    "bonds",
-  );
-  const importSnapshotMutation = useImportInvestmentSnapshots(
-    investmentId,
-    "bonds",
-  );
-  const createTransactionMutation = useCreateInvestmentTransaction(
-    investmentId,
-    "bonds",
-  );
-  const updateTransactionMutation =
-    useUpdateInvestmentTransaction(investmentId);
-  const deleteTransactionMutation =
-    useDeleteInvestmentTransaction(investmentId);
+  const createSnapshotMutation = useCreateInvestmentSnapshot(investmentId, "bonds");
+  const updateSnapshotMutation = useUpdateInvestmentSnapshot(investmentId, "bonds");
+  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(investmentId, "bonds");
+  const importSnapshotMutation = useImportInvestmentSnapshots(investmentId, "bonds");
+  const createTransactionMutation = useCreateInvestmentTransaction(investmentId, "bonds");
+  const updateTransactionMutation = useUpdateInvestmentTransaction(investmentId);
+  const deleteTransactionMutation = useDeleteInvestmentTransaction(investmentId);
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
 
@@ -104,18 +75,10 @@ export function BondDetail({ investmentId, onBack }: Props) {
   const [txnPage, setTxnPage] = useState(1);
   const [txnSearch, setTxnSearch] = useState("");
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
-  const filteredTransactions = (transactions ?? []).filter((tx) =>
-    matchesTxnSearch(tx, txnSearch),
-  );
-  const totalTxnPages = Math.max(
-    1,
-    Math.ceil(filteredTransactions.length / PAGE_SIZE),
-  );
+  const filteredTransactions = (transactions ?? []).filter((tx) => matchesTxnSearch(tx, txnSearch));
+  const totalTxnPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const effectiveTxnPage = Math.min(txnPage, totalTxnPages);
   const quantityUnit = t("investments:bond.quantityUnit");
 
@@ -129,9 +92,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
   }
 
   if (isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
   }
   if (error) {
     return (
@@ -155,8 +116,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
   // they're terminal, not recurring income.
   const txnSum = (kind: "coupon" | "fee"): number =>
     (transactions ?? []).reduce(
-      (acc, tx) =>
-        tx.transaction_type === kind ? acc + Number(tx.amount) : acc,
+      (acc, tx) => (tx.transaction_type === kind ? acc + Number(tx.amount) : acc),
       0,
     );
   const totalCoupons = txnSum("coupon");
@@ -166,8 +126,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
   // from the ledger; no face_value fallback remains.
   const bondCostSeries = costBasisSeries(snapshots ?? [], transactions ?? []);
   const bondTotalCost = computeCostBasis(transactions ?? []).cost;
-  const bondLatestSnapshot =
-    snapshots && snapshots.length > 0 ? snapshots[0] : null;
+  const bondLatestSnapshot = snapshots && snapshots.length > 0 ? snapshots[0] : null;
   // Maturity is uniquely terminal: posting it flips the position to 'matured'
   // (backend hard guard, ADR-0009), after which the transaction-create row is
   // gated off entirely by isActiveStatus below.
@@ -177,14 +136,10 @@ export function BondDetail({ investmentId, onBack }: Props) {
       ? "investments:bond.bondType.govt_primary"
       : "investments:bond.bondType.secondary_market",
   );
-  const frequencyLabel = t(
-    `investments:bond.couponFrequency.${bond.details.coupon_frequency}`,
+  const frequencyLabel = t(`investments:bond.couponFrequency.${bond.details.coupon_frequency}`);
+  const subtitleBits = [bond.details.series_code, bondTypeLabel, bond.details.issuer].filter(
+    Boolean,
   );
-  const subtitleBits = [
-    bond.details.series_code,
-    bondTypeLabel,
-    bond.details.issuer,
-  ].filter(Boolean);
 
   // Guided tour (issue #23). Steps run top-to-bottom; HelpTourButton prunes any
   // whose anchor isn't rendered this visit (chart needs ≥2 snapshots; the
@@ -231,28 +186,16 @@ export function BondDetail({ investmentId, onBack }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
-          <h1
-            data-testid="tour-overview"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
             {bond.investment.display_name}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {subtitleBits.join(" · ")}
-          </p>
+          <p className="text-sm text-muted-foreground">{subtitleBits.join(" · ")}</p>
           <InvestmentHeadline
             currency={bond.investment.native_currency}
-            latestValue={
-              bondLatestSnapshot ? Number(bondLatestSnapshot.amount) : null
-            }
+            latestValue={bondLatestSnapshot ? Number(bondLatestSnapshot.amount) : null}
             totalCost={bondTotalCost}
             status={bond.investment.status}
             terminatedAt={bond.investment.terminated_at}
@@ -277,11 +220,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
             currentTerminatedAt={bond.investment.terminated_at}
             currentNote={bond.investment.termination_note}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-1 size-4" />
             {t("common:delete")}
           </Button>
@@ -306,40 +245,27 @@ export function BondDetail({ investmentId, onBack }: Props) {
         </CardHeader>
         <CardContent className="text-sm space-y-1">
           <p>
-            <span className="text-muted-foreground">
-              {t("investments:bond.faceValueLabel")}
-            </span>{" "}
-            {formatCurrency(
-              bond.outstanding_face,
-              bond.investment.native_currency,
-            )}
+            <span className="text-muted-foreground">{t("investments:bond.faceValueLabel")}</span>{" "}
+            {formatCurrency(bond.outstanding_face, bond.investment.native_currency)}
           </p>
           <p>
-            <span className="text-muted-foreground">
-              {t("investments:bond.couponLabel")}
-            </span>{" "}
+            <span className="text-muted-foreground">{t("investments:bond.couponLabel")}</span>{" "}
             {t("investments:bond.couponValue", {
               rate: couponPct,
               frequency: frequencyLabel,
             })}
           </p>
           <p>
-            <span className="text-muted-foreground">
-              {t("investments:bond.maturityLabel")}
-            </span>{" "}
+            <span className="text-muted-foreground">{t("investments:bond.maturityLabel")}</span>{" "}
             {formatDate(bond.details.maturity_date)}
           </p>
           <p>
             <span className="text-muted-foreground">
               {t("investments:bond.fields.couponDisposition")}
             </span>{" "}
-            {t(
-              `investments:bond.couponDisposition.${bond.details.coupon_disposition}`,
-            )}
+            {t(`investments:bond.couponDisposition.${bond.details.coupon_disposition}`)}
           </p>
-          {bond.investment.description && (
-            <p className="pt-1">{bond.investment.description}</p>
-          )}
+          {bond.investment.description && <p className="pt-1">{bond.investment.description}</p>}
         </CardContent>
       </Card>
 
@@ -369,19 +295,12 @@ export function BondDetail({ investmentId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("investments:snapshotsCard.title")}</CardTitle>
-              <CardDescription>
-                {t("investments:bond.snapshotsDescription")}
-              </CardDescription>
+              <CardDescription>{t("investments:bond.snapshotsDescription")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Full position workbook (Detail + Snapshots + Transactions);
                   available regardless of status. */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                data-testid="bond-export"
-              >
+              <Button asChild size="sm" variant="outline" data-testid="bond-export">
                 <a href={bondExportUrl(bond.investment.id)}>
                   <Download className="mr-1 size-4" />
                   {t("common:export.trigger")}
@@ -397,17 +316,14 @@ export function BondDetail({ investmentId, onBack }: Props) {
                       bondLatestSnapshot
                         ? {
                             amount: bondLatestSnapshot.amount,
-                            accrued_interest:
-                              bondLatestSnapshot.accrued_interest,
+                            accrued_interest: bondLatestSnapshot.accrued_interest,
                             lastSnapshotMonth: bondLatestSnapshot.year_month,
                           }
                         : null
                     }
                   />
                   <ImportSnapshotsDialog
-                    templateUrl={investmentImportTemplateUrl(
-                      bond.investment.id,
-                    )}
+                    templateUrl={investmentImportTemplateUrl(bond.investment.id)}
                     mutation={importSnapshotMutation}
                     currency={bond.investment.native_currency}
                   />
@@ -426,9 +342,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>
-                      {t("investments:snapshotsCard.monthHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.monthHeader")}</TableHead>
                     <TableHead className="text-right">
                       {t("investments:snapshotsCard.principalHeader")}
                     </TableHead>
@@ -438,9 +352,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                     <TableHead className="text-right">
                       {t("investments:snapshotsCard.totalValueHeader")}
                     </TableHead>
-                    <TableHead>
-                      {t("investments:snapshotsCard.notesHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.notesHeader")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -474,9 +386,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("investments:transactions.cardTitle")}</CardTitle>
-              <CardDescription>
-                {t("investments:bond.transactionsDescription")}
-              </CardDescription>
+              <CardDescription>{t("investments:bond.transactionsDescription")}</CardDescription>
             </div>
             {isActiveStatus(bond.investment.status) && (
               <div className="flex flex-wrap gap-2">
@@ -525,10 +435,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                       {t("investments:bond.totalCouponsLabel")}
                     </span>{" "}
                     <span className="tabular-nums">
-                      {formatCurrency(
-                        totalCoupons.toString(),
-                        bond.investment.native_currency,
-                      )}
+                      {formatCurrency(totalCoupons.toString(), bond.investment.native_currency)}
                     </span>
                   </div>
                   <div>
@@ -536,10 +443,7 @@ export function BondDetail({ investmentId, onBack }: Props) {
                       {t("investments:bond.totalFeesLabel")}
                     </span>{" "}
                     <span className="tabular-nums">
-                      {formatCurrency(
-                        totalFees.toString(),
-                        bond.investment.native_currency,
-                      )}
+                      {formatCurrency(totalFees.toString(), bond.investment.native_currency)}
                     </span>
                   </div>
                 </div>
@@ -560,18 +464,12 @@ export function BondDetail({ investmentId, onBack }: Props) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>
-                          {t("investments:transactions.dateHeader")}
-                        </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.typeHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.dateHeader")}</TableHead>
+                        <TableHead>{t("investments:transactions.typeHeader")}</TableHead>
                         <TableHead className="text-right">
                           {t("investments:transactions.cashImpactHeader")}
                         </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.notesHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.notesHeader")}</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>

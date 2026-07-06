@@ -40,8 +40,7 @@ export function CreateVehicleDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         vehicle_type: form.vehicle_type,
         make: form.make || null,
@@ -100,18 +99,12 @@ export function CreateVehicleDialog() {
             }
           >
             <option value="car">{t("assets:vehicle.vehicleTypes.car")}</option>
-            <option value="motorcycle">
-              {t("assets:vehicle.vehicleTypes.motorcycle")}
-            </option>
-            <option value="other">
-              {t("assets:vehicle.vehicleTypes.other")}
-            </option>
+            <option value="motorcycle">{t("assets:vehicle.vehicleTypes.motorcycle")}</option>
+            <option value="other">{t("assets:vehicle.vehicleTypes.other")}</option>
           </select>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="v_native_currency">
-            {t("common:fields.currency")}
-          </Label>
+          <Label htmlFor="v_native_currency">{t("common:fields.currency")}</Label>
           <Input
             id="v_native_currency"
             required
@@ -161,9 +154,7 @@ export function CreateVehicleDialog() {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="v_plate">
-            {t("assets:vehicle.fields.plateNumber")}
-          </Label>
+          <Label htmlFor="v_plate">{t("assets:vehicle.fields.plateNumber")}</Label>
           <Input
             id="v_plate"
             value={form.plate_number}
@@ -173,9 +164,7 @@ export function CreateVehicleDialog() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="v_depr">
-          {t("assets:vehicle.fields.depreciationRate")}
-        </Label>
+        <Label htmlFor="v_depr">{t("assets:vehicle.fields.depreciationRate")}</Label>
         <Input
           id="v_depr"
           inputMode="decimal"
@@ -219,16 +208,12 @@ export function CreateVehicleDialog() {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>

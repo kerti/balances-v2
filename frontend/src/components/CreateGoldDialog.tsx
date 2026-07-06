@@ -43,8 +43,7 @@ export function CreateGoldDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
         form: form.form,
@@ -76,9 +75,7 @@ export function CreateGoldDialog() {
       }}
     >
       <div className="grid gap-2">
-        <Label htmlFor="gold_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="gold_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="gold_display_name"
           required
@@ -95,18 +92,12 @@ export function CreateGoldDialog() {
             id="gold_form"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.form}
-            onChange={(e) =>
-              setForm({ ...form, form: e.target.value as GoldForm })
-            }
+            onChange={(e) => setForm({ ...form, form: e.target.value as GoldForm })}
           >
             <option value="bar">{t("investments:gold.goldForms.bar")}</option>
             <option value="coin">{t("investments:gold.goldForms.coin")}</option>
-            <option value="digital">
-              {t("investments:gold.goldForms.digital")}
-            </option>
-            <option value="jewelry">
-              {t("investments:gold.goldForms.jewelry")}
-            </option>
+            <option value="digital">{t("investments:gold.goldForms.digital")}</option>
+            <option value="jewelry">{t("investments:gold.goldForms.jewelry")}</option>
           </select>
         </div>
         <GoldPuritySelect
@@ -162,16 +153,12 @@ export function CreateGoldDialog() {
             aria-label={t("investments:ownership.soleOwnerAria")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -179,9 +166,7 @@ export function CreateGoldDialog() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="gold_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="gold_description">{t("common:fields.description")}</Label>
         <Input
           id="gold_description"
           value={form.description}

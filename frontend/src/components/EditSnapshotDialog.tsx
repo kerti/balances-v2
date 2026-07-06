@@ -43,11 +43,7 @@ type Props<TResult> = {
   onOpenChange: (open: boolean) => void;
   snapshot: SnapshotLike;
   // Owned by the parent so this dialog works for any position group.
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateSnapshotMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateSnapshotMutationVariables>;
 };
 
 // year_month is shown read-only, not editable: changing it would mean creating
@@ -99,9 +95,7 @@ export function EditSnapshotDialog<TResult>({
               disabled
               value={formatYearMonth(snapshot.year_month)}
             />
-            <p className="text-xs text-muted-foreground">
-              {t("snapshot.wrongMonthHint")}
-            </p>
+            <p className="text-xs text-muted-foreground">{t("snapshot.wrongMonthHint")}</p>
           </div>
 
           <div className="grid gap-2">
@@ -130,36 +124,24 @@ export function EditSnapshotDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_snap_description">
-              {t("fields.description")}
-            </Label>
+            <Label htmlFor="edit_snap_description">{t("fields.description")}</Label>
             <Input
               id="edit_snap_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending
-                ? t("actions.saving")
-                : t("actions.saveChanges")}
+              {mutation.isPending ? t("actions.saving") : t("actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

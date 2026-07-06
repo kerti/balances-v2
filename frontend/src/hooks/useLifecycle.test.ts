@@ -12,11 +12,7 @@ const ID = "11111111-1111-1111-1111-111111111111";
 describe("lifecycleInvalidationKeys", () => {
   it("refreshes the investment snapshot list on a terminal flip (issue #56)", () => {
     const keys = lifecycleInvalidationKeys("investments", ID, "stocks");
-    expect(keys).toEqual([
-      ["stocks"],
-      ["stocks", ID],
-      ["investment-snapshots", ID],
-    ]);
+    expect(keys).toEqual([["stocks"], ["stocks", ID], ["investment-snapshots", ID]]);
   });
 
   it.each(["assets", "liabilities", "receivables"] as const)(

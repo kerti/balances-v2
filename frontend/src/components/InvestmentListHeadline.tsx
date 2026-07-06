@@ -23,20 +23,12 @@ type Props = {
   testId?: string;
 };
 
-export function InvestmentListHeadline({
-  aggregates,
-  count,
-  noun,
-  nounPlural,
-  testId,
-}: Props) {
+export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, testId }: Props) {
   const { t } = useTranslation(["common", "investments"]);
   if (aggregates.length === 0) return null;
   return (
     <div className="rounded-lg border p-4" data-testid={testId}>
-      <div className="text-sm text-muted-foreground">
-        {t("investments:list.totalValue")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("investments:list.totalValue")}</div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
           <span key={a.currency}>
@@ -55,15 +47,11 @@ export function InvestmentListHeadline({
         ))}
       </div>
       <div className="mt-0.5 text-sm">
-        <span className="text-muted-foreground">
-          {t("investments:list.unrealizedPL")}
-        </span>{" "}
+        <span className="text-muted-foreground">{t("investments:list.unrealizedPL")}</span>{" "}
         {aggregates.map((a, i) => (
           <span key={a.currency}>
             {i > 0 && <SepMuted />}
-            <span className={cn("tabular-nums", plColor(a.pl))}>
-              {formatPL(a)}
-            </span>
+            <span className={cn("tabular-nums", plColor(a.pl))}>{formatPL(a)}</span>
           </span>
         ))}
       </div>

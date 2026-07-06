@@ -34,9 +34,7 @@ type SuggestArgs = {
 // zero rate (no drift to project), no prior snapshot, picked month not strictly
 // after the anchor, or any input that doesn't parse. Callers render nothing on
 // null.
-export function suggestRevalued(
-  args: SuggestArgs,
-): RevaluationSuggestion | null {
+export function suggestRevalued(args: SuggestArgs): RevaluationSuggestion | null {
   if (!args.annualRatePct) return null;
   const rate = Number(args.annualRatePct);
   if (!Number.isFinite(rate) || rate === 0) return null;

@@ -39,11 +39,7 @@ type Props<TResult> = {
   snapshot: InvestmentSnapshotLike;
   // Mutation owned by the parent so the dialog works for any
   // M4.3a investment subtype (stock / mutual_fund / gold).
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateQuantityPriceSnapshotMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateQuantityPriceSnapshotMutationVariables>;
 };
 
 function deriveAmount(quantity: string, pricePerUnit: string): string | null {
@@ -97,9 +93,7 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("investments:quantityPriceSnapshot.editTitle")}
-          </DialogTitle>
+          <DialogTitle>{t("investments:quantityPriceSnapshot.editTitle")}</DialogTitle>
           <DialogDescription>
             {t("investments:quantityPriceSnapshot.editDescription")}
           </DialogDescription>
@@ -129,9 +123,7 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.price_per_unit}
-                onChange={(e) =>
-                  setForm({ ...form, price_per_unit: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
               />
             </div>
           </div>
@@ -141,16 +133,12 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
               {t("investments:quantityPriceSnapshot.totalValueLabel")}
             </span>{" "}
             <span className="font-medium">
-              {derivedAmount !== null
-                ? formatCurrency(derivedAmount, snapshot.currency)
-                : "—"}
+              {derivedAmount !== null ? formatCurrency(derivedAmount, snapshot.currency) : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_inv_as_of_date">
-              {t("common:fields.statementDate")}
-            </Label>
+            <Label htmlFor="edit_inv_as_of_date">{t("common:fields.statementDate")}</Label>
             <Input
               id="edit_inv_as_of_date"
               type="date"
@@ -162,39 +150,24 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_inv_snap_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_inv_snap_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_inv_snap_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || derivedAmount === null}
-            >
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+            <Button type="submit" disabled={mutation.isPending || derivedAmount === null}>
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

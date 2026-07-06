@@ -1,9 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  importWithReloadGuard,
-  isChunkLoadError,
-  type ReloadEnv,
-} from "@/lib/lazyWithReload";
+import { importWithReloadGuard, isChunkLoadError, type ReloadEnv } from "@/lib/lazyWithReload";
 
 describe("isChunkLoadError", () => {
   it("matches the engine messages for a missing dynamic chunk", () => {
@@ -40,15 +36,12 @@ describe("importWithReloadGuard", () => {
     return env;
   }
 
-  const chunkErr = () =>
-    Promise.reject(new Error("Failed to fetch dynamically imported module"));
+  const chunkErr = () => Promise.reject(new Error("Failed to fetch dynamically imported module"));
 
   it("passes a successful import through and clears any stale guard", async () => {
     const env = fakeEnv(true);
     const mod = { default: "ok" };
-    await expect(
-      importWithReloadGuard(() => Promise.resolve(mod), env),
-    ).resolves.toBe(mod);
+    await expect(importWithReloadGuard(() => Promise.resolve(mod), env)).resolves.toBe(mod);
     expect(env.guardSet()).toBe(false);
     expect(env.reload).not.toHaveBeenCalled();
   });
@@ -57,10 +50,7 @@ describe("importWithReloadGuard", () => {
     const env = fakeEnv(false);
     // Holds the Suspense fallback (never settles); race it against a tick.
     const pending = importWithReloadGuard(chunkErr, env);
-    const settled = await Promise.race([
-      pending.then(() => "settled"),
-      Promise.resolve("pending"),
-    ]);
+    const settled = await Promise.race([pending.then(() => "settled"), Promise.resolve("pending")]);
     expect(settled).toBe("pending");
     expect(env.reload).toHaveBeenCalledOnce();
     expect(env.guardSet()).toBe(true);

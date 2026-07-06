@@ -25,24 +25,14 @@ type Props = {
   legendPosition?: "bottom" | "right";
 };
 
-const InvestmentPieChartImpl = lazyWithReload(
-  () => import("./InvestmentPieChartImpl"),
-);
+const InvestmentPieChartImpl = lazyWithReload(() => import("./InvestmentPieChartImpl"));
 
-export function InvestmentPieChart({
-  slices,
-  currency,
-  legendPosition = "bottom",
-}: Props) {
+export function InvestmentPieChart({ slices, currency, legendPosition = "bottom" }: Props) {
   const total = slices.reduce((s, sl) => s + sl.value, 0);
   if (total <= 0) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
-      <InvestmentPieChartImpl
-        slices={slices}
-        currency={currency}
-        legendPosition={legendPosition}
-      />
+      <InvestmentPieChartImpl slices={slices} currency={currency} legendPosition={legendPosition} />
     </Suspense>
   );
 }

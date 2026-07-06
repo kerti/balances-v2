@@ -40,8 +40,7 @@ export function useUpdateFxRate() {
 export function useDeleteFxRate() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/fx-rates/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/fx-rates/${id}`, { method: "DELETE" }),
     onSuccess: () => invalidate(qc),
   });
 }

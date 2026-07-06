@@ -13,8 +13,7 @@
     var theme =
       stored === "light" || stored === "dark"
         ? stored
-        : window.matchMedia &&
-            window.matchMedia("(prefers-color-scheme: light)").matches
+        : window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
           ? "light"
           : "dark";
     if (theme === "dark") document.documentElement.classList.add("dark");

@@ -23,8 +23,7 @@ export function useReceivableTimeSeries(): {
 } {
   const query = useQuery({
     queryKey: ["receivable-time-series"],
-    queryFn: () =>
-      api<ReceivableTimeSeriesItem[]>("/api/receivables/time-series"),
+    queryFn: () => api<ReceivableTimeSeriesItem[]>("/api/receivables/time-series"),
   });
 
   const byId = useMemo(() => {

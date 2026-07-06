@@ -23,11 +23,7 @@ type Props<TResult> = {
   onOpenChange: (open: boolean) => void;
   transaction: InvestmentTransaction;
   quantityUnit: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateTransactionMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateTransactionMutationVariables>;
 };
 
 export function EditFeeTransactionDialog<TResult>({
@@ -58,8 +54,7 @@ export function EditFeeTransactionDialog<TResult>({
     setForm((prev) => {
       const merged = { ...prev, ...next };
       if (!qtyTouched && ("amount" in next || "price_per_unit" in next)) {
-        merged.quantity =
-          deriveFeeQuantity(merged.amount, merged.price_per_unit) ?? "";
+        merged.quantity = deriveFeeQuantity(merged.amount, merged.price_per_unit) ?? "";
       }
       return merged;
     });
@@ -93,25 +88,19 @@ export function EditFeeTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("investments:fee.editTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("investments:fee.editDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:fee.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="edit_fee_date">
-                {t("investments:fee.feeDateLabel")}
-              </Label>
+              <Label htmlFor="edit_fee_date">{t("investments:fee.feeDateLabel")}</Label>
               <Input
                 id="edit_fee_date"
                 type="date"
                 required
                 max={todayDate()}
                 value={form.transaction_date}
-                onChange={(e) =>
-                  setForm({ ...form, transaction_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -160,53 +149,37 @@ export function EditFeeTransactionDialog<TResult>({
                 }}
               />
               {qtyAutoDerived && (
-                <p className="text-xs text-muted-foreground">
-                  {t("investments:fee.derivedHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("investments:fee.derivedHint")}</p>
               )}
             </div>
           </div>
 
           {unitFeeIncomplete && (
-            <p className="text-xs text-amber-600">
-              {t("investments:fee.incompleteHint")}
-            </p>
+            <p className="text-xs text-amber-600">{t("investments:fee.incompleteHint")}</p>
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_fee_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_fee_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_fee_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
             <Button
               type="submit"
               disabled={mutation.isPending || !form.amount || unitFeeIncomplete}
             >
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

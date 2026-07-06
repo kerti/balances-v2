@@ -42,8 +42,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         vehicle_type: form.vehicle_type,
         make: form.make || null,
         model: form.model || null,
@@ -68,9 +67,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="ev_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="ev_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="ev_display_name"
           required
@@ -93,12 +90,8 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           }
         >
           <option value="car">{t("assets:vehicle.vehicleTypes.car")}</option>
-          <option value="motorcycle">
-            {t("assets:vehicle.vehicleTypes.motorcycle")}
-          </option>
-          <option value="other">
-            {t("assets:vehicle.vehicleTypes.other")}
-          </option>
+          <option value="motorcycle">{t("assets:vehicle.vehicleTypes.motorcycle")}</option>
+          <option value="other">{t("assets:vehicle.vehicleTypes.other")}</option>
         </select>
       </div>
 
@@ -112,9 +105,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="ev_model">
-            {t("assets:vehicle.fields.modelEdit")}
-          </Label>
+          <Label htmlFor="ev_model">{t("assets:vehicle.fields.modelEdit")}</Label>
           <Input
             id="ev_model"
             value={form.model}
@@ -134,9 +125,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="ev_plate">
-            {t("assets:vehicle.fields.plateNumberEdit")}
-          </Label>
+          <Label htmlFor="ev_plate">{t("assets:vehicle.fields.plateNumberEdit")}</Label>
           <Input
             id="ev_plate"
             value={form.plate_number}
@@ -146,9 +135,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="ev_depr">
-          {t("assets:vehicle.fields.depreciationRateEdit")}
-        </Label>
+        <Label htmlFor="ev_depr">{t("assets:vehicle.fields.depreciationRateEdit")}</Label>
         <Input
           id="ev_depr"
           inputMode="decimal"
@@ -191,16 +178,12 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>

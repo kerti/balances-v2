@@ -214,9 +214,7 @@ const cases: Case[] = [
     headlineTestId: "properties-total",
     name: /Lake House/,
     secondary: /House · 1 Main St/,
-    handlers: [
-      http.get("/api/properties", () => HttpResponse.json([propertyItem])),
-    ],
+    handlers: [http.get("/api/properties", () => HttpResponse.json([propertyItem]))],
   },
   {
     label: "vehicle",
@@ -225,9 +223,7 @@ const cases: Case[] = [
     headlineTestId: "vehicles-total",
     name: /Family Car/,
     secondary: /Car · Toyota Corolla · 2020 · ABC123/,
-    handlers: [
-      http.get("/api/vehicles", () => HttpResponse.json([vehicleItem])),
-    ],
+    handlers: [http.get("/api/vehicles", () => HttpResponse.json([vehicleItem]))],
   },
   {
     label: "liability (personal)",
@@ -251,9 +247,7 @@ const cases: Case[] = [
     secondary: /A Friend/,
     handlers: [
       http.get("/api/receivables", () =>
-        HttpResponse.json([
-          { receivable, latest_snapshot: receivableSnapshot },
-        ]),
+        HttpResponse.json([{ receivable, latest_snapshot: receivableSnapshot }]),
       ),
       http.get("/api/receivables/time-series", () => HttpResponse.json([])),
     ],
@@ -263,18 +257,9 @@ const cases: Case[] = [
 describe("non-investment descriptors (conformance)", () => {
   it.each(cases)(
     "$label loads and surfaces its declared columns",
-    async ({
-      descriptor,
-      rowTestId,
-      headlineTestId,
-      name,
-      secondary,
-      handlers,
-    }) => {
+    async ({ descriptor, rowTestId, headlineTestId, name, secondary, handlers }) => {
       server.use(...commonHandlers, ...handlers);
-      renderWithProviders(
-        <PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />,
-      );
+      renderWithProviders(<PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />);
 
       const row = await screen.findByTestId(rowTestId);
       expect(within(row).getByText(name)).toBeInTheDocument();
@@ -285,9 +270,7 @@ describe("non-investment descriptors (conformance)", () => {
       // Ownership extra column: privacy-safe sole-owner label.
       expect(within(row).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
       // Declared ownership header + the headline slot.
-      expect(
-        screen.getByRole("columnheader", { name: /Ownership/ }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("columnheader", { name: /Ownership/ })).toBeInTheDocument();
       expect(screen.getByTestId(headlineTestId)).toBeInTheDocument();
     },
   );

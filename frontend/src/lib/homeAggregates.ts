@@ -27,12 +27,7 @@ import {
 } from "@/lib/listAggregates";
 import { monthRange } from "@/lib/months";
 
-export type InvestmentCategory =
-  | "stock"
-  | "mutualFund"
-  | "bond"
-  | "timeDeposit"
-  | "gold";
+export type InvestmentCategory = "stock" | "mutualFund" | "bond" | "timeDeposit" | "gold";
 
 export type InvestmentRiskProfile = "low" | "medium" | "high";
 
@@ -44,11 +39,7 @@ export const INVESTMENT_CATEGORIES: InvestmentCategory[] = [
   "gold",
 ];
 
-export const INVESTMENT_RISK_PROFILES: InvestmentRiskProfile[] = [
-  "low",
-  "medium",
-  "high",
-];
+export const INVESTMENT_RISK_PROFILES: InvestmentRiskProfile[] = ["low", "medium", "high"];
 
 export type HomePosition = Position & {
   category: InvestmentCategory;
@@ -89,9 +80,7 @@ const emptyByCategory = (): Record<InvestmentCategory, number> => ({
   gold: 0,
 });
 
-export function aggregateHomePositions(
-  positions: HomePosition[],
-): HomeAggregates {
+export function aggregateHomePositions(positions: HomePosition[]): HomeAggregates {
   // Headline + time series come straight from the list aggregator,
   // which already does the active-only headline + all-positions time
   // series split. Strip the extra fields so the call is type-clean.
@@ -117,8 +106,7 @@ export function aggregateHomePositions(
     if (!byCurrencyAll.has(p.currency)) byCurrencyAll.set(p.currency, []);
     byCurrencyAll.get(p.currency)!.push(p);
     if (p.status === "active") {
-      if (!byCurrencyActive.has(p.currency))
-        byCurrencyActive.set(p.currency, []);
+      if (!byCurrencyActive.has(p.currency)) byCurrencyActive.set(p.currency, []);
       byCurrencyActive.get(p.currency)!.push(p);
     }
   }
@@ -158,9 +146,7 @@ export function aggregateHomePositions(
 // rollover seam) — matching listAggregates' aggregateMonthly. The
 // termination-month snapshot is the synthetic 0-close (#25/#27), excluded by
 // the cap below, so a same-month rollover never double-counts.
-function aggregateMonthlyByCategory(
-  positions: HomePosition[],
-): CategoryTimePoint[] {
+function aggregateMonthlyByCategory(positions: HomePosition[]): CategoryTimePoint[] {
   type Sorted = {
     category: InvestmentCategory;
     months: string[];

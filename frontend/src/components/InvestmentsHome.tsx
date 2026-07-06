@@ -20,20 +20,11 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InvestmentListHeadline } from "@/components/InvestmentListHeadline";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import { CategoryStackChart } from "@/components/CategoryStackChart";
-import {
-  InvestmentPieChart,
-  type PieSlice,
-} from "@/components/InvestmentPieChart";
+import { InvestmentPieChart, type PieSlice } from "@/components/InvestmentPieChart";
 import {
   useBonds,
   useGolds,
@@ -99,10 +90,7 @@ export function InvestmentsHome() {
   // fetch (#22). Only the category literal differs.
   const positions = useMemo<HomePosition[]>(() => {
     const out: HomePosition[] = [];
-    const push = (
-      items: HomeListItem[] | undefined,
-      category: InvestmentCategory,
-    ) => {
+    const push = (items: HomeListItem[] | undefined, category: InvestmentCategory) => {
       for (const it of items ?? []) {
         const ts = timeSeries.byId.get(it.investment.id);
         out.push({
@@ -110,9 +98,7 @@ export function InvestmentsHome() {
           currency: it.investment.native_currency,
           status: it.investment.status,
           terminated_at: it.investment.terminated_at,
-          latestValue: it.latest_snapshot
-            ? Number(it.latest_snapshot.amount)
-            : null,
+          latestValue: it.latest_snapshot ? Number(it.latest_snapshot.amount) : null,
           cost: Number(it.cost_basis),
           snapshots: ts?.snapshots ?? [],
           costSeries: ts?.costSeries ?? [],
@@ -127,19 +113,9 @@ export function InvestmentsHome() {
     push(timeDeposits.data, "timeDeposit");
     push(golds.data, "gold");
     return out;
-  }, [
-    stocks.data,
-    mutualFunds.data,
-    bonds.data,
-    timeDeposits.data,
-    golds.data,
-    timeSeries.byId,
-  ]);
+  }, [stocks.data, mutualFunds.data, bonds.data, timeDeposits.data, golds.data, timeSeries.byId]);
 
-  const aggregates = useMemo(
-    () => aggregateHomePositions(positions),
-    [positions],
-  );
+  const aggregates = useMemo(() => aggregateHomePositions(positions), [positions]);
 
   const anyPending =
     stocks.isPending ||
@@ -148,11 +124,7 @@ export function InvestmentsHome() {
     timeDeposits.isPending ||
     golds.isPending;
   const firstError =
-    stocks.error ??
-    mutualFunds.error ??
-    bonds.error ??
-    timeDeposits.error ??
-    golds.error;
+    stocks.error ?? mutualFunds.error ?? bonds.error ?? timeDeposits.error ?? golds.error;
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);
 
@@ -162,14 +134,10 @@ export function InvestmentsHome() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {t("common:home.investments.title")}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("investments:home.subtitle")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("investments:home.subtitle")}</p>
       </div>
 
-      {anyPending && (
-        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-      )}
+      {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
       {firstError && (
         <p className="text-sm text-destructive">
@@ -200,17 +168,11 @@ export function InvestmentsHome() {
           <div className="grid gap-4 md:grid-cols-2">
             <CategoryPieCard
               currency={currency}
-              slices={buildCategorySlices(
-                aggregates.categoryPieByCurrency.get(currency) ?? [],
-                t,
-              )}
+              slices={buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t)}
             />
             <RiskPieCard
               currency={currency}
-              slices={buildRiskSlices(
-                aggregates.riskPieByCurrency.get(currency) ?? [],
-                t,
-              )}
+              slices={buildRiskSlices(aggregates.riskPieByCurrency.get(currency) ?? [], t)}
             />
           </div>
         </div>
@@ -265,9 +227,7 @@ function ValueCostCard({
     <Card data-testid={`home-value-cost-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.valueCostChartTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.valueCostChartDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.valueCostChartDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <SnapshotChart
@@ -299,9 +259,7 @@ function CategoryStackCard({
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryStackTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryStackDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryStackDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <CategoryStackChart series={series} currency={currency} />
@@ -310,22 +268,14 @@ function CategoryStackCard({
   );
 }
 
-function CategoryPieCard({
-  currency,
-  slices,
-}: {
-  currency: string;
-  slices: PieSlice[];
-}) {
+function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("investments");
   if (slices.every((s) => s.value <= 0)) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryPieTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryPieDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryPieDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <InvestmentPieChart slices={slices} currency={currency} />
@@ -334,22 +284,14 @@ function CategoryPieCard({
   );
 }
 
-function RiskPieCard({
-  currency,
-  slices,
-}: {
-  currency: string;
-  slices: PieSlice[];
-}) {
+function RiskPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("investments");
   if (slices.every((s) => s.value <= 0)) return null;
   return (
     <Card data-testid={`home-risk-pie-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.riskPieTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.riskPieDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.riskPieDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <InvestmentPieChart slices={slices} currency={currency} />

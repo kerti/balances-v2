@@ -56,9 +56,7 @@ export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
               })}
             </div>
             {!terminated && (
-              <div className={`text-xs ${maturityClass(mInfo.state)}`}>
-                {mInfo.label}
-              </div>
+              <div className={`text-xs ${maturityClass(mInfo.state)}`}>{mInfo.label}</div>
             )}
           </>
         );
@@ -72,10 +70,6 @@ export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
   headlineTestId: "time-deposits-total",
   renderCreateDialog: () => <CreateTimeDepositDialog />,
   renderEditDialog: (item, props) => (
-    <EditTimeDepositDialog
-      key={item.investment.id}
-      timeDeposit={item}
-      {...props}
-    />
+    <EditTimeDepositDialog key={item.investment.id} timeDeposit={item} {...props} />
   ),
 });

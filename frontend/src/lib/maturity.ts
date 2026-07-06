@@ -35,10 +35,7 @@ function daysBetween(a: Date, b: Date): number {
   return Math.round((bx.getTime() - ax.getTime()) / oneDay);
 }
 
-export function maturityInfo(
-  maturityDate: string,
-  now: Date = new Date(),
-): MaturityInfo {
+export function maturityInfo(maturityDate: string, now: Date = new Date()): MaturityInfo {
   const m = new Date(maturityDate);
   if (Number.isNaN(m.getTime())) {
     return { state: "default", label: "" };

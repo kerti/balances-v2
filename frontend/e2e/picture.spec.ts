@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from "@playwright/test";
 
 // Proves the Google-picture backfill end-to-end: seeded Alice has picture_url
 // NULL, so the header avatar renders initials. After signing in through mock-oidc
@@ -12,24 +12,22 @@ import { test, expect } from '@playwright/test'
 // leaves Alice's picture_url populated for the rest of the suite — no other
 // spec depends on it being NULL, mirroring login.spec.ts's persisted-session
 // approach.
-test.use({ storageState: { cookies: [], origins: [] } })
+test.use({ storageState: { cookies: [], origins: [] } });
 
-test('OAuth callback backfills picture_url and the avatar renders the image', async ({
-  page,
-}) => {
-  await page.goto('/')
+test("OAuth callback backfills picture_url and the avatar renders the image", async ({ page }) => {
+  await page.goto("/");
 
-  const signIn = page.getByTestId('signin-google')
-  await expect(signIn).toBeVisible()
-  await signIn.click()
+  const signIn = page.getByTestId("signin-google");
+  await expect(signIn).toBeVisible();
+  await signIn.click();
 
   // Authenticated shell renders; assert the seeded Alice landed.
-  await expect(page.getByText('Alice', { exact: true })).toBeVisible()
+  await expect(page.getByText("Alice", { exact: true })).toBeVisible();
 
   // The avatar's image branch is now active, with the URL from the id_token's
   // `picture` claim. The initials fallback must be gone.
-  const img = page.getByTestId('user-avatar-img')
-  await expect(img).toBeVisible()
-  await expect(img).toHaveAttribute('src', 'http://localhost:8090/avatar.png')
-  await expect(page.getByTestId('user-avatar-fallback')).toHaveCount(0)
-})
+  const img = page.getByTestId("user-avatar-img");
+  await expect(img).toBeVisible();
+  await expect(img).toHaveAttribute("src", "http://localhost:8090/avatar.png");
+  await expect(page.getByTestId("user-avatar-fallback")).toHaveCount(0);
+});

@@ -1,9 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportResult,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportResult } from "@/hooks/snapshotImport";
 
 // postCreateImport is the transport behind the create-from-file dialog. These
 // cover its three branches — ok, the 422 "bad workbook" result, and a hard
@@ -33,17 +30,11 @@ afterEach(() => {
 
 describe("postCreateImport", () => {
   it("posts multipart to {base}/import with the mode query and returns the result", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(jsonResponse(200, cleanPreview));
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, cleanPreview));
     vi.stubGlobal("fetch", fetchMock);
 
     const file = new File(["x"], "acct.xlsx");
-    const result = await postCreateImport(
-      "/api/bank-accounts",
-      file,
-      "preview",
-    );
+    const result = await postCreateImport("/api/bank-accounts", file, "preview");
 
     expect(result).toEqual(cleanPreview);
     const [url, init] = fetchMock.mock.calls[0];
@@ -80,16 +71,9 @@ describe("postCreateImport", () => {
   });
 
   it("throws ApiError on a non-ok, non-422 response", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse(500, { code: "INTERNAL" })),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, { code: "INTERNAL" })));
     await expect(
-      postCreateImport(
-        "/api/bank-accounts",
-        new File(["x"], "a.xlsx"),
-        "commit",
-      ),
+      postCreateImport("/api/bank-accounts", new File(["x"], "a.xlsx"), "commit"),
     ).rejects.toBeInstanceOf(ApiError);
   });
 });

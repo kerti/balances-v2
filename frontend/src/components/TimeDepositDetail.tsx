@@ -2,20 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useTimeDeposit, useDeleteTimeDeposit } from "@/hooks/useInvestments";
 import {
@@ -55,14 +43,7 @@ import { ownershipLabel } from "@/lib/ownership";
 import { matchesTxnSearch } from "@/lib/transactionSearch";
 import { maturityRolloverPrefill } from "@/lib/rollover";
 import { flatCostSeries } from "@/lib/costBasis";
-import {
-  ArrowDown,
-  ArrowUp,
-  Download,
-  Pencil,
-  Repeat,
-  Trash2,
-} from "lucide-react";
+import { ArrowDown, ArrowUp, Download, Pencil, Repeat, Trash2 } from "lucide-react";
 import { InvestmentHeadline } from "@/components/InvestmentHeadline";
 
 type Props = {
@@ -75,40 +56,19 @@ type Props = {
 
 const PAGE_SIZE = 12;
 
-export function TimeDepositDetail({
-  investmentId,
-  onBack,
-  onSelectTimeDeposit,
-}: Props) {
+export function TimeDepositDetail({ investmentId, onBack, onSelectTimeDeposit }: Props) {
   const { t } = useTranslation(["investments", "common", "errors"]);
   const { data: td, isPending, error } = useTimeDeposit(investmentId);
   const { data: snapshots } = useInvestmentSnapshots(investmentId);
   const { data: transactions } = useInvestmentTransactions(investmentId);
   const deleteMutation = useDeleteTimeDeposit();
-  const createSnapshotMutation = useCreateInvestmentSnapshot(
-    investmentId,
-    "time-deposits",
-  );
-  const updateSnapshotMutation = useUpdateInvestmentSnapshot(
-    investmentId,
-    "time-deposits",
-  );
-  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(
-    investmentId,
-    "time-deposits",
-  );
-  const importSnapshotMutation = useImportInvestmentSnapshots(
-    investmentId,
-    "time-deposits",
-  );
-  const createTransactionMutation = useCreateInvestmentTransaction(
-    investmentId,
-    "time-deposits",
-  );
-  const updateTransactionMutation =
-    useUpdateInvestmentTransaction(investmentId);
-  const deleteTransactionMutation =
-    useDeleteInvestmentTransaction(investmentId);
+  const createSnapshotMutation = useCreateInvestmentSnapshot(investmentId, "time-deposits");
+  const updateSnapshotMutation = useUpdateInvestmentSnapshot(investmentId, "time-deposits");
+  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(investmentId, "time-deposits");
+  const importSnapshotMutation = useImportInvestmentSnapshots(investmentId, "time-deposits");
+  const createTransactionMutation = useCreateInvestmentTransaction(investmentId, "time-deposits");
+  const updateTransactionMutation = useUpdateInvestmentTransaction(investmentId);
+  const deleteTransactionMutation = useDeleteInvestmentTransaction(investmentId);
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
 
@@ -118,18 +78,10 @@ export function TimeDepositDetail({
   const [txnPage, setTxnPage] = useState(1);
   const [txnSearch, setTxnSearch] = useState("");
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
-  const filteredTransactions = (transactions ?? []).filter((tx) =>
-    matchesTxnSearch(tx, txnSearch),
-  );
-  const totalTxnPages = Math.max(
-    1,
-    Math.ceil(filteredTransactions.length / PAGE_SIZE),
-  );
+  const filteredTransactions = (transactions ?? []).filter((tx) => matchesTxnSearch(tx, txnSearch));
+  const totalTxnPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const effectiveTxnPage = Math.min(txnPage, totalTxnPages);
 
   function handleConfirmDelete() {
@@ -142,9 +94,7 @@ export function TimeDepositDetail({
   }
 
   if (isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
   }
   if (error) {
     return (
@@ -167,9 +117,7 @@ export function TimeDepositDetail({
   // (backend hard guard, ADR-0009), after which the transaction-create row is
   // gated off entirely by isActiveStatus below.
   const ratePct = Number(td.details.interest_rate).toFixed(2);
-  const rolloverLabel = t(
-    `investments:timeDeposit.rolloverPolicy.${td.details.rollover_policy}`,
-  );
+  const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${td.details.rollover_policy}`);
   // Q14c-iv: a matured TD whose principal/interest rolled over needs a fresh
   // deposit to hold the rolled funds. Non-null only when something actually
   // rolled (and a maturity txn exists, which only happens once matured).
@@ -217,18 +165,10 @@ export function TimeDepositDetail({
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
-          <h1
-            data-testid="tour-overview"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
             {td.investment.display_name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -240,11 +180,7 @@ export function TimeDepositDetail({
           </p>
           <InvestmentHeadline
             currency={td.investment.native_currency}
-            latestValue={
-              snapshots && snapshots.length > 0
-                ? Number(snapshots[0].amount)
-                : null
-            }
+            latestValue={snapshots && snapshots.length > 0 ? Number(snapshots[0].amount) : null}
             totalCost={Number(td.details.principal)}
             status={td.investment.status}
             terminatedAt={td.investment.terminated_at}
@@ -269,11 +205,7 @@ export function TimeDepositDetail({
             currentTerminatedAt={td.investment.terminated_at}
             currentNote={td.investment.termination_note}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-1 size-4" />
             {t("common:delete")}
           </Button>
@@ -288,9 +220,7 @@ export function TimeDepositDetail({
           <div className="flex items-start gap-3">
             <Repeat className="mt-0.5 size-5 shrink-0 text-sky-600" />
             <div className="text-sm">
-              <p className="font-medium">
-                {t("investments:timeDeposit.rollover.calloutTitle")}
-              </p>
+              <p className="font-medium">{t("investments:timeDeposit.rollover.calloutTitle")}</p>
               <p className="text-sky-800">
                 {t("investments:timeDeposit.rollover.calloutBody", {
                   amount: formatCurrency(
@@ -335,10 +265,7 @@ export function TimeDepositDetail({
             <span className="text-muted-foreground">
               {t("investments:timeDeposit.principalLabel")}
             </span>{" "}
-            {formatCurrency(
-              td.details.principal,
-              td.investment.native_currency,
-            )}
+            {formatCurrency(td.details.principal, td.investment.native_currency)}
           </p>
           <p>
             <span className="text-muted-foreground">
@@ -358,9 +285,7 @@ export function TimeDepositDetail({
             </span>{" "}
             {rolloverLabel}
           </p>
-          {td.investment.description && (
-            <p className="pt-1">{td.investment.description}</p>
-          )}
+          {td.investment.description && <p className="pt-1">{td.investment.description}</p>}
         </CardContent>
       </Card>
 
@@ -434,10 +359,7 @@ export function TimeDepositDetail({
             <SnapshotChart
               snapshots={snapshots}
               currency={td.investment.native_currency}
-              costSeries={flatCostSeries(
-                snapshots,
-                Number(td.details.principal),
-              )}
+              costSeries={flatCostSeries(snapshots, Number(td.details.principal))}
               status={td.investment.status}
             />
           </CardContent>
@@ -449,19 +371,12 @@ export function TimeDepositDetail({
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("investments:snapshotsCard.title")}</CardTitle>
-              <CardDescription>
-                {t("investments:timeDeposit.snapshotsDescription")}
-              </CardDescription>
+              <CardDescription>{t("investments:timeDeposit.snapshotsDescription")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Full position workbook (Detail + Snapshots + Transactions);
                   available regardless of status. */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                data-testid="time-deposit-export"
-              >
+              <Button asChild size="sm" variant="outline" data-testid="time-deposit-export">
                 <a href={timeDepositExportUrl(td.investment.id)}>
                   <Download className="mr-1 size-4" />
                   {t("common:export.trigger")}
@@ -502,9 +417,7 @@ export function TimeDepositDetail({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>
-                      {t("investments:snapshotsCard.monthHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.monthHeader")}</TableHead>
                     <TableHead className="text-right">
                       {t("investments:snapshotsCard.principalHeader")}
                     </TableHead>
@@ -514,9 +427,7 @@ export function TimeDepositDetail({
                     <TableHead className="text-right">
                       {t("investments:snapshotsCard.totalValueHeader")}
                     </TableHead>
-                    <TableHead>
-                      {t("investments:snapshotsCard.notesHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.notesHeader")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -592,18 +503,12 @@ export function TimeDepositDetail({
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>
-                          {t("investments:transactions.dateHeader")}
-                        </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.typeHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.dateHeader")}</TableHead>
+                        <TableHead>{t("investments:transactions.typeHeader")}</TableHead>
                         <TableHead className="text-right">
                           {t("investments:transactions.cashImpactHeader")}
                         </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.notesHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.notesHeader")}</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>

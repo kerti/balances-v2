@@ -3,10 +3,7 @@ import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { LifecycleGroup } from "@/lib/lifecycle";
 import type { SortDir } from "@/lib/sort";
-import type {
-  CreateImportArgs,
-  CreateImportResult,
-} from "@/hooks/snapshotImport";
+import type { CreateImportArgs, CreateImportResult } from "@/hooks/snapshotImport";
 
 // The presentation-neutral shape the core reads off a position's latest
 // snapshot. A descriptor projects its list item down to this; the core owns how
@@ -24,11 +21,7 @@ export type PositionListQuery<T> = {
   error: unknown;
 };
 
-export type PositionDeleteMutation = UseMutationResult<
-  unknown,
-  unknown,
-  string
->;
+export type PositionDeleteMutation = UseMutationResult<unknown, unknown, string>;
 export type PositionImportMutation = UseMutationResult<
   CreateImportResult,
   unknown,

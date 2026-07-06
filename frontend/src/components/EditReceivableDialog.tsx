@@ -26,11 +26,7 @@ function toForm(r: Receivable) {
   };
 }
 
-export function EditReceivableDialog({
-  open,
-  onOpenChange,
-  receivable,
-}: Props) {
+export function EditReceivableDialog({ open, onOpenChange, receivable }: Props) {
   const { t } = useTranslation(["receivables", "common"]);
   const mutation = useUpdateReceivable(receivable.id);
   const { data: user } = useSession();
@@ -45,8 +41,7 @@ export function EditReceivableDialog({
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         counterparty_name: form.counterparty_name,
         due_date: form.due_date || null,
       },
@@ -67,9 +62,7 @@ export function EditReceivableDialog({
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_r_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_r_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_r_display_name"
           required
@@ -79,23 +72,17 @@ export function EditReceivableDialog({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_r_counterparty">
-          {t("receivables:fields.counterparty")}
-        </Label>
+        <Label htmlFor="edit_r_counterparty">{t("receivables:fields.counterparty")}</Label>
         <Input
           id="edit_r_counterparty"
           required
           value={form.counterparty_name}
-          onChange={(e) =>
-            setForm({ ...form, counterparty_name: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, counterparty_name: e.target.value })}
         />
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_r_due_date">
-          {t("receivables:fields.dueDate")}
-        </Label>
+        <Label htmlFor="edit_r_due_date">{t("receivables:fields.dueDate")}</Label>
         <Input
           id="edit_r_due_date"
           type="date"
@@ -134,16 +121,12 @@ export function EditReceivableDialog({
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -151,9 +134,7 @@ export function EditReceivableDialog({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_r_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_r_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_r_description"
           value={form.description}

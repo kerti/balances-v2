@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportArgs,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type {
   Bond,
   RiskProfile,
@@ -94,8 +91,7 @@ export function useUpdateStock(id: string) {
 export function useDeleteStock() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/investments/stocks/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/investments/stocks/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
     },
@@ -175,8 +171,7 @@ export function useUpdateMutualFund(id: string) {
 export function useDeleteMutualFund() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/investments/mutual-funds/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/investments/mutual-funds/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
     },
@@ -256,8 +251,7 @@ export function useUpdateGold(id: string) {
 export function useDeleteGold() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/investments/golds/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/investments/golds/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["golds"] });
     },
@@ -350,8 +344,7 @@ export function useUpdateBond(id: string) {
 export function useDeleteBond() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/investments/bonds/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/investments/bonds/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
     },
@@ -455,13 +448,10 @@ export function useLinkRolloverSuccessor(sourceId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (successorId: string) =>
-      api<TimeDeposit>(
-        `/api/investments/time-deposits/${sourceId}/rollover-successor`,
-        {
-          method: "POST",
-          body: JSON.stringify({ successor_id: successorId }),
-        },
-      ),
+      api<TimeDeposit>(`/api/investments/time-deposits/${sourceId}/rollover-successor`, {
+        method: "POST",
+        body: JSON.stringify({ successor_id: successorId }),
+      }),
     onSuccess: (_data, successorId) => {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
       qc.invalidateQueries({ queryKey: ["time-deposits", sourceId] });
@@ -473,8 +463,7 @@ export function useLinkRolloverSuccessor(sourceId: string) {
 export function useDeleteTimeDeposit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/investments/time-deposits/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/investments/time-deposits/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
     },

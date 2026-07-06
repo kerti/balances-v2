@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportArgs,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Vehicle, VehicleListItem } from "@/api/types";
 
 export type CreateVehiclePayload = {
@@ -84,8 +81,7 @@ export function useUpdateVehicle(id: string) {
 export function useImportCreateVehicle() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: CreateImportArgs) =>
-      postCreateImport("/api/vehicles", args.file, args.mode),
+    mutationFn: (args: CreateImportArgs) => postCreateImport("/api/vehicles", args.file, args.mode),
     onSuccess: (result) => {
       if (result.committed) {
         qc.invalidateQueries({ queryKey: ["vehicles"] });
@@ -97,8 +93,7 @@ export function useImportCreateVehicle() {
 export function useDeleteVehicle() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/vehicles/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/vehicles/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
     },

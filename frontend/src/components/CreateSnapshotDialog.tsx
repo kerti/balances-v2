@@ -15,12 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
-import {
-  thisYearMonth,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
@@ -135,9 +130,7 @@ export function CreateSnapshotDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("snapshot.createTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("snapshot.createDescription", { currency })}
-          </DialogDescription>
+          <DialogDescription>{t("snapshot.createDescription", { currency })}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
@@ -149,9 +142,7 @@ export function CreateSnapshotDialog<TResult>({
                 required
                 max={thisYearMonth()}
                 value={form.year_month}
-                onChange={(e) =>
-                  setForm({ ...form, year_month: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, year_month: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -162,9 +153,7 @@ export function CreateSnapshotDialog<TResult>({
                 min={monthStartDate(form.year_month)}
                 max={monthEndDateCapped(form.year_month)}
                 value={form.as_of_date}
-                onChange={(e) =>
-                  setForm({ ...form, as_of_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
               />
             </div>
           </div>
@@ -202,9 +191,7 @@ export function CreateSnapshotDialog<TResult>({
                       amount: formatCurrency(s.amount, currency),
                       magnitude,
                       months: s.monthsElapsed,
-                      anchor: formatYearMonth(
-                        s.anchorYearMonth + "-01T00:00:00Z",
-                      ),
+                      anchor: formatYearMonth(s.anchorYearMonth + "-01T00:00:00Z"),
                     })}
                   </span>
                   <Button
@@ -235,17 +222,13 @@ export function CreateSnapshotDialog<TResult>({
             <Input
               id="description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("snapshot.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>

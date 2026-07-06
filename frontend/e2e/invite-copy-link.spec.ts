@@ -19,36 +19,28 @@ test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 // copy-link panel is the affordance. The email_sent=false toast itself can't be
 // exercised against this real stack (NoopMailer never errors); the backend
 // best-effort test guards that branch.
-test(
-  "invite flow surfaces a copyable accept link",
-  { tag: "@smoke" },
-  async ({ page }) => {
-    await page.goto("/settings");
+test("invite flow surfaces a copyable accept link", { tag: "@smoke" }, async ({ page }) => {
+  await page.goto("/settings");
 
-    const inviteEmail = `e2e-invitee-${Date.now()}@example.com`;
-    await page.getByLabel("Email address").fill(inviteEmail);
-    await page.getByRole("button", { name: "Send invitation" }).click();
+  const inviteEmail = `e2e-invitee-${Date.now()}@example.com`;
+  await page.getByLabel("Email address").fill(inviteEmail);
+  await page.getByRole("button", { name: "Send invitation" }).click();
 
-    // Result block: the accept URL is rendered for manual sharing.
-    await expect(
-      page.getByText(`Invitation sent to ${inviteEmail}`),
-    ).toBeVisible();
-    const acceptUrl = await page.getByTestId("invite-accept-url").innerText();
-    // The e2e backend runs AUTH_LOCAL_ENABLED=true, so the invite link is the SPA
-    // set-password route (ADR-0039/#281), not the Google /start URL.
-    expect(acceptUrl).toContain("/accept?token=");
+  // Result block: the accept URL is rendered for manual sharing.
+  await expect(page.getByText(`Invitation sent to ${inviteEmail}`)).toBeVisible();
+  const acceptUrl = await page.getByTestId("invite-accept-url").innerText();
+  // The e2e backend runs AUTH_LOCAL_ENABLED=true, so the invite link is the SPA
+  // set-password route (ADR-0039/#281), not the Google /start URL.
+  expect(acceptUrl).toContain("/accept?token=");
 
-    const copyButton = page.getByTestId("copy-invite-link");
-    await expect(copyButton).toBeVisible();
-    await copyButton.click();
-    await expect(copyButton).toHaveText("Copied!");
+  const copyButton = page.getByTestId("copy-invite-link");
+  await expect(copyButton).toBeVisible();
+  await copyButton.click();
+  await expect(copyButton).toHaveText("Copied!");
 
-    const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe(acceptUrl);
+  const clipboard = await page.evaluate(() => navigator.clipboard.readText());
+  expect(clipboard).toBe(acceptUrl);
 
-    // email_sent=true (NoopMailer): no failed-send toast nags the inviter.
-    await expect(
-      page.getByText("the email couldn't be sent", { exact: false }),
-    ).toHaveCount(0);
-  },
-);
+  // email_sent=true (NoopMailer): no failed-send toast nags the inviter.
+  await expect(page.getByText("the email couldn't be sent", { exact: false })).toHaveCount(0);
+});

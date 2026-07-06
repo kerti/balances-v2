@@ -9,10 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  InvestmentPieChart,
-  type PieSlice,
-} from "@/components/InvestmentPieChart";
+import { InvestmentPieChart, type PieSlice } from "@/components/InvestmentPieChart";
 import { TagBadge } from "@/components/TagBadge";
 import { useTags, useTagBreakdown } from "@/hooks/useTags";
 import { aggregateTagBreakdown, type TagCell } from "@/lib/tagBreakdown";
@@ -33,8 +30,7 @@ export function TagsScreen() {
   const [checked, setChecked] = useState<Record<string, Set<string>>>({});
 
   const untaggedLabel = t("report.untagged");
-  const breakdowns =
-    rows && tags ? aggregateTagBreakdown(rows, tags, untaggedLabel) : [];
+  const breakdowns = rows && tags ? aggregateTagBreakdown(rows, tags, untaggedLabel) : [];
 
   function isChecked(currency: string, key: string) {
     return checked[currency]?.has(key) ?? true;
@@ -53,9 +49,7 @@ export function TagsScreen() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("report.title")}
-        </h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("report.title")}</h1>
         <p className="text-sm text-muted-foreground">{t("report.subtitle")}</p>
       </div>
 
@@ -83,26 +77,16 @@ export function TagsScreen() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <InvestmentPieChart
-                slices={slices}
-                currency={bd.currency}
-                legendPosition="right"
-              />
+              <InvestmentPieChart slices={slices} currency={bd.currency} legendPosition="right" />
 
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-8" />
                     <TableHead>{t("report.col.tag")}</TableHead>
-                    <TableHead className="text-right">
-                      {t("report.col.holdings")}
-                    </TableHead>
-                    <TableHead className="text-right">
-                      {t("report.col.liabilities")}
-                    </TableHead>
-                    <TableHead className="text-right">
-                      {t("report.col.net")}
-                    </TableHead>
+                    <TableHead className="text-right">{t("report.col.holdings")}</TableHead>
+                    <TableHead className="text-right">{t("report.col.liabilities")}</TableHead>
+                    <TableHead className="text-right">{t("report.col.net")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -124,9 +108,7 @@ export function TagsScreen() {
                           <TagBadge name={c.name} color={c.color} />
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {c.holdings > 0
-                            ? formatCurrency(String(c.holdings), bd.currency)
-                            : "—"}
+                          {c.holdings > 0 ? formatCurrency(String(c.holdings), bd.currency) : "—"}
                         </TableCell>
                         <TableCell className="text-right tabular-nums text-destructive">
                           {c.liabilities > 0
@@ -151,10 +133,7 @@ export function TagsScreen() {
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {formatCurrency(
-                        String(bd.totalHoldings - bd.totalLiabilities),
-                        bd.currency,
-                      )}
+                      {formatCurrency(String(bd.totalHoldings - bd.totalLiabilities), bd.currency)}
                     </TableCell>
                   </TableRow>
                 </TableBody>

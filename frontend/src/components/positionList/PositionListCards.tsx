@@ -26,10 +26,7 @@ export function PositionListCards<T>({
         <Card
           key={row.id}
           data-testid={`${testIdPrefix}-card`}
-          className={cn(
-            "cursor-pointer",
-            row.terminated && "text-muted-foreground",
-          )}
+          className={cn("cursor-pointer", row.terminated && "text-muted-foreground")}
           onClick={() => onSelect(row.id)}
         >
           <CardContent className="flex items-start justify-between gap-3 p-4">

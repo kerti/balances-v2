@@ -13,10 +13,7 @@
 // quantity is DECIMAL(20,8) on the wire, so the result rounds to 8dp with
 // trailing zeros trimmed (so "0.05000000" shows as "0.05").
 
-export function deriveFeeQuantity(
-  amount: string,
-  pricePerUnit: string,
-): string | null {
+export function deriveFeeQuantity(amount: string, pricePerUnit: string): string | null {
   if (!amount || !pricePerUnit) return null;
   const a = Number(amount);
   const p = Number(pricePerUnit);

@@ -5,13 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/api/client";
 import { errorMessage } from "@/lib/errorMessage";
 import { formatDateTime } from "@/lib/format";
@@ -95,16 +89,12 @@ export function InviteForm() {
         </form>
 
         {mutation.error && (
-          <p className="mt-3 text-sm text-destructive">
-            {errorMessage(mutation.error)}
-          </p>
+          <p className="mt-3 text-sm text-destructive">{errorMessage(mutation.error)}</p>
         )}
 
         {result && (
           <div className="mt-4 p-3 rounded-md bg-muted text-sm space-y-2">
-            <p className="font-medium">
-              {t("invite.sentTo", { email: result.invited_email })}
-            </p>
+            <p className="font-medium">{t("invite.sentTo", { email: result.invited_email })}</p>
             <p className="text-muted-foreground">
               {t("invite.expires", { when: formatDateTime(result.expires_at) })}
             </p>

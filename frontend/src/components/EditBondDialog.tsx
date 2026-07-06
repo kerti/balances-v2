@@ -8,13 +8,7 @@ import { preferredName } from "@/lib/names";
 import { useSession } from "@/hooks/useSession";
 import { RiskProfileSelect } from "@/components/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/PositionFormDialog";
-import type {
-  Bond,
-  BondListItem,
-  BondType,
-  CouponFrequency,
-  CouponDisposition,
-} from "@/api/types";
+import type { Bond, BondListItem, BondType, CouponFrequency, CouponDisposition } from "@/api/types";
 
 type Props = {
   open: boolean;
@@ -56,8 +50,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         bond_type: form.bond_type,
         series_code: form.series_code.trim() || null,
@@ -87,9 +80,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
     >
       <div className="space-y-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_bond_display_name">
-            {t("common:fields.displayName")}
-          </Label>
+          <Label htmlFor="edit_bond_display_name">{t("common:fields.displayName")}</Label>
           <Input
             id="edit_bond_display_name"
             required
@@ -99,21 +90,15 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_bond_series_code">
-              {t("investments:bond.fields.seriesCode")}
-            </Label>
+            <Label htmlFor="edit_bond_series_code">{t("investments:bond.fields.seriesCode")}</Label>
             <Input
               id="edit_bond_series_code"
               value={form.series_code}
-              onChange={(e) =>
-                setForm({ ...form, series_code: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, series_code: e.target.value })}
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="edit_bond_issuer">
-              {t("investments:bond.fields.issuer")}
-            </Label>
+            <Label htmlFor="edit_bond_issuer">{t("investments:bond.fields.issuer")}</Label>
             <Input
               id="edit_bond_issuer"
               required
@@ -123,9 +108,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_bond_description">
-            {t("common:fields.description")}
-          </Label>
+          <Label htmlFor="edit_bond_description">{t("common:fields.description")}</Label>
           <Input
             id="edit_bond_description"
             value={form.description}
@@ -136,20 +119,14 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
 
       <div className="space-y-3 border-t pt-4">
         <div className="grid gap-2">
-          <Label htmlFor="edit_bond_type">
-            {t("investments:bond.fields.bondType")}
-          </Label>
+          <Label htmlFor="edit_bond_type">{t("investments:bond.fields.bondType")}</Label>
           <select
             id="edit_bond_type"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.bond_type}
-            onChange={(e) =>
-              setForm({ ...form, bond_type: e.target.value as BondType })
-            }
+            onChange={(e) => setForm({ ...form, bond_type: e.target.value as BondType })}
           >
-            <option value="govt_primary">
-              {t("investments:bond.bondType.govt_primary")}
-            </option>
+            <option value="govt_primary">{t("investments:bond.bondType.govt_primary")}</option>
             <option value="secondary_market">
               {t("investments:bond.bondType.secondary_market")}
             </option>
@@ -162,17 +139,13 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
       <div className="space-y-3 border-t pt-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_bond_coupon_rate">
-              {t("investments:bond.fields.couponRate")}
-            </Label>
+            <Label htmlFor="edit_bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
             <Input
               id="edit_bond_coupon_rate"
               required
               inputMode="decimal"
               value={form.coupon_rate}
-              onChange={(e) =>
-                setForm({ ...form, coupon_rate: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, coupon_rate: e.target.value })}
             />
           </div>
           <div className="grid gap-2">
@@ -190,18 +163,12 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
                 })
               }
             >
-              <option value="monthly">
-                {t("investments:bond.couponFrequency.monthly")}
-              </option>
-              <option value="quarterly">
-                {t("investments:bond.couponFrequency.quarterly")}
-              </option>
+              <option value="monthly">{t("investments:bond.couponFrequency.monthly")}</option>
+              <option value="quarterly">{t("investments:bond.couponFrequency.quarterly")}</option>
               <option value="semi_annual">
                 {t("investments:bond.couponFrequency.semi_annual")}
               </option>
-              <option value="annual">
-                {t("investments:bond.couponFrequency.annual")}
-              </option>
+              <option value="annual">{t("investments:bond.couponFrequency.annual")}</option>
             </select>
           </div>
         </div>
@@ -220,30 +187,22 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
               })
             }
           >
-            <option value="pays_out">
-              {t("investments:bond.couponDisposition.pays_out")}
-            </option>
-            <option value="accrues">
-              {t("investments:bond.couponDisposition.accrues")}
-            </option>
+            <option value="pays_out">{t("investments:bond.couponDisposition.pays_out")}</option>
+            <option value="accrues">{t("investments:bond.couponDisposition.accrues")}</option>
           </select>
           <p className="text-xs text-muted-foreground">
             {t("investments:bond.couponDisposition.hint")}
           </p>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_bond_maturity">
-            {t("investments:bond.fields.maturityDate")}
-          </Label>
+          <Label htmlFor="edit_bond_maturity">{t("investments:bond.fields.maturityDate")}</Label>
           <Input
             id="edit_bond_maturity"
             required
             type="date"
             max="9999-12-31"
             value={form.maturity_date}
-            onChange={(e) =>
-              setForm({ ...form, maturity_date: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
           />
         </div>
       </div>
@@ -278,16 +237,12 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
               aria-label={t("investments:ownership.soleOwnerAria")}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={effectiveSoleOwnerID ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, sole_owner_user_id: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
             >
               {(members ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {preferredName(m)}
-                  {user && m.id === user.id
-                    ? t("common:ownership.youSuffix")
-                    : ""}
+                  {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
                 </option>
               ))}
             </select>

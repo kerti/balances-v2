@@ -65,9 +65,7 @@ describe("goldDescriptor (conformance)", () => {
       http.get("/api/investments/golds", () => HttpResponse.json([goldItem])),
       http.get("/api/investments/time-series", () => HttpResponse.json([])),
     );
-    renderWithProviders(
-      <PositionListScreen descriptor={goldDescriptor} onSelect={vi.fn()} />,
-    );
+    renderWithProviders(<PositionListScreen descriptor={goldDescriptor} onSelect={vi.fn()} />);
 
     const row = await screen.findByTestId("gold-row");
     // Shared surface: name, status, value.
@@ -81,9 +79,7 @@ describe("goldDescriptor (conformance)", () => {
     // Activity column: ledger transaction count.
     expect(within(row).getByText("3 transactions")).toBeInTheDocument();
     // Declared subtype header + the cost/P-L headline slot.
-    expect(
-      screen.getByRole("columnheader", { name: /Form & purity/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Form & purity/ })).toBeInTheDocument();
     expect(screen.getByTestId("gold-total")).toBeInTheDocument();
   });
 });

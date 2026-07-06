@@ -21,11 +21,7 @@ type Props<TResult> = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction: InvestmentTransaction;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateTransactionMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateTransactionMutationVariables>;
 };
 
 const TITLE_KEYS: Record<string, string> = {
@@ -48,8 +44,7 @@ export function EditCashIncomeTransactionDialog<TResult>({
   });
 
   const titleKey =
-    TITLE_KEYS[transaction.transaction_type] ??
-    "investments:cashIncome.editIncomeTitle";
+    TITLE_KEYS[transaction.transaction_type] ?? "investments:cashIncome.editIncomeTitle";
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -79,25 +74,19 @@ export function EditCashIncomeTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t(titleKey)}</DialogTitle>
-          <DialogDescription>
-            {t("investments:cashIncome.editDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:cashIncome.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="edit_cash_date">
-                {t("investments:cashIncome.paymentDateLabel")}
-              </Label>
+              <Label htmlFor="edit_cash_date">{t("investments:cashIncome.paymentDateLabel")}</Label>
               <Input
                 id="edit_cash_date"
                 type="date"
                 required
                 max={todayDate()}
                 value={form.transaction_date}
-                onChange={(e) =>
-                  setForm({ ...form, transaction_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -117,36 +106,24 @@ export function EditCashIncomeTransactionDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_cash_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_cash_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_cash_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.amount}>
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

@@ -44,9 +44,7 @@ describe("aggregateListPositions — byCurrency totals", () => {
         cost: 9999,
       }),
     ]);
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 1000, cost: 800, pl: 200 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 1000, cost: 800, pl: 200 }]);
     expect(r.count).toBe(1);
   });
 
@@ -57,9 +55,7 @@ describe("aggregateListPositions — byCurrency totals", () => {
     const r = aggregateListPositions([
       pos({ id: "a", currency: "IDR", latestValue: null, cost: 500 }),
     ]);
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 0, cost: 500, pl: -500 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 0, cost: 500, pl: -500 }]);
     expect(r.count).toBe(0);
   });
 
@@ -274,9 +270,7 @@ describe("aggregateListPositions — time series", () => {
       }),
     ]);
     // Closed position is excluded from the headline (active-only).
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 100, cost: 100, pl: 0 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 100, cost: 100, pl: 0 }]);
     expect(r.count).toBe(1);
     // Appears in Jan (held). From its termination month (Feb) on, it's gone —
     // the active position alone carries Feb + Mar. No phantom carry of the

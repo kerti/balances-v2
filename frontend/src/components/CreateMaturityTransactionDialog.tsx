@@ -40,11 +40,7 @@ type Props<TResult> = {
   // placement → no lower bound, and the backend leaves bonds unbounded).
   placementDate?: string;
   maturityDate?: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentTransactionPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentTransactionPayload>;
 };
 
 // The Maturity event is dated at maturityDate, the day the deposit actually
@@ -100,9 +96,7 @@ export function CreateMaturityTransactionDialog<TResult>({
 }: Props<TResult>) {
   const { t } = useTranslation(["investments", "common"]);
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(() =>
-    emptyForm(rolloverPolicy, maturityDate),
-  );
+  const [form, setForm] = useState(() => emptyForm(rolloverPolicy, maturityDate));
 
   const totalReceived = (() => {
     const p = Number(form.principal_amount);
@@ -149,15 +143,11 @@ export function CreateMaturityTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("investments:maturityTxn.createTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("investments:maturityTxn.createDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:maturityTxn.createDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="mat_date">
-              {t("investments:maturityTxn.maturityDateLabel")}
-            </Label>
+            <Label htmlFor="mat_date">{t("investments:maturityTxn.maturityDateLabel")}</Label>
             <Input
               id="mat_date"
               type="date"
@@ -165,9 +155,7 @@ export function CreateMaturityTransactionDialog<TResult>({
               min={placementDate || undefined}
               max={maxMaturityDate(maturityDate)}
               value={form.transaction_date}
-              onChange={(e) =>
-                setForm({ ...form, transaction_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
             />
           </div>
 
@@ -181,9 +169,7 @@ export function CreateMaturityTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.principal_amount}
-                onChange={(e) =>
-                  setForm({ ...form, principal_amount: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
                 placeholder={t("investments:maturityTxn.principalPlaceholder")}
               />
             </div>
@@ -196,9 +182,7 @@ export function CreateMaturityTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.interest_amount}
-                onChange={(e) =>
-                  setForm({ ...form, interest_amount: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, interest_amount: e.target.value })}
                 placeholder={t("investments:maturityTxn.interestPlaceholder")}
               />
             </div>
@@ -209,9 +193,7 @@ export function CreateMaturityTransactionDialog<TResult>({
               {t("investments:maturityTxn.totalAtMaturityLabel")}
             </span>{" "}
             <span className="font-medium">
-              {totalReceived !== null
-                ? formatCurrency(totalReceived, currency)
-                : "—"}
+              {totalReceived !== null ? formatCurrency(totalReceived, currency) : "—"}
             </span>
           </div>
 
@@ -231,12 +213,8 @@ export function CreateMaturityTransactionDialog<TResult>({
                   })
                 }
               >
-                <option value="cash_out">
-                  {t("investments:disposition.cashOut")}
-                </option>
-                <option value="rolled_to_new">
-                  {t("investments:disposition.rolledToNew")}
-                </option>
+                <option value="cash_out">{t("investments:disposition.cashOut")}</option>
+                <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
               </select>
             </div>
             <div className="grid gap-2">
@@ -254,34 +232,24 @@ export function CreateMaturityTransactionDialog<TResult>({
                   })
                 }
               >
-                <option value="cash_out">
-                  {t("investments:disposition.cashOut")}
-                </option>
-                <option value="rolled_to_new">
-                  {t("investments:disposition.rolledToNew")}
-                </option>
+                <option value="cash_out">{t("investments:disposition.cashOut")}</option>
+                <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
               </select>
             </div>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="mat_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="mat_description">{t("common:fields.description")}</Label>
             <Input
               id="mat_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("investments:maturityTxn.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
@@ -290,11 +258,7 @@ export function CreateMaturityTransactionDialog<TResult>({
             </Button>
             <Button
               type="submit"
-              disabled={
-                mutation.isPending ||
-                !form.principal_amount ||
-                !form.interest_amount
-              }
+              disabled={mutation.isPending || !form.principal_amount || !form.interest_amount}
             >
               {mutation.isPending
                 ? t("common:actions.saving")

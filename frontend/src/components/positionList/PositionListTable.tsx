@@ -47,10 +47,7 @@ export function PositionListTable<T>({
                     onSort={() => onToggleSort(col.sortKey!)}
                   />
                 ) : (
-                  <TableHead
-                    key={col.id}
-                    className={cn(col.align === "right" && "text-right")}
-                  >
+                  <TableHead key={col.id} className={cn(col.align === "right" && "text-right")}>
                     {col.label}
                   </TableHead>
                 ),
@@ -63,18 +60,13 @@ export function PositionListTable<T>({
               <TableRow
                 key={row.id}
                 data-testid={`${testIdPrefix}-row`}
-                className={cn(
-                  "cursor-pointer",
-                  row.terminated && "text-muted-foreground",
-                )}
+                className={cn("cursor-pointer", row.terminated && "text-muted-foreground")}
                 onClick={() => onSelect(row.id)}
               >
                 {columns.map((col) => (
                   <TableCell
                     key={col.id}
-                    className={cn(
-                      col.align === "right" && "text-right tabular-nums",
-                    )}
+                    className={cn(col.align === "right" && "text-right tabular-nums")}
                   >
                     {col.cell(row)}
                   </TableCell>

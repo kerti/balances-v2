@@ -28,11 +28,7 @@ type Props<TResult> = {
   onOpenChange: (open: boolean) => void;
   transaction: InvestmentTransaction;
   quantityUnit: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateTransactionMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateTransactionMutationVariables>;
 };
 
 function deriveAmount(quantity: string, pricePerUnit: string): string | null {
@@ -90,30 +86,20 @@ export function EditTradeTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t(
-              isBuy
-                ? "investments:trade.editBuyTitle"
-                : "investments:trade.editSellTitle",
-            )}
+            {t(isBuy ? "investments:trade.editBuyTitle" : "investments:trade.editSellTitle")}
           </DialogTitle>
-          <DialogDescription>
-            {t("investments:trade.editDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:trade.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_trade_date">
-              {t("investments:trade.tradeDateLabel")}
-            </Label>
+            <Label htmlFor="edit_trade_date">{t("investments:trade.tradeDateLabel")}</Label>
             <Input
               id="edit_trade_date"
               type="date"
               required
               max={todayDate()}
               value={form.transaction_date}
-              onChange={(e) =>
-                setForm({ ...form, transaction_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
             />
           </div>
 
@@ -141,62 +127,39 @@ export function EditTradeTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.price_per_unit}
-                onChange={(e) =>
-                  setForm({ ...form, price_per_unit: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
               />
             </div>
           </div>
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t(
-                isBuy
-                  ? "investments:trade.cashOutLabel"
-                  : "investments:trade.cashInLabel",
-              )}
+              {t(isBuy ? "investments:trade.cashOutLabel" : "investments:trade.cashInLabel")}
             </span>{" "}
             <span className="font-medium">
-              {derivedAmount !== null
-                ? formatCurrency(derivedAmount, transaction.currency)
-                : "—"}
+              {derivedAmount !== null ? formatCurrency(derivedAmount, transaction.currency) : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_trade_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_trade_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_trade_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || derivedAmount === null}
-            >
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+            <Button type="submit" disabled={mutation.isPending || derivedAmount === null}>
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

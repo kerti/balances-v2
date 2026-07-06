@@ -80,8 +80,7 @@ export function AppSidebar() {
   // detail page beneath it (e.g. Bank Accounts active on /assets/bank-accounts
   // and /assets/bank-accounts/:id). The dashboard's `/` is exact-only — the
   // prefix test below reduces to an equality check for it.
-  const leafActive = (to: string) =>
-    pathname === to || pathname.startsWith(to + "/");
+  const leafActive = (to: string) => pathname === to || pathname.startsWith(to + "/");
 
   return (
     <Sidebar>
@@ -103,11 +102,7 @@ export function AppSidebar() {
                     className={navItemClass}
                     // A group's own button highlights only on its exact home
                     // path; its children own their own active state.
-                    isActive={
-                      section.children
-                        ? pathname === section.to
-                        : leafActive(section.to)
-                    }
+                    isActive={section.children ? pathname === section.to : leafActive(section.to)}
                   >
                     <Link to={section.to} onClick={close}>
                       {t(section.labelKey)}

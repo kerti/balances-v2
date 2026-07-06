@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportArgs,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Liability, LiabilityListItem } from "@/api/types";
 
 export type CreateLiabilityPayload = {
@@ -102,8 +99,7 @@ export function useImportCreateLiability() {
 export function useDeleteLiability() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/liabilities/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/liabilities/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
     },

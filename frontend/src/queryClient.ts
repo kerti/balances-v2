@@ -6,10 +6,7 @@ import { ApiError } from "@/api/client";
 // unauthorized) — identical bytes will fail identically, so retrying just
 // delays the error reaching the UI. Network errors and 5xx are transient and
 // keep the default retry budget (#360).
-export function shouldRetryQuery(
-  failureCount: number,
-  error: unknown,
-): boolean {
+export function shouldRetryQuery(failureCount: number, error: unknown): boolean {
   if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
     return false;
   }

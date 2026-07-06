@@ -1,13 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/errorMessage";
@@ -108,13 +102,9 @@ export function RestoreCard() {
               disabled={previewing}
               data-testid="restore-choose-button"
             >
-              {previewing
-                ? t("data.restore.checking")
-                : t("data.restore.choose")}
+              {previewing ? t("data.restore.checking") : t("data.restore.choose")}
             </Button>
-            <p className="text-sm text-muted-foreground">
-              {t("data.restore.chooseHint")}
-            </p>
+            <p className="text-sm text-muted-foreground">{t("data.restore.chooseHint")}</p>
           </div>
         )}
 
@@ -129,8 +119,7 @@ export function RestoreCard() {
               </p>
             </div>
 
-            {preview.backup.source_format_version <
-              preview.backup.format_version && (
+            {preview.backup.source_format_version < preview.backup.format_version && (
               <div
                 className="rounded-md border bg-muted p-3 text-sm text-muted-foreground"
                 data-testid="restore-older-version"
@@ -189,9 +178,7 @@ export function RestoreCard() {
                 disabled={!confirmed || committing}
                 data-testid="restore-commit-button"
               >
-                {committing
-                  ? t("data.restore.restoring")
-                  : t("data.restore.commit")}
+                {committing ? t("data.restore.restoring") : t("data.restore.commit")}
               </Button>
               <Button variant="ghost" onClick={reset} disabled={committing}>
                 {t("data.restore.cancel")}
@@ -199,10 +186,7 @@ export function RestoreCard() {
             </div>
 
             {committing && (
-              <p
-                className="text-sm text-muted-foreground"
-                data-testid="restore-progress"
-              >
+              <p className="text-sm text-muted-foreground" data-testid="restore-progress">
                 {t("data.restore.dontClose")}
               </p>
             )}

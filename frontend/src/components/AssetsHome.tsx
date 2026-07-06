@@ -16,30 +16,18 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import {
   GroupCategoryStackChart,
   type GroupStackCategory,
 } from "@/components/GroupCategoryStackChart";
-import {
-  InvestmentPieChart,
-  type PieSlice,
-} from "@/components/InvestmentPieChart";
+import { InvestmentPieChart, type PieSlice } from "@/components/InvestmentPieChart";
 import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useProperties } from "@/hooks/useProperties";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useAssetTimeSeries } from "@/hooks/useAssetTimeSeries";
-import {
-  aggregateGroupHome,
-  type GroupPosition,
-} from "@/lib/groupHomeAggregates";
+import { aggregateGroupHome, type GroupPosition } from "@/lib/groupHomeAggregates";
 import { formatCurrency } from "@/lib/format";
 import type {
   Asset,
@@ -51,11 +39,7 @@ import type {
 
 type AssetCategory = "bankAccount" | "property" | "vehicle";
 
-const ASSET_CATEGORIES: AssetCategory[] = [
-  "bankAccount",
-  "property",
-  "vehicle",
-];
+const ASSET_CATEGORIES: AssetCategory[] = ["bankAccount", "property", "vehicle"];
 
 // Distinct Tailwind 500-level hues, same palette family as the investment
 // category fills so the app reads consistently. Bank = emerald (cash tone),
@@ -81,10 +65,7 @@ export function AssetsHome() {
 
   const positions = useMemo<GroupPosition[]>(() => {
     const out: GroupPosition[] = [];
-    const push = (
-      items: AssetListItem[] | undefined,
-      category: AssetCategory,
-    ) => {
+    const push = (items: AssetListItem[] | undefined, category: AssetCategory) => {
       for (const it of items ?? []) {
         const ts = timeSeries.byId.get(it.asset.id);
         out.push({
@@ -92,9 +73,7 @@ export function AssetsHome() {
           currency: it.asset.native_currency,
           status: it.asset.status,
           terminated_at: it.asset.terminated_at,
-          latestValue: it.latest_snapshot
-            ? Number(it.latest_snapshot.amount)
-            : null,
+          latestValue: it.latest_snapshot ? Number(it.latest_snapshot.amount) : null,
           snapshots: ts?.snapshots ?? [],
           category,
         });
@@ -106,13 +85,9 @@ export function AssetsHome() {
     return out;
   }, [bankAccounts.data, properties.data, vehicles.data, timeSeries.byId]);
 
-  const aggregates = useMemo(
-    () => aggregateGroupHome(positions, ASSET_CATEGORIES),
-    [positions],
-  );
+  const aggregates = useMemo(() => aggregateGroupHome(positions, ASSET_CATEGORIES), [positions]);
 
-  const anyPending =
-    bankAccounts.isPending || properties.isPending || vehicles.isPending;
+  const anyPending = bankAccounts.isPending || properties.isPending || vehicles.isPending;
   const firstError = bankAccounts.error ?? properties.error ?? vehicles.error;
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);
@@ -126,17 +101,11 @@ export function AssetsHome() {
   return (
     <div className="space-y-6" data-testid="assets-home">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("common:home.assets.title")}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("assets:home.subtitle")}
-        </p>
+        <h1 className="text-2xl font-semibold tracking-tight">{t("common:home.assets.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("assets:home.subtitle")}</p>
       </div>
 
-      {anyPending && (
-        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-      )}
+      {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
       {firstError && (
         <p className="text-sm text-destructive">
@@ -146,10 +115,7 @@ export function AssetsHome() {
         </p>
       )}
 
-      <TotalValueCard
-        aggregates={aggregates.byCurrency}
-        count={aggregates.count}
-      />
+      <TotalValueCard aggregates={aggregates.byCurrency} count={aggregates.count} />
 
       {currencies.map((currency) => (
         <div key={currency} className="space-y-4">
@@ -164,10 +130,7 @@ export function AssetsHome() {
           />
           <CategoryPieCard
             currency={currency}
-            slices={buildCategorySlices(
-              aggregates.categoryPieByCurrency.get(currency) ?? [],
-              t,
-            )}
+            slices={buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t)}
           />
         </div>
       ))}
@@ -177,10 +140,7 @@ export function AssetsHome() {
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
-function buildCategorySlices(
-  pie: { category: string; value: number }[],
-  t: TFn,
-): PieSlice[] {
+function buildCategorySlices(pie: { category: string; value: number }[], t: TFn): PieSlice[] {
   return ASSET_CATEGORIES.map((c) => {
     const found = pie.find((p) => p.category === c);
     return {
@@ -203,9 +163,7 @@ function TotalValueCard({
   if (aggregates.length === 0) return null;
   return (
     <div className="rounded-lg border p-4" data-testid="home-total">
-      <div className="text-sm text-muted-foreground">
-        {t("home.totalValueTitle")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("home.totalValueTitle")}</div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
           <span key={a.currency}>
@@ -234,9 +192,7 @@ function ValueCard({
     <Card data-testid={`home-value-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.valueChartTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.valueChartDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.valueChartDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <SnapshotChart
@@ -266,37 +222,23 @@ function CategoryStackCard({
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryStackTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryStackDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryStackDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
-        <GroupCategoryStackChart
-          series={series}
-          categories={categories}
-          currency={currency}
-        />
+        <GroupCategoryStackChart series={series} categories={categories} currency={currency} />
       </CardContent>
     </Card>
   );
 }
 
-function CategoryPieCard({
-  currency,
-  slices,
-}: {
-  currency: string;
-  slices: PieSlice[];
-}) {
+function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("assets");
   if (slices.every((s) => s.value <= 0)) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryPieTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryPieDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryPieDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <InvestmentPieChart slices={slices} currency={currency} />

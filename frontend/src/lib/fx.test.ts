@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  availableDisplayCurrencies,
-  resolveDisplayRate,
-  convert,
-} from "@/lib/fx";
+import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate } from "@/api/types";
 
 // resolveDisplayRate/availableDisplayCurrencies only read currency/year_month/
@@ -49,16 +45,11 @@ describe("resolveDisplayRate", () => {
   });
 
   it("picks the most recent rate regardless of list order", () => {
-    const unsorted = [
-      rate("USD", "2026-05", "16500"),
-      rate("USD", "2026-03", "16000"),
-    ];
-    expect(resolveDisplayRate(unsorted, "USD", "2026-05-01T00:00:00Z")).toEqual(
-      {
-        rate: 16500,
-        rateMonth: "2026-05-01T00:00:00Z",
-      },
-    );
+    const unsorted = [rate("USD", "2026-05", "16500"), rate("USD", "2026-03", "16000")];
+    expect(resolveDisplayRate(unsorted, "USD", "2026-05-01T00:00:00Z")).toEqual({
+      rate: 16500,
+      rateMonth: "2026-05-01T00:00:00Z",
+    });
   });
 
   it("returns null when no rate exists on or before the month", () => {
@@ -71,18 +62,10 @@ describe("resolveDisplayRate", () => {
 
   it("returns null when the stored rate is non-positive or garbage", () => {
     expect(
-      resolveDisplayRate(
-        [rate("USD", "2026-05", "0")],
-        "USD",
-        "2026-05-01T00:00:00Z",
-      ),
+      resolveDisplayRate([rate("USD", "2026-05", "0")], "USD", "2026-05-01T00:00:00Z"),
     ).toBeNull();
     expect(
-      resolveDisplayRate(
-        [rate("USD", "2026-05", "oops")],
-        "USD",
-        "2026-05-01T00:00:00Z",
-      ),
+      resolveDisplayRate([rate("USD", "2026-05", "oops")], "USD", "2026-05-01T00:00:00Z"),
     ).toBeNull();
   });
 });

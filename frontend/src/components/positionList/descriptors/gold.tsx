@@ -1,10 +1,6 @@
 import { CreateGoldDialog } from "@/components/CreateGoldDialog";
 import { EditGoldDialog } from "@/components/EditGoldDialog";
-import {
-  useGolds,
-  useDeleteGold,
-  useImportCreateGold,
-} from "@/hooks/useInvestments";
+import { useGolds, useDeleteGold, useImportCreateGold } from "@/hooks/useInvestments";
 import { investmentDescriptor } from "@/components/positionList/presets/investment";
 import { formatGoldPurity } from "@/lib/gold";
 import i18n from "@/i18n";

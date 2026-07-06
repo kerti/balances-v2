@@ -31,11 +31,7 @@ export function lifecycleInvalidationKeys(
   return keys;
 }
 
-export function useUpdateLifecycle(
-  group: LifecycleGroup,
-  id: string,
-  listKey: string,
-) {
+export function useUpdateLifecycle(group: LifecycleGroup, id: string, listKey: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: LifecyclePayload) =>

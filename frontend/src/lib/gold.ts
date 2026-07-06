@@ -40,8 +40,6 @@ export const GOLD_PURITY_PRESETS: ReadonlyArray<{
 export function goldPurityPresetKarat(purity: string): number | null {
   const n = Number(purity);
   if (Number.isNaN(n)) return null;
-  const hit = GOLD_PURITY_PRESETS.find(
-    (p) => Math.abs(Number(p.value) - n) < 1e-4,
-  );
+  const hit = GOLD_PURITY_PRESETS.find((p) => Math.abs(Number(p.value) - n) < 1e-4);
   return hit ? hit.karat : null;
 }

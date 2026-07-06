@@ -30,38 +30,28 @@ describe("filenameFromDisposition", () => {
 
   it("extracts a quoted filename", () => {
     expect(
-      filenameFromDisposition(
-        'attachment; filename="household-backup-2026-01-02.json.gz"',
-      ),
+      filenameFromDisposition('attachment; filename="household-backup-2026-01-02.json.gz"'),
     ).toBe("household-backup-2026-01-02.json.gz");
   });
 
   it("extracts an unquoted filename", () => {
     expect(
-      filenameFromDisposition(
-        "attachment; filename=household-backup-2026-01-02.json.gz",
-      ),
+      filenameFromDisposition("attachment; filename=household-backup-2026-01-02.json.gz"),
     ).toBe("household-backup-2026-01-02.json.gz");
   });
 
   it("handles the RFC 5987 filename* form", () => {
     expect(
-      filenameFromDisposition(
-        "attachment; filename*=UTF-8''household-backup-2026-01-02.json.gz",
-      ),
+      filenameFromDisposition("attachment; filename*=UTF-8''household-backup-2026-01-02.json.gz"),
     ).toBe("household-backup-2026-01-02.json.gz");
   });
 
   it("falls back to a date-stamped default when the header is null", () => {
-    expect(filenameFromDisposition(null, ref)).toBe(
-      "household-backup-2026-06-16.json.gz",
-    );
+    expect(filenameFromDisposition(null, ref)).toBe("household-backup-2026-06-16.json.gz");
   });
 
   it("falls back when the header has no filename", () => {
-    expect(filenameFromDisposition("attachment", ref)).toBe(
-      "household-backup-2026-06-16.json.gz",
-    );
+    expect(filenameFromDisposition("attachment", ref)).toBe("household-backup-2026-06-16.json.gz");
   });
 });
 
@@ -85,8 +75,7 @@ describe("downloadBackup", () => {
     const res = new Response(new Blob(["gzipped"]), {
       status: 200,
       headers: {
-        "Content-Disposition":
-          'attachment; filename="household-backup-2026-01-02.json.gz"',
+        "Content-Disposition": 'attachment; filename="household-backup-2026-01-02.json.gz"',
       },
     });
     const fetchMock = vi.fn().mockResolvedValue(res);
@@ -107,16 +96,11 @@ describe("downloadBackup", () => {
 
     await downloadBackup("compacted");
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "/api/backup/export?fidelity=compacted",
-    );
+    expect(fetchMock).toHaveBeenCalledWith("/api/backup/export?fidelity=compacted");
   });
 
   it("throws when the export endpoint answers non-2xx", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response("", { status: 500 })),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 500 })));
     await expect(downloadBackup()).rejects.toThrow("export failed (500)");
   });
 });
@@ -150,9 +134,7 @@ describe("postRestore data layer", () => {
   it("commit posts to the commit endpoint", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(
-        jsonResponse(200, { restored: true, summary: { counts: {} } }),
-      );
+      .mockResolvedValue(jsonResponse(200, { restored: true, summary: { counts: {} } }));
     vi.stubGlobal("fetch", fetchMock);
 
     const res = await postRestoreCommit(backupFile());
@@ -163,11 +145,7 @@ describe("postRestore data layer", () => {
   it("throws an ApiError carrying the ADR-0027 envelope on a non-2xx", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          jsonResponse(403, { code: "NOT_A_MEMBER_OF_BACKUP" }),
-        ),
+      vi.fn().mockResolvedValue(jsonResponse(403, { code: "NOT_A_MEMBER_OF_BACKUP" })),
     );
 
     const err = await postRestorePreview(backupFile()).catch((e) => e);
@@ -177,14 +155,9 @@ describe("postRestore data layer", () => {
   });
 
   it("drops a non-envelope JSON error body (no code field)", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse(500, { oops: true })),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, { oops: true })));
 
-    const err = (await postRestoreCommit(backupFile()).catch(
-      (e) => e,
-    )) as ApiError;
+    const err = (await postRestoreCommit(backupFile()).catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(500);
     // Not an ADR-0027 envelope → body is left undefined so errorMessage() falls
@@ -206,9 +179,7 @@ describe("postRestore data layer", () => {
       ),
     );
 
-    const err = (await postRestoreCommit(backupFile()).catch(
-      (e) => e,
-    )) as ApiError;
+    const err = (await postRestoreCommit(backupFile()).catch((e) => e)) as ApiError;
     expect(err).toBeInstanceOf(ApiError);
     expect(err.status).toBe(502);
     expect(err.body).toBe("<html>502 Bad Gateway</html>");

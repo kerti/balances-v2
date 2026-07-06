@@ -1,21 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { reconcileQuantity } from "@/lib/reconciliation";
-import type {
-  InvestmentSnapshot,
-  InvestmentTransaction,
-  TransactionType,
-} from "@/api/types";
+import type { InvestmentSnapshot, InvestmentTransaction, TransactionType } from "@/api/types";
 
 // reconcileQuantity only reads snapshot.quantity and each transaction's
 // type+quantity, so fixtures carry just those fields (cast past the full
 // wire types — the rest is irrelevant to the calculation).
-const snap = (quantity: string | null): InvestmentSnapshot =>
-  ({ quantity }) as InvestmentSnapshot;
+const snap = (quantity: string | null): InvestmentSnapshot => ({ quantity }) as InvestmentSnapshot;
 
-const txn = (
-  transaction_type: TransactionType,
-  quantity: string | null,
-): InvestmentTransaction =>
+const txn = (transaction_type: TransactionType, quantity: string | null): InvestmentTransaction =>
   ({ transaction_type, quantity }) as InvestmentTransaction;
 
 describe("reconcileQuantity", () => {

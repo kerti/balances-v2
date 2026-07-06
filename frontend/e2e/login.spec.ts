@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from "@playwright/test";
 
 // Drives the REAL OAuth login flow end-to-end: Sign-in link -> /auth/google/start
 // -> mock OIDC authorize -> callback -> minted session -> back to the app. This is
@@ -10,26 +10,28 @@ import { test, expect } from '@playwright/test'
 //
 // Override the project's injected storageState with an empty one so the context
 // starts unauthenticated and the sign-in screen renders first.
-test.use({ storageState: { cookies: [], origins: [] } })
+test.use({ storageState: { cookies: [], origins: [] } });
 
 // covers: INV-JOURNEYS-01
-test('signs in via the mock OIDC provider and lands as Alice', { tag: '@smoke' }, async ({
-  page,
-}) => {
-  await page.goto('/')
+test(
+  "signs in via the mock OIDC provider and lands as Alice",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    await page.goto("/");
 
-  const signIn = page.getByTestId('signin-google')
-  await expect(signIn).toBeVisible()
+    const signIn = page.getByTestId("signin-google");
+    await expect(signIn).toBeVisible();
 
-  // Full-page navigation through the redirect chain; auto-waiting assertions
-  // below cover the async settle back on the e2e frontend origin.
-  await signIn.click()
+    // Full-page navigation through the redirect chain; auto-waiting assertions
+    // below cover the async settle back on the e2e frontend origin.
+    await signIn.click();
 
-  // Authenticated AppShell renders as the seeded Alice.
-  await expect(page.getByText('Alice', { exact: true })).toBeVisible()
-  await expect(page.getByText('alice@example.com')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
-})
+    // Authenticated AppShell renders as the seeded Alice.
+    await expect(page.getByText("Alice", { exact: true })).toBeVisible();
+    await expect(page.getByText("alice@example.com")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  },
+);
 
 // covers: INV-AUTH-09
 // The pre-auth language picker is display-only: choosing a language switches the
@@ -37,21 +39,23 @@ test('signs in via the mock OIDC provider and lands as Alice', { tag: '@smoke' }
 // the backend turns into the oauth_locale seed hint, ADR-0035). It never PATCHes
 // — verified here only as far as the link/copy reacting; the server-side seed is
 // covered by the Go suite.
-test('pre-auth language picker threads the locale onto the start link', { tag: '@smoke' }, async ({
-  page,
-}) => {
-  await page.goto('/')
+test(
+  "pre-auth language picker threads the locale onto the start link",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    await page.goto("/");
 
-  const picker = page.getByTestId('signin-language-select')
-  await expect(picker).toBeVisible()
-  const signIn = page.getByTestId('signin-google')
+    const picker = page.getByTestId("signin-language-select");
+    await expect(picker).toBeVisible();
+    const signIn = page.getByTestId("signin-google");
 
-  await picker.selectOption('id-ID')
-  await expect(signIn).toHaveAttribute('href', /[?&]lng=id-ID/)
-  // The visible UI switches to the chosen language too.
-  await expect(signIn).toHaveText('Lanjutkan dengan Google')
+    await picker.selectOption("id-ID");
+    await expect(signIn).toHaveAttribute("href", /[?&]lng=id-ID/);
+    // The visible UI switches to the chosen language too.
+    await expect(signIn).toHaveText("Lanjutkan dengan Google");
 
-  await picker.selectOption('en-GB')
-  await expect(signIn).toHaveAttribute('href', /[?&]lng=en-GB/)
-  await expect(signIn).toHaveText('Continue with Google')
-})
+    await picker.selectOption("en-GB");
+    await expect(signIn).toHaveAttribute("href", /[?&]lng=en-GB/);
+    await expect(signIn).toHaveText("Continue with Google");
+  },
+);

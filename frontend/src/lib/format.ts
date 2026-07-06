@@ -36,11 +36,7 @@ function resolve(locale: Locale | undefined): Locale {
   return locale ?? activeLocale();
 }
 
-export function formatCurrency(
-  amount: string,
-  currency: string,
-  locale?: Locale,
-): string {
+export function formatCurrency(amount: string, currency: string, locale?: Locale): string {
   const n = Number(amount);
   if (Number.isNaN(n)) return amount;
   const decimals = NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;

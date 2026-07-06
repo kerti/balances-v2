@@ -51,16 +51,11 @@ function triggerDownload(blob: Blob, filename: string) {
 // (the export feature itself) and EraseCard (the "download a backup first"
 // nudge on the erasure confirm step, ADR-0040) — both just want the file on
 // disk, not a preview of its contents.
-export async function downloadBackup(
-  fidelity: Fidelity = "full",
-): Promise<void> {
+export async function downloadBackup(fidelity: Fidelity = "full"): Promise<void> {
   const res = await fetch(`/api/backup/export?fidelity=${fidelity}`);
   if (!res.ok) throw new Error(`export failed (${res.status})`);
   const blob = await res.blob();
-  triggerDownload(
-    blob,
-    filenameFromDisposition(res.headers.get("Content-Disposition")),
-  );
+  triggerDownload(blob, filenameFromDisposition(res.headers.get("Content-Disposition")));
 }
 
 // totalRows sums a section-count map — the single headline number the UI shows
@@ -83,10 +78,7 @@ export function isHouseholdEmpty(counts: Record<string, number>): boolean {
 // envelope, so errorMessage() can translate the backup-specific codes. Unlike
 // the snapshot importer, a 422 here is a real error (too-new format / invalid
 // graph), not a success-shaped result.
-async function postRestore<T>(
-  step: "preview" | "commit",
-  file: File,
-): Promise<T> {
+async function postRestore<T>(step: "preview" | "commit", file: File): Promise<T> {
   const body = new FormData();
   body.append("file", file);
   const res = await fetch(`/api/backup/restore/${step}`, {
@@ -112,11 +104,7 @@ async function postRestore<T>(
         errBody = raw;
       }
     }
-    throw new ApiError(
-      res.status,
-      res.statusText || `restore failed (${res.status})`,
-      errBody,
-    );
+    throw new ApiError(res.status, res.statusText || `restore failed (${res.status})`, errBody);
   }
   return (await res.json()) as T;
 }
@@ -133,10 +121,7 @@ export function postRestoreCommit(file: File): Promise<RestoreResult> {
 // Content-Disposition header (e.g. `attachment; filename="household-backup-….json.gz"`),
 // falling back to a date-stamped default when the header is missing or unusual.
 // Handles both the plain `filename=` and the RFC 5987 `filename*=UTF-8''` forms.
-export function filenameFromDisposition(
-  header: string | null,
-  now: Date = new Date(),
-): string {
+export function filenameFromDisposition(header: string | null, now: Date = new Date()): string {
   const fallback = `household-backup-${now.toISOString().slice(0, 10)}.json.gz`;
   if (!header) return fallback;
   const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(header);

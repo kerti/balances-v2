@@ -37,10 +37,7 @@ export function ResetSetScreen() {
 
   const preview = useQuery<ResetPreview>({
     queryKey: ["reset-preview", token],
-    queryFn: () =>
-      api<ResetPreview>(
-        `/api/auth/local/reset?token=${encodeURIComponent(token)}`,
-      ),
+    queryFn: () => api<ResetPreview>(`/api/auth/local/reset?token=${encodeURIComponent(token)}`),
     enabled: token !== "",
     retry: false,
   });
@@ -51,8 +48,7 @@ export function ResetSetScreen() {
         method: "POST",
         body: JSON.stringify({ token, password }),
       }),
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["session"] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["session"] }),
   });
 
   const onSubmit = (e: FormEvent) => {
@@ -61,8 +57,7 @@ export function ResetSetScreen() {
   };
 
   const invalidLink =
-    token === "" ||
-    (preview.error instanceof ApiError && preview.error.status === 409);
+    token === "" || (preview.error instanceof ApiError && preview.error.status === 409);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-6">
@@ -70,17 +65,13 @@ export function ResetSetScreen() {
         <CardHeader>
           <AppLogo className="w-full h-auto" />
           <CardTitle className="pt-2">{t("resetSet.title")}</CardTitle>
-          {preview.data && (
-            <CardDescription>{t("resetSet.subtitle")}</CardDescription>
-          )}
+          {preview.data && <CardDescription>{t("resetSet.subtitle")}</CardDescription>}
         </CardHeader>
 
         <CardContent className="space-y-4">
           {invalidLink ? (
             <div className="space-y-3" data-testid="reset-invalid">
-              <p className="text-sm text-muted-foreground">
-                {t("resetSet.invalid")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("resetSet.invalid")}</p>
               <Button asChild variant="outline" className="w-full">
                 <a href="/forgot-password">{t("resetSet.requestNew")}</a>
               </Button>
@@ -88,15 +79,9 @@ export function ResetSetScreen() {
           ) : preview.isPending ? (
             <p className="text-sm text-muted-foreground">{t("working")}</p>
           ) : (
-            <form
-              onSubmit={onSubmit}
-              className="space-y-3"
-              data-testid="reset-set-form"
-            >
+            <form onSubmit={onSubmit} className="space-y-3" data-testid="reset-set-form">
               <div className="space-y-1">
-                <Label htmlFor="reset-set-email">
-                  {t("resetSet.emailLabel")}
-                </Label>
+                <Label htmlFor="reset-set-email">{t("resetSet.emailLabel")}</Label>
                 <Input
                   id="reset-set-email"
                   data-testid="reset-set-email"
@@ -108,9 +93,7 @@ export function ResetSetScreen() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="reset-set-password">
-                  {t("resetSet.passwordLabel")}
-                </Label>
+                <Label htmlFor="reset-set-password">{t("resetSet.passwordLabel")}</Label>
                 <Input
                   id="reset-set-password"
                   data-testid="reset-set-password"
@@ -120,16 +103,11 @@ export function ResetSetScreen() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t("signIn.local.passwordHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("signIn.local.passwordHint")}</p>
               </div>
 
               {reset.isError && (
-                <p
-                  data-testid="reset-set-error"
-                  className="text-sm text-destructive"
-                >
+                <p data-testid="reset-set-error" className="text-sm text-destructive">
                   {errorMessage(reset.error)}
                 </p>
               )}

@@ -27,11 +27,7 @@ type CashIncomeType = "coupon" | "dividend" | "distribution";
 type Props<TResult> = {
   currency: string;
   txnType: CashIncomeType;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentTransactionPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentTransactionPayload>;
 };
 
 function emptyForm() {
@@ -105,25 +101,19 @@ export function CreateCashIncomeTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t(TITLE_KEYS[txnType])}</DialogTitle>
-          <DialogDescription>
-            {t("investments:cashIncome.createDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:cashIncome.createDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="cash_date">
-                {t("investments:cashIncome.paymentDateLabel")}
-              </Label>
+              <Label htmlFor="cash_date">{t("investments:cashIncome.paymentDateLabel")}</Label>
               <Input
                 id="cash_date"
                 type="date"
                 required
                 max={todayDate()}
                 value={form.transaction_date}
-                onChange={(e) =>
-                  setForm({ ...form, transaction_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -142,23 +132,17 @@ export function CreateCashIncomeTransactionDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="cash_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="cash_description">{t("common:fields.description")}</Label>
             <Input
               id="cash_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("investments:cashIncome.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
@@ -166,9 +150,7 @@ export function CreateCashIncomeTransactionDialog<TResult>({
               {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending || !form.amount}>
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t(RECORD_KEYS[txnType])}
+              {mutation.isPending ? t("common:actions.saving") : t(RECORD_KEYS[txnType])}
             </Button>
           </DialogFooter>
         </form>

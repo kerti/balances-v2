@@ -1,12 +1,7 @@
 import { describe, it, expect } from "vitest";
-import {
-  aggregateHomePositions,
-  type HomePosition,
-} from "@/lib/homeAggregates";
+import { aggregateHomePositions, type HomePosition } from "@/lib/homeAggregates";
 
-const pos = (
-  overrides: Partial<HomePosition> & { id: string },
-): HomePosition => ({
+const pos = (overrides: Partial<HomePosition> & { id: string }): HomePosition => ({
   currency: "IDR",
   status: "active",
   terminated_at: null,
@@ -49,9 +44,7 @@ describe("aggregateHomePositions", () => {
         costSeries: [{ year_month: "2026-01", cost: 40 }],
       }),
     ]);
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 250, cost: 140, pl: 110 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 250, cost: 140, pl: 110 }]);
     expect(r.timeSeriesByCurrency.get("IDR")).toEqual([
       { year_month: "2026-01", value: 250, cost: 140 },
     ]);
@@ -209,9 +202,7 @@ describe("aggregateHomePositions", () => {
         ],
       }),
     ]);
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 100, cost: 0, pl: 100 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 100, cost: 0, pl: 100 }]);
     expect(r.categoryPieByCurrency.get("IDR")).toEqual([
       { category: "stock", value: 100 },
       { category: "mutualFund", value: 0 },
@@ -266,14 +257,10 @@ describe("aggregateHomePositions", () => {
       { currency: "IDR", value: 100, cost: 0, pl: 100 },
       { currency: "USD", value: 50, cost: 0, pl: 50 },
     ]);
-    expect(
-      r.categoryPieByCurrency.get("IDR")!.find((s) => s.category === "stock")
-        ?.value,
-    ).toBe(100);
-    expect(
-      r.categoryPieByCurrency.get("USD")!.find((s) => s.category === "bond")
-        ?.value,
-    ).toBe(50);
+    expect(r.categoryPieByCurrency.get("IDR")!.find((s) => s.category === "stock")?.value).toBe(
+      100,
+    );
+    expect(r.categoryPieByCurrency.get("USD")!.find((s) => s.category === "bond")?.value).toBe(50);
     expect(r.categorySeriesByCurrency.has("USD")).toBe(true);
   });
 

@@ -139,8 +139,7 @@ export function CreateIncomeDialog({
         category: form.category,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         regularity: form.regularity,
       },
       { onSuccess: close },
@@ -159,13 +158,9 @@ export function CreateIncomeDialog({
       )}
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {seed ? t("income:duplicateTitle") : t("income:createTitle")}
-          </DialogTitle>
+          <DialogTitle>{seed ? t("income:duplicateTitle") : t("income:createTitle")}</DialogTitle>
           <DialogDescription>
-            {seed
-              ? t("income:duplicateDescription")
-              : t("income:createDescription")}
+            {seed ? t("income:duplicateDescription") : t("income:createDescription")}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
@@ -182,9 +177,7 @@ export function CreateIncomeDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="income_category">
-                {t("income:fields.category")}
-              </Label>
+              <Label htmlFor="income_category">{t("income:fields.category")}</Label>
               <select
                 id="income_category"
                 required
@@ -200,25 +193,17 @@ export function CreateIncomeDialog({
                 <option value="" disabled>
                   {t("income:categoryOptions.placeholder")}
                 </option>
-                <option value="salary">
-                  {t("income:categoryOptions.salary")}
-                </option>
+                <option value="salary">{t("income:categoryOptions.salary")}</option>
                 <option value="business_income">
                   {t("income:categoryOptions.business_income")}
                 </option>
-                <option value="rental_income">
-                  {t("income:categoryOptions.rental_income")}
-                </option>
+                <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
                 <option value="gift">{t("income:categoryOptions.gift")}</option>
-                <option value="tax_refund">
-                  {t("income:categoryOptions.tax_refund")}
-                </option>
+                <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
                 <option value="insurance_payout">
                   {t("income:categoryOptions.insurance_payout")}
                 </option>
-                <option value="other">
-                  {t("income:categoryOptions.other")}
-                </option>
+                <option value="other">{t("income:categoryOptions.other")}</option>
               </select>
             </div>
           </div>
@@ -236,9 +221,7 @@ export function CreateIncomeDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="income_currency">
-                {t("income:fields.currency")}
-              </Label>
+              <Label htmlFor="income_currency">{t("income:fields.currency")}</Label>
               <Input
                 id="income_currency"
                 required
@@ -255,15 +238,11 @@ export function CreateIncomeDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="income_description">
-              {t("income:fields.description")}
-            </Label>
+            <Label htmlFor="income_description">{t("income:fields.description")}</Label>
             <Input
               id="income_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("income:placeholders.description")}
             />
           </div>
@@ -287,9 +266,7 @@ export function CreateIncomeDialog({
                   name="regularity"
                   value="incidental"
                   checked={form.regularity === "incidental"}
-                  onChange={() =>
-                    setForm({ ...form, regularity: "incidental" })
-                  }
+                  onChange={() => setForm({ ...form, regularity: "incidental" })}
                 />
                 {t("income:regularity.incidental")}
               </label>
@@ -325,16 +302,12 @@ export function CreateIncomeDialog({
                 aria-label={t("common:ownership.soleOwner")}
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={effectiveSoleOwnerID ?? ""}
-                onChange={(e) =>
-                  setForm({ ...form, sole_owner_user_id: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
               >
                 {(members ?? []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {preferredName(m)}
-                    {user && m.id === user.id
-                      ? t("common:ownership.youSuffix")
-                      : ""}
+                    {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
                   </option>
                 ))}
               </select>
@@ -342,9 +315,7 @@ export function CreateIncomeDialog({
           </div>
 
           {mutation.error && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
@@ -352,9 +323,7 @@ export function CreateIncomeDialog({
               {t("common:cancel")}
             </Button>
             <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending
-                ? t("income:submit.saving")
-                : t("income:submit.create")}
+              {mutation.isPending ? t("income:submit.saving") : t("income:submit.create")}
             </Button>
           </DialogFooter>
         </form>

@@ -2,13 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/api/client";
 import { useSession } from "@/hooks/useSession";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
@@ -96,9 +90,7 @@ export function ReactivationCard() {
             >
               <span className="text-sm">
                 <span className="font-medium">{m.display_name}</span>{" "}
-                <span className="text-muted-foreground break-all">
-                  {m.email}
-                </span>
+                <span className="text-muted-foreground break-all">{m.email}</span>
               </span>
               <Button
                 type="button"
@@ -115,16 +107,12 @@ export function ReactivationCard() {
         </ul>
 
         {mutation.error && (
-          <p className="mt-3 text-sm text-destructive">
-            {errorMessage(mutation.error)}
-          </p>
+          <p className="mt-3 text-sm text-destructive">{errorMessage(mutation.error)}</p>
         )}
 
         {result && (
           <div className="mt-4 p-3 rounded-md bg-muted text-sm space-y-2">
-            <p className="font-medium">
-              {t("reactivation.linkFor", { email: result.email })}
-            </p>
+            <p className="font-medium">{t("reactivation.linkFor", { email: result.email })}</p>
             <p className="text-muted-foreground">
               {t("reactivation.expires", {
                 when: formatDateTime(result.expires_at),

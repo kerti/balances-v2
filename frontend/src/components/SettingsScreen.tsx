@@ -1,13 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,15 +21,8 @@ import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
-import {
-  SUPPORTED_CARRYOVER_DATE_MODES,
-  type CarryoverDateMode,
-} from "@/lib/dateLimits";
-import {
-  useFxRates,
-  useCreateFxRate,
-  useDeleteFxRate,
-} from "@/hooks/useFxRates";
+import { SUPPORTED_CARRYOVER_DATE_MODES, type CarryoverDateMode } from "@/lib/dateLimits";
+import { useFxRates, useCreateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
 import { formatYearMonth } from "@/lib/format";
 import { InviteForm } from "@/components/InviteForm";
 import { ReactivationCard } from "@/components/ReactivationCard";
@@ -95,9 +82,7 @@ export function SettingsScreen() {
         <CardContent className="space-y-4">
           <div className="flex items-end gap-3">
             <div className="space-y-1">
-              <Label htmlFor="reporting-currency">
-                {t("currency.reportingLabel")}
-              </Label>
+              <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
               <Input
                 id="reporting-currency"
                 className="w-28 uppercase"
@@ -109,9 +94,7 @@ export function SettingsScreen() {
             <Button
               variant="outline"
               onClick={saveCurrency}
-              disabled={
-                updateSettings.isPending || reportingCurrency.length !== 3
-              }
+              disabled={updateSettings.isPending || reportingCurrency.length !== 3}
             >
               {t("common:save")}
             </Button>
@@ -129,9 +112,7 @@ export function SettingsScreen() {
           </label>
 
           {updateSettings.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(updateSettings.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
           )}
         </CardContent>
       </Card>
@@ -193,19 +174,13 @@ function NicknameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={save}
-            disabled={updateMe.isPending || !dirty}
-          >
+          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
             {t("common:save")}
           </Button>
         </div>
 
         {updateMe.isError && (
-          <p className="text-sm text-destructive">
-            {errorMessage(updateMe.error)}
-          </p>
+          <p className="text-sm text-destructive">{errorMessage(updateMe.error)}</p>
         )}
       </CardContent>
     </Card>
@@ -257,19 +232,13 @@ function HouseholdNameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={save}
-            disabled={updateSettings.isPending || !dirty}
-          >
+          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
             {t("common:save")}
           </Button>
         </div>
 
         {updateSettings.isError && (
-          <p className="text-sm text-destructive">
-            {errorMessage(updateSettings.error)}
-          </p>
+          <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
         )}
       </CardContent>
     </Card>
@@ -440,9 +409,7 @@ function CarryoverDateCard() {
       <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
-            <Label htmlFor="carryover-date-mode">
-              {t("carryoverDate.label")}
-            </Label>
+            <Label htmlFor="carryover-date-mode">{t("carryoverDate.label")}</Label>
             <select
               id="carryover-date-mode"
               data-testid="settings-carryover-date-select"
@@ -487,8 +454,7 @@ function FxRatesCard() {
     );
   };
 
-  const canAdd =
-    month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
+  const canAdd = month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
 
   return (
     <Card>
@@ -538,14 +504,10 @@ function FxRatesCard() {
         </div>
 
         {createRate.isError && (
-          <p className="text-sm text-destructive">
-            {errorMessage(createRate.error)}
-          </p>
+          <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
         )}
 
-        {isPending && (
-          <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-        )}
+        {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
         {rates && rates.length === 0 && (
           <p className="text-sm text-muted-foreground">{t("fx.empty")}</p>
@@ -568,11 +530,7 @@ function FxRatesCard() {
                   <TableCell>{r.currency}</TableCell>
                   <TableCell className="tabular-nums">{r.rate}</TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteRate.mutate(r.id)}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
                       {t("common:delete")}
                     </Button>
                   </TableCell>

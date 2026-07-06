@@ -1,13 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { downloadBackup, type Fidelity } from "@/lib/backup";
 
@@ -40,9 +34,7 @@ export function BackupCard() {
       </CardHeader>
       <CardContent className="space-y-4">
         <fieldset className="space-y-2" disabled={exporting}>
-          <legend className="text-sm font-medium">
-            {t("data.fidelity.label")}
-          </legend>
+          <legend className="text-sm font-medium">{t("data.fidelity.label")}</legend>
           {(["full", "compacted"] as const).map((opt) => (
             <label key={opt} className="flex items-start gap-2 text-sm">
               <input
@@ -56,9 +48,7 @@ export function BackupCard() {
               />
               <span>
                 <span className="font-medium">{t(`data.fidelity.${opt}`)}</span>
-                <span className="block text-muted-foreground">
-                  {t(`data.fidelity.${opt}Hint`)}
-                </span>
+                <span className="block text-muted-foreground">{t(`data.fidelity.${opt}Hint`)}</span>
               </span>
             </label>
           ))}

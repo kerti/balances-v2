@@ -1,11 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { LiabilitySnapshot } from "@/api/types";
-import {
-  postSnapshotImport,
-  snapshotImportTemplateUrl,
-  type ImportArgs,
-} from "./snapshotImport";
+import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Liability snapshots live under /api/liabilities/{id}/snapshots — per-group
 // per ADR-0022. Mutations invalidate the liability list query because each
@@ -29,8 +25,7 @@ export type UpdateLiabilitySnapshotPayload = {
 export function useLiabilitySnapshots(liabilityId: string | null) {
   return useQuery({
     queryKey: ["liability-snapshots", liabilityId],
-    queryFn: () =>
-      api<LiabilitySnapshot[]>(`/api/liabilities/${liabilityId}/snapshots`),
+    queryFn: () => api<LiabilitySnapshot[]>(`/api/liabilities/${liabilityId}/snapshots`),
     enabled: !!liabilityId,
   });
 }
@@ -53,17 +48,11 @@ export function useCreateLiabilitySnapshot(liabilityId: string) {
 export function useUpdateLiabilitySnapshot(liabilityId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      snapshotId: string;
-      payload: UpdateLiabilitySnapshotPayload;
-    }) =>
-      api<LiabilitySnapshot>(
-        `/api/liabilities/${liabilityId}/snapshots/${args.snapshotId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(args.payload),
-        },
-      ),
+    mutationFn: (args: { snapshotId: string; payload: UpdateLiabilitySnapshotPayload }) =>
+      api<LiabilitySnapshot>(`/api/liabilities/${liabilityId}/snapshots/${args.snapshotId}`, {
+        method: "PATCH",
+        body: JSON.stringify(args.payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liability-snapshots", liabilityId] });
       qc.invalidateQueries({ queryKey: ["liabilities"] });
@@ -102,11 +91,7 @@ export function useImportLiabilitySnapshots(liabilityId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: ImportArgs) =>
-      postSnapshotImport(
-        `/api/liabilities/${liabilityId}/snapshots`,
-        args.file,
-        args.mode,
-      ),
+      postSnapshotImport(`/api/liabilities/${liabilityId}/snapshots`, args.file, args.mode),
     onSuccess: (result) => {
       // Only a real write should refresh the caches; a preview changed nothing.
       if (result.committed) {

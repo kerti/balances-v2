@@ -81,9 +81,7 @@ describe("i18n catalogs", () => {
     for (const ns of NAMESPACES) {
       const enKeys = Object.keys(CATALOGS["en-GB"][ns]).sort();
       const idKeys = Object.keys(CATALOGS["id-ID"][ns]).sort();
-      expect(idKeys, `id/${ns}.json keys diverge from en/${ns}.json`).toEqual(
-        enKeys,
-      );
+      expect(idKeys, `id/${ns}.json keys diverge from en/${ns}.json`).toEqual(enKeys);
     }
   });
 });

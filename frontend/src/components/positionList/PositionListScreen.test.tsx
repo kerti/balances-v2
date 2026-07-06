@@ -10,11 +10,7 @@ import userEvent from "@testing-library/user-event";
 import i18n from "@/i18n";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionListScreen } from "./PositionListScreen";
-import type {
-  PositionDeleteMutation,
-  PositionListDescriptor,
-  PositionListQuery,
-} from "./types";
+import type { PositionDeleteMutation, PositionListDescriptor, PositionListQuery } from "./types";
 
 type Widget = {
   id: string;
@@ -95,10 +91,7 @@ function makeDescriptor(
 
 function renderList(query: PositionListQuery<Widget>, deleteMutate = vi.fn()) {
   return renderWithProviders(
-    <PositionListScreen
-      descriptor={makeDescriptor(query, deleteMutate)}
-      onSelect={vi.fn()}
-    />,
+    <PositionListScreen descriptor={makeDescriptor(query, deleteMutate)} onSelect={vi.fn()} />,
   );
 }
 
@@ -164,18 +157,14 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     renderList(loaded([]));
     expect(screen.getByText("No widgets here")).toBeInTheDocument();
     // Two create affordances in the empty state: the header + the empty card.
-    expect(
-      screen.getAllByRole("button", { name: "Create widget" }),
-    ).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Create widget" })).toHaveLength(2);
   });
 
   it("opens the edit dialog from the row ⋮ menu", async () => {
     const user = userEvent.setup();
     renderList(loaded(widgets));
 
-    await user.click(
-      screen.getAllByRole("button", { name: "Widget actions" })[0],
-    );
+    await user.click(screen.getAllByRole("button", { name: "Widget actions" })[0]);
     await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
 
     expect(await screen.findByText("Editing Alpha")).toBeInTheDocument();
@@ -186,15 +175,11 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     const deleteMutate = vi.fn();
     renderList(loaded(widgets), deleteMutate);
 
-    await user.click(
-      screen.getAllByRole("button", { name: "Widget actions" })[0],
-    );
+    await user.click(screen.getAllByRole("button", { name: "Widget actions" })[0]);
     await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
 
     const confirm = await screen.findByRole("alertdialog");
-    expect(
-      within(confirm).getByText("Really delete Alpha?"),
-    ).toBeInTheDocument();
+    expect(within(confirm).getByText("Really delete Alpha?")).toBeInTheDocument();
     await user.click(within(confirm).getByRole("button", { name: "Delete" }));
 
     expect(deleteMutate).toHaveBeenCalledWith("w1", expect.anything());

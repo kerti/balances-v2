@@ -1,14 +1,9 @@
 import { describe, it, expect } from "vitest";
-import {
-  aggregateGroupHome,
-  type GroupPosition,
-} from "@/lib/groupHomeAggregates";
+import { aggregateGroupHome, type GroupPosition } from "@/lib/groupHomeAggregates";
 
 const CATS = ["bankAccount", "property", "vehicle"];
 
-const pos = (
-  overrides: Partial<GroupPosition> & { id: string },
-): GroupPosition => ({
+const pos = (overrides: Partial<GroupPosition> & { id: string }): GroupPosition => ({
   currency: "IDR",
   status: "active",
   terminated_at: null,
@@ -46,9 +41,7 @@ describe("aggregateGroupHome", () => {
       ],
       CATS,
     );
-    expect(r.byCurrency).toEqual([
-      { currency: "IDR", value: 250, cost: 0, pl: 250 },
-    ]);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 250, cost: 0, pl: 250 }]);
     expect(r.timeSeriesByCurrency.get("IDR")).toEqual([
       { year_month: "2026-01", value: 250, cost: 0 },
     ]);

@@ -11,12 +11,7 @@ type Props = {
 // Right-aligned "Show inactive {noun} (N)" checkbox shown above a list's table.
 // Callers render it only when there are inactive rows to reveal, so the count
 // is always ≥ 1 here.
-export function ShowInactiveToggle({
-  count,
-  nounPlural,
-  checked,
-  onChange,
-}: Props) {
+export function ShowInactiveToggle({ count, nounPlural, checked, onChange }: Props) {
   const { t } = useTranslation("common");
   return (
     <div className="flex justify-end">

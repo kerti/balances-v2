@@ -6,9 +6,7 @@ import { Suspense } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
 import type { CategoryTimePoint } from "@/lib/homeAggregates";
 
-const CategoryStackChartImpl = lazyWithReload(
-  () => import("./CategoryStackChartImpl"),
-);
+const CategoryStackChartImpl = lazyWithReload(() => import("./CategoryStackChartImpl"));
 
 type Props = {
   series: CategoryTimePoint[];

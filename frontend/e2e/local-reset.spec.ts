@@ -27,17 +27,13 @@ test(
     // On the request form: submitting any email lands on the same generic
     // confirmation — no enumeration, so the UI can't reveal account existence.
     await expect(page.getByTestId("reset-request-form")).toBeVisible();
-    await page
-      .getByTestId("reset-request-email")
-      .fill(`nobody-${Date.now()}@example.test`);
+    await page.getByTestId("reset-request-email").fill(`nobody-${Date.now()}@example.test`);
     await page.getByTestId("reset-request-submit").click();
     await expect(page.getByTestId("reset-request-sent")).toBeVisible();
   },
 );
 
-test("an invalid reset link shows the request-a-new-one notice", async ({
-  page,
-}) => {
+test("an invalid reset link shows the request-a-new-one notice", async ({ page }) => {
   // A bogus token resolves to the generic 409, so the set screen replaces the
   // form with the invalid-link notice rather than a password field.
   await page.goto("/reset?token=this-token-does-not-exist");

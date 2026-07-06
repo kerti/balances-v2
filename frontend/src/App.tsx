@@ -55,19 +55,11 @@ import { SettingsScreen } from "@/components/SettingsScreen";
 // so the ~20 screen/detail components stay untouched — the router lives only
 // here. ListRoute hands the screen a navigate fn; DetailRoute also pulls the
 // `:id` path param.
-function ListRoute({
-  render,
-}: {
-  render: (nav: NavigateFunction) => ReactNode;
-}) {
+function ListRoute({ render }: { render: (nav: NavigateFunction) => ReactNode }) {
   return <>{render(useNavigate())}</>;
 }
 
-function DetailRoute({
-  render,
-}: {
-  render: (id: string, nav: NavigateFunction) => ReactNode;
-}) {
+function DetailRoute({ render }: { render: (id: string, nav: NavigateFunction) => ReactNode }) {
   const { id } = useParams();
   return <>{render(id!, useNavigate())}</>;
 }
@@ -102,10 +94,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <BankAccountDetail
-                assetId={id}
-                onBack={() => nav(routes.bankAccounts)}
-              />
+              <BankAccountDetail assetId={id} onBack={() => nav(routes.bankAccounts)} />
             )}
           />
         ),
@@ -128,10 +117,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <PropertyDetail
-                assetId={id}
-                onBack={() => nav(routes.properties)}
-              />
+              <PropertyDetail assetId={id} onBack={() => nav(routes.properties)} />
             )}
           />
         ),
@@ -153,9 +139,7 @@ const router = createBrowserRouter([
         path: "assets/vehicles/:id",
         element: (
           <DetailRoute
-            render={(id, nav) => (
-              <VehicleDetail assetId={id} onBack={() => nav(routes.vehicles)} />
-            )}
+            render={(id, nav) => <VehicleDetail assetId={id} onBack={() => nav(routes.vehicles)} />}
           />
         ),
       },
@@ -180,10 +164,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <LiabilityDetail
-                liabilityId={id}
-                onBack={() => nav(routes.liabilitiesPersonal)}
-              />
+              <LiabilityDetail liabilityId={id} onBack={() => nav(routes.liabilitiesPersonal)} />
             )}
           />
         ),
@@ -234,10 +215,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <ReceivableDetail
-                receivableId={id}
-                onBack={() => nav(routes.receivables)}
-              />
+              <ReceivableDetail receivableId={id} onBack={() => nav(routes.receivables)} />
             )}
           />
         ),
@@ -263,10 +241,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <StockDetail
-                investmentId={id}
-                onBack={() => nav(routes.stocks)}
-              />
+              <StockDetail investmentId={id} onBack={() => nav(routes.stocks)} />
             )}
           />
         ),
@@ -289,10 +264,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <MutualFundDetail
-                investmentId={id}
-                onBack={() => nav(routes.mutualFunds)}
-              />
+              <MutualFundDetail investmentId={id} onBack={() => nav(routes.mutualFunds)} />
             )}
           />
         ),
@@ -314,9 +286,7 @@ const router = createBrowserRouter([
         path: "investments/bonds/:id",
         element: (
           <DetailRoute
-            render={(id, nav) => (
-              <BondDetail investmentId={id} onBack={() => nav(routes.bonds)} />
-            )}
+            render={(id, nav) => <BondDetail investmentId={id} onBack={() => nav(routes.bonds)} />}
           />
         ),
       },
@@ -364,9 +334,7 @@ const router = createBrowserRouter([
         path: "investments/gold/:id",
         element: (
           <DetailRoute
-            render={(id, nav) => (
-              <GoldDetail investmentId={id} onBack={() => nav(routes.gold)} />
-            )}
+            render={(id, nav) => <GoldDetail investmentId={id} onBack={() => nav(routes.gold)} />}
           />
         ),
       },

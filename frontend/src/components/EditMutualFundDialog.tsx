@@ -30,11 +30,7 @@ function toForm(m: MutualFund | MutualFundListItem) {
   };
 }
 
-export function EditMutualFundDialog({
-  open,
-  onOpenChange,
-  mutualFund,
-}: Props) {
+export function EditMutualFundDialog({ open, onOpenChange, mutualFund }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const mutation = useUpdateMutualFund(mutualFund.investment.id);
   const { data: user } = useSession();
@@ -49,8 +45,7 @@ export function EditMutualFundDialog({
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         fund_code: form.fund_code,
         fund_manager: form.fund_manager || null,
@@ -74,9 +69,7 @@ export function EditMutualFundDialog({
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_mf_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_mf_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_mf_display_name"
           required
@@ -87,9 +80,7 @@ export function EditMutualFundDialog({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_mf_fund_code">
-            {t("investments:mutualFund.fields.fundCode")}
-          </Label>
+          <Label htmlFor="edit_mf_fund_code">{t("investments:mutualFund.fields.fundCode")}</Label>
           <Input
             id="edit_mf_fund_code"
             required
@@ -144,16 +135,12 @@ export function EditMutualFundDialog({
             aria-label={t("investments:ownership.soleOwnerAria")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -161,9 +148,7 @@ export function EditMutualFundDialog({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_mf_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_mf_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_mf_description"
           value={form.description}

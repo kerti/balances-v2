@@ -8,9 +8,7 @@
 import { lazy, Suspense } from "react";
 import type { GroupCategoryTimePoint } from "@/lib/groupHomeAggregates";
 
-const GroupCategoryStackChartImpl = lazy(
-  () => import("./GroupCategoryStackChartImpl"),
-);
+const GroupCategoryStackChartImpl = lazy(() => import("./GroupCategoryStackChartImpl"));
 
 export type GroupStackCategory = {
   key: string;
@@ -24,19 +22,11 @@ type Props = {
   currency: string;
 };
 
-export function GroupCategoryStackChart({
-  series,
-  categories,
-  currency,
-}: Props) {
+export function GroupCategoryStackChart({ series, categories, currency }: Props) {
   if (series.length < 2) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
-      <GroupCategoryStackChartImpl
-        series={series}
-        categories={categories}
-        currency={currency}
-      />
+      <GroupCategoryStackChartImpl series={series} categories={categories} currency={currency} />
     </Suspense>
   );
 }

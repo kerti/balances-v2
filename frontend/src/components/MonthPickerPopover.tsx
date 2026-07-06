@@ -3,11 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { formatYearMonth } from "@/lib/format";
 
@@ -115,10 +111,7 @@ export function MonthPickerPopover({
           >
             <ChevronLeft className="size-4" />
           </Button>
-          <span
-            className="text-sm font-medium"
-            data-testid="month-picker-year-label"
-          >
+          <span className="text-sm font-medium" data-testid="month-picker-year-label">
             {viewYear}
           </span>
           <Button
@@ -137,8 +130,7 @@ export function MonthPickerPopover({
             const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
             const iso = isoByKey.get(key);
             const disabled = !iso;
-            const isSelected =
-              viewYear === selectedYear && idx === selectedMonthIdx;
+            const isSelected = viewYear === selectedYear && idx === selectedMonthIdx;
             return (
               <Button
                 key={key}

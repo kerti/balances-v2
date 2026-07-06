@@ -67,9 +67,7 @@ export type NonInvestmentConfig<T> = {
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
 };
 
-function ownershipColumn<T>(
-  config: NonInvestmentConfig<T>,
-): PositionExtraColumn<T, OwnershipCtx> {
+function ownershipColumn<T>(config: NonInvestmentConfig<T>): PositionExtraColumn<T, OwnershipCtx> {
   const label = (item: T, ctx: OwnershipCtx) => {
     const core = config.entity(item);
     return ownershipLabel(
@@ -147,9 +145,7 @@ export function nonInvestmentDescriptor<T>(
     getSecondary: config.getSecondary,
     deleteDescription: config.deleteDescription,
     extraColumns: [ownershipColumn(config)],
-    renderHeadline: (items) => (
-      <NonInvestmentHeadline items={items} config={config} />
-    ),
+    renderHeadline: (items) => <NonInvestmentHeadline items={items} config={config} />,
     renderCreateDialog: config.renderCreateDialog,
     renderEditDialog: config.renderEditDialog,
   };

@@ -45,19 +45,14 @@ export class ApiError extends Error {
 // out and surfaces an error before the server would have anyway.
 const DEFAULT_TIMEOUT_MS = 20_000;
 
-export async function api<T = unknown>(
-  input: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function api<T = unknown>(input: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
 
   const timeoutSignal = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
-  const signal = init.signal
-    ? AbortSignal.any([init.signal, timeoutSignal])
-    : timeoutSignal;
+  const signal = init.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
 
   const res = await fetch(input, { ...init, headers, signal });
 
@@ -73,11 +68,7 @@ export async function api<T = unknown>(
         /* swallow */
       }
     }
-    throw new ApiError(
-      res.status,
-      res.statusText || `request failed (${res.status})`,
-      body,
-    );
+    throw new ApiError(res.status, res.statusText || `request failed (${res.status})`, body);
   }
 
   if (res.status === 204) {

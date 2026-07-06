@@ -37,8 +37,7 @@ export function CreateBankAccountDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         bank_name: form.bank_name,
         account_number: form.account_number,
@@ -80,9 +79,7 @@ export function CreateBankAccountDialog() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="bank_name">
-          {t("assets:bankAccount.fields.bankName")}
-        </Label>
+        <Label htmlFor="bank_name">{t("assets:bankAccount.fields.bankName")}</Label>
         <Input
           id="bank_name"
           required
@@ -93,9 +90,7 @@ export function CreateBankAccountDialog() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="account_number">
-          {t("assets:bankAccount.fields.accountNumber")}
-        </Label>
+        <Label htmlFor="account_number">{t("assets:bankAccount.fields.accountNumber")}</Label>
         <Input
           id="account_number"
           required
@@ -106,9 +101,7 @@ export function CreateBankAccountDialog() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="account_type">
-            {t("assets:bankAccount.fields.accountType")}
-          </Label>
+          <Label htmlFor="account_type">{t("assets:bankAccount.fields.accountType")}</Label>
           <select
             id="account_type"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -120,15 +113,9 @@ export function CreateBankAccountDialog() {
               })
             }
           >
-            <option value="savings">
-              {t("assets:bankAccount.accountTypes.savings")}
-            </option>
-            <option value="current">
-              {t("assets:bankAccount.accountTypes.current")}
-            </option>
-            <option value="other">
-              {t("assets:bankAccount.accountTypes.other")}
-            </option>
+            <option value="savings">{t("assets:bankAccount.accountTypes.savings")}</option>
+            <option value="current">{t("assets:bankAccount.accountTypes.current")}</option>
+            <option value="other">{t("assets:bankAccount.accountTypes.other")}</option>
           </select>
         </div>
         <div className="grid gap-2">
@@ -178,16 +165,12 @@ export function CreateBankAccountDialog() {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>

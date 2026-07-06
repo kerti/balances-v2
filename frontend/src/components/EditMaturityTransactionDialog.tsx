@@ -22,11 +22,7 @@ type Props<TResult> = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   transaction: InvestmentTransaction;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    UpdateTransactionMutationVariables
-  >;
+  mutation: UseMutationResult<TResult, unknown, UpdateTransactionMutationVariables>;
 };
 
 export function EditMaturityTransactionDialog<TResult>({
@@ -40,10 +36,8 @@ export function EditMaturityTransactionDialog<TResult>({
     transaction_date: transaction.transaction_date.slice(0, 10),
     principal_amount: transaction.principal_amount ?? "",
     interest_amount: transaction.interest_amount ?? "",
-    principal_disposition: (transaction.principal_disposition ??
-      "cash_out") as Disposition,
-    interest_disposition: (transaction.interest_disposition ??
-      "cash_out") as Disposition,
+    principal_disposition: (transaction.principal_disposition ?? "cash_out") as Disposition,
+    interest_disposition: (transaction.interest_disposition ?? "cash_out") as Disposition,
     description: transaction.description ?? "",
   });
 
@@ -82,24 +76,18 @@ export function EditMaturityTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("investments:maturityTxn.editTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("investments:maturityTxn.editDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:maturityTxn.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_mat_date">
-              {t("investments:maturityTxn.maturityDateLabel")}
-            </Label>
+            <Label htmlFor="edit_mat_date">{t("investments:maturityTxn.maturityDateLabel")}</Label>
             <Input
               id="edit_mat_date"
               type="date"
               required
               max={todayDate()}
               value={form.transaction_date}
-              onChange={(e) =>
-                setForm({ ...form, transaction_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
             />
           </div>
 
@@ -115,9 +103,7 @@ export function EditMaturityTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.principal_amount}
-                onChange={(e) =>
-                  setForm({ ...form, principal_amount: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -131,9 +117,7 @@ export function EditMaturityTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.interest_amount}
-                onChange={(e) =>
-                  setForm({ ...form, interest_amount: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, interest_amount: e.target.value })}
               />
             </div>
           </div>
@@ -143,9 +127,7 @@ export function EditMaturityTransactionDialog<TResult>({
               {t("investments:maturityTxn.totalAtMaturityLabel")}
             </span>{" "}
             <span className="font-medium">
-              {totalReceived !== null
-                ? formatCurrency(totalReceived, transaction.currency)
-                : "—"}
+              {totalReceived !== null ? formatCurrency(totalReceived, transaction.currency) : "—"}
             </span>
           </div>
 
@@ -165,12 +147,8 @@ export function EditMaturityTransactionDialog<TResult>({
                   })
                 }
               >
-                <option value="cash_out">
-                  {t("investments:disposition.cashOut")}
-                </option>
-                <option value="rolled_to_new">
-                  {t("investments:disposition.rolledToNew")}
-                </option>
+                <option value="cash_out">{t("investments:disposition.cashOut")}</option>
+                <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
               </select>
             </div>
             <div className="grid gap-2">
@@ -188,54 +166,34 @@ export function EditMaturityTransactionDialog<TResult>({
                   })
                 }
               >
-                <option value="cash_out">
-                  {t("investments:disposition.cashOut")}
-                </option>
-                <option value="rolled_to_new">
-                  {t("investments:disposition.rolledToNew")}
-                </option>
+                <option value="cash_out">{t("investments:disposition.cashOut")}</option>
+                <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
               </select>
             </div>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_mat_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="edit_mat_description">{t("common:fields.description")}</Label>
             <Input
               id="edit_mat_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
             <Button
               type="submit"
-              disabled={
-                mutation.isPending ||
-                !form.principal_amount ||
-                !form.interest_amount
-              }
+              disabled={mutation.isPending || !form.principal_amount || !form.interest_amount}
             >
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("common:actions.saveChanges")}
+              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
         </form>

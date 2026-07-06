@@ -38,8 +38,7 @@ function impactDirection(t: InvestmentTransaction): Direction {
       return "in";
     case "maturity": {
       const bothRolled =
-        t.principal_disposition === "rolled_to_new" &&
-        t.interest_disposition === "rolled_to_new";
+        t.principal_disposition === "rolled_to_new" && t.interest_disposition === "rolled_to_new";
       return bothRolled ? "mixed" : "in";
     }
   }
@@ -69,11 +68,7 @@ function impactColor(dir: Direction): string {
 type Props<TUpdate, TDelete> = {
   transaction: InvestmentTransaction;
   quantityUnit: string;
-  updateMutation: UseMutationResult<
-    TUpdate,
-    unknown,
-    UpdateTransactionMutationVariables
-  >;
+  updateMutation: UseMutationResult<TUpdate, unknown, UpdateTransactionMutationVariables>;
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
 };
 
@@ -89,9 +84,7 @@ export function TransactionRow<TUpdate, TDelete>({
 
   const dir = impactDirection(transaction);
   const impact = impactAmount(transaction);
-  const label = t(
-    `investments:transactionType.${transaction.transaction_type}`,
-  );
+  const label = t(`investments:transactionType.${transaction.transaction_type}`);
 
   function detailLine(): string {
     switch (transaction.transaction_type) {
@@ -101,20 +94,14 @@ export function TransactionRow<TUpdate, TDelete>({
         return t("investments:transactionRow.tradeDetail", {
           quantity: transaction.quantity,
           unit: quantityUnit,
-          price: formatCurrency(
-            transaction.price_per_unit,
-            transaction.currency,
-          ),
+          price: formatCurrency(transaction.price_per_unit, transaction.currency),
         });
       case "fee":
         if (transaction.quantity && transaction.price_per_unit) {
           return t("investments:transactionRow.feeDetail", {
             quantity: transaction.quantity,
             unit: quantityUnit,
-            price: formatCurrency(
-              transaction.price_per_unit,
-              transaction.currency,
-            ),
+            price: formatCurrency(transaction.price_per_unit, transaction.currency),
           });
         }
         return "";
@@ -128,10 +115,7 @@ export function TransactionRow<TUpdate, TDelete>({
           );
           parts.push(
             t("investments:transactionRow.maturityPrincipalDetail", {
-              amount: formatCurrency(
-                transaction.principal_amount,
-                transaction.currency,
-              ),
+              amount: formatCurrency(transaction.principal_amount, transaction.currency),
               disp,
             }),
           );
@@ -144,10 +128,7 @@ export function TransactionRow<TUpdate, TDelete>({
           );
           parts.push(
             t("investments:transactionRow.maturityInterestDetail", {
-              amount: formatCurrency(
-                transaction.interest_amount,
-                transaction.currency,
-              ),
+              amount: formatCurrency(transaction.interest_amount, transaction.currency),
               disp,
             }),
           );
@@ -180,22 +161,16 @@ export function TransactionRow<TUpdate, TDelete>({
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">
-            {formatDate(transaction.transaction_date)}
-          </div>
+          <div className="font-medium">{formatDate(transaction.transaction_date)}</div>
         </TableCell>
         <TableCell>
           <div className="font-medium">{label}</div>
-          {detail && (
-            <div className="text-xs text-muted-foreground">{detail}</div>
-          )}
+          {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
         </TableCell>
         <TableCell className={`text-right tabular-nums ${impactColor(dir)}`}>
           {impactText()}
         </TableCell>
-        <TableCell className="text-muted-foreground">
-          {transaction.description ?? "—"}
-        </TableCell>
+        <TableCell className="text-muted-foreground">{transaction.description ?? "—"}</TableCell>
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -211,10 +186,7 @@ export function TransactionRow<TUpdate, TDelete>({
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
                 {t("common:actions.edit")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
                 {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -225,8 +197,7 @@ export function TransactionRow<TUpdate, TDelete>({
       {/* Edit dialogs are shape-conditional; one of them is mounted at a
           time. Mounting per-shape keeps each dialog's form state initialized
           from the right fields. */}
-      {(transaction.transaction_type === "buy" ||
-        transaction.transaction_type === "sell") && (
+      {(transaction.transaction_type === "buy" || transaction.transaction_type === "sell") && (
         <EditTradeTransactionDialog
           key={transaction.id}
           open={editOpen}

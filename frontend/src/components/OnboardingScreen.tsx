@@ -67,13 +67,11 @@ export function OnboardingScreen() {
   const invitations = options.data?.invitations ?? [];
   const hasInvites = invitations.length > 0;
   const foundingDisabled = options.data?.founding_disabled ?? false;
-  const householdName =
-    override ?? options.data?.suggested_household_name ?? "";
+  const householdName = override ?? options.data?.suggested_household_name ?? "";
 
   // On success the commit set the real session cookie; re-running the session
   // query flips App.tsx over to the authed router, landing on the dashboard.
-  const onCommitted = () =>
-    void queryClient.invalidateQueries({ queryKey: ["session"] });
+  const onCommitted = () => void queryClient.invalidateQueries({ queryKey: ["session"] });
 
   const found = useMutation({
     mutationFn: () =>
@@ -104,8 +102,7 @@ export function OnboardingScreen() {
     },
   });
 
-  const expired =
-    options.error instanceof ApiError && options.error.status === 401;
+  const expired = options.error instanceof ApiError && options.error.status === 401;
 
   // Founder form is shown directly when there are no invitations; when there
   // are, it appears only after the explicit "start your own instead" confirm.
@@ -179,9 +176,7 @@ export function OnboardingScreen() {
                         join.mutate(inv.invitation_id);
                       }}
                       className={`w-full rounded-md border px-3 py-2 text-left transition-colors hover:bg-accent disabled:opacity-50 ${
-                        inv.hint
-                          ? "border-primary ring-1 ring-primary"
-                          : "border-input"
+                        inv.hint ? "border-primary ring-1 ring-primary" : "border-input"
                       }`}
                     >
                       <span className="block text-sm font-medium">
@@ -221,14 +216,10 @@ export function OnboardingScreen() {
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-medium">{t("founder.title")}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {t("founder.description")}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{t("founder.description")}</p>
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="onboarding-household-name">
-                      {t("founder.nameLabel")}
-                    </Label>
+                    <Label htmlFor="onboarding-household-name">{t("founder.nameLabel")}</Label>
                     <Input
                       id="onboarding-household-name"
                       data-testid="onboarding-household-name"
@@ -249,9 +240,7 @@ export function OnboardingScreen() {
                     data-testid="onboarding-found-submit"
                     disabled={options.isPending || found.isPending}
                   >
-                    {found.isPending
-                      ? t("founder.submitting")
-                      : t("founder.submit")}
+                    {found.isPending ? t("founder.submitting") : t("founder.submit")}
                   </Button>
                 </form>
               )}

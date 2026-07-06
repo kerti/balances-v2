@@ -47,10 +47,7 @@ export function InviteAcceptScreen() {
   // means the link is used/expired/unknown; the form is replaced by a notice.
   const preview = useQuery<InvitePreview>({
     queryKey: ["invite-preview", token],
-    queryFn: () =>
-      api<InvitePreview>(
-        `/api/auth/local/invite?token=${encodeURIComponent(token)}`,
-      ),
+    queryFn: () => api<InvitePreview>(`/api/auth/local/invite?token=${encodeURIComponent(token)}`),
     enabled: token !== "",
     retry: false,
   });
@@ -63,8 +60,7 @@ export function InviteAcceptScreen() {
       }),
     // The session cookie now exists; re-running the session query flips App.tsx
     // over to the authed router, landing the new member straight in the app.
-    onSuccess: () =>
-      void queryClient.invalidateQueries({ queryKey: ["session"] }),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["session"] }),
   });
 
   const onSubmit = (e: FormEvent) => {
@@ -73,8 +69,7 @@ export function InviteAcceptScreen() {
   };
 
   const invalidLink =
-    token === "" ||
-    (preview.error instanceof ApiError && preview.error.status === 409);
+    token === "" || (preview.error instanceof ApiError && preview.error.status === 409);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-6">
@@ -94,9 +89,7 @@ export function InviteAcceptScreen() {
         <CardContent className="space-y-4">
           {invalidLink ? (
             <div className="space-y-3" data-testid="invite-invalid">
-              <p className="text-sm text-muted-foreground">
-                {t("invite.invalid")}
-              </p>
+              <p className="text-sm text-muted-foreground">{t("invite.invalid")}</p>
               <Button asChild variant="outline" className="w-full">
                 <a href="/">{t("invite.goToSignIn")}</a>
               </Button>
@@ -105,11 +98,7 @@ export function InviteAcceptScreen() {
             <p className="text-sm text-muted-foreground">{t("working")}</p>
           ) : (
             <>
-              <form
-                onSubmit={onSubmit}
-                className="space-y-3"
-                data-testid="invite-accept-form"
-              >
+              <form onSubmit={onSubmit} className="space-y-3" data-testid="invite-accept-form">
                 <div className="space-y-1">
                   <Label htmlFor="invite-email">{t("invite.emailLabel")}</Label>
                   <Input
@@ -123,9 +112,7 @@ export function InviteAcceptScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="invite-password">
-                    {t("invite.passwordLabel")}
-                  </Label>
+                  <Label htmlFor="invite-password">{t("invite.passwordLabel")}</Label>
                   <Input
                     id="invite-password"
                     data-testid="invite-password"
@@ -135,16 +122,11 @@ export function InviteAcceptScreen() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {t("signIn.local.passwordHint")}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{t("signIn.local.passwordHint")}</p>
                 </div>
 
                 {accept.isError && (
-                  <p
-                    data-testid="invite-error"
-                    className="text-sm text-destructive"
-                  >
+                  <p data-testid="invite-error" className="text-sm text-destructive">
                     {errorMessage(accept.error)}
                   </p>
                 )}
@@ -161,10 +143,7 @@ export function InviteAcceptScreen() {
 
               {showGoogle && (
                 <>
-                  <div
-                    className="flex items-center gap-2"
-                    data-testid="invite-divider"
-                  >
+                  <div className="flex items-center gap-2" data-testid="invite-divider">
                     <div className="h-px flex-1 bg-border" />
                     <span className="text-xs uppercase text-muted-foreground">
                       {t("signIn.or")}

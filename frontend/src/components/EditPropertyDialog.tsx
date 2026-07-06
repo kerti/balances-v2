@@ -43,8 +43,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         property_type: form.property_type,
         address: form.address || null,
         acquisition_date: form.acquisition_date || null,
@@ -68,9 +67,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_p_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_p_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_p_display_name"
           required
@@ -92,25 +89,15 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
             })
           }
         >
-          <option value="house">
-            {t("assets:property.propertyTypes.house")}
-          </option>
-          <option value="apartment">
-            {t("assets:property.propertyTypes.apartment")}
-          </option>
-          <option value="land">
-            {t("assets:property.propertyTypes.land")}
-          </option>
-          <option value="commercial">
-            {t("assets:property.propertyTypes.commercial")}
-          </option>
+          <option value="house">{t("assets:property.propertyTypes.house")}</option>
+          <option value="apartment">{t("assets:property.propertyTypes.apartment")}</option>
+          <option value="land">{t("assets:property.propertyTypes.land")}</option>
+          <option value="commercial">{t("assets:property.propertyTypes.commercial")}</option>
         </select>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_p_address">
-          {t("assets:property.fields.addressEdit")}
-        </Label>
+        <Label htmlFor="edit_p_address">{t("assets:property.fields.addressEdit")}</Label>
         <Input
           id="edit_p_address"
           value={form.address}
@@ -120,38 +107,28 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_p_acq_date">
-            {t("assets:property.fields.acquisitionDateEdit")}
-          </Label>
+          <Label htmlFor="edit_p_acq_date">{t("assets:property.fields.acquisitionDateEdit")}</Label>
           <Input
             id="edit_p_acq_date"
             type="date"
             max="9999-12-31"
             value={form.acquisition_date}
-            onChange={(e) =>
-              setForm({ ...form, acquisition_date: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, acquisition_date: e.target.value })}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_p_acq_cost">
-            {t("assets:property.fields.acquisitionCostEdit")}
-          </Label>
+          <Label htmlFor="edit_p_acq_cost">{t("assets:property.fields.acquisitionCostEdit")}</Label>
           <Input
             id="edit_p_acq_cost"
             inputMode="decimal"
             value={form.acquisition_cost}
-            onChange={(e) =>
-              setForm({ ...form, acquisition_cost: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, acquisition_cost: e.target.value })}
           />
         </div>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_p_apprec">
-          {t("assets:property.fields.appreciationRateEdit")}
-        </Label>
+        <Label htmlFor="edit_p_apprec">{t("assets:property.fields.appreciationRateEdit")}</Label>
         <Input
           id="edit_p_apprec"
           inputMode="decimal"
@@ -195,16 +172,12 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -212,9 +185,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_p_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_p_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_p_description"
           value={form.description}

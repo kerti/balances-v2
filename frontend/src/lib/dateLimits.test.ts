@@ -54,31 +54,23 @@ describe("dateLimits", () => {
 
     it("end_of_month_after_last_snapshot returns the end of the next month", () => {
       // Snapshot in March → end of April; April is past, so not clamped.
-      expect(
-        carryoverSeedDate("end_of_month_after_last_snapshot", "2026-03"),
-      ).toBe("2026-04-30");
+      expect(carryoverSeedDate("end_of_month_after_last_snapshot", "2026-03")).toBe("2026-04-30");
     });
 
     it("accepts a full YYYY-MM-DD snapshot date", () => {
-      expect(
-        carryoverSeedDate("end_of_month_after_last_snapshot", "2026-02-14"),
-      ).toBe("2026-03-31");
+      expect(carryoverSeedDate("end_of_month_after_last_snapshot", "2026-02-14")).toBe(
+        "2026-03-31",
+      );
     });
 
     it("clamps a future seed to today", () => {
       // Snapshot in May → end of June (future); clamps to today (2026-05-30).
-      expect(
-        carryoverSeedDate("end_of_month_after_last_snapshot", "2026-05"),
-      ).toBe("2026-05-30");
+      expect(carryoverSeedDate("end_of_month_after_last_snapshot", "2026-05")).toBe("2026-05-30");
     });
 
     it("falls back to today when the snapshot month is missing", () => {
-      expect(carryoverSeedDate("end_of_month_after_last_snapshot")).toBe(
-        "2026-05-30",
-      );
-      expect(carryoverSeedDate("end_of_month_after_last_snapshot", null)).toBe(
-        "2026-05-30",
-      );
+      expect(carryoverSeedDate("end_of_month_after_last_snapshot")).toBe("2026-05-30");
+      expect(carryoverSeedDate("end_of_month_after_last_snapshot", null)).toBe("2026-05-30");
     });
   });
 
@@ -100,9 +92,7 @@ describe("dateLimits", () => {
     });
 
     it("back-dates yearMonth for end_of_month_after_last_snapshot", () => {
-      expect(
-        carryoverSeed("end_of_month_after_last_snapshot", "2026-03"),
-      ).toEqual({
+      expect(carryoverSeed("end_of_month_after_last_snapshot", "2026-03")).toEqual({
         yearMonth: "2026-04",
         asOfDate: "2026-04-30",
       });
@@ -111,9 +101,7 @@ describe("dateLimits", () => {
     it("keeps the pair consistent when the seed is clamped to today", () => {
       // Snapshot in May → end of June (future) clamps to today; yearMonth must
       // follow the clamped date, not the unclamped June.
-      expect(
-        carryoverSeed("end_of_month_after_last_snapshot", "2026-05"),
-      ).toEqual({
+      expect(carryoverSeed("end_of_month_after_last_snapshot", "2026-05")).toEqual({
         yearMonth: "2026-05",
         asOfDate: "2026-05-30",
       });

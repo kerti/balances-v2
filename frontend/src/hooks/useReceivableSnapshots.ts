@@ -1,11 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { ReceivableSnapshot } from "@/api/types";
-import {
-  postSnapshotImport,
-  snapshotImportTemplateUrl,
-  type ImportArgs,
-} from "./snapshotImport";
+import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Receivable snapshots live under /api/receivables/{id}/snapshots — per-group
 // per ADR-0022.
@@ -28,8 +24,7 @@ export type UpdateReceivableSnapshotPayload = {
 export function useReceivableSnapshots(receivableId: string | null) {
   return useQuery({
     queryKey: ["receivable-snapshots", receivableId],
-    queryFn: () =>
-      api<ReceivableSnapshot[]>(`/api/receivables/${receivableId}/snapshots`),
+    queryFn: () => api<ReceivableSnapshot[]>(`/api/receivables/${receivableId}/snapshots`),
     enabled: !!receivableId,
   });
 }
@@ -54,17 +49,11 @@ export function useCreateReceivableSnapshot(receivableId: string) {
 export function useUpdateReceivableSnapshot(receivableId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      snapshotId: string;
-      payload: UpdateReceivableSnapshotPayload;
-    }) =>
-      api<ReceivableSnapshot>(
-        `/api/receivables/${receivableId}/snapshots/${args.snapshotId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(args.payload),
-        },
-      ),
+    mutationFn: (args: { snapshotId: string; payload: UpdateReceivableSnapshotPayload }) =>
+      api<ReceivableSnapshot>(`/api/receivables/${receivableId}/snapshots/${args.snapshotId}`, {
+        method: "PATCH",
+        body: JSON.stringify(args.payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({
         queryKey: ["receivable-snapshots", receivableId],
@@ -93,9 +82,7 @@ export function useDeleteReceivableSnapshot(receivableId: string) {
 // ----- bulk snapshot import (xlsx template) -------------------------------
 
 export function receivableImportTemplateUrl(receivableId: string): string {
-  return snapshotImportTemplateUrl(
-    `/api/receivables/${receivableId}/snapshots`,
-  );
+  return snapshotImportTemplateUrl(`/api/receivables/${receivableId}/snapshots`);
 }
 
 // receivableExportUrl is the plain-GET download for a receivable's full position
@@ -109,11 +96,7 @@ export function useImportReceivableSnapshots(receivableId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: ImportArgs) =>
-      postSnapshotImport(
-        `/api/receivables/${receivableId}/snapshots`,
-        args.file,
-        args.mode,
-      ),
+      postSnapshotImport(`/api/receivables/${receivableId}/snapshots`, args.file, args.mode),
     onSuccess: (result) => {
       // Only a real write should refresh the caches; a preview changed nothing.
       if (result.committed) {

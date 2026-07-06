@@ -10,10 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { EditIncomeDialog } from "@/components/EditIncomeDialog";
-import {
-  CreateIncomeDialog,
-  type DuplicateSeed,
-} from "@/components/CreateIncomeDialog";
+import { CreateIncomeDialog, type DuplicateSeed } from "@/components/CreateIncomeDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useDeleteIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
@@ -65,17 +62,13 @@ export function IncomeRow({ income }: Props) {
   // table cell stays compact.
   const categoryChip = t(`income:categories.${income.category}`);
   const regularityLabel = t(
-    isRoutine
-      ? "income:regularity.routineRowLabel"
-      : "income:regularity.incidentalRowLabel",
+    isRoutine ? "income:regularity.routineRowLabel" : "income:regularity.incidentalRowLabel",
   );
 
   return (
     <>
       <TableRow>
-        <TableCell className="whitespace-nowrap">
-          {formatDate(income.date)}
-        </TableCell>
+        <TableCell className="whitespace-nowrap">{formatDate(income.date)}</TableCell>
         <TableCell>
           <div className="flex items-center gap-1.5">
             <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs">
@@ -94,21 +87,13 @@ export function IncomeRow({ income }: Props) {
           {formatCurrency(income.amount, income.currency)}
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">
-          {income.description || (
-            <span className="text-muted-foreground/60">{"—"}</span>
-          )}
+          {income.description || <span className="text-muted-foreground/60">{"—"}</span>}
         </TableCell>
-        <TableCell className="text-xs text-muted-foreground">
-          {ownerLabel}
-        </TableCell>
+        <TableCell className="text-xs text-muted-foreground">{ownerLabel}</TableCell>
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("income:rowActions")}
-              >
+              <Button variant="ghost" size="icon" aria-label={t("income:rowActions")}>
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -119,10 +104,7 @@ export function IncomeRow({ income }: Props) {
               <DropdownMenuItem onClick={() => setDuplicateOpen(true)}>
                 {t("income:actions.duplicate")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
                 {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>

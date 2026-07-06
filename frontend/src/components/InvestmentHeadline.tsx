@@ -46,52 +46,32 @@ export function InvestmentHeadline({
 }: Props) {
   const { t } = useTranslation("investments");
 
-  const isClosed = !!(
-    (status === "sold" || status === "matured") &&
-    terminatedAt
-  );
+  const isClosed = !!((status === "sold" || status === "matured") && terminatedAt);
   // P/L is meaningful only when we have a current value to compare cost
   // against. No snapshot → no P/L number to show.
   const pl = latestValue !== null ? latestValue - totalCost : null;
-  const plPct =
-    pl !== null && Math.abs(totalCost) > 0 ? (pl / totalCost) * 100 : null;
+  const plPct = pl !== null && Math.abs(totalCost) > 0 ? (pl / totalCost) * 100 : null;
 
   return (
-    <div
-      className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm"
-      data-testid="investment-headline"
-    >
+    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm" data-testid="investment-headline">
       <div>
         <span className="text-muted-foreground">{t("headline.totalCost")}</span>{" "}
-        <span className="tabular-nums">
-          {formatCurrency(totalCost.toString(), currency)}
-        </span>
+        <span className="tabular-nums">{formatCurrency(totalCost.toString(), currency)}</span>
       </div>
       {isClosed ? (
         <div data-testid="investment-headline-closed">
           <span className="text-muted-foreground">
-            {t(
-              status === "matured"
-                ? "headline.closed.matured"
-                : "headline.closed.sold",
-            )}
+            {t(status === "matured" ? "headline.closed.matured" : "headline.closed.sold")}
           </span>{" "}
           <span>{formatDate(terminatedAt)}</span>
         </div>
       ) : (
         <div>
-          <span className="text-muted-foreground">
-            {t("headline.unrealizedPL")}
-          </span>{" "}
+          <span className="text-muted-foreground">{t("headline.unrealizedPL")}</span>{" "}
           {pl === null ? (
-            <span className="text-muted-foreground">
-              {t("headline.unrealizedPLEmpty")}
-            </span>
+            <span className="text-muted-foreground">{t("headline.unrealizedPLEmpty")}</span>
           ) : (
-            <span
-              className={cn("tabular-nums", plColor(pl))}
-              data-testid="investment-headline-pl"
-            >
+            <span className={cn("tabular-nums", plColor(pl))} data-testid="investment-headline-pl">
               {formatPL(pl, plPct, currency)}
             </span>
           )}

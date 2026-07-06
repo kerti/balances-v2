@@ -33,12 +33,7 @@ type Props = {
 // even request the chunk on empty data.
 const SnapshotChartImpl = lazyWithReload(() => import("./SnapshotChartImpl"));
 
-export function SnapshotChart({
-  snapshots,
-  currency,
-  costSeries,
-  status,
-}: Props) {
+export function SnapshotChart({ snapshots, currency, costSeries, status }: Props) {
   if (snapshots.length === 0) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>

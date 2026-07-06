@@ -34,8 +34,7 @@ export function useInvestmentTimeSeries(): {
 } {
   const query = useQuery({
     queryKey: ["investment-time-series"],
-    queryFn: () =>
-      api<InvestmentTimeSeriesItem[]>("/api/investments/time-series"),
+    queryFn: () => api<InvestmentTimeSeriesItem[]>("/api/investments/time-series"),
   });
 
   const byId = useMemo(() => {

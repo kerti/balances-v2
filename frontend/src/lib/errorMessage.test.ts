@@ -19,9 +19,7 @@ describe("errorMessage", () => {
       code: "INVALID_ID",
       args: { field: "asset_id" },
     });
-    expect(errorMessage(err)).toBe(
-      i18n.t("errors:code.INVALID_ID", { field: "asset_id" }),
-    );
+    expect(errorMessage(err)).toBe(i18n.t("errors:code.INVALID_ID", { field: "asset_id" }));
   });
 
   it("resolves a known VALIDATION rule sub-key into the outer template", () => {
@@ -30,9 +28,7 @@ describe("errorMessage", () => {
       args: { field: "email", rule: "email" },
     });
     const rule = i18n.t("errors:code.VALIDATION_RULE.email");
-    expect(errorMessage(err)).toBe(
-      i18n.t("errors:code.VALIDATION", { field: "email", rule }),
-    );
+    expect(errorMessage(err)).toBe(i18n.t("errors:code.VALIDATION", { field: "email", rule }));
   });
 
   it("falls back to the raw rule token for an unknown VALIDATION rule", () => {
@@ -68,9 +64,7 @@ describe("errorMessage", () => {
   });
 
   it("uses the fallback arg for a non-Error throw when given one", () => {
-    expect(errorMessage("a thrown string", "custom fallback")).toBe(
-      "custom fallback",
-    );
+    expect(errorMessage("a thrown string", "custom fallback")).toBe("custom fallback");
   });
 
   it("falls back to UNKNOWN for a non-Error throw with no fallback", () => {

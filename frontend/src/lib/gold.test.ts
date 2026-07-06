@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  formatGoldPurity,
-  goldPurityPresetKarat,
-  GOLD_PURITY_PRESETS,
-} from "@/lib/gold";
+import { formatGoldPurity, goldPurityPresetKarat, GOLD_PURITY_PRESETS } from "@/lib/gold";
 
 describe("formatGoldPurity", () => {
   it("renders pure gold (0.999+) as 24K with the conventional suffix", () => {

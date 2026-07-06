@@ -1,24 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pencil, Trash2, Check, X } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { TagBadge } from "@/components/TagBadge";
-import {
-  useTags,
-  useCreateTag,
-  useUpdateTag,
-  useDeleteTag,
-} from "@/hooks/useTags";
+import { useTags, useCreateTag, useUpdateTag, useDeleteTag } from "@/hooks/useTags";
 import type { Tag } from "@/api/types";
 import { TAG_SWATCHES, DEFAULT_TAG_COLOR } from "@/lib/tagColors";
 import { errorMessage } from "@/lib/errorMessage";
@@ -45,9 +34,7 @@ function SwatchPicker({
           disabled={disabled}
           onClick={() => onChange(c)}
           className={`size-6 rounded-full border-2 transition-transform ${
-            value === c
-              ? "scale-110 border-foreground"
-              : "border-transparent hover:scale-105"
+            value === c ? "scale-110 border-foreground" : "border-transparent hover:scale-105"
           }`}
           style={{ backgroundColor: c }}
         />
@@ -115,11 +102,7 @@ export function TagsCard() {
               }}
               disabled={createTag.isPending}
             />
-            <SwatchPicker
-              value={color}
-              onChange={setColor}
-              disabled={createTag.isPending}
-            />
+            <SwatchPicker value={color} onChange={setColor} disabled={createTag.isPending} />
             <Button
               type="button"
               data-testid="add-tag"
@@ -130,9 +113,7 @@ export function TagsCard() {
             </Button>
           </div>
           {createTag.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(createTag.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(createTag.error)}</p>
           )}
         </div>
       </CardContent>
@@ -159,10 +140,7 @@ function TagRow({ tag }: { tag: Tag }) {
   const save = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    updateTag.mutate(
-      { name: trimmed, color },
-      { onSuccess: () => setEditing(false) },
-    );
+    updateTag.mutate({ name: trimmed, color }, { onSuccess: () => setEditing(false) });
   };
 
   if (editing) {
@@ -180,11 +158,7 @@ function TagRow({ tag }: { tag: Tag }) {
           }}
           disabled={updateTag.isPending}
         />
-        <SwatchPicker
-          value={color}
-          onChange={setColor}
-          disabled={updateTag.isPending}
-        />
+        <SwatchPicker value={color} onChange={setColor} disabled={updateTag.isPending} />
         <Button
           type="button"
           size="icon"
@@ -205,9 +179,7 @@ function TagRow({ tag }: { tag: Tag }) {
           <X className="size-4" />
         </Button>
         {updateTag.isError && (
-          <p className="w-full text-sm text-destructive">
-            {errorMessage(updateTag.error)}
-          </p>
+          <p className="w-full text-sm text-destructive">{errorMessage(updateTag.error)}</p>
         )}
       </div>
     );
@@ -245,9 +217,7 @@ function TagRow({ tag }: { tag: Tag }) {
         confirmLabel={t("common:delete")}
         destructive
         pending={deleteTag.isPending}
-        onConfirm={() =>
-          deleteTag.mutate(tag.id, { onSuccess: () => setConfirmOpen(false) })
-        }
+        onConfirm={() => deleteTag.mutate(tag.id, { onSuccess: () => setConfirmOpen(false) })}
       />
     </div>
   );

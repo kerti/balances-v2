@@ -2,20 +2,8 @@ import { useState } from "react";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useReceivable, useDeleteReceivable } from "@/hooks/useReceivables";
 import {
@@ -66,10 +54,7 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [page, setPage] = useState(1);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
 
   function handleConfirmDelete() {
@@ -82,9 +67,7 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
   }
 
   if (isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
   }
   if (error) {
     return (
@@ -132,18 +115,10 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
-          <h1
-            data-testid="tour-overview"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
             {receivable.display_name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -174,11 +149,7 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
             currentTerminatedAt={receivable.terminated_at}
             currentNote={receivable.termination_note}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-1 size-4" />
             {t("common:delete")}
           </Button>
@@ -219,10 +190,7 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SnapshotChart
-              snapshots={snapshots}
-              currency={receivable.native_currency}
-            />
+            <SnapshotChart snapshots={snapshots} currency={receivable.native_currency} />
           </CardContent>
         </Card>
       )}
@@ -232,21 +200,14 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("receivables:snapshotsTitle")}</CardTitle>
-              <CardDescription>
-                {t("receivables:snapshotsDescription")}
-              </CardDescription>
+              <CardDescription>{t("receivables:snapshotsDescription")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Export the full position workbook (Detail + Snapshots). Plain
                   anchor download — session cookie rides along same-origin, like
                   the import template link. Available regardless of status so a
                   terminated position can still be backed up. */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                data-testid="receivable-export"
-              >
+              <Button asChild size="sm" variant="outline" data-testid="receivable-export">
                 <a href={receivableExportUrl(receivable.id)}>
                   <Download className="mr-1 size-4" />
                   {t("common:export.trigger")}
@@ -278,9 +239,7 @@ export function ReceivableDetail({ receivableId, onBack }: Props) {
         </CardHeader>
         <CardContent className="p-0">
           {!snapshots || snapshots.length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              {t("receivables:snapshotsEmpty")}
-            </p>
+            <p className="p-6 text-sm text-muted-foreground">{t("receivables:snapshotsEmpty")}</p>
           ) : (
             <>
               <Table>

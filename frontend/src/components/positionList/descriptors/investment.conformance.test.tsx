@@ -161,23 +161,13 @@ const cases: Case[] = [
 describe("investment descriptors (conformance)", () => {
   it.each(cases)(
     "$label loads and surfaces its subtype column + headline",
-    async ({
-      descriptor,
-      rowTestId,
-      headlineTestId,
-      name,
-      subtype,
-      path,
-      item,
-    }) => {
+    async ({ descriptor, rowTestId, headlineTestId, name, subtype, path, item }) => {
       const handlers: HttpHandler[] = [
         http.get(path, () => HttpResponse.json([item])),
         http.get("/api/investments/time-series", () => HttpResponse.json([])),
       ];
       server.use(...handlers);
-      renderWithProviders(
-        <PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />,
-      );
+      renderWithProviders(<PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />);
 
       const row = await screen.findByTestId(rowTestId);
       expect(within(row).getByText(name)).toBeInTheDocument();

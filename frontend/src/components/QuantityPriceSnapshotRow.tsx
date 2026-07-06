@@ -33,11 +33,7 @@ type Props<TUpdate, TDelete> = {
   // Unit label is subtype-specific ("sh" for stocks, "units" for mutual
   // funds, "g" for gold). Passed in so this row stays subtype-agnostic.
   quantityUnit: string;
-  updateMutation: UseMutationResult<
-    TUpdate,
-    unknown,
-    UpdateQuantityPriceSnapshotMutationVariables
-  >;
+  updateMutation: UseMutationResult<TUpdate, unknown, UpdateQuantityPriceSnapshotMutationVariables>;
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
 };
 
@@ -61,9 +57,7 @@ export function QuantityPriceSnapshotRow<TUpdate, TDelete>({
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">
-            {formatYearMonth(snapshot.year_month)}
-          </div>
+          <div className="font-medium">{formatYearMonth(snapshot.year_month)}</div>
           {snapshot.as_of_date && (
             <div className="text-xs text-muted-foreground">
               {t("common:snapshot.statementPrefix", {
@@ -83,17 +77,11 @@ export function QuantityPriceSnapshotRow<TUpdate, TDelete>({
         <TableCell className="text-right tabular-nums">
           {formatCurrency(snapshot.amount, snapshot.currency)}
         </TableCell>
-        <TableCell className="text-muted-foreground">
-          {snapshot.description ?? "—"}
-        </TableCell>
+        <TableCell className="text-muted-foreground">{snapshot.description ?? "—"}</TableCell>
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("investments:snapshotRow.actions")}
-              >
+              <Button variant="ghost" size="icon" aria-label={t("investments:snapshotRow.actions")}>
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -101,10 +89,7 @@ export function QuantityPriceSnapshotRow<TUpdate, TDelete>({
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
                 {t("common:actions.edit")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
                 {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>

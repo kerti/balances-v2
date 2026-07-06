@@ -19,14 +19,7 @@ type Props = {
 // stay separate (no FX — see lib/totals); a single-currency household sees one
 // figure, a mixed one sees "Rp … · $ …". Renders nothing when no active
 // position carries a balance.
-export function ListHeadline({
-  totals,
-  count,
-  label,
-  noun,
-  nounPlural,
-  testId,
-}: Props) {
+export function ListHeadline({ totals, count, label, noun, nounPlural, testId }: Props) {
   const { t } = useTranslation("common");
   if (totals.length === 0) return null;
   return (

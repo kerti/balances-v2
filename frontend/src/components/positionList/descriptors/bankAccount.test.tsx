@@ -102,10 +102,7 @@ describe("bankAccountDescriptor (conformance)", () => {
   it("loads the list and renders every declared column", async () => {
     stubEndpoints();
     renderWithProviders(
-      <PositionListScreen
-        descriptor={bankAccountDescriptor}
-        onSelect={vi.fn()}
-      />,
+      <PositionListScreen descriptor={bankAccountDescriptor} onSelect={vi.fn()} />,
     );
 
     // List hook resolved through MSW → the row is here.
@@ -113,9 +110,7 @@ describe("bankAccountDescriptor (conformance)", () => {
 
     // Shared surface: name + the bank-detail secondary line + status + value.
     expect(within(row).getByText("Everyday Checking")).toBeInTheDocument();
-    expect(
-      within(row).getByText(/Test Bank · 1234567890 · Savings/),
-    ).toBeInTheDocument();
+    expect(within(row).getByText(/Test Bank · 1234567890 · Savings/)).toBeInTheDocument();
     expect(within(row).getByText("Active")).toBeInTheDocument();
     expect(within(row).getByText(/4,?321/)).toBeInTheDocument();
 
@@ -123,12 +118,8 @@ describe("bankAccountDescriptor (conformance)", () => {
     expect(within(row).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
 
     // Declared headers + headline slot.
-    expect(
-      screen.getByRole("columnheader", { name: /Ownership/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("columnheader", { name: /Latest balance/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Ownership/ })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Latest balance/ })).toBeInTheDocument();
     expect(screen.getByTestId("bank-accounts-total")).toBeInTheDocument();
   });
 });

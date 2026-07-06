@@ -24,9 +24,7 @@ export type CostBasis = { cost: number; heldQty: number };
 // caller can zip it back with `snapshots` by index.
 type SnapshotLike = { year_month: string };
 
-export function computeCostBasis(
-  transactions: InvestmentTransaction[],
-): CostBasis {
+export function computeCostBasis(transactions: InvestmentTransaction[]): CostBasis {
   let cost = 0;
   let qty = 0;
   for (const tx of orderedByDate(transactions)) {
@@ -51,9 +49,7 @@ export function costBasisSeries(
 ): Array<{ year_month: string; cost: number }> {
   const monthOf = (s: string) => s.slice(0, 7);
   const ordered = orderedByDate(transactions);
-  const monthsAsc = [
-    ...new Set(snapshots.map((s) => monthOf(s.year_month))),
-  ].sort();
+  const monthsAsc = [...new Set(snapshots.map((s) => monthOf(s.year_month)))].sort();
 
   let cost = 0;
   let qty = 0;
@@ -91,12 +87,8 @@ export function flatCostSeries(
 
 // ---- internals --------------------------------------------------------
 
-function orderedByDate(
-  transactions: InvestmentTransaction[],
-): InvestmentTransaction[] {
-  return [...transactions].sort((a, b) =>
-    a.transaction_date.localeCompare(b.transaction_date),
-  );
+function orderedByDate(transactions: InvestmentTransaction[]): InvestmentTransaction[] {
+  return [...transactions].sort((a, b) => a.transaction_date.localeCompare(b.transaction_date));
 }
 
 // Side-effecting reducer step. Reads current (cost, qty) via `read` so

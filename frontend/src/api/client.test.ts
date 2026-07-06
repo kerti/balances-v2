@@ -8,13 +8,11 @@ describe("api", () => {
   });
 
   it("attaches an abort signal to every request (#360 request timeout)", async () => {
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        expect(init?.signal).toBeInstanceOf(AbortSignal);
-        expect(init?.signal?.aborted).toBe(false);
-        return new Response(null, { status: 204 });
-      },
-    );
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      expect(init?.signal?.aborted).toBe(false);
+      return new Response(null, { status: 204 });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     await api("/api/whatever");
@@ -24,12 +22,10 @@ describe("api", () => {
 
   it("combines a caller-supplied signal with the default timeout signal", async () => {
     const controller = new AbortController();
-    const fetchMock = vi.fn(
-      async (_input: RequestInfo | URL, init?: RequestInit) => {
-        expect(init?.signal).toBeInstanceOf(AbortSignal);
-        return new Response(null, { status: 204 });
-      },
-    );
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.signal).toBeInstanceOf(AbortSignal);
+      return new Response(null, { status: 204 });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     await api("/api/whatever", { signal: controller.signal });

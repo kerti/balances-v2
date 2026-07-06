@@ -15,28 +15,16 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import {
   GroupCategoryStackChart,
   type GroupStackCategory,
 } from "@/components/GroupCategoryStackChart";
-import {
-  InvestmentPieChart,
-  type PieSlice,
-} from "@/components/InvestmentPieChart";
+import { InvestmentPieChart, type PieSlice } from "@/components/InvestmentPieChart";
 import { useLiabilities } from "@/hooks/useLiabilities";
 import { useLiabilityTimeSeries } from "@/hooks/useLiabilityTimeSeries";
-import {
-  aggregateGroupHome,
-  type GroupPosition,
-} from "@/lib/groupHomeAggregates";
+import { aggregateGroupHome, type GroupPosition } from "@/lib/groupHomeAggregates";
 import { formatCurrency } from "@/lib/format";
 
 type LiabilityCategory = "personal" | "institutional";
@@ -64,9 +52,7 @@ export function LiabilitiesHome() {
         currency: it.liability.native_currency,
         status: it.liability.status,
         terminated_at: it.liability.terminated_at,
-        latestValue: it.latest_snapshot
-          ? Number(it.latest_snapshot.amount)
-          : null,
+        latestValue: it.latest_snapshot ? Number(it.latest_snapshot.amount) : null,
         snapshots: ts?.snapshots ?? [],
         category: it.liability.subtype,
       });
@@ -81,13 +67,11 @@ export function LiabilitiesHome() {
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);
 
-  const stackCategories: GroupStackCategory[] = LIABILITY_CATEGORIES.map(
-    (c) => ({
-      key: c,
-      label: t(`liabilities:home.categoryLabel.${c}`),
-      color: CATEGORY_FILLS[c],
-    }),
-  );
+  const stackCategories: GroupStackCategory[] = LIABILITY_CATEGORIES.map((c) => ({
+    key: c,
+    label: t(`liabilities:home.categoryLabel.${c}`),
+    color: CATEGORY_FILLS[c],
+  }));
 
   return (
     <div className="space-y-6" data-testid="liabilities-home">
@@ -95,9 +79,7 @@ export function LiabilitiesHome() {
         <h1 className="text-2xl font-semibold tracking-tight">
           {t("common:home.liabilities.title")}
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {t("liabilities:home.subtitle")}
-        </p>
+        <p className="text-sm text-muted-foreground">{t("liabilities:home.subtitle")}</p>
       </div>
 
       {liabilities.isPending && (
@@ -112,10 +94,7 @@ export function LiabilitiesHome() {
         </p>
       )}
 
-      <TotalOwedCard
-        aggregates={aggregates.byCurrency}
-        count={aggregates.count}
-      />
+      <TotalOwedCard aggregates={aggregates.byCurrency} count={aggregates.count} />
 
       {currencies.map((currency) => (
         <div key={currency} className="space-y-4">
@@ -130,10 +109,7 @@ export function LiabilitiesHome() {
           />
           <CategoryPieCard
             currency={currency}
-            slices={buildCategorySlices(
-              aggregates.categoryPieByCurrency.get(currency) ?? [],
-              t,
-            )}
+            slices={buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t)}
           />
         </div>
       ))}
@@ -143,10 +119,7 @@ export function LiabilitiesHome() {
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
-function buildCategorySlices(
-  pie: { category: string; value: number }[],
-  t: TFn,
-): PieSlice[] {
+function buildCategorySlices(pie: { category: string; value: number }[], t: TFn): PieSlice[] {
   return LIABILITY_CATEGORIES.map((c) => {
     const found = pie.find((p) => p.category === c);
     return {
@@ -169,9 +142,7 @@ function TotalOwedCard({
   if (aggregates.length === 0) return null;
   return (
     <div className="rounded-lg border p-4" data-testid="home-total">
-      <div className="text-sm text-muted-foreground">
-        {t("home.totalOwedTitle")}
-      </div>
+      <div className="text-sm text-muted-foreground">{t("home.totalOwedTitle")}</div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
           <span key={a.currency}>
@@ -200,9 +171,7 @@ function ValueCard({
     <Card data-testid={`home-value-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.valueChartTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.valueChartDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.valueChartDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <SnapshotChart
@@ -232,37 +201,23 @@ function CategoryStackCard({
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryStackTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryStackDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryStackDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
-        <GroupCategoryStackChart
-          series={series}
-          categories={categories}
-          currency={currency}
-        />
+        <GroupCategoryStackChart series={series} categories={categories} currency={currency} />
       </CardContent>
     </Card>
   );
 }
 
-function CategoryPieCard({
-  currency,
-  slices,
-}: {
-  currency: string;
-  slices: PieSlice[];
-}) {
+function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("liabilities");
   if (slices.every((s) => s.value <= 0)) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>
         <CardTitle>{t("home.categoryPieTitle")}</CardTitle>
-        <CardDescription>
-          {t("home.categoryPieDescription", { currency })}
-        </CardDescription>
+        <CardDescription>{t("home.categoryPieDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
         <InvestmentPieChart slices={slices} currency={currency} />

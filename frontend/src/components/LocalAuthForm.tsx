@@ -87,11 +87,7 @@ export function LocalAuthForm() {
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="space-y-3"
-      data-testid="local-auth-form"
-    >
+    <form onSubmit={onSubmit} className="space-y-3" data-testid="local-auth-form">
       <div className="grid grid-cols-2 gap-1 rounded-md bg-muted p-1">
         <button
           type="button"
@@ -114,10 +110,7 @@ export function LocalAuthForm() {
       </div>
 
       {mode === "signin" && methods?.demo_mode && (
-        <p
-          data-testid="local-demo-hint"
-          className="text-xs text-muted-foreground"
-        >
+        <p data-testid="local-demo-hint" className="text-xs text-muted-foreground">
           {t("signIn.local.demoHint", {
             email: methods.demo_email,
             password: methods.demo_password,
@@ -127,9 +120,7 @@ export function LocalAuthForm() {
 
       {mode === "register" && (
         <div className="space-y-1">
-          <Label htmlFor="local-display-name">
-            {t("signIn.local.displayName")}
-          </Label>
+          <Label htmlFor="local-display-name">{t("signIn.local.displayName")}</Label>
           <Input
             id="local-display-name"
             data-testid="local-display-name"
@@ -165,9 +156,7 @@ export function LocalAuthForm() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {mode === "register" && (
-          <p className="text-xs text-muted-foreground">
-            {t("signIn.local.passwordHint")}
-          </p>
+          <p className="text-xs text-muted-foreground">{t("signIn.local.passwordHint")}</p>
         )}
       </div>
 

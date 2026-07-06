@@ -8,11 +8,7 @@ import { preferredName } from "@/lib/names";
 import { useSession } from "@/hooks/useSession";
 import { RiskProfileSelect } from "@/components/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/PositionFormDialog";
-import type {
-  RolloverPolicy,
-  TimeDeposit,
-  TimeDepositListItem,
-} from "@/api/types";
+import type { RolloverPolicy, TimeDeposit, TimeDepositListItem } from "@/api/types";
 
 type Props = {
   open: boolean;
@@ -39,11 +35,7 @@ function toForm(td: TimeDeposit | TimeDepositListItem) {
   };
 }
 
-export function EditTimeDepositDialog({
-  open,
-  onOpenChange,
-  timeDeposit,
-}: Props) {
+export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(() => toForm(timeDeposit));
   const { data: user } = useSession();
@@ -56,9 +48,7 @@ export function EditTimeDepositDialog({
   // server's ErrInvalidDepositTerm. (A term that strands existing snapshots is
   // caught server-side as OUTSIDE_DEPOSIT_TERM and surfaced via mutation.error.)
   const termInvalid =
-    !!form.placement_date &&
-    !!form.maturity_date &&
-    form.maturity_date <= form.placement_date;
+    !!form.placement_date && !!form.maturity_date && form.maturity_date <= form.placement_date;
 
   function submit(close: () => void) {
     if (termInvalid) return;
@@ -67,8 +57,7 @@ export function EditTimeDepositDialog({
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         bank_name: form.bank_name,
         principal: form.principal,
@@ -99,9 +88,7 @@ export function EditTimeDepositDialog({
     >
       <div className="space-y-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_td_display_name">
-            {t("common:fields.displayName")}
-          </Label>
+          <Label htmlFor="edit_td_display_name">{t("common:fields.displayName")}</Label>
           <Input
             id="edit_td_display_name"
             required
@@ -110,9 +97,7 @@ export function EditTimeDepositDialog({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_td_description">
-            {t("common:fields.description")}
-          </Label>
+          <Label htmlFor="edit_td_description">{t("common:fields.description")}</Label>
           <Input
             id="edit_td_description"
             value={form.description}
@@ -123,9 +108,7 @@ export function EditTimeDepositDialog({
 
       <div className="space-y-3 border-t pt-4">
         <div className="grid gap-2">
-          <Label htmlFor="edit_td_bank_name">
-            {t("investments:timeDeposit.fields.bankName")}
-          </Label>
+          <Label htmlFor="edit_td_bank_name">{t("investments:timeDeposit.fields.bankName")}</Label>
           <Input
             id="edit_td_bank_name"
             required
@@ -134,9 +117,7 @@ export function EditTimeDepositDialog({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_td_principal">
-            {t("investments:timeDeposit.fields.principal")}
-          </Label>
+          <Label htmlFor="edit_td_principal">{t("investments:timeDeposit.fields.principal")}</Label>
           <Input
             id="edit_td_principal"
             required
@@ -158,9 +139,7 @@ export function EditTimeDepositDialog({
               required
               inputMode="decimal"
               value={form.interest_rate}
-              onChange={(e) =>
-                setForm({ ...form, interest_rate: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
             />
           </div>
           <div className="grid gap-2">
@@ -172,9 +151,7 @@ export function EditTimeDepositDialog({
               required
               inputMode="numeric"
               value={form.term_months}
-              onChange={(e) =>
-                setForm({ ...form, term_months: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, term_months: e.target.value })}
             />
           </div>
         </div>
@@ -189,9 +166,7 @@ export function EditTimeDepositDialog({
               type="date"
               max="9999-12-31"
               value={form.placement_date}
-              onChange={(e) =>
-                setForm({ ...form, placement_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, placement_date: e.target.value })}
             />
           </div>
           <div className="grid gap-2">
@@ -205,17 +180,12 @@ export function EditTimeDepositDialog({
               min={form.placement_date || undefined}
               max="9999-12-31"
               value={form.maturity_date}
-              onChange={(e) =>
-                setForm({ ...form, maturity_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
             />
           </div>
         </div>
         {termInvalid && (
-          <p
-            data-testid="edit-td-term-error"
-            className="text-sm text-destructive"
-          >
+          <p data-testid="edit-td-term-error" className="text-sm text-destructive">
             {t("investments:timeDeposit.maturityAfterPlacement")}
           </p>
         )}
@@ -241,9 +211,7 @@ export function EditTimeDepositDialog({
               {t("investments:timeDeposit.rolloverPolicy.auto_renew_principal")}
             </option>
             <option value="auto_renew_with_interest">
-              {t(
-                "investments:timeDeposit.rolloverPolicy.auto_renew_with_interest",
-              )}
+              {t("investments:timeDeposit.rolloverPolicy.auto_renew_with_interest")}
             </option>
             <option value="no_rollover">
               {t("investments:timeDeposit.rolloverPolicy.no_rollover")}
@@ -282,16 +250,12 @@ export function EditTimeDepositDialog({
               aria-label={t("investments:ownership.soleOwnerAria")}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={effectiveSoleOwnerID ?? ""}
-              onChange={(e) =>
-                setForm({ ...form, sole_owner_user_id: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
             >
               {(members ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {preferredName(m)}
-                  {user && m.id === user.id
-                    ? t("common:ownership.youSuffix")
-                    : ""}
+                  {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
                 </option>
               ))}
             </select>

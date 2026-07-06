@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type {
-  InvestmentTransaction,
-  TransactionType,
-  Disposition,
-} from "@/api/types";
+import type { InvestmentTransaction, TransactionType, Disposition } from "@/api/types";
 
 // Transactions live under /api/investments/{id}/transactions. One shared
 // table per migration 00010; the repo's validateInvestmentTransactionType
@@ -53,28 +49,19 @@ export type UpdateInvestmentTransactionPayload = Omit<
 export function useInvestmentTransactions(investmentId: string | null) {
   return useQuery({
     queryKey: ["investment-transactions", investmentId],
-    queryFn: () =>
-      api<InvestmentTransaction[]>(
-        `/api/investments/${investmentId}/transactions`,
-      ),
+    queryFn: () => api<InvestmentTransaction[]>(`/api/investments/${investmentId}/transactions`),
     enabled: !!investmentId,
   });
 }
 
-export function useCreateInvestmentTransaction(
-  investmentId: string,
-  detailKey?: string,
-) {
+export function useCreateInvestmentTransaction(investmentId: string, detailKey?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateInvestmentTransactionPayload) =>
-      api<InvestmentTransaction>(
-        `/api/investments/${investmentId}/transactions`,
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        },
-      ),
+      api<InvestmentTransaction>(`/api/investments/${investmentId}/transactions`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({
         queryKey: ["investment-transactions", investmentId],
@@ -96,10 +83,7 @@ export function useCreateInvestmentTransaction(
 export function useUpdateInvestmentTransaction(investmentId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      transactionId: string;
-      payload: UpdateInvestmentTransactionPayload;
-    }) =>
+    mutationFn: (args: { transactionId: string; payload: UpdateInvestmentTransactionPayload }) =>
       api<InvestmentTransaction>(
         `/api/investments/${investmentId}/transactions/${args.transactionId}`,
         {

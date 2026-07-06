@@ -64,9 +64,7 @@ export function TerminatePositionDialog({
 
   function reset() {
     setStatus(currentStatus);
-    setTerminatedAt(
-      currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "",
-    );
+    setTerminatedAt(currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "");
     setNote(currentNote ?? "");
     mutation.reset();
   }
@@ -116,9 +114,7 @@ export function TerminatePositionDialog({
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="lifecycle_status">
-              {t("terminate.statusLabel")}
-            </Label>
+            <Label htmlFor="lifecycle_status">{t("terminate.statusLabel")}</Label>
             <select
               id="lifecycle_status"
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -135,9 +131,7 @@ export function TerminatePositionDialog({
 
           {!isActive && (
             <div className="grid gap-2">
-              <Label htmlFor="lifecycle_terminated_at">
-                {t("terminate.terminatedOnLabel")}
-              </Label>
+              <Label htmlFor="lifecycle_terminated_at">{t("terminate.terminatedOnLabel")}</Label>
               <Input
                 id="lifecycle_terminated_at"
                 type="date"
@@ -160,9 +154,7 @@ export function TerminatePositionDialog({
           </div>
 
           {mutation.error && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>

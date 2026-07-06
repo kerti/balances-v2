@@ -22,9 +22,7 @@ export function RouteErrorBoundary() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-center">
       <h1 className="text-lg font-medium">{t("common:somethingWentWrong")}</h1>
-      <p className="max-w-sm text-sm text-muted-foreground">
-        {t("errors:appError.body")}
-      </p>
+      <p className="max-w-sm text-sm text-muted-foreground">{t("errors:appError.body")}</p>
       <Button onClick={handleReload}>{t("errors:appError.reload")}</Button>
     </div>
   );

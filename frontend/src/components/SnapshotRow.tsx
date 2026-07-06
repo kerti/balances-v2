@@ -28,11 +28,7 @@ type SnapshotLike = {
 
 type Props<TUpdate, TDelete> = {
   snapshot: SnapshotLike;
-  updateMutation: UseMutationResult<
-    TUpdate,
-    unknown,
-    UpdateSnapshotMutationVariables
-  >;
+  updateMutation: UseMutationResult<TUpdate, unknown, UpdateSnapshotMutationVariables>;
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
 };
 
@@ -55,9 +51,7 @@ export function SnapshotRow<TUpdate, TDelete>({
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">
-            {formatYearMonth(snapshot.year_month)}
-          </div>
+          <div className="font-medium">{formatYearMonth(snapshot.year_month)}</div>
           {snapshot.as_of_date && (
             <div className="text-xs text-muted-foreground">
               {t("snapshot.statementPrefix", {
@@ -66,20 +60,12 @@ export function SnapshotRow<TUpdate, TDelete>({
             </div>
           )}
         </TableCell>
-        <TableCell>
-          {formatCurrency(snapshot.amount, snapshot.currency)}
-        </TableCell>
-        <TableCell className="text-muted-foreground">
-          {snapshot.description ?? "—"}
-        </TableCell>
+        <TableCell>{formatCurrency(snapshot.amount, snapshot.currency)}</TableCell>
+        <TableCell className="text-muted-foreground">{snapshot.description ?? "—"}</TableCell>
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("snapshot.rowActions")}
-              >
+              <Button variant="ghost" size="icon" aria-label={t("snapshot.rowActions")}>
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -87,10 +73,7 @@ export function SnapshotRow<TUpdate, TDelete>({
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
                 {t("actions.edit")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
                 {t("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>

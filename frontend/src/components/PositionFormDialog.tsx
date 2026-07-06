@@ -121,9 +121,7 @@ export function PositionFormDialog({
         >
           {children}
 
-          {error != null && (
-            <p className="text-sm text-destructive">{errorMessage(error)}</p>
-          )}
+          {error != null && <p className="text-sm text-destructive">{errorMessage(error)}</p>}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>

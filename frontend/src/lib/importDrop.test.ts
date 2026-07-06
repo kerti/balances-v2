@@ -17,15 +17,12 @@ describe("isXlsxFile", () => {
   });
 
   it("accepts the spreadsheet MIME even if the name lacks the extension", () => {
-    const mime =
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    const mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     expect(isXlsxFile(makeFile("download", mime))).toBe(true);
   });
 
   it("rejects non-spreadsheet files", () => {
-    expect(isXlsxFile(makeFile("statement.pdf", "application/pdf"))).toBe(
-      false,
-    );
+    expect(isXlsxFile(makeFile("statement.pdf", "application/pdf"))).toBe(false);
     expect(isXlsxFile(makeFile("data.csv", "text/csv"))).toBe(false);
   });
 });

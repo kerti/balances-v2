@@ -28,11 +28,7 @@ export function SortableHeader({
   className,
   testId,
 }: Props) {
-  const Icon = !active
-    ? ChevronsUpDown
-    : dir === "asc"
-      ? ChevronUp
-      : ChevronDown;
+  const Icon = !active ? ChevronsUpDown : dir === "asc" ? ChevronUp : ChevronDown;
   return (
     <TableHead
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
@@ -48,12 +44,7 @@ export function SortableHeader({
         )}
       >
         {label}
-        <Icon
-          className={cn(
-            "size-3.5",
-            active ? "text-foreground" : "text-muted-foreground",
-          )}
-        />
+        <Icon className={cn("size-3.5", active ? "text-foreground" : "text-muted-foreground")} />
       </button>
     </TableHead>
   );

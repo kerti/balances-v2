@@ -70,9 +70,7 @@ export function AccruedInterestSnapshotRow<TUpdate, TDelete>({
     <>
       <TableRow>
         <TableCell>
-          <div className="font-medium">
-            {formatYearMonth(snapshot.year_month)}
-          </div>
+          <div className="font-medium">{formatYearMonth(snapshot.year_month)}</div>
           {snapshot.as_of_date && (
             <div className="text-xs text-muted-foreground">
               {t("common:snapshot.statementPrefix", {
@@ -92,17 +90,11 @@ export function AccruedInterestSnapshotRow<TUpdate, TDelete>({
         <TableCell className="text-right tabular-nums">
           {formatCurrency(snapshot.amount, snapshot.currency)}
         </TableCell>
-        <TableCell className="text-muted-foreground">
-          {snapshot.description ?? "—"}
-        </TableCell>
+        <TableCell className="text-muted-foreground">{snapshot.description ?? "—"}</TableCell>
         <TableCell className="text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={t("investments:snapshotRow.actions")}
-              >
+              <Button variant="ghost" size="icon" aria-label={t("investments:snapshotRow.actions")}>
                 <MoreHorizontal className="size-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -110,10 +102,7 @@ export function AccruedInterestSnapshotRow<TUpdate, TDelete>({
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
                 {t("common:actions.edit")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setDeleteOpen(true)}
-                variant="destructive"
-              >
+              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
                 {t("common:delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>

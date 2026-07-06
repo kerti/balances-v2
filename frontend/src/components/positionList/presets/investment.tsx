@@ -14,10 +14,7 @@ import { useTranslation } from "react-i18next";
 import { InvestmentListHeadline } from "@/components/InvestmentListHeadline";
 import { ListTimeGraph } from "@/components/ListTimeGraph";
 import { RiskProfileBadge } from "@/components/RiskProfileBadge";
-import {
-  RiskProfileFilter,
-  type RiskProfileFilterValue,
-} from "@/components/RiskProfileFilter";
+import { RiskProfileFilter, type RiskProfileFilterValue } from "@/components/RiskProfileFilter";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
@@ -71,13 +68,7 @@ export type InvestmentConfig<T> = {
 // The transaction-activity cell content (issue #67), lifted out of
 // TransactionActivityCell's `<TableCell>` wrapper so it reads as a
 // presentation-neutral extra column.
-function ActivityContent({
-  count,
-  lastDate,
-}: {
-  count: number;
-  lastDate: string | null;
-}) {
+function ActivityContent({ count, lastDate }: { count: number; lastDate: string | null }) {
   const { t } = useTranslation("common");
   if (count === 0) return <span className="text-muted-foreground">{"—"}</span>;
   return (
@@ -94,13 +85,7 @@ function ActivityContent({
 
 // The cost + unrealized-P/L headline plus the value-over-time graph, aggregated
 // from the list payload's cost basis + one household-scoped time-series fetch.
-function InvestmentHeadline<T>({
-  items,
-  config,
-}: {
-  items: T[];
-  config: InvestmentConfig<T>;
-}) {
+function InvestmentHeadline<T>({ items, config }: { items: T[]; config: InvestmentConfig<T> }) {
   const { t } = useTranslation(config.i18nNamespaces);
   const timeSeries = useInvestmentTimeSeries();
   const positions = useMemo<Position[]>(
@@ -122,10 +107,7 @@ function InvestmentHeadline<T>({
       }),
     [items, timeSeries.byId, config],
   );
-  const aggregates = useMemo(
-    () => aggregateListPositions(positions),
-    [positions],
-  );
+  const aggregates = useMemo(() => aggregateListPositions(positions), [positions]);
   return (
     <>
       <InvestmentListHeadline
@@ -163,8 +145,7 @@ export function investmentDescriptor<T>(
       const [value, setValue] = useState<RiskProfileFilterValue>("all");
       return {
         control: <RiskProfileFilter value={value} onChange={setValue} />,
-        predicate: (item: T) =>
-          value === "all" || config.entity(item).risk_profile === value,
+        predicate: (item: T) => value === "all" || config.entity(item).risk_profile === value,
       };
     },
     getId: (item) => config.entity(item).id,
@@ -180,9 +161,7 @@ export function investmentDescriptor<T>(
         {config.titleAccessory?.(item)}
       </>
     ),
-    renderHeadline: (items) => (
-      <InvestmentHeadline items={items} config={config} />
-    ),
+    renderHeadline: (items) => <InvestmentHeadline items={items} config={config} />,
     renderCreateDialog: config.renderCreateDialog,
     renderEditDialog: config.renderEditDialog,
   };

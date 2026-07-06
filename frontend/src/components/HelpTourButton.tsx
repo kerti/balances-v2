@@ -25,9 +25,7 @@ export function HelpTourButton({ steps }: Props) {
     // Skip steps whose target isn't rendered this visit (the chart needs ≥2
     // snapshots; the add-buttons hide on closed positions). A pruned step would
     // otherwise pop up as a stray centered modal.
-    const present = steps.filter(
-      (s) => !s.element || document.querySelector(s.element),
-    );
+    const present = steps.filter((s) => !s.element || document.querySelector(s.element));
     if (present.length === 0) return;
     driver({
       showProgress: true,

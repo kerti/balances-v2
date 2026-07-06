@@ -27,11 +27,7 @@ import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTr
 type Props<TResult> = {
   currency: string;
   quantityUnit: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentTransactionPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentTransactionPayload>;
 };
 
 function emptyForm() {
@@ -69,8 +65,7 @@ export function CreateFeeTransactionDialog<TResult>({
     setForm((prev) => {
       const merged = { ...prev, ...next };
       if (!qtyTouched && ("amount" in next || "price_per_unit" in next)) {
-        merged.quantity =
-          deriveFeeQuantity(merged.amount, merged.price_per_unit) ?? "";
+        merged.quantity = deriveFeeQuantity(merged.amount, merged.price_per_unit) ?? "";
       }
       return merged;
     });
@@ -115,25 +110,19 @@ export function CreateFeeTransactionDialog<TResult>({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("investments:fee.createTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("investments:fee.createDescription")}
-          </DialogDescription>
+          <DialogDescription>{t("investments:fee.createDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="fee_date">
-                {t("investments:fee.feeDateLabel")}
-              </Label>
+              <Label htmlFor="fee_date">{t("investments:fee.feeDateLabel")}</Label>
               <Input
                 id="fee_date"
                 type="date"
                 required
                 max={todayDate()}
                 value={form.transaction_date}
-                onChange={(e) =>
-                  setForm({ ...form, transaction_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
@@ -179,37 +168,27 @@ export function CreateFeeTransactionDialog<TResult>({
                 }}
               />
               {qtyAutoDerived && (
-                <p className="text-xs text-muted-foreground">
-                  {t("investments:fee.derivedHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("investments:fee.derivedHint")}</p>
               )}
             </div>
           </div>
 
           {unitFeeIncomplete && (
-            <p className="text-xs text-amber-600">
-              {t("investments:fee.incompleteHint")}
-            </p>
+            <p className="text-xs text-amber-600">{t("investments:fee.incompleteHint")}</p>
           )}
 
           <div className="grid gap-2">
-            <Label htmlFor="fee_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="fee_description">{t("common:fields.description")}</Label>
             <Input
               id="fee_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("investments:fee.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
@@ -220,9 +199,7 @@ export function CreateFeeTransactionDialog<TResult>({
               type="submit"
               disabled={mutation.isPending || !form.amount || unitFeeIncomplete}
             >
-              {mutation.isPending
-                ? t("common:actions.saving")
-                : t("investments:fee.recordFee")}
+              {mutation.isPending ? t("common:actions.saving") : t("investments:fee.recordFee")}
             </Button>
           </DialogFooter>
         </form>

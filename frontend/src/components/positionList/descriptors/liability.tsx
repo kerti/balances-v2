@@ -52,15 +52,9 @@ export function liabilityDescriptor(
       }),
     headlineLabelKey: "liabilities:totalOwed",
     headlineTestId: "liabilities-total",
-    renderCreateDialog: () => (
-      <CreateLiabilityDialog defaultSubtype={subtype} />
-    ),
+    renderCreateDialog: () => <CreateLiabilityDialog defaultSubtype={subtype} />,
     renderEditDialog: (item, props) => (
-      <EditLiabilityDialog
-        key={item.liability.id}
-        liability={item.liability}
-        {...props}
-      />
+      <EditLiabilityDialog key={item.liability.id} liability={item.liability} {...props} />
     ),
   });
 }
@@ -68,5 +62,4 @@ export function liabilityDescriptor(
 // Materialised once per subtype: descriptors are static, so the route wiring
 // passes these constants rather than rebuilding on every render.
 export const liabilityPersonalDescriptor = liabilityDescriptor("personal");
-export const liabilityInstitutionalDescriptor =
-  liabilityDescriptor("institutional");
+export const liabilityInstitutionalDescriptor = liabilityDescriptor("institutional");

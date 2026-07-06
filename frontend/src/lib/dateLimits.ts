@@ -33,9 +33,7 @@ export const SUPPORTED_CARRYOVER_DATE_MODES = [
 ] as const;
 export type CarryoverDateMode = (typeof SUPPORTED_CARRYOVER_DATE_MODES)[number];
 
-export function isSupportedCarryoverDateMode(
-  value: string,
-): value is CarryoverDateMode {
+export function isSupportedCarryoverDateMode(value: string): value is CarryoverDateMode {
   return (SUPPORTED_CARRYOVER_DATE_MODES as readonly string[]).includes(value);
 }
 

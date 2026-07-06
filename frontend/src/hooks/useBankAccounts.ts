@@ -1,9 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import {
-  postCreateImport,
-  type CreateImportArgs,
-} from "@/hooks/snapshotImport";
+import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { BankAccount, BankAccountListItem } from "@/api/types";
 
 export type CreateBankAccountPayload = {
@@ -92,8 +89,7 @@ export function useImportCreateBankAccount() {
 export function useDeleteBankAccount() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) =>
-      api(`/api/bank-accounts/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => api(`/api/bank-accounts/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bank-accounts"] });
     },
@@ -110,7 +106,4 @@ export {
   useUpdateSnapshot,
   useDeleteSnapshot,
 } from "./useAssetSnapshots";
-export type {
-  CreateSnapshotPayload,
-  UpdateSnapshotPayload,
-} from "./useAssetSnapshots";
+export type { CreateSnapshotPayload, UpdateSnapshotPayload } from "./useAssetSnapshots";

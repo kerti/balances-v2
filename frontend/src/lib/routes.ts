@@ -49,8 +49,7 @@ export const routes = {
   liabilities: "/liabilities",
   liabilitiesPersonal: "/liabilities/personal",
   liabilitiesInstitutional: "/liabilities/institutional",
-  liability: (subtype: "personal" | "institutional", id: string) =>
-    `/liabilities/${subtype}/${id}`,
+  liability: (subtype: "personal" | "institutional", id: string) => `/liabilities/${subtype}/${id}`,
 
   // Receivables — flat group: the list is the root path, no home page.
   receivables: "/receivables",
@@ -83,11 +82,7 @@ export const routes = {
 // any pair without a detail page (none today) so callers render a plain label
 // instead of a dead link. The subtype strings are the engine's wire values
 // (matching the DB subtype columns), not display labels.
-export function positionDetail(
-  group: string,
-  subtype: string,
-  id: string,
-): string | null {
+export function positionDetail(group: string, subtype: string, id: string): string | null {
   switch (group) {
     case "asset":
       switch (subtype) {

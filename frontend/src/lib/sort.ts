@@ -19,9 +19,7 @@ export function byText<T>(get: (t: T) => string): Comparator<T> {
 // Numeric sort with nulls always last, regardless of direction — a position
 // with no snapshot has no balance to rank, so it sinks to the bottom whether
 // you sort ascending or descending.
-export function byNumberNullsLast<T>(
-  get: (t: T) => number | null,
-): Comparator<T> {
+export function byNumberNullsLast<T>(get: (t: T) => number | null): Comparator<T> {
   return (a, b, dir) => {
     const av = get(a);
     const bv = get(b);

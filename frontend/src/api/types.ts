@@ -32,10 +32,7 @@ export type TagBreakdownRow = {
   total: string;
 };
 
-export type Asset = Omit<
-  Generated.Asset,
-  "subtype" | "ownership_type" | "status"
-> & {
+export type Asset = Omit<Generated.Asset, "subtype" | "ownership_type" | "status"> & {
   subtype: "bank_account" | "property" | "vehicle";
   ownership_type: "sole" | "joint";
   status: "active" | "closed" | "sold" | "disposed";
@@ -47,10 +44,7 @@ export type AssetSnapshot = Generated.AssetSnapshot;
 
 // ----- bank account -----------------------------------------------------
 
-export type BankAccountDetails = Omit<
-  Generated.BankAccountDetails,
-  "account_type"
-> & {
+export type BankAccountDetails = Omit<Generated.BankAccountDetails, "account_type"> & {
   account_type: "savings" | "current" | "other";
 };
 
@@ -67,10 +61,7 @@ export type BankAccountListItem = {
 
 // ----- property ---------------------------------------------------------
 
-export type PropertyDetails = Omit<
-  Generated.PropertyDetails,
-  "property_type"
-> & {
+export type PropertyDetails = Omit<Generated.PropertyDetails, "property_type"> & {
   property_type: "house" | "apartment" | "land" | "commercial";
 };
 
@@ -104,10 +95,7 @@ export type VehicleListItem = {
 
 // ----- liability --------------------------------------------------------
 
-export type Liability = Omit<
-  Generated.Liability,
-  "subtype" | "ownership_type" | "status"
-> & {
+export type Liability = Omit<Generated.Liability, "subtype" | "ownership_type" | "status"> & {
   subtype: "personal" | "institutional";
   ownership_type: "sole" | "joint";
   status: "active" | "paid_off" | "forgiven" | "written_off";
@@ -122,10 +110,7 @@ export type LiabilityListItem = {
 
 // ----- receivable -------------------------------------------------------
 
-export type Receivable = Omit<
-  Generated.Receivable,
-  "ownership_type" | "status"
-> & {
+export type Receivable = Omit<Generated.Receivable, "ownership_type" | "status"> & {
   ownership_type: "sole" | "joint";
   status: "active" | "collected" | "written_off";
 };
@@ -139,8 +124,7 @@ export type ReceivableListItem = {
 
 // ----- investment ------------------------------------------------------
 
-export type InvestmentSubtype =
-  "stock" | "mutual_fund" | "gold" | "bond" | "time_deposit";
+export type InvestmentSubtype = "stock" | "mutual_fund" | "gold" | "bond" | "time_deposit";
 
 // Risk profile (migration 00018) — user's classification of the position's
 // risk. Forced manual choice on create (no default) so the user thinks; mutable
@@ -200,10 +184,7 @@ export type MutualFundType =
   | "commodity"
   | "other";
 
-export type MutualFundDetails = Omit<
-  Generated.MutualFundDetails,
-  "fund_type"
-> & {
+export type MutualFundDetails = Omit<Generated.MutualFundDetails, "fund_type"> & {
   fund_type: MutualFundType;
 };
 
@@ -248,8 +229,7 @@ export type GoldListItem = {
 };
 
 export type BondType = "govt_primary" | "secondary_market";
-export type CouponFrequency =
-  "monthly" | "quarterly" | "semi_annual" | "annual";
+export type CouponFrequency = "monthly" | "quarterly" | "semi_annual" | "annual";
 // Does the coupon pay out to the bank account or accrue inside the instrument
 // (#66)? Drives the accrued-interest snapshot form's default + copy.
 export type CouponDisposition = "pays_out" | "accrues";
@@ -286,13 +266,9 @@ export type BondListItem = {
   last_transaction_date: string | null;
 };
 
-export type RolloverPolicy =
-  "auto_renew_principal" | "auto_renew_with_interest" | "no_rollover";
+export type RolloverPolicy = "auto_renew_principal" | "auto_renew_with_interest" | "no_rollover";
 
-export type TimeDepositDetails = Omit<
-  Generated.TimeDepositDetails,
-  "rollover_policy"
-> & {
+export type TimeDepositDetails = Omit<Generated.TimeDepositDetails, "rollover_policy"> & {
   rollover_policy: RolloverPolicy;
 };
 
@@ -377,10 +353,7 @@ export type IncomeCategory =
 // payouts). Filter chip on the list, icon on the row. Required from the API.
 export type Regularity = "routine" | "incidental";
 
-export type Income = Omit<
-  Generated.Income,
-  "category" | "ownership_type" | "regularity"
-> & {
+export type Income = Omit<Generated.Income, "category" | "ownership_type" | "regularity"> & {
   category: IncomeCategory;
   ownership_type: "sole" | "joint";
   regularity: Regularity;

@@ -1,10 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { addMonths, maturityRolloverPrefill } from "@/lib/rollover";
-import type {
-  Disposition,
-  InvestmentTransaction,
-  TimeDeposit,
-} from "@/api/types";
+import type { Disposition, InvestmentTransaction, TimeDeposit } from "@/api/types";
 
 const maturity = (fields: {
   date?: string;
@@ -25,9 +21,7 @@ const maturity = (fields: {
 const td = (hasSuccessor = false): TimeDeposit =>
   ({
     rolled_from: null,
-    rolled_to: hasSuccessor
-      ? { id: "succ-1", display_name: "BCA 6mo (rolled)" }
-      : null,
+    rolled_to: hasSuccessor ? { id: "succ-1", display_name: "BCA 6mo (rolled)" } : null,
     investment: {
       display_name: "BCA 6mo",
       description: "Emergency fund deposit",

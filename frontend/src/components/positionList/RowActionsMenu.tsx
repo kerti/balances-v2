@@ -25,19 +25,12 @@ export function RowActionsMenu({ label, onEdit, onDelete }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={label}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <Button variant="ghost" size="icon" aria-label={label} onClick={(e) => e.stopPropagation()}>
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem onClick={onEdit}>
-          {t("actions.edit")}
-        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>{t("actions.edit")}</DropdownMenuItem>
         <DropdownMenuItem onClick={onDelete} variant="destructive">
           {t("delete")}
         </DropdownMenuItem>

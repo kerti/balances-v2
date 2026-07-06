@@ -16,12 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { formatCurrency } from "@/lib/format";
-import {
-  thisYearMonth,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
@@ -29,11 +24,7 @@ import type { CouponDisposition } from "@/api/types";
 
 type Props<TResult> = {
   currency: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentSnapshotPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentSnapshotPayload>;
   // Latest snapshot's total value + accrued + period, when one exists. Drives
   // the "Copy carryover" helper (issue #60); lastSnapshotMonth (the latest
   // snapshot's year_month) anchors the end_of_month_after_last_snapshot date
@@ -161,9 +152,7 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {t("investments:accruedInterestSnapshot.createTitle")}
-          </DialogTitle>
+          <DialogTitle>{t("investments:accruedInterestSnapshot.createTitle")}</DialogTitle>
           <DialogDescription>
             {t("investments:accruedInterestSnapshot.createDescription", {
               currency,
@@ -180,24 +169,18 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
                 required
                 max={thisYearMonth()}
                 value={form.year_month}
-                onChange={(e) =>
-                  setForm({ ...form, year_month: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, year_month: e.target.value })}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="ai_as_of_date">
-                {t("common:fields.statementDate")}
-              </Label>
+              <Label htmlFor="ai_as_of_date">{t("common:fields.statementDate")}</Label>
               <Input
                 id="ai_as_of_date"
                 type="date"
                 min={monthStartDate(form.year_month)}
                 max={monthEndDateCapped(form.year_month)}
                 value={form.as_of_date}
-                onChange={(e) =>
-                  setForm({ ...form, as_of_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
               />
             </div>
           </div>
@@ -215,9 +198,7 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
                 inputMode="decimal"
                 value={form.amount}
                 onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                placeholder={t(
-                  "investments:accruedInterestSnapshot.totalValuePlaceholder",
-                )}
+                placeholder={t("investments:accruedInterestSnapshot.totalValuePlaceholder")}
               />
             </div>
             <div className="grid gap-2">
@@ -231,12 +212,8 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.accrued_interest}
-                onChange={(e) =>
-                  setForm({ ...form, accrued_interest: e.target.value })
-                }
-                placeholder={t(
-                  "investments:accruedInterestSnapshot.accruedPlaceholder",
-                )}
+                onChange={(e) => setForm({ ...form, accrued_interest: e.target.value })}
+                placeholder={t("investments:accruedInterestSnapshot.accruedPlaceholder")}
               />
             </div>
           </div>
@@ -246,9 +223,7 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
               {t("investments:accruedInterestSnapshot.ofWhichPrincipalLabel")}
             </span>{" "}
             <span className="font-medium">
-              {derivedPrincipal !== null
-                ? formatCurrency(derivedPrincipal, currency)
-                : "—"}
+              {derivedPrincipal !== null ? formatCurrency(derivedPrincipal, currency) : "—"}
             </span>
           </div>
 
@@ -259,25 +234,17 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
           </p>
 
           <div className="grid gap-2">
-            <Label htmlFor="ai_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="ai_description">{t("common:fields.description")}</Label>
             <Input
               id="ai_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              placeholder={t(
-                "investments:accruedInterestSnapshot.descriptionPlaceholder",
-              )}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder={t("investments:accruedInterestSnapshot.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>

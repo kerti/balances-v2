@@ -16,10 +16,7 @@ export type DisplayRate = {
 // availableDisplayCurrencies lists currencies the user can project into: any
 // currency with at least one rate, minus the reporting currency (trivially 1:1,
 // stores no rate row). Sorted alphabetically for a stable selector.
-export function availableDisplayCurrencies(
-  rates: FxRate[],
-  reportingCurrency: string,
-): string[] {
+export function availableDisplayCurrencies(rates: FxRate[], reportingCurrency: string): string[] {
   const set = new Set<string>();
   for (const r of rates) {
     if (r.currency !== reportingCurrency) set.add(r.currency);
@@ -41,8 +38,7 @@ export function resolveDisplayRate(
   for (const r of rates) {
     if (r.currency !== currency) continue;
     if (r.year_month.slice(0, 7) > m) continue;
-    if (!best || r.year_month.slice(0, 7) > best.year_month.slice(0, 7))
-      best = r;
+    if (!best || r.year_month.slice(0, 7) > best.year_month.slice(0, 7)) best = r;
   }
   if (!best) return null;
   const rate = Number(best.rate);

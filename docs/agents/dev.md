@@ -6,6 +6,15 @@ conventions live in `CONTEXT.md` and `HANDOFF.md`; this file is just the how-to-
 `make help` lists every target. The common loop uses the **background dev-server** targets so the
 servers keep running across edits.
 
+## First clone
+
+```bash
+make setup            # git hooks (PII guard) + frontend deps + seed .env from .env.dev.example
+```
+
+Bundles `hooks-install` and `frontend-install` so neither is missable on a fresh clone; idempotent,
+safe to re-run.
+
 ## Running locally
 
 ```bash
@@ -53,9 +62,10 @@ docker exec balances-v2-postgres-1 psql -U balances -d balances \
 ```bash
 cd backend && golangci-lint run    # config: .golangci.yml (repo root)
 cd frontend && npm run lint        # config: frontend/eslint.config.js
+cd frontend && npm run format      # config: frontend/.prettierrc.json — npm run format:check for CI's read-only check
 ```
 
-CI runs both on every push. `revive`'s `exported` / `package-comments` are deliberately disabled for
+CI runs all three on every push. `revive`'s `exported` / `package-comments` are deliberately disabled for
 application code; `react-refresh/only-export-components` is off for `components/ui/**` (shadcn);
 `react-hooks/set-state-in-effect` is enforced everywhere else.
 
@@ -76,7 +86,7 @@ deliberate non-goal until alpha.
 
 ## Pre-commit hook (PII guard)
 
-Run **once per clone**:
+Run **once per clone** (bundled into `make setup` — see "First clone" above):
 
 ```bash
 make hooks-install

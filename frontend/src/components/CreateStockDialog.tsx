@@ -42,8 +42,7 @@ export function CreateStockDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         risk_profile: form.risk_profile,
         ticker: form.ticker.toUpperCase(),
@@ -75,9 +74,7 @@ export function CreateStockDialog() {
       }}
     >
       <div className="grid gap-2">
-        <Label htmlFor="stock_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="stock_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="stock_display_name"
           required
@@ -89,30 +86,22 @@ export function CreateStockDialog() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="stock_ticker">
-            {t("investments:stock.fields.ticker")}
-          </Label>
+          <Label htmlFor="stock_ticker">{t("investments:stock.fields.ticker")}</Label>
           <Input
             id="stock_ticker"
             required
             value={form.ticker}
-            onChange={(e) =>
-              setForm({ ...form, ticker: e.target.value.toUpperCase() })
-            }
+            onChange={(e) => setForm({ ...form, ticker: e.target.value.toUpperCase() })}
             placeholder={t("investments:stock.placeholders.ticker")}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="stock_exchange">
-            {t("investments:stock.fields.exchange")}
-          </Label>
+          <Label htmlFor="stock_exchange">{t("investments:stock.fields.exchange")}</Label>
           <Input
             id="stock_exchange"
             required
             value={form.exchange}
-            onChange={(e) =>
-              setForm({ ...form, exchange: e.target.value.toUpperCase() })
-            }
+            onChange={(e) => setForm({ ...form, exchange: e.target.value.toUpperCase() })}
             placeholder={t("investments:stock.placeholders.exchange")}
           />
         </div>
@@ -164,16 +153,12 @@ export function CreateStockDialog() {
             aria-label={t("investments:ownership.soleOwnerAria")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -187,9 +172,7 @@ export function CreateStockDialog() {
       />
 
       <div className="grid gap-2">
-        <Label htmlFor="stock_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="stock_description">{t("common:fields.description")}</Label>
         <Input
           id="stock_description"
           value={form.description}

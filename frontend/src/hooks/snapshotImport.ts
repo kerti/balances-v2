@@ -65,11 +65,7 @@ export async function postCreateImport(
     } catch {
       errBody = await res.text().catch(() => undefined);
     }
-    throw new ApiError(
-      res.status,
-      res.statusText || `import failed (${res.status})`,
-      errBody,
-    );
+    throw new ApiError(res.status, res.statusText || `import failed (${res.status})`, errBody);
   }
   return (await res.json()) as CreateImportResult;
 }
@@ -105,11 +101,7 @@ export async function postSnapshotImport(
     } catch {
       errBody = await res.text().catch(() => undefined);
     }
-    throw new ApiError(
-      res.status,
-      res.statusText || `import failed (${res.status})`,
-      errBody,
-    );
+    throw new ApiError(res.status, res.statusText || `import failed (${res.status})`, errBody);
   }
   return (await res.json()) as ImportResult;
 }

@@ -176,7 +176,5 @@ describe("PositionFormDialog", () => {
 });
 
 async function waitForDialogGone() {
-  await vi.waitFor(() =>
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
-  );
+  await vi.waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 }

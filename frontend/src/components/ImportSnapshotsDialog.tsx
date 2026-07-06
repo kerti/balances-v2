@@ -35,11 +35,7 @@ type Props = {
 // upload. "Check file" runs a server-side dry-run (validates + counts, writes
 // nothing); "Import" only lights up once the file is clean. Aimed at a
 // non-technical user backfilling years of statements at once.
-export function ImportSnapshotsDialog({
-  templateUrl,
-  mutation,
-  currency,
-}: Props) {
+export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -102,20 +98,14 @@ export function ImportSnapshotsDialog({
   }
 
   const total = result ? result.to_insert + result.to_update : 0;
-  const cleanPreview =
-    result?.mode === "preview" && result.errors.length === 0 && total > 0;
-  const emptyPreview =
-    result?.mode === "preview" && result.errors.length === 0 && total === 0;
+  const cleanPreview = result?.mode === "preview" && result.errors.length === 0 && total > 0;
+  const emptyPreview = result?.mode === "preview" && result.errors.length === 0 && total === 0;
   const committed = result?.committed === true;
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          data-testid="import-snapshots-trigger"
-        >
+        <Button size="sm" variant="outline" data-testid="import-snapshots-trigger">
           <Upload className="mr-1 size-4" />
           {t("import.trigger")}
         </Button>
@@ -159,9 +149,7 @@ export function ImportSnapshotsDialog({
               data-drag-active={dragActive}
               className={cn(
                 "grid gap-2 rounded-md border-2 border-dashed p-4 transition-colors",
-                dragActive
-                  ? "border-primary bg-primary/5"
-                  : "border-input bg-muted/30",
+                dragActive ? "border-primary bg-primary/5" : "border-input bg-muted/30",
               )}
             >
               <p className="text-sm text-muted-foreground">
@@ -178,18 +166,12 @@ export function ImportSnapshotsDialog({
               />
             </div>
             {invalid && (
-              <p
-                className="text-sm text-destructive"
-                data-testid="import-invalid-file"
-              >
+              <p className="text-sm text-destructive" data-testid="import-invalid-file">
                 {t("import.invalidFile")}
               </p>
             )}
             {file && !invalid && (
-              <p
-                className="text-xs text-muted-foreground"
-                data-testid="import-selected-file"
-              >
+              <p className="text-xs text-muted-foreground" data-testid="import-selected-file">
                 {file.name}
               </p>
             )}
@@ -216,10 +198,7 @@ export function ImportSnapshotsDialog({
                     ))}
                   </ul>
                   {result.errors.length > MAX_VISIBLE_ERRORS && (
-                    <p
-                      className="text-xs text-muted-foreground"
-                      data-testid="import-errors-more"
-                    >
+                    <p className="text-xs text-muted-foreground" data-testid="import-errors-more">
                       {t("import.moreErrors", {
                         count: result.errors.length - MAX_VISIBLE_ERRORS,
                       })}
@@ -227,9 +206,7 @@ export function ImportSnapshotsDialog({
                   )}
                 </div>
               ) : emptyPreview ? (
-                <p className="text-muted-foreground">
-                  {t("import.emptyPreview")}
-                </p>
+                <p className="text-muted-foreground">{t("import.emptyPreview")}</p>
               ) : (
                 <p className="text-muted-foreground">
                   {t("import.preview", {
@@ -252,9 +229,7 @@ export function ImportSnapshotsDialog({
           )}
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
         </div>
 
@@ -275,9 +250,7 @@ export function ImportSnapshotsDialog({
                 onClick={() => run("preview")}
                 data-testid="import-check-btn"
               >
-                {mutation.isPending && !committed
-                  ? t("actions.checking")
-                  : t("import.checkFile")}
+                {mutation.isPending && !committed ? t("actions.checking") : t("import.checkFile")}
               </Button>
               <Button
                 type="button"
@@ -285,9 +258,7 @@ export function ImportSnapshotsDialog({
                 onClick={() => run("commit")}
                 data-testid="import-commit-btn"
               >
-                {cleanPreview
-                  ? t("import.importN", { count: total })
-                  : t("import.importPlain")}
+                {cleanPreview ? t("import.importN", { count: total }) : t("import.importPlain")}
               </Button>
             </>
           )}

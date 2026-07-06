@@ -22,11 +22,7 @@ export type { ImportResult, ImportRowError };
 // affected asset belongs to without an extra lookup, and invalidating
 // three small queries at household scale is cheaper than tracking that.
 
-const ASSET_LIST_KEYS = [
-  ["bank-accounts"],
-  ["properties"],
-  ["vehicles"],
-] as const;
+const ASSET_LIST_KEYS = [["bank-accounts"], ["properties"], ["vehicles"]] as const;
 
 function invalidateAssetLists(qc: ReturnType<typeof useQueryClient>) {
   ASSET_LIST_KEYS.forEach((key) =>
@@ -75,17 +71,11 @@ export function useCreateSnapshot(assetId: string) {
 export function useUpdateSnapshot(assetId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      snapshotId: string;
-      payload: UpdateSnapshotPayload;
-    }) =>
-      api<AssetSnapshot>(
-        `/api/assets/${assetId}/snapshots/${args.snapshotId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(args.payload),
-        },
-      ),
+    mutationFn: (args: { snapshotId: string; payload: UpdateSnapshotPayload }) =>
+      api<AssetSnapshot>(`/api/assets/${assetId}/snapshots/${args.snapshotId}`, {
+        method: "PATCH",
+        body: JSON.stringify(args.payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["snapshots", assetId] });
       invalidateAssetLists(qc);
@@ -135,11 +125,7 @@ export function useImportSnapshots(assetId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: ImportArgs) =>
-      postSnapshotImport(
-        `/api/assets/${assetId}/snapshots`,
-        args.file,
-        args.mode,
-      ),
+      postSnapshotImport(`/api/assets/${assetId}/snapshots`, args.file, args.mode),
     onSuccess: (result) => {
       // Only a real write should refresh the snapshot/list caches; a preview
       // changed nothing. (The global MutationCache still pokes ['reports'],

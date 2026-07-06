@@ -36,9 +36,7 @@ test(
 
     // Select the fresh identity: the browser carries this to mock-oidc's /authorize
     // on the top-level OAuth redirect.
-    await context.addCookies([
-      { name: "mock_oidc_sub", value: sub, url: MOCK_OIDC_ORIGIN },
-    ]);
+    await context.addCookies([{ name: "mock_oidc_sub", value: sub, url: MOCK_OIDC_ORIGIN }]);
 
     await page.goto("/");
 
@@ -51,9 +49,7 @@ test(
     await expect(page.getByTestId("onboarding-card")).toBeVisible();
 
     // Name the household and commit the founder choice.
-    await page
-      .getByTestId("onboarding-household-name")
-      .fill("Newcomer Household");
+    await page.getByTestId("onboarding-household-name").fill("Newcomer Household");
     await page.getByTestId("onboarding-found-submit").click();
 
     // The commit set the real session cookie; the app flips to the authed shell as

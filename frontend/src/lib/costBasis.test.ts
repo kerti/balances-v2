@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeCostBasis,
-  costBasisSeries,
-  flatCostSeries,
-} from "@/lib/costBasis";
+import { computeCostBasis, costBasisSeries, flatCostSeries } from "@/lib/costBasis";
 import type { InvestmentTransaction, TransactionType } from "@/api/types";
 
 // Fixtures carry only the fields the helper reads (cast past the wire type).
@@ -88,9 +84,7 @@ describe("computeCostBasis", () => {
   });
 
   it("ignores sells when nothing is held", () => {
-    const r = computeCostBasis([
-      txn("sell", "2026-01-01", { amount: "100", quantity: "5" }),
-    ]);
+    const r = computeCostBasis([txn("sell", "2026-01-01", { amount: "100", quantity: "5" })]);
     expect(r).toEqual({ cost: 0, heldQty: 0 });
   });
 
@@ -146,11 +140,7 @@ describe("costBasisSeries", () => {
   });
 
   it("attributes a mid-month txn to that snapshot month", () => {
-    const snaps = [
-      { year_month: "2026-01" },
-      { year_month: "2026-02" },
-      { year_month: "2026-03" },
-    ];
+    const snaps = [{ year_month: "2026-01" }, { year_month: "2026-02" }, { year_month: "2026-03" }];
     const r = costBasisSeries(snaps, [
       txn("buy", "2026-02-15", { amount: "1000", quantity: "10" }),
     ]);
@@ -163,18 +153,12 @@ describe("costBasisSeries", () => {
 
   it("accepts API year_month formatted as YYYY-MM-DDTHH", () => {
     const snaps = [{ year_month: "2026-02-01T00:00:00Z" }];
-    const r = costBasisSeries(snaps, [
-      txn("buy", "2026-02-15", { amount: "500", quantity: "5" }),
-    ]);
+    const r = costBasisSeries(snaps, [txn("buy", "2026-02-15", { amount: "500", quantity: "5" })]);
     expect(r[0].cost).toBe(500);
   });
 
   it("reflects an interim sell at the correct snapshot", () => {
-    const snaps = [
-      { year_month: "2026-01" },
-      { year_month: "2026-02" },
-      { year_month: "2026-03" },
-    ];
+    const snaps = [{ year_month: "2026-01" }, { year_month: "2026-02" }, { year_month: "2026-03" }];
     const r = costBasisSeries(snaps, [
       txn("buy", "2026-01-15", { amount: "1000", quantity: "10" }),
       txn("sell", "2026-02-15", { amount: "600", quantity: "4" }),

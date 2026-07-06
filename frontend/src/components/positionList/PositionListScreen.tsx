@@ -1,12 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShowInactiveToggle } from "@/components/ShowInactiveToggle";
 import { StatusBadge } from "@/components/StatusBadge";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -19,11 +13,7 @@ import { formatCurrency, formatYearMonth } from "@/lib/format";
 import { isActiveStatus, statusLabel } from "@/lib/lifecycle";
 import { byNumberNullsLast, byText } from "@/lib/sort";
 import { cn } from "@/lib/utils";
-import type {
-  ColumnView,
-  PositionListDescriptor,
-  RowView,
-} from "@/components/positionList/types";
+import type { ColumnView, PositionListDescriptor, RowView } from "@/components/positionList/types";
 
 type Props<T, Ctx> = {
   descriptor: PositionListDescriptor<T, Ctx>;
@@ -37,10 +27,7 @@ type Props<T, Ctx> = {
 // slots; group-specific fields arrive as extra columns the core places but
 // never inspects. `useIsMobile` picks the renderer; both consume one
 // presentation-neutral column list.
-export function PositionListScreen<T, Ctx>({
-  descriptor,
-  onSelect,
-}: Props<T, Ctx>) {
+export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ctx>) {
   const { t } = useTranslation(descriptor.i18nNamespaces);
   const { data, isPending, error } = descriptor.useList();
   const deleteMutation = descriptor.useDelete();
@@ -94,9 +81,7 @@ export function PositionListScreen<T, Ctx>({
       cell: (row) => (
         <>
           <div className="flex items-center gap-2">
-            <div className={cn("font-medium", row.terminated && "font-normal")}>
-              {row.name}
-            </div>
+            <div className={cn("font-medium", row.terminated && "font-normal")}>{row.name}</div>
             {descriptor.renderTitleAccessory?.(row.item, ctx)}
           </div>
           {row.secondary ? (
@@ -111,9 +96,7 @@ export function PositionListScreen<T, Ctx>({
       align: "left",
       sortKey: "status",
       mobileVisible: true,
-      cell: (row) => (
-        <StatusBadge group={descriptor.group} status={row.status} />
-      ),
+      cell: (row) => <StatusBadge group={descriptor.group} status={row.status} />,
     };
     const valueCol: ColumnView<T> = {
       id: "value",
@@ -124,9 +107,7 @@ export function PositionListScreen<T, Ctx>({
       cell: (row) =>
         row.snapshot ? (
           <>
-            <div>
-              {formatCurrency(row.snapshot.amount, row.snapshot.currency)}
-            </div>
+            <div>{formatCurrency(row.snapshot.amount, row.snapshot.currency)}</div>
             <div className="text-xs text-muted-foreground">
               {formatYearMonth(row.snapshot.year_month)}
             </div>
@@ -148,13 +129,7 @@ export function PositionListScreen<T, Ctx>({
           cell: (row) => col.render(row.item, ctx),
         }));
 
-    return [
-      nameCol,
-      ...extra("main"),
-      statusCol,
-      valueCol,
-      ...extra("trailing"),
-    ];
+    return [nameCol, ...extra("main"), statusCol, valueCol, ...extra("trailing")];
   }, [descriptor, keys.valueLabel, t, ctx]);
 
   const sortColumns = useMemo<Record<string, ColumnSort<RowView<T>>>>(() => {
@@ -170,9 +145,7 @@ export function PositionListScreen<T, Ctx>({
         type === "number"
           ? {
               dir: "asc",
-              cmp: byNumberNullsLast(
-                (r) => value(r.item, ctx) as number | null,
-              ),
+              cmp: byNumberNullsLast((r) => value(r.item, ctx) as number | null),
             }
           : {
               dir: "asc",
@@ -194,8 +167,7 @@ export function PositionListScreen<T, Ctx>({
 
   const terminatedCount = rows.filter((r) => r.terminated).length;
   let visibleRows = showInactive ? sorted : sorted.filter((r) => !r.terminated);
-  if (rowFilter)
-    visibleRows = visibleRows.filter((r) => rowFilter.predicate(r.item));
+  if (rowFilter) visibleRows = visibleRows.filter((r) => rowFilter.predicate(r.item));
 
   function handleDeleteConfirm() {
     if (!deleteItem) return;
@@ -206,34 +178,24 @@ export function PositionListScreen<T, Ctx>({
 
   // Both renderers share one signature; the cast picks one without tripping
   // generic-through-union inference on the ternary.
-  const Renderer = (
-    isMobile ? PositionListCards : PositionListTable
-  ) as typeof PositionListTable;
+  const Renderer = (isMobile ? PositionListCards : PositionListTable) as typeof PositionListTable;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t(keys.listTitle, copyArgs)}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {t(keys.listSubtitle, copyArgs)}
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t(keys.listTitle, copyArgs)}</h1>
+          <p className="text-sm text-muted-foreground">{t(keys.listSubtitle, copyArgs)}</p>
         </div>
         <div className="flex items-center gap-2">
-          {importMutation && (
-            <ImportPositionDialog noun={noun} mutation={importMutation} />
-          )}
+          {importMutation && <ImportPositionDialog noun={noun} mutation={importMutation} />}
           {descriptor.renderCreateDialog()}
         </div>
       </div>
 
       {descriptor.renderHeadline(data ?? [])}
 
-      {isPending && (
-        <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-      )}
+      {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
       {error != null && (
         <p className="text-sm text-destructive">
@@ -306,9 +268,7 @@ export function PositionListScreen<T, Ctx>({
           if (!open) setDeleteItem(null);
         }}
         title={t(keys.deleteTitle)}
-        description={
-          deleteItem ? descriptor.deleteDescription(deleteItem, t) : undefined
-        }
+        description={deleteItem ? descriptor.deleteDescription(deleteItem, t) : undefined}
         confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}

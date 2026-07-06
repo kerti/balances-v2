@@ -1,10 +1,6 @@
 import { CreateBondDialog } from "@/components/CreateBondDialog";
 import { EditBondDialog } from "@/components/EditBondDialog";
-import {
-  useBonds,
-  useDeleteBond,
-  useImportCreateBond,
-} from "@/hooks/useInvestments";
+import { useBonds, useDeleteBond, useImportCreateBond } from "@/hooks/useInvestments";
 import { investmentDescriptor } from "@/components/positionList/presets/investment";
 import { maturityClass, maturityInfo } from "@/lib/maturity";
 import { isActiveStatus } from "@/lib/lifecycle";
@@ -62,9 +58,7 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
         return (
           <>
             {item.details.series_code ? (
-              <div className="font-mono text-sm">
-                {item.details.series_code}
-              </div>
+              <div className="font-mono text-sm">{item.details.series_code}</div>
             ) : (
               <div className="text-sm text-muted-foreground">{"—"}</div>
             )}
@@ -73,15 +67,11 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
                 type: bondType,
                 issuer: item.details.issuer,
                 rate: Number(item.details.coupon_rate).toFixed(2),
-                frequency: i18n.t(
-                  FREQUENCY_SHORT_KEY[item.details.coupon_frequency],
-                ),
+                frequency: i18n.t(FREQUENCY_SHORT_KEY[item.details.coupon_frequency]),
               })}
             </div>
             {!terminated && (
-              <div className={`text-xs ${maturityClass(mInfo.state)}`}>
-                {mInfo.label}
-              </div>
+              <div className={`text-xs ${maturityClass(mInfo.state)}`}>{mInfo.label}</div>
             )}
           </>
         );

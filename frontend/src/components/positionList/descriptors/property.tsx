@@ -1,10 +1,6 @@
 import { CreatePropertyDialog } from "@/components/CreatePropertyDialog";
 import { EditPropertyDialog } from "@/components/EditPropertyDialog";
-import {
-  useProperties,
-  useDeleteProperty,
-  useImportCreateProperty,
-} from "@/hooks/useProperties";
+import { useProperties, useDeleteProperty, useImportCreateProperty } from "@/hooks/useProperties";
 import { nonInvestmentDescriptor } from "@/components/positionList/presets/nonInvestment";
 import type { PropertyListItem } from "@/api/types";
 
@@ -33,9 +29,7 @@ export const propertyDescriptor = nonInvestmentDescriptor<PropertyListItem>({
   entity: (item) => item.asset,
   getSnapshot: (item) => item.latest_snapshot,
   getSecondary: (item, t) => {
-    const typeLabel = t(
-      `assets:property.propertyTypes.${item.details.property_type}`,
-    );
+    const typeLabel = t(`assets:property.propertyTypes.${item.details.property_type}`);
     return [typeLabel, item.details.address].filter(Boolean).join(" · ") || "—";
   },
   deleteDescription: (item, t) =>

@@ -3,20 +3,8 @@ import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PaginationControls } from "@/components/PaginationControls";
 import { useGold, useDeleteGold } from "@/hooks/useInvestments";
 import {
@@ -70,28 +58,13 @@ export function GoldDetail({ investmentId, onBack }: Props) {
   const { data: snapshots } = useInvestmentSnapshots(investmentId);
   const { data: transactions } = useInvestmentTransactions(investmentId);
   const deleteMutation = useDeleteGold();
-  const createSnapshotMutation = useCreateInvestmentSnapshot(
-    investmentId,
-    "golds",
-  );
-  const updateSnapshotMutation = useUpdateInvestmentSnapshot(
-    investmentId,
-    "golds",
-  );
-  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(
-    investmentId,
-    "golds",
-  );
-  const importSnapshotMutation = useImportInvestmentSnapshots(
-    investmentId,
-    "golds",
-  );
-  const createTransactionMutation =
-    useCreateInvestmentTransaction(investmentId);
-  const updateTransactionMutation =
-    useUpdateInvestmentTransaction(investmentId);
-  const deleteTransactionMutation =
-    useDeleteInvestmentTransaction(investmentId);
+  const createSnapshotMutation = useCreateInvestmentSnapshot(investmentId, "golds");
+  const updateSnapshotMutation = useUpdateInvestmentSnapshot(investmentId, "golds");
+  const deleteSnapshotMutation = useDeleteInvestmentSnapshot(investmentId, "golds");
+  const importSnapshotMutation = useImportInvestmentSnapshots(investmentId, "golds");
+  const createTransactionMutation = useCreateInvestmentTransaction(investmentId);
+  const updateTransactionMutation = useUpdateInvestmentTransaction(investmentId);
+  const deleteTransactionMutation = useDeleteInvestmentTransaction(investmentId);
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
 
@@ -101,21 +74,12 @@ export function GoldDetail({ investmentId, onBack }: Props) {
   const [txnPage, setTxnPage] = useState(1);
   const [txnSearch, setTxnSearch] = useState("");
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE),
-  );
+  const totalPages = Math.max(1, Math.ceil((snapshots?.length ?? 0) / PAGE_SIZE));
   const effectivePage = Math.min(page, totalPages);
-  const filteredTransactions = (transactions ?? []).filter((tx) =>
-    matchesTxnSearch(tx, txnSearch),
-  );
-  const totalTxnPages = Math.max(
-    1,
-    Math.ceil(filteredTransactions.length / PAGE_SIZE),
-  );
+  const filteredTransactions = (transactions ?? []).filter((tx) => matchesTxnSearch(tx, txnSearch));
+  const totalTxnPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
   const effectiveTxnPage = Math.min(txnPage, totalTxnPages);
-  const latestSnapshot =
-    snapshots && snapshots.length > 0 ? snapshots[0] : null;
+  const latestSnapshot = snapshots && snapshots.length > 0 ? snapshots[0] : null;
   const recon = reconcileQuantity(latestSnapshot, transactions);
   const quantityUnit = t("investments:gold.quantityUnit");
 
@@ -129,9 +93,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
   }
 
   if (isPending) {
-    return (
-      <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
-    );
+    return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
   }
   if (error) {
     return (
@@ -194,18 +156,10 @@ export function GoldDetail({ investmentId, onBack }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
-          <h1
-            data-testid="tour-overview"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
             {gold.investment.display_name}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -238,11 +192,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
             currentTerminatedAt={gold.investment.terminated_at}
             currentNote={gold.investment.termination_note}
           />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDeleteOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
             <Trash2 className="mr-1 size-4" />
             {t("common:delete")}
           </Button>
@@ -266,9 +216,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
           </CardDescription>
         </CardHeader>
         {gold.investment.description && (
-          <CardContent className="text-sm">
-            {gold.investment.description}
-          </CardContent>
+          <CardContent className="text-sm">{gold.investment.description}</CardContent>
         )}
       </Card>
 
@@ -298,19 +246,12 @@ export function GoldDetail({ investmentId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("investments:snapshotsCard.title")}</CardTitle>
-              <CardDescription>
-                {t("investments:gold.snapshotsDescription")}
-              </CardDescription>
+              <CardDescription>{t("investments:gold.snapshotsDescription")}</CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
               {/* Full position workbook (Detail + Snapshots + Transactions);
                   available regardless of status. */}
-              <Button
-                asChild
-                size="sm"
-                variant="outline"
-                data-testid="gold-export"
-              >
+              <Button asChild size="sm" variant="outline" data-testid="gold-export">
                 <a href={goldExportUrl(gold.investment.id)}>
                   <Download className="mr-1 size-4" />
                   {t("common:export.trigger")}
@@ -333,9 +274,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
                     }
                   />
                   <ImportSnapshotsDialog
-                    templateUrl={investmentImportTemplateUrl(
-                      gold.investment.id,
-                    )}
+                    templateUrl={investmentImportTemplateUrl(gold.investment.id)}
                     mutation={importSnapshotMutation}
                     currency={gold.investment.native_currency}
                   />
@@ -354,9 +293,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>
-                      {t("investments:snapshotsCard.monthHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.monthHeader")}</TableHead>
                     <TableHead className="text-right">
                       {t("investments:gold.gramsHeader")}
                     </TableHead>
@@ -366,9 +303,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
                     <TableHead className="text-right">
                       {t("investments:snapshotsCard.totalValueHeader")}
                     </TableHead>
-                    <TableHead>
-                      {t("investments:snapshotsCard.notesHeader")}
-                    </TableHead>
+                    <TableHead>{t("investments:snapshotsCard.notesHeader")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -403,9 +338,7 @@ export function GoldDetail({ investmentId, onBack }: Props) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <CardTitle>{t("investments:transactions.cardTitle")}</CardTitle>
-              <CardDescription>
-                {t("investments:gold.transactionsDescription")}
-              </CardDescription>
+              <CardDescription>{t("investments:gold.transactionsDescription")}</CardDescription>
             </div>
             {isActiveStatus(gold.investment.status) && (
               <div className="flex flex-wrap gap-2">
@@ -465,18 +398,12 @@ export function GoldDetail({ investmentId, onBack }: Props) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>
-                          {t("investments:transactions.dateHeader")}
-                        </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.typeHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.dateHeader")}</TableHead>
+                        <TableHead>{t("investments:transactions.typeHeader")}</TableHead>
                         <TableHead className="text-right">
                           {t("investments:transactions.cashImpactHeader")}
                         </TableHead>
-                        <TableHead>
-                          {t("investments:transactions.notesHeader")}
-                        </TableHead>
+                        <TableHead>{t("investments:transactions.notesHeader")}</TableHead>
                         <TableHead className="w-12"></TableHead>
                       </TableRow>
                     </TableHeader>

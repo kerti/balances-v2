@@ -7,12 +7,7 @@ describe("monthRange", () => {
   });
 
   it("enumerates consecutive months inclusively", () => {
-    expect(monthRange("2026-01", "2026-04")).toEqual([
-      "2026-01",
-      "2026-02",
-      "2026-03",
-      "2026-04",
-    ]);
+    expect(monthRange("2026-01", "2026-04")).toEqual(["2026-01", "2026-02", "2026-03", "2026-04"]);
   });
 
   it("fills the gap between non-adjacent bounds", () => {
@@ -27,12 +22,7 @@ describe("monthRange", () => {
   });
 
   it("crosses a year boundary", () => {
-    expect(monthRange("2025-11", "2026-02")).toEqual([
-      "2025-11",
-      "2025-12",
-      "2026-01",
-      "2026-02",
-    ]);
+    expect(monthRange("2025-11", "2026-02")).toEqual(["2025-11", "2025-12", "2026-01", "2026-02"]);
   });
 
   it("accepts the API YYYY-MM-DDTHH year_month shape", () => {

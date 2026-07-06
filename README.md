@@ -18,14 +18,13 @@ Licensed under [AGPL-3.0](LICENSE) (ADR-0042).
 
 ## Local development
 
-Prerequisites: Docker (OrbStack recommended on macOS), Go 1.26.4+, Node 22+.
+Prerequisites: Docker (OrbStack recommended on macOS), Go 1.26.4+, Node 22+ (`.nvmrc` pins the version).
 
 ```sh
-cp .env.dev.example .env
+make setup                    # first clone only: git hooks + frontend deps + seed .env
 make up                       # starts Postgres + Mailpit (docker-compose.dev.yml)
 make backend-migrate-up       # applies pending migrations
 make backend-run              # http://localhost:8080  (terminal 1)
-make frontend-install         # first time only
 make frontend-dev             # http://localhost:5173  (terminal 2)
 ```
 

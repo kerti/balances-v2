@@ -23,8 +23,7 @@ export function useLiabilityTimeSeries(): {
 } {
   const query = useQuery({
     queryKey: ["liability-time-series"],
-    queryFn: () =>
-      api<LiabilityTimeSeriesItem[]>("/api/liabilities/time-series"),
+    queryFn: () => api<LiabilityTimeSeriesItem[]>("/api/liabilities/time-series"),
   });
 
   const byId = useMemo(() => {

@@ -23,11 +23,7 @@ type Props = {
 export function RiskProfileFilter({ value, onChange }: Props) {
   const { t } = useTranslation("investments");
   return (
-    <div
-      className="flex gap-2"
-      role="group"
-      aria-label={t("riskProfile.filterAriaLabel")}
-    >
+    <div className="flex gap-2" role="group" aria-label={t("riskProfile.filterAriaLabel")}>
       {OPTIONS.map((opt) => (
         <Button
           key={opt.value}

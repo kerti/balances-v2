@@ -1,12 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { CircleUser } from "lucide-react";
 import { GitHubMark } from "@/components/icons/GitHubMark";
-import {
-  APP_VERSION,
-  DEPLOY_ENV,
-  MAINTAINER_URL,
-  REPO_URL,
-} from "@/lib/appInfo";
+import { APP_VERSION, DEPLOY_ENV, MAINTAINER_URL, REPO_URL } from "@/lib/appInfo";
 
 // App identity block: release tag, deploy target, and the source/maintainer
 // links (issue #75). Shared by the sidebar footer and the sign-in screen

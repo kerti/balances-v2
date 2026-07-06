@@ -30,11 +30,7 @@ type Props<TResult> = {
   // distinct buy/sell hints to spell out the bid/ask spread (issue #19);
   // other subtypes omit it.
   priceHint?: string;
-  mutation: UseMutationResult<
-    TResult,
-    unknown,
-    CreateInvestmentTransactionPayload
-  >;
+  mutation: UseMutationResult<TResult, unknown, CreateInvestmentTransactionPayload>;
 };
 
 function emptyForm() {
@@ -101,45 +97,30 @@ export function CreateTradeTransactionDialog<TResult>({
       <DialogTrigger asChild>
         <Button size="sm" variant={isBuy ? "default" : "outline"}>
           <Plus className="mr-1 size-4" />
-          {t(
-            isBuy
-              ? "investments:trade.buyTrigger"
-              : "investments:trade.sellTrigger",
-          )}
+          {t(isBuy ? "investments:trade.buyTrigger" : "investments:trade.sellTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {t(
-              isBuy
-                ? "investments:trade.buyTitle"
-                : "investments:trade.sellTitle",
-            )}
+            {t(isBuy ? "investments:trade.buyTitle" : "investments:trade.sellTitle")}
           </DialogTitle>
           <DialogDescription>
-            {t(
-              isBuy
-                ? "investments:trade.buyDescription"
-                : "investments:trade.sellDescription",
-              { currency },
-            )}
+            {t(isBuy ? "investments:trade.buyDescription" : "investments:trade.sellDescription", {
+              currency,
+            })}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="trade_date">
-              {t("investments:trade.tradeDateLabel")}
-            </Label>
+            <Label htmlFor="trade_date">{t("investments:trade.tradeDateLabel")}</Label>
             <Input
               id="trade_date"
               type="date"
               required
               max={todayDate()}
               value={form.transaction_date}
-              onChange={(e) =>
-                setForm({ ...form, transaction_date: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, transaction_date: e.target.value })}
             />
           </div>
 
@@ -166,68 +147,45 @@ export function CreateTradeTransactionDialog<TResult>({
                 required
                 inputMode="decimal"
                 value={form.price_per_unit}
-                onChange={(e) =>
-                  setForm({ ...form, price_per_unit: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
                 placeholder={t("investments:trade.pricePerUnitPlaceholder")}
               />
             </div>
           </div>
 
-          {priceHint && (
-            <p className="text-xs text-muted-foreground">{priceHint}</p>
-          )}
+          {priceHint && <p className="text-xs text-muted-foreground">{priceHint}</p>}
 
           <div className="rounded-md bg-muted px-3 py-2 text-sm">
             <span className="text-muted-foreground">
-              {t(
-                isBuy
-                  ? "investments:trade.cashOutLabel"
-                  : "investments:trade.cashInLabel",
-              )}
+              {t(isBuy ? "investments:trade.cashOutLabel" : "investments:trade.cashInLabel")}
             </span>{" "}
             <span className="font-medium">
-              {derivedAmount !== null
-                ? formatCurrency(derivedAmount, currency)
-                : "—"}
+              {derivedAmount !== null ? formatCurrency(derivedAmount, currency) : "—"}
             </span>
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="trade_description">
-              {t("common:fields.description")}
-            </Label>
+            <Label htmlFor="trade_description">{t("common:fields.description")}</Label>
             <Input
               id="trade_description"
               value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder={t("investments:trade.descriptionPlaceholder")}
             />
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">
-              {errorMessage(mutation.error)}
-            </p>
+            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
           )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || derivedAmount === null}
-            >
+            <Button type="submit" disabled={mutation.isPending || derivedAmount === null}>
               {mutation.isPending
                 ? t("common:actions.saving")
-                : t(
-                    isBuy
-                      ? "investments:trade.recordBuy"
-                      : "investments:trade.recordSell",
-                  )}
+                : t(isBuy ? "investments:trade.recordBuy" : "investments:trade.recordSell")}
             </Button>
           </DialogFooter>
         </form>

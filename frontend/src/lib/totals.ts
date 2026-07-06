@@ -30,8 +30,6 @@ export function activeCurrencyTotals(items: TotalsInput[]): TotalsResult {
   }
   const totals = [...byCurrency.entries()]
     .map(([currency, amount]) => ({ currency, amount }))
-    .sort(
-      (a, b) => b.amount - a.amount || a.currency.localeCompare(b.currency),
-    );
+    .sort((a, b) => b.amount - a.amount || a.currency.localeCompare(b.currency));
   return { totals, count };
 }

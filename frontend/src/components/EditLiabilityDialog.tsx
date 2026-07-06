@@ -45,8 +45,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         counterparty_name: form.counterparty_name,
         principal: form.principal || null,
         interest_rate: form.interest_rate || null,
@@ -72,9 +71,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       onSubmit={submit}
     >
       <div className="grid gap-2">
-        <Label htmlFor="edit_l_display_name">
-          {t("common:fields.displayName")}
-        </Label>
+        <Label htmlFor="edit_l_display_name">{t("common:fields.displayName")}</Label>
         <Input
           id="edit_l_display_name"
           required
@@ -84,24 +81,18 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_l_counterparty">
-          {t("liabilities:fields.counterparty")}
-        </Label>
+        <Label htmlFor="edit_l_counterparty">{t("liabilities:fields.counterparty")}</Label>
         <Input
           id="edit_l_counterparty"
           required
           value={form.counterparty_name}
-          onChange={(e) =>
-            setForm({ ...form, counterparty_name: e.target.value })
-          }
+          onChange={(e) => setForm({ ...form, counterparty_name: e.target.value })}
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_l_principal">
-            {t("liabilities:fields.principalEdit")}
-          </Label>
+          <Label htmlFor="edit_l_principal">{t("liabilities:fields.principalEdit")}</Label>
           <Input
             id="edit_l_principal"
             inputMode="decimal"
@@ -110,25 +101,19 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_l_interest_rate">
-            {t("liabilities:fields.interestRateEdit")}
-          </Label>
+          <Label htmlFor="edit_l_interest_rate">{t("liabilities:fields.interestRateEdit")}</Label>
           <Input
             id="edit_l_interest_rate"
             inputMode="decimal"
             value={form.interest_rate}
-            onChange={(e) =>
-              setForm({ ...form, interest_rate: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
           />
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="edit_l_term">
-            {t("liabilities:fields.termEdit")}
-          </Label>
+          <Label htmlFor="edit_l_term">{t("liabilities:fields.termEdit")}</Label>
           <Input
             id="edit_l_term"
             inputMode="numeric"
@@ -137,9 +122,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_l_start">
-            {t("liabilities:fields.startDateEdit")}
-          </Label>
+          <Label htmlFor="edit_l_start">{t("liabilities:fields.startDateEdit")}</Label>
           <Input
             id="edit_l_start"
             type="date"
@@ -149,17 +132,13 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="edit_l_maturity">
-            {t("liabilities:fields.maturityDateEdit")}
-          </Label>
+          <Label htmlFor="edit_l_maturity">{t("liabilities:fields.maturityDateEdit")}</Label>
           <Input
             id="edit_l_maturity"
             type="date"
             max="9999-12-31"
             value={form.maturity_date}
-            onChange={(e) =>
-              setForm({ ...form, maturity_date: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
           />
         </div>
       </div>
@@ -193,16 +172,12 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
@@ -210,9 +185,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="edit_l_description">
-          {t("common:fields.description")}
-        </Label>
+        <Label htmlFor="edit_l_description">{t("common:fields.description")}</Label>
         <Input
           id="edit_l_description"
           value={form.description}

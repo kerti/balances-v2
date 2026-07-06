@@ -7,12 +7,7 @@ import {
   type LifecycleGroup,
 } from "@/lib/lifecycle";
 
-const groups: LifecycleGroup[] = [
-  "assets",
-  "liabilities",
-  "receivables",
-  "investments",
-];
+const groups: LifecycleGroup[] = ["assets", "liabilities", "receivables", "investments"];
 
 describe("STATUS_VALUES", () => {
   it("leads every group with the active value", () => {

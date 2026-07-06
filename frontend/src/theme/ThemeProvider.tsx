@@ -1,11 +1,5 @@
 import { useCallback, useState, type ReactNode } from "react";
-import {
-  LOCALSTORAGE_KEY,
-  ThemeContext,
-  applyTheme,
-  resolveBootTheme,
-  type Theme,
-} from "@/theme";
+import { LOCALSTORAGE_KEY, ThemeContext, applyTheme, resolveBootTheme, type Theme } from "@/theme";
 
 // ThemeProvider holds the active theme and is the single writer of the choice:
 // setTheme persists to localStorage, reflects the `dark` class onto <html>, and
@@ -25,9 +19,5 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setThemeState(next);
   }, []);
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
 }

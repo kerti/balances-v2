@@ -1,10 +1,6 @@
 import { CreateVehicleDialog } from "@/components/CreateVehicleDialog";
 import { EditVehicleDialog } from "@/components/EditVehicleDialog";
-import {
-  useVehicles,
-  useDeleteVehicle,
-  useImportCreateVehicle,
-} from "@/hooks/useVehicles";
+import { useVehicles, useDeleteVehicle, useImportCreateVehicle } from "@/hooks/useVehicles";
 import { nonInvestmentDescriptor } from "@/components/positionList/presets/nonInvestment";
 import type { VehicleListItem } from "@/api/types";
 
@@ -33,12 +29,8 @@ export const vehicleDescriptor = nonInvestmentDescriptor<VehicleListItem>({
   entity: (item) => item.asset,
   getSnapshot: (item) => item.latest_snapshot,
   getSecondary: (item, t) => {
-    const typeLabel = t(
-      `assets:vehicle.vehicleTypes.${item.details.vehicle_type}`,
-    );
-    const makeModel = [item.details.make, item.details.model]
-      .filter(Boolean)
-      .join(" ");
+    const typeLabel = t(`assets:vehicle.vehicleTypes.${item.details.vehicle_type}`);
+    const makeModel = [item.details.make, item.details.model].filter(Boolean).join(" ");
     return (
       [
         typeLabel,

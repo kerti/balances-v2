@@ -78,12 +78,7 @@ export default function InvestmentPieChartImpl({
             layout="vertical"
             verticalAlign="middle"
             align="right"
-            content={
-              <ChartLegendContent
-                nameKey="key"
-                className="flex-col items-start"
-              />
-            }
+            content={<ChartLegendContent nameKey="key" className="flex-col items-start" />}
           />
         ) : (
           <ChartLegend content={<ChartLegendContent nameKey="key" />} />

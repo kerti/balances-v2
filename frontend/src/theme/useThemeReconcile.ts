@@ -21,8 +21,7 @@ import type { Me } from "@/hooks/useSession";
 
 function osPick(): Theme | null {
   if (typeof window.matchMedia !== "function") return null;
-  if (window.matchMedia("(prefers-color-scheme: light)").matches)
-    return "light";
+  if (window.matchMedia("(prefers-color-scheme: light)").matches) return "light";
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
   return null;
 }

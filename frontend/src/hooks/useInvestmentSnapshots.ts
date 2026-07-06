@@ -1,11 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { InvestmentSnapshot } from "@/api/types";
-import {
-  postSnapshotImport,
-  snapshotImportTemplateUrl,
-  type ImportArgs,
-} from "./snapshotImport";
+import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Investment snapshots live under /api/investments/{id}/snapshots — one
 // shared table per ADR-0022. quantity + price_per_unit carry the value shape
@@ -38,26 +34,17 @@ export type UpdateInvestmentSnapshotPayload = {
   description: string | null;
 };
 
-export type InvestmentListKey =
-  | "stocks"
-  | "mutual-funds"
-  | "golds"
-  | "bonds"
-  | "time-deposits";
+export type InvestmentListKey = "stocks" | "mutual-funds" | "golds" | "bonds" | "time-deposits";
 
 export function useInvestmentSnapshots(investmentId: string | null) {
   return useQuery({
     queryKey: ["investment-snapshots", investmentId],
-    queryFn: () =>
-      api<InvestmentSnapshot[]>(`/api/investments/${investmentId}/snapshots`),
+    queryFn: () => api<InvestmentSnapshot[]>(`/api/investments/${investmentId}/snapshots`),
     enabled: !!investmentId,
   });
 }
 
-export function useCreateInvestmentSnapshot(
-  investmentId: string,
-  listKey: InvestmentListKey,
-) {
+export function useCreateInvestmentSnapshot(investmentId: string, listKey: InvestmentListKey) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateInvestmentSnapshotPayload) =>
@@ -74,23 +61,14 @@ export function useCreateInvestmentSnapshot(
   });
 }
 
-export function useUpdateInvestmentSnapshot(
-  investmentId: string,
-  listKey: InvestmentListKey,
-) {
+export function useUpdateInvestmentSnapshot(investmentId: string, listKey: InvestmentListKey) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (args: {
-      snapshotId: string;
-      payload: UpdateInvestmentSnapshotPayload;
-    }) =>
-      api<InvestmentSnapshot>(
-        `/api/investments/${investmentId}/snapshots/${args.snapshotId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(args.payload),
-        },
-      ),
+    mutationFn: (args: { snapshotId: string; payload: UpdateInvestmentSnapshotPayload }) =>
+      api<InvestmentSnapshot>(`/api/investments/${investmentId}/snapshots/${args.snapshotId}`, {
+        method: "PATCH",
+        body: JSON.stringify(args.payload),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({
         queryKey: ["investment-snapshots", investmentId],
@@ -100,10 +78,7 @@ export function useUpdateInvestmentSnapshot(
   });
 }
 
-export function useDeleteInvestmentSnapshot(
-  investmentId: string,
-  listKey: InvestmentListKey,
-) {
+export function useDeleteInvestmentSnapshot(investmentId: string, listKey: InvestmentListKey) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (snapshotId: string) =>
@@ -125,9 +100,7 @@ export function useDeleteInvestmentSnapshot(
 // shape-agnostic — same dialog, same hook, for all five subtypes.
 
 export function investmentImportTemplateUrl(investmentId: string): string {
-  return snapshotImportTemplateUrl(
-    `/api/investments/${investmentId}/snapshots`,
-  );
+  return snapshotImportTemplateUrl(`/api/investments/${investmentId}/snapshots`);
 }
 
 // Per-subtype export URLs for the full position workbook (Detail + Snapshots +
@@ -154,18 +127,11 @@ export function timeDepositExportUrl(investmentId: string): string {
   return `/api/investments/time-deposits/${investmentId}/export`;
 }
 
-export function useImportInvestmentSnapshots(
-  investmentId: string,
-  listKey: InvestmentListKey,
-) {
+export function useImportInvestmentSnapshots(investmentId: string, listKey: InvestmentListKey) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: ImportArgs) =>
-      postSnapshotImport(
-        `/api/investments/${investmentId}/snapshots`,
-        args.file,
-        args.mode,
-      ),
+      postSnapshotImport(`/api/investments/${investmentId}/snapshots`, args.file, args.mode),
     onSuccess: (result) => {
       // Only a real write should refresh the caches; a preview changed nothing.
       if (result.committed) {

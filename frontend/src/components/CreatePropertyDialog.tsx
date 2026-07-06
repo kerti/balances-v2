@@ -39,8 +39,7 @@ export function CreatePropertyDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
-        sole_owner_user_id:
-          form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
+        sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         property_type: form.property_type,
         address: form.address || null,
@@ -85,9 +84,7 @@ export function CreatePropertyDialog() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="property_type">
-            {t("assets:property.fields.type")}
-          </Label>
+          <Label htmlFor="property_type">{t("assets:property.fields.type")}</Label>
           <select
             id="property_type"
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
@@ -99,18 +96,10 @@ export function CreatePropertyDialog() {
               })
             }
           >
-            <option value="house">
-              {t("assets:property.propertyTypes.house")}
-            </option>
-            <option value="apartment">
-              {t("assets:property.propertyTypes.apartment")}
-            </option>
-            <option value="land">
-              {t("assets:property.propertyTypes.land")}
-            </option>
-            <option value="commercial">
-              {t("assets:property.propertyTypes.commercial")}
-            </option>
+            <option value="house">{t("assets:property.propertyTypes.house")}</option>
+            <option value="apartment">{t("assets:property.propertyTypes.apartment")}</option>
+            <option value="land">{t("assets:property.propertyTypes.land")}</option>
+            <option value="commercial">{t("assets:property.propertyTypes.commercial")}</option>
           </select>
         </div>
         <div className="grid gap-2">
@@ -142,30 +131,22 @@ export function CreatePropertyDialog() {
 
       <div className="grid grid-cols-2 gap-3">
         <div className="grid gap-2">
-          <Label htmlFor="acquisition_date">
-            {t("assets:property.fields.acquisitionDate")}
-          </Label>
+          <Label htmlFor="acquisition_date">{t("assets:property.fields.acquisitionDate")}</Label>
           <Input
             id="acquisition_date"
             type="date"
             max="9999-12-31"
             value={form.acquisition_date}
-            onChange={(e) =>
-              setForm({ ...form, acquisition_date: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, acquisition_date: e.target.value })}
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="acquisition_cost">
-            {t("assets:property.fields.acquisitionCost")}
-          </Label>
+          <Label htmlFor="acquisition_cost">{t("assets:property.fields.acquisitionCost")}</Label>
           <Input
             id="acquisition_cost"
             inputMode="decimal"
             value={form.acquisition_cost}
-            onChange={(e) =>
-              setForm({ ...form, acquisition_cost: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, acquisition_cost: e.target.value })}
             placeholder={t("assets:property.placeholders.acquisitionCost")}
           />
         </div>
@@ -218,16 +199,12 @@ export function CreatePropertyDialog() {
             aria-label={t("common:ownership.soleOwner")}
             className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) =>
-              setForm({ ...form, sole_owner_user_id: e.target.value })
-            }
+            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
           >
             {(members ?? []).map((m) => (
               <option key={m.id} value={m.id}>
                 {preferredName(m)}
-                {user && m.id === user.id
-                  ? t("common:ownership.youSuffix")
-                  : ""}
+                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
               </option>
             ))}
           </select>
