@@ -25,6 +25,17 @@ binary is rebuilt, and the auto-migrate-on-`serve` masks this — migrations app
 keeps running. If a backend test passes locally but the dev server shows old behavior, restart first;
 don't go hunting for a code bug. `make restart` bounces both servers.
 
+## Codegen
+
+```bash
+make backend-sqlc            # regenerate backend/internal/db from queries/ + migrations
+make backend-gen-ts-types    # regenerate frontend/src/api/generated.types.ts from the Go structs
+```
+
+Run `backend-gen-ts-types` after a migration/sqlc regen changes a wire-facing struct's fields (see
+`frontend/src/api/types.ts`'s header and `backend/tools/gen-ts-types`, issue #365). `make check` /
+CI (`backend-gen-ts-types-check`) fails if the generated file is stale relative to the Go source.
+
 ## Auth and smoke-testing the API
 
 The backend command is `serve`, not `server`. There is **no dev-login backdoor** — auth is real

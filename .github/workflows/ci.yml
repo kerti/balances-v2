@@ -96,6 +96,25 @@ jobs:
       - name: Strict coverage gate
         run: go run ./tools/qa-matrix -report -strict
 
+  gen-ts-types:
+    name: Generated TS types freshness
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      # Fails if frontend/src/api/generated.types.ts doesn't match what the
+      # Go source would produce — a changed nullability or an added/removed
+      # column on a wire-facing struct without a matching regen. See
+      # backend/tools/gen-ts-types and issue #365.
+      - name: Check generated.types.ts is up to date
+        run: go run ./tools/gen-ts-types -check
+
   backend-vuln:
     name: Backend vuln scan
     runs-on: ubuntu-latest

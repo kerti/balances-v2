@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -46,6 +46,8 @@ help:
 	@echo "  backend-migrate-status  show migration status"
 	@echo "  backend-tidy            go mod tidy"
 	@echo "  backend-sqlc            regenerate sqlc code"
+	@echo "  backend-gen-ts-types    regenerate frontend/src/api/generated.types.ts"
+	@echo "  backend-gen-ts-types-check  CI gate: fail if generated.types.ts is stale"
 	@echo ""
 	@echo "Frontend (Vite/React):"
 	@echo "  frontend-install        npm install"
@@ -111,6 +113,19 @@ backend-tidy:
 
 backend-sqlc:
 	cd backend && sqlc generate
+
+# Regenerate frontend/src/api/generated.types.ts, the structural (field
+# names + nullability) mirror of the sqlc/repo wire-facing Go structs. Run
+# after a migration/sqlc regen changes one of those structs — see
+# backend/tools/gen-ts-types and frontend/src/api/types.ts's header (issue
+# #365).
+backend-gen-ts-types:
+	cd backend && go run ./tools/gen-ts-types
+
+# The CI gate: fails if generated.types.ts is stale relative to the Go
+# source, without rewriting it.
+backend-gen-ts-types-check:
+	cd backend && go run ./tools/gen-ts-types -check
 
 frontend-install:
 	cd frontend && npm install
@@ -288,6 +303,7 @@ check:
 	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report -strict) >/tmp/balances-check-qa.log 2>&1; qa=$$?; \
 	  sed -n '1s/^qa-matrix: /  /p' /tmp/balances-check-qa.log; \
 	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
+	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >/tmp/balances-check-ts-types.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-ts-types.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
 # Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the
