@@ -19,9 +19,9 @@ Read these first, in order:
 
 ## Where we are now
 
-M1–M6 complete; **M6 (v1 polish)** and **M7 (productization) are both closed** — M7 closed 2026-07-03.
-CI is green. **`v0.7.0-alpha.5` is the latest preview release**; **`v0.7.0-rc.2` is demo's current
-release** on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
+M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
+2026-07-06. CI is green. **`v0.8.0-alpha.1` is the latest preview release**; **`v0.7.0-rc.2` is demo's
+current release** on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
 `https://demo.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
 mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with Fly-managed TLS.
@@ -47,18 +47,21 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
     ADR-0041). No migration.
   - `v0.7.0-rc.2` — promotes the `alpha.5` commit verbatim, no changes. Demo standup complete (#217
     closed) — see below.
+- **M8** (active) — next domain features, prioritized by real-user feedback from M7:
+  - `v0.8.0-alpha.1` — descriptor-driven Position list + `PositionFormDialog` migration for all
+    position types (#330–#334), generated FE wire-types from Go (#383), security response headers
+    (#384), reliability tail (session housekeeping/limiter eviction/DB pool bounds/HTTP
+    timeouts/gzip-bomb cap, #378/#379/#381), post-deploy version verification (#380), CONTRIBUTING +
+    SECURITY.md (#387/#388), AGPL-3.0 license (ADR-0042). No migration.
 
 ## What's next
 
-**M7 closed (2026-07-03) — productization done: self-host (#116), onboarding (#158), and the
-non-disposable-environment bullet (self-host satisfies it) all shipped; #93 landing stays consciously
-deferred to near-RC. Latest preview release v0.7.0-alpha.5; latest demo release v0.7.0-rc.2.** Next,
-in order:
+**M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`).** Prioritized by
+real-user feedback from M7 (not pre-specified). Next, in order:
 
-1. **M8 = next domain features (now the active line)**, prioritized by real-user feedback from M7
-   (not pre-specified). Includes the M6→M8 pivot of **PDF export (#187)**. Also riding along: #299
-   (privacy policy, not blocked on prod) — small M7 leftover that didn't gate anything, moved here so
-   M7 could close clean. #163 (email wordmark raster) shipped separately (`#315`). See ROADMAP M8.
+1. Includes the M6→M8 pivot of **PDF export (#187)**. Also riding along: #299 (privacy policy, not
+   blocked on prod) — small M7 leftover that didn't gate anything, moved here so M7 could close clean.
+   #163 (email wordmark raster) shipped separately (`#315`). See ROADMAP M8.
 2. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
    eventual standup, tracked via #218 (Neon isolation) and #299's remaining GDPR scope, not its own
    milestone. Prod itself stays deferred indefinitely.
