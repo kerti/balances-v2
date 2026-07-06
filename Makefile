@@ -91,28 +91,28 @@ ps:
 	docker compose -f $(DEV_COMPOSE) ps
 
 backend-run:
-	cd backend && go run ./cmd/balances serve
+	( cd backend && go run ./cmd/balances serve )
 
 backend-build:
-	cd backend && go build -o bin/balances ./cmd/balances
+	( cd backend && go build -o bin/balances ./cmd/balances )
 
 backend-test:
-	cd backend && go test ./...
+	( cd backend && go test ./... )
 
 backend-migrate-up:
-	cd backend && go run ./cmd/balances migrate up
+	( cd backend && go run ./cmd/balances migrate up )
 
 backend-migrate-down:
-	cd backend && go run ./cmd/balances migrate down
+	( cd backend && go run ./cmd/balances migrate down )
 
 backend-migrate-status:
-	cd backend && go run ./cmd/balances migrate status
+	( cd backend && go run ./cmd/balances migrate status )
 
 backend-tidy:
-	cd backend && go mod tidy
+	( cd backend && go mod tidy )
 
 backend-sqlc:
-	cd backend && sqlc generate
+	( cd backend && sqlc generate )
 
 # Regenerate frontend/src/api/generated.types.ts, the structural (field
 # names + nullability) mirror of the sqlc/repo wire-facing Go structs. Run
@@ -120,21 +120,21 @@ backend-sqlc:
 # backend/tools/gen-ts-types and frontend/src/api/types.ts's header (issue
 # #365).
 backend-gen-ts-types:
-	cd backend && go run ./tools/gen-ts-types
+	( cd backend && go run ./tools/gen-ts-types )
 
 # The CI gate: fails if generated.types.ts is stale relative to the Go
 # source, without rewriting it.
 backend-gen-ts-types-check:
-	cd backend && go run ./tools/gen-ts-types -check
+	( cd backend && go run ./tools/gen-ts-types -check )
 
 frontend-install:
-	cd frontend && npm install
+	( cd frontend && npm install )
 
 frontend-dev:
-	cd frontend && npm run dev
+	( cd frontend && npm run dev )
 
 frontend-build:
-	cd frontend && npm run build
+	( cd frontend && npm run build )
 
 # ----- background dev servers ---------------------------------------------
 # `make restart` kills any running backend + frontend dev processes and
@@ -220,7 +220,7 @@ restart: backend-restart frontend-restart
 # ports, so the 8080/5173 dev servers are never touched.
 
 e2e: e2e-db-create e2e-seed
-	@cd backend && go build -o /tmp/balances-e2e ./cmd/balances
+	@( cd backend && go build -o /tmp/balances-e2e ./cmd/balances )
 	@/tmp/balances-e2e mock-oidc & \
 	  MOCK_PID=$$!; \
 	  trap "kill $$MOCK_PID 2>/dev/null" EXIT; \
@@ -228,7 +228,7 @@ e2e: e2e-db-create e2e-seed
 	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
 	    sleep 0.2; \
 	  done; \
-	  cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS)
+	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS) )
 
 # CI variant of `e2e` (issue #70). Differs only in the DB-create step: CI runs a
 # GitHub `services: postgres` reachable on localhost — there is no docker
@@ -236,7 +236,7 @@ e2e: e2e-db-create e2e-seed
 # service's POSTGRES_DB, so e2e-db-create is skipped. E2E_ARGS forwards Playwright
 # flags, e.g. `make e2e-ci E2E_ARGS='--grep @smoke'` for the per-PR smoke gate.
 e2e-ci: e2e-seed-ci
-	@cd backend && go build -o /tmp/balances-e2e ./cmd/balances
+	@( cd backend && go build -o /tmp/balances-e2e ./cmd/balances )
 	@/tmp/balances-e2e mock-oidc & \
 	  MOCK_PID=$$!; \
 	  trap "kill $$MOCK_PID 2>/dev/null" EXIT; \
@@ -244,13 +244,13 @@ e2e-ci: e2e-seed-ci
 	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
 	    sleep 0.2; \
 	  done; \
-	  cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS)
+	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS) )
 
 e2e-seed-ci:
-	@cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e
+	@( cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e )
 
 e2e-mock-oidc:
-	@cd backend && go run ./cmd/balances mock-oidc
+	@( cd backend && go run ./cmd/balances mock-oidc )
 
 e2e-db-create:
 	@docker exec $(PG_CONTAINER) psql -U $(PG_USER) -d postgres -tAc \
@@ -259,10 +259,10 @@ e2e-db-create:
 	@echo "e2e db: $(E2E_DB) ready"
 
 e2e-seed: e2e-db-create
-	@cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e
+	@( cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e )
 
 e2e-backend: e2e-db-create
-	@cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances serve
+	@( cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances serve )
 
 servers-status:
 	@if pgrep -f 'cmd/balances serve' >/dev/null; then \
@@ -310,21 +310,21 @@ check:
 # test suite, joined against the docs/qa/invariants/ catalog. Advisory: prints
 # uncovered / nightly-only invariants but does not fail. See docs/qa/README.md.
 qa-matrix:
-	@cd backend && go run ./tools/qa-matrix
+	@( cd backend && go run ./tools/qa-matrix )
 
 # The CI gate (also run inside `make check`). Fails if any catalogued invariant
 # lacks per-PR coverage — uncovered, or covered only by a nightly (non-smoke)
 # Playwright spec. -report so it doesn't rewrite the coverage files. See
 # docs/qa/how-it-works.md.
 qa-strict:
-	@cd backend && go run ./tools/qa-matrix -report -strict
+	@( cd backend && go run ./tools/qa-matrix -report -strict )
 
 # Advisory gap-finder: test files with no covers: annotation that sit in a
 # directory where another test does carry one — the likeliest within-zone
 # stragglers. Excludes wholly-unannotated dirs (uncatalogued zones, expected
 # blank). Does not rewrite the coverage files. See docs/qa/README.md.
 qa-gaps:
-	@cd backend && go run ./tools/qa-matrix -gaps
+	@( cd backend && go run ./tools/qa-matrix -gaps )
 
 # Print one live session token (newest, unexpired) for curl smoke tests against
 # authenticated endpoints. Empty result → non-zero exit with a hint on stderr.
