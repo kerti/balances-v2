@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { CircleUser } from "lucide-react";
 import { GitHubMark } from "@/components/icons/GitHubMark";
-import { APP_VERSION, DEPLOY_ENV, MAINTAINER_URL, REPO_URL } from "@/lib/appInfo";
+import { useDeployEnv } from "@/hooks/useDeployEnv";
+import { APP_VERSION, MAINTAINER_URL, REPO_URL } from "@/lib/appInfo";
 
 // App identity block: release tag, deploy target, and the source/maintainer
 // links (issue #75). Shared by the sidebar footer and the sign-in screen
@@ -19,6 +20,7 @@ type Props = {
 
 export function AppInfo({ className, variant = "stacked" }: Props) {
   const { t } = useTranslation("nav");
+  const deployEnv = useDeployEnv();
 
   const version = (
     <span data-testid="app-version" className="font-mono">
@@ -30,7 +32,7 @@ export function AppInfo({ className, variant = "stacked" }: Props) {
       data-testid="deploy-env"
       className="w-fit rounded border border-sidebar-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide"
     >
-      {t(`footer.deploy.${DEPLOY_ENV}`)}
+      {t(`footer.deploy.${deployEnv}`)}
     </span>
   );
   const github = (

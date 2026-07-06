@@ -17,7 +17,7 @@ describe("resolveAppVersion", () => {
 });
 
 describe("resolveDeployEnv", () => {
-  it.each(["preview", "demo", "production", "local"] as const)(
+  it.each(["preview", "demo", "production", "self-hosted", "local"] as const)(
     "passes the known target %s through unchanged",
     (env) => {
       expect(resolveDeployEnv(env)).toBe(env);

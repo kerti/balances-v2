@@ -9,13 +9,13 @@
 # so there's no reason to emulate the target arch here.
 FROM --platform=$BUILDPLATFORM node:22 AS web
 WORKDIR /web
-# App identity baked into the bundle (issue #75). The deploy workflow passes the
-# release tag and target env as build args; Vite picks up VITE_*-prefixed vars
-# from the environment at `npm run build`. Local builds use the defaults.
+# Release tag baked into the bundle (issue #75). The deploy workflow passes it
+# as a build arg; Vite picks up VITE_*-prefixed vars from the environment at
+# `npm run build`. Local builds use the default. The deploy target (DEPLOY_ENV)
+# is NOT baked in here — it's read at runtime (#354), since the same built
+# image is deployed to every environment.
 ARG APP_VERSION=dev
-ARG DEPLOY_ENV=local
 ENV VITE_APP_VERSION=$APP_VERSION
-ENV VITE_DEPLOY_ENV=$DEPLOY_ENV
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 COPY frontend/ ./

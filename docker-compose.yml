@@ -44,6 +44,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-balances}:${POSTGRES_PASSWORD:-balances}@postgres:5432/${POSTGRES_DB:-balances}?sslmode=disable
       # Serve the SPA bundle baked into the image alongside /api (single origin).
       WEB_DIR: /app/web
+      # Read at runtime (#354), not baked into the image — the same published
+      # image also runs unmodified on Fly, where this is set per environment.
+      DEPLOY_ENV: self-hosted
     ports:
       - "${APP_PORT:-8080}:8080"
     depends_on:

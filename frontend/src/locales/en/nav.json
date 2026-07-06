@@ -22,6 +22,7 @@
       "preview": "Preview",
       "demo": "Demo",
       "production": "Production",
+      "self-hosted": "Self-hosted",
       "local": "Local"
     },
     "sourceCode": "Source code on GitHub",

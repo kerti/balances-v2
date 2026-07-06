@@ -1,7 +1,8 @@
-# Tag-driven deploy (ADR-0029/0030). A SemVer tag routes to an environment and a
-# single `flyctl deploy` builds the image (SPA + Go binary) and rolls it out;
-# `goose up` runs inside Fly as the release_command. Single-origin: the Go app
-# serves the SPA, so there is no separate frontend deploy.
+# Tag-driven deploy (ADR-0029/0030). A SemVer tag routes to an environment; the
+# image is built exactly once and pushed to GHCR, then Fly deploys that same
+# image by reference (#354 — GHCR and Fly used to run independently-built
+# artifacts). `goose up` runs inside Fly as the release_command. Single-origin:
+# the Go app serves the SPA, so there is no separate frontend deploy.
 #
 #   v0.6.0-alpha.N -> preview     (auto)
 #   v0.6.0-rc.N    -> demo        (auto, once demo exists)
@@ -25,53 +26,14 @@ jobs:
           elif [[ "$t" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then echo "env=production" >> "$GITHUB_OUTPUT"
           else echo "::error::tag $t matches no environment"; exit 1; fi
 
-  deploy:
-    needs: route
-    runs-on: ubuntu-latest
-    environment: ${{ needs.route.outputs.env }}   # secrets + (production) approval gate
-    concurrency: deploy-${{ needs.route.outputs.env }}
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master-pinned 2026-06-13
-      - name: Deploy to ${{ needs.route.outputs.env }}
-        # APP_VERSION/DEPLOY_ENV are baked into the SPA bundle for the footer
-        # (issue #75); the Dockerfile web stage reads them as VITE_ vars.
-        run: |
-          flyctl deploy --app "balances-${{ needs.route.outputs.env }}" --remote-only \
-            --build-arg APP_VERSION="${{ github.ref_name }}" \
-            --build-arg DEPLOY_ENV="${{ needs.route.outputs.env }}"
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-      - name: Verify the rolled-out version
-        # flyctl deploy succeeding only proves one health check passed, not that
-        # this tag is actually what's serving — /healthz.version is baked in the
-        # same build-arg above (#355). Poll the app's default *.fly.dev hostname
-        # (stable regardless of any custom domain fronting the environment).
-        run: |
-          url="https://balances-${{ needs.route.outputs.env }}.fly.dev/healthz"
-          want="${{ github.ref_name }}"
-          for i in $(seq 1 10); do
-            got="$(curl -fsS "$url" | jq -r .version 2>/dev/null || true)"
-            if [[ "$got" == "$want" ]]; then
-              echo "verified: $url reports version $got"
-              exit 0
-            fi
-            echo "attempt $i/10: got '$got', want '$want' — retrying in 5s"
-            sleep 5
-          done
-          echo "::error::$url never reported version $want"
-          exit 1
-
-  # Self-host artifact (#225, ADR-0033). Fly builds on its own remote builder and
-  # pushes nothing public, so the operator `docker compose pull` contract has no
-  # source. This job builds the same Dockerfile and pushes it to GHCR, named for
-  # the product (`balances`, not the `-v2` repo) so the operator-facing image is
-  # clean. Independent of the Fly deploy — runs in parallel, off the same tag.
+  # Single build, reused by both Fly and self-hosters (#354, ADR-0033). Also
+  # the operator artifact for `docker compose pull` (#225) — named for the
+  # product (`balances`, not the `-v2` repo) so it's clean self-host copy.
   # NOTE one-time setup: the GHCR package visibility must be flipped to public
-  # (Packages -> balances -> Package settings -> Change visibility) so the image
-  # is anonymously pullable; GITHUB_TOKEN cannot set that.
-  ghcr:
-    needs: route
+  # (Packages -> balances -> Package settings -> Change visibility) so the
+  # image is anonymously pullable; GITHUB_TOKEN cannot set that.
+  build:
+    needs: route   # fail fast on an unroutable tag before spending a build
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -93,8 +55,49 @@ jobs:
           # compiles per target, so no QEMU emulation is needed.
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/kerti/balances:${{ github.ref_name }}
-          # Kept in lockstep with the Fly build args above so the published
-          # artifact bakes the same version/env identity into the SPA bundle.
+          # APP_VERSION is baked in (identical across every environment this
+          # one build is deployed to). DEPLOY_ENV is NOT a build arg — it
+          # varies per environment, so it's read at runtime instead (#354),
+          # passed to Fly below via `flyctl deploy --env` and to self-hosters
+          # via docker-compose.yml.
           build-args: |
             APP_VERSION=${{ github.ref_name }}
-            DEPLOY_ENV=${{ needs.route.outputs.env }}
+
+  deploy:
+    needs: [route, build]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.route.outputs.env }}   # secrets + (production) approval gate
+    concurrency: deploy-${{ needs.route.outputs.env }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master-pinned 2026-06-13
+      - name: Deploy to ${{ needs.route.outputs.env }}
+        # --image pins the exact digest `build` just pushed — no rebuild, so
+        # this is byte-identical to what self-hosters pull (#354). fly.toml is
+        # still read for the rest of the app config (checks, release_command).
+        # DEPLOY_ENV is a runtime env var, not baked into the image.
+        run: |
+          flyctl deploy --app "balances-${{ needs.route.outputs.env }}" \
+            --image "ghcr.io/kerti/balances:${{ github.ref_name }}" \
+            --env DEPLOY_ENV="${{ needs.route.outputs.env }}"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      - name: Verify the rolled-out version
+        # flyctl deploy succeeding only proves one health check passed, not that
+        # this tag is actually what's serving — /healthz.version is baked in the
+        # build-arg above (#355). Poll the app's default *.fly.dev hostname
+        # (stable regardless of any custom domain fronting the environment).
+        run: |
+          url="https://balances-${{ needs.route.outputs.env }}.fly.dev/healthz"
+          want="${{ github.ref_name }}"
+          for i in $(seq 1 10); do
+            got="$(curl -fsS "$url" | jq -r .version 2>/dev/null || true)"
+            if [[ "$got" == "$want" ]]; then
+              echo "verified: $url reports version $got"
+              exit 0
+            fi
+            echo "attempt $i/10: got '$got', want '$want' — retrying in 5s"
+            sleep 5
+          done
+          echo "::error::$url never reported version $want"
+          exit 1

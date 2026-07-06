@@ -22,6 +22,7 @@
       "preview": "Pratinjau",
       "demo": "Demo",
       "production": "Produksi",
+      "self-hosted": "Mandiri",
       "local": "Lokal"
     },
     "sourceCode": "Kode sumber di GitHub",

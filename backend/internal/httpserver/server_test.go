@@ -39,9 +39,10 @@ func TestServer_Healthz(t *testing.T) {
 	}
 
 	var body struct {
-		OK      bool   `json:"ok"`
-		DBTime  string `json:"db_time"`
-		Version string `json:"version"`
+		OK        bool   `json:"ok"`
+		DBTime    string `json:"db_time"`
+		Version   string `json:"version"`
+		DeployEnv string `json:"deploy_env"`
 	}
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("decode body: %v (raw: %s)", err, rec.Body.String())
@@ -55,6 +56,35 @@ func TestServer_Healthz(t *testing.T) {
 	// appVersion defaults to "dev" absent the build-time -ldflags -X (#355).
 	if body.Version != "dev" {
 		t.Errorf("version = %q, want default %q", body.Version, "dev")
+	}
+	// DEPLOY_ENV defaults to "local" absent the runtime env var (#354).
+	if body.DeployEnv != "local" {
+		t.Errorf("deploy_env = %q, want default %q", body.DeployEnv, "local")
+	}
+}
+
+// TestServer_Healthz_DeployEnvFromRuntime proves DEPLOY_ENV is read per-request
+// from the environment, not baked at build time — the fix for #354: the same
+// built image is deployed to every environment, so the label can't be a
+// compile-time constant.
+func TestServer_Healthz_DeployEnvFromRuntime(t *testing.T) {
+	t.Setenv("DEPLOY_ENV", "self-hosted")
+
+	tdb := testutil.NewTestDB(t)
+	s := httpserver.New(tdb.Pool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	s.Handler().ServeHTTP(rec, req)
+
+	var body struct {
+		DeployEnv string `json:"deploy_env"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode body: %v (raw: %s)", err, rec.Body.String())
+	}
+	if body.DeployEnv != "self-hosted" {
+		t.Errorf("deploy_env = %q, want %q", body.DeployEnv, "self-hosted")
 	}
 }
 
