@@ -137,6 +137,18 @@ backend-gen-ts-types:
 backend-gen-ts-types-check:
 	( cd backend && go run ./tools/gen-ts-types -check )
 
+# Regenerate docs/api-routes.md, the flat inventory of every backend HTTP
+# route. Walked from the live chi router (not the source), so it can't drift.
+# Run after adding/removing/renaming a route in any handler's Mount. See
+# backend/tools/gen-routes and issue #370.
+api-routes:
+	( cd backend && go run ./tools/gen-routes )
+
+# The CI gate: fails if docs/api-routes.md is stale relative to the router,
+# without rewriting it.
+api-routes-check:
+	( cd backend && go run ./tools/gen-routes -check )
+
 frontend-install:
 	( cd frontend && npm install )
 
@@ -315,6 +327,7 @@ check:
 	  sed -n '1s/^qa-matrix: /  /p' /tmp/balances-check-qa.log; \
 	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
 	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >/tmp/balances-check-ts-types.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-ts-types.log'; fail=1; }; \
+	printf '%-14s' 'api-routes';   (cd backend && go run ./tools/gen-routes -check)   >/tmp/balances-check-api-routes.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-api-routes.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
 # Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the

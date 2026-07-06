@@ -97,7 +97,7 @@ jobs:
         run: go run ./tools/qa-matrix -report -strict
 
   gen-ts-types:
-    name: Generated TS types freshness
+    name: Generated artifacts freshness
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -114,6 +114,11 @@ jobs:
       # backend/tools/gen-ts-types and issue #365.
       - name: Check generated.types.ts is up to date
         run: go run ./tools/gen-ts-types -check
+      # Fails if docs/api-routes.md doesn't match the live router — a route
+      # added/removed/renamed in a handler's Mount without a matching regen.
+      # See backend/tools/gen-routes and issue #370.
+      - name: Check api-routes.md is up to date
+        run: go run ./tools/gen-routes -check
 
   backend-vuln:
     name: Backend vuln scan

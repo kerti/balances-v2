@@ -14,6 +14,10 @@ transaction.
 The domain glossary lives in `CONTEXT.md`. The decisions behind the design and tech stack live in
 `docs/adr/`. The implementation outline lives in `docs/ROADMAP.md`.
 
+**New here?** Start with [`docs/architecture.md`](docs/architecture.md) for how the pieces fit and
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for the workflow. `HANDOFF.md` tracks the current project state
+(it's written for AI agents, but it's the fastest read on where things stand).
+
 Licensed under [AGPL-3.0](LICENSE) (ADR-0042).
 
 ## Local development
