@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import {
   createBrowserRouter,
   Navigate,
@@ -353,8 +353,28 @@ const router = createBrowserRouter([
   },
 ]);
 
+// Every path an unauthenticated visitor is allowed to land on directly, below.
+// Anything else (e.g. a stray /settings from a stale bookmark or a logged-out
+// session) falls through to the sign-in screen — reset to dashboard so the
+// address bar matches what's rendered instead of parking on an authed-only path.
+const PRE_AUTH_PATHS: string[] = [
+  routes.dashboard,
+  routes.onboarding,
+  routes.accept,
+  routes.forgotPassword,
+  routes.resetPassword,
+  routes.erased,
+];
+
 function App() {
   const { data: user, isPending } = useSession();
+
+  useEffect(() => {
+    if (isPending || user) return;
+    if (!PRE_AUTH_PATHS.includes(window.location.pathname)) {
+      window.history.replaceState(null, "", routes.dashboard);
+    }
+  }, [isPending, user]);
 
   if (isPending) {
     return (
