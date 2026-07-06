@@ -295,9 +295,7 @@ func (h *Handlers) createLocalFounder(ctx context.Context, hs db.OnboardingHands
 	}); err != nil {
 		return db.User{}, err
 	}
-	if err := h.sendWelcomeEmail(ctx, user); err != nil {
-		slog.Error("send welcome email", "err", err, "user_id", user.ID)
-	}
+	h.dispatchWelcomeEmail(user)
 	return user, nil
 }
 

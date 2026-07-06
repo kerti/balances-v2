@@ -457,11 +457,10 @@ func (h *Handlers) createFounder(ctx context.Context, c *googleClaims, seedLocal
 		return db.User{}, err
 	}
 
-	// Best-effort welcome email (ADR-0020): a mail outage must never cost the
-	// founder their signup, so we log and proceed rather than fail the flow.
-	if err := h.sendWelcomeEmail(ctx, user); err != nil {
-		slog.Error("send welcome email", "err", err, "user_id", user.ID)
-	}
+	// Best-effort welcome email (ADR-0020), dispatched off the request
+	// goroutine (mirrors issueResetToken in reset.go) so a slow/hung SMTP relay
+	// never costs the founder their signup latency, only a delayed email.
+	h.dispatchWelcomeEmail(user)
 	return user, nil
 }
 

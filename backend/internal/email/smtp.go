@@ -4,14 +4,23 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/mail"
 	"net/smtp"
 	"strings"
+	"time"
 )
+
+// defaultSendTimeout bounds a Send call when the caller's context carries no
+// deadline of its own — without it, a hung relay (dead TCP peer, one that
+// accepts the connection but never responds) blocks the caller forever, since
+// neither net.Dial nor the smtp.Client calls below time out on their own.
+const defaultSendTimeout = 30 * time.Second
 
 // SMTPConfig configures a plain-SMTP Mailer. In dev this points at Mailpit
 // (localhost:1025, no auth, no TLS). In production the same shape can target
@@ -73,7 +82,13 @@ func NewSMTPMailer(cfg SMTPConfig) (*SMTPMailer, error) {
 	return m, nil
 }
 
-func (m *SMTPMailer) Send(_ context.Context, msg Message) error {
+// Send mirrors smtp.SendMail's dial → EHLO → opportunistic STARTTLS → AUTH →
+// MAIL/RCPT/DATA sequence, reimplemented on top of the lower-level Client so
+// the connection can be dialed with ctx and bounded by a deadline —
+// smtp.SendMail itself takes no context and never times out, so a hung relay
+// would otherwise block the caller (welcome/invite/reset email, all sent
+// inline from a request) indefinitely.
+func (m *SMTPMailer) Send(ctx context.Context, msg Message) error {
 	if m.fromErr != nil {
 		return m.fromErr
 	}
@@ -90,13 +105,79 @@ func (m *SMTPMailer) Send(_ context.Context, msg Message) error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", m.cfg.Host, m.cfg.Port)
-	var auth smtp.Auth
-	if m.cfg.Username != "" {
-		auth = smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
+	var d net.Dialer
+	conn, err := d.DialContext(ctx, "tcp", addr)
+	if err != nil {
+		return fmt.Errorf("smtp: dial: %w", err)
 	}
+
+	deadline := time.Now().Add(defaultSendTimeout)
+	if dl, ok := ctx.Deadline(); ok && dl.Before(deadline) {
+		deadline = dl
+	}
+	if err := conn.SetDeadline(deadline); err != nil {
+		_ = conn.Close()
+		return fmt.Errorf("smtp: set deadline: %w", err)
+	}
+
+	// SetDeadline alone only bounds the worst case; if ctx is canceled sooner
+	// (the request that triggered this send hung up), abort the conn right
+	// away instead of idling until the deadline.
+	done := make(chan struct{})
+	defer close(done)
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = conn.Close()
+		case <-done:
+		}
+	}()
+
+	client, err := smtp.NewClient(conn, m.cfg.Host)
+	if err != nil {
+		_ = conn.Close()
+		return fmt.Errorf("smtp: new client: %w", err)
+	}
+	defer client.Close() //nolint:errcheck // best-effort cleanup; Quit above already reported the real outcome
+
+	if ok, _ := client.Extension("STARTTLS"); ok {
+		if err := client.StartTLS(&tls.Config{ServerName: m.cfg.Host}); err != nil {
+			return fmt.Errorf("smtp: starttls: %w", err)
+		}
+	}
+
+	if m.cfg.Username != "" {
+		if ok, _ := client.Extension("AUTH"); !ok {
+			return errors.New("smtp: server doesn't support AUTH")
+		}
+		auth := smtp.PlainAuth("", m.cfg.Username, m.cfg.Password, m.cfg.Host)
+		if err := client.Auth(auth); err != nil {
+			return fmt.Errorf("smtp: auth: %w", err)
+		}
+	}
+
 	// Envelope reverse-path is the bare address; the display-name form (if any)
 	// lives only in the From: header built above (#192).
-	return smtp.SendMail(addr, auth, m.envelope, []string{msg.To}, body)
+	if err := client.Mail(m.envelope); err != nil {
+		return fmt.Errorf("smtp: mail from: %w", err)
+	}
+	if err := client.Rcpt(msg.To); err != nil {
+		return fmt.Errorf("smtp: rcpt to: %w", err)
+	}
+
+	w, err := client.Data()
+	if err != nil {
+		return fmt.Errorf("smtp: data: %w", err)
+	}
+	if _, err := w.Write(body); err != nil {
+		_ = w.Close()
+		return fmt.Errorf("smtp: write body: %w", err)
+	}
+	if err := w.Close(); err != nil {
+		return fmt.Errorf("smtp: close data: %w", err)
+	}
+
+	return client.Quit()
 }
 
 func buildMultipartMessage(from string, msg Message) ([]byte, error) {
