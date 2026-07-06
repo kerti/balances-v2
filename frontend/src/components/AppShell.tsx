@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Outlet } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -9,6 +9,7 @@ import { AppLogo } from "@/components/AppLogo";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSession } from "@/hooks/useSession";
 import { useInviteIgnoredNotice } from "@/hooks/useInviteIgnoredNotice";
+import { routes } from "@/lib/routes";
 import { useLocaleReconcile } from "@/i18n/useLocaleReconcile";
 import { useThemeReconcile } from "@/theme/useThemeReconcile";
 import { api } from "@/api/client";
@@ -18,6 +19,7 @@ import { api } from "@/api/client";
 // into <Outlet/>. Mounted only when signed in, so useSession always has a user.
 export function AppShell() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { data: user } = useSession();
   const { t } = useTranslation("common");
   useLocaleReconcile(user);
@@ -28,8 +30,11 @@ export function AppShell() {
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
-      // Whatever happens on the server, surface the signed-out state on the
-      // client by invalidating the session query.
+      // Land back on the dashboard route before the session flips to
+      // signed-out — otherwise App swaps RouterProvider for SignInScreen
+      // while leaving whatever path the user was on (e.g. /settings) in the
+      // address bar.
+      navigate(routes.dashboard, { replace: true });
       await qc.invalidateQueries({ queryKey: ["session"] });
     }
   }
