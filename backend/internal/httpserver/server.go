@@ -93,6 +93,7 @@ func (s *Server) buildRouter() chi.Router {
 	// If we ever deploy behind a known proxy, add a trusted-CIDR-aware extractor.
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(securityHeaders(s.cfg.CookieSecure))
 	r.Use(s.authH.SessionMiddleware)
 
 	r.Get("/healthz", s.handleHealthz)

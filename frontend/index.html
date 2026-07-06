@@ -5,31 +5,9 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Balances</title>
-    <!--
-      Apply the persisted theme before first paint so there is no light/dark
-      flash. Precedence mirrors resolveBootTheme() in src/theme/index.ts: an
-      explicit stored choice (balances.theme), then the OS preference, then dark
-      (the app's historical default). Inline + synchronous so it runs ahead of
-      any rendering. The React ThemeProvider re-reads the same sources, so its
-      initial state matches what this script painted.
-    -->
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem('balances.theme')
-          var theme =
-            stored === 'light' || stored === 'dark'
-              ? stored
-              : window.matchMedia &&
-                  window.matchMedia('(prefers-color-scheme: light)').matches
-                ? 'light'
-                : 'dark'
-          if (theme === 'dark') document.documentElement.classList.add('dark')
-        } catch (e) {
-          document.documentElement.classList.add('dark')
-        }
-      })()
-    </script>
+    <!-- See public/theme-init.js: applies the persisted theme before first
+         paint, kept as an external file (not inline) for CSP script-src 'self'. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
