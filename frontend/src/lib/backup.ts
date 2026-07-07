@@ -35,8 +35,10 @@ export type Fidelity = "full" | "compacted";
 
 // triggerDownload saves a blob to disk via a transient object URL + anchor —
 // the standard browser-download dance, since the export endpoint streams a
-// file rather than JSON the api() client could parse.
-function triggerDownload(blob: Blob, filename: string) {
+// file rather than JSON the api() client could parse. Exported for reuse by
+// any other feature that ends up with an in-memory Blob to save (e.g. the
+// client-generated PDF report, ADR-0044).
+export function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import { MonthPickerPopover } from "@/components/MonthPickerPopover";
+import { ReportPdfButton } from "@/components/ReportPdfButton";
 import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
@@ -83,6 +84,10 @@ export function DashboardScreen() {
         displayCurrencies={displayCurrencies}
         secondary={secondary}
         onSecondaryChange={setSecondaryCurrency}
+        currency={currency}
+        rates={rates ?? []}
+        members={members}
+        me={me}
       />
 
       <HeadlineCard
@@ -171,6 +176,10 @@ function DashboardHeader({
   displayCurrencies,
   secondary,
   onSecondaryChange,
+  currency,
+  rates,
+  members,
+  me,
 }: {
   reports: MonthlyReport[];
   selected: MonthlyReport;
@@ -178,6 +187,10 @@ function DashboardHeader({
   displayCurrencies: string[];
   secondary: string;
   onSecondaryChange: (currency: string) => void;
+  currency: string;
+  rates: FxRate[];
+  members: HouseholdMember[] | undefined;
+  me: Me | null | undefined;
 }) {
   const { t } = useTranslation("dashboard");
   return (
@@ -206,6 +219,15 @@ function DashboardHeader({
           months={reports.map((r) => r.year_month)}
           selected={selected.year_month}
           onSelect={onSelect}
+        />
+        <ReportPdfButton
+          reports={reports}
+          selected={selected}
+          currency={currency}
+          secondaryCurrency={secondary}
+          rates={rates}
+          members={members}
+          me={me}
         />
       </div>
     </div>

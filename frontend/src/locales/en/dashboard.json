@@ -85,5 +85,11 @@
   "monthPicker": {
     "prevYear": "Previous year",
     "nextYear": "Next year"
+  },
+  "downloadPdf": {
+    "button": "Download PDF",
+    "preparing": "Preparing…",
+    "exported": "PDF downloaded",
+    "failed": "Couldn't generate the PDF — try again."
   }
 }

@@ -85,5 +85,11 @@
   "monthPicker": {
     "prevYear": "Tahun sebelumnya",
     "nextYear": "Tahun berikutnya"
+  },
+  "downloadPdf": {
+    "button": "Unduh PDF",
+    "preparing": "Menyiapkan…",
+    "exported": "PDF berhasil diunduh",
+    "failed": "Gagal membuat PDF — coba lagi."
   }
 }
