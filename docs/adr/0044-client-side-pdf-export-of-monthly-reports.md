@@ -23,8 +23,17 @@ scheduled send (no browser present) — a bigger, structurally different feature
 ## Decision
 
 - **Library:** `@react-pdf/renderer` (MIT; compatible with the AGPL-3.0 project license, ADR-0042).
-  Lazy-loaded (`React.lazy`/dynamic `import()`) so it isn't part of the main bundle — this is a PWA
-  with an offline angle (ADR-0016).
+  Lazy-loaded via a plain dynamic `import()` **inside the button's click handler**, not
+  `React.lazy`/`Suspense` on mount. Its dependency graph (~1.4MB — fonts, layout engine, pdfkit) is
+  far larger than any other lazy chunk in this app (`recharts`, mount-loaded for `SnapshotChart`, is
+  ~18KB) and is only needed for a comparatively rare, explicitly-triggered action — eagerly fetching
+  it on every dashboard view would be bloat disproportionate to how often it's used. (First shipped
+  mount-loaded, mirroring `SnapshotChart`'s pattern without weighing that difference; corrected after
+  it caused e2e flakiness under CI's cold Vite cache — see Consequences.) Reuses
+  `lazyWithReload.ts`'s `importWithReloadGuard` directly (the same post-deploy chunk-reload recovery,
+  applicable to any dynamic import, not just `React.lazy` components) rather than the `lazyWithReload`
+  wrapper itself. This is still a PWA with an offline angle (ADR-0016) — the chunk isn't part of the
+  main bundle either way.
 - **Scope (v1):** mirrors the on-screen dashboard exactly — headline net worth, time-series chart,
   4-row group breakdown, FX rates used, income-statement lines, by-person split. **No per-position
   ledger.** The dashboard itself never enumerates individual positions, so nothing in the PDF needs
@@ -62,3 +71,9 @@ scheduled send (no browser present) — a bigger, structurally different feature
   the month) is explicitly out of scope and would need a separate design decision — client-side
   generation cannot run without a browser. Note: issue #371 (reminder email) does not currently ask
   for this — it's scoped as a stale-data nudge, not a report attachment.
+- Click-triggered loading means the button itself must render as a plain, always-visible element —
+  no `Suspense` fallback state to design for, and the one-time chunk-fetch latency now lands after
+  the click (where a "Preparing…" busy state already covers it) rather than before the button even
+  appears. The e2e smoke spec (`dashboard-pdf-export.spec.ts`) asserts the button is visible with the
+  *default* locator timeout — if that ever needs widening again, that's a signal the button stopped
+  being a plain synchronous render, not that the timeout needs raising further.

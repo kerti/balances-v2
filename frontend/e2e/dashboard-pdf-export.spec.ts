@@ -8,14 +8,14 @@ import { test, expect } from "@playwright/test";
 test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ page }) => {
   await page.goto("/");
 
-  // The button is behind a lazy import() (ReportPdfButton, ADR-0044) whose
-  // chunk (~1.4MB — @react-pdf/renderer's font/layout engine) is far larger
-  // than any other lazy chunk in this app; the default 5s locator timeout can
-  // be too tight for that one-time fetch+eval on a cold-cache CI run.
+  // The button itself renders immediately — @react-pdf/renderer (~1.4MB, far
+  // larger than any other lazy chunk in this app) is fetched only on click,
+  // not eagerly on mount (ADR-0044), so the one-time fetch+eval cost lands
+  // here, after the click, rather than gating the button's own visibility.
   const btn = page.getByTestId("download-pdf-button");
-  await expect(btn).toBeVisible({ timeout: 15_000 });
+  await expect(btn).toBeVisible();
 
-  const downloadPromise = page.waitForEvent("download");
+  const downloadPromise = page.waitForEvent("download", { timeout: 30_000 });
   await btn.click();
   const download = await downloadPromise;
 
