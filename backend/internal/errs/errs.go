@@ -111,4 +111,12 @@ var (
 	// confinement spans two tables, so it is enforced in the repo, not by a
 	// CHECK. Mapped to 400.
 	ErrOutsideDepositTerm = errors.New("repo: entry falls outside the time deposit's term")
+
+	// ErrSnapshotMonthExists is returned when creating a snapshot for a
+	// (position, year_month) that already has a live one — the partial unique
+	// index `<table>_year_month_idx` (migration 00001, WHERE deleted_at IS
+	// NULL) enforces one snapshot per month across all four position-group
+	// snapshot tables. The caller should edit or delete the existing snapshot
+	// instead of creating a second one. Mapped to 409 (#395).
+	ErrSnapshotMonthExists = errors.New("repo: a snapshot already exists for that month")
 )

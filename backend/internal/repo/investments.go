@@ -99,6 +99,9 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 		if asOfMonthViolation(err) {
 			return nil, ErrSnapshotDateOutsideMonth
 		}
+		if snapshotMonthViolation(err) {
+			return nil, ErrSnapshotMonthExists
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

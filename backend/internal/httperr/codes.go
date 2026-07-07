@@ -230,6 +230,12 @@ const (
 	// (ADR-0040, #300).
 	CodeHouseholdNameMismatch Code = "HOUSEHOLD_NAME_MISMATCH"
 
+	// CodeSnapshotMonthExists maps repo.ErrSnapshotMonthExists -> 409 —
+	// uniqueness collision on (position, year_month): a live snapshot already
+	// exists for that month, so create another instead of overwriting silently
+	// (#395). Edit or delete the existing one first.
+	CodeSnapshotMonthExists Code = "SNAPSHOT_MONTH_EXISTS"
+
 	// CodeErasureDisabledDemo is a 403 for household erasure when the operator has
 	// set DEMO_MODE (ADR-0041, #217): every visitor to the demo shares one
 	// identity, so a single click would lock out every subsequent visitor until
