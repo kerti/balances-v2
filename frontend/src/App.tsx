@@ -82,6 +82,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={bankAccountDescriptor.entityKey}
                 descriptor={bankAccountDescriptor}
                 onSelect={(id) => nav(routes.bankAccount(id))}
               />
@@ -105,6 +106,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={propertyDescriptor.entityKey}
                 descriptor={propertyDescriptor}
                 onSelect={(id) => nav(routes.property(id))}
               />
@@ -128,6 +130,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={vehicleDescriptor.entityKey}
                 descriptor={vehicleDescriptor}
                 onSelect={(id) => nav(routes.vehicle(id))}
               />
@@ -152,6 +155,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={liabilityPersonalDescriptor.entityKey}
                 descriptor={liabilityPersonalDescriptor}
                 onSelect={(id) => nav(routes.liability("personal", id))}
               />
@@ -175,6 +179,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={liabilityInstitutionalDescriptor.entityKey}
                 descriptor={liabilityInstitutionalDescriptor}
                 onSelect={(id) => nav(routes.liability("institutional", id))}
               />
@@ -203,6 +208,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={receivableDescriptor.entityKey}
                 descriptor={receivableDescriptor}
                 onSelect={(id) => nav(routes.receivable(id))}
               />
@@ -229,6 +235,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={stockDescriptor.entityKey}
                 descriptor={stockDescriptor}
                 onSelect={(id) => nav(routes.stock(id))}
               />
@@ -252,6 +259,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={mutualFundDescriptor.entityKey}
                 descriptor={mutualFundDescriptor}
                 onSelect={(id) => nav(routes.mutualFund(id))}
               />
@@ -275,6 +283,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={bondDescriptor.entityKey}
                 descriptor={bondDescriptor}
                 onSelect={(id) => nav(routes.bond(id))}
               />
@@ -296,6 +305,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={timeDepositDescriptor.entityKey}
                 descriptor={timeDepositDescriptor}
                 onSelect={(id) => nav(routes.timeDeposit(id))}
               />
@@ -323,6 +333,7 @@ const router = createBrowserRouter([
           <ListRoute
             render={(nav) => (
               <PositionListScreen
+                key={goldDescriptor.entityKey}
                 descriptor={goldDescriptor}
                 onSelect={(id) => nav(routes.goldItem(id))}
               />
