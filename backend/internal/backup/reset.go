@@ -96,6 +96,19 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 	if err != nil {
 		return fmt.Errorf("demo reset: create household: %w", err)
 	}
+	// Multi-currency is off by default (CreateHousehold has no such column);
+	// flipped on here so the seeded USD positions (demo_seed.go) actually
+	// convert into nw_total instead of having their raw digits summed in as
+	// if they were IDR (ADR-0002 — the converter no-ops entirely when this is
+	// false, silently, with no missing-fx warning either).
+	if _, err := q.UpdateHouseholdSettings(ctx, db.UpdateHouseholdSettingsParams{
+		ID:                   household.ID,
+		DisplayName:          household.DisplayName,
+		ReportingCurrency:    household.ReportingCurrency,
+		MultiCurrencyEnabled: true,
+	}); err != nil {
+		return fmt.Errorf("demo reset: enable multi-currency: %w", err)
+	}
 
 	hash, err := auth.HashPassword(password)
 	if err != nil {
