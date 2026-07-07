@@ -23,6 +23,7 @@
     "INVALID_TRANSACTION_SHAPE": "Transaction values don't match the chosen type.",
     "INVALID_LIFECYCLE": "Invalid position status.",
     "FX_RATE_EXISTS": "An FX rate already exists for that month and currency.",
+    "SNAPSHOT_MONTH_EXISTS": "A snapshot for that month already exists. Edit or delete it instead of creating a new one.",
     "FOREIGN_POSITIONS_EXIST": "Foreign-currency positions exist; remove them before turning off multi-currency.",
     "POSITION_NOT_ACTIVE": "This position is no longer active.",
     "TAG_NAME_EXISTS": "A tag with that name already exists.",

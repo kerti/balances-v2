@@ -381,6 +381,9 @@ func (r *ReceivableRepo) CreateReceivableSnapshot(ctx context.Context, p CreateR
 		if asOfMonthViolation(err) {
 			return nil, ErrSnapshotDateOutsideMonth
 		}
+		if snapshotMonthViolation(err) {
+			return nil, ErrSnapshotMonthExists
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

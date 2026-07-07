@@ -23,6 +23,7 @@
     "INVALID_TRANSACTION_SHAPE": "Nilai transaksi tidak sesuai dengan jenis yang dipilih.",
     "INVALID_LIFECYCLE": "Status posisi tidak valid.",
     "FX_RATE_EXISTS": "Kurs untuk bulan dan mata uang tersebut sudah ada.",
+    "SNAPSHOT_MONTH_EXISTS": "Snapshot untuk bulan itu sudah ada. Ubah atau hapus yang sudah ada, bukan membuat yang baru.",
     "FOREIGN_POSITIONS_EXIST": "Masih ada posisi dalam mata uang asing; hapus dulu sebelum menonaktifkan multi-mata uang.",
     "POSITION_NOT_ACTIVE": "Posisi ini sudah tidak aktif.",
     "TAG_NAME_EXISTS": "Tag dengan nama itu sudah ada.",

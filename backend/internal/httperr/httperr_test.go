@@ -70,6 +70,7 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"SnapshotDateOutsideMonth", errs.ErrSnapshotDateOutsideMonth, http.StatusBadRequest, CodeSnapshotDateOutsideMonth},
 		{"InvalidDepositTerm", errs.ErrInvalidDepositTerm, http.StatusBadRequest, CodeInvalidDepositTerm},
 		{"OutsideDepositTerm", errs.ErrOutsideDepositTerm, http.StatusBadRequest, CodeOutsideDepositTerm},
+		{"SnapshotMonthExists", errs.ErrSnapshotMonthExists, http.StatusConflict, CodeSnapshotMonthExists},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

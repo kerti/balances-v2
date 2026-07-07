@@ -411,6 +411,9 @@ func (r *LiabilityRepo) CreateLiabilitySnapshot(ctx context.Context, p CreateLia
 		if asOfMonthViolation(err) {
 			return nil, ErrSnapshotDateOutsideMonth
 		}
+		if snapshotMonthViolation(err) {
+			return nil, ErrSnapshotMonthExists
+		}
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrNotFound
 		}

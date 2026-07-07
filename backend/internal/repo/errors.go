@@ -28,4 +28,5 @@ var (
 	ErrSnapshotDateOutsideMonth = errs.ErrSnapshotDateOutsideMonth
 	ErrInvalidDepositTerm       = errs.ErrInvalidDepositTerm
 	ErrOutsideDepositTerm       = errs.ErrOutsideDepositTerm
+	ErrSnapshotMonthExists      = errs.ErrSnapshotMonthExists
 )
