@@ -24,6 +24,17 @@ export default defineConfig({
       "/api": apiProxyTarget,
     },
   },
+  // @react-pdf/renderer is lazy-loaded (ReportPdfButton, ADR-0044) behind a
+  // dynamic import(), and its dependency graph (fonts, layout engine, pdfkit)
+  // is far larger than any other lazy chunk here (~1.4MB vs recharts' ~18KB).
+  // Without this, Vite defers pre-bundling it until the first request that
+  // actually imports it — on a cold cache (fresh CI checkout) that first
+  // fetch+transform can take longer than a test's default locator timeout.
+  // Listing it here makes the dev server pre-bundle it eagerly at startup,
+  // inside the webServer's own (generous) readiness window instead.
+  optimizeDeps: {
+    include: ["@react-pdf/renderer"],
+  },
   build: {
     rolldownOptions: {
       output: {
