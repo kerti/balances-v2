@@ -62,7 +62,22 @@ test(
     await expect(inviteePage.getByRole("button", { name: "Sign out" })).toBeVisible();
 
     // 5. The single-use link is now spent: reopening it shows the invalid notice.
+    // Two background races to close out first:
+    // - SessionMiddleware (session.go) re-issues Set-Cookie with a fresh TTL on
+    //   EVERY authenticated request (sliding session). The Dashboard's own
+    //   initial data fetches can still be in flight right after the assertion
+    //   above; if one lands after clearCookies(), it silently re-arms the same
+    //   session. Drain in-flight requests first.
+    // - Once signed in, the router's catch-all (App.tsx's `path: "*" ->
+    //   Navigate(routes.dashboard)`) silently replaces the URL away from
+    //   /accept?token=... in the background, so by the time we get here the
+    //   current URL is either still acceptPath (making a goto() to it an
+    //   unreliable same-URL no-op) or already "/". Route through a distinct
+    //   URL first so the subsequent goto(acceptPath) is always a genuine fresh
+    //   navigation regardless of where that redirect race landed.
+    await inviteePage.waitForLoadState("networkidle");
     await inviteePage.context().clearCookies();
+    await inviteePage.goto("about:blank");
     await inviteePage.goto(acceptPath);
     await expect(inviteePage.getByTestId("invite-invalid")).toBeVisible();
 
