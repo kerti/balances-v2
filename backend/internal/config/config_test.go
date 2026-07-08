@@ -19,7 +19,7 @@ var configEnvKeys = []string{
 	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED", "FOUNDING_DISABLED",
 	"DEMO_MODE", "DEMO_RESET_TOKEN", "DEMO_EMAIL", "DEMO_PASSWORD",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
-	"SESSION_TTL", "COOKIE_SECURE",
+	"SESSION_TTL", "COOKIE_SECURE", "TRUST_PROXY_HEADERS",
 	"HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT",
 	"EMAIL_ENABLED",
 	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
@@ -78,6 +78,11 @@ func TestLoad_Defaults(t *testing.T) {
 	}
 	if cfg.CookieSecure {
 		t.Errorf("CookieSecure = true, want default false")
+	}
+	// Off by default (#363): RemoteAddr is the only trustworthy source unless an
+	// operator confirms a trusted proxy genuinely fronts every request.
+	if cfg.TrustProxyHeaders {
+		t.Errorf("TrustProxyHeaders = true, want default false")
 	}
 	if cfg.SMTPPort != 1025 {
 		t.Errorf("SMTPPort = %d, want default 1025", cfg.SMTPPort)
@@ -302,6 +307,23 @@ func TestLoad_EmailDisabled(t *testing.T) {
 	}
 	if cfg.EmailEnabled {
 		t.Errorf("EmailEnabled = true, want false")
+	}
+}
+
+// TestLoad_TrustProxyHeaders: an operator confirming a trusted proxy fronts
+// every request (Fly, or their own reverse proxy) flips the client-IP
+// extractor auth.Handlers.clientIP consults (#363).
+func TestLoad_TrustProxyHeaders(t *testing.T) {
+	clearConfigEnv(t)
+	t.Setenv("DATABASE_URL", "postgres://localhost/db")
+	t.Setenv("TRUST_PROXY_HEADERS", "true")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if !cfg.TrustProxyHeaders {
+		t.Error("TrustProxyHeaders = false, want true")
 	}
 }
 

@@ -84,27 +84,32 @@ type Config struct {
 	BackendURL   string
 	EmailFrom    string
 	Mailer       email.Mailer
+	// TrustProxyHeaders mirrors config.Config.TrustProxyHeaders (#363) — see
+	// there for the full rationale. Read by clientIP to decide whether a
+	// fronting proxy's header or RemoteAddr keys the login/reset limiter.
+	TrustProxyHeaders bool
 }
 
 type Handlers struct {
-	q                *db.Queries
-	pool             *pgxpool.Pool
-	googleOAuth      googleOAuthClient
-	googleEnabled    bool
-	localEnabled     bool
-	emailEnabled     bool
-	foundingDisabled bool
-	demoMode         bool
-	demoEmail        string
-	demoPassword     string
-	limiter          *loginLimiter
-	mailer           email.Mailer
-	validate         *validator.Validate
-	sessionTTL       time.Duration
-	cookieSecure     bool
-	frontendURL      string
-	backendURL       string
-	emailFrom        string
+	q                 *db.Queries
+	pool              *pgxpool.Pool
+	googleOAuth       googleOAuthClient
+	googleEnabled     bool
+	localEnabled      bool
+	emailEnabled      bool
+	foundingDisabled  bool
+	demoMode          bool
+	demoEmail         string
+	demoPassword      string
+	limiter           *loginLimiter
+	mailer            email.Mailer
+	validate          *validator.Validate
+	sessionTTL        time.Duration
+	cookieSecure      bool
+	frontendURL       string
+	backendURL        string
+	emailFrom         string
+	trustProxyHeaders bool
 	// dispatch runs a background task. In production it spawns a goroutine; the
 	// reset-request path uses it to send the email *off* the request goroutine so
 	// the SMTP round-trip never lands in the response timing (the no-enumeration
@@ -135,25 +140,26 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		return nil, errors.New("auth: backend url is required")
 	}
 	return &Handlers{
-		q:                q,
-		pool:             cfg.Pool,
-		googleOAuth:      g,
-		googleEnabled:    cfg.GoogleEnabled,
-		localEnabled:     cfg.LocalEnabled,
-		emailEnabled:     cfg.EmailEnabled,
-		foundingDisabled: cfg.FoundingDisabled,
-		demoMode:         cfg.DemoMode,
-		demoEmail:        cfg.DemoEmail,
-		demoPassword:     cfg.DemoPassword,
-		limiter:          newLoginLimiter(),
-		mailer:           cfg.Mailer,
-		validate:         httperr.NewValidator(),
-		sessionTTL:       cfg.SessionTTL,
-		cookieSecure:     cfg.CookieSecure,
-		frontendURL:      cfg.FrontendURL,
-		backendURL:       cfg.BackendURL,
-		emailFrom:        cfg.EmailFrom,
-		dispatch:         func(fn func()) { go fn() },
+		q:                 q,
+		pool:              cfg.Pool,
+		googleOAuth:       g,
+		googleEnabled:     cfg.GoogleEnabled,
+		localEnabled:      cfg.LocalEnabled,
+		emailEnabled:      cfg.EmailEnabled,
+		foundingDisabled:  cfg.FoundingDisabled,
+		demoMode:          cfg.DemoMode,
+		demoEmail:         cfg.DemoEmail,
+		demoPassword:      cfg.DemoPassword,
+		limiter:           newLoginLimiter(),
+		mailer:            cfg.Mailer,
+		validate:          httperr.NewValidator(),
+		sessionTTL:        cfg.SessionTTL,
+		cookieSecure:      cfg.CookieSecure,
+		frontendURL:       cfg.FrontendURL,
+		backendURL:        cfg.BackendURL,
+		emailFrom:         cfg.EmailFrom,
+		trustProxyHeaders: cfg.TrustProxyHeaders,
+		dispatch:          func(fn func()) { go fn() },
 	}, nil
 }
 

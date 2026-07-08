@@ -286,3 +286,101 @@ func TestLocalLogin_RateLimited(t *testing.T) {
 		t.Error("repeated login failures never tripped the rate limiter")
 	}
 }
+
+// TestClientIP_TrustProxyHeaders exercises the extractor at the unit level
+// (#363): off, headers are ignored and RemoteAddr always wins — the safe
+// default for a bare self-host, where any header is attacker-supplied. On,
+// Fly's dedicated header wins over X-Forwarded-For, and X-Forwarded-For falls
+// back to its rightmost hop (the trusted proxy's own append). Neither header
+// present still falls back to RemoteAddr either way.
+func TestClientIP_TrustProxyHeaders(t *testing.T) {
+	cases := []struct {
+		name       string
+		trust      bool
+		remoteAddr string
+		flyIP      string
+		xff        string
+		want       string
+	}{
+		{"trust off, headers ignored", false, "203.0.113.9:1234", "198.51.100.7", "198.51.100.1, 198.51.100.2", "203.0.113.9"},
+		{"trust on, Fly-Client-IP wins", true, "203.0.113.9:1234", "198.51.100.7", "198.51.100.1, 198.51.100.2", "198.51.100.7"},
+		{"trust on, XFF rightmost hop wins with no Fly header", true, "203.0.113.9:1234", "", "198.51.100.1, 198.51.100.2", "198.51.100.2"},
+		{"trust on, neither header falls back to RemoteAddr", true, "203.0.113.9:1234", "", "", "203.0.113.9"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			h := &Handlers{trustProxyHeaders: tc.trust}
+			req := httptest.NewRequest(http.MethodPost, "/auth/local/login", nil)
+			req.RemoteAddr = tc.remoteAddr
+			if tc.flyIP != "" {
+				req.Header.Set("Fly-Client-IP", tc.flyIP)
+			}
+			if tc.xff != "" {
+				req.Header.Set("X-Forwarded-For", tc.xff)
+			}
+			if got := h.clientIP(req); got != tc.want {
+				t.Errorf("clientIP = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestLocalLogin_RateLimitIsolationBehindTrustedProxy is the regression this
+// fix targets (#363): with TRUST_PROXY_HEADERS on, two different real clients
+// arriving through the same fronting proxy (identical RemoteAddr) must key the
+// limiter on their distinct Fly-Client-IP, not collapse onto one shared bucket
+// — otherwise an attacker hammering one household's login from behind the
+// proxy would also lock out every other household sharing it.
+//
+// covers: INV-AUTH-17
+func TestLocalLogin_RateLimitIsolationBehindTrustedProxy(t *testing.T) {
+	h := newAuthHarness(t)
+	h.h.trustProxyHeaders = true
+	h.seedLocalUser(t, "victim@example.com", "the-correct-passphrase")
+
+	loginAs := func(flyIP string) *httptest.ResponseRecorder {
+		buf, err := json.Marshal(map[string]string{
+			"email": "attacker-target@example.com", "password": "deliberately-wrong",
+		})
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		req := httptest.NewRequest(http.MethodPost, "/auth/local/login", bytes.NewReader(buf))
+		req.Header.Set("Content-Type", "application/json")
+		req.RemoteAddr = "192.0.2.100:443" // shared proxy address for both "clients"
+		req.Header.Set("Fly-Client-IP", flyIP)
+		rec := httptest.NewRecorder()
+		h.router.ServeHTTP(rec, req)
+		return rec
+	}
+
+	// Attacker (203.0.113.1) trips their own IP bucket.
+	var attackerGot429 bool
+	for i := 0; i < 6; i++ {
+		if rec := loginAs("203.0.113.1"); rec.Code == http.StatusTooManyRequests {
+			attackerGot429 = true
+			break
+		}
+	}
+	if !attackerGot429 {
+		t.Fatal("attacker never tripped the rate limiter")
+	}
+
+	// A different real client (203.0.113.2) behind the same proxy, targeting a
+	// different (unrelated) email, must still get a normal 401 — not swept up
+	// in the attacker's IP-bucket backoff.
+	buf, err := json.Marshal(map[string]string{
+		"email": "victim@example.com", "password": "wrong-but-unrelated",
+	})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/auth/local/login", bytes.NewReader(buf))
+	req.Header.Set("Content-Type", "application/json")
+	req.RemoteAddr = "192.0.2.100:443"
+	req.Header.Set("Fly-Client-IP", "203.0.113.2")
+	rec := httptest.NewRecorder()
+	h.router.ServeHTTP(rec, req)
+
+	requireStatus(t, rec, http.StatusUnauthorized)
+}

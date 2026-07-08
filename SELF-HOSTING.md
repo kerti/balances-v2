@@ -107,6 +107,7 @@ to it. This path is fully supported — it is simply the bundled proxy profile l
 ```ini
 APP_URL=https://balances.example.com
 COOKIE_SECURE=true
+TRUST_PROXY_HEADERS=true
 ```
 
 ```sh
@@ -116,6 +117,12 @@ docker compose up -d
 The app is published on `APP_PORT` (default `8080`). Point your proxy at `http://<host>:8080` and have
 it serve `https://balances.example.com`. Forward the `Host`, `X-Forwarded-Proto`, and
 `X-Forwarded-For` headers as usual.
+
+`TRUST_PROXY_HEADERS=true` matters here too: with it left off, the login/reset rate limiter sees every
+household member as arriving from your proxy's one address, so a single attacker's failed logins would
+throttle everyone behind it. Only set this when a proxy you control genuinely sits in front of every
+request — an app reachable directly (no proxy) must leave it `false`, or anyone could spoof
+`X-Forwarded-For` to dodge the limiter entirely.
 
 `COOKIE_SECURE=true` is required: the session cookie is then marked `Secure` and is only sent over
 HTTPS, which your proxy now provides. (Leaving it `false` behind HTTPS is harmless; setting it `true`
@@ -138,6 +145,7 @@ Prerequisites:
 APP_URL=https://balances.example.com
 COOKIE_SECURE=true
 CADDY_DOMAIN=balances.example.com
+TRUST_PROXY_HEADERS=true
 ```
 
 ```sh
@@ -147,6 +155,10 @@ docker compose --profile proxy up -d
 `CADDY_DOMAIN` is read by the bundled `Caddyfile`; you do not edit the file. Caddy fetches a
 certificate on first boot (a few seconds) and proxies to the app. Issued certificates persist in the
 `caddy_data` volume, so restarts do not re-request them (which matters — Let's Encrypt rate-limits).
+
+`TRUST_PROXY_HEADERS=true` is needed here for the same reason as [option 2](#2-bring-your-own-proxy):
+Caddy is the only path to the app, and it sets `X-Forwarded-For` itself — a trustworthy source for the
+login/reset rate limiter's real-client key.
 
 The OAuth redirect URI is `https://balances.example.com/api/auth/google/callback`.
 
@@ -449,6 +461,7 @@ actually touch:
 | `APP_URL` | `http://localhost:8080` | The one origin the app is reached on. Derives frontend/backend URLs and the OAuth callback. |
 | `COOKIE_SECURE` | `false` | `true` once HTTPS is in front; `false` only for an http localhost trial. |
 | `CADDY_DOMAIN` | _(empty)_ | Domain for the bundled Caddy proxy profile. Leave empty unless using `--profile proxy`. |
+| `TRUST_PROXY_HEADERS` | `false` | `true` once a proxy you control (your own, or bundled Caddy) fronts every request — the login/reset rate limiter then keys on the proxy's forwarded client IP instead of its own address. Leave `false` for a no-proxy localhost trial. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `balances` | Bundled database credentials. **Change the password** beyond a trial. `DATABASE_URL` is assembled from these — you do not set it. |
 | `AUTH_GOOGLE_ENABLED` | `true` | Google sign-in. Set `false` to run without a Google OAuth client. |
 | `AUTH_LOCAL_ENABLED` | `false` | `true` to enable local email + password accounts. The server refuses to start if both providers are disabled. |

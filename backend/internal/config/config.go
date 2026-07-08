@@ -96,6 +96,20 @@ type Config struct {
 	SessionTTL       time.Duration `env:"SESSION_TTL" envDefault:"720h"`
 	CookieSecure     bool          `env:"COOKIE_SECURE" envDefault:"false"`
 
+	// TrustProxyHeaders opts the login/reset rate limiter's client-IP extraction
+	// into trusting a fronting proxy's header — Fly's `Fly-Client-IP`, or
+	// otherwise the rightmost `X-Forwarded-For` hop — instead of RemoteAddr
+	// (#363). Default false: RemoteAddr is always the genuine transport peer,
+	// which is correct for a bare self-host with no proxy in front, but a
+	// real client's IP when every request already arrives via a trusted proxy
+	// (Fly's edge, or an operator's own reverse proxy — SELF-HOSTING.md "bring
+	// your own proxy") — with this off in that case, every client collapses onto
+	// the proxy's one address and one attacker's failed logins rate-limit every
+	// other household member sharing it. Only flip this on when a trusted proxy
+	// is genuinely the sole path in — an untrusted header source makes the
+	// limiter trivially bypassable (attacker sets their own X-Forwarded-For).
+	TrustProxyHeaders bool `env:"TRUST_PROXY_HEADERS" envDefault:"false"`
+
 	// EmailEnabled gates all outbound transactional mail (ADR-0037). The default
 	// is true, preserving current behaviour. A self-hoster who wants no mail
 	// dependency sets EMAIL_ENABLED=false: main wires a no-op Mailer and skips
