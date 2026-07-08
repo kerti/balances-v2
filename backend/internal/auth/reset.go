@@ -59,7 +59,7 @@ func (h *Handlers) handleLocalResetRequest(w http.ResponseWriter, r *http.Reques
 	// so it never crosses wires with the login limiter. A 429 here is independent
 	// of whether the email exists, so it does not enumerate. An unparseable email
 	// still consumes rate (keyed on the empty string) but never proceeds.
-	ipKey := "reset-ip:" + clientIP(r)
+	ipKey := "reset-ip:" + h.clientIP(r)
 	emailKey := "reset:" + email
 	if d := h.limiter.maxRetryAfter(ipKey, emailKey); d > 0 {
 		w.Header().Set("Retry-After", strconv.Itoa(int(d.Seconds())+1))
