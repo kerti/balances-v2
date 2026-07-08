@@ -1,126 +1,164 @@
-# Detailed PDF report layout: itemized positions and composition charts
+---
+status: supersedes ADR-0044 (render location; "no new endpoint")
+---
 
-Amends [[adr-0044]]. The exported monthly PDF grows from a one-page mirror of the on-screen
-dashboard into a denser, deliberately different report: an itemized per-position breakdown,
-composition charts (assets/investments/liabilities by subtype), and a 12-month
-expense-vs-passive-income trend, alongside the existing net-worth trend and income-statement
-lines. Rendering stays client-side via `@react-pdf/renderer` (0044's library/lazy-load decision is
-unchanged; the separate bundle-size question is tracked independently in #394) — but this ADR adds
-one new backend endpoint, reversing 0044's "no new dependency and no new endpoint" claim.
+# Detailed PDF report: server-side render, itemized financial statement
+
+Supersedes [[adr-0044]] on where the report renders. The exported monthly PDF moves from a
+client-side `@react-pdf/renderer` mirror of the dashboard to a **backend-rendered, portrait,
+itemized financial statement** drawn natively in Go (`go-pdf/fpdf`): each Position itemized under
+its group, composition donuts, a 12-month trend, and a prominent health-indicator panel — a
+document closer to the household's old spreadsheet workbook than to the live UI.
+
+This ADR was rewritten in place, not superseded by a new number: it was authored on the still-open
+#413 branch and never reached `main`, so this PR *is* the discussion that produced the decision
+below. ADR-0044, by contrast, is merged and immutable — hence the `supersedes` status above rather
+than an edit to 0044 itself.
 
 ## Why
 
-0044 shipped v1 scoped explicitly to mirror the dashboard, with "no per-position ledger" as a
-stated non-goal ("the dashboard itself never enumerates individual positions, so nothing in the
-PDF needs to either"). That was correct for a first cut, but a downloadable report has a different
-job than the live dashboard: it's meant to be a point-in-time financial statement someone can
-print, archive, or hand to another household member without opening the app — closer to the
-household's old spreadsheet workbook than to a live UI. That calls for more detail, not a mirror.
+0044 rendered the report client-side, reasoning that the data was already on the client and that
+server-side rendering meant either headless Chromium (conflicts with the lean self-hostable image,
+ADR-0030/0037) or a "hand-built native Go PDF layout" it lumped in as "meaningfully heavier." An
+earlier draft of *this* ADR (0045) kept client-side rendering and rejected a faithful port of the
+household's reference template, on the grounds that "fighting react-pdf's flow model for a
+spreadsheet-grid layout costs more than it buys."
 
-A reference template (a household's prior monthly-report spreadsheet, not itself reused — layout
-and section ideas only, no real data or copy) confirmed the shape: each position itemized under
-its group, composition breakdowns per group, and a longer trend view. It also included a
-ratios/statistics panel (cash-flow ratio, passive-income ratio, instant-liquidity ratio,
-fund-resilience months) and a current-assets-vs-current-liabilities bar. Both are dropped from
-this ADR's scope — see Considered alternatives.
+Both framings collapse once the goal is the dense, detailed, tabular statement the household
+actually wants:
 
-"Ledger" was the wrong word for the itemized section during early scoping — it implies a
-transaction log. What's wanted is simpler: each position's balance for the reported month, drilled
-down from the group totals the dashboard already shows.
+- **The layout that "costs more than it buys" in react-pdf is the layout we want.** A dense,
+  itemized, right-aligned financial statement is the exact case react-pdf's flexbox-flow model
+  fights hardest and a native cell/xy PDF library does trivially. 0045's own rejection reason
+  inverts into a reason to change renderers, not to drop the layout.
+- **Native Go PDF is *not* "meaningfully heavier."** 0044 conflated it with headless Chromium. The
+  thing that violates the lean-image constraint is the *browser*; a pure-Go `fpdf` dependency is a
+  few hundred KB of Go, no runtime binary, no browser payload — it *satisfies* ADR-0030/0037.
+- **The data already lives on the backend.** The report engine computes every number. Rendering
+  server-side stops shipping per-position JSON to the client only to re-derive layout there.
+- **It removes the one stated blocker for a real future feature.** Both 0044 and 0045 named a
+  fully-unattended scheduled report email (no browser present) as the *only* thing that would force
+  server-side rendering. Building it now makes that feature a straight compose-on-top, not a
+  re-architecture.
+
+The reference template (a household's prior monthly-report spreadsheet — layout and section ideas
+only, no real data or copy reused) is a **content checklist, not a wireframe**: its value is the
+density and per-Position itemization, not its literal landscape 4-column grid.
 
 ## Decision
 
-- **New endpoint: `GET /api/reports/{yearMonth}/positions`.** Returns every active position's
-  value *as of that month* — group, subtype, ownership, native + reporting-currency amount, and
-  whether the value was carried forward from an earlier snapshot (stale). One request per PDF
-  generation, correct for any month (not just the latest).
+- **Render location: backend, native Go via `go-pdf/fpdf`.** Supersedes 0044's client-side
+  decision and its "no new dependency, no new endpoint" claim. `fpdf` (BSD-3, clean under the
+  project's AGPL-3.0, ADR-0042) is pure Go — no browser, satisfies the lean-image constraint. The
+  PDF itself now renders server-side; the client's job shrinks to triggering a download.
 
-  The naive client-side approach — fetching the existing per-subtype list endpoints
-  (`/api/investments/stocks` etc.) — was rejected: those return each position's *current* latest
-  snapshot, not its value at an arbitrary past `year_month`. Since the dashboard lets a user select
-  and export any past month (`DashboardScreen.tsx`'s `selectedMonth`), that would silently show
-  today's balances stamped with a past month's report.
+- **Layout: portrait, single-column section-flow.** Not the template's landscape 4-column grid.
+  Fidelity is to the template's *content and tabular density*, not its grid. Sections stack
+  top-to-bottom and paginate through natural document flow (`fpdf` page breaks), which also makes
+  the portfolio-size-dependent page count (first noted in 0045) a non-problem. (This vindicates
+  0045's original single-column-per-section instinct — only the renderer changes.)
 
-  The report engine already solves this. `generateMonthlyReports`
-  (`backend/internal/repo/monthly_reports_engine.go:493-534`) computes exactly this — each
-  position's carried-forward, FX-converted value for a given month index — then immediately sums
-  it into `nwAssets`/`nwLiabilities`/etc. and discards the per-position value. This ADR extracts
-  that resolution step into a new pure function, `generatePositionDetail(in reportEngineInput,
-  targetMonth time.Time) []PositionDetail`, reusing `byPos`/`latestAtOrBefore`/`fx.convert`
-  unchanged — no new SQL, no reimplementing carry-forward semantics, and no risk of the endpoint's
-  numbers drifting from the aggregate report's.
+- **Section order:** Header → **Kekayaan Bersih** headline → **STATISTIKA** → **HARTA** → **HUTANG**
+  → **INVESTASI** → **ARUS KAS** → **GRAFIK**. STATISTIKA sits directly under the headline
+  deliberately: it is the household's financial-health scorecard and should be immediately visible.
+  It renders as a **placeholder block now** (#412) — reserving the prominent slot so the ratios drop
+  in later with zero reflow.
+  - **HARTA** (Assets), itemized: *Harta Lancar* → Rekening Bank grouped **by owner**; *Harta Tidak
+    Lancar* → Properti, Kendaraan. Subtotals + Jumlah Harta.
+  - **HUTANG** (Liabilities), itemized: Hutang Lembaga / Hutang Pribadi + Jumlah Hutang.
+  - **INVESTASI** (Investments), itemized by subtype: Reksa Dana, Obligasi, Emas, Saham,
+    Peer-to-Peer Lending, Deposito + Jumlah Investasi.
+  - **ARUS KAS**: Kas Masuk (earned income, **by household member** — from the engine's existing
+    per-user `earned_income`) − Kas Keluar (derived living expenses) = Total Arus Kas. Investment
+    P/L is a statistic, not cash flow, and stays in the STATISTIKA panel (deferred).
 
-  A new repo method, `MonthlyReportRepo.GetPositionDetail`, refreshes materialized reports first
-  (same as `GetReport`) so both the aggregate totals and this itemized breakdown are backed by the
-  same staleness/carry-forward pass, then validates the month exists (`ErrNotFound` otherwise,
-  mirroring `GetReport`) before calling the pure function. Nothing here is persisted — computed
-  fresh on every read, like the aggregate report is when stale.
+- **All currencies tracked in the reported month are surfaced.** Each itemized Position shows its
+  **native** amount + currency where native ≠ reporting (e.g. a US stock: `$1,000` → `Rp
+  15,500,000`), reporting-currency-only where they match; an **FX-rates-used** section lists every
+  rate applied that month. Group subtotals and net worth stay in the household reporting currency —
+  restating the *grand total* in every currency would be noise. This replaces 0044's single
+  "secondary currency captured from the Q15c toggle at export": there is no secondary-currency
+  concept and no currency parameter — the currency set is derived from the month's data.
 
-- **Composition breakdowns.** Assets/investments/liabilities-by-subtype composition (for
-  donut-style charts) is derived client-side from the same `/positions` response — no second
-  endpoint. Income and investment-return composition (by category/instrument) reuses subtotals
-  `MonthlyReport` already returns on the wire; `frontend/src/api/types.ts` currently types only the
-  totals ("Per-category / per-subtype columns also exist on the wire; typed here only as totals
-  until a drill-down needs them") — this is that drill-down, so the FE type gains the per-category
-  fields already present server-side. Zero additional backend change beyond the one new endpoint.
-- **12-month expense vs. passive-income trend.** `MonthlyReport` already carries
-  `earned_income_total`, `investment_return_total`, and `derived_living_expenses` per row, and
-  `reports[]` is already fetched in full by `useReports()`. `reportPdfData.ts` currently maps only
-  `nw_total` into the trend series; it now also extracts these two lines. No new fetch, no backend
-  change.
-- **Charts.** A new donut/pie chart type joins `charts/LineChart.tsx` in
-  `frontend/src/lib/pdf/charts/`, hand-rolled with `@react-pdf/renderer`'s `Svg`/`Path` primitives
-  the same way — 0044 already anticipated this exact extension point ("a later chart type, e.g. a
-  pie chart, expected as a likely follow-on ask, slots in beside it without restructuring"). No new
-  bar chart (see Considered alternatives — the one candidate use for a bar chart is rejected).
-- **Layout.** Not a literal port of the reference template's dense multi-column financial-statement
-  layout. React-pdf's page-flow model and the app's brand system fit a cleaner,
-  single-column-per-section flow better than replicating a spreadsheet-style grid; the template is
-  a content checklist, not a wireframe.
-- **Pagination.** Becomes real document flow instead of a non-issue: itemized positions scale with
-  portfolio size, so the report is no longer roughly fixed-size regardless of household data.
-  `@react-pdf/renderer`'s `Page` component paginates overflowing flex content automatically — no
-  manual page-break logic needed, but layout choices (e.g. not letting a section start mid-page in
-  a way that orphans its heading) now matter in a way 0044 didn't have to consider.
-- **Server-side rendering remains out of scope.** The PDF itself still renders client-side (0044
-  unchanged on that point); only the *data* for one section now comes from a dedicated endpoint
-  instead of being assembled from data already on the client. Moving the whole export server-side
-  was raised again while scoping this ADR and explicitly deferred — same trigger condition as
-  0044's Consequences (the unattended-scheduled-email feature, if it's ever built) and #394's open
-  question about the render library. Not resolved here.
+- **Charts: hand-drawn vector via `fpdf` primitives** (arcs/polylines), not raster or SVG — crisp
+  at any zoom, theme-independent, no image pipeline, no extra dependency. Three composition donuts
+  (Komposisi Harta / Investasi / Hutang) + a 12-month trend line. The branch's `pieChartMath` /
+  `lineChartMath` (pure TS) port to Go as the geometry half. The reference template's
+  Harta-vs-Hutang bar stays dropped — no liquid/current-vs-non-current split exists in the domain
+  (unchanged from 0045's earlier pass).
+
+- **Font: embed Geist (Regular + Bold)** via `go:embed` + `fpdf.AddUTF8Font`, matching the web UI
+  (OFL, redistributable; Latin coverage suffices for Indonesian). Two TTFs compiled into the
+  backend binary; ~50–100 KB subset per generated PDF. Replaces 0044's generic Helvetica.
+
+- **Money/number formatting is server-side and matches the app, not the template.** A small
+  `moneyfmt` package built on `golang.org/x/text/message`+`currency` (already an indirect dep;
+  promoted to direct) reproduces `lib/format.ts`'s `Intl.NumberFormat` output — IDR shows with no
+  decimals and locale grouping (`Rp 4.479.560.000`), *not* the template's 2-decimal comma-group
+  spreadsheet convention. A **golden parity test** — `{en-GB, id-ID} × {tracked currencies}`
+  asserting Go output equals captured `Intl.NumberFormat` strings — guards the one new drift surface
+  (dashboard formats in JS, report formats in Go); any cell where x/text ≠ Intl gets a thin shim.
+
+- **Endpoint: `GET /api/reports/{yearMonth}/pdf`** → `application/pdf`, `RequireAuth`, `Content-
+  Disposition: attachment; filename="Balances_<YYYY-MM>.pdf"`. Reuses the same staleness-refresh
+  path as `GetReport`/`GetPositionDetail`. **No currency param.** **Locale is derived from the
+  authenticated user's stored language preference** (the same way transactional emails pick their
+  recipient locale, ADR-0035) — not a query param. Report copy lives in a new **server-side Go
+  catalog** (`reportCopy`, following `auth/email_i18n.go`'s hand-rolled per-locale pattern); the
+  FE `dashboard.json` report keys are removed.
+
+- **Reuse / discard partition:**
+  - **Kept:** `generatePositionDetail` / `PositionDetail` / `buildPositionSnapshotIndex` (the
+    extracted carry-forward + FX resolution) and `MonthlyReportRepo.GetPositionDetail` — they now
+    feed the renderer directly. **INV-FINANCE-18** (per-position sum matches the aggregate report)
+    is unchanged: it guards the extracted pure function, not any HTTP shape.
+  - **Dropped:** `GET /api/reports/{yearMonth}/positions` (the JSON endpoint existed only to feed
+    the client renderer — no consumer remains; re-add if one appears). All branch frontend PDF code
+    (`ReportDocument.tsx`, `charts/*.tsx`, `reportPdfData.ts`, the `api/types.ts` position types,
+    their tests). `ReportPdfButton.tsx` is rewritten to a plain authenticated download.
+  - **Ported:** `pieChartMath` / `lineChartMath` (TS → Go); report copy strings (FE i18n → Go
+    catalog).
+
+- **Ratios / statistics stay deferred to #412.** Placeholder panel now (see section order); the
+  formulas encode household-specific assumptions that need deliberate work, not lifting from a
+  template built for a different purpose.
 
 ## Considered alternatives
 
-- **Mirror the reference template's literal 4-column dense layout.** Rejected — fighting
-  react-pdf's flow model for a spreadsheet-grid layout costs more than it buys, and the app's
-  brand/print identity is better served by a native layout than a faithful port of someone else's
-  spreadsheet export.
-- **Client-side itemized breakdown via existing per-subtype list endpoints.** Rejected — correct
-  only for the latest month (see Decision); would need per-position snapshot-history fetches to
-  generalize to past months, which reimplements the engine's carry-forward logic outside the
-  backend and costs dozens of requests per export for a large portfolio.
-- **Build the ratios/statistics panel now, from the template's formulas.** Rejected — those
-  formulas encode household-specific assumptions (what counts as "instant liquidity," pension
-  income as 80% of current salary, etc.) that need to be worked out deliberately, not lifted from a
-  template built for a different purpose. Deferred to #412.
-- **Add a current-assets-vs-current-liabilities bar chart.** Rejected for this pass — no
-  liquid/current-vs-non-current split exists anywhere in the domain model (checked both the report
-  engine and the DB layer); building it is new backend classification work, not a report layout
-  change. Not filed as a follow-up issue yet; revisit if/when it's needed for something beyond this
-  chart.
+- **Keep client-side `@react-pdf/renderer` and build the dense layout there.** Rejected — react-pdf's
+  flexbox-flow model is the wrong tool for a dense tabular statement; 0045's own "costs more than it
+  buys" reasoning applies, and the fix is to change renderer, not to abandon the layout.
+- **Headless Chromium (HTML → PDF).** Rejected — violates the lean self-hostable image (ADR-0030/
+  0037). This is the constraint 0044 correctly cited; it applies to the *browser*, not to native
+  Go PDF.
+- **Faithful landscape 4-column port of the reference template.** Rejected — the template is a
+  content checklist, not a wireframe; portrait single-column flow reads cleaner, paginates
+  naturally, and was the chosen layout.
+- **Raster (go-chart PNG) or SVG charts.** Rejected — hand-drawn vector is crisper at print/zoom,
+  carries no chart-font-≠-report-font mismatch, and adds no dependency or image pipeline.
+- **Hand-roll number formatting from scratch.** Rejected — `x/text` is already an indirect dep and
+  is CLDR-backed (same family as `Intl`); a golden parity test handles the residual Intl-parity
+  risk with far less code to own.
+- **Keep the `/positions` JSON endpoint as a public data surface.** Rejected — YAGNI once the client
+  renderer is gone; nothing consumes it.
+- **Build the ratios/statistics panel now from the template's formulas.** Rejected (unchanged from
+  0045) — household-specific assumptions; deferred to #412.
 
 ## Consequences
 
-- One new endpoint, one new request per PDF generation — not the "up to 9 extra requests" an
-  earlier draft of this ADR considered (client-side per-subtype fetching). Simpler for the frontend
-  and correct for any month.
-- The itemized breakdown makes the report's page count portfolio-size-dependent for the first time
-  — still bounded in practice (a household's position count doesn't run away), but no longer the
-  "roughly fixed-size" property 0044 relied on to wave off pagination.
-- `generatePositionDetail` duplicates none of the aggregate engine's logic (it's extracted, not
-  copied), so a future change to carry-forward/FX-conversion rules can't silently diverge between
-  the aggregate report and this endpoint.
-- Ratios/statistics panel and the current-vs-non-current split stay open questions: #412 (vague,
-  deliberately) for the former; the latter has no issue yet.
-- `docs/adr/README.md`'s one-line summary for 0044 should be read alongside this ADR — the
-  "no per-position ledger," "mirrors dashboard," and "no new endpoint" clauses are superseded here.
+- **A fully-unattended scheduled report email is no longer blocked.** Both 0044 and 0045 named it as
+  the sole trigger for server-side rendering; the structural barrier is now gone. Not built here —
+  but it composes as a straight "render bytes → `Mailer.Send` with attachment," no browser needed.
+- **The ~1.4 MB `@react-pdf/renderer` lazy chunk disappears from the frontend** — the bundle-size
+  question tracked in #394 is resolved as a side effect of this pivot, not separately.
+- **New backend dependency: `go-pdf/fpdf`** (BSD-3, clean under AGPL); `golang.org/x/text` promoted
+  indirect → direct. Two Geist TTFs added to backend assets and compiled into the binary.
+- **Formatting now has two implementations** (JS on the dashboard, Go in the report). The golden
+  parity test is the guard; "the app changed its number format" becomes a fixture update the Go side
+  is forced to match.
+- **Report i18n is a new server-side surface** — a small, plural-free, two-locale Go catalog
+  (`reportCopy`), matching the existing email-i18n precedent; the FE no longer carries report copy.
+- **INV-FINANCE-18 is unchanged** — still guards the extracted per-position resolution against
+  diverging from the aggregate report.
+- `docs/adr/README.md`'s line for 0044 should be read alongside this ADR: its "renders client-side,"
+  "mirrors the dashboard," and "no new endpoint" clauses are superseded here.
