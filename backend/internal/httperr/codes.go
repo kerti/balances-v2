@@ -236,6 +236,12 @@ const (
 	// (#395). Edit or delete the existing one first.
 	CodeSnapshotMonthExists Code = "SNAPSHOT_MONTH_EXISTS"
 
+	// CodeCrossSiteRequestBlocked is a 403 second-layer CSRF guard (#364,
+	// CF-21) behind SameSite=Lax: a non-safe-method request whose Sec-Fetch-Site
+	// or Origin header names a different site than this server is refused
+	// before it ever reaches a handler.
+	CodeCrossSiteRequestBlocked Code = "CROSS_SITE_REQUEST_BLOCKED"
+
 	// CodeErasureDisabledDemo is a 403 for household erasure when the operator has
 	// set DEMO_MODE (ADR-0041, #217): every visitor to the demo shares one
 	// identity, so a single click would lock out every subsequent visitor until

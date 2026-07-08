@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -85,6 +86,35 @@ func TestServer_Healthz_DeployEnvFromRuntime(t *testing.T) {
 	}
 	if body.DeployEnv != "self-hosted" {
 		t.Errorf("deploy_env = %q, want %q", body.DeployEnv, "self-hosted")
+	}
+}
+
+// covers: INV-SERVING-07
+// TestServer_Healthz_DBError proves a DB failure surfaces as a bare 503 with
+// no error text in the body (#364 CF-21: raw pgx errors were leaking to
+// unauthenticated callers). It builds a private pool from the same DSN as
+// the shared test pool and closes it immediately, so QueryRow fails without
+// touching the shared pool other tests in this package depend on.
+func TestServer_Healthz_DBError(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+
+	deadPool, err := pgxpool.New(context.Background(), tdb.Pool.Config().ConnString())
+	if err != nil {
+		t.Fatalf("build private pool: %v", err)
+	}
+	deadPool.Close()
+
+	s := httpserver.New(deadPool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	s.Handler().ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status = %d, want %d; body = %s", rec.Code, http.StatusServiceUnavailable, rec.Body.String())
+	}
+	if body := rec.Body.String(); strings.Contains(body, "pgx") || strings.Contains(body, "closed pool") {
+		t.Errorf("body leaks raw driver error: %q", body)
 	}
 }
 

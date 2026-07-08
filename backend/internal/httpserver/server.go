@@ -98,6 +98,7 @@ func (s *Server) buildRouter() chi.Router {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders(s.cfg.CookieSecure))
+	r.Use(csrfOriginCheck)
 	r.Use(s.authH.SessionMiddleware)
 
 	r.Get("/healthz", s.handleHealthz)

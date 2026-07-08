@@ -1,8 +1,10 @@
 version: 2
 
 # Automated dependency-update PRs + security alerts. Config-only, no CI job.
-# Covers all three ecosystems in play: Go modules (backend), npm (frontend),
-# and the GitHub Actions pinned in our workflows.
+# Covers all four ecosystems in play: Go modules (backend), npm (frontend),
+# the GitHub Actions pinned in our workflows, and the Dockerfile base images
+# (digest-pinned per #364 CF-21 — this entry is what keeps those digests from
+# going stale, since a pinned digest never floats to a newer patch on its own).
 updates:
   - package-ecosystem: gomod
     directory: /backend
@@ -22,6 +24,12 @@ updates:
         dependency-type: development
 
   - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker
     directory: /
     schedule:
       interval: weekly
