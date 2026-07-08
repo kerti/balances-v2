@@ -36,6 +36,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Post("/rebuild", h.handleRebuildAll)
 		r.Get("/{yearMonth}", h.handleGet)
 		r.Post("/{yearMonth}/rebuild", h.handleRebuildMonth)
+		r.Get("/{yearMonth}/positions", h.handlePositions)
 	})
 }
 
@@ -183,6 +184,24 @@ func (h *Handlers) handleRebuildMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.handleGet(w, r)
+}
+
+// handlePositions serves the itemized per-position breakdown for one month —
+// the data behind the PDF export's detail sections (ADR-0045). repo.PositionDetail
+// already carries its own json tags (no backing DB row to build a response DTO
+// from, unlike toResponse above), so the rows serialise directly.
+func (h *Handlers) handlePositions(w http.ResponseWriter, r *http.Request) {
+	ym, ok := parseYearMonth(chi.URLParam(r, "yearMonth"))
+	if !ok {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
+		return
+	}
+	rows, err := h.repo.GetPositionDetail(r.Context(), ym)
+	if err != nil {
+		httperr.WriteRepo(w, "get position detail", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rows)
 }
 
 // ----- helpers ------------------------------------------------------------

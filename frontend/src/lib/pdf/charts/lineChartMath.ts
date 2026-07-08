@@ -23,6 +23,47 @@ function fillGaps(series: { year_month: string; amount: string }[]): number[] {
   });
 }
 
+// Same indigo/slate family TrendChart.tsx draws with — living expenses in
+// slate, passive income (investment return) in indigo, matching the app's
+// "spend vs. grow" framing elsewhere. Lives here (not TrendChart.tsx) so that
+// file only exports a component — react-refresh/only-export-components
+// forbids mixing the two.
+export const TREND_LIVING_EXPENSES_COLOR = "#334155";
+export const TREND_INVESTMENT_RETURN_COLOR = "#6366F1";
+
+export type TwoLineChartGeometry = { pathA: string; pathB: string; minY: number; maxY: number };
+
+// computeTwoLineGeometry draws two pre-aligned numeric series (no gap-filling
+// — the trend chart's caller already sources both from the same contiguous
+// monthly report rows, unlike the sparse/possibly-gapped series
+// computeLineChartGeometry handles) on one shared y-scale, so they're
+// visually comparable on a single chart.
+export function computeTwoLineGeometry(
+  a: number[],
+  b: number[],
+  opts: { width: number; height: number },
+): TwoLineChartGeometry {
+  if (a.length === 0 || b.length === 0) {
+    return { pathA: "", pathB: "", minY: 0, maxY: 0 };
+  }
+  const all = [...a, ...b];
+  const minY = Math.min(...all);
+  const maxY = Math.max(...all);
+  const range = maxY - minY;
+  const scaleY = (v: number): number =>
+    range === 0 ? opts.height / 2 : opts.height - ((v - minY) / range) * opts.height;
+
+  const toPath = (values: number[]): string =>
+    values
+      .map((v, i) => {
+        const x = values.length === 1 ? 0 : (i / (values.length - 1)) * opts.width;
+        return `${i === 0 ? "M" : "L"} ${x} ${scaleY(v)}`;
+      })
+      .join(" ");
+
+  return { pathA: toPath(a), pathB: toPath(b), minY, maxY };
+}
+
 export function computeLineChartGeometry(
   series: { year_month: string; amount: string }[],
   opts: { width: number; height: number },

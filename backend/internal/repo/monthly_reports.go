@@ -91,6 +91,39 @@ func (r *MonthlyReportRepo) GetReport(ctx context.Context, yearMonth time.Time) 
 	return &row, nil
 }
 
+// GetPositionDetail resolves every active position's value at yearMonth —
+// the itemized breakdown behind the PDF export (ADR-0045). Refreshes
+// materialized reports first, same as GetReport, so the aggregate totals and
+// this itemized breakdown are backed by the same staleness/carry-forward pass
+// (INV-FINANCE-18). ErrNotFound when the month is outside the reportable
+// range, mirroring GetReport. Nothing here is persisted — computed fresh on
+// every read, unlike the materialized report rows.
+func (r *MonthlyReportRepo) GetPositionDetail(ctx context.Context, yearMonth time.Time) ([]PositionDetail, error) {
+	uid, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.refresh(ctx, uid, hid); err != nil {
+		return nil, err
+	}
+	target := monthFromIndex(monthIndex(yearMonth))
+	if _, err := r.q.GetMonthlyReport(ctx, db.GetMonthlyReportParams{HouseholdID: hid, YearMonth: target}); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get monthly report for position detail: %w", err)
+	}
+	currentMonth, err := r.currentMonth(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	in, err := r.loadEngineInput(ctx, hid, currentMonth)
+	if err != nil {
+		return nil, err
+	}
+	return generatePositionDetail(in, target), nil
+}
+
 // refresh regenerates and upserts the household's reports when the materialized
 // rows are stale or the month range changed.
 func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) error {

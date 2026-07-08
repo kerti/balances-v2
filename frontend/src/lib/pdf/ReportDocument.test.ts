@@ -4,7 +4,7 @@ import { pdf } from "@react-pdf/renderer";
 import type { TFunction } from "i18next";
 import { ReportDocument } from "@/lib/pdf/ReportDocument";
 import { buildReportPdfData } from "@/lib/pdf/reportPdfData";
-import type { MonthlyReport } from "@/api/types";
+import type { MonthlyReport, PositionDetail } from "@/api/types";
 
 // Built via React.createElement (not JSX) so this file can stay `.ts` — the
 // vitest project split (vitest.config.ts) routes `.ts` to the `node` tier and
@@ -58,6 +58,7 @@ describe("ReportDocument", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     const blob = await pdf(
       toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
@@ -73,6 +74,7 @@ describe("ReportDocument", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     const blob = await pdf(
       toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
@@ -88,6 +90,7 @@ describe("ReportDocument", () => {
       currency: "IDR",
       secondaryCurrency: "USD",
       rates: [{ currency: "USD", year_month: "2026-06-01T00:00:00Z", rate: "16000" } as never],
+      positions: [],
     });
     const blob = await pdf(
       toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
@@ -106,6 +109,7 @@ describe("ReportDocument", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     const blob = await pdf(
       toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
@@ -126,6 +130,7 @@ describe("ReportDocument", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     const blob = await pdf(
       toPdfElement(
@@ -139,6 +144,116 @@ describe("ReportDocument", () => {
           me: { id: "user-a" } as never,
         }),
       ),
+    ).toBlob();
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  const position = (overrides: Partial<PositionDetail> = {}): PositionDetail =>
+    ({
+      position_id: "pos-1",
+      name: "Position",
+      group: "asset",
+      subtype: "bank_account",
+      ownership_type: "joint",
+      sole_owner_user_id: null,
+      native_currency: "IDR",
+      native_amount: "1000000",
+      amount: "1000000",
+      stale: false,
+      stale_month: null,
+      ...overrides,
+    }) as PositionDetail;
+
+  it("renders itemized positions (incl. a stale/carried-forward one) across every group to a non-empty PDF blob", async () => {
+    const selected = report();
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [
+        position({ position_id: "a", group: "asset", subtype: "bank_account" }),
+        position({ position_id: "b", group: "asset", subtype: "property", stale: true }),
+        position({ position_id: "c", group: "investment", subtype: "stock" }),
+        position({ position_id: "d", group: "liability", subtype: "personal" }),
+        position({ position_id: "e", group: "receivable", subtype: "" }),
+      ],
+    });
+    const blob = await pdf(
+      toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
+    ).toBlob();
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it("renders with no positions (itemized empty-state) to a non-empty PDF blob", async () => {
+    const selected = report();
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    const blob = await pdf(
+      toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
+    ).toBlob();
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it("renders composition donuts (assets/investments/liabilities + income/return categories) to a non-empty PDF blob", async () => {
+    const selected = report({
+      earned_income_salary: "5000000",
+      earned_income_business: "3000000",
+      investment_return_stock: "200000",
+      investment_return_bond: "300000",
+    });
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [
+        position({ position_id: "a", group: "asset", subtype: "bank_account", amount: "100" }),
+        position({ position_id: "b", group: "asset", subtype: "property", amount: "5000" }),
+        position({ position_id: "c", group: "investment", subtype: "stock", amount: "300" }),
+        position({ position_id: "d", group: "investment", subtype: "bond", amount: "200" }),
+        position({ position_id: "e", group: "liability", subtype: "personal", amount: "70" }),
+        position({
+          position_id: "f",
+          group: "liability",
+          subtype: "institutional",
+          amount: "30",
+        }),
+      ],
+    });
+    const blob = await pdf(
+      toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
+    ).toBlob();
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
+  it("renders the 12-month expense-vs-passive-income trend chart to a non-empty PDF blob", async () => {
+    const months = Array.from({ length: 4 }, (_, i) =>
+      report({
+        year_month: `2026-0${i + 1}-01T00:00:00Z`,
+        derived_living_expenses: String(1000000 + i),
+        investment_return_total: String(200000 + i),
+      }),
+    );
+    const selected = months[months.length - 1];
+    const data = buildReportPdfData({
+      reports: months,
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    const blob = await pdf(
+      toPdfElement(createElement(ReportDocument, { data, t: stubT, members: undefined, me: null })),
     ).toBlob();
     expect(blob.size).toBeGreaterThan(0);
   });

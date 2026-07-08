@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeLineChartGeometry } from "@/lib/pdf/charts/lineChartMath";
+import { computeLineChartGeometry, computeTwoLineGeometry } from "@/lib/pdf/charts/lineChartMath";
 
 describe("computeLineChartGeometry", () => {
   it("returns an empty geometry for an empty series", () => {
@@ -51,5 +51,31 @@ describe("computeLineChartGeometry", () => {
       { x: 100, y: 100 }, // May: carried forward -> same y as Apr
       { x: 200, y: 0 }, // Jun: 200 (max) -> top
     ]);
+  });
+});
+
+describe("computeTwoLineGeometry", () => {
+  it("returns empty paths when either series is empty", () => {
+    expect(computeTwoLineGeometry([], [1, 2], { width: 200, height: 100 })).toEqual({
+      pathA: "",
+      pathB: "",
+      minY: 0,
+      maxY: 0,
+    });
+  });
+
+  it("scales both series against a shared min/max", () => {
+    const geo = computeTwoLineGeometry([0, 100], [50, 25], { width: 200, height: 100 });
+    // Shared scale across both series: min=0, max=100.
+    expect(geo.minY).toBe(0);
+    expect(geo.maxY).toBe(100);
+    expect(geo.pathA).toBe("M 0 100 L 200 0"); // 0 -> bottom, 100 -> top
+    expect(geo.pathB).toBe("M 0 50 L 200 75"); // 50 -> mid, 25 -> 3/4 down
+  });
+
+  it("centers a single-point series vertically when min equals max", () => {
+    const geo = computeTwoLineGeometry([5], [5], { width: 200, height: 100 });
+    expect(geo.pathA).toBe("M 0 50");
+    expect(geo.pathB).toBe("M 0 50");
   });
 });

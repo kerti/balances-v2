@@ -294,20 +294,16 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	}
 	fx := newFxConverter(in)
 
-	byPos := make(map[uuid.UUID][]monthAmount, len(in.positions))
+	byPos := buildPositionSnapshotIndex(in.snapshots)
 	var minIdx, maxIdx int
 	for i, s := range in.snapshots {
 		si := monthIndex(s.yearMonth)
-		byPos[s.positionID] = append(byPos[s.positionID], monthAmount{idx: si, amount: s.amount, currency: s.currency})
 		if i == 0 || si < minIdx {
 			minIdx = si
 		}
 		if i == 0 || si > maxIdx {
 			maxIdx = si
 		}
-	}
-	for _, ss := range byPos {
-		sort.Slice(ss, func(i, j int) bool { return ss[i].idx < ss[j].idx })
 	}
 
 	incomeByMonth := make(map[int][]reportIncome)
@@ -580,6 +576,82 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 
 		prevNwTotal = m.nwTotal
 		out = append(out, m)
+	}
+	return out
+}
+
+// buildPositionSnapshotIndex groups a household's snapshots by position, each
+// group sorted ascending by month — the shape latestAtOrBefore scans. Shared by
+// generateMonthlyReports and generatePositionDetail so both resolve
+// carry-forward the same way.
+func buildPositionSnapshotIndex(snapshots []reportSnapshot) map[uuid.UUID][]monthAmount {
+	byPos := make(map[uuid.UUID][]monthAmount, len(snapshots))
+	for _, s := range snapshots {
+		si := monthIndex(s.yearMonth)
+		byPos[s.positionID] = append(byPos[s.positionID], monthAmount{idx: si, amount: s.amount, currency: s.currency})
+	}
+	for _, ss := range byPos {
+		sort.Slice(ss, func(i, j int) bool { return ss[i].idx < ss[j].idx })
+	}
+	return byPos
+}
+
+// PositionDetail is one position's carried-forward, FX-converted value at a
+// single target month — the itemized breakdown behind the exported PDF report
+// (ADR-0045). Exported because it crosses the repo package boundary with no
+// backing DB row (nothing here is persisted, unlike db.MonthlyReport).
+type PositionDetail struct {
+	ID             uuid.UUID       `json:"position_id"`
+	Name           string          `json:"name"`
+	Group          string          `json:"group"`
+	Subtype        string          `json:"subtype"`
+	OwnershipType  string          `json:"ownership_type"`
+	SoleOwnerID    *uuid.UUID      `json:"sole_owner_user_id"`
+	NativeCurrency string          `json:"native_currency"`
+	NativeAmount   decimal.Decimal `json:"native_amount"`
+	Amount         decimal.Decimal `json:"amount"` // reporting currency
+	Stale          bool            `json:"stale"`
+	StaleMonth     *time.Time      `json:"stale_month"`
+}
+
+// generatePositionDetail resolves every active position's value at a single
+// target month, reusing the exact carry-forward + FX-conversion logic
+// generateMonthlyReports applies in its net-worth pass (above) — extracted so
+// the two can never diverge (INV-FINANCE-18) — but without generating every
+// month or the income statement, since only one month's positions are wanted.
+// A position with no snapshot at or before targetMonth, terminated before it,
+// or in an unconvertible currency is silently excluded, matching the aggregate
+// pass's own per-position exclusion rules.
+func generatePositionDetail(in reportEngineInput, targetMonth time.Time) []PositionDetail {
+	idx := monthIndex(targetMonth)
+	fx := newFxConverter(in)
+	byPos := buildPositionSnapshotIndex(in.snapshots)
+	positions := sortedPositions(in.positions)
+
+	out := make([]PositionDetail, 0, len(positions))
+	for _, p := range positions {
+		if terminatedBefore(p, idx) {
+			continue
+		}
+		carried, ok := latestAtOrBefore(byPos[p.id], idx)
+		if !ok {
+			continue
+		}
+		v, _, cok := fx.convert(carried.amount, carried.currency, idx)
+		if !cok {
+			continue
+		}
+		d := PositionDetail{
+			ID: p.id, Name: p.name, Group: p.group.String(), Subtype: p.subtype,
+			OwnershipType: p.ownershipType, SoleOwnerID: p.soleOwnerID,
+			NativeCurrency: carried.currency, NativeAmount: carried.amount, Amount: v,
+		}
+		if carried.idx < idx {
+			d.Stale = true
+			m := monthFromIndex(carried.idx)
+			d.StaleMonth = &m
+		}
+		out = append(out, d)
 	}
 	return out
 }

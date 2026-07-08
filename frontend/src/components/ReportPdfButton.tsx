@@ -3,9 +3,10 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import i18n from "@/i18n";
+import { api } from "@/api/client";
 import { importWithReloadGuard } from "@/lib/lazyWithReload";
 import { triggerDownload } from "@/lib/backup";
-import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
+import type { FxRate, HouseholdMember, MonthlyReport, PositionDetail } from "@/api/types";
 import type { Me } from "@/hooks/useSession";
 
 type Props = {
@@ -42,12 +43,24 @@ export function ReportPdfButton({
   async function handleClick() {
     setBusy(true);
     try {
-      const [{ pdf }, { buildReportPdfData }, { ReportDocument }] = await Promise.all([
+      const [{ pdf }, { buildReportPdfData }, { ReportDocument }, positions] = await Promise.all([
         importWithReloadGuard(() => import("@react-pdf/renderer")),
         importWithReloadGuard(() => import("@/lib/pdf/reportPdfData")),
         importWithReloadGuard(() => import("@/lib/pdf/ReportDocument")),
+        // Itemized per-position breakdown for the selected month (ADR-0045) —
+        // one request, correct for any month, not just the latest (see the
+        // ADR for why the naive per-subtype-list-endpoint approach was
+        // rejected).
+        api<PositionDetail[]>(`/api/reports/${selected.year_month.slice(0, 7)}/positions`),
       ]);
-      const data = buildReportPdfData({ reports, selected, currency, secondaryCurrency, rates });
+      const data = buildReportPdfData({
+        reports,
+        selected,
+        currency,
+        secondaryCurrency,
+        rates,
+        positions,
+      });
       const fixedT = i18n.getFixedT(i18n.language, "dashboard");
       const blob = await pdf(
         <ReportDocument data={data} t={fixedT} members={members} me={me} />,

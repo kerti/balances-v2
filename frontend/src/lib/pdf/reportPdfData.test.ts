@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildReportPdfData } from "@/lib/pdf/reportPdfData";
-import type { FxRate, MonthlyReport } from "@/api/types";
+import type { FxRate, MonthlyReport, PositionDetail } from "@/api/types";
 
 // Fixtures carry only the fields buildReportPdfData actually reads — cast
 // past the full wire type, mirroring lib/fx.test.ts's fixture style.
@@ -37,6 +37,7 @@ describe("buildReportPdfData", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.headline.secondary).toBeNull();
   });
@@ -49,6 +50,7 @@ describe("buildReportPdfData", () => {
       currency: "IDR",
       secondaryCurrency: "USD",
       rates: [rate("USD", "2026-06", "16000")],
+      positions: [],
     });
     expect(data.headline.secondary).toEqual({
       currency: "USD",
@@ -66,6 +68,7 @@ describe("buildReportPdfData", () => {
         currency: "IDR",
         secondaryCurrency: "EUR", // no EUR rate at all — stale/deleted selection
         rates: [rate("USD", "2026-06", "16000")],
+        positions: [],
       }),
     ).not.toThrow();
     const data = buildReportPdfData({
@@ -74,6 +77,7 @@ describe("buildReportPdfData", () => {
       currency: "IDR",
       secondaryCurrency: "EUR",
       rates: [rate("USD", "2026-06", "16000")],
+      positions: [],
     });
     expect(data.headline.secondary).toBeNull();
   });
@@ -88,6 +92,7 @@ describe("buildReportPdfData — income statement", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.incomeStatement).toBeNull();
   });
@@ -105,6 +110,7 @@ describe("buildReportPdfData — income statement", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.incomeStatement).toEqual({
       earned: 8000000,
@@ -131,6 +137,7 @@ describe("buildReportPdfData — income statement", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.incomeStatement).toEqual({
       earned: 0,
@@ -157,6 +164,7 @@ describe("buildReportPdfData — byPerson", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.byPerson.map((p) => p.key)).toEqual(["joint", "user-b", "user-a"]);
   });
@@ -171,6 +179,7 @@ describe("buildReportPdfData — fxRatesUsed", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.fxRatesUsed).toEqual([
       { currency: "SGD", rate: "12000" },
@@ -186,6 +195,7 @@ describe("buildReportPdfData — fxRatesUsed", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.fxRatesUsed).toEqual([]);
   });
@@ -205,6 +215,7 @@ describe("buildReportPdfData — groupBreakdown", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.groupBreakdown).toEqual([
       { labelKey: "assets", value: 60000000, negative: false },
@@ -226,6 +237,7 @@ describe("buildReportPdfData — series", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.series).toEqual([
       { year_month: "2026-04-01T00:00:00Z", amount: "90000000" },
@@ -244,8 +256,170 @@ describe("buildReportPdfData — top-level identity fields", () => {
       currency: "IDR",
       secondaryCurrency: "",
       rates: [],
+      positions: [],
     });
     expect(data.yearMonth).toBe("2026-06-01T00:00:00Z");
     expect(data.currency).toBe("IDR");
+  });
+});
+
+const position = (overrides: Partial<PositionDetail> = {}): PositionDetail =>
+  ({
+    position_id: "pos-1",
+    name: "Position",
+    group: "asset",
+    subtype: "bank_account",
+    ownership_type: "joint",
+    sole_owner_user_id: null,
+    native_currency: "IDR",
+    native_amount: "1000",
+    amount: "1000",
+    stale: false,
+    stale_month: null,
+    ...overrides,
+  }) as PositionDetail;
+
+describe("buildReportPdfData — itemizedPositions", () => {
+  it("groups positions by group and sorts each group by amount descending", () => {
+    const selected = report();
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [
+        position({ position_id: "a", group: "asset", subtype: "bank_account", amount: "100" }),
+        position({ position_id: "b", group: "asset", subtype: "property", amount: "5000" }),
+        position({ position_id: "c", group: "investment", subtype: "stock", amount: "300" }),
+      ],
+    });
+    expect(data.itemizedPositions.asset.map((p) => p.id)).toEqual(["b", "a"]);
+    expect(data.itemizedPositions.investment.map((p) => p.id)).toEqual(["c"]);
+    expect(data.itemizedPositions.liability).toEqual([]);
+    expect(data.itemizedPositions.receivable).toEqual([]);
+  });
+
+  it("carries the stale flag through", () => {
+    const selected = report();
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [position({ group: "asset", stale: true })],
+    });
+    expect(data.itemizedPositions.asset[0].stale).toBe(true);
+  });
+});
+
+describe("buildReportPdfData — composition", () => {
+  it("sums assets/investments/liabilities by subtype, largest first", () => {
+    const selected = report();
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [
+        position({ group: "asset", subtype: "bank_account", amount: "100" }),
+        position({ group: "asset", subtype: "bank_account", amount: "50" }),
+        position({ group: "asset", subtype: "property", amount: "5000" }),
+        position({ group: "liability", subtype: "personal", amount: "70" }),
+      ],
+    });
+    expect(data.composition.assets).toEqual([
+      { key: "property", value: 5000 },
+      { key: "bank_account", value: 150 },
+    ]);
+    expect(data.composition.liabilities).toEqual([{ key: "personal", value: 70 }]);
+    expect(data.composition.investments).toEqual([]);
+  });
+
+  it("derives earned-income/investment-return composition from per-category fields, dropping zero categories", () => {
+    const selected = report({
+      earned_income_salary: "5000000",
+      earned_income_business: "0",
+      earned_income_rental: "3000000",
+      investment_return_stock: "200000",
+      investment_return_mutual_fund: "300000",
+    });
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    expect(data.composition.earnedIncome).toEqual([
+      { key: "salary", value: 5000000 },
+      { key: "rental", value: 3000000 },
+    ]);
+    expect(data.composition.investmentReturn).toEqual([
+      { key: "stock", value: 200000 },
+      { key: "mutual_fund", value: 300000 },
+    ]);
+  });
+
+  it("is empty for both category compositions on the baseline month", () => {
+    const selected = report({ derived_living_expenses: null, earned_income_salary: "5000000" });
+    const data = buildReportPdfData({
+      reports: [selected],
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    expect(data.composition.earnedIncome).toEqual([]);
+    expect(data.composition.investmentReturn).toEqual([]);
+  });
+});
+
+describe("buildReportPdfData — trend", () => {
+  it("takes at most the last 12 months up to and including the selected month", () => {
+    const months = Array.from({ length: 14 }, (_, i) => {
+      const m = String((i % 12) + 1).padStart(2, "0");
+      const y = 2025 + Math.floor(i / 12);
+      return report({
+        year_month: `${y}-${m}-01T00:00:00Z`,
+        derived_living_expenses: String(1000 + i),
+        investment_return_total: String(2000 + i),
+      });
+    });
+    const selected = months[months.length - 1];
+    const data = buildReportPdfData({
+      reports: months,
+      selected,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    expect(data.trend).toHaveLength(12);
+    expect(data.trend[data.trend.length - 1]).toEqual({
+      year_month: selected.year_month,
+      livingExpenses: 1000 + 13,
+      investmentReturn: 2000 + 13,
+    });
+  });
+
+  it("excludes months after the selected month", () => {
+    const jan = report({ year_month: "2026-01-01T00:00:00Z" });
+    const feb = report({ year_month: "2026-02-01T00:00:00Z" });
+    const data = buildReportPdfData({
+      reports: [jan, feb],
+      selected: jan,
+      currency: "IDR",
+      secondaryCurrency: "",
+      rates: [],
+      positions: [],
+    });
+    expect(data.trend).toEqual([
+      { livingExpenses: 3000000, investmentReturn: 500000, year_month: "2026-01-01T00:00:00Z" },
+    ]);
   });
 });
