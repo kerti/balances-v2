@@ -23,7 +23,13 @@ const (
 
 const sessionCookieName = "session"
 
-func randomSessionID() (string, error) {
+// RandomSessionID returns a fresh 256-bit random, URL-safe opaque value. Used
+// as both the session bearer credential (IssueSession stores HashToken(id) and
+// cookies the plaintext) and, unrelatedly, as the onboarding-handshake id
+// (local.go, onboarding.go) — those are a different table with no hashing
+// requirement. Exported for the `session-token` CLI dev helper, which mints a
+// session outside the auth package (no http.ResponseWriter to cookie).
+func RandomSessionID() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -88,7 +94,7 @@ func (h *Handlers) SessionMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-		session, err := h.q.GetSessionByID(ctx, cookie.Value)
+		session, err := h.q.GetSessionByID(ctx, HashToken(cookie.Value))
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				h.clearSessionCookie(w)
@@ -109,7 +115,10 @@ func (h *Handlers) SessionMiddleware(next http.Handler) http.Handler {
 			ExpiresAt: pgtype.Timestamptz{Time: newExpiresAt, Valid: true},
 			ID:        session.ID,
 		})
-		h.setSessionCookie(w, session.ID, newExpiresAt)
+		// session.ID is the hashed at-rest value (looked up above); the cookie
+		// must keep the plaintext bearer value the client presented, or the next
+		// request's hash-and-lookup would never match this row again.
+		h.setSessionCookie(w, cookie.Value, newExpiresAt)
 
 		next.ServeHTTP(w, r.WithContext(WithUser(ctx, user)))
 	})

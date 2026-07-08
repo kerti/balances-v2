@@ -247,7 +247,7 @@ func clientIP(r *http.Request) string {
 // beginLocalOnboarding records a credential-bearing, google_sub-less handshake
 // and writes the handshake cookie — the local mirror of beginOnboarding.
 func (h *Handlers) beginLocalOnboarding(ctx context.Context, w http.ResponseWriter, email, displayName, seedLocale, passwordHash string) error {
-	token, err := randomSessionID()
+	token, err := RandomSessionID()
 	if err != nil {
 		return err
 	}

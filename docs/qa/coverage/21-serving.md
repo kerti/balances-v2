@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/21-serving.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**5 / 5** invariants in this zone have at least one covering test (**5** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**6 / 6** invariants in this zone have at least one covering test (**6** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -13,3 +13,4 @@
 | INV-SERVING-03 | Extension disambiguation: an extensionless client route that collides with the build-output dir — the Assets section under `/assets/` (e.g. `/assets/bank-accounts`, App.tsx) — falls back to the SPA shell, not 404; only an extension-bearing `/assets/` miss 404s (the rule that lets INV-SERVING-02 and a client route coexist under the same prefix, #241) | `backend/internal/httpserver/serving_integration_test.go`<br>`backend/internal/httpserver/spa_test.go` |
 | INV-SERVING-04 | Route precedence: the SPA catch-all (`/*`) is mounted last and never shadows the sibling route trees — `/api/*` and `/healthz` resolve to their own handlers (or, for an unmounted `/api` path, the `/api` subtree's 404), never the SPA shell, in the single-origin image. This is the wiring a handler-in-isolation test cannot reach | `backend/internal/httpserver/serving_integration_test.go` |
 | INV-SERVING-05 | Traversal is rejected: a request path that escapes `WEB_DIR` (`..`) is refused (`http.ServeFile`'s guard / the within-root prefix check), never serving a file outside the served directory | `backend/internal/httpserver/spa_test.go` |
+| INV-SERVING-06 | Every response (API and static) carries hardening headers — CSP (`default-src 'self'`, `frame-ancestors 'none'`, no `script-src 'unsafe-inline'`), `X-Content-Type-Options: nosniff`, and `Referrer-Policy`; `Strict-Transport-Security` is set only when `COOKIE_SECURE=true`, never over an assumed-plain-HTTP deployment | `backend/internal/httpserver/security_headers_test.go` |

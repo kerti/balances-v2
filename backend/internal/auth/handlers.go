@@ -364,7 +364,7 @@ func (h *Handlers) handleCallback(w http.ResponseWriter, r *http.Request) {
 // google_sub) rather than dumping them on the sign-in screen. Must be called
 // before the response status is written, since it sets a Set-Cookie header.
 func (h *Handlers) IssueSession(ctx context.Context, w http.ResponseWriter, userID uuid.UUID, userAgent string) error {
-	sessionID, err := randomSessionID()
+	sessionID, err := RandomSessionID()
 	if err != nil {
 		return fmt.Errorf("generate session id: %w", err)
 	}
@@ -374,7 +374,7 @@ func (h *Handlers) IssueSession(ctx context.Context, w http.ResponseWriter, user
 		ua = &userAgent
 	}
 	if _, err := h.q.CreateSession(ctx, db.CreateSessionParams{
-		ID:        sessionID,
+		ID:        HashToken(sessionID),
 		UserID:    userID,
 		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
 		UserAgent: ua,
@@ -478,7 +478,7 @@ func (h *Handlers) clearShortCookie(w http.ResponseWriter, name string) {
 
 func (h *Handlers) handleLogout(w http.ResponseWriter, r *http.Request) {
 	if cookie, err := r.Cookie(sessionCookieName); err == nil && cookie.Value != "" {
-		_ = h.q.DeleteSession(r.Context(), cookie.Value)
+		_ = h.q.DeleteSession(r.Context(), HashToken(cookie.Value))
 	}
 	h.clearSessionCookie(w)
 	w.WriteHeader(http.StatusNoContent)

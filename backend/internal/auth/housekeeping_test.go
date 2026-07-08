@@ -35,12 +35,12 @@ func TestSweep_DeletesExpiredRowsAndEvictsLimiter(t *testing.T) {
 	ctx := context.Background()
 	past := time.Now().Add(-time.Hour)
 
-	sessionID, err := randomSessionID()
+	sessionID, err := RandomSessionID()
 	if err != nil {
-		t.Fatalf("randomSessionID: %v", err)
+		t.Fatalf("RandomSessionID: %v", err)
 	}
 	if _, err := h.q.CreateSession(ctx, db.CreateSessionParams{
-		ID:        sessionID,
+		ID:        HashToken(sessionID),
 		UserID:    h.user.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: past, Valid: true},
 	}); err != nil {
@@ -60,7 +60,7 @@ func TestSweep_DeletesExpiredRowsAndEvictsLimiter(t *testing.T) {
 
 	// Sanity: all three rows exist before sweep runs — otherwise the
 	// post-sweep zero counts below would prove nothing.
-	if got := countRows(t, h, "sessions", "id", sessionID); got != 1 {
+	if got := countRows(t, h, "sessions", "id", HashToken(sessionID)); got != 1 {
 		t.Fatalf("precondition: sessions count = %d, want 1", got)
 	}
 	if got := countRows(t, h, "onboarding_handshakes", "id", handshakeID); got != 1 {
@@ -77,7 +77,7 @@ func TestSweep_DeletesExpiredRowsAndEvictsLimiter(t *testing.T) {
 
 	h.h.sweep(ctx)
 
-	if got := countRows(t, h, "sessions", "id", sessionID); got != 0 {
+	if got := countRows(t, h, "sessions", "id", HashToken(sessionID)); got != 0 {
 		t.Errorf("expired session should have been deleted by sweep, count = %d", got)
 	}
 	if got := countRows(t, h, "onboarding_handshakes", "id", handshakeID); got != 0 {
@@ -123,12 +123,12 @@ func TestStartHousekeeping_SweepsOnTick(t *testing.T) {
 	h := newAuthHarness(t)
 	ctx := context.Background()
 
-	sessionID, err := randomSessionID()
+	sessionID, err := RandomSessionID()
 	if err != nil {
-		t.Fatalf("randomSessionID: %v", err)
+		t.Fatalf("RandomSessionID: %v", err)
 	}
 	if _, err := h.q.CreateSession(ctx, db.CreateSessionParams{
-		ID:        sessionID,
+		ID:        HashToken(sessionID),
 		UserID:    h.user.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(-time.Hour), Valid: true},
 	}); err != nil {
@@ -141,7 +141,7 @@ func TestStartHousekeeping_SweepsOnTick(t *testing.T) {
 
 	deadline := time.Now().Add(2 * time.Second)
 	for {
-		if countRows(t, h, "sessions", "id", sessionID) == 0 {
+		if countRows(t, h, "sessions", "id", HashToken(sessionID)) == 0 {
 			return // swept
 		}
 		if time.Now().After(deadline) {

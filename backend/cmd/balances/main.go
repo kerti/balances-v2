@@ -63,6 +63,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "seed-e2e failed:", err)
 			os.Exit(1)
 		}
+	case "session-token":
+		if err := sessionTokenCmd(os.Args[2:]); err != nil {
+			fmt.Fprintln(os.Stderr, "session-token:", err)
+			os.Exit(1)
+		}
 	case "mock-oidc":
 		if err := mockOIDCCmd(); err != nil {
 			fmt.Fprintln(os.Stderr, "mock-oidc failed:", err)
@@ -86,6 +91,7 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  migrate version    show current revision")
 	fmt.Fprintln(os.Stderr, "  reset-password <email>  mint a one-time set-password link for a local account")
 	fmt.Fprintln(os.Stderr, "  seed-e2e           reset the balances_e2e DB with Playwright fixtures")
+	fmt.Fprintln(os.Stderr, "  session-token <email>  mint a session and print its bearer token (dev/curl only)")
 	fmt.Fprintln(os.Stderr, "  mock-oidc          run the E2E fake OIDC provider (ADR-0024)")
 }
 
@@ -300,7 +306,9 @@ const e2eDatabaseName = "balances_e2e"
 // rather than a random opaque token because it only ever exists in the
 // balances_e2e database — never production — so global-setup can rely on a
 // constant instead of parsing it back out. We still print it (see below) to
-// honour the ADR-0024 contract.
+// honour the ADR-0024 contract. The seeded row stores HashToken(e2eSessionID)
+// (#361, sessions are hashed at rest); this constant stays the plaintext
+// cookie value, matched by SessionMiddleware hashing it on lookup.
 const e2eSessionID = "e2e-session-alice"
 
 // Alice's fixture identity is shared between seed-e2e (which inserts the user
@@ -410,7 +418,7 @@ func seedE2ECmd() error {
 
 	userAgent := "e2e"
 	if _, err := q.CreateSession(ctx, db.CreateSessionParams{
-		ID:        e2eSessionID,
+		ID:        auth.HashToken(e2eSessionID),
 		UserID:    alice.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(cfg.SessionTTL), Valid: true},
 		UserAgent: &userAgent,

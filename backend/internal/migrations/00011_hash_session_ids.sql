@@ -1,0 +1,22 @@
+-- +goose Up
+-- Hash session tokens at rest (#361, CF-18). HashToken's own guarantee — "a
+-- database leak yields nothing usable" — already covers every other
+-- credential-shaped secret (password-reset tokens, invitation tokens, local
+-- set-password tokens). Sessions were the one exception: CreateSession
+-- inserted the bearer id straight into the DB, so any read-level exposure
+-- (backup leak, replica misconfig, future SQLi) would yield live session
+-- credentials for every active user.
+--
+-- Backfill in place rather than truncate (unlike 00009's invite-token rename,
+-- which had no live plaintext worth preserving): at migration time the id
+-- column still holds each session's plaintext bearer value, so hashing it here
+-- keeps every currently active session valid. The application layer now hashes
+-- the presented cookie before every lookup/write, so a migrated row still
+-- matches — no forced logout, no cookie change.
+UPDATE public.sessions SET id = encode(sha256(id::bytea), 'hex');
+
+-- +goose Down
+-- Irreversible: a hash is not reversible to its plaintext. Down leaves the
+-- hashed values in place — reverting the application code without reverting
+-- this data would force every session to reauthenticate, which is the correct
+-- (safe) failure mode for a down migration here.

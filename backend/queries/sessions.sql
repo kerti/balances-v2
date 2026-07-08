@@ -1,3 +1,8 @@
+-- id is SHA-256(bearer token) at rest (#361): a DB leak yields nothing usable,
+-- matching HashToken's guarantee for every other credential-shaped secret.
+-- Callers hash the cookie value before every read/write; the cookie itself
+-- keeps the plaintext.
+
 -- name: GetSessionByID :one
 SELECT *
 FROM sessions

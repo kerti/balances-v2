@@ -133,7 +133,7 @@ func TestSessionMiddleware(t *testing.T) {
 	t.Run("expired session is treated like unknown", func(t *testing.T) {
 		sessionID := mustRandomSessionID(t)
 		_, err := h.q.CreateSession(context.Background(), db.CreateSessionParams{
-			ID:        sessionID,
+			ID:        HashToken(sessionID),
 			UserID:    h.user.ID,
 			ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(-1 * time.Hour), Valid: true},
 		})
@@ -158,7 +158,7 @@ func TestSessionMiddleware(t *testing.T) {
 		sessionID := mustRandomSessionID(t)
 		originalExpiry := time.Now().Add(10 * time.Minute)
 		_, err := h.q.CreateSession(context.Background(), db.CreateSessionParams{
-			ID:        sessionID,
+			ID:        HashToken(sessionID),
 			UserID:    h.user.ID,
 			ExpiresAt: pgtype.Timestamptz{Time: originalExpiry, Valid: true},
 		})
@@ -184,6 +184,9 @@ func TestSessionMiddleware(t *testing.T) {
 		if c == nil {
 			t.Fatal("expected refreshed session cookie")
 		}
+		// The refreshed cookie must stay the plaintext bearer value presented,
+		// not the hashed at-rest id (#361) — a regression here silently breaks
+		// every session after its first sliding-TTL refresh.
 		if c.Value != sessionID {
 			t.Errorf("cookie value: want session id preserved, got %q", c.Value)
 		}
@@ -195,11 +198,46 @@ func TestSessionMiddleware(t *testing.T) {
 	})
 }
 
+// TestIssueSession_HashesAtRest verifies sessions get the same at-rest
+// treatment as every other credential-shaped secret (HashToken): the stored
+// row never equals the plaintext cookie value, and only the hash is what a
+// lookup actually matches. Uses raw COUNT(*), not GetSessionByID, to check the
+// negative case — an expiry-gated getter would give a false pass on a missing
+// row exactly like on a deleted one.
+//
+// covers: INV-AUTH-28
+func TestIssueSession_HashesAtRest(t *testing.T) {
+	h := newAuthHarness(t)
+	rec := httptest.NewRecorder()
+	if err := h.h.IssueSession(context.Background(), rec, h.user.ID, "test-agent"); err != nil {
+		t.Fatalf("IssueSession: %v", err)
+	}
+	cookie := findCookie(rec, sessionCookieName)
+	if cookie == nil || cookie.Value == "" {
+		t.Fatal("expected a non-empty session cookie")
+	}
+
+	if got := countRows(t, h, "sessions", "id", cookie.Value); got != 0 {
+		t.Errorf("plaintext cookie value found at rest — sessions must be hashed, count = %d", got)
+	}
+	if got := countRows(t, h, "sessions", "id", HashToken(cookie.Value)); got != 1 {
+		t.Errorf("hashed session id not found at rest, count = %d", got)
+	}
+
+	session, err := h.q.GetSessionByID(context.Background(), HashToken(cookie.Value))
+	if err != nil {
+		t.Fatalf("GetSessionByID(hash): %v", err)
+	}
+	if session.UserID != h.user.ID {
+		t.Errorf("session.user_id: want %s, got %s", h.user.ID, session.UserID)
+	}
+}
+
 func mustRandomSessionID(t *testing.T) string {
 	t.Helper()
-	id, err := randomSessionID()
+	id, err := RandomSessionID()
 	if err != nil {
-		t.Fatalf("randomSessionID: %v", err)
+		t.Fatalf("RandomSessionID: %v", err)
 	}
 	return id
 }
@@ -208,9 +246,9 @@ func mustRandomSessionID(t *testing.T) string {
 func TestRandomSessionID_UniqueAndNonEmpty(t *testing.T) {
 	seen := make(map[string]bool, 32)
 	for range 32 {
-		id, err := randomSessionID()
+		id, err := RandomSessionID()
 		if err != nil {
-			t.Fatalf("randomSessionID: %v", err)
+			t.Fatalf("RandomSessionID: %v", err)
 		}
 		if id == "" {
 			t.Fatal("empty session id")

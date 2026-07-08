@@ -78,11 +78,16 @@ func (q *Queries) DeleteSessionsForUser(ctx context.Context, userID uuid.UUID) e
 }
 
 const getSessionByID = `-- name: GetSessionByID :one
+
 SELECT id, user_id, created_at, expires_at, last_seen_at, user_agent
 FROM sessions
 WHERE id = $1 AND expires_at > now()
 `
 
+// id is SHA-256(bearer token) at rest (#361): a DB leak yields nothing usable,
+// matching HashToken's guarantee for every other credential-shaped secret.
+// Callers hash the cookie value before every read/write; the cookie itself
+// keeps the plaintext.
 func (q *Queries) GetSessionByID(ctx context.Context, id string) (Session, error) {
 	row := q.db.QueryRow(ctx, getSessionByID, id)
 	var i Session
