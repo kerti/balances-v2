@@ -4,7 +4,7 @@ import { computeLineChartGeometry, computeTwoLineGeometry } from "@/lib/pdf/char
 describe("computeLineChartGeometry", () => {
   it("returns an empty geometry for an empty series", () => {
     const geo = computeLineChartGeometry([], { width: 200, height: 100 });
-    expect(geo).toEqual({ path: "", points: [], minY: 0, maxY: 0 });
+    expect(geo).toEqual({ path: "", points: [], months: [], minY: 0, maxY: 0 });
   });
 
   it("places a single point centered vertically at x=0", () => {
@@ -51,6 +51,7 @@ describe("computeLineChartGeometry", () => {
       { x: 100, y: 100 }, // May: carried forward -> same y as Apr
       { x: 200, y: 0 }, // Jun: 200 (max) -> top
     ]);
+    expect(geo.months).toEqual(["2026-04", "2026-05", "2026-06"]);
   });
 });
 
@@ -59,6 +60,8 @@ describe("computeTwoLineGeometry", () => {
     expect(computeTwoLineGeometry([], [1, 2], { width: 200, height: 100 })).toEqual({
       pathA: "",
       pathB: "",
+      pointsA: [],
+      pointsB: [],
       minY: 0,
       maxY: 0,
     });
@@ -71,6 +74,14 @@ describe("computeTwoLineGeometry", () => {
     expect(geo.maxY).toBe(100);
     expect(geo.pathA).toBe("M 0 100 L 200 0"); // 0 -> bottom, 100 -> top
     expect(geo.pathB).toBe("M 0 50 L 200 75"); // 50 -> mid, 25 -> 3/4 down
+    expect(geo.pointsA).toEqual([
+      { x: 0, y: 100 },
+      { x: 200, y: 0 },
+    ]);
+    expect(geo.pointsB).toEqual([
+      { x: 0, y: 50 },
+      { x: 200, y: 75 },
+    ]);
   });
 
   it("centers a single-point series vertically when min equals max", () => {

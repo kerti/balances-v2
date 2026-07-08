@@ -166,10 +166,7 @@ export function ReportDocument({ data, t, members, me }: Props) {
         {data.trend.length > 0 && (
           <View wrap={false}>
             <Text style={styles.sectionTitle}>{t("trend.title")}</Text>
-            <TrendChart
-              livingExpenses={data.trend.map((p) => p.livingExpenses)}
-              investmentReturn={data.trend.map((p) => p.investmentReturn)}
-            />
+            <TrendChart trend={data.trend} />
             <View style={{ marginTop: 4 }}>
               <View style={styles.legendRow}>
                 <View
