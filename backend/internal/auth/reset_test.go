@@ -202,7 +202,7 @@ func TestPasswordReset_RevokesOtherSessions(t *testing.T) {
 
 	// A pre-existing (attacker) session.
 	old, err := h.q.CreateSession(context.Background(), db.CreateSessionParams{
-		ID:        "old-session-id",
+		ID:        HashToken("old-session-id"),
 		UserID:    user.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(time.Hour), Valid: true},
 	})

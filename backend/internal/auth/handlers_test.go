@@ -179,7 +179,7 @@ func TestHandleLogout(t *testing.T) {
 	t.Run("204 and deletes the session row when cookie is present", func(t *testing.T) {
 		sessionID := mustRandomSessionID(t)
 		_, err := h.q.CreateSession(context.Background(), db.CreateSessionParams{
-			ID:        sessionID,
+			ID:        HashToken(sessionID),
 			UserID:    h.user.ID,
 			ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(30 * time.Minute), Valid: true},
 		})
@@ -195,11 +195,10 @@ func TestHandleLogout(t *testing.T) {
 			t.Errorf("status: want 204, got %d (body: %s)", rec.Code, rec.Body.String())
 		}
 
-		// Session row should now be gone (GetSessionByID filters out expired
-		// AND missing rows the same way).
-		_, err = h.q.GetSessionByID(context.Background(), sessionID)
-		if err == nil {
-			t.Error("expected session to be deleted, GetSessionByID still found it")
+		// Raw COUNT, not GetSessionByID: the getter's own expiry filter would
+		// give a false pass here even if logout deleted nothing.
+		if got := countRows(t, h, "sessions", "id", HashToken(sessionID)); got != 0 {
+			t.Errorf("expected session row deleted, count = %d", got)
 		}
 
 		// Cookie cleared.

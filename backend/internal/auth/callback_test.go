@@ -122,7 +122,7 @@ func TestHandleCallback_ExistingUserSignIn(t *testing.T) {
 	}
 
 	// Session row should exist for the harness user.
-	session, err := h.q.GetSessionByID(context.Background(), sessCookie.Value)
+	session, err := h.q.GetSessionByID(context.Background(), HashToken(sessCookie.Value))
 	if err != nil {
 		t.Fatalf("GetSessionByID: %v", err)
 	}
@@ -357,7 +357,7 @@ func TestHandleCallback_FreshSession(t *testing.T) {
 	// Plant an old expired session for the harness user.
 	oldSessionID := mustRandomSessionID(t)
 	_, err := h.q.CreateSession(context.Background(), db.CreateSessionParams{
-		ID:        oldSessionID,
+		ID:        HashToken(oldSessionID),
 		UserID:    h.user.ID,
 		ExpiresAt: pgtype.Timestamptz{Time: time.Now().Add(-1 * time.Hour), Valid: true},
 	})

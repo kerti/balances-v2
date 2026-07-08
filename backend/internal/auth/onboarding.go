@@ -39,7 +39,7 @@ const (
 // commits a choice at the gate (ADR-0038). hintInvitationID pre-highlights a
 // clicked invite link's Household at the gate (#268); nil in the founder slice.
 func (h *Handlers) beginOnboarding(ctx context.Context, w http.ResponseWriter, c *googleClaims, seedLocale string, hintInvitationID *uuid.UUID) error {
-	token, err := randomSessionID()
+	token, err := RandomSessionID()
 	if err != nil {
 		return err
 	}

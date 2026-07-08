@@ -15,7 +15,9 @@ DEV_COMPOSE := docker-compose.dev.yml
 # Compose derives the project name from the containing folder, so cloning
 # under anything other than `balances-v2` silently breaks `docker exec
 # $(PG_CONTAINER)` (e2e-db-create, session-token) with a confusing "no such
-# container" error (issue #369).
+# container" error (issue #369). e2e-db-create is the only remaining direct
+# `docker exec $(PG_CONTAINER)` user — session-token (#361) mints via the Go
+# CLI (DATABASE_URL from .env) instead.
 COMPOSE_PROJECT_NAME := balances-v2
 
 # Background dev-server logs. tail -f to follow.
@@ -84,7 +86,7 @@ help:
 	@echo "  qa-matrix               regenerate docs/qa/coverage/ from invariant annotations"
 	@echo "  qa-strict               CI gate: fail if any invariant lacks per-PR coverage"
 	@echo "  qa-gaps                 list within-zone test files that carry no covers: annotation"
-	@echo "  session-token           print a live session token for curl smoke tests"
+	@echo "  session-token EMAIL=... mint a session token for that user, for curl smoke tests"
 	@echo "  hooks-install           enable the pre-commit pii-guard (run once per clone)"
 	@echo "  setup                   first-clone entry point: hooks-install + frontend-install + seed .env"
 
@@ -350,13 +352,14 @@ qa-strict:
 qa-gaps:
 	@( cd backend && go run ./tools/qa-matrix -gaps )
 
-# Print one live session token (newest, unexpired) for curl smoke tests against
-# authenticated endpoints. Empty result → non-zero exit with a hint on stderr.
+# Mint a fresh session for EMAIL and print its bearer token, for curl smoke
+# tests against authenticated endpoints. Session ids are hashed at rest (#361),
+# so a raw `SELECT id FROM sessions` can no longer recover a usable token — this
+# goes through the `session-token` CLI subcommand, which mints one and prints
+# the plaintext once. Usage: make session-token EMAIL=alice@example.com
 session-token:
-	@tok=$$(docker exec $(PG_CONTAINER) psql -U $(PG_USER) -d $(PG_DB) -tAc \
-	  "SELECT s.id FROM sessions s WHERE s.expires_at > now() ORDER BY s.expires_at DESC LIMIT 1" 2>/dev/null); \
-	if [ -z "$$tok" ]; then echo "✗ no live session — log in via the dev UI first" >&2; exit 1; fi; \
-	echo "$$tok"
+	@if [ -z "$(EMAIL)" ]; then echo "usage: make session-token EMAIL=<email>" >&2; exit 1; fi
+	@( cd backend && go run ./cmd/balances session-token "$(EMAIL)" )
 
 # Install the repo git hooks (core.hooksPath=.githooks) and seed the local,
 # gitignored .pii-patterns denylist from the template + your git identity, so

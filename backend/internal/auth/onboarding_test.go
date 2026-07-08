@@ -26,9 +26,9 @@ func mustBeginHandshake(t *testing.T, h *authHarness, sub, email, name string, e
 // pre-selection hint (hint_invitation_id).
 func mustBeginHandshakeWithHint(t *testing.T, h *authHarness, sub, email, name string, expiresAt time.Time, hint *uuid.UUID) string {
 	t.Helper()
-	token, err := randomSessionID()
+	token, err := RandomSessionID()
 	if err != nil {
-		t.Fatalf("randomSessionID: %v", err)
+		t.Fatalf("RandomSessionID: %v", err)
 	}
 	_, err = h.q.CreateOnboardingHandshake(context.Background(), db.CreateOnboardingHandshakeParams{
 		ID:               token,
