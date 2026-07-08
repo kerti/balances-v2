@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -25,7 +26,8 @@ type healthzResponse struct {
 func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request) {
 	var dbTime time.Time
 	if err := s.pool.QueryRow(r.Context(), "SELECT now()").Scan(&dbTime); err != nil {
-		http.Error(w, "db unreachable: "+err.Error(), http.StatusServiceUnavailable)
+		slog.Error("healthz db unreachable", "err", err)
+		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
 

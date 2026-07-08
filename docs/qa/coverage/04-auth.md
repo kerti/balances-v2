@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/04-auth.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**28 / 28** invariants in this zone have at least one covering test (**28** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**29 / 29** invariants in this zone have at least one covering test (**29** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -36,3 +36,4 @@
 | INV-AUTH-26 | `FOUNDING_DISABLED` gates only the gate's **found** commit, uniformly across both providers (the same `handleOnboardingChoice` path); a zero-invite identity is blocked (403 `FOUNDING_DISABLED`) with no `users`/`households` row created and the handshake left intact, while the invite-based **join** commit is completely unaffected. The options response mirrors the flag (`founding_disabled`) so the gate hides the affordance before it's ever clicked; default is open (unset), so a fresh instance can still found its first household | `backend/internal/auth/onboarding_test.go` |
 | INV-AUTH-27 | `GET /api/auth/methods` reports `demo_mode` (default false) and, only when true, the shared demo login (`demo_email`/`demo_password`) so the SPA can pre-fill the sign-in form (ADR-0041, #217) — with `demo_mode` false the credential fields are absent, not merely blank | `backend/internal/auth/local_test.go` |
 | INV-AUTH-28 | A session is hashed at rest (SHA-256 of the ≥256-bit bearer id) like every other credential-shaped secret (`HashToken`) — `sessions.id` never equals the plaintext cookie value, a DB leak yields no usable session, and the sliding-TTL cookie refresh (`SessionMiddleware`) re-issues the original plaintext, never the stored hash | `backend/internal/auth/session_test.go` |
+| INV-AUTH-29 | A second CSRF layer sits behind `SameSite=Lax` (INV-AUTH-03): every non-safe-method (`POST`/`PUT`/`PATCH`/`DELETE`) request is checked against `Sec-Fetch-Site` (must be `same-origin` or `none`) falling back to `Origin` (host must match the request host) when a browser omits the newer header; a request carrying neither signal (a non-browser client SameSite never protected anyway) is passed through rather than broken (`internal/httpserver` middleware, ahead of `SessionMiddleware`) | `backend/internal/httpserver/csrf_test.go` |
