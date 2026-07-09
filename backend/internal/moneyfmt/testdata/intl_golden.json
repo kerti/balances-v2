@@ -1,0 +1,406 @@
+{
+  "currency": [
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "6274520496.58",
+      "want": "IDR 6,274,520,497"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "0",
+      "want": "IDR 0"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "-70000000",
+      "want": "-IDR 70,000,000"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "20665178.19",
+      "want": "IDR 20,665,178"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "1234.5",
+      "want": "IDR 1,235"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "IDR",
+      "amount": "-0.004",
+      "want": "-IDR 0"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "6274520496.58",
+      "want": "US$6,274,520,496.58"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "0",
+      "want": "US$0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "-70000000",
+      "want": "-US$70,000,000.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "20665178.19",
+      "want": "US$20,665,178.19"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "1234.5",
+      "want": "US$1,234.50"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "USD",
+      "amount": "-0.004",
+      "want": "-US$0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "6274520496.58",
+      "want": "€6,274,520,496.58"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "0",
+      "want": "€0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "-70000000",
+      "want": "-€70,000,000.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "20665178.19",
+      "want": "€20,665,178.19"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "1234.5",
+      "want": "€1,234.50"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "EUR",
+      "amount": "-0.004",
+      "want": "-€0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "6274520496.58",
+      "want": "SGD 6,274,520,496.58"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "0",
+      "want": "SGD 0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "-70000000",
+      "want": "-SGD 70,000,000.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "20665178.19",
+      "want": "SGD 20,665,178.19"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "1234.5",
+      "want": "SGD 1,234.50"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "SGD",
+      "amount": "-0.004",
+      "want": "-SGD 0.00"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "6274520496.58",
+      "want": "JP¥6,274,520,497"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "0",
+      "want": "JP¥0"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "-70000000",
+      "want": "-JP¥70,000,000"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "20665178.19",
+      "want": "JP¥20,665,178"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "1234.5",
+      "want": "JP¥1,235"
+    },
+    {
+      "locale": "en-GB",
+      "currency": "JPY",
+      "amount": "-0.004",
+      "want": "-JP¥0"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "6274520496.58",
+      "want": "Rp 6.274.520.497"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "0",
+      "want": "Rp 0"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "-70000000",
+      "want": "-Rp 70.000.000"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "20665178.19",
+      "want": "Rp 20.665.178"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "1234.5",
+      "want": "Rp 1.235"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "IDR",
+      "amount": "-0.004",
+      "want": "-Rp 0"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "6274520496.58",
+      "want": "US$6.274.520.496,58"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "0",
+      "want": "US$0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "-70000000",
+      "want": "-US$70.000.000,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "20665178.19",
+      "want": "US$20.665.178,19"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "1234.5",
+      "want": "US$1.234,50"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "USD",
+      "amount": "-0.004",
+      "want": "-US$0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "6274520496.58",
+      "want": "€6.274.520.496,58"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "0",
+      "want": "€0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "-70000000",
+      "want": "-€70.000.000,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "20665178.19",
+      "want": "€20.665.178,19"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "1234.5",
+      "want": "€1.234,50"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "EUR",
+      "amount": "-0.004",
+      "want": "-€0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "6274520496.58",
+      "want": "SGD 6.274.520.496,58"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "0",
+      "want": "SGD 0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "-70000000",
+      "want": "-SGD 70.000.000,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "20665178.19",
+      "want": "SGD 20.665.178,19"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "1234.5",
+      "want": "SGD 1.234,50"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "SGD",
+      "amount": "-0.004",
+      "want": "-SGD 0,00"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "6274520496.58",
+      "want": "JP¥6.274.520.497"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "0",
+      "want": "JP¥0"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "-70000000",
+      "want": "-JP¥70.000.000"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "20665178.19",
+      "want": "JP¥20.665.178"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "1234.5",
+      "want": "JP¥1.235"
+    },
+    {
+      "locale": "id-ID",
+      "currency": "JPY",
+      "amount": "-0.004",
+      "want": "-JP¥0"
+    }
+  ],
+  "number": [
+    {
+      "locale": "en-GB",
+      "value": "12345.67",
+      "want": "12,345.67"
+    },
+    {
+      "locale": "en-GB",
+      "value": "0",
+      "want": "0"
+    },
+    {
+      "locale": "en-GB",
+      "value": "-8496208.96",
+      "want": "-8,496,208.96"
+    },
+    {
+      "locale": "en-GB",
+      "value": "1000000",
+      "want": "1,000,000"
+    },
+    {
+      "locale": "id-ID",
+      "value": "12345.67",
+      "want": "12.345,67"
+    },
+    {
+      "locale": "id-ID",
+      "value": "0",
+      "want": "0"
+    },
+    {
+      "locale": "id-ID",
+      "value": "-8496208.96",
+      "want": "-8.496.208,96"
+    },
+    {
+      "locale": "id-ID",
+      "value": "1000000",
+      "want": "1.000.000"
+    }
+  ]
+}

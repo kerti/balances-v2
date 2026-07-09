@@ -91,42 +91,5 @@
     "preparing": "Menyiapkan…",
     "exported": "PDF berhasil diunduh",
     "failed": "Gagal membuat PDF — coba lagi."
-  },
-  "itemized": {
-    "title": "Posisi",
-    "carriedForward": "(dilanjutkan)",
-    "empty": "Tidak ada posisi bulan ini."
-  },
-  "composition": {
-    "title": "Komposisi {{group}}",
-    "incomeTitle": "Pemasukan per kategori",
-    "returnTitle": "Hasil investasi per kategori",
-    "legendLine": "{{label}} ({{percent}}%)"
-  },
-  "subtype": {
-    "bank_account": "Rekening Bank",
-    "property": "Properti",
-    "vehicle": "Kendaraan",
-    "stock": "Saham",
-    "mutual_fund": "Reksa Dana",
-    "bond": "Obligasi",
-    "gold": "Emas",
-    "time_deposit": "Deposito",
-    "personal": "Pribadi",
-    "institutional": "Institusional"
-  },
-  "incomeCategory": {
-    "salary": "Gaji",
-    "business": "Usaha",
-    "rental": "Sewa",
-    "gift": "Hadiah",
-    "tax_refund": "Pengembalian pajak",
-    "insurance": "Asuransi",
-    "other": "Lainnya"
-  },
-  "trend": {
-    "title": "Pengeluaran vs pendapatan pasif (12 bulan)",
-    "livingExpensesLegend": "Pengeluaran",
-    "investmentReturnLegend": "Pendapatan pasif (hasil investasi)"
   }
 }

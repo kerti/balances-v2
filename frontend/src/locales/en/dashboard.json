@@ -91,42 +91,5 @@
     "preparing": "Preparing…",
     "exported": "PDF downloaded",
     "failed": "Couldn't generate the PDF — try again."
-  },
-  "itemized": {
-    "title": "Positions",
-    "carriedForward": "(carried forward)",
-    "empty": "No positions this month."
-  },
-  "composition": {
-    "title": "{{group}} composition",
-    "incomeTitle": "Income by category",
-    "returnTitle": "Investment return by category",
-    "legendLine": "{{label}} ({{percent}}%)"
-  },
-  "subtype": {
-    "bank_account": "Bank Accounts",
-    "property": "Properties",
-    "vehicle": "Vehicles",
-    "stock": "Stocks",
-    "mutual_fund": "Mutual Funds",
-    "bond": "Bonds",
-    "gold": "Gold",
-    "time_deposit": "Time Deposits",
-    "personal": "Personal",
-    "institutional": "Institutional"
-  },
-  "incomeCategory": {
-    "salary": "Salary",
-    "business": "Business",
-    "rental": "Rental",
-    "gift": "Gift",
-    "tax_refund": "Tax refund",
-    "insurance": "Insurance",
-    "other": "Other"
-  },
-  "trend": {
-    "title": "Expenses vs. passive income (12 months)",
-    "livingExpensesLegend": "Living expenses",
-    "investmentReturnLegend": "Passive income (investment return)"
   }
 }

@@ -58,19 +58,29 @@ density and per-Position itemization, not its literal landscape 4-column grid.
   the portfolio-size-dependent page count (first noted in 0045) a non-problem. (This vindicates
   0045's original single-column-per-section instinct — only the renderer changes.)
 
-- **Section order:** Header → **Kekayaan Bersih** headline → **STATISTIKA** → **HARTA** → **HUTANG**
-  → **INVESTASI** → **ARUS KAS** → **GRAFIK**. STATISTIKA sits directly under the headline
+- **Section order:** Header → **Net Worth** headline → **Statistics** → **Assets** → **Liabilities**
+  → **Investments** → **Cash Flow** → **Charts**. Statistics sits directly under the headline
   deliberately: it is the household's financial-health scorecard and should be immediately visible.
   It renders as a **placeholder block now** (#412) — reserving the prominent slot so the ratios drop
-  in later with zero reflow.
-  - **HARTA** (Assets), itemized: *Harta Lancar* → Rekening Bank grouped **by owner**; *Harta Tidak
-    Lancar* → Properti, Kendaraan. Subtotals + Jumlah Harta.
-  - **HUTANG** (Liabilities), itemized: Hutang Lembaga / Hutang Pribadi + Jumlah Hutang.
-  - **INVESTASI** (Investments), itemized by subtype: Reksa Dana, Obligasi, Emas, Saham,
-    Peer-to-Peer Lending, Deposito + Jumlah Investasi.
-  - **ARUS KAS**: Kas Masuk (earned income, **by household member** — from the engine's existing
-    per-user `earned_income`) − Kas Keluar (derived living expenses) = Total Arus Kas. Investment
-    P/L is a statistic, not cash flow, and stays in the STATISTIKA panel (deferred).
+  in later with zero reflow. (Section headings render localized at runtime — English above, Indonesian
+  in id-ID — from the `reportCopy` catalog; the domain terms are used here.)
+  - **Assets**, itemized: *Current Assets* → Bank Accounts grouped **by owner**; *Non-current
+    Assets* → Property, Vehicles. Subtotals + Total Assets. (Current vs non-current here is a fixed
+    *presentational* mapping — Bank = current; Property, Vehicles = non-current — not a domain
+    classification; see the dropped bar chart below, which needed a split that genuinely doesn't
+    exist.)
+  - **Liabilities**, itemized: Institutional Debt / Personal Debt + Total Liabilities.
+  - **Investments**, itemized by subtype: Mutual Funds, Bonds, Gold, Stocks, Time Deposits + Total
+    Investments. (The reference template's "Peer-to-Peer Lending" is *not* a domain subtype — the
+    investment subtypes are exactly `stock`/`mutual_fund`/`bond`/`gold`/`time_deposit` — so it is
+    dropped, not rendered as an empty group.)
+  - **Receivables**, itemized (group only, no subtypes), rendered only when the household has any.
+    Absent from the reference template but part of net worth (`nw = assets + investments +
+    receivables − liabilities`); omitting it would leave the itemized sections not summing to the
+    headline.
+  - **Cash Flow**: Cash In (earned income, **by household member** — from the engine's existing
+    per-user `earned_income`) − Cash Out (derived living expenses) = Net Cash Flow. Investment
+    P/L is a statistic, not cash flow, and stays in the Statistics panel (deferred).
 
 - **All currencies tracked in the reported month are surfaced.** Each itemized Position shows its
   **native** amount + currency where native ≠ reporting (e.g. a US stock: `$1,000` → `Rp
@@ -82,10 +92,12 @@ density and per-Position itemization, not its literal landscape 4-column grid.
 
 - **Charts: hand-drawn vector via `fpdf` primitives** (arcs/polylines), not raster or SVG — crisp
   at any zoom, theme-independent, no image pipeline, no extra dependency. Three composition donuts
-  (Komposisi Harta / Investasi / Hutang) + a 12-month trend line. The branch's `pieChartMath` /
-  `lineChartMath` (pure TS) port to Go as the geometry half. The reference template's
-  Harta-vs-Hutang bar stays dropped — no liquid/current-vs-non-current split exists in the domain
-  (unchanged from 0045's earlier pass).
+  (Assets / Investments / Liabilities by subtype) + a 12-month trend line. The branch's
+  `pieChartMath` / `lineChartMath` (pure TS) port to Go as the geometry half. The reference
+  template's current-assets-vs-current-liabilities bar stays dropped — no liquid/current-vs-non-
+  current split exists across the domain (unchanged from 0045's earlier pass; the Assets-section
+  current/non-current grouping above is presentational only and does not generalize to a bar that
+  needs the same split on the liabilities side).
 
 - **Font: embed Geist (Regular + Bold)** via `go:embed` + `fpdf.AddUTF8Font`, matching the web UI
   (OFL, redistributable; Latin coverage suffices for Indonesian). Two TTFs compiled into the

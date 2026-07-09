@@ -388,48 +388,16 @@ export type MonthlyReport = {
   nw_receivables: string;
   nw_investments: string;
   // Income statement (slice 2). Derived lines are null on the first-month
-  // baseline (no prior month — ADR-0006).
+  // baseline (no prior month — ADR-0006). Per-category / per-subtype columns
+  // also exist on the wire; typed here only as totals until a drill-down needs them.
   earned_income_total: string | null;
-  // Per-category earned income (ADR-0045 composition chart drill-down). Same
-  // baseline-null rule as the total.
-  earned_income_salary: string | null;
-  earned_income_business: string | null;
-  earned_income_rental: string | null;
-  earned_income_gift: string | null;
-  earned_income_tax_refund: string | null;
-  earned_income_insurance: string | null;
-  earned_income_other: string | null;
   investment_return_total: string | null;
-  // Per-subtype investment return (ADR-0045 composition chart drill-down).
-  investment_return_stock: string | null;
-  investment_return_mutual_fund: string | null;
-  investment_return_bond: string | null;
-  investment_return_gold: string | null;
-  investment_return_time_deposit: string | null;
   asset_value_change: string | null; // property + vehicle non-cash mark change
   derived_living_expenses: string | null; // signed cash-spending residual
   user_breakdowns: Record<string, UserBreakdown>; // keyed by user_id and "joint"
   stale_positions: StalePosition[]; // positions carried forward this month (#50)
   fx_rates_used: Record<string, string>; // currency -> rate applied this month
   missing_fx: MissingFx[]; // positions/flows excluded for want of a rate
-};
-
-// PositionDetail is one position's itemized value at a specific report month
-// (ADR-0045), served by GET /api/reports/{yearMonth}/positions. Mirrors
-// backend repo.PositionDetail — not a materialized row, computed fresh on
-// every read the same way the aggregate report is when stale.
-export type PositionDetail = {
-  position_id: string;
-  name: string;
-  group: "asset" | "liability" | "receivable" | "investment";
-  subtype: string;
-  ownership_type: "sole" | "joint";
-  sole_owner_user_id: string | null;
-  native_currency: string;
-  native_amount: string;
-  amount: string; // reporting currency
-  stale: boolean;
-  stale_month: string | null;
 };
 
 // StalePosition is one position whose value this month was carried forward from

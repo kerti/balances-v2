@@ -1,10 +1,12 @@
 package reports_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -193,73 +195,41 @@ func TestReportsHandlers_Rebuild(t *testing.T) {
 	})
 }
 
-type positionDetailDTO struct {
-	PositionID     string `json:"position_id"`
-	Name           string `json:"name"`
-	Group          string `json:"group"`
-	Subtype        string `json:"subtype"`
-	NativeCurrency string `json:"native_currency"`
-	NativeAmount   string `json:"native_amount"`
-	Amount         string `json:"amount"`
-	Stale          bool   `json:"stale"`
-}
-
-// covers: INV-FINANCE-18
-func TestReportsHandlers_Positions(t *testing.T) {
+func TestReportsHandlers_PDF(t *testing.T) {
 	router, user := newHarness(t)
 
-	t.Run("200 known month returns the seeded position", func(t *testing.T) {
-		rec := do(t, router, "/reports/2026-01/positions", &user)
+	t.Run("200 returns a PDF with an attachment filename", func(t *testing.T) {
+		rec := do(t, router, "/reports/2026-01/pdf", &user)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("status: got %d (%s)", rec.Code, rec.Body.String())
 		}
-		var list []positionDetailDTO
-		if err := json.NewDecoder(rec.Body).Decode(&list); err != nil {
-			t.Fatalf("decode: %v", err)
+		if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
+			t.Errorf("content-type: got %q, want application/pdf", ct)
 		}
-		if len(list) != 1 {
-			t.Fatalf("got %d positions, want 1", len(list))
+		if cd := rec.Header().Get("Content-Disposition"); !strings.Contains(cd, `filename="Balances_2026-01.pdf"`) {
+			t.Errorf("content-disposition: got %q", cd)
 		}
-		p := list[0]
-		if p.Group != "asset" || p.Subtype != "bank_account" {
-			t.Errorf("group/subtype: got %s/%s", p.Group, p.Subtype)
-		}
-		if p.Amount != "100" || p.NativeAmount != "100" || p.NativeCurrency != "IDR" {
-			t.Errorf("amount: got %s %s (reporting %s)", p.NativeAmount, p.NativeCurrency, p.Amount)
-		}
-		if p.Stale {
-			t.Errorf("2026-01 position flagged stale, should be fresh")
-		}
-	})
-
-	t.Run("carried-forward month is flagged stale", func(t *testing.T) {
-		rec := do(t, router, "/reports/2026-02/positions", &user)
-		if rec.Code != http.StatusOK {
-			t.Fatalf("status: got %d (%s)", rec.Code, rec.Body.String())
-		}
-		var list []positionDetailDTO
-		_ = json.NewDecoder(rec.Body).Decode(&list)
-		if len(list) != 1 || !list[0].Stale {
-			t.Errorf("Feb (no fresh snapshot) not carried-forward+stale: %+v", list)
+		if !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+			t.Errorf("body is not a PDF (prefix %q)", rec.Body.Bytes()[:min(8, rec.Body.Len())])
 		}
 	})
 
 	t.Run("404 month out of range", func(t *testing.T) {
-		rec := do(t, router, "/reports/1999-01/positions", &user)
+		rec := do(t, router, "/reports/1999-01/pdf", &user)
 		if rec.Code != http.StatusNotFound {
 			t.Errorf("status: got %d, want 404", rec.Code)
 		}
 	})
 
 	t.Run("400 bad year_month", func(t *testing.T) {
-		rec := do(t, router, "/reports/not-a-month/positions", &user)
+		rec := do(t, router, "/reports/not-a-month/pdf", &user)
 		if rec.Code != http.StatusBadRequest {
 			t.Errorf("status: got %d, want 400", rec.Code)
 		}
 	})
 
 	t.Run("requires auth", func(t *testing.T) {
-		rec := do(t, router, "/reports/2026-01/positions", nil)
+		rec := do(t, router, "/reports/2026-01/pdf", nil)
 		if rec.Code != http.StatusUnauthorized {
 			t.Errorf("status: got %d, want 401", rec.Code)
 		}

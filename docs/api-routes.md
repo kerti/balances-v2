@@ -146,7 +146,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/reports/` |
 | POST | `/api/reports/rebuild` |
 | GET | `/api/reports/{yearMonth}` |
-| GET | `/api/reports/{yearMonth}/positions` |
+| GET | `/api/reports/{yearMonth}/pdf` |
 | POST | `/api/reports/{yearMonth}/rebuild` |
 | GET | `/api/tags/` |
 | POST | `/api/tags/` |

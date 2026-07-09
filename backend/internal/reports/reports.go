@@ -9,6 +9,7 @@ package reports
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
+	"github.com/kerti/balances-v2/backend/internal/reports/pdf"
 	"github.com/shopspring/decimal"
 )
 
@@ -36,8 +38,59 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Post("/rebuild", h.handleRebuildAll)
 		r.Get("/{yearMonth}", h.handleGet)
 		r.Post("/{yearMonth}/rebuild", h.handleRebuildMonth)
-		r.Get("/{yearMonth}/positions", h.handlePositions)
+		r.Get("/{yearMonth}/pdf", h.handlePDF)
 	})
+}
+
+// handlePDF renders the month's report as a native PDF (ADR-0045). Reporting
+// currency is the household's; locale comes from the authenticated user's
+// stored preference (like transactional emails, ADR-0035) — no query params.
+// Same staleness-refresh path as handleGet.
+func (h *Handlers) handlePDF(w http.ResponseWriter, r *http.Request) {
+	ym, ok := parseYearMonth(chi.URLParam(r, "yearMonth"))
+	if !ok {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
+		return
+	}
+	ctx := r.Context()
+	row, err := h.repo.GetReport(ctx, ym)
+	if err != nil {
+		httperr.WriteRepo(w, "get report", err)
+		return
+	}
+	positions, err := h.repo.GetPositionDetail(ctx, ym)
+	if err != nil {
+		httperr.WriteRepo(w, "get position detail", err)
+		return
+	}
+	series, err := h.repo.ListReports(ctx)
+	if err != nil {
+		httperr.WriteRepo(w, "list reports", err)
+		return
+	}
+	members, err := h.repo.Members(ctx)
+	if err != nil {
+		httperr.WriteRepo(w, "household members", err)
+		return
+	}
+	currency, err := h.repo.ReportingCurrency(ctx)
+	if err != nil {
+		httperr.WriteRepo(w, "reporting currency", err)
+		return
+	}
+	locale := "en-GB"
+	if u, ok := auth.UserFromContext(ctx); ok && u.Locale != "" {
+		locale = u.Locale
+	}
+	body, err := pdf.Render(buildPDFInput(row, positions, series, members, currency, locale))
+	if err != nil {
+		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="Balances_%s.pdf"`, ym.Format("2006-01")))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(body)
 }
 
 // reportResponse is the API shape: net worth + group breakdowns + the income
@@ -184,24 +237,6 @@ func (h *Handlers) handleRebuildMonth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.handleGet(w, r)
-}
-
-// handlePositions serves the itemized per-position breakdown for one month —
-// the data behind the PDF export's detail sections (ADR-0045). repo.PositionDetail
-// already carries its own json tags (no backing DB row to build a response DTO
-// from, unlike toResponse above), so the rows serialise directly.
-func (h *Handlers) handlePositions(w http.ResponseWriter, r *http.Request) {
-	ym, ok := parseYearMonth(chi.URLParam(r, "yearMonth"))
-	if !ok {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
-		return
-	}
-	rows, err := h.repo.GetPositionDetail(r.Context(), ym)
-	if err != nil {
-		httperr.WriteRepo(w, "get position detail", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, rows)
 }
 
 // ----- helpers ------------------------------------------------------------

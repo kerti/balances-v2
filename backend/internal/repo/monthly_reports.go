@@ -91,6 +91,16 @@ func (r *MonthlyReportRepo) GetReport(ctx context.Context, yearMonth time.Time) 
 	return &row, nil
 }
 
+// Members returns the household's users, for resolving position-owner and
+// per-member cash-flow labels in the PDF report (ADR-0045).
+func (r *MonthlyReportRepo) Members(ctx context.Context) ([]db.User, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.q.ListUsersByHousehold(ctx, hid)
+}
+
 // GetPositionDetail resolves every active position's value at yearMonth —
 // the itemized breakdown behind the PDF export (ADR-0045). Refreshes
 // materialized reports first, same as GetReport, so the aggregate totals and
