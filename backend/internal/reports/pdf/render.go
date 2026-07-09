@@ -29,14 +29,15 @@ var geistRegular []byte
 //go:embed fonts/Geist-Bold.ttf
 var geistBold []byte
 
-// Palette: ink/muted match the app's primary + muted text; accent is the app's
-// teal primary (oklch(0.609 0.126 221.7) ≈ #0891B2); gain/loss are the
-// up/down colours for the net-worth delta and negative amounts; rule is the
-// hairline colour for table borders.
+// Palette: ink/muted match the app's primary + muted text; accent is the brand
+// indigo (docs/brand/logo.md — the documented brand colour, same as the
+// wordmark, so the report's headings/totals match its own mark rather than the
+// app's teal UI primary); gain/loss are the up/down colours for the net-worth
+// delta and negative amounts; rule is the hairline colour for table borders.
 var (
 	ink    = [3]int{0x0F, 0x17, 0x2A}
 	muted  = [3]int{0x64, 0x74, 0x8B}
-	accent = [3]int{0x08, 0x91, 0xB2}
+	accent = brandIndigo // #6366F1 — kept identical to the wordmark's accent
 	gain   = [3]int{0x05, 0x96, 0x69}
 	loss   = [3]int{0xDC, 0x26, 0x26}
 	rule   = [3]int{0xCB, 0xD5, 0xE1}
@@ -132,7 +133,7 @@ func (d *doc) footer() {
 type lineOpt struct {
 	bold      bool
 	mutedText bool
-	accent    bool // teal — section/net totals
+	accent    bool // brand indigo — section/net totals
 	negative  bool // red — deficits and losses (wins over accent)
 	size      float64
 	topBorder bool

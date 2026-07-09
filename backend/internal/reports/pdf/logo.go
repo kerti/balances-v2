@@ -9,9 +9,10 @@ import "github.com/go-pdf/fpdf"
 // a fulcrum dot (the monthly snapshot), a beam with two hanging stacks reading
 // as asset (left, indigo, taller) vs liability (right, slate) bars.
 //
-// These are the logo's own palette (docs/brand/logo.md) — the constant indigo
-// brand accent, distinct from the report's teal UI accent. The app carries the
-// same duality (indigo wordmark, teal primary), so the report matches it.
+// These are the logo's own palette (docs/brand/logo.md). The constant indigo
+// brand accent is the report's accent too (see render.go's `accent`), so the
+// mark and the section headings/totals are one colour — the documented brand
+// colour, not the app's teal UI primary.
 var (
 	brandIndigo    = [3]int{0x63, 0x66, 0xF1} // fulcrum dot + top asset bar
 	brandIndigoMid = [3]int{0x81, 0x8C, 0xF8} // asset bar 2
