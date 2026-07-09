@@ -135,6 +135,10 @@ density and per-Position itemization, not its literal landscape 4-column grid.
   formulas encode household-specific assumptions that need deliberate work, not lifting from a
   template built for a different purpose.
 
+- **App version in the footer stays deferred to #414.** The per-page footer carries branding +
+  page number now; the version isn't plumbed server-side yet (no ldflag/const/env) and gets its own
+  PR (build-time `git describe` ldflag → config → footer, `dev` fallback).
+
 ## Considered alternatives
 
 - **Keep client-side `@react-pdf/renderer` and build the dense layout there.** Rejected — react-pdf's

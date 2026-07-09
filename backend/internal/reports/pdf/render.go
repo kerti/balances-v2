@@ -108,9 +108,9 @@ func (d *doc) fmtMonthYear(t time.Time) string {
 }
 
 // footer draws the branding + page number on every page (ADR-0045). The app
-// version is deliberately absent for now — it isn't plumbed server-side yet;
-// tracked as a follow-up. "{nb}" is the total-pages alias fpdf substitutes at
-// output time.
+// version is deliberately absent for now — it isn't plumbed server-side yet
+// (tracked in #414, its own PR). "{nb}" is the total-pages alias fpdf
+// substitutes at output time.
 func (d *doc) footer() {
 	d.pdf.SetY(-12)
 	d.pdf.SetDrawColor(rule[0], rule[1], rule[2])
