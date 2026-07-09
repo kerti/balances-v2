@@ -107,7 +107,12 @@ weighed: the sign-in notice and whether to demo-block `restore/commit`.
 
 - Standing up demo requires setting `AUTH_LOCAL_ENABLED=true`, `FOUNDING_DISABLED=true`, `DEMO_MODE=true`,
   and `DEMO_RESET_TOKEN=<secret>` on the `balances-demo` Fly app, plus the matching token as a
-  `demo` GitHub Environment secret for the reset workflow.
+  `demo` GitHub Environment secret for the reset workflow. **Correction (2026-07-09):** moved to a
+  plain repo secret instead — any job referencing a GitHub Environment auto-registers a Deployment
+  against it, so the nightly cron was stamping `demo`'s deployment history with a bogus entry (pointing
+  at `main` HEAD, not the live tag) on every reset, making demo look newer than the code actually
+  running on it. `FLY_API_TOKEN` stays Environment-scoped for real deploys; `DEMO_RESET_TOKEN` doesn't
+  need that protection (worst case: wipes/reseeds demo data, recoverable by re-running the reset).
 - A future non-demo use of `FOUNDING_DISABLED` (e.g. a self-hoster freezing their instance) is
   unaffected — it isn't bundled into `DEMO_MODE`.
 - `wipeHousehold` gains a third caller (reset) alongside restore and Erasure — same "every

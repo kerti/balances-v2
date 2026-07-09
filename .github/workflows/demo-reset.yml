@@ -4,6 +4,17 @@
 # domain config) rather than a real domain name. The reset endpoint itself
 # only exists when DEMO_MODE is set (ADR-0041) — everywhere else this would
 # 404, so there is no environment-routing logic to get wrong here.
+#
+# Deliberately does NOT set `environment: demo` on the job: any job that
+# references a GitHub Environment auto-registers a Deployment against it, and
+# this workflow never deploys anything (it only POSTs to a reset endpoint on
+# the already-running app) — that was stamping the `demo` Environment's
+# deployment history with a bogus nightly entry pointing at whatever `main`
+# HEAD happened to be, making demo look newer than the code actually running
+# on it. DEMO_RESET_TOKEN is a plain repo secret instead — it's a low-blast-
+# radius admin token scoped to wiping/reseeding demo data (recoverable by
+# re-running the reset), not the Fly control-plane credential
+# (FLY_API_TOKEN), which stays Environment-scoped for real deploys.
 name: demo-reset
 on:
   schedule:
@@ -15,7 +26,6 @@ on:
 jobs:
   reset:
     runs-on: ubuntu-latest
-    environment: demo # scopes access to the demo Environment's DEMO_RESET_TOKEN
     steps:
       - name: Trigger demo reset
         run: |
