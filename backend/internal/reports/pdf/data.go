@@ -62,7 +62,8 @@ type Input struct {
 	Locale            string // BCP-47, from the authenticated user's preference
 	ReportingCurrency string
 	NetWorth          string // reporting-currency decimal string
-	Delta             *Delta // nil on the baseline month
+	Delta             *Delta // month-over-month; nil when no prior month
+	YoY               *Delta // year-over-year; nil when no month a year earlier
 	Positions         []Position
 	CashFlow          *CashFlow // nil on the baseline month
 	FxRates           []FxRate

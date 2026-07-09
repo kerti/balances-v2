@@ -66,6 +66,7 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		ReportingCurrency: currency,
 		NetWorth:          row.NwTotal.String(),
 		Delta:             buildDelta(row, series),
+		YoY:               buildYoY(row, series),
 		Positions:         pos,
 		CashFlow:          buildCashFlow(row, nameByID, joint),
 		FxRates:           buildFxRates(row.FxRatesUsed),
@@ -73,9 +74,8 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 	}
 }
 
-// buildDelta computes the net-worth change against the report immediately
-// preceding row's month. Nil when there is no earlier month, or the previous
-// net worth is zero (percentage undefined).
+// buildDelta computes the month-over-month net-worth change: against the report
+// immediately preceding row's month (handles gaps in the series).
 func buildDelta(row *db.MonthlyReport, series []db.MonthlyReport) *pdf.Delta {
 	var prev *db.MonthlyReport
 	for i := range series {
@@ -84,6 +84,25 @@ func buildDelta(row *db.MonthlyReport, series []db.MonthlyReport) *pdf.Delta {
 			prev = r
 		}
 	}
+	return deltaFrom(row, prev)
+}
+
+// buildYoY computes the year-over-year change: against the same month one year
+// earlier. Nil when that month isn't in the reported range.
+func buildYoY(row *db.MonthlyReport, series []db.MonthlyReport) *pdf.Delta {
+	target := row.YearMonth.AddDate(-1, 0, 0)
+	for i := range series {
+		s := &series[i]
+		if s.YearMonth.Year() == target.Year() && s.YearMonth.Month() == target.Month() {
+			return deltaFrom(row, s)
+		}
+	}
+	return nil
+}
+
+// deltaFrom builds a Delta from row against prev. Nil when prev is absent or its
+// net worth is zero (percentage undefined).
+func deltaFrom(row, prev *db.MonthlyReport) *pdf.Delta {
 	if prev == nil || prev.NwTotal.IsZero() {
 		return nil
 	}

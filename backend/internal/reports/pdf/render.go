@@ -225,39 +225,48 @@ func (d *doc) headline() {
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
 	d.pdf.SetFont("Geist", "", 10)
 	d.pdf.CellFormat(0, 6, d.c.netWorth, "", 1, "L", false, 0, "")
+
+	// Net-worth figure on the left; MoM + YoY comparisons stacked, right-aligned,
+	// on the same band to the right of the figure.
+	y0 := d.pdf.GetY()
 	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 	d.pdf.SetFont("Geist", "B", 24)
-	d.pdf.CellFormat(0, 12, d.money(d.in.NetWorth), "", 1, "L", false, 0, "")
-	d.deltaLine()
+	d.pdf.SetXY(d.x0, y0)
+	d.pdf.CellFormat(0, 12, d.money(d.in.NetWorth), "", 0, "L", false, 0, "")
+
+	yy := y0 + 1.5
+	for _, dl := range []*Delta{d.in.Delta, d.in.YoY} {
+		if dl == nil {
+			continue
+		}
+		text, col := d.deltaText(dl)
+		d.pdf.SetFont("Geist", "", 8.5)
+		d.pdf.SetTextColor(col[0], col[1], col[2])
+		d.pdf.SetXY(d.x0, yy)
+		d.pdf.CellFormat(d.w, 4.5, text, "", 0, "R", false, 0, "")
+		yy += 5
+	}
+	d.pdf.SetXY(d.x0, y0+13)
 }
 
-// deltaLine renders the month-over-month net-worth change under the headline,
-// coloured green (gain) or red (loss). No-op on the baseline month.
-func (d *doc) deltaLine() {
-	dl := d.in.Delta
-	if dl == nil {
-		return
-	}
+// deltaText formats a net-worth change ("+Rp 110.000.000 (+1,8%) vs May 2026")
+// and its colour — green (gain) or red (loss). The compared month naming (prior
+// month for MoM, year-ago month for YoY) makes each line self-describing.
+func (d *doc) deltaText(dl *Delta) (string, [3]int) {
 	amt := decAmt(dl.Amount)
-	up := !amt.IsNegative()
-	col := loss
-	sign := "-"
-	if up {
-		col, sign = gain, "+"
+	col, sign := gain, "+"
+	if amt.IsNegative() {
+		col, sign = loss, "-"
 	}
-	pctSign := "-"
-	if dl.Percent >= 0 {
-		pctSign = "+"
+	pctSign := "+"
+	if dl.Percent < 0 {
+		pctSign = "-"
 	}
-	pct := math.Abs(dl.Percent)
 	text := fmt.Sprintf("%s%s (%s%s%%) %s",
 		sign, d.money(amt.Abs().String()),
-		pctSign, moneyfmt.FormatNumber(fmt.Sprintf("%.1f", pct), d.in.Locale),
+		pctSign, moneyfmt.FormatNumber(fmt.Sprintf("%.1f", math.Abs(dl.Percent)), d.in.Locale),
 		fmt.Sprintf(d.c.deltaVs, d.fmtMonthYear(dl.Prev)))
-	d.pdf.SetFont("Geist", "", 9)
-	d.pdf.SetTextColor(col[0], col[1], col[2])
-	d.pdf.SetX(d.x0)
-	d.pdf.CellFormat(0, 6, text, "", 1, "L", false, 0, "")
+	return text, col
 }
 
 // statistics renders the deferred (#412) health-indicator panel as a reserved
