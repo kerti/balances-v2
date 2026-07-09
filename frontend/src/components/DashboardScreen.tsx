@@ -84,10 +84,6 @@ export function DashboardScreen() {
         displayCurrencies={displayCurrencies}
         secondary={secondary}
         onSecondaryChange={setSecondaryCurrency}
-        currency={currency}
-        rates={rates ?? []}
-        members={members}
-        me={me}
       />
 
       <HeadlineCard
@@ -176,10 +172,6 @@ function DashboardHeader({
   displayCurrencies,
   secondary,
   onSecondaryChange,
-  currency,
-  rates,
-  members,
-  me,
 }: {
   reports: MonthlyReport[];
   selected: MonthlyReport;
@@ -187,10 +179,6 @@ function DashboardHeader({
   displayCurrencies: string[];
   secondary: string;
   onSecondaryChange: (currency: string) => void;
-  currency: string;
-  rates: FxRate[];
-  members: HouseholdMember[] | undefined;
-  me: Me | null | undefined;
 }) {
   const { t } = useTranslation("dashboard");
   return (
@@ -220,15 +208,7 @@ function DashboardHeader({
           selected={selected.year_month}
           onSelect={onSelect}
         />
-        <ReportPdfButton
-          reports={reports}
-          selected={selected}
-          currency={currency}
-          secondaryCurrency={secondary}
-          rates={rates}
-          members={members}
-          me={me}
-        />
+        <ReportPdfButton selected={selected} />
       </div>
     </div>
   );

@@ -27,3 +27,4 @@ its rules are unit-tested without a container.
 | INV-FINANCE-15 | A foreign amount is converted at the latest rate ≤ M (carry-forward) and the rate is recorded in fx_rates_used | ADR-0002 | Critical |
 | INV-FINANCE-16 | A foreign currency with no rate ≤ M is excluded from net worth and flagged in missing_fx — never summed 1:1 | ADR-0002 | Critical |
 | INV-FINANCE-17 | With multi-currency off, amounts sum at face value — no conversion, missing_fx, or fx_rates_used | ADR-0002 | High |
+| INV-FINANCE-18 | Itemized per-position detail (`GET /api/reports/{yearMonth}/positions`) sums, per group, to the same `nw_assets`/`nw_liabilities`/`nw_investments`/`nw_receivables` the aggregate report shows for that month — same carry-forward/FX/termination rules, extracted not reimplemented | ADR-0006, ADR-0045 | Critical |

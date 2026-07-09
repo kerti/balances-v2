@@ -1,10 +1,12 @@
 package reports_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -187,6 +189,47 @@ func TestReportsHandlers_Rebuild(t *testing.T) {
 
 	t.Run("rebuild requires auth", func(t *testing.T) {
 		rec := post(t, router, "/reports/rebuild", nil)
+		if rec.Code != http.StatusUnauthorized {
+			t.Errorf("status: got %d, want 401", rec.Code)
+		}
+	})
+}
+
+func TestReportsHandlers_PDF(t *testing.T) {
+	router, user := newHarness(t)
+
+	t.Run("200 returns a PDF with an attachment filename", func(t *testing.T) {
+		rec := do(t, router, "/reports/2026-01/pdf", &user)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status: got %d (%s)", rec.Code, rec.Body.String())
+		}
+		if ct := rec.Header().Get("Content-Type"); ct != "application/pdf" {
+			t.Errorf("content-type: got %q, want application/pdf", ct)
+		}
+		if cd := rec.Header().Get("Content-Disposition"); !strings.Contains(cd, `filename="Balances_2026-01.pdf"`) {
+			t.Errorf("content-disposition: got %q", cd)
+		}
+		if !bytes.HasPrefix(rec.Body.Bytes(), []byte("%PDF-")) {
+			t.Errorf("body is not a PDF (prefix %q)", rec.Body.Bytes()[:min(8, rec.Body.Len())])
+		}
+	})
+
+	t.Run("404 month out of range", func(t *testing.T) {
+		rec := do(t, router, "/reports/1999-01/pdf", &user)
+		if rec.Code != http.StatusNotFound {
+			t.Errorf("status: got %d, want 404", rec.Code)
+		}
+	})
+
+	t.Run("400 bad year_month", func(t *testing.T) {
+		rec := do(t, router, "/reports/not-a-month/pdf", &user)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("status: got %d, want 400", rec.Code)
+		}
+	})
+
+	t.Run("requires auth", func(t *testing.T) {
+		rec := do(t, router, "/reports/2026-01/pdf", nil)
 		if rec.Code != http.StatusUnauthorized {
 			t.Errorf("status: got %d, want 401", rec.Code)
 		}

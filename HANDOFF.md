@@ -59,8 +59,12 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 **M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`).** Prioritized by
 real-user feedback from M7 (not pre-specified). Next, in order:
 
-1. **PDF export (#187)** — shipped: client-side via `@react-pdf/renderer`, mirrors the dashboard's
-   aggregate content (ADR-0044). The M6→M8 pivot item is done. Also riding along: #299 (privacy
+1. **PDF export (#187 → #413)** — shipped v1 client-side (ADR-0044); **#413 pivots it server-side**
+   (ADR-0045 supersedes 0044's render location): native-Go `go-pdf/fpdf` renders a portrait,
+   itemized financial statement (per-Position breakdown, vector composition donuts + trend, embedded
+   Geist, server-side `x/text` money formatting golden-tested against `Intl`). `GET
+   /api/reports/{yearMonth}/pdf` replaces the client renderer + the `/positions` JSON endpoint; drops
+   the ~1.4MB react-pdf chunk (#394); ratios deferred (#412). Also riding along: #299 (privacy
    policy, not blocked on prod) — small M7 leftover that didn't gate anything, moved here so M7 could
    close clean. #163 (email wordmark raster) shipped separately (`#315`). See ROADMAP M8.
 2. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
