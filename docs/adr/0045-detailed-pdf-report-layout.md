@@ -84,6 +84,13 @@ density and per-Position itemization, not its literal landscape 4-column grid.
   "secondary currency captured from the Q15c toggle at export": there is no secondary-currency
   concept and no currency parameter — the currency set is derived from the month's data.
 
+- **Exact-zero positions are omitted** (drained accounts, sold-out holdings, paid-off debts). A
+  zero balance contributes nothing to any subtotal or to net worth, so every figure is identical
+  whether it is shown or not — the omission is cosmetic, not a reconciliation change, and a
+  household statement reads cleaner without empty line items. Filtered in the input builder, not the
+  renderer. No toggle: a position to retire for good is *terminated* (already excluded); a
+  zero-but-active position is transient. Near-zero real balances are kept (exact zero only).
+
 - **Charts: hand-drawn vector via `fpdf` primitives** (arcs/polylines), not raster or SVG — crisp
   at any zoom, theme-independent, no image pipeline, no extra dependency. Three composition donuts
   (Assets / Investments / Liabilities by subtype) + a 12-month trend line. The branch's

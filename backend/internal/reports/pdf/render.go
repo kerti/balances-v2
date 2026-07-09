@@ -115,13 +115,18 @@ func (d *doc) footer() {
 	d.pdf.SetY(-12)
 	d.pdf.SetDrawColor(rule[0], rule[1], rule[2])
 	d.pdf.SetLineWidth(0.2)
-	d.pdf.Line(d.x0, d.pdf.GetY(), d.x0+d.w, d.pdf.GetY())
-	d.pdf.Ln(1.5)
+	yLine := d.pdf.GetY()
+	d.pdf.Line(d.x0, yLine, d.x0+d.w, yLine)
+
+	// Full-colour brand lockup on the left; page number vertically centred on
+	// the same band on the right.
+	const glyphH = 4.0
+	logoY := yLine + 2.5
+	drawLogo(d.pdf, d.x0, logoY, glyphH, 9, ink)
 	d.pdf.SetFont("Geist", "", 7.5)
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
-	d.pdf.SetX(d.x0)
-	d.pdf.CellFormat(d.w/2, 5, "Balances", "", 0, "L", false, 0, "")
-	d.pdf.CellFormat(d.w/2, 5, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "R", false, 0, "")
+	d.pdf.SetXY(d.x0, logoY)
+	d.pdf.CellFormat(d.w, glyphH, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "RM", false, 0, "")
 }
 
 type lineOpt struct {
@@ -210,9 +215,11 @@ func (d *doc) position(p Position, indent float64) {
 // ---- sections ---------------------------------------------------------------
 
 func (d *doc) header() {
+	y0 := d.pdf.GetY()
+	const glyphH = 9.5
+	drawLogo(d.pdf, d.x0, y0, glyphH, 22, ink) // full-colour brand lockup
+	d.pdf.SetXY(d.x0, y0+glyphH+2.5)
 	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
-	d.pdf.SetFont("Geist", "B", 16)
-	d.pdf.CellFormat(0, 9, "Balances", "", 1, "L", false, 0, "")
 	d.pdf.SetFont("Geist", "B", 13)
 	d.pdf.CellFormat(0, 8, d.c.title+" — "+d.fmtMonthYear(d.in.YearMonth), "", 1, "L", false, 0, "")
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])

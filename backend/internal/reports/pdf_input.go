@@ -48,6 +48,14 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 
 	pos := make([]pdf.Position, 0, len(positions))
 	for _, p := range positions {
+		// Hide exact-zero positions (drained accounts, sold-out holdings, paid-off
+		// debts): they contribute nothing to any subtotal or net worth, so every
+		// figure is unchanged, and a household statement reads cleaner without empty
+		// line items. A position to retire for good is terminated (already excluded);
+		// near-zero real balances are kept.
+		if p.Amount.IsZero() {
+			continue
+		}
 		pos = append(pos, pdf.Position{
 			Group:          p.Group,
 			Subtype:        p.Subtype,

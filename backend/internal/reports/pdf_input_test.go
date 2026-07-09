@@ -8,6 +8,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
 func ym(y int, m time.Month) time.Time { return time.Date(y, m, 1, 0, 0, 0, 0, time.UTC) }
@@ -139,6 +140,29 @@ func TestBuildTrendAscendingCappedAt12(t *testing.T) {
 	// Last point is the most recent month (Jan 2026), net worth 1000.
 	if trend[len(trend)-1].NetWorth != 1000 {
 		t.Errorf("last trend NW: got %v, want 1000", trend[len(trend)-1].NetWorth)
+	}
+}
+
+func TestBuildPDFInputHidesZeroPositions(t *testing.T) {
+	row := &db.MonthlyReport{YearMonth: ym(2026, time.June), NwTotal: dec("900")}
+	positions := []repo.PositionDetail{
+		{Name: "Everyday", Group: "asset", Subtype: "bank_account", OwnershipType: "joint",
+			NativeCurrency: "IDR", NativeAmount: dec("900"), Amount: dec("900")},
+		{Name: "Drained", Group: "asset", Subtype: "bank_account", OwnershipType: "joint",
+			NativeCurrency: "IDR", NativeAmount: decimal.Zero, Amount: decimal.Zero},
+		{Name: "Paid-off loan", Group: "liability", Subtype: "personal", OwnershipType: "joint",
+			NativeCurrency: "IDR", NativeAmount: decimal.Zero, Amount: decimal.Zero},
+	}
+	in := buildPDFInput(row, positions, nil, nil, "IDR", "en-GB")
+	if len(in.Positions) != 1 {
+		t.Fatalf("positions: got %d, want 1 (two zero rows dropped)", len(in.Positions))
+	}
+	if in.Positions[0].Name != "Everyday" {
+		t.Errorf("kept position: got %q, want Everyday", in.Positions[0].Name)
+	}
+	// Net worth is untouched by the filter — zeros never contributed to it.
+	if in.NetWorth != "900" {
+		t.Errorf("net worth: got %q, want 900", in.NetWorth)
 	}
 }
 
