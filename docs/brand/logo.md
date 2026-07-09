@@ -51,6 +51,36 @@ The **indigo accent is constant across themes**; only the *ink* (post/beam/hange
 | Preview bg light | `#F8FAFC` | (preview only) |
 | Preview bg dark  | `#0B1120` | (preview only) |
 
+## In-app UI tokens
+
+The app's shadcn/Tailwind theme (`frontend/src/index.css`) uses the same **indigo** as the
+logo accent for `--primary`, `--ring`, `--chart-1..5`, and the `--sidebar-*` set — Tailwind v4's
+oklch indigo-300…700 ramp, anchored on **indigo-500 = `#6366F1`** (the exact logo accent hex).
+Neutrals (`--background`, `--card`, `--border`, etc.) stay on shadcn's stone base, unrelated to
+brand colour.
+
+| Token role | Light mode | Dark mode | Tailwind step |
+|---|---|---|---|
+| `--primary` / `--ring` / `--sidebar-primary` / `--sidebar-ring` / `--chart-1` (dark only) | `oklch(0.511 0.262 276.966)` | `oklch(0.673 0.182 276.935)` | indigo-600 / indigo-400 |
+| `--chart-1` (light) | `oklch(0.585 0.233 277.117)` | — | indigo-500 (= `#6366F1`) |
+| `--chart-2` | `oklch(0.511 0.262 276.966)` | `oklch(0.585 0.233 277.117)` | indigo-600 / indigo-500 |
+| `--chart-3` | `oklch(0.457 0.24 277.023)` | `oklch(0.511 0.262 276.966)` | indigo-700 / indigo-600 |
+| `--chart-4` | `oklch(0.673 0.182 276.935)` | `oklch(0.785 0.115 274.713)` | indigo-400 / indigo-300 |
+| `--chart-5` | `oklch(0.785 0.115 274.713)` | `oklch(0.87 0.065 274.039)` | indigo-300 / indigo-200 |
+
+Dark mode shifts the whole ramp **two** Tailwind steps lighter than light mode (not one) —
+indigo's chroma is much higher than a typical shadcn accent (e.g. the cyan ramp this theme
+started from), so a one-step shift that reads fine for cyan still reads too dark/moody for
+indigo against a dark `--background`. Change the whole ramp by swapping the `oklch(...)` values
+for another Tailwind colour's steps, keeping the same role mapping and the two-step light/dark
+offset.
+
+Two component-level palettes are **not** part of this brand ramp — they're categorical palettes
+picked for mutual distinctiveness (colour-blind safe), not brand identity, and use raw hex rather
+than the CSS vars above: `frontend/src/lib/tagColors.ts` (user-defined position tags) and
+`frontend/src/components/CategoryStackChartImpl.tsx` (category stack chart). Leave them as-is
+when re-theming the brand ramp.
+
 ## Geometry
 
 The mark is drawn on a **256 design grid** (`shapes()` in `gen.py`). Tight content bounds are
@@ -99,7 +129,8 @@ the PNG, but the `viewBox` itself is tight. Ship the SVGs, not the PNGs.
 
 ## Notes / open follow-ups
 
-- Not yet wired into the app. To install: favicon `<link rel="icon" href="favicon.svg">`, and a
+- The colour ramp is wired into the app theme (see "In-app UI tokens" above); the SVG mark itself
+  is not yet installed. To install: favicon `<link rel="icon" href="favicon.svg">`, and a
   theme-switching `<AppLogo>` that picks `glyph-light` / `glyph-dark` (and the matching wordmark)
   from the active theme.
 - `IBMPlexSans-var.ttf` and `wordmark_path.json` are **gitignored** (one is downloadable, the
