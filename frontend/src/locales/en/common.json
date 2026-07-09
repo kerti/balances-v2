@@ -5,6 +5,14 @@
     "languageLabel": "Language",
     "withGoogle": "Continue with Google",
     "or": "or",
+    "demoNotice": {
+      "title": "Public demo — please read",
+      "shared": "Everyone shares one account. Anything you enter is visible to, and can be changed by, every other visitor.",
+      "noReal": "Don't enter real or personal information — treat this as a throwaway sandbox.",
+      "wipe": "All data is wiped and reset to sample figures every night.",
+      "warranty": "Provided as-is, with no warranty and no privacy guarantee.",
+      "reset": "See something offensive? Ask for an out-of-cycle reset via the project link below."
+    },
     "local": {
       "signInTab": "Sign in",
       "registerTab": "Create account",

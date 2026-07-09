@@ -47,6 +47,29 @@ export function SignInScreen() {
           <CardDescription>{t("signIn.tagline")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Public-demo notice (ADR-0041, #346/CF-03): the demo is a shared,
+              public, writable sandbox behind one login, so state the terms up
+              front — shared account, no real data, nightly wipe, no warranty,
+              and the maintainer-run out-of-cycle reset (requested via the
+              project link in the footer). `restore-commit` stays live on demo
+              (accept + document, ADR-0041) — this notice is the documented
+              acceptance of the defacement-until-reset window. */}
+          {methods?.demo_mode && (
+            <div
+              data-testid="signin-demo-notice"
+              role="note"
+              className="space-y-2 rounded-md border border-border bg-muted/50 p-3 text-xs text-muted-foreground"
+            >
+              <p className="font-medium text-foreground">{t("signIn.demoNotice.title")}</p>
+              <ul className="list-disc space-y-1 pl-4">
+                <li>{t("signIn.demoNotice.shared")}</li>
+                <li>{t("signIn.demoNotice.noReal")}</li>
+                <li>{t("signIn.demoNotice.wipe")}</li>
+                <li>{t("signIn.demoNotice.warranty")}</li>
+                <li>{t("signIn.demoNotice.reset")}</li>
+              </ul>
+            </div>
+          )}
           <div className="space-y-1">
             <Label htmlFor="signin-language">{t("signIn.languageLabel")}</Label>
             <select
