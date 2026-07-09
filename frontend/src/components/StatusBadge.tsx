@@ -11,7 +11,9 @@ type Props = {
 
 export function StatusBadge({ group, status }: Props) {
   const active = status === "active";
-  const cls = active ? "bg-green-100 text-green-800" : "bg-muted text-muted-foreground";
+  const cls = active
+    ? "bg-green-300 text-green-800 dark:bg-green-100"
+    : "bg-muted text-muted-foreground";
   return (
     <span
       data-testid="status-badge"
