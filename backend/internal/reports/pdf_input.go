@@ -65,11 +65,31 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		Locale:            locale,
 		ReportingCurrency: currency,
 		NetWorth:          row.NwTotal.String(),
+		Delta:             buildDelta(row, series),
 		Positions:         pos,
 		CashFlow:          buildCashFlow(row, nameByID, joint),
 		FxRates:           buildFxRates(row.FxRatesUsed),
 		Trend:             buildTrend(series),
 	}
+}
+
+// buildDelta computes the net-worth change against the report immediately
+// preceding row's month. Nil when there is no earlier month, or the previous
+// net worth is zero (percentage undefined).
+func buildDelta(row *db.MonthlyReport, series []db.MonthlyReport) *pdf.Delta {
+	var prev *db.MonthlyReport
+	for i := range series {
+		r := &series[i]
+		if r.YearMonth.Before(row.YearMonth) && (prev == nil || r.YearMonth.After(prev.YearMonth)) {
+			prev = r
+		}
+	}
+	if prev == nil || prev.NwTotal.IsZero() {
+		return nil
+	}
+	change := row.NwTotal.Sub(prev.NwTotal)
+	pct, _ := change.Div(prev.NwTotal).Mul(decimal.NewFromInt(100)).Float64()
+	return &pdf.Delta{Amount: change.String(), Percent: pct, Prev: prev.YearMonth}
 }
 
 // buildCashFlow reduces the income statement to cash terms (earned income by

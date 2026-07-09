@@ -102,9 +102,10 @@ func drawLegend(pdf *fpdf.Fpdf, x, y float64, slices []slice) float64 {
 	return y
 }
 
-// drawTrend renders a net-worth trend line inside the box (x,y,w,h). Values are
-// scaled to [min,max]; a light baseline + the polyline + end markers are drawn.
-func drawTrend(pdf *fpdf.Fpdf, x, y, w, h float64, pts []TrendPoint) {
+// drawTrend renders a net-worth trend line inside the box (x,y,w,h): a light
+// baseline, a per-month tick under each point, the polyline with end markers,
+// first/last month labels, and a value callout above the latest point.
+func drawTrend(pdf *fpdf.Fpdf, x, y, w, h float64, pts []TrendPoint, lastLabel string) {
 	if len(pts) < 2 {
 		return
 	}
@@ -117,28 +118,36 @@ func drawTrend(pdf *fpdf.Fpdf, x, y, w, h float64, pts []TrendPoint) {
 	if span == 0 {
 		span = 1
 	}
-	// baseline
-	pdf.SetDrawColor(0xE2, 0xE8, 0xF0)
-	pdf.SetLineWidth(0.2)
-	pdf.Line(x, y+h, x+w, y+h)
-
 	sx := func(i int) float64 { return x + w*float64(i)/float64(len(pts)-1) }
 	sy := func(v float64) float64 { return y + h - h*(v-mn)/span }
 
-	pdf.SetDrawColor(chartPalette[0][0], chartPalette[0][1], chartPalette[0][2])
+	// baseline + a tick under each month
+	pdf.SetDrawColor(rule[0], rule[1], rule[2])
+	pdf.SetLineWidth(0.2)
+	pdf.Line(x, y+h, x+w, y+h)
+	for i := range pts {
+		pdf.Line(sx(i), y+h, sx(i), y+h+1)
+	}
+
+	pdf.SetDrawColor(accent[0], accent[1], accent[2])
 	pdf.SetLineWidth(0.5)
 	for i := 0; i < len(pts)-1; i++ {
 		pdf.Line(sx(i), sy(pts[i].NetWorth), sx(i+1), sy(pts[i+1].NetWorth))
 	}
-	// end markers
-	pdf.SetFillColor(chartPalette[0][0], chartPalette[0][1], chartPalette[0][2])
+	pdf.SetFillColor(accent[0], accent[1], accent[2])
 	pdf.Circle(sx(0), sy(pts[0].NetWorth), 0.7, "F")
-	pdf.Circle(sx(len(pts)-1), sy(pts[len(pts)-1].NetWorth), 0.9, "F")
+	pdf.Circle(sx(len(pts)-1), sy(pts[len(pts)-1].NetWorth), 1.1, "F")
+
+	// value callout above the latest point
+	pdf.SetFont("Geist", "B", 7)
+	pdf.SetTextColor(accent[0], accent[1], accent[2])
+	pdf.SetXY(x+w-40, sy(pts[len(pts)-1].NetWorth)-5)
+	pdf.CellFormat(40, 3, lastLabel, "", 0, "R", false, 0, "")
 
 	// first/last month labels
 	pdf.SetFont("Geist", "", 6.5)
 	pdf.SetTextColor(muted[0], muted[1], muted[2])
-	pdf.SetXY(x, y+h+0.5)
+	pdf.SetXY(x, y+h+1.5)
 	pdf.CellFormat(w/2, 3, pts[0].Label, "", 0, "L", false, 0, "")
 	pdf.CellFormat(w/2, 3, pts[len(pts)-1].Label, "", 0, "R", false, 0, "")
 }

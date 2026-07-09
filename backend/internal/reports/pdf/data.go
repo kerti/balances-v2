@@ -46,6 +46,14 @@ type TrendPoint struct {
 	NetWorth float64 // reporting-currency net worth
 }
 
+// Delta is the month-over-month change in net worth against the immediately
+// preceding reported month. Nil when there is no prior month.
+type Delta struct {
+	Amount  string    // signed reporting-currency change (current − previous)
+	Percent float64   // signed percentage change
+	Prev    time.Time // the month compared against
+}
+
 // Input is everything the renderer needs for one month's report. Assembled by
 // the reports handler from the aggregate report, position detail, the report
 // series, and household members.
@@ -54,6 +62,7 @@ type Input struct {
 	Locale            string // BCP-47, from the authenticated user's preference
 	ReportingCurrency string
 	NetWorth          string // reporting-currency decimal string
+	Delta             *Delta // nil on the baseline month
 	Positions         []Position
 	CashFlow          *CashFlow // nil on the baseline month
 	FxRates           []FxRate

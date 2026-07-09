@@ -13,7 +13,9 @@ import (
 	"bytes"
 	_ "embed"
 	"fmt"
+	"math"
 	"sort"
+	"time"
 
 	"github.com/go-pdf/fpdf"
 	"github.com/shopspring/decimal"
@@ -27,10 +29,17 @@ var geistRegular []byte
 //go:embed fonts/Geist-Bold.ttf
 var geistBold []byte
 
-// slate-900 / slate-500, matching the app's primary + muted text colours.
+// Palette: ink/muted match the app's primary + muted text; accent is the app's
+// teal primary (oklch(0.609 0.126 221.7) ≈ #0891B2); gain/loss are the
+// up/down colours for the net-worth delta and negative amounts; rule is the
+// hairline colour for table borders.
 var (
-	ink   = [3]int{0x0F, 0x17, 0x2A}
-	muted = [3]int{0x64, 0x74, 0x8B}
+	ink    = [3]int{0x0F, 0x17, 0x2A}
+	muted  = [3]int{0x64, 0x74, 0x8B}
+	accent = [3]int{0x08, 0x91, 0xB2}
+	gain   = [3]int{0x05, 0x96, 0x69}
+	loss   = [3]int{0xDC, 0x26, 0x26}
+	rule   = [3]int{0xCB, 0xD5, 0xE1}
 )
 
 const (
@@ -57,9 +66,14 @@ func Render(in Input) ([]byte, error) {
 	pdf.AddUTF8FontFromBytes("Geist", "B", geistBold)
 	pdf.SetMargins(marginL, marginT, marginR)
 	pdf.SetAutoPageBreak(true, marginB)
-	pdf.AddPage()
 
 	d := &doc{pdf: pdf, c: copyFor(in.Locale), in: in, x0: marginL, w: 210 - marginL - marginR}
+	pdf.AliasNbPages("{nb}")
+	pdf.SetFooterFunc(d.footer)
+
+	pdf.AddPage()
+	pdf.SetDrawColor(rule[0], rule[1], rule[2])
+	pdf.SetLineWidth(0.2)
 	d.header()
 	d.headline()
 	d.statistics()
@@ -85,17 +99,36 @@ func (d *doc) money(amount string) string {
 	return moneyfmt.FormatCurrency(amount, d.in.ReportingCurrency, d.in.Locale)
 }
 
-func (d *doc) monthYear() string {
+func (d *doc) fmtMonthYear(t time.Time) string {
 	names := monthNamesEN
-	if d.in.Locale[:2] == "id" {
+	if len(d.in.Locale) >= 2 && d.in.Locale[:2] == "id" {
 		names = monthNamesIDCat
 	}
-	return fmt.Sprintf("%s %d", names[int(d.in.YearMonth.Month())], d.in.YearMonth.Year())
+	return fmt.Sprintf("%s %d", names[int(t.Month())], t.Year())
+}
+
+// footer draws the branding + page number on every page (ADR-0045). The app
+// version is deliberately absent for now — it isn't plumbed server-side yet;
+// tracked as a follow-up. "{nb}" is the total-pages alias fpdf substitutes at
+// output time.
+func (d *doc) footer() {
+	d.pdf.SetY(-12)
+	d.pdf.SetDrawColor(rule[0], rule[1], rule[2])
+	d.pdf.SetLineWidth(0.2)
+	d.pdf.Line(d.x0, d.pdf.GetY(), d.x0+d.w, d.pdf.GetY())
+	d.pdf.Ln(1.5)
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0)
+	d.pdf.CellFormat(d.w/2, 5, "Balances", "", 0, "L", false, 0, "")
+	d.pdf.CellFormat(d.w/2, 5, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "R", false, 0, "")
 }
 
 type lineOpt struct {
 	bold      bool
 	mutedText bool
+	accent    bool // teal — section/net totals
+	negative  bool // red — deficits and losses (wins over accent)
 	size      float64
 	topBorder bool
 }
@@ -114,11 +147,16 @@ func (d *doc) line(label, value string, indent float64, o lineOpt) {
 		border = "T"
 	}
 	d.pdf.SetFont("Geist", style, o.size)
-	if o.mutedText {
-		d.pdf.SetTextColor(muted[0], muted[1], muted[2])
-	} else {
-		d.pdf.SetTextColor(ink[0], ink[1], ink[2])
+	col := ink
+	switch {
+	case o.negative:
+		col = loss
+	case o.accent:
+		col = accent
+	case o.mutedText:
+		col = muted
 	}
+	d.pdf.SetTextColor(col[0], col[1], col[2])
 	d.pdf.SetX(d.x0 + indent)
 	d.pdf.CellFormat(d.w-valueW-indent, lineH, label, border, 0, "L", false, 0, "")
 	d.pdf.CellFormat(valueW, lineH, value, border, 1, "R", false, 0, "")
@@ -127,9 +165,11 @@ func (d *doc) line(label, value string, indent float64, o lineOpt) {
 func (d *doc) sectionTitle(title string) {
 	d.pdf.Ln(3)
 	d.pdf.SetFont("Geist", "B", 12)
-	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
+	d.pdf.SetTextColor(accent[0], accent[1], accent[2])
+	d.pdf.SetDrawColor(accent[0], accent[1], accent[2])
 	d.pdf.SetX(d.x0)
 	d.pdf.CellFormat(d.w, 7, title, "B", 1, "L", false, 0, "")
+	d.pdf.SetDrawColor(rule[0], rule[1], rule[2])
 	d.pdf.Ln(1)
 }
 
@@ -162,10 +202,10 @@ func (d *doc) header() {
 	d.pdf.SetFont("Geist", "B", 16)
 	d.pdf.CellFormat(0, 9, "Balances", "", 1, "L", false, 0, "")
 	d.pdf.SetFont("Geist", "B", 13)
-	d.pdf.CellFormat(0, 8, d.c.title+" — "+d.monthYear(), "", 1, "L", false, 0, "")
+	d.pdf.CellFormat(0, 8, d.c.title+" — "+d.fmtMonthYear(d.in.YearMonth), "", 1, "L", false, 0, "")
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
 	d.pdf.SetFont("Geist", "", 9)
-	d.pdf.CellFormat(0, 6, fmt.Sprintf(d.c.subtitle, d.monthYear()), "", 1, "L", false, 0, "")
+	d.pdf.CellFormat(0, 6, fmt.Sprintf(d.c.subtitle, d.fmtMonthYear(d.in.YearMonth)), "", 1, "L", false, 0, "")
 }
 
 func (d *doc) headline() {
@@ -176,6 +216,36 @@ func (d *doc) headline() {
 	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 	d.pdf.SetFont("Geist", "B", 24)
 	d.pdf.CellFormat(0, 12, d.money(d.in.NetWorth), "", 1, "L", false, 0, "")
+	d.deltaLine()
+}
+
+// deltaLine renders the month-over-month net-worth change under the headline,
+// coloured green (gain) or red (loss). No-op on the baseline month.
+func (d *doc) deltaLine() {
+	dl := d.in.Delta
+	if dl == nil {
+		return
+	}
+	amt := decAmt(dl.Amount)
+	up := !amt.IsNegative()
+	col := loss
+	sign := "-"
+	if up {
+		col, sign = gain, "+"
+	}
+	pctSign := "-"
+	if dl.Percent >= 0 {
+		pctSign = "+"
+	}
+	pct := math.Abs(dl.Percent)
+	text := fmt.Sprintf("%s%s (%s%s%%) %s",
+		sign, d.money(amt.Abs().String()),
+		pctSign, moneyfmt.FormatNumber(fmt.Sprintf("%.1f", pct), d.in.Locale),
+		fmt.Sprintf(d.c.deltaVs, d.fmtMonthYear(dl.Prev)))
+	d.pdf.SetFont("Geist", "", 9)
+	d.pdf.SetTextColor(col[0], col[1], col[2])
+	d.pdf.SetX(d.x0)
+	d.pdf.CellFormat(0, 6, text, "", 1, "L", false, 0, "")
 }
 
 // statistics renders the deferred (#412) health-indicator panel as a reserved
@@ -207,6 +277,8 @@ func (d *doc) assets() {
 			for _, p := range ps {
 				d.position(p, 8)
 			}
+			d.line(d.c.total(owner), d.money(sum(ps).String()), 5,
+				lineOpt{mutedText: true, size: 8, topBorder: true})
 		}
 		d.line(d.c.total(subtypeLabel(d.in.Locale, "bank_account")), d.money(sum(banks).String()), 2,
 			lineOpt{bold: true, topBorder: true})
@@ -219,7 +291,7 @@ func (d *doc) assets() {
 	}
 
 	d.line(d.c.total(d.c.assets), d.money(sum(append(append(banks, props...), vehicles...)).String()), 0,
-		lineOpt{bold: true, size: 10.5, topBorder: true})
+		lineOpt{bold: true, accent: true, size: 10.5, topBorder: true})
 }
 
 func (d *doc) liabilities() {
@@ -232,7 +304,7 @@ func (d *doc) liabilities() {
 	d.itemizedSubtype("institutional", inst)
 	d.itemizedSubtype("personal", pers)
 	d.line(d.c.total(d.c.liabilities), d.money(sum(append(inst, pers...)).String()), 0,
-		lineOpt{bold: true, size: 10.5, topBorder: true})
+		lineOpt{bold: true, accent: true, size: 10.5, topBorder: true})
 }
 
 func (d *doc) investments() {
@@ -254,7 +326,7 @@ func (d *doc) investments() {
 		all = append(all, ps...)
 	}
 	d.line(d.c.total(d.c.investments), d.money(sum(all).String()), 0,
-		lineOpt{bold: true, size: 10.5, topBorder: true})
+		lineOpt{bold: true, accent: true, size: 10.5, topBorder: true})
 }
 
 func (d *doc) receivables() {
@@ -267,7 +339,7 @@ func (d *doc) receivables() {
 		d.position(p, 4)
 	}
 	d.line(d.c.total(d.c.receivables), d.money(sum(rs).String()), 0,
-		lineOpt{bold: true, size: 10.5, topBorder: true})
+		lineOpt{bold: true, accent: true, size: 10.5, topBorder: true})
 }
 
 // itemizedSubtype draws a subtype heading, its positions, and a subtotal — the
@@ -301,7 +373,8 @@ func (d *doc) cashFlow() {
 	d.line(d.c.income, d.money(cf.Income), 2, lineOpt{bold: true, topBorder: true})
 	d.subtypeHeader(d.c.cashOut)
 	d.line(d.c.expenses, d.money(cf.Expenses), 5, lineOpt{})
-	d.line(d.c.netCashFlow, d.money(cf.Net), 0, lineOpt{bold: true, size: 10.5, topBorder: true})
+	d.line(d.c.netCashFlow, d.money(cf.Net), 0,
+		lineOpt{bold: true, accent: true, negative: decAmt(cf.Net).IsNegative(), size: 10.5, topBorder: true})
 }
 
 func (d *doc) fxRates() {
@@ -329,11 +402,12 @@ func (d *doc) charts() {
 
 	donuts := []struct {
 		title  string
+		group  string
 		slices []slice
 	}{
-		{d.c.chartAssets, assetsComp},
-		{d.c.chartInvestments, invComp},
-		{d.c.chartLiabilities, liabComp},
+		{d.c.chartAssets, "asset", assetsComp},
+		{d.c.chartInvestments, "investment", invComp},
+		{d.c.chartLiabilities, "liability", liabComp},
 	}
 	colW := d.w / 3
 	top := d.pdf.GetY()
@@ -342,13 +416,19 @@ func (d *doc) charts() {
 		if len(dn.slices) == 0 {
 			continue
 		}
-		cx := d.x0 + colW*float64(j) + colW/2
-		d.pdf.SetXY(d.x0+colW*float64(j), top)
+		colX := d.x0 + colW*float64(j)
+		cx := colX + colW/2
+		d.pdf.SetXY(colX, top)
 		d.pdf.SetFont("Geist", "B", 8.5)
 		d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 		d.pdf.CellFormat(colW, 5, dn.title, "", 0, "C", false, 0, "")
-		drawDonut(d.pdf, cx, top+20, 13, 6.5, dn.slices)
-		endY := drawLegend(d.pdf, d.x0+colW*float64(j)+4, top+36, dn.slices)
+		drawDonut(d.pdf, cx, top+19, 13, 6.5, dn.slices)
+		// group total, centred below the donut
+		d.pdf.SetXY(colX, top+32)
+		d.pdf.SetFont("Geist", "B", 7.5)
+		d.pdf.SetTextColor(accent[0], accent[1], accent[2])
+		d.pdf.CellFormat(colW, 4, d.money(sum(d.positions(dn.group, "")).String()), "", 0, "C", false, 0, "")
+		endY := drawLegend(d.pdf, colX+4, top+38, dn.slices)
 		if endY > maxY {
 			maxY = endY
 		}
@@ -360,8 +440,8 @@ func (d *doc) charts() {
 		d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 		d.pdf.SetX(d.x0)
 		d.pdf.CellFormat(d.w, 5, d.c.chartTrend, "", 1, "L", false, 0, "")
-		drawTrend(d.pdf, d.x0, d.pdf.GetY()+2, d.w, 26, d.in.Trend)
-		d.pdf.SetY(d.pdf.GetY() + 32)
+		drawTrend(d.pdf, d.x0, d.pdf.GetY()+4, d.w, 26, d.in.Trend, d.money(d.in.NetWorth))
+		d.pdf.SetY(d.pdf.GetY() + 34)
 	}
 }
 

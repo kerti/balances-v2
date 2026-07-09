@@ -43,6 +43,9 @@ type reportCopy struct {
 
 	statsSoon string // #412 placeholder caption
 
+	deltaVs    string // "vs %s" — month-over-month comparison suffix
+	footerPage string // "Page %d of %s" (%s = total-pages alias)
+
 	// chart titles
 	chartAssets      string
 	chartInvestments string
@@ -76,6 +79,8 @@ var reportCatalog = map[string]reportCopy{
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* carried forward from an earlier month's statement",
 		statsSoon:        "Financial-health indicators are coming soon.",
+		deltaVs:          "vs %s",
+		footerPage:       "Page %d of %s",
 		chartAssets:      "Assets Composition",
 		chartInvestments: "Investments Composition",
 		chartLiabilities: "Liabilities Composition",
@@ -106,6 +111,8 @@ var reportCatalog = map[string]reportCopy{
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
 		statsSoon:        "Indikator kesehatan keuangan akan segera hadir.",
+		deltaVs:          "vs %s",
+		footerPage:       "Halaman %d dari %s",
 		chartAssets:      "Komposisi Harta",
 		chartInvestments: "Komposisi Investasi",
 		chartLiabilities: "Komposisi Hutang",
