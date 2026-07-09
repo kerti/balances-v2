@@ -17,17 +17,26 @@ bulk-*history* tool, not the recurring low-friction monthly path.
 
 ## The decision
 
-### Entry mode on the [[adr-0043]] lists, not a new screen
+### A per-type entry view launched from the [[adr-0043]] list
 
-The descriptor already renders one list per position type and already owns the row scaffold and the
-web-table/mobile-card split. Bulk entry is a **mode toggle** on that surface: rows flip from read-only
-to prefilled+editable, and the descriptor's per-type shape decides the input. This reuses the
-consolidated list rendering rather than duplicating it, and it **dissolves the Investment
-two-shape problem** — the Stock list is uniformly qty×price rows, the accruing-bond list is uniformly
-accrued rows, because each *type's* descriptor already dictates its input shape. There is no
-heterogeneous mega-screen and no per-group `/enter` screen to keep in sync with the lists.
+Bulk entry is reached by an **"Enter this month" action on each type's list**, which opens a **dedicated
+per-type entry view** backed by the month-scoped entry endpoint. It stays **per-type**, so it still
+**dissolves the Investment two-shape problem** — the Stock entry view is uniformly qty×price rows, the
+accruing-bond view uniformly accrued rows — and there is no heterogeneous mega-screen and no per-group
+`/enter` surface to keep in sync.
 
-The three snapshot input shapes ([[adr-0022]]) map to their lists unchanged: **amount-only**
+**Refinement (found during the S1 build, #421).** An earlier draft made this a *mode toggle that flips
+the same list rows editable in place*. Two frictions killed that: (1) the entry data is a **different
+endpoint** (`GET …/snapshots/entry`, month-scoped eligible positions + carry-forward prefill) with a
+different shape than the list's own query (all positions + latest snapshot) — the same rows can't just
+"become editable"; (2) `PositionListScreen`'s core is a **read-only, sortable component the [[adr-0043]]
+decision explicitly fences against god-config** — injecting editable inputs, batch dirty-state, the
+when-control, and per-row errors into it is exactly the creep that ADR guards. So the entry view is its
+own component that **reuses the descriptor's presentation-neutral projections** (name, secondary line,
+currency) but owns the editable/batch-save interaction; the read-only list core is untouched. The spirit
+of "reuse the descriptor, stay per-type, no new top-level nav" holds — it is launched *from* the list.
+
+The three snapshot input shapes ([[adr-0022]]) map to their entry views unchanged: **amount-only**
 (Asset/Liability/Receivable), **qty×price** (Stock/MutualFund/Gold, and Bond/TimeDeposit total-value),
 **accrued** (Bond/TimeDeposit `accrues` disposition — its coupon-disposition default, 0 vs forced
 entry, carries over from the per-position form).
@@ -75,11 +84,19 @@ for the full dialog, and keeping the row to a single tab-stop (the number) is th
 ### Month-aware eligibility
 
 The list for a target month shows exactly the positions that may legitimately hold a snapshot for that
-`year_month`: `status = active`, **plus** positions terminated in the target month or later (you still
-enter the closing month of an account you closed this month); **excluding** positions created after the
-target month and TimeDeposits outside their placement→maturity window (the same CHECK the per-position
-form enforces). A position terminated before the target month never appears — carry-forward already
-froze it. Changing the target month re-filters the list.
+`year_month`: owned, not deleted, `status = active` **or** terminated in the target month or later (you
+still enter the closing month of an account you closed this month). A position terminated *before* the
+target month never appears — carry-forward already froze it. Changing the target month re-filters the
+list.
+
+**Correction (found during the S1 build, #421):** an earlier draft of this ADR also excluded
+"positions created after the target month." That was dropped. `created_at` is a record timestamp, not
+economic existence, and gating on it breaks two real flows — the importer backfilling years of
+pre-creation history, and onboarding (entering *last* month for an account added today) — while the
+per-position dialog imposes no such guard. Eligibility is therefore ownership + the termination bound
+only. TimeDeposit's placement→maturity window (a genuine economic bound, unlike `created_at`) remains
+in scope for the investment slices, enforced by the same CHECK the per-position form uses — that is a
+real date, not a record timestamp.
 
 ### Atomic batch write + one coalesced report regen
 

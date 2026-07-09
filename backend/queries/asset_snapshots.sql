@@ -91,6 +91,49 @@ SELECT a.display_name, a.native_currency
 FROM assets a
 WHERE a.id = $1 AND a.household_id = $2 AND a.deleted_at IS NULL;
 
+-- ListEligibleAssetIDsForMonth returns the ids of the household's assets that
+-- may legitimately hold a snapshot for the given target month (ADR-0046
+-- month-aware eligibility): owned, not deleted, and either still active or
+-- terminated in the target month or later. An asset terminated *before* the
+-- target month never appears — its forward contribution is already frozen by
+-- the carry-forward rule. There is deliberately no created_at guard: created_at
+-- is a record timestamp, not economic existence, and gating on it would block
+-- legitimate backfill of pre-creation months (the importer) and onboarding
+-- (enter last month for an account added today) — the per-position dialog has
+-- no such guard either.
+-- name: ListEligibleAssetIDsForMonth :many
+SELECT id
+FROM assets
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
+
+-- ListEligibleAssetsForMonth is ListEligibleAssetIDsForMonth plus the display
+-- fields the bulk monthly-entry list needs (ADR-0046): name, native currency,
+-- and subtype so the entry view can group by type (bank account / property /
+-- vehicle). Ordered by subtype then display name so rows arrive pre-grouped —
+-- the subtype strings sort bank_account < property < vehicle, the order the
+-- entry view presents.
+-- name: ListEligibleAssetsForMonth :many
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
+FROM assets
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
+ORDER BY subtype, display_name;
+
+-- ListLatestSnapshotsByAssetIDsAsOfMonth returns, per asset, the most-recent
+-- snapshot at or before the target month — the carry-forward prefill for the
+-- entry list. Month-bounded so a value entered ahead of the target does not
+-- leak backwards as the prefill.
+-- name: ListLatestSnapshotsByAssetIDsAsOfMonth :many
+SELECT DISTINCT ON (asset_id) asset_id, amount, year_month
+FROM asset_snapshots
+WHERE asset_id = ANY(sqlc.arg('asset_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY asset_id, year_month DESC;
+
 -- UpsertAssetSnapshot inserts a snapshot or, when one already exists for the
 -- (asset_id, year_month) pair, overwrites it (last-write-wins) — the importer
 -- needs idempotent re-runs of a multi-year backfill. ON CONFLICT targets the

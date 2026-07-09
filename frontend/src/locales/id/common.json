@@ -244,5 +244,18 @@
     "back": "Kembali",
     "done": "Selesai",
     "progress": "{{current}} dari {{total}}"
+  },
+  "bulkEntry": {
+    "trigger": "Isi bulan ini",
+    "title": "Isi saldo bulan ini",
+    "description": "Perbarui nilai setiap akun untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
+    "empty": "Belum ada akun yang memenuhi syarat untuk bulan ini.",
+    "carriedFrom": "Dibawa dari {{month}}",
+    "noHistory": "Belum ada nilai sebelumnya",
+    "rowError": "Akun ini tidak dapat diisi nilai untuk bulan ini.",
+    "changedCount": "{{count}} diubah",
+    "save": "Simpan semua",
+    "overwritesThisMonth": "Akan menimpa",
+    "undo": "Urungkan"
   }
 }
