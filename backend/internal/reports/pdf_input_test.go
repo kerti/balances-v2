@@ -127,7 +127,7 @@ func TestBuildTrendAscendingCappedAt12(t *testing.T) {
 			NwTotal:   decimal.NewFromInt(int64(1000 + i)),
 		})
 	}
-	trend := buildTrend(series)
+	trend := buildTrend(series, ym(2026, time.January))
 	if len(trend) != 12 {
 		t.Fatalf("trend length: got %d, want 12 (capped)", len(trend))
 	}
@@ -137,9 +137,39 @@ func TestBuildTrendAscendingCappedAt12(t *testing.T) {
 			t.Fatal("empty trend label")
 		}
 	}
-	// Last point is the most recent month (Jan 2026), net worth 1000.
+	// Last point is the reported month (Jan 2026), net worth 1000.
 	if trend[len(trend)-1].NetWorth != 1000 {
 		t.Errorf("last trend NW: got %v, want 1000", trend[len(trend)-1].NetWorth)
+	}
+}
+
+// A report for an older month must chart the 12 months ending at that month, not
+// the latest 12 months on record — the trend must never run past the reported
+// month into its future.
+func TestBuildTrendEndsAtReportingMonth(t *testing.T) {
+	var series []db.MonthlyReport
+	// 18 consecutive months, Jan 2025 .. Jun 2026, NW = month index.
+	for i := 0; i < 18; i++ {
+		series = append(series, db.MonthlyReport{
+			YearMonth: ym(2025, time.January).AddDate(0, i, 0),
+			NwTotal:   decimal.NewFromInt(int64(i)),
+		})
+	}
+	// Report for Mar 2026 (index 14) while Apr–Jun 2026 also exist.
+	trend := buildTrend(series, ym(2026, time.March))
+	if len(trend) != 12 {
+		t.Fatalf("trend length: got %d, want 12", len(trend))
+	}
+	last := trend[len(trend)-1]
+	if last.Label != "Mar 26" {
+		t.Errorf("last label: got %q, want Mar 26 (reported month, not latest)", last.Label)
+	}
+	if last.NetWorth != 14 {
+		t.Errorf("last NW: got %v, want 14 (Mar 2026, not Jun 2026)", last.NetWorth)
+	}
+	// Window is the 12 months ending at Mar 2026 → starts Apr 2025 (index 3).
+	if trend[0].Label != "Apr 25" || trend[0].NetWorth != 3 {
+		t.Errorf("first point: got %q/%v, want Apr 25/3", trend[0].Label, trend[0].NetWorth)
 	}
 }
 

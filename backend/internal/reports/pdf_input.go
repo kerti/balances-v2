@@ -3,6 +3,7 @@ package reports
 import (
 	"encoding/json"
 	"sort"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -78,7 +79,7 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		Positions:         pos,
 		CashFlow:          buildCashFlow(row, nameByID, joint),
 		FxRates:           buildFxRates(row.FxRatesUsed),
-		Trend:             buildTrend(series),
+		Trend:             buildTrend(series, row.YearMonth),
 	}
 }
 
@@ -179,9 +180,17 @@ func buildFxRates(raw []byte) []pdf.FxRate {
 	return fx
 }
 
-// buildTrend takes the last 12 months of net worth, ascending, for the trend line.
-func buildTrend(series []db.MonthlyReport) []pdf.TrendPoint {
-	s := append([]db.MonthlyReport(nil), series...)
+// buildTrend takes the 12 months of net worth ending at the reported month
+// (inclusive), ascending, for the trend line. Months after the reported month
+// are excluded so the trend runs up to the report, not to the latest data on
+// record — a report for an older month must not chart into its future.
+func buildTrend(series []db.MonthlyReport, upto time.Time) []pdf.TrendPoint {
+	s := make([]db.MonthlyReport, 0, len(series))
+	for _, r := range series {
+		if !r.YearMonth.After(upto) {
+			s = append(s, r)
+		}
+	}
 	sort.Slice(s, func(i, j int) bool { return s[i].YearMonth.Before(s[j].YearMonth) })
 	if len(s) > 12 {
 		s = s[len(s)-12:]
