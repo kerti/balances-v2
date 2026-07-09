@@ -20,7 +20,7 @@ Read these first, in order:
 ## Where we are now
 
 M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
-2026-07-06. CI is green. **`v0.8.0-alpha.1` is the latest preview release**; **`v0.7.0-rc.2` is demo's
+2026-07-06. CI is green. **`v0.8.0-alpha.2` is the latest preview release**; **`v0.7.0-rc.2` is demo's
 current release** on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
 `https://demo.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
@@ -53,21 +53,20 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
     (#384), reliability tail (session housekeeping/limiter eviction/DB pool bounds/HTTP
     timeouts/gzip-bomb cap, #378/#379/#381), post-deploy version verification (#380), CONTRIBUTING +
     SECURITY.md (#387/#388), AGPL-3.0 license (ADR-0042). No migration.
+  - `v0.8.0-alpha.2` — PDF export shipped both client-side (#187/#393, ADR-0044) and server-side
+    native-Go (#413, ADR-0045 supersedes 0044's render location); demo enhancements (multi-year
+    history, ledger detail, multi-currency, sign-in notice, #396/#415); indigo theme (#416); security
+    tail (session tokens hashed at rest #361/#398, deploy-aware rate-limiter IP #363/#399, local-invite
+    race hardening #340/#400, healthz leak + second CSRF layer + image scan #364/#402). Migration:
+    additive backfill (`00011`, in-place session-id hash, non-destructive).
 
 ## What's next
 
-**M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`).** Prioritized by
-real-user feedback from M7 (not pre-specified). Next, in order:
+**M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`), second cut
+2026-07-09 (`v0.8.0-alpha.2`).** Prioritized by real-user feedback from M7 (not pre-specified).
+PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2 — ratios deferred (#412). Next, in order:
 
-1. **PDF export (#187 → #413)** — shipped v1 client-side (ADR-0044); **#413 pivots it server-side**
-   (ADR-0045 supersedes 0044's render location): native-Go `go-pdf/fpdf` renders a portrait,
-   itemized financial statement (per-Position breakdown, vector composition donuts + trend, embedded
-   Geist, server-side `x/text` money formatting golden-tested against `Intl`). `GET
-   /api/reports/{yearMonth}/pdf` replaces the client renderer + the `/positions` JSON endpoint; drops
-   the ~1.4MB react-pdf chunk (#394); ratios deferred (#412). Also riding along: #299 (privacy
-   policy, not blocked on prod) — small M7 leftover that didn't gate anything, moved here so M7 could
-   close clean. #163 (email wordmark raster) shipped separately (`#315`). See ROADMAP M8.
-2. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
+1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
    eventual standup, tracked via #218 (Neon isolation) and #299's remaining GDPR scope, not its own
    milestone. Prod itself stays deferred indefinitely.
 
