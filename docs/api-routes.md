@@ -6,10 +6,12 @@ Every HTTP route the backend serves, walked from the live chi router so it canno
 
 Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and session semantics are ADR-0038/0039. See [architecture.md](architecture.md) for the request flow these routes sit in.
 
-152 routes.
+154 routes.
 
 | Method | Path |
 | ------ | ---- |
+| POST | `/api/assets/snapshots/bulk` |
+| GET | `/api/assets/snapshots/entry` |
 | GET | `/api/assets/time-series` |
 | PATCH | `/api/assets/{id}/lifecycle/` |
 | GET | `/api/assets/{id}/snapshots/` |
