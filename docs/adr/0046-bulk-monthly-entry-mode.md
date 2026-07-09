@@ -75,11 +75,19 @@ for the full dialog, and keeping the row to a single tab-stop (the number) is th
 ### Month-aware eligibility
 
 The list for a target month shows exactly the positions that may legitimately hold a snapshot for that
-`year_month`: `status = active`, **plus** positions terminated in the target month or later (you still
-enter the closing month of an account you closed this month); **excluding** positions created after the
-target month and TimeDeposits outside their placement→maturity window (the same CHECK the per-position
-form enforces). A position terminated before the target month never appears — carry-forward already
-froze it. Changing the target month re-filters the list.
+`year_month`: owned, not deleted, `status = active` **or** terminated in the target month or later (you
+still enter the closing month of an account you closed this month). A position terminated *before* the
+target month never appears — carry-forward already froze it. Changing the target month re-filters the
+list.
+
+**Correction (found during the S1 build, #421):** an earlier draft of this ADR also excluded
+"positions created after the target month." That was dropped. `created_at` is a record timestamp, not
+economic existence, and gating on it breaks two real flows — the importer backfilling years of
+pre-creation history, and onboarding (entering *last* month for an account added today) — while the
+per-position dialog imposes no such guard. Eligibility is therefore ownership + the termination bound
+only. TimeDeposit's placement→maturity window (a genuine economic bound, unlike `created_at`) remains
+in scope for the investment slices, enforced by the same CHECK the per-position form uses — that is a
+real date, not a record timestamp.
 
 ### Atomic batch write + one coalesced report regen
 

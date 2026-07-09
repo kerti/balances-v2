@@ -121,6 +121,11 @@ func (h *Handlers) Mount(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Get("/assets/time-series", h.handleAssetTimeSeries)
+		// Bulk monthly-entry (ADR-0046): one save for many positions of the
+		// Asset group. Static two-/three-segment paths, so chi prefers the
+		// static "snapshots" node over the /assets/{id}/… param routes below.
+		r.Get("/assets/snapshots/entry", h.handleAssetEntryList)
+		r.Post("/assets/snapshots/bulk", h.handleBulkCreateSnapshots)
 	})
 
 	r.Route("/assets/{id}/snapshots", func(r chi.Router) {

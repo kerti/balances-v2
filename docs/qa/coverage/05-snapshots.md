@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/05-snapshots.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**5 / 5** invariants in this zone have at least one covering test (**5** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**7 / 7** invariants in this zone have at least one covering test (**7** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -13,3 +13,5 @@
 | INV-SNAPSHOTS-03 | A soft-deleted snapshot is excluded from every value read — the live list, the latest-per-position selection, and the report-feeding query all carry `deleted_at IS NULL`, so a corrected or removed reading never re-enters net worth | `backend/internal/repo/snapshot_as_of_month_test.go` |
 | INV-SNAPSHOTS-04 | Bulk import is an upsert keyed by (position, year_month): last-write-wins overwrites an existing month in place rather than double-counting, dry-run writes nothing, and the whole batch is one transaction | `backend/internal/repo/import_snapshots_test.go` |
 | INV-SNAPSHOTS-05 | A snapshot is a past observation — a future `year_month` (`CodeFutureYearMonth`) or future `as_of_date` (`CodeSnapshotFutureDate`) is rejected 400 on both the create and update paths | `backend/internal/assets/snapshots_test.go`<br>`backend/internal/investments/snapshots_test.go` |
+| INV-SNAPSHOTS-06 | Bulk monthly-entry save is dirty-rows-only, atomic, and month-aware: the caller sends only changed rows; every row is validated for month-aware eligibility (owned, not deleted, active or terminated in the target month or later) before any write, and any ineligible row aborts the whole batch (nothing written) returning a per-row error keyed by asset; eligible rows upsert on (position, year_month) so re-entry edits in place rather than duplicating; there is deliberately no `created_at` guard (would break backfill/onboarding) | `backend/internal/assets/bulk_snapshots_test.go` |
+| INV-SNAPSHOTS-07 | The bulk monthly-entry list surfaces every eligible position with its carry-forward prefill — the most-recent snapshot at or before the target month (null when the position has no history yet), the position's native currency, and the month it was carried from — excluding positions terminated before the target month | `backend/internal/assets/bulk_snapshots_test.go` |
