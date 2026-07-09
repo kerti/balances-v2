@@ -65,6 +65,26 @@ existing session-expiry→login-redirect path handles this with no demo-specific
 window or warning banner was rejected as disproportionate for a rare, cheap-to-recover-from edge case
 at a fixed low-traffic hour.
 
+**The writable-sandbox posture is disclosed, not fenced off (#346/CF-03).** The demo is a public,
+writable sandbox behind one shared login, so any visitor can wipe-and-replace the shared Household with
+offensive or personal content that stays visible until the next nightly reset. Two capabilities were
+weighed: the sign-in notice and whether to demo-block `restore/commit`.
+
+- **A one-screen sign-in notice is added**, shown only when `demo_mode` is on (same gate as the
+  credential pre-fill): shared account, no real data, nightly wipe, no warranty, and a stated
+  out-of-cycle reset the maintainer runs on request (via the footer project link — visitors have no
+  reset button, and shouldn't, since it's `DEMO_RESET_TOKEN`-authed). This is the honest disclosure of
+  what the shared sandbox is.
+- **`restore/commit` stays live on demo — the defacement-until-reset window is an accepted, documented
+  risk, not a blocked endpoint.** Erasure is blocked (above) for one specific reason: it strands the
+  shared identity, locking out every later visitor until the reset. That reason does **not** apply to
+  restore — the commit carries the caller's local credential across the wipe and re-issues a session
+  ([[adr-0039]]), so the shared login keeps working afterwards. And a malicious restore defaces nothing
+  an ordinary edit couldn't already deface (rename accounts, add offensively-named positions) — both are
+  live mutations recoverable by the same nightly reset. Blocking restore would remove a headline feature
+  ([[adr-0036]]) from the demo while closing none of the defacement window it purports to. So restore is
+  treated as any other mutation, and the notice's disclosure is what covers the residual window.
+
 ## Considered alternatives
 
 - **Per-visitor ephemeral Household sandboxes.** Rejected — needs new anonymous-provisioning and
@@ -78,6 +98,10 @@ at a fixed low-traffic hour.
   have; the GitHub-Actions-drives-Fly pattern already exists for deploys.
 - **Leaning on the nightly reset as Erasure's only safety net** (i.e. leave Erasure enabled). Rejected —
   up to ~24h of "demo is down" from a single click is worse than the cost of one more gated endpoint.
+- **Demo-blocking `restore/commit` alongside Erasure (#346/CF-03).** Rejected — restore doesn't strand
+  the shared login (credential carried across the wipe, [[adr-0039]]) the way Erasure does, and it
+  enables no defacement an ordinary edit doesn't; blocking it would cost a headline feature on the demo
+  and close none of the window. The sign-in notice + nightly reset cover the residual risk instead.
 
 ## Consequences
 

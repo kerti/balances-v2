@@ -5,6 +5,14 @@
     "languageLabel": "Bahasa",
     "withGoogle": "Lanjutkan dengan Google",
     "or": "atau",
+    "demoNotice": {
+      "title": "Demo publik — mohon dibaca",
+      "shared": "Semua orang memakai satu akun yang sama. Apa pun yang Anda masukkan dapat dilihat, dan diubah, oleh setiap pengunjung lain.",
+      "noReal": "Jangan masukkan informasi asli atau pribadi — anggap ini sekadar kotak pasir sekali pakai.",
+      "wipe": "Semua data dihapus dan dikembalikan ke angka contoh setiap malam.",
+      "warranty": "Disediakan apa adanya, tanpa jaminan dan tanpa jaminan privasi.",
+      "reset": "Menemukan sesuatu yang tidak pantas? Minta reset di luar jadwal melalui tautan proyek di bawah."
+    },
     "local": {
       "signInTab": "Masuk",
       "registerTab": "Buat akun",
