@@ -183,7 +183,7 @@ func TestBuildPDFInputHidesZeroPositions(t *testing.T) {
 		{Name: "Paid-off loan", Group: "liability", Subtype: "personal", OwnershipType: "joint",
 			NativeCurrency: "IDR", NativeAmount: decimal.Zero, Amount: decimal.Zero},
 	}
-	in := buildPDFInput(row, positions, nil, nil, "IDR", "en-GB")
+	in := buildPDFInput(row, positions, nil, nil, "IDR", "en-GB", "dev")
 	if len(in.Positions) != 1 {
 		t.Fatalf("positions: got %d, want 1 (two zero rows dropped)", len(in.Positions))
 	}
@@ -193,6 +193,10 @@ func TestBuildPDFInputHidesZeroPositions(t *testing.T) {
 	// Net worth is untouched by the filter — zeros never contributed to it.
 	if in.NetWorth != "900" {
 		t.Errorf("net worth: got %q, want 900", in.NetWorth)
+	}
+	// Build version is plumbed through to the footer slot (#414).
+	if in.Version != "dev" {
+		t.Errorf("version: got %q, want dev", in.Version)
 	}
 }
 

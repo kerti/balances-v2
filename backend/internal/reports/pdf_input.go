@@ -26,7 +26,7 @@ type userBreakdownJSON struct {
 // itemized position detail, the report series (for the trend), and household
 // members (for owner + per-member labels). All numbers already come resolved to
 // the reporting currency by the report engine (ADR-0045).
-func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, series []db.MonthlyReport, members []db.User, currency, locale string) pdf.Input {
+func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, series []db.MonthlyReport, members []db.User, currency, locale, appVersion string) pdf.Input {
 	nameByID := map[uuid.UUID]string{}
 	for _, m := range members {
 		name := m.DisplayName
@@ -72,6 +72,7 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 	return pdf.Input{
 		YearMonth:         row.YearMonth,
 		Locale:            locale,
+		Version:           appVersion,
 		ReportingCurrency: currency,
 		NetWorth:          row.NwTotal.String(),
 		Delta:             buildDelta(row, series),

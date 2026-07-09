@@ -60,6 +60,7 @@ type Delta struct {
 type Input struct {
 	YearMonth         time.Time
 	Locale            string // BCP-47, from the authenticated user's preference
+	Version           string // app build tag for the footer (#414); "" hides the suffix
 	ReportingCurrency string
 	NetWorth          string // reporting-currency decimal string
 	Delta             *Delta // month-over-month; nil when no prior month

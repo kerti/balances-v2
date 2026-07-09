@@ -108,10 +108,10 @@ func (d *doc) fmtMonthYear(t time.Time) string {
 	return fmt.Sprintf("%s %d", names[int(t.Month())], t.Year())
 }
 
-// footer draws the branding + page number on every page (ADR-0045). The app
-// version is deliberately absent for now — it isn't plumbed server-side yet
-// (tracked in #414, its own PR). "{nb}" is the total-pages alias fpdf
-// substitutes at output time.
+// footer draws the branding + app version + page number on every page
+// (ADR-0045, #414). The version suffix (" · <tag>") trails the wordmark in
+// muted ink; the page number is centred on the same band, right-aligned.
+// "{nb}" is the total-pages alias fpdf substitutes at output time.
 func (d *doc) footer() {
 	d.pdf.SetY(-12)
 	d.pdf.SetDrawColor(rule[0], rule[1], rule[2])
@@ -119,15 +119,29 @@ func (d *doc) footer() {
 	yLine := d.pdf.GetY()
 	d.pdf.Line(d.x0, yLine, d.x0+d.w, yLine)
 
-	// Full-colour brand lockup on the left; page number vertically centred on
-	// the same band on the right.
+	// Full-colour brand lockup on the left, then the version suffix trailing it;
+	// page number vertically centred on the same band on the right.
 	const glyphH = 4.0
 	logoY := yLine + 2.5
-	drawLogo(d.pdf, d.x0, logoY, glyphH, 9, ink)
+	lockupW := drawLogo(d.pdf, d.x0, logoY, glyphH, 9, ink)
 	d.pdf.SetFont("Geist", "", 7.5)
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	if suffix := versionSuffix(d.in.Version); suffix != "" {
+		d.pdf.SetXY(d.x0+lockupW, logoY)
+		d.pdf.CellFormat(d.pdf.GetStringWidth(suffix)+2, glyphH, suffix, "", 0, "LM", false, 0, "")
+	}
 	d.pdf.SetXY(d.x0, logoY)
 	d.pdf.CellFormat(d.w, glyphH, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "RM", false, 0, "")
+}
+
+// versionSuffix formats the build tag as a footer suffix trailing the wordmark
+// (" · v0.8.0-alpha.1"), or "" for an unset version so the slot reads as just
+// the wordmark rather than a dangling separator.
+func versionSuffix(v string) string {
+	if v == "" {
+		return ""
+	}
+	return " · " + v
 }
 
 type lineOpt struct {

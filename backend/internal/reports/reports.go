@@ -20,6 +20,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/reports/pdf"
+	"github.com/kerti/balances-v2/backend/internal/version"
 	"github.com/shopspring/decimal"
 )
 
@@ -82,7 +83,7 @@ func (h *Handlers) handlePDF(w http.ResponseWriter, r *http.Request) {
 	if u, ok := auth.UserFromContext(ctx); ok && u.Locale != "" {
 		locale = u.Locale
 	}
-	body, err := pdf.Render(buildPDFInput(row, positions, series, members, currency, locale))
+	body, err := pdf.Render(buildPDFInput(row, positions, series, members, currency, locale, version.Version))
 	if err != nil {
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
