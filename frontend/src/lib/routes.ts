@@ -36,6 +36,8 @@ export const routes = {
 
   // Assets — home + three subtype lists, each with a detail under it.
   assets: "/assets",
+  // Bulk monthly-entry for the whole Asset group (ADR-0046).
+  assetsEnter: "/assets/enter",
   bankAccounts: "/assets/bank-accounts",
   bankAccount: (id: string) => `/assets/bank-accounts/${id}`,
   properties: "/assets/properties",

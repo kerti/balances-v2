@@ -15,8 +15,12 @@
 // the shared `aggregateGroupHome` helper.
 
 import { useMemo } from "react";
+import { Link } from "react-router";
+import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { routes } from "@/lib/routes";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import {
   GroupCategoryStackChart,
@@ -100,9 +104,17 @@ export function AssetsHome() {
 
   return (
     <div className="space-y-6" data-testid="assets-home">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("common:home.assets.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("assets:home.subtitle")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("common:home.assets.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("assets:home.subtitle")}</p>
+        </div>
+        <Button asChild size="sm" data-testid="assets-enter-month">
+          <Link to={routes.assetsEnter}>
+            <CalendarPlus className="mr-1 size-4" />
+            {t("common:bulkEntry.trigger")}
+          </Link>
+        </Button>
       </div>
 
       {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}

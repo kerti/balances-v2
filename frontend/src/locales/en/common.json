@@ -244,5 +244,16 @@
     "back": "Back",
     "done": "Done",
     "progress": "{{current}} of {{total}}"
+  },
+  "bulkEntry": {
+    "trigger": "Enter this month",
+    "title": "Enter this month's balances",
+    "description": "Update the value of each account for the chosen month. Only the ones you change are saved.",
+    "empty": "No accounts are eligible for this month yet.",
+    "carriedFrom": "Carried from {{month}}",
+    "noHistory": "No previous value",
+    "rowError": "This account can't take a value for this month.",
+    "changedCount": "{{count}} changed",
+    "save": "Save all"
   }
 }

@@ -19,6 +19,7 @@ import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
 import { AssetsHome } from "@/components/AssetsHome";
+import { AssetEntryScreen } from "@/components/AssetEntryScreen";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
 import { BankAccountDetail } from "@/components/BankAccountDetail";
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
 
       // Assets
       { path: "assets", element: <AssetsHome /> },
+      { path: "assets/enter", element: <AssetEntryScreen /> },
       {
         path: "assets/bank-accounts",
         element: (
