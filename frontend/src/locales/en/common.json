@@ -254,6 +254,8 @@
     "noHistory": "No previous value",
     "rowError": "This account can't take a value for this month.",
     "changedCount": "{{count}} changed",
-    "save": "Save all"
+    "save": "Save all",
+    "overwritesThisMonth": "Will overwrite",
+    "undo": "Undo"
   }
 }

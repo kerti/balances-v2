@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
+import { Landmark, Home, Car, Wallet, RotateCcw, type LucideIcon } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { thisYearMonth, monthEndDateCapped, monthStartDate } from "@/lib/dateLimits";
 import { formatYearMonth } from "@/lib/format";
 import { errorMessage } from "@/lib/errorMessage";
+import { ownershipLabel } from "@/lib/ownership";
 import { routes } from "@/lib/routes";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { useSession } from "@/hooks/useSession";
 import {
   useAssetEntryList,
   useBulkSaveAssetSnapshots,
@@ -16,13 +20,23 @@ import {
   type BulkSnapshotRow,
 } from "@/hooks/useBulkEntry";
 
+// Asset subtypes, in the order the entry view groups them, each with its icon
+// and the i18n key (camelCase) for its section label — reusing AssetsHome's
+// category labels (assets:home.categoryLabel.*) so the app reads consistently.
+const SUBTYPE_META: Record<string, { icon: LucideIcon; labelKey: string }> = {
+  bank_account: { icon: Landmark, labelKey: "bankAccount" },
+  property: { icon: Home, labelKey: "property" },
+  vehicle: { icon: Car, labelKey: "vehicle" },
+};
+const SUBTYPE_ORDER = ["bank_account", "property", "vehicle"];
+
 // AssetEntryScreen is the Asset group's bulk monthly-entry view (ADR-0046):
-// one screen listing every position eligible for a chosen month, each with its
-// last value carried forward, a batch-level "when" control, and one Save. Only
-// rows the user actually changed are sent (dirty-only); untouched positions
-// ride the carry-forward rule.
+// one screen listing every position eligible for a chosen month, grouped by
+// type, each with its last value carried forward, a batch-level "when" control,
+// and one Save. Only rows the user actually changed are sent (dirty-only);
+// untouched positions ride the carry-forward rule.
 export function AssetEntryScreen() {
-  const { t } = useTranslation("common");
+  const { t } = useTranslation(["common", "assets"]);
   const navigate = useNavigate();
 
   const [yearMonth, setYearMonth] = useState(thisYearMonth());
@@ -36,6 +50,8 @@ export function AssetEntryScreen() {
 
   const list = useAssetEntryList(yearMonth);
   const save = useBulkSaveAssetSnapshots();
+  const { data: members } = useHouseholdMembers();
+  const { data: me } = useSession();
 
   // Guarded setState-during-render (no useEffect — lint bans setState-in-effect,
   // ADR-0041 follow-up): when the month changes, re-seed the as-of default,
@@ -75,6 +91,102 @@ export function AssetEntryScreen() {
     currency: r.currency,
   }));
 
+  // Group eligible rows by subtype (rows arrive pre-ordered by subtype then
+  // name), then present the known subtypes in SUBTYPE_ORDER, any unknown last.
+  const grouped = new Map<string, AssetEntryRow[]>();
+  for (const r of rows) {
+    const g = grouped.get(r.subtype) ?? [];
+    g.push(r);
+    grouped.set(r.subtype, g);
+  }
+  const orderedSubtypes = [
+    ...SUBTYPE_ORDER.filter((s) => grouped.has(s)),
+    ...[...grouped.keys()].filter((s) => !SUBTYPE_ORDER.includes(s)),
+  ];
+
+  // resetRow drops the user's override so the field falls back to its
+  // carried-forward prefill (empty for a position with no history).
+  function resetRow(assetID: string) {
+    setEdits((prev) => {
+      const next = { ...prev };
+      delete next[assetID];
+      return next;
+    });
+  }
+
+  function renderRow(row: AssetEntryRow) {
+    const dirty = isDirty(row);
+    return (
+      <li
+        key={row.asset_id}
+        className="flex items-center gap-3 py-2"
+        data-testid={`asset-entry-row-${row.asset_id}`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            {dirty && (
+              <span
+                className="size-1.5 shrink-0 rounded-full bg-amber-500"
+                data-testid={`asset-entry-dirty-${row.asset_id}`}
+                aria-hidden
+              />
+            )}
+            <span className="truncate font-medium">{row.display_name}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {ownershipLabel(row.ownership_type, row.sole_owner_user_id, members, me)}
+            {" · "}
+            {row.carried_from === yearMonth ? (
+              // A snapshot already exists for the chosen month — the prefill IS
+              // this month's value, so editing it overwrites (upsert). Warn.
+              <span
+                className="text-amber-600"
+                data-testid={`asset-entry-overwrite-${row.asset_id}`}
+              >
+                {t("bulkEntry.overwritesThisMonth")}
+              </span>
+            ) : row.carried_from ? (
+              t("bulkEntry.carriedFrom", {
+                month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`),
+              })
+            ) : (
+              t("bulkEntry.noHistory")
+            )}
+          </div>
+          {rowErrors[row.asset_id] && (
+            <div
+              className="text-xs text-destructive"
+              data-testid={`asset-entry-error-${row.asset_id}`}
+            >
+              {t("bulkEntry.rowError")}
+            </div>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{row.currency}</span>
+        <Input
+          className={`w-36${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+          inputMode="decimal"
+          value={valueFor(row)}
+          onChange={(e) => setEdits({ ...edits, [row.asset_id]: e.target.value })}
+          data-testid={`asset-entry-amount-${row.asset_id}`}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`size-8 shrink-0${dirty ? "" : " invisible"}`}
+          onClick={() => resetRow(row.asset_id)}
+          aria-label={t("bulkEntry.undo")}
+          title={t("bulkEntry.undo")}
+          disabled={!dirty}
+          data-testid={`asset-entry-undo-${row.asset_id}`}
+        >
+          <RotateCcw className="size-4" />
+        </Button>
+      </li>
+    );
+  }
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (dirtyRows.length === 0) return;
@@ -86,6 +198,15 @@ export function AssetEntryScreen() {
 
   return (
     <div className="mx-auto max-w-2xl p-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(routes.assets)}
+        className="-ml-2 mb-1"
+        data-testid="asset-entry-back"
+      >
+        {t("common:actions.back")}
+      </Button>
       <Card>
         <CardHeader>
           <CardTitle>{t("bulkEntry.title")}</CardTitle>
@@ -126,42 +247,21 @@ export function AssetEntryScreen() {
                 {t("bulkEntry.empty")}
               </p>
             ) : (
-              <ul className="divide-y">
-                {rows.map((row) => (
-                  <li
-                    key={row.asset_id}
-                    className="flex items-center gap-3 py-2"
-                    data-testid={`asset-entry-row-${row.asset_id}`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{row.display_name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {row.carried_from
-                          ? t("bulkEntry.carriedFrom", {
-                              month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`),
-                            })
-                          : t("bulkEntry.noHistory")}
+              <div className="space-y-4">
+                {orderedSubtypes.map((subtype) => {
+                  const meta = SUBTYPE_META[subtype];
+                  const Icon = meta?.icon ?? Wallet;
+                  return (
+                    <div key={subtype} data-testid={`asset-entry-group-${subtype}`}>
+                      <div className="mb-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Icon className="size-4" />
+                        {meta ? t(`assets:home.categoryLabel.${meta.labelKey}`) : subtype}
                       </div>
-                      {rowErrors[row.asset_id] && (
-                        <div
-                          className="text-xs text-destructive"
-                          data-testid={`asset-entry-error-${row.asset_id}`}
-                        >
-                          {t("bulkEntry.rowError")}
-                        </div>
-                      )}
+                      <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
                     </div>
-                    <span className="text-xs text-muted-foreground">{row.currency}</span>
-                    <Input
-                      className="w-36"
-                      inputMode="decimal"
-                      value={valueFor(row)}
-                      onChange={(e) => setEdits({ ...edits, [row.asset_id]: e.target.value })}
-                      data-testid={`asset-entry-amount-${row.asset_id}`}
-                    />
-                  </li>
-                ))}
-              </ul>
+                  );
+                })}
+              </div>
             )}
 
             {hasEnvelopeError && (

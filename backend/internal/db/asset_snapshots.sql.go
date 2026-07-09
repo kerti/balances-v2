@@ -271,12 +271,12 @@ func (q *Queries) ListEligibleAssetIDsForMonth(ctx context.Context, arg ListElig
 }
 
 const listEligibleAssetsForMonth = `-- name: ListEligibleAssetsForMonth :many
-SELECT id, display_name, native_currency
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
 FROM assets
 WHERE household_id = $1::uuid
   AND deleted_at IS NULL
   AND (terminated_at IS NULL OR terminated_at >= $2::date)
-ORDER BY display_name
+ORDER BY subtype, display_name
 `
 
 type ListEligibleAssetsForMonthParams struct {
@@ -285,14 +285,20 @@ type ListEligibleAssetsForMonthParams struct {
 }
 
 type ListEligibleAssetsForMonthRow struct {
-	ID             uuid.UUID `json:"id"`
-	DisplayName    string    `json:"display_name"`
-	NativeCurrency string    `json:"native_currency"`
+	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
+	NativeCurrency  string     `json:"native_currency"`
+	Subtype         string     `json:"subtype"`
+	OwnershipType   string     `json:"ownership_type"`
+	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 }
 
 // ListEligibleAssetsForMonth is ListEligibleAssetIDsForMonth plus the display
-// fields the bulk monthly-entry list needs (ADR-0046): name + native currency.
-// Ordered by display name for a stable phone-first list.
+// fields the bulk monthly-entry list needs (ADR-0046): name, native currency,
+// and subtype so the entry view can group by type (bank account / property /
+// vehicle). Ordered by subtype then display name so rows arrive pre-grouped —
+// the subtype strings sort bank_account < property < vehicle, the order the
+// entry view presents.
 func (q *Queries) ListEligibleAssetsForMonth(ctx context.Context, arg ListEligibleAssetsForMonthParams) ([]ListEligibleAssetsForMonthRow, error) {
 	rows, err := q.db.Query(ctx, listEligibleAssetsForMonth, arg.HouseholdID, arg.YearMonth)
 	if err != nil {
@@ -302,7 +308,14 @@ func (q *Queries) ListEligibleAssetsForMonth(ctx context.Context, arg ListEligib
 	var items []ListEligibleAssetsForMonthRow
 	for rows.Next() {
 		var i ListEligibleAssetsForMonthRow
-		if err := rows.Scan(&i.ID, &i.DisplayName, &i.NativeCurrency); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.NativeCurrency,
+			&i.Subtype,
+			&i.OwnershipType,
+			&i.SoleOwnerUserID,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

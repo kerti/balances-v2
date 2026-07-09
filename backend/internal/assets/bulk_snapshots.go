@@ -48,11 +48,14 @@ type bulkSnapshotErrResp struct {
 // entryRowResp is one asset in the bulk monthly-entry list. PrefillAmount /
 // CarriedFrom are null for an asset with no history at or before the month.
 type entryRowResp struct {
-	AssetID       string  `json:"asset_id"`
-	DisplayName   string  `json:"display_name"`
-	Currency      string  `json:"currency"`
-	PrefillAmount *string `json:"prefill_amount"`
-	CarriedFrom   *string `json:"carried_from"`
+	AssetID         string  `json:"asset_id"`
+	DisplayName     string  `json:"display_name"`
+	Currency        string  `json:"currency"`
+	Subtype         string  `json:"subtype"`
+	OwnershipType   string  `json:"ownership_type"`
+	SoleOwnerUserID *string `json:"sole_owner_user_id"`
+	PrefillAmount   *string `json:"prefill_amount"`
+	CarriedFrom     *string `json:"carried_from"`
 }
 
 type entryListResp struct {
@@ -84,9 +87,15 @@ func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) 
 	resp := entryListResp{YearMonth: ym.Format("2006-01"), Rows: make([]entryRowResp, len(rows))}
 	for i, row := range rows {
 		out := entryRowResp{
-			AssetID:     row.AssetID.String(),
-			DisplayName: row.DisplayName,
-			Currency:    row.Currency,
+			AssetID:       row.AssetID.String(),
+			DisplayName:   row.DisplayName,
+			Currency:      row.Currency,
+			Subtype:       row.Subtype,
+			OwnershipType: row.OwnershipType,
+		}
+		if row.SoleOwnerUserID != nil {
+			s := row.SoleOwnerUserID.String()
+			out.SoleOwnerUserID = &s
 		}
 		if row.PrefillAmount != nil {
 			s := row.PrefillAmount.String()

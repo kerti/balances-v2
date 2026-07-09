@@ -254,6 +254,8 @@
     "noHistory": "Belum ada nilai sebelumnya",
     "rowError": "Akun ini tidak dapat diisi nilai untuk bulan ini.",
     "changedCount": "{{count}} diubah",
-    "save": "Simpan semua"
+    "save": "Simpan semua",
+    "overwritesThisMonth": "Akan menimpa",
+    "undo": "Urungkan"
   }
 }

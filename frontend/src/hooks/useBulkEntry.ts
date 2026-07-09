@@ -9,6 +9,9 @@ export type AssetEntryRow = {
   asset_id: string;
   display_name: string;
   currency: string;
+  subtype: string; // bank_account | property | vehicle
+  ownership_type: "sole" | "joint";
+  sole_owner_user_id: string | null;
   prefill_amount: string | null;
   carried_from: string | null;
 };

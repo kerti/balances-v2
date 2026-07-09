@@ -109,15 +109,18 @@ WHERE household_id = sqlc.arg('household_id')::uuid
   AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
 
 -- ListEligibleAssetsForMonth is ListEligibleAssetIDsForMonth plus the display
--- fields the bulk monthly-entry list needs (ADR-0046): name + native currency.
--- Ordered by display name for a stable phone-first list.
+-- fields the bulk monthly-entry list needs (ADR-0046): name, native currency,
+-- and subtype so the entry view can group by type (bank account / property /
+-- vehicle). Ordered by subtype then display name so rows arrive pre-grouped —
+-- the subtype strings sort bank_account < property < vehicle, the order the
+-- entry view presents.
 -- name: ListEligibleAssetsForMonth :many
-SELECT id, display_name, native_currency
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
 FROM assets
 WHERE household_id = sqlc.arg('household_id')::uuid
   AND deleted_at IS NULL
   AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
-ORDER BY display_name;
+ORDER BY subtype, display_name;
 
 -- ListLatestSnapshotsByAssetIDsAsOfMonth returns, per asset, the most-recent
 -- snapshot at or before the target month — the carry-forward prefill for the

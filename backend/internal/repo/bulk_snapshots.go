@@ -44,11 +44,14 @@ type BulkSnapshotRowError struct {
 // eligible asset with its carry-forward prefill. PrefillAmount/CarriedFrom are
 // nil for an asset with no snapshot at or before the target month.
 type AssetEntryRow struct {
-	AssetID       uuid.UUID
-	DisplayName   string
-	Currency      string
-	PrefillAmount *decimal.Decimal
-	CarriedFrom   *time.Time
+	AssetID         uuid.UUID
+	DisplayName     string
+	Currency        string
+	Subtype         string
+	OwnershipType   string
+	SoleOwnerUserID *uuid.UUID
+	PrefillAmount   *decimal.Decimal
+	CarriedFrom     *time.Time
 }
 
 // ListAssetEntryRows returns the bulk monthly-entry list for a target month:
@@ -90,9 +93,12 @@ func (r *AssetRepo) ListAssetEntryRows(ctx context.Context, yearMonth time.Time)
 	rows := make([]AssetEntryRow, len(assets))
 	for i, a := range assets {
 		row := AssetEntryRow{
-			AssetID:     a.ID,
-			DisplayName: a.DisplayName,
-			Currency:    a.NativeCurrency,
+			AssetID:         a.ID,
+			DisplayName:     a.DisplayName,
+			Currency:        a.NativeCurrency,
+			Subtype:         a.Subtype,
+			OwnershipType:   a.OwnershipType,
+			SoleOwnerUserID: a.SoleOwnerUserID,
 		}
 		if s, ok := prefill[a.ID]; ok {
 			amt := s.Amount

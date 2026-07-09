@@ -245,6 +245,7 @@ type entryRow struct {
 	AssetID       string  `json:"asset_id"`
 	DisplayName   string  `json:"display_name"`
 	Currency      string  `json:"currency"`
+	Subtype       string  `json:"subtype"`
 	PrefillAmount *string `json:"prefill_amount"`
 	CarriedFrom   *string `json:"carried_from"`
 }
@@ -291,6 +292,9 @@ func TestAssetSnapshotHandlers_EntryList(t *testing.T) {
 	}
 	if hist.Currency != "IDR" {
 		t.Errorf("currency should be the asset's native IDR, got %s", hist.Currency)
+	}
+	if hist.Subtype != "bank_account" {
+		t.Errorf("subtype should be bank_account (createBankAccount), got %q", hist.Subtype)
 	}
 	fr, ok := rows[fresh.Asset.ID.String()]
 	if !ok {
