@@ -10,18 +10,13 @@ itemized financial statement** drawn natively in Go (`go-pdf/fpdf`): each Positi
 its group, composition donuts, a 12-month trend, and a prominent health-indicator panel — a
 document closer to the household's old spreadsheet workbook than to the live UI.
 
-This ADR was rewritten in place, not superseded by a new number: it was authored on the still-open
-#413 branch and never reached `main`, so this PR *is* the discussion that produced the decision
-below. ADR-0044, by contrast, is merged and immutable — hence the `supersedes` status above rather
-than an edit to 0044 itself.
-
 ## Why
 
 0044 rendered the report client-side, reasoning that the data was already on the client and that
 server-side rendering meant either headless Chromium (conflicts with the lean self-hostable image,
-ADR-0030/0037) or a "hand-built native Go PDF layout" it lumped in as "meaningfully heavier." An
-earlier draft of *this* ADR (0045) kept client-side rendering and rejected a faithful port of the
-household's reference template, on the grounds that "fighting react-pdf's flow model for a
+ADR-0030/0037) or a "hand-built native Go PDF layout" it lumped in as "meaningfully heavier." It
+also kept the layout a light mirror of the dashboard, on the reasoning that a faithful, dense port
+of the household's reference template wasn't worth it — that "fighting react-pdf's flow model for a
 spreadsheet-grid layout costs more than it buys."
 
 Both framings collapse once the goal is the dense, detailed, tabular statement the household
@@ -29,17 +24,16 @@ actually wants:
 
 - **The layout that "costs more than it buys" in react-pdf is the layout we want.** A dense,
   itemized, right-aligned financial statement is the exact case react-pdf's flexbox-flow model
-  fights hardest and a native cell/xy PDF library does trivially. 0045's own rejection reason
-  inverts into a reason to change renderers, not to drop the layout.
+  fights hardest and a native cell/xy PDF library does trivially. That rejection reason inverts
+  into a reason to change renderers, not to drop the layout.
 - **Native Go PDF is *not* "meaningfully heavier."** 0044 conflated it with headless Chromium. The
   thing that violates the lean-image constraint is the *browser*; a pure-Go `fpdf` dependency is a
   few hundred KB of Go, no runtime binary, no browser payload — it *satisfies* ADR-0030/0037.
 - **The data already lives on the backend.** The report engine computes every number. Rendering
   server-side stops shipping per-position JSON to the client only to re-derive layout there.
-- **It removes the one stated blocker for a real future feature.** Both 0044 and 0045 named a
-  fully-unattended scheduled report email (no browser present) as the *only* thing that would force
-  server-side rendering. Building it now makes that feature a straight compose-on-top, not a
-  re-architecture.
+- **It removes the one stated blocker for a real future feature.** 0044 named a fully-unattended
+  scheduled report email (no browser present) as the *only* thing that would force server-side
+  rendering. Building it now makes that feature a straight compose-on-top, not a re-architecture.
 
 The reference template (a household's prior monthly-report spreadsheet — layout and section ideas
 only, no real data or copy reused) is a **content checklist, not a wireframe**: its value is the
@@ -55,8 +49,8 @@ density and per-Position itemization, not its literal landscape 4-column grid.
 - **Layout: portrait, single-column section-flow.** Not the template's landscape 4-column grid.
   Fidelity is to the template's *content and tabular density*, not its grid. Sections stack
   top-to-bottom and paginate through natural document flow (`fpdf` page breaks), which also makes
-  the portfolio-size-dependent page count (first noted in 0045) a non-problem. (This vindicates
-  0045's original single-column-per-section instinct — only the renderer changes.)
+  the portfolio-size-dependent page count a non-problem — single-column-per-section flow is the
+  right shape regardless of renderer.
 
 - **Section order:** Header → **Net Worth** headline → **Statistics** → **Assets** → **Liabilities**
   → **Investments** → **Cash Flow** → **Charts**. Statistics sits directly under the headline
@@ -95,9 +89,9 @@ density and per-Position itemization, not its literal landscape 4-column grid.
   (Assets / Investments / Liabilities by subtype) + a 12-month trend line. The branch's
   `pieChartMath` / `lineChartMath` (pure TS) port to Go as the geometry half. The reference
   template's current-assets-vs-current-liabilities bar stays dropped — no liquid/current-vs-non-
-  current split exists across the domain (unchanged from 0045's earlier pass; the Assets-section
-  current/non-current grouping above is presentational only and does not generalize to a bar that
-  needs the same split on the liabilities side).
+  current split exists across the domain (the Assets-section current/non-current grouping above is
+  presentational only and does not generalize to a bar that needs the same split on the liabilities
+  side).
 
 - **Font: embed Geist (Regular + Bold)** via `go:embed` + `fpdf.AddUTF8Font`, matching the web UI
   (OFL, redistributable; Latin coverage suffices for Indonesian). Two TTFs compiled into the
@@ -142,8 +136,8 @@ density and per-Position itemization, not its literal landscape 4-column grid.
 ## Considered alternatives
 
 - **Keep client-side `@react-pdf/renderer` and build the dense layout there.** Rejected — react-pdf's
-  flexbox-flow model is the wrong tool for a dense tabular statement; 0045's own "costs more than it
-  buys" reasoning applies, and the fix is to change renderer, not to abandon the layout.
+  flexbox-flow model is the wrong tool for a dense tabular statement; the "costs more than it buys"
+  reasoning applies, and the fix is to change renderer, not to abandon the layout.
 - **Headless Chromium (HTML → PDF).** Rejected — violates the lean self-hostable image (ADR-0030/
   0037). This is the constraint 0044 correctly cited; it applies to the *browser*, not to native
   Go PDF.
@@ -157,13 +151,13 @@ density and per-Position itemization, not its literal landscape 4-column grid.
   risk with far less code to own.
 - **Keep the `/positions` JSON endpoint as a public data surface.** Rejected — YAGNI once the client
   renderer is gone; nothing consumes it.
-- **Build the ratios/statistics panel now from the template's formulas.** Rejected (unchanged from
-  0045) — household-specific assumptions; deferred to #412.
+- **Build the ratios/statistics panel now from the template's formulas.** Rejected — household-
+  specific assumptions; deferred to #412.
 
 ## Consequences
 
-- **A fully-unattended scheduled report email is no longer blocked.** Both 0044 and 0045 named it as
-  the sole trigger for server-side rendering; the structural barrier is now gone. Not built here —
+- **A fully-unattended scheduled report email is no longer blocked.** 0044 named it as the sole
+  trigger for server-side rendering; the structural barrier is now gone. Not built here —
   but it composes as a straight "render bytes → `Mailer.Send` with attachment," no browser needed.
 - **The ~1.4 MB `@react-pdf/renderer` lazy chunk disappears from the frontend** — the bundle-size
   question tracked in #394 is resolved as a side effect of this pivot, not separately.

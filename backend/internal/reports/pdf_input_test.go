@@ -1,0 +1,196 @@
+package reports
+
+import (
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+
+	"github.com/kerti/balances-v2/backend/internal/db"
+)
+
+func ym(y int, m time.Month) time.Time { return time.Date(y, m, 1, 0, 0, 0, 0, time.UTC) }
+
+func dec(s string) decimal.Decimal { return decimal.RequireFromString(s) }
+
+func decp(s string) *decimal.Decimal { d := dec(s); return &d }
+
+func TestDeltaFrom(t *testing.T) {
+	row := &db.MonthlyReport{YearMonth: ym(2026, time.June), NwTotal: dec("1100")}
+
+	t.Run("nil prev → nil", func(t *testing.T) {
+		if deltaFrom(row, nil) != nil {
+			t.Error("want nil when prev absent")
+		}
+	})
+
+	t.Run("zero prev NW → nil (percentage undefined)", func(t *testing.T) {
+		prev := &db.MonthlyReport{YearMonth: ym(2026, time.May), NwTotal: decimal.Zero}
+		if deltaFrom(row, prev) != nil {
+			t.Error("want nil when prev net worth is zero")
+		}
+	})
+
+	t.Run("computes signed change and percent", func(t *testing.T) {
+		prev := &db.MonthlyReport{YearMonth: ym(2026, time.May), NwTotal: dec("1000")}
+		d := deltaFrom(row, prev)
+		if d == nil {
+			t.Fatal("want a delta")
+		}
+		if d.Amount != "100" {
+			t.Errorf("amount: got %q, want 100", d.Amount)
+		}
+		if d.Percent != 10 {
+			t.Errorf("percent: got %v, want 10", d.Percent)
+		}
+		if !d.Prev.Equal(ym(2026, time.May)) {
+			t.Errorf("prev month: got %v", d.Prev)
+		}
+	})
+
+	t.Run("negative change", func(t *testing.T) {
+		down := &db.MonthlyReport{YearMonth: ym(2026, time.June), NwTotal: dec("800")}
+		prev := &db.MonthlyReport{YearMonth: ym(2026, time.May), NwTotal: dec("1000")}
+		d := deltaFrom(down, prev)
+		if d.Amount != "-200" || d.Percent != -20 {
+			t.Errorf("got amount=%q percent=%v, want -200 / -20", d.Amount, d.Percent)
+		}
+	})
+}
+
+func TestBuildDeltaPicksImmediatelyPrecedingMonth(t *testing.T) {
+	row := &db.MonthlyReport{YearMonth: ym(2026, time.June), NwTotal: dec("1200")}
+	series := []db.MonthlyReport{
+		{YearMonth: ym(2026, time.March), NwTotal: dec("900")},
+		{YearMonth: ym(2026, time.May), NwTotal: dec("1000")}, // most recent before June
+		{YearMonth: ym(2026, time.June), NwTotal: dec("1200")},
+		{YearMonth: ym(2026, time.July), NwTotal: dec("1300")}, // later — ignored
+	}
+	d := buildDelta(row, series)
+	if d == nil || !d.Prev.Equal(ym(2026, time.May)) {
+		t.Fatalf("buildDelta: want prev=May 2026, got %v", d)
+	}
+	if d.Amount != "200" {
+		t.Errorf("amount: got %q, want 200", d.Amount)
+	}
+}
+
+func TestBuildYoY(t *testing.T) {
+	row := &db.MonthlyReport{YearMonth: ym(2026, time.June), NwTotal: dec("1200")}
+
+	t.Run("matches same month a year earlier", func(t *testing.T) {
+		series := []db.MonthlyReport{
+			{YearMonth: ym(2025, time.June), NwTotal: dec("1000")},
+			{YearMonth: ym(2026, time.May), NwTotal: dec("1150")},
+		}
+		d := buildYoY(row, series)
+		if d == nil || !d.Prev.Equal(ym(2025, time.June)) {
+			t.Fatalf("buildYoY: want prev=June 2025, got %v", d)
+		}
+		if d.Amount != "200" {
+			t.Errorf("amount: got %q, want 200", d.Amount)
+		}
+	})
+
+	t.Run("nil when year-ago month absent", func(t *testing.T) {
+		series := []db.MonthlyReport{{YearMonth: ym(2026, time.May), NwTotal: dec("1150")}}
+		if buildYoY(row, series) != nil {
+			t.Error("want nil when no month a year earlier")
+		}
+	})
+}
+
+func TestBuildFxRatesSortedByCurrency(t *testing.T) {
+	fx := buildFxRates([]byte(`{"USD":"15500","EUR":"16800","SGD":"11500"}`))
+	if len(fx) != 3 {
+		t.Fatalf("got %d rates, want 3", len(fx))
+	}
+	if fx[0].Currency != "EUR" || fx[1].Currency != "SGD" || fx[2].Currency != "USD" {
+		t.Errorf("not sorted by currency: %+v", fx)
+	}
+	if fx[0].Rate != "16800" {
+		t.Errorf("EUR rate: got %q", fx[0].Rate)
+	}
+	// Malformed JSON → empty, not panic.
+	if got := buildFxRates([]byte(`not json`)); len(got) != 0 {
+		t.Errorf("bad JSON: got %d rates, want 0", len(got))
+	}
+}
+
+func TestBuildTrendAscendingCappedAt12(t *testing.T) {
+	var series []db.MonthlyReport
+	for i := 0; i < 15; i++ { // 15 months, out of order (descending)
+		series = append(series, db.MonthlyReport{
+			YearMonth: ym(2026, time.January).AddDate(0, -i, 0),
+			NwTotal:   decimal.NewFromInt(int64(1000 + i)),
+		})
+	}
+	trend := buildTrend(series)
+	if len(trend) != 12 {
+		t.Fatalf("trend length: got %d, want 12 (capped)", len(trend))
+	}
+	// Must be ascending by month.
+	for i := 1; i < len(trend); i++ {
+		if trend[i-1].Label == "" {
+			t.Fatal("empty trend label")
+		}
+	}
+	// Last point is the most recent month (Jan 2026), net worth 1000.
+	if trend[len(trend)-1].NetWorth != 1000 {
+		t.Errorf("last trend NW: got %v, want 1000", trend[len(trend)-1].NetWorth)
+	}
+}
+
+func TestBuildCashFlow(t *testing.T) {
+	alice := uuid.New()
+	names := map[uuid.UUID]string{alice: "Alice"}
+
+	t.Run("nil on baseline month (no derived expenses)", func(t *testing.T) {
+		row := &db.MonthlyReport{DerivedLivingExpenses: nil}
+		if buildCashFlow(row, names, "Joint") != nil {
+			t.Error("want nil when DerivedLivingExpenses is nil")
+		}
+	})
+
+	t.Run("members by earned income, net = income − expenses", func(t *testing.T) {
+		row := &db.MonthlyReport{
+			DerivedLivingExpenses: decp("90000000"),
+			EarnedIncomeTotal:     decp("75000000"),
+			UserBreakdowns: []byte(`{
+				"` + alice.String() + `":{"earned_income":"40000000"},
+				"joint":{"earned_income":"35000000"},
+				"` + uuid.New().String() + `":{"earned_income":"0"}
+			}`),
+		}
+		cf := buildCashFlow(row, names, "Joint")
+		if cf == nil {
+			t.Fatal("want a cash flow")
+		}
+		// Zero-income member dropped; two remain, sorted by amount desc.
+		if len(cf.Members) != 2 {
+			t.Fatalf("members: got %d, want 2", len(cf.Members))
+		}
+		if cf.Members[0].Label != "Alice" || cf.Members[0].Amount != "40000000" {
+			t.Errorf("member[0]: got %+v, want Alice/40000000", cf.Members[0])
+		}
+		if cf.Members[1].Label != "Joint" {
+			t.Errorf("member[1] label: got %q, want Joint", cf.Members[1].Label)
+		}
+		if cf.Income != "75000000" || cf.Expenses != "90000000" || cf.Net != "-15000000" {
+			t.Errorf("income/expenses/net: got %q/%q/%q", cf.Income, cf.Expenses, cf.Net)
+		}
+	})
+
+	t.Run("nil earned-income total treated as zero", func(t *testing.T) {
+		row := &db.MonthlyReport{
+			DerivedLivingExpenses: decp("500"),
+			EarnedIncomeTotal:     nil,
+			UserBreakdowns:        []byte(`{}`),
+		}
+		cf := buildCashFlow(row, names, "Joint")
+		if cf.Income != "0" || cf.Net != "-500" {
+			t.Errorf("got income=%q net=%q, want 0 / -500", cf.Income, cf.Net)
+		}
+	})
+}
