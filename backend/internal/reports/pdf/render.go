@@ -162,7 +162,18 @@ func (d *doc) line(label, value string, indent float64, o lineOpt) {
 	d.pdf.CellFormat(valueW, lineH, value, border, 1, "R", false, 0, "")
 }
 
+// keepTogether forces a page break if `needed` mm won't fit before the bottom
+// margin — used to stop a heading being orphaned at a page bottom with its rows
+// pushed to the next page (fpdf has no native keep-with-next).
+func (d *doc) keepTogether(needed float64) {
+	const pageH = 297.0 // A4 portrait
+	if d.pdf.GetY()+needed > pageH-marginB {
+		d.pdf.AddPage()
+	}
+}
+
 func (d *doc) sectionTitle(title string) {
+	d.keepTogether(22) // title + a couple of rows
 	d.pdf.Ln(3)
 	d.pdf.SetFont("Geist", "B", 12)
 	d.pdf.SetTextColor(accent[0], accent[1], accent[2])
@@ -180,6 +191,7 @@ func (d *doc) subGroup(label string) {
 
 // subtypeHeader draws a bold level-2 heading (e.g. Bank Accounts).
 func (d *doc) subtypeHeader(label string) {
+	d.keepTogether(14) // heading + first row
 	d.line(label, "", 2, lineOpt{bold: true, size: 9.5})
 }
 
@@ -250,13 +262,17 @@ func (d *doc) deltaLine() {
 
 // statistics renders the deferred (#412) health-indicator panel as a reserved
 // placeholder block directly under the headline — the prominent slot the ratios
-// will fill later, with no reflow when they do.
+// will fill later, with no reflow when they do. The future rows are shown with
+// an em-dash so the slot reads as intentionally reserved, not empty.
 func (d *doc) statistics() {
 	d.sectionTitle(d.c.statistics)
+	for _, label := range d.c.statRows {
+		d.line(label, "—", 2, lineOpt{mutedText: true})
+	}
+	d.pdf.SetFont("Geist", "", 7.5)
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
-	d.pdf.SetFont("Geist", "", 9)
 	d.pdf.SetX(d.x0)
-	d.pdf.CellFormat(d.w, lineH, d.c.statsSoon, "", 1, "L", false, 0, "")
+	d.pdf.CellFormat(d.w, 4.5, d.c.statsSoon, "", 1, "L", false, 0, "")
 }
 
 func (d *doc) assets() {
@@ -398,6 +414,7 @@ func (d *doc) charts() {
 	if len(assetsComp)+len(invComp)+len(liabComp) == 0 && len(d.in.Trend) < 2 {
 		return
 	}
+	d.keepTogether(62) // keep the section title with the donut row
 	d.sectionTitle(d.c.charts)
 
 	donuts := []struct {
@@ -436,6 +453,7 @@ func (d *doc) charts() {
 	d.pdf.SetY(maxY + 4)
 
 	if len(d.in.Trend) >= 2 {
+		d.keepTogether(38) // keep the trend title with the line
 		d.pdf.SetFont("Geist", "B", 8.5)
 		d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 		d.pdf.SetX(d.x0)

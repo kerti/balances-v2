@@ -41,7 +41,8 @@ type reportCopy struct {
 
 	staleNote string // footnote for carried-forward values
 
-	statsSoon string // #412 placeholder caption
+	statsSoon string   // #412 placeholder caption
+	statRows  []string // reserved statistic labels shown with an em-dash (#412)
 
 	deltaVs    string // "vs %s" — month-over-month comparison suffix
 	footerPage string // "Page %d of %s" (%s = total-pages alias)
@@ -81,6 +82,7 @@ var reportCatalog = map[string]reportCopy{
 		statsSoon:        "Financial-health indicators are coming soon.",
 		deltaVs:          "vs %s",
 		footerPage:       "Page %d of %s",
+		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
 		chartAssets:      "Assets Composition",
 		chartInvestments: "Investments Composition",
 		chartLiabilities: "Liabilities Composition",
@@ -113,6 +115,7 @@ var reportCatalog = map[string]reportCopy{
 		statsSoon:        "Indikator kesehatan keuangan akan segera hadir.",
 		deltaVs:          "vs %s",
 		footerPage:       "Halaman %d dari %s",
+		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
 		chartAssets:      "Komposisi Harta",
 		chartInvestments: "Komposisi Investasi",
 		chartLiabilities: "Komposisi Hutang",
