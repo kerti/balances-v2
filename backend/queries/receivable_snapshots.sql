@@ -116,3 +116,42 @@ DO UPDATE SET
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
 RETURNING *;
+
+-- ListEligibleReceivableIDsForMonth returns the ids of the household's
+-- receivables that may legitimately hold a snapshot for the given target month
+-- (ADR-0046 month-aware eligibility): owned, not deleted, and either still
+-- active or terminated in the target month or later. A receivable terminated
+-- *before* the target month never appears — its forward contribution is already
+-- frozen by the carry-forward rule. No created_at guard, for the same reason as
+-- the Asset entry list: created_at is a record timestamp, not economic
+-- existence, and gating on it would block legitimate backfill/onboarding.
+-- name: ListEligibleReceivableIDsForMonth :many
+SELECT id
+FROM receivables
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
+
+-- ListEligibleReceivablesForMonth is ListEligibleReceivableIDsForMonth plus the
+-- display fields the bulk monthly-entry list needs (ADR-0046): name and native
+-- currency. Receivables are a flat group with no subtype, so the entry view
+-- renders one ungrouped list; rows are ordered by display name.
+-- name: ListEligibleReceivablesForMonth :many
+SELECT id, display_name, native_currency, ownership_type, sole_owner_user_id
+FROM receivables
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
+ORDER BY display_name;
+
+-- ListLatestSnapshotsByReceivableIDsAsOfMonth returns, per receivable, the
+-- most-recent snapshot at or before the target month — the carry-forward
+-- prefill for the entry list. Month-bounded so a value entered ahead of the
+-- target does not leak backwards as the prefill.
+-- name: ListLatestSnapshotsByReceivableIDsAsOfMonth :many
+SELECT DISTINCT ON (receivable_id) receivable_id, amount, year_month
+FROM receivable_snapshots
+WHERE receivable_id = ANY(sqlc.arg('receivable_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY receivable_id, year_month DESC;

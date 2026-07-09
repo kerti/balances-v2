@@ -49,12 +49,17 @@ export const routes = {
   // (`/liabilities/personal/:id`) so the dynamic `:id` never overlaps the
   // literal `personal`/`institutional` segments. ADR-0025.
   liabilities: "/liabilities",
+  // Bulk monthly-entry for the whole Liability group (ADR-0046).
+  liabilitiesEnter: "/liabilities/enter",
   liabilitiesPersonal: "/liabilities/personal",
   liabilitiesInstitutional: "/liabilities/institutional",
   liability: (subtype: "personal" | "institutional", id: string) => `/liabilities/${subtype}/${id}`,
 
   // Receivables — flat group: the list is the root path, no home page.
   receivables: "/receivables",
+  // Bulk monthly-entry for the Receivable group (ADR-0046). Static segment, so
+  // it never collides with the `/receivables/:id` detail route.
+  receivablesEnter: "/receivables/enter",
   receivable: (id: string) => `/receivables/${id}`,
 
   // Investments — home + five subtype lists, each with a detail under it.
