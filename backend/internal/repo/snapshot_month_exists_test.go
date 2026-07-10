@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -30,7 +30,7 @@ func TestAssetSnapshot_CreateDuplicateMonthIsInformative(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewAssetRepo(tdb.Pool)
 
 	account, err := r.CreateBankAccount(ctx, repo.CreateBankAccountParams{
@@ -69,7 +69,7 @@ func TestLiabilitySnapshot_CreateDuplicateMonthIsInformative(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewLiabilityRepo(tdb.Pool)
 
 	liability, err := r.CreateLiability(ctx, repo.CreateLiabilityParams{
@@ -107,7 +107,7 @@ func TestReceivableSnapshot_CreateDuplicateMonthIsInformative(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewReceivableRepo(tdb.Pool)
 
 	receivable, err := r.CreateReceivable(ctx, repo.CreateReceivableParams{
@@ -144,7 +144,7 @@ func TestInvestmentSnapshot_CreateDuplicateMonthIsInformative(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	stock, err := r.CreateStock(ctx, repo.CreateStockParams{

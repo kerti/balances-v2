@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -113,7 +113,7 @@ func TestRestoreParseValidate(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
@@ -204,8 +204,8 @@ func TestRestoreCommit(t *testing.T) {
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise — must survive untouched
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
@@ -359,8 +359,8 @@ func TestRestoreEndpoints(t *testing.T) {
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	notifier := &stubNotifier{}
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, notifier, false, DemoConfig{})

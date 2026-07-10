@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // TestInvestmentHandlers_ListRepoError covers the repo-error (500) branch of
@@ -35,7 +35,7 @@ func TestInvestmentHandlers_ListRepoError(t *testing.T) {
 }
 
 func (h *handlerHarness) getCancelled(path string) *httptest.ResponseRecorder {
-	ctx, cancel := context.WithCancel(auth.WithUser(context.Background(), h.user))
+	ctx, cancel := context.WithCancel(identity.WithUser(context.Background(), h.user))
 	cancel()
 	req := httptest.NewRequest(http.MethodGet, path, nil).WithContext(ctx)
 	rec := httptest.NewRecorder()

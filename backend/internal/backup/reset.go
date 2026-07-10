@@ -15,6 +15,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // handleDemoReset wipes and reseeds the shared demo Household (ADR-0041, #217).
@@ -147,7 +148,7 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 		return fmt.Errorf("demo reset: create second member: %w", err)
 	}
 
-	if err := seedDemoData(auth.WithUser(ctx, demoUser), pool, demoUser.ID, member2.ID); err != nil {
+	if err := seedDemoData(identity.WithUser(ctx, demoUser), pool, demoUser.ID, member2.ID); err != nil {
 		return err
 	}
 	return nil

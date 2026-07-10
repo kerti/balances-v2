@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // AssetRepo wraps the generated queries with tenancy-aware methods for the
@@ -165,7 +165,7 @@ func (r *AssetRepo) softDeleteAsset(ctx context.Context, id uuid.UUID) error {
 // currentUser returns (user_id, household_id) from request context, or
 // ErrUnauthenticated if no user is attached.
 func currentUser(ctx context.Context) (uuid.UUID, uuid.UUID, error) {
-	u, ok := auth.UserFromContext(ctx)
+	u, ok := identity.UserFromContext(ctx)
 	if !ok {
 		return uuid.Nil, uuid.Nil, ErrUnauthenticated
 	}

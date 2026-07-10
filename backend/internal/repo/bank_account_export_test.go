@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -26,8 +26,8 @@ func TestExportBankAccount(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	assets := repo.NewAssetRepo(tdb.Pool)
 	tags := repo.NewTagRepo(tdb.Pool)

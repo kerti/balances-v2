@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
@@ -212,7 +212,7 @@ func TestMintGoldenFixture(t *testing.T) {
 	if derefStr(alice.GoogleSub) != goldenSub {
 		t.Fatalf("seeded sub %q != goldenSub %q — update goldenSub", derefStr(alice.GoogleSub), goldenSub)
 	}
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 	seedHousehold(ctx, t, tdb.Pool, alice)
 	h := New(tdb.Pool, "http://golden.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 

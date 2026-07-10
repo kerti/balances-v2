@@ -15,6 +15,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // Handlers serves the backup endpoints. Export reads across every table, so it
@@ -111,7 +112,7 @@ func (h *Handlers) Mount(r chi.Router) {
 // (ADR-0036). The ?fidelity= query selects full (default — carries soft-deleted
 // rows) or compacted (live rows only).
 func (h *Handlers) handleExport(w http.ResponseWriter, r *http.Request) {
-	user, ok := auth.UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return

@@ -16,8 +16,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/liabilities"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
@@ -51,7 +51,7 @@ func newHarness(t *testing.T) *handlerHarness {
 // (the /tags routes aren't mounted on this liability router).
 func (h *handlerHarness) seedTag(t *testing.T, name string) uuid.UUID {
 	t.Helper()
-	ctx := auth.WithUser(context.Background(), h.user)
+	ctx := identity.WithUser(context.Background(), h.user)
 	tag, err := repo.NewTagRepo(h.pool).CreateTag(ctx, name, "#22c55e")
 	if err != nil {
 		t.Fatalf("seed tag: %v", err)
@@ -86,7 +86,7 @@ func (h *handlerHarness) doRaw(t *testing.T, method, path string, body any, user
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if user != nil {
-		req = req.WithContext(auth.WithUser(req.Context(), *user))
+		req = req.WithContext(identity.WithUser(req.Context(), *user))
 	}
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)

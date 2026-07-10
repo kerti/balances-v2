@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
@@ -32,7 +32,7 @@ func TestEraseHousehold_HappyPath(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 
 	// A second, invited (non-founder) member of Alice's household — must also
@@ -52,7 +52,7 @@ func TestEraseHousehold_HappyPath(t *testing.T) {
 
 	// Cross-tenant noise that must survive.
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	bobCtx := auth.WithUser(context.Background(), bob)
+	bobCtx := identity.WithUser(context.Background(), bob)
 	seedHousehold(bobCtx, t, tdb.Pool, bob)
 
 	issuer := &stubIssuer{}
@@ -146,7 +146,7 @@ func TestEraseHousehold_DemoModeForbidden(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{Enabled: true})
 
@@ -185,10 +185,10 @@ func TestEraseHousehold_NonFounderForbidden(t *testing.T) {
 	if err != nil {
 		t.Fatalf("seed peer: %v", err)
 	}
-	seedHousehold(auth.WithUser(context.Background(), alice), t, tdb.Pool, alice)
+	seedHousehold(identity.WithUser(context.Background(), alice), t, tdb.Pool, alice)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
-	peerCtx := auth.WithUser(context.Background(), peer)
+	peerCtx := identity.WithUser(context.Background(), peer)
 	rec := eraseReq(peerCtx, t, h.handleEraseHousehold, eraseHouseholdReq{HouseholdName: "whatever"})
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("status = %d, want 403, body=%s", rec.Code, rec.Body.String())
@@ -212,7 +212,7 @@ func TestEraseHousehold_NameMismatch(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 	seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
@@ -247,7 +247,7 @@ func TestEraseHousehold_BadRequest(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/backup/erase", bytes.NewReader([]byte("{not-json"))).WithContext(aliceCtx)

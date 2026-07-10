@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -35,7 +35,7 @@ func TestAssetRepo_BulkMonthlyEntry(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewAssetRepo(tdb.Pool)
 
 	acct, err := r.CreateBankAccount(ctx, repo.CreateBankAccountParams{
@@ -124,7 +124,7 @@ func TestLiabilityRepo_BulkMonthlyEntry(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewLiabilityRepo(tdb.Pool)
 
 	liab, err := r.CreateLiability(ctx, repo.CreateLiabilityParams{
@@ -196,7 +196,7 @@ func TestReceivableRepo_BulkMonthlyEntry(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewReceivableRepo(tdb.Pool)
 
 	recv, err := r.CreateReceivable(ctx, repo.CreateReceivableParams{
@@ -251,7 +251,7 @@ func TestInvestmentRepo_BulkMonthlyEntry_QtyPrice(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	stock, err := r.CreateStock(ctx, repo.CreateStockParams{
@@ -315,7 +315,7 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	bond, err := r.CreateBond(ctx, repo.CreateBondParams{

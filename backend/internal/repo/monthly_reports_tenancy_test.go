@@ -10,8 +10,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -40,8 +40,8 @@ func TestMonthlyReportRepo(t *testing.T) {
 	}
 	carol := testutil.CreateHouseholdWithUser(t, q, "Carol") // separate household
 
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	carolCtx := auth.WithUser(context.Background(), carol)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	carolCtx := identity.WithUser(context.Background(), carol)
 
 	// Joint bank account: snapshots in Jan + Mar (Feb gap -> carry-forward).
 	acct := createAsset(t, q, alice.HouseholdID, &alice.ID, nil, "joint")

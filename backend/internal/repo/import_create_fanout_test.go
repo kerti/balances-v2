@@ -7,8 +7,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -30,7 +30,7 @@ func TestCreatePropertyWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 
 	assets := repo.NewAssetRepo(tdb.Pool)
 	tags := repo.NewTagRepo(tdb.Pool)
@@ -66,7 +66,7 @@ func TestCreateVehicleWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 
 	assets := repo.NewAssetRepo(tdb.Pool)
 
@@ -96,7 +96,7 @@ func TestCreateLiabilityWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 
 	liabilities := repo.NewLiabilityRepo(tdb.Pool)
 	tags := repo.NewTagRepo(tdb.Pool)
@@ -133,7 +133,7 @@ func TestCreateReceivableWithSnapshots(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 
 	receivables := repo.NewReceivableRepo(tdb.Pool)
 
@@ -169,7 +169,7 @@ func TestFlatGroupLookups(t *testing.T) {
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 
 	tags := repo.NewTagRepo(tdb.Pool)
 	tag, err := tags.CreateTag(ctx, "Shared", "#22c55e")

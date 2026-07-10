@@ -13,8 +13,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/reports"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
@@ -63,7 +63,7 @@ func do(t *testing.T, router *chi.Mux, path string, user *db.User) *httptest.Res
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if user != nil {
-		req = req.WithContext(auth.WithUser(req.Context(), *user))
+		req = req.WithContext(identity.WithUser(req.Context(), *user))
 	}
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
@@ -137,7 +137,7 @@ func post(t *testing.T, router *chi.Mux, path string, user *db.User) *httptest.R
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, path, nil)
 	if user != nil {
-		req = req.WithContext(auth.WithUser(req.Context(), *user))
+		req = req.WithContext(identity.WithUser(req.Context(), *user))
 	}
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)

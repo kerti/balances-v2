@@ -15,13 +15,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/reports/pdf"
 	"github.com/kerti/balances-v2/backend/internal/version"
-	"github.com/shopspring/decimal"
 )
 
 type Handlers struct {
@@ -80,7 +82,7 @@ func (h *Handlers) handlePDF(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	locale := "en-GB"
-	if u, ok := auth.UserFromContext(ctx); ok && u.Locale != "" {
+	if u, ok := identity.UserFromContext(ctx); ok && u.Locale != "" {
 		locale = u.Locale
 	}
 	body, err := pdf.Render(buildPDFInput(row, positions, series, members, currency, locale, version.Version))

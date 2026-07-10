@@ -9,7 +9,7 @@ import (
 
 // CreateHouseholdWithUser creates a household and a single user within it,
 // bypassing the OAuth flow. Returns the persisted User row, suitable for
-// passing into auth.WithUser to simulate an authenticated request.
+// passing into identity.WithUser to simulate an authenticated request.
 func CreateHouseholdWithUser(t *testing.T, q *db.Queries, displayName string) db.User {
 	t.Helper()
 	ctx := context.Background()

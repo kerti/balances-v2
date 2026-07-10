@@ -9,8 +9,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -47,7 +47,7 @@ func TestSoftDelete_Idempotent(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewAssetRepo(tdb.Pool)
 
 	t.Run("snapshot delete is idempotent", func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestMonthlyReport_GatherExcludesDeletedSnapshot(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewAssetRepo(tdb.Pool)
 
 	jan := ymUTC(2026, time.January)

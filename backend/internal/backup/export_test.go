@@ -15,8 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -94,8 +94,8 @@ func TestBackupExport(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	liveAmount := seedHousehold(aliceCtx, t, tdb.Pool, alice)
 	seedHousehold(bobCtx, t, tdb.Pool, bob) // cross-tenant noise

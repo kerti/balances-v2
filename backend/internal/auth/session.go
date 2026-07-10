@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -13,12 +12,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
-)
-
-type contextKey int
-
-const (
-	userContextKey contextKey = iota
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 const sessionCookieName = "session"
@@ -68,19 +62,6 @@ func (h *Handlers) clearSessionCookie(w http.ResponseWriter) {
 	})
 }
 
-// UserFromContext returns the authenticated user from the request context, if any.
-func UserFromContext(ctx context.Context) (db.User, bool) {
-	u, ok := ctx.Value(userContextKey).(db.User)
-	return u, ok
-}
-
-// WithUser returns a child context with the given User attached. Production
-// code goes through SessionMiddleware; tests use this directly to simulate an
-// authenticated request without exercising the OAuth and session machinery.
-func WithUser(ctx context.Context, u db.User) context.Context {
-	return context.WithValue(ctx, userContextKey, u)
-}
-
 // SessionMiddleware reads the session cookie, looks up the session and user,
 // touches the session (sliding TTL), and injects the user into the request
 // context. Requests without a valid session continue without a user — handlers
@@ -120,14 +101,14 @@ func (h *Handlers) SessionMiddleware(next http.Handler) http.Handler {
 		// request's hash-and-lookup would never match this row again.
 		h.setSessionCookie(w, cookie.Value, newExpiresAt)
 
-		next.ServeHTTP(w, r.WithContext(WithUser(ctx, user)))
+		next.ServeHTTP(w, r.WithContext(identity.WithUser(ctx, user)))
 	})
 }
 
 // RequireAuth blocks requests that have no authenticated user in context.
 func RequireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := UserFromContext(r.Context()); !ok {
+		if _, ok := identity.UserFromContext(r.Context()); !ok {
 			httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 			return
 		}
