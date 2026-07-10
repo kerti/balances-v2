@@ -21,7 +21,11 @@ import { DashboardScreen } from "@/components/DashboardScreen";
 import { AssetsHome } from "@/components/AssetsHome";
 import { AssetEntryScreen } from "@/components/AssetEntryScreen";
 import { EntryScreen } from "@/components/entry/EntryScreen";
-import { liabilityEntryConfig, receivableEntryConfig } from "@/components/entry/groups";
+import {
+  liabilityEntryConfig,
+  receivableEntryConfig,
+  investmentEntryConfig,
+} from "@/components/entry/groups";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
 import { BankAccountDetail } from "@/components/BankAccountDetail";
@@ -235,6 +239,7 @@ const router = createBrowserRouter([
 
       // Investments
       { path: "investments", element: <InvestmentsHome /> },
+      { path: "investments/enter/prices", element: <EntryScreen config={investmentEntryConfig} /> },
       {
         path: "investments/stocks",
         element: (

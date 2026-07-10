@@ -122,3 +122,46 @@ DO UPDATE SET
     updated_by       = EXCLUDED.updated_by,
     updated_at       = now()
 RETURNING *;
+
+-- ----- bulk monthly-entry, qty×price shape (ADR-0046, #423) ------------------
+--
+-- Stock/MutualFund/Gold only: the three subtypes whose snapshots take the
+-- quantity+price_per_unit branch of investment_snapshot_shape. Bond/TimeDeposit
+-- (the accrued branch) are a separate slice (#424) with their own queries.
+-- Eligibility mirrors the asset rule: owned, not deleted, and either still
+-- active or terminated in the target month or later. created_at is deliberately
+-- not gated (a record timestamp, not economic existence — see the asset notes).
+
+-- name: ListEligibleQtyPriceInvestmentIDsForMonth :many
+SELECT id
+FROM investments
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND subtype IN ('stock', 'mutual_fund', 'gold')
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
+
+-- ListEligibleQtyPriceInvestmentsForMonth is the ID query plus the display
+-- fields the entry list needs (ADR-0046): name, native currency, and subtype so
+-- the entry view groups by type. Ordered by subtype then name so rows arrive
+-- pre-grouped; the entry view re-orders subtypes to its own preference.
+-- name: ListEligibleQtyPriceInvestmentsForMonth :many
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
+FROM investments
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND subtype IN ('stock', 'mutual_fund', 'gold')
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
+ORDER BY subtype, display_name;
+
+-- ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth returns, per investment,
+-- the most-recent snapshot at or before the target month — the carry-forward
+-- prefill for the entry list. Carries quantity + price_per_unit (the two
+-- tab-stops), month-bounded so a value entered ahead of the target does not leak
+-- backwards as the prefill.
+-- name: ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth :many
+SELECT DISTINCT ON (investment_id) investment_id, quantity, price_per_unit, year_month
+FROM investment_snapshots
+WHERE investment_id = ANY(sqlc.arg('investment_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY investment_id, year_month DESC;
