@@ -360,7 +360,7 @@ func TestReceivableHandlers_CreateSnapshot(t *testing.T) {
 			"year_month": "2030-01",
 			"amount":     "1000",
 			"currency":   "IDR",
-			"as_of_date": "2030-01-02",
+			"as_of_date": "2030-01-03",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
@@ -417,7 +417,7 @@ func TestReceivableHandlers_UpdateSnapshot(t *testing.T) {
 			map[string]any{
 				"amount":     "1",
 				"currency":   "IDR",
-				"as_of_date": "2030-01-02",
+				"as_of_date": "2030-01-03",
 			})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})

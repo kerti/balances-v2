@@ -247,7 +247,7 @@ func TestInvestmentTransactionHandlers_CommonErrors(t *testing.T) {
 	t.Run("400 future transaction_date on create", func(t *testing.T) {
 		rec := h.do(t, "POST", "/investments/"+stock.Investment.ID.String()+"/transactions", map[string]any{
 			"transaction_type": "dividend",
-			"transaction_date": "2030-01-02",
+			"transaction_date": "2030-01-03",
 			"currency":         "IDR",
 			"amount":           "1",
 		})
@@ -322,7 +322,7 @@ func TestInvestmentTransactionHandlers_ListUpdateDelete(t *testing.T) {
 		rec := h.do(t, "PATCH",
 			"/investments/"+stock.Investment.ID.String()+"/transactions/"+txn.ID.String(),
 			map[string]any{
-				"transaction_date": "2030-01-02",
+				"transaction_date": "2030-01-03",
 				"currency":         "IDR",
 				"amount":           "1",
 				"quantity":         "1",

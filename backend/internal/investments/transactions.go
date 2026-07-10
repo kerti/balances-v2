@@ -7,6 +7,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -67,7 +68,7 @@ func (h *Handlers) handleCreateTransaction(w http.ResponseWriter, r *http.Reques
 		writeInvalidDate(w, "transaction_date")
 		return
 	}
-	if isFutureDate(txnDate, h.now()) {
+	if dateguard.IsFuture(txnDate, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeTransactionFutureDate, nil)
 		return
 	}
@@ -129,7 +130,7 @@ func (h *Handlers) handleUpdateTransaction(w http.ResponseWriter, r *http.Reques
 		writeInvalidDate(w, "transaction_date")
 		return
 	}
-	if isFutureDate(txnDate, h.now()) {
+	if dateguard.IsFuture(txnDate, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeTransactionFutureDate, nil)
 		return
 	}

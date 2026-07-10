@@ -104,9 +104,22 @@ func TestAssetSnapshotHandlers_Create(t *testing.T) {
 			"year_month": "2030-01",
 			"amount":     "1000",
 			"currency":   "IDR",
-			"as_of_date": "2030-01-02",
+			"as_of_date": "2030-01-03",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	// #426: a UTC+ member's local "today" can be one civil day ahead of UTC;
+	// the guard tolerates that (fakeNow = 2030-01-01 UTC, so 2030-01-02 is a
+	// valid same-day save, not a future-date 400). Two days ahead still 400s.
+	t.Run("201 as_of_date one civil day ahead (tz tolerance)", func(t *testing.T) {
+		rec := h.do(t, "POST", "/assets/"+parent.Asset.ID.String()+"/snapshots", map[string]any{
+			"year_month": "2030-01",
+			"amount":     "1000",
+			"currency":   "IDR",
+			"as_of_date": "2030-01-02",
+		})
+		requireStatus(t, rec, http.StatusCreated)
 	})
 }
 
@@ -173,7 +186,7 @@ func TestAssetSnapshotHandlers_Update(t *testing.T) {
 			map[string]any{
 				"amount":     "1",
 				"currency":   "IDR",
-				"as_of_date": "2030-01-02",
+				"as_of_date": "2030-01-03",
 			})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
