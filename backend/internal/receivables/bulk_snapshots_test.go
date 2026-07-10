@@ -155,6 +155,42 @@ func TestReceivableSnapshotHandlers_Bulk(t *testing.T) {
 	})
 }
 
+// covers: INV-SNAPSHOTS-06
+func TestReceivableSnapshotHandlers_BulkValidation(t *testing.T) {
+	h := newHarness(t)
+	rv := h.createReceivable(t, "Validation parent")
+	goodRow := []map[string]any{{"receivable_id": rv.ID.String(), "amount": "1000", "currency": "IDR"}}
+
+	// fakeNow = 2030-01-01 UTC; 2030-02 is a future month and 2030-01-03 is more
+	// than the one-civil-day tz tolerance past today (#426), so both 400.
+	cases := []struct {
+		name string
+		body any
+		want int
+	}{
+		{"malformed JSON", "{not json", http.StatusBadRequest},
+		{"missing year_month", map[string]any{"rows": goodRow}, http.StatusBadRequest},
+		{"unparseable year_month", map[string]any{"year_month": "May 2026", "rows": goodRow}, http.StatusBadRequest},
+		{"future year_month", map[string]any{"year_month": "2030-02", "rows": goodRow}, http.StatusBadRequest},
+		{"bad as_of_date format", map[string]any{"year_month": "2026-05", "as_of_date": "05/31/2026", "rows": goodRow}, http.StatusBadRequest},
+		{"future as_of_date", map[string]any{"year_month": "2030-01", "as_of_date": "2030-01-03", "rows": goodRow}, http.StatusBadRequest},
+		{"row missing currency", map[string]any{"year_month": "2026-05", "rows": []map[string]any{{"receivable_id": rv.ID.String(), "amount": "1000"}}}, http.StatusBadRequest},
+		{"row bad uuid shape", map[string]any{"year_month": "2026-05", "rows": []map[string]any{{"receivable_id": "not-a-uuid", "amount": "1000", "currency": "IDR"}}}, http.StatusBadRequest},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			requireStatus(t, h.do(t, "POST", "/receivables/snapshots/bulk", tc.body), tc.want)
+		})
+	}
+
+	t.Run("entry list rejects a bad year_month", func(t *testing.T) {
+		requireStatus(t, h.do(t, "GET", "/receivables/snapshots/entry?year_month=nope", nil), http.StatusBadRequest)
+	})
+	t.Run("entry list rejects a future year_month", func(t *testing.T) {
+		requireStatus(t, h.do(t, "GET", "/receivables/snapshots/entry?year_month=2030-02", nil), http.StatusBadRequest)
+	})
+}
+
 type entryRow struct {
 	ReceivableID  string  `json:"receivable_id"`
 	DisplayName   string  `json:"display_name"`
