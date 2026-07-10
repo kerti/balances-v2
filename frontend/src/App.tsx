@@ -19,6 +19,14 @@ import { AppShell } from "@/components/AppShell";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { DashboardScreen } from "@/components/DashboardScreen";
 import { AssetsHome } from "@/components/AssetsHome";
+import { AssetEntryScreen } from "@/components/AssetEntryScreen";
+import { EntryScreen } from "@/components/entry/EntryScreen";
+import {
+  liabilityEntryConfig,
+  receivableEntryConfig,
+  investmentEntryConfig,
+  investmentAccruedEntryConfig,
+} from "@/components/entry/groups";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
 import { BankAccountDetail } from "@/components/BankAccountDetail";
@@ -76,6 +84,7 @@ const router = createBrowserRouter([
 
       // Assets
       { path: "assets", element: <AssetsHome /> },
+      { path: "assets/enter", element: <AssetEntryScreen /> },
       {
         path: "assets/bank-accounts",
         element: (
@@ -149,6 +158,7 @@ const router = createBrowserRouter([
 
       // Liabilities
       { path: "liabilities", element: <LiabilitiesHome /> },
+      { path: "liabilities/enter", element: <EntryScreen config={liabilityEntryConfig} /> },
       {
         path: "liabilities/personal",
         element: (
@@ -202,6 +212,7 @@ const router = createBrowserRouter([
       },
 
       // Receivables (flat)
+      { path: "receivables/enter", element: <EntryScreen config={receivableEntryConfig} /> },
       {
         path: "receivables",
         element: (
@@ -229,6 +240,11 @@ const router = createBrowserRouter([
 
       // Investments
       { path: "investments", element: <InvestmentsHome /> },
+      { path: "investments/enter/prices", element: <EntryScreen config={investmentEntryConfig} /> },
+      {
+        path: "investments/enter/accrued",
+        element: <EntryScreen config={investmentAccruedEntryConfig} />,
+      },
       {
         path: "investments/stocks",
         element: (

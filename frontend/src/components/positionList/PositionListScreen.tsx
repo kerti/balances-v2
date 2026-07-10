@@ -188,6 +188,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
           <p className="text-sm text-muted-foreground">{t(keys.listSubtitle, copyArgs)}</p>
         </div>
         <div className="flex items-center gap-2">
+          {descriptor.renderHeaderAction?.()}
           {importMutation && <ImportPositionDialog noun={noun} mutation={importMutation} />}
           {descriptor.renderCreateDialog()}
         </div>

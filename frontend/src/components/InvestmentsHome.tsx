@@ -19,8 +19,12 @@
 // fetch (`useInvestmentTimeSeries`, #22) — no per-position fan-out.
 
 import { useMemo } from "react";
+import { Link } from "react-router";
+import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { routes } from "@/lib/routes";
 import { InvestmentListHeadline } from "@/components/InvestmentListHeadline";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import { CategoryStackChart } from "@/components/CategoryStackChart";
@@ -130,11 +134,30 @@ export function InvestmentsHome() {
 
   return (
     <div className="space-y-6" data-testid="investments-home">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("common:home.investments.title")}
-        </h1>
-        <p className="text-sm text-muted-foreground">{t("investments:home.subtitle")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("common:home.investments.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t("investments:home.subtitle")}</p>
+        </div>
+        {/* Two bulk monthly-entry actions (ADR-0046): qty×price prices for
+            Stock/MutualFund/Gold (#423) and accrued values for Bond/TimeDeposit
+            (#424) — one per snapshot shape, matching how statements arrive. */}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button asChild size="sm" variant="outline" data-testid="investments-enter-accrued">
+            <Link to={routes.investmentsEnterAccrued}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.investmentsAccrued.trigger")}
+            </Link>
+          </Button>
+          <Button asChild size="sm" data-testid="investments-enter-prices">
+            <Link to={routes.investmentsEnterPrices}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.investments.trigger")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}

@@ -5,8 +5,12 @@
 // `renderHeadlineExtra` slot, keeping the core untouched.
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo } from "react";
+import { Link } from "react-router";
+import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { routes } from "@/lib/routes";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import { CreateReceivableDialog } from "@/components/CreateReceivableDialog";
 import { EditReceivableDialog } from "@/components/EditReceivableDialog";
@@ -67,43 +71,60 @@ function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
   );
 }
 
-export const receivableDescriptor = nonInvestmentDescriptor<ReceivableListItem>({
-  entityKey: "receivable",
-  testIdPrefix: "receivable",
-  group: "receivables",
-  i18nNamespaces: ["receivables", "common", "errors"],
-  keys: {
-    listTitle: "receivables:listTitle",
-    listSubtitle: "receivables:listSubtitle",
-    emptyTitle: "receivables:emptyTitle",
-    emptyBody: "receivables:emptyBody",
-    noun: "receivables:noun",
-    nounPlural: "receivables:nounPlural",
-    valueLabel: "receivables:sortLatestBalance",
-    rowActions: "receivables:rowActions",
-    deleteTitle: "receivables:deleteTitle",
-  },
-  useList: useReceivables,
-  useDelete: useDeleteReceivable,
-  useImport: useImportCreateReceivable,
-  entity: (item) => item.receivable,
-  getSnapshot: (item) => item.latest_snapshot,
-  getSecondary: (item, t) =>
-    item.receivable.counterparty_name +
-    (item.receivable.due_date
-      ? t("receivables:rowDueSuffix", {
-          date: formatDate(item.receivable.due_date),
-        })
-      : ""),
-  deleteDescription: (item, t) =>
-    t("receivables:deleteRowDescription", {
-      name: item.receivable.display_name,
-    }),
-  headlineLabelKey: "receivables:totalOutstanding",
-  headlineTestId: "receivables-total",
-  renderHeadlineExtra: (items) => <ReceivableCharts items={items} />,
-  renderCreateDialog: () => <CreateReceivableDialog />,
-  renderEditDialog: (item, props) => (
-    <EditReceivableDialog key={item.receivable.id} receivable={item.receivable} {...props} />
-  ),
-});
+// Receivables have no Home screen (flat group), so the bulk monthly-entry
+// launch (ADR-0046) lives in the list toolbar rather than on a Home header.
+function ReceivableEnterButton() {
+  const { t } = useTranslation("common");
+  return (
+    <Button asChild size="sm" data-testid="receivables-enter-month">
+      <Link to={routes.receivablesEnter}>
+        <CalendarPlus className="mr-1 size-4" />
+        {t("bulkEntry.trigger")}
+      </Link>
+    </Button>
+  );
+}
+
+export const receivableDescriptor = {
+  ...nonInvestmentDescriptor<ReceivableListItem>({
+    entityKey: "receivable",
+    testIdPrefix: "receivable",
+    group: "receivables",
+    i18nNamespaces: ["receivables", "common", "errors"],
+    keys: {
+      listTitle: "receivables:listTitle",
+      listSubtitle: "receivables:listSubtitle",
+      emptyTitle: "receivables:emptyTitle",
+      emptyBody: "receivables:emptyBody",
+      noun: "receivables:noun",
+      nounPlural: "receivables:nounPlural",
+      valueLabel: "receivables:sortLatestBalance",
+      rowActions: "receivables:rowActions",
+      deleteTitle: "receivables:deleteTitle",
+    },
+    useList: useReceivables,
+    useDelete: useDeleteReceivable,
+    useImport: useImportCreateReceivable,
+    entity: (item) => item.receivable,
+    getSnapshot: (item) => item.latest_snapshot,
+    getSecondary: (item, t) =>
+      item.receivable.counterparty_name +
+      (item.receivable.due_date
+        ? t("receivables:rowDueSuffix", {
+            date: formatDate(item.receivable.due_date),
+          })
+        : ""),
+    deleteDescription: (item, t) =>
+      t("receivables:deleteRowDescription", {
+        name: item.receivable.display_name,
+      }),
+    headlineLabelKey: "receivables:totalOutstanding",
+    headlineTestId: "receivables-total",
+    renderHeadlineExtra: (items) => <ReceivableCharts items={items} />,
+    renderCreateDialog: () => <CreateReceivableDialog />,
+    renderEditDialog: (item, props) => (
+      <EditReceivableDialog key={item.receivable.id} receivable={item.receivable} {...props} />
+    ),
+  }),
+  renderHeaderAction: () => <ReceivableEnterButton />,
+};

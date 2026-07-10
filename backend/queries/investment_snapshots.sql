@@ -122,3 +122,117 @@ DO UPDATE SET
     updated_by       = EXCLUDED.updated_by,
     updated_at       = now()
 RETURNING *;
+
+-- ----- bulk monthly-entry, qty×price shape (ADR-0046, #423) ------------------
+--
+-- Stock/MutualFund/Gold only: the three subtypes whose snapshots take the
+-- quantity+price_per_unit branch of investment_snapshot_shape. Bond/TimeDeposit
+-- (the accrued branch) are a separate slice (#424) with their own queries.
+-- Eligibility mirrors the asset rule: owned, not deleted, and either still
+-- active or terminated in the target month or later. created_at is deliberately
+-- not gated (a record timestamp, not economic existence — see the asset notes).
+
+-- name: ListEligibleQtyPriceInvestmentIDsForMonth :many
+SELECT id
+FROM investments
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND subtype IN ('stock', 'mutual_fund', 'gold')
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
+
+-- ListEligibleQtyPriceInvestmentsForMonth is the ID query plus the display
+-- fields the entry list needs (ADR-0046): name, native currency, and subtype so
+-- the entry view groups by type. Ordered by subtype then name so rows arrive
+-- pre-grouped; the entry view re-orders subtypes to its own preference.
+-- name: ListEligibleQtyPriceInvestmentsForMonth :many
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
+FROM investments
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND subtype IN ('stock', 'mutual_fund', 'gold')
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
+ORDER BY subtype, display_name;
+
+-- ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth returns, per investment,
+-- the most-recent snapshot at or before the target month — the carry-forward
+-- prefill for the entry list. Carries quantity + price_per_unit (the two
+-- tab-stops), month-bounded so a value entered ahead of the target does not leak
+-- backwards as the prefill.
+-- name: ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth :many
+SELECT DISTINCT ON (investment_id) investment_id, quantity, price_per_unit, year_month
+FROM investment_snapshots
+WHERE investment_id = ANY(sqlc.arg('investment_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY investment_id, year_month DESC;
+
+-- ----- bulk monthly-entry, accrued shape (ADR-0046, #424) --------------------
+--
+-- Bond/TimeDeposit only: the two subtypes whose snapshots take the
+-- accrued_interest branch of investment_snapshot_shape (accrued_interest set,
+-- quantity/price null). Stock/MutualFund/Gold (the qty×price branch) are the
+-- separate #423 slice above. A row carries the total value (amount) and the
+-- accrued-interest component — the same two figures the per-position accrued
+-- dialog takes — so, unlike qty×price, `amount` is entered directly (a bond's
+-- total value already *is* its snapshot amount), not derived. Eligibility
+-- mirrors the qty×price/asset rule (owned, not deleted, active or terminated in
+-- the target month or later); created_at is deliberately not gated (a record
+-- timestamp, not economic existence). A time deposit's snapshots are further
+-- confined to its term window (placement month..maturity month, issue #62) — the
+-- same repo-layer bound the per-position form applies — so an out-of-term month
+-- excludes it from the list and rejects a hand-crafted write row. The
+-- coupon_disposition of a bond drives only the entry list's per-row accrued
+-- default (empty vs 0), so it is joined in for the list; time deposits have no
+-- bond_details row and default to 0.
+
+-- name: ListEligibleAccruedInvestmentIDsForMonth :many
+SELECT i.id
+FROM investments i
+LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+WHERE i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL
+  AND i.subtype IN ('bond', 'time_deposit')
+  AND (i.terminated_at IS NULL OR i.terminated_at >= sqlc.arg('year_month')::date)
+  AND (
+    i.subtype <> 'time_deposit'
+    OR (date_trunc('month', td.placement_date)::date <= sqlc.arg('year_month')::date
+        AND date_trunc('month', td.maturity_date)::date >= sqlc.arg('year_month')::date)
+  );
+
+-- ListEligibleAccruedInvestmentsForMonth is the ID query plus the display fields
+-- the entry list needs (ADR-0046), and each bond's coupon_disposition (via a
+-- LEFT JOIN on bond_details) so the entry view can seed the accrued default the
+-- per-position form uses (accrues → forced entry, pays_out/time-deposit → 0).
+-- A time deposit has no bond_details row, so coupon_disposition is NULL — the
+-- repo treats NULL as pays_out. Time deposits are also confined to their term
+-- window (same predicate as the ID query). Ordered by subtype then name so rows
+-- arrive pre-grouped.
+-- name: ListEligibleAccruedInvestmentsForMonth :many
+SELECT i.id, i.display_name, i.native_currency, i.subtype, i.ownership_type,
+       i.sole_owner_user_id, bd.coupon_disposition
+FROM investments i
+LEFT JOIN bond_details bd ON bd.investment_id = i.id
+LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+WHERE i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL
+  AND i.subtype IN ('bond', 'time_deposit')
+  AND (i.terminated_at IS NULL OR i.terminated_at >= sqlc.arg('year_month')::date)
+  AND (
+    i.subtype <> 'time_deposit'
+    OR (date_trunc('month', td.placement_date)::date <= sqlc.arg('year_month')::date
+        AND date_trunc('month', td.maturity_date)::date >= sqlc.arg('year_month')::date)
+  )
+ORDER BY i.subtype, i.display_name;
+
+-- ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth returns, per investment,
+-- the most-recent snapshot at or before the target month — the carry-forward
+-- prefill for the accrued entry list. Carries amount (the total value tab-stop)
+-- and accrued_interest (the second tab-stop), month-bounded so a value entered
+-- ahead of the target does not leak backwards as the prefill.
+-- name: ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth :many
+SELECT DISTINCT ON (investment_id) investment_id, amount, accrued_interest, year_month
+FROM investment_snapshots
+WHERE investment_id = ANY(sqlc.arg('investment_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY investment_id, year_month DESC;

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/04-auth.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**29 / 29** invariants in this zone have at least one covering test (**29** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**30 / 30** invariants in this zone have at least one covering test (**30** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -37,3 +37,4 @@
 | INV-AUTH-27 | `GET /api/auth/methods` reports `demo_mode` (default false) and, only when true, the shared demo login (`demo_email`/`demo_password`) so the SPA can pre-fill the sign-in form (ADR-0041, #217) — with `demo_mode` false the credential fields are absent, not merely blank | `backend/internal/auth/local_test.go` |
 | INV-AUTH-28 | A session is hashed at rest (SHA-256 of the ≥256-bit bearer id) like every other credential-shaped secret (`HashToken`) — `sessions.id` never equals the plaintext cookie value, a DB leak yields no usable session, and the sliding-TTL cookie refresh (`SessionMiddleware`) re-issues the original plaintext, never the stored hash | `backend/internal/auth/session_test.go` |
 | INV-AUTH-29 | A second CSRF layer sits behind `SameSite=Lax` (INV-AUTH-03): every non-safe-method (`POST`/`PUT`/`PATCH`/`DELETE`) request is checked against `Sec-Fetch-Site` (must be `same-origin` or `none`) falling back to `Origin` (host must match the request host) when a browser omits the newer header; a request carrying neither signal (a non-browser client SameSite never protected anyway) is passed through rather than broken (`internal/httpserver` middleware, ahead of `SessionMiddleware`) | `backend/internal/httpserver/csrf_test.go` |
+| INV-AUTH-30 | When `GET /api/auth/methods` reports `demo_mode` true, the sign-in screen renders a public-demo notice (shared account · no real data · nightly wipe · no warranty · maintainer-run out-of-cycle reset via the project link) — the documented acceptance of the demo's writable-sandbox posture, since `restore-commit` is deliberately **not** demo-blocked (unlike Erasure/INV-BACKUP-14, a restore carries the shared credential across the wipe and re-issues a session, so it can't strand the shared login — the only defacement it enables persists until the nightly reset, exactly as an ordinary edit does). On a non-demo instance the notice is absent | `frontend/src/components/SignInScreen.test.tsx` |

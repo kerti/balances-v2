@@ -36,6 +36,8 @@ export const routes = {
 
   // Assets — home + three subtype lists, each with a detail under it.
   assets: "/assets",
+  // Bulk monthly-entry for the whole Asset group (ADR-0046).
+  assetsEnter: "/assets/enter",
   bankAccounts: "/assets/bank-accounts",
   bankAccount: (id: string) => `/assets/bank-accounts/${id}`,
   properties: "/assets/properties",
@@ -47,16 +49,28 @@ export const routes = {
   // (`/liabilities/personal/:id`) so the dynamic `:id` never overlaps the
   // literal `personal`/`institutional` segments. ADR-0025.
   liabilities: "/liabilities",
+  // Bulk monthly-entry for the whole Liability group (ADR-0046).
+  liabilitiesEnter: "/liabilities/enter",
   liabilitiesPersonal: "/liabilities/personal",
   liabilitiesInstitutional: "/liabilities/institutional",
   liability: (subtype: "personal" | "institutional", id: string) => `/liabilities/${subtype}/${id}`,
 
   // Receivables — flat group: the list is the root path, no home page.
   receivables: "/receivables",
+  // Bulk monthly-entry for the Receivable group (ADR-0046). Static segment, so
+  // it never collides with the `/receivables/:id` detail route.
+  receivablesEnter: "/receivables/enter",
   receivable: (id: string) => `/receivables/${id}`,
 
   // Investments — home + five subtype lists, each with a detail under it.
   investments: "/investments",
+  // Bulk monthly-entry, qty×price shape (ADR-0046, #423): the Stock/MutualFund/
+  // Gold price-entry view. Static `enter/prices` segments, so no clash with the
+  // `/investments/:subtype/:id` detail routes.
+  investmentsEnterPrices: "/investments/enter/prices",
+  // Bulk monthly-entry, accrued shape (ADR-0046, #424): the Bond/TimeDeposit
+  // total-value + accrued-interest view. Sibling `enter/accrued` segments.
+  investmentsEnterAccrued: "/investments/enter/accrued",
   stocks: "/investments/stocks",
   stock: (id: string) => `/investments/stocks/${id}`,
   mutualFunds: "/investments/mutual-funds",

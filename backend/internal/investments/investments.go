@@ -135,6 +135,19 @@ func (h *Handlers) Mount(r chi.Router) {
 		// two-segment /{id}/… routes below.
 		r.Get("/time-series", h.handleInvestmentTimeSeries)
 
+		// Bulk monthly-entry, qty×price shape (ADR-0046, #423): one save for
+		// many Stock/MutualFund/Gold positions. Static "snapshots" node, so chi
+		// prefers it over the /investments/{id}/snapshots param routes below.
+		r.Get("/snapshots/entry", h.handleInvestmentEntryList)
+		r.Post("/snapshots/bulk", h.handleBulkCreateInvestmentSnapshots)
+
+		// Bulk monthly-entry, accrued shape (ADR-0046, #424): the Bond/TimeDeposit
+		// twin under a distinct static "accrued" node, keeping its own list +
+		// bulk-save path so the qty×price and accrued entry views never share an
+		// endpoint. Static segments, so no clash with the param routes below.
+		r.Get("/snapshots/accrued/entry", h.handleInvestmentAccruedEntryList)
+		r.Post("/snapshots/accrued/bulk", h.handleBulkCreateInvestmentAccruedSnapshots)
+
 		r.Route("/{id}/snapshots", func(r chi.Router) {
 			r.Post("/", h.handleCreateSnapshot)
 			r.Get("/", h.handleListSnapshots)

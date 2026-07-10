@@ -14,8 +14,12 @@
 // historically (capped at terminated_at), via the shared `aggregateGroupHome`.
 
 import { useMemo } from "react";
+import { Link } from "react-router";
+import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { routes } from "@/lib/routes";
 import { SnapshotChart } from "@/components/SnapshotChart";
 import {
   GroupCategoryStackChart,
@@ -75,11 +79,19 @@ export function LiabilitiesHome() {
 
   return (
     <div className="space-y-6" data-testid="liabilities-home">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          {t("common:home.liabilities.title")}
-        </h1>
-        <p className="text-sm text-muted-foreground">{t("liabilities:home.subtitle")}</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("common:home.liabilities.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t("liabilities:home.subtitle")}</p>
+        </div>
+        <Button asChild size="sm" data-testid="liabilities-enter-month">
+          <Link to={routes.liabilitiesEnter}>
+            <CalendarPlus className="mr-1 size-4" />
+            {t("common:bulkEntry.trigger")}
+          </Link>
+        </Button>
       </div>
 
       {liabilities.isPending && (

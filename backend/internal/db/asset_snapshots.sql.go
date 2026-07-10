@@ -227,6 +227,105 @@ func (q *Queries) ListAssetSnapshotsForAsset(ctx context.Context, arg ListAssetS
 	return items, nil
 }
 
+const listEligibleAssetIDsForMonth = `-- name: ListEligibleAssetIDsForMonth :many
+SELECT id
+FROM assets
+WHERE household_id = $1::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= $2::date)
+`
+
+type ListEligibleAssetIDsForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+// ListEligibleAssetIDsForMonth returns the ids of the household's assets that
+// may legitimately hold a snapshot for the given target month (ADR-0046
+// month-aware eligibility): owned, not deleted, and either still active or
+// terminated in the target month or later. An asset terminated *before* the
+// target month never appears — its forward contribution is already frozen by
+// the carry-forward rule. There is deliberately no created_at guard: created_at
+// is a record timestamp, not economic existence, and gating on it would block
+// legitimate backfill of pre-creation months (the importer) and onboarding
+// (enter last month for an account added today) — the per-position dialog has
+// no such guard either.
+func (q *Queries) ListEligibleAssetIDsForMonth(ctx context.Context, arg ListEligibleAssetIDsForMonthParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listEligibleAssetIDsForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEligibleAssetsForMonth = `-- name: ListEligibleAssetsForMonth :many
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
+FROM assets
+WHERE household_id = $1::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= $2::date)
+ORDER BY subtype, display_name
+`
+
+type ListEligibleAssetsForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+type ListEligibleAssetsForMonthRow struct {
+	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
+	NativeCurrency  string     `json:"native_currency"`
+	Subtype         string     `json:"subtype"`
+	OwnershipType   string     `json:"ownership_type"`
+	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
+}
+
+// ListEligibleAssetsForMonth is ListEligibleAssetIDsForMonth plus the display
+// fields the bulk monthly-entry list needs (ADR-0046): name, native currency,
+// and subtype so the entry view can group by type (bank account / property /
+// vehicle). Ordered by subtype then display name so rows arrive pre-grouped —
+// the subtype strings sort bank_account < property < vehicle, the order the
+// entry view presents.
+func (q *Queries) ListEligibleAssetsForMonth(ctx context.Context, arg ListEligibleAssetsForMonthParams) ([]ListEligibleAssetsForMonthRow, error) {
+	rows, err := q.db.Query(ctx, listEligibleAssetsForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEligibleAssetsForMonthRow
+	for rows.Next() {
+		var i ListEligibleAssetsForMonthRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.NativeCurrency,
+			&i.Subtype,
+			&i.OwnershipType,
+			&i.SoleOwnerUserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLatestSnapshotsByAssetIDs = `-- name: ListLatestSnapshotsByAssetIDs :many
 SELECT DISTINCT ON (asset_id) id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
 FROM asset_snapshots
@@ -260,6 +359,50 @@ func (q *Queries) ListLatestSnapshotsByAssetIDs(ctx context.Context, dollar_1 []
 			&i.UpdatedAt,
 			&i.DeletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestSnapshotsByAssetIDsAsOfMonth = `-- name: ListLatestSnapshotsByAssetIDsAsOfMonth :many
+SELECT DISTINCT ON (asset_id) asset_id, amount, year_month
+FROM asset_snapshots
+WHERE asset_id = ANY($1::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= $2::date
+ORDER BY asset_id, year_month DESC
+`
+
+type ListLatestSnapshotsByAssetIDsAsOfMonthParams struct {
+	AssetIds  []uuid.UUID `json:"asset_ids"`
+	YearMonth time.Time   `json:"year_month"`
+}
+
+type ListLatestSnapshotsByAssetIDsAsOfMonthRow struct {
+	AssetID   uuid.UUID       `json:"asset_id"`
+	Amount    decimal.Decimal `json:"amount"`
+	YearMonth time.Time       `json:"year_month"`
+}
+
+// ListLatestSnapshotsByAssetIDsAsOfMonth returns, per asset, the most-recent
+// snapshot at or before the target month — the carry-forward prefill for the
+// entry list. Month-bounded so a value entered ahead of the target does not
+// leak backwards as the prefill.
+func (q *Queries) ListLatestSnapshotsByAssetIDsAsOfMonth(ctx context.Context, arg ListLatestSnapshotsByAssetIDsAsOfMonthParams) ([]ListLatestSnapshotsByAssetIDsAsOfMonthRow, error) {
+	rows, err := q.db.Query(ctx, listLatestSnapshotsByAssetIDsAsOfMonth, arg.AssetIds, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLatestSnapshotsByAssetIDsAsOfMonthRow
+	for rows.Next() {
+		var i ListLatestSnapshotsByAssetIDsAsOfMonthRow
+		if err := rows.Scan(&i.AssetID, &i.Amount, &i.YearMonth); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -115,3 +115,43 @@ DO UPDATE SET
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
 RETURNING *;
+
+-- ListEligibleLiabilityIDsForMonth returns the ids of the household's
+-- liabilities that may legitimately hold a snapshot for the given target month
+-- (ADR-0046 month-aware eligibility): owned, not deleted, and either still
+-- active or terminated in the target month or later. A liability terminated
+-- *before* the target month never appears — its forward contribution is already
+-- frozen by the carry-forward rule. No created_at guard, for the same reason as
+-- the Asset entry list: created_at is a record timestamp, not economic
+-- existence, and gating on it would block legitimate backfill/onboarding.
+-- name: ListEligibleLiabilityIDsForMonth :many
+SELECT id
+FROM liabilities
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date);
+
+-- ListEligibleLiabilitiesForMonth is ListEligibleLiabilityIDsForMonth plus the
+-- display fields the bulk monthly-entry list needs (ADR-0046): name, native
+-- currency, and subtype so the entry view can group by type (personal /
+-- institutional). Ordered by subtype then display name so rows arrive
+-- pre-grouped.
+-- name: ListEligibleLiabilitiesForMonth :many
+SELECT id, display_name, native_currency, subtype, ownership_type, sole_owner_user_id
+FROM liabilities
+WHERE household_id = sqlc.arg('household_id')::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= sqlc.arg('year_month')::date)
+ORDER BY subtype, display_name;
+
+-- ListLatestSnapshotsByLiabilityIDsAsOfMonth returns, per liability, the
+-- most-recent snapshot at or before the target month — the carry-forward
+-- prefill for the entry list. Month-bounded so a value entered ahead of the
+-- target does not leak backwards as the prefill.
+-- name: ListLatestSnapshotsByLiabilityIDsAsOfMonth :many
+SELECT DISTINCT ON (liability_id) liability_id, amount, year_month
+FROM liability_snapshots
+WHERE liability_id = ANY(sqlc.arg('liability_ids')::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= sqlc.arg('year_month')::date
+ORDER BY liability_id, year_month DESC;
