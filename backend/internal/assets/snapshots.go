@@ -7,6 +7,7 @@ import (
 
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -43,7 +44,7 @@ func (h *Handlers) handleCreateSnapshot(w http.ResponseWriter, r *http.Request) 
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -54,7 +55,7 @@ func (h *Handlers) handleCreateSnapshot(w http.ResponseWriter, r *http.Request) 
 			writeInvalidDate(w, "as_of_date")
 			return
 		}
-		if isFutureDate(t, h.now()) {
+		if dateguard.IsFuture(t, h.now()) {
 			httperr.Write(w, http.StatusBadRequest, httperr.CodeSnapshotFutureDate, nil)
 			return
 		}
@@ -121,7 +122,7 @@ func (h *Handlers) handleUpdateSnapshot(w http.ResponseWriter, r *http.Request) 
 			writeInvalidDate(w, "as_of_date")
 			return
 		}
-		if isFutureDate(t, h.now()) {
+		if dateguard.IsFuture(t, h.now()) {
 			httperr.Write(w, http.StatusBadRequest, httperr.CodeSnapshotFutureDate, nil)
 			return
 		}
@@ -165,21 +166,4 @@ func parseYearMonth(s string) (time.Time, error) {
 	}
 	// Force first-of-month per Q12a even if the caller sent a different day.
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC), nil
-}
-
-// isFutureYearMonth reports whether ym (first-of-month UTC) is strictly later
-// than the current month derived from now. A snapshot is by definition a past
-// observation, so future months are nonsense — backlog item lifted to M6.
-func isFutureYearMonth(ym, now time.Time) bool {
-	n := now.UTC()
-	currentMonth := time.Date(n.Year(), n.Month(), 1, 0, 0, 0, 0, time.UTC)
-	return ym.After(currentMonth)
-}
-
-// isFutureDate reports whether t (a calendar date parsed as UTC midnight) is
-// strictly after today UTC. Same backlog item as isFutureYearMonth.
-func isFutureDate(t, now time.Time) bool {
-	n := now.UTC()
-	today := time.Date(n.Year(), n.Month(), n.Day(), 0, 0, 0, 0, time.UTC)
-	return t.After(today)
 }

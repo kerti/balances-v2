@@ -172,7 +172,7 @@ func TestInvestmentSnapshotHandlers_CommonErrors(t *testing.T) {
 			"currency":       "IDR",
 			"quantity":       "1",
 			"price_per_unit": "1",
-			"as_of_date":     "2030-01-02",
+			"as_of_date":     "2030-01-03",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
@@ -195,7 +195,7 @@ func TestInvestmentSnapshotHandlers_CommonErrors(t *testing.T) {
 			"amount":           "1",
 			"currency":         "IDR",
 			"accrued_interest": "1",
-			"as_of_date":       "2030-01-02",
+			"as_of_date":       "2030-01-03",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
@@ -258,7 +258,7 @@ func TestInvestmentSnapshotHandlers_ListUpdateDelete(t *testing.T) {
 				"currency":       "IDR",
 				"quantity":       "1",
 				"price_per_unit": "1",
-				"as_of_date":     "2030-01-02",
+				"as_of_date":     "2030-01-03",
 			})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
