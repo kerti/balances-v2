@@ -7,7 +7,8 @@ import { api, ApiError, isEnvelope, type ErrorEnvelope } from "@/api/client";
 // — so a small data-layer config carries the API base + that field name, and
 // these hooks normalise every group to a single `position_id`-keyed shape the
 // EntryScreen renders uniformly.
-export type EntryGroup = "assets" | "liabilities" | "receivables" | "investments";
+export type EntryGroup =
+  "assets" | "liabilities" | "receivables" | "investments" | "investments-accrued";
 
 // EntryDataConfig is the data-layer half of a group's entry config: where its
 // endpoints live, the wire name of its position id, and the query keys a
@@ -26,8 +27,11 @@ export type EntryDataConfig = {
 //
 // The prefill fields are shape-specific (ADR-0022): amount-only groups populate
 // `prefill_amount`; the qty×price group (#423) populates `prefill_quantity` +
-// `prefill_price` instead. An `EntryShape` reads whichever pair its group uses;
-// the unused ones stay null.
+// `prefill_price` instead; the accrued group (#424) populates `prefill_amount`
+// (the total value) + `prefill_accrued_interest`. An `EntryShape` reads
+// whichever fields its group uses; the unused ones stay null. `coupon_disposition`
+// is carried only for the accrued group (a bond's, driving its per-row accrued
+// default); null for every other group and for time deposits.
 export type EntryRow = {
   position_id: string;
   display_name: string;
@@ -38,6 +42,8 @@ export type EntryRow = {
   prefill_amount: string | null;
   prefill_quantity: string | null;
   prefill_price: string | null;
+  prefill_accrued_interest: string | null;
+  coupon_disposition: string | null;
   carried_from: string | null;
 };
 
@@ -81,6 +87,8 @@ type RawEntryRow = Record<string, unknown> & {
   prefill_amount?: string | null;
   prefill_quantity?: string | null;
   prefill_price?: string | null;
+  prefill_accrued_interest?: string | null;
+  coupon_disposition?: string | null;
   carried_from: string | null;
 };
 
@@ -106,6 +114,8 @@ export function useEntryList(cfg: EntryDataConfig, yearMonth: string | null) {
           prefill_amount: r.prefill_amount ?? null,
           prefill_quantity: r.prefill_quantity ?? null,
           prefill_price: r.prefill_price ?? null,
+          prefill_accrued_interest: r.prefill_accrued_interest ?? null,
+          coupon_disposition: r.coupon_disposition ?? null,
           carried_from: r.carried_from,
         })),
       };

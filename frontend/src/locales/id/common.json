@@ -259,11 +259,20 @@
     "undo": "Urungkan",
     "quantity": "Jumlah",
     "pricePerUnit": "Harga per unit",
+    "totalValue": "Nilai total",
+    "accrued": "Bunga berjalan",
     "investments": {
       "trigger": "Isi harga",
       "title": "Isi harga bulan ini",
       "description": "Perbarui jumlah unit dan harga setiap aset untuk bulan yang dipilih. Nilainya dihitung otomatis, dan hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada aset yang memenuhi syarat untuk bulan ini.",
+      "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
+    },
+    "investmentsAccrued": {
+      "trigger": "Isi bunga",
+      "title": "Isi nilai obligasi & deposito bulan ini",
+      "description": "Perbarui nilai total dan bunga berjalan setiap obligasi dan deposito untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
+      "empty": "Belum ada obligasi atau deposito yang memenuhi syarat untuk bulan ini.",
       "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
     }
   }

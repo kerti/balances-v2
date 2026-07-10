@@ -7,11 +7,18 @@ import {
   LineChart,
   PieChart,
   Coins,
+  ScrollText,
+  PiggyBank,
   type LucideIcon,
 } from "lucide-react";
 import { routes } from "@/lib/routes";
 import type { EntryDataConfig } from "@/hooks/useBulkEntry";
-import { amountOnlyShape, qtyPriceShape, type EntryShape } from "@/components/entry/shapes";
+import {
+  amountOnlyShape,
+  qtyPriceShape,
+  accruedShape,
+  type EntryShape,
+} from "@/components/entry/shapes";
 
 // Per-group config for the bulk monthly-entry screen (ADR-0046). Extends the
 // data-layer EntryDataConfig (endpoints + id field) with the presentation the
@@ -115,5 +122,29 @@ export const investmentEntryConfig: EntryGroupConfig = {
     stock: { icon: LineChart, labelKey: "stock" },
     mutual_fund: { icon: PieChart, labelKey: "mutualFund" },
     gold: { icon: Coins, labelKey: "gold" },
+  },
+};
+
+// Investments (accrued shape, #424) — the two subtypes whose snapshots take the
+// accrued_interest branch: Bond, TimeDeposit. Each row carries the total value +
+// accrued interest (the per-position accrued dialog's two figures). Distinct
+// `group` id (own cache namespace) and `apiBase` (own /accrued/entry + /bulk
+// endpoints) so it never collides with the qty×price view. Invalidates the two
+// lists + the investment Home time-series so carried-forward totals refresh.
+// Stock/MutualFund/Gold (qty×price shape) live in investmentEntryConfig above.
+export const investmentAccruedEntryConfig: EntryGroupConfig = {
+  group: "investments-accrued",
+  shape: accruedShape,
+  copyPrefix: "bulkEntry.investmentsAccrued",
+  apiBase: "/api/investments/snapshots/accrued",
+  idField: "investment_id",
+  invalidateKeys: [["bonds"], ["time-deposits"], ["investment-time-series"]],
+  backRoute: routes.investments,
+  testidPrefix: "investment-accrued",
+  labelNs: "investments",
+  subtypeOrder: ["bond", "time_deposit"],
+  subtypeMeta: {
+    bond: { icon: ScrollText, labelKey: "bond" },
+    time_deposit: { icon: PiggyBank, labelKey: "timeDeposit" },
   },
 };

@@ -141,14 +141,23 @@ export function InvestmentsHome() {
           </h1>
           <p className="text-sm text-muted-foreground">{t("investments:home.subtitle")}</p>
         </div>
-        {/* qty×price bulk monthly-entry (ADR-0046, #423): Stock/MutualFund/Gold.
-            The accrued Bond/TimeDeposit entry (#424) will add a sibling action. */}
-        <Button asChild size="sm" data-testid="investments-enter-prices">
-          <Link to={routes.investmentsEnterPrices}>
-            <CalendarPlus className="mr-1 size-4" />
-            {t("common:bulkEntry.investments.trigger")}
-          </Link>
-        </Button>
+        {/* Two bulk monthly-entry actions (ADR-0046): qty×price prices for
+            Stock/MutualFund/Gold (#423) and accrued values for Bond/TimeDeposit
+            (#424) — one per snapshot shape, matching how statements arrive. */}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button asChild size="sm" variant="outline" data-testid="investments-enter-accrued">
+            <Link to={routes.investmentsEnterAccrued}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.investmentsAccrued.trigger")}
+            </Link>
+          </Button>
+          <Button asChild size="sm" data-testid="investments-enter-prices">
+            <Link to={routes.investmentsEnterPrices}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.investments.trigger")}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
