@@ -256,6 +256,15 @@
     "changedCount": "{{count}} diubah",
     "save": "Simpan semua",
     "overwritesThisMonth": "Akan menimpa",
-    "undo": "Urungkan"
+    "undo": "Urungkan",
+    "quantity": "Jumlah",
+    "pricePerUnit": "Harga per unit",
+    "investments": {
+      "trigger": "Isi harga",
+      "title": "Isi harga bulan ini",
+      "description": "Perbarui jumlah unit dan harga setiap aset untuk bulan yang dipilih. Nilainya dihitung otomatis, dan hanya yang Anda ubah yang disimpan.",
+      "empty": "Belum ada aset yang memenuhi syarat untuk bulan ini.",
+      "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
+    }
   }
 }

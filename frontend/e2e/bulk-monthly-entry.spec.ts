@@ -175,3 +175,74 @@ test(
     await expect(page.getByText(name)).toHaveCount(0);
   },
 );
+
+// The same journey for the Investment group's qty×price shape (#423): the mode
+// extends past the amount-only groups to Stock/MutualFund/Gold, where a row has
+// two tab-stops (quantity, price per unit) and the value is computed. Launched
+// from the Investments Home header. Proves the two-field row goes dirty, saves,
+// and re-opens carrying the same factors forward with the overwrite warning.
+// covers: INV-JOURNEYS-05
+test(
+  "investment qty×price bulk monthly-entry: list → save → re-open shows overwrite",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E bulk stock ${Date.now()}`;
+
+    await page.goto("/investments/stocks");
+    await page.getByRole("button", { name: "New stock" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("New stock position")).toBeVisible();
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Ticker").fill("E2EB");
+    await dialog.getByLabel("Exchange").fill("IDX");
+    await dialog.getByLabel("Risk profile").selectOption("medium");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // Launch the qty×price price-entry view from the Investments Home header.
+    await page.goto("/investments");
+    await expect(page.getByTestId("investments-home")).toBeVisible();
+    await page.getByTestId("investments-enter-prices").click();
+    await expect(page.getByText("Enter this month's prices")).toBeVisible();
+
+    // The new stock is listed with no history and nothing counted as changed.
+    const row = page.locator("li").filter({ hasText: name });
+    await expect(row.getByText("No previous value")).toBeVisible();
+    await expect(page.getByTestId("investment-entry-dirty-count")).toHaveText("0 changed");
+
+    // Typing only the quantity leaves the pair incomplete — still not dirty.
+    await row.getByLabel("Quantity").fill("100");
+    await expect(page.getByTestId("investment-entry-dirty-count")).toHaveText("0 changed");
+    // Add the price: the pair completes, the row goes dirty, value is computed.
+    await row.getByLabel("Price per unit").fill("8500");
+    await expect(page.getByTestId("investment-entry-dirty-count")).toHaveText("1 changed");
+
+    // Pin the statement date to the first of the chosen month (UTC-safe; see the
+    // asset journey above for why).
+    const month = await page.getByTestId("investment-entry-month").inputValue();
+    await page.getByTestId("investment-entry-asof").fill(`${month}-01`);
+
+    await page.getByTestId("investment-entry-save").click();
+    await expect(page).toHaveURL(/\/investments$/);
+    await expect(page.getByTestId("investments-home")).toBeVisible();
+
+    // Re-open the same month: the write persisted, so the row carries forward its
+    // own quantity + price and warns the next save overwrites it.
+    await page.getByTestId("investments-enter-prices").click();
+    const savedRow = page.locator("li").filter({ hasText: name });
+    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByLabel("Quantity")).toHaveValue("100");
+    await expect(savedRow.getByLabel("Price per unit")).toHaveValue("8500");
+
+    // Cleanup: delete the parent stock from its detail page.
+    await page.goto("/investments/stocks");
+    await page
+      .getByRole("row", { name: new RegExp(name) })
+      .getByText(name)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);
