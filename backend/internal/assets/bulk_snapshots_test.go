@@ -222,7 +222,10 @@ func TestAssetSnapshotHandlers_BulkValidation(t *testing.T) {
 		{"unparseable year_month", map[string]any{"year_month": "May 2026", "rows": goodRow}, http.StatusBadRequest},
 		{"future year_month", map[string]any{"year_month": "2030-02", "rows": goodRow}, http.StatusBadRequest},
 		{"bad as_of_date format", map[string]any{"year_month": "2026-05", "as_of_date": "05/31/2026", "rows": goodRow}, http.StatusBadRequest},
-		{"future as_of_date", map[string]any{"year_month": "2030-01", "as_of_date": "2030-01-02", "rows": goodRow}, http.StatusBadRequest},
+		{"future as_of_date", map[string]any{"year_month": "2030-01", "as_of_date": "2030-01-03", "rows": goodRow}, http.StatusBadRequest},
+		// #426: fakeNow = 2030-01-01 UTC; a UTC+ member's local-today can be
+		// one civil day ahead, so 2030-01-02 is a valid same-day save here.
+		{"as_of_date one civil day ahead (tz tolerance)", map[string]any{"year_month": "2030-01", "as_of_date": "2030-01-02", "rows": goodRow}, http.StatusOK},
 		{"row missing currency", map[string]any{"year_month": "2026-05", "rows": []map[string]any{{"asset_id": acct.Asset.ID.String(), "amount": "1000"}}}, http.StatusBadRequest},
 		{"row bad uuid shape", map[string]any{"year_month": "2026-05", "rows": []map[string]any{{"asset_id": "not-a-uuid", "amount": "1000", "currency": "IDR"}}}, http.StatusBadRequest},
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -72,7 +73,7 @@ func (h *Handlers) handleEntryList(w http.ResponseWriter, r *http.Request) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -127,7 +128,7 @@ func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Requ
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -139,7 +140,7 @@ func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Requ
 			writeInvalidDate(w, "as_of_date")
 			return
 		}
-		if isFutureDate(t, h.now()) {
+		if dateguard.IsFuture(t, h.now()) {
 			httperr.Write(w, http.StatusBadRequest, httperr.CodeSnapshotFutureDate, nil)
 			return
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -77,7 +78,7 @@ func (h *Handlers) handleInvestmentEntryList(w http.ResponseWriter, r *http.Requ
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -137,7 +138,7 @@ func (h *Handlers) handleBulkCreateInvestmentSnapshots(w http.ResponseWriter, r 
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -149,7 +150,7 @@ func (h *Handlers) handleBulkCreateInvestmentSnapshots(w http.ResponseWriter, r 
 			writeInvalidDate(w, "as_of_date")
 			return
 		}
-		if isFutureDate(t, h.now()) {
+		if dateguard.IsFuture(t, h.now()) {
 			httperr.Write(w, http.StatusBadRequest, httperr.CodeSnapshotFutureDate, nil)
 			return
 		}
@@ -252,7 +253,7 @@ func (h *Handlers) handleInvestmentAccruedEntryList(w http.ResponseWriter, r *ht
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -314,7 +315,7 @@ func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWri
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	if isFutureYearMonth(ym, h.now()) {
+	if dateguard.IsFutureMonth(ym, h.now()) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeFutureYearMonth, nil)
 		return
 	}
@@ -326,7 +327,7 @@ func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWri
 			writeInvalidDate(w, "as_of_date")
 			return
 		}
-		if isFutureDate(t, h.now()) {
+		if dateguard.IsFuture(t, h.now()) {
 			httperr.Write(w, http.StatusBadRequest, httperr.CodeSnapshotFutureDate, nil)
 			return
 		}

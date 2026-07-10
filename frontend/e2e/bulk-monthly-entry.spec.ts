@@ -40,13 +40,9 @@ test(
     await row.getByRole("textbox").fill("12500000");
     await expect(page.getByTestId("asset-entry-dirty-count")).toHaveText("1 changed");
 
-    // Pin the statement date to the first of the chosen month rather than the
-    // browser-local "today" the screen seeds: the backend's future-date guard
-    // compares in UTC, so a UTC+ tester running pre-dawn would send a date one
-    // calendar day ahead of the server's UTC today and the save would 400. The
-    // first-of-month is unambiguously past and in-month in every timezone.
-    const month = await page.getByTestId("asset-entry-month").inputValue();
-    await page.getByTestId("asset-entry-asof").fill(`${month}-01`);
+    // The statement date is left as the screen's seeded browser-local "today":
+    // the backend future-date guard tolerates the max forward timezone offset,
+    // so a UTC+ tester running pre-dawn no longer 400s (#426).
 
     // --- Save all: a successful batch redirects back to Assets home ---
     await page.getByTestId("asset-entry-save").click();
@@ -104,8 +100,7 @@ test(
 
     await row.getByRole("textbox").fill("250000000");
     await expect(page.getByTestId("liability-entry-dirty-count")).toHaveText("1 changed");
-    const lMonth = await page.getByTestId("liability-entry-month").inputValue();
-    await page.getByTestId("liability-entry-asof").fill(`${lMonth}-01`);
+    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
 
     await page.getByTestId("liability-entry-save").click();
     await expect(page).toHaveURL(/\/liabilities$/);
@@ -154,8 +149,7 @@ test(
 
     await row.getByRole("textbox").fill("4500000");
     await expect(page.getByTestId("receivable-entry-dirty-count")).toHaveText("1 changed");
-    const rMonth = await page.getByTestId("receivable-entry-month").inputValue();
-    await page.getByTestId("receivable-entry-asof").fill(`${rMonth}-01`);
+    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
 
     await page.getByTestId("receivable-entry-save").click();
     await expect(page).toHaveURL(/\/receivables$/);
@@ -217,10 +211,7 @@ test(
     await row.getByLabel("Price per unit").fill("8500");
     await expect(page.getByTestId("investment-entry-dirty-count")).toHaveText("1 changed");
 
-    // Pin the statement date to the first of the chosen month (UTC-safe; see the
-    // asset journey above for why).
-    const month = await page.getByTestId("investment-entry-month").inputValue();
-    await page.getByTestId("investment-entry-asof").fill(`${month}-01`);
+    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
 
     await page.getByTestId("investment-entry-save").click();
     await expect(page).toHaveURL(/\/investments$/);
@@ -283,10 +274,7 @@ test(
     await row.getByLabel("Total value").fill("1010000");
     await expect(page.getByTestId("investment-accrued-entry-dirty-count")).toHaveText("1 changed");
 
-    // Pin the statement date to the first of the chosen month (UTC-safe; see the
-    // asset journey above for why).
-    const month = await page.getByTestId("investment-accrued-entry-month").inputValue();
-    await page.getByTestId("investment-accrued-entry-asof").fill(`${month}-01`);
+    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
 
     await page.getByTestId("investment-accrued-entry-save").click();
     await expect(page).toHaveURL(/\/investments$/);
