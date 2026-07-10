@@ -73,3 +73,105 @@ test(
     await expect(page.getByText(account)).toHaveCount(0);
   },
 );
+
+// The same journey for the Liability group (#422): the mode generalises to the
+// amount-only groups. Launched from the Liabilities Home header rather than an
+// aggregate, and the group is grouped-by-subtype like Assets.
+// covers: INV-JOURNEYS-05
+test(
+  "liability bulk monthly-entry: list → save → re-open shows overwrite",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E bulk liability ${Date.now()}`;
+
+    await page.goto("/liabilities/personal");
+    await page.getByRole("button", { name: "New liability" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // Launch from the Liabilities Home header.
+    await page.goto("/liabilities");
+    await expect(page.getByTestId("liabilities-home")).toBeVisible();
+    await page.getByTestId("liabilities-enter-month").click();
+    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+
+    const row = page.locator("li").filter({ hasText: name });
+    await expect(row.getByText("No previous value")).toBeVisible();
+    await expect(page.getByTestId("liability-entry-dirty-count")).toHaveText("0 changed");
+
+    await row.getByRole("textbox").fill("250000000");
+    await expect(page.getByTestId("liability-entry-dirty-count")).toHaveText("1 changed");
+    const lMonth = await page.getByTestId("liability-entry-month").inputValue();
+    await page.getByTestId("liability-entry-asof").fill(`${lMonth}-01`);
+
+    await page.getByTestId("liability-entry-save").click();
+    await expect(page).toHaveURL(/\/liabilities$/);
+    await expect(page.getByTestId("liabilities-home")).toBeVisible();
+
+    await page.getByTestId("liabilities-enter-month").click();
+    const savedRow = page.locator("li").filter({ hasText: name });
+    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByRole("textbox")).toHaveValue("250000000");
+
+    // Cleanup: delete via the list row actions menu.
+    await page.goto("/liabilities/personal");
+    const listRow = page.getByRole("row", { name: new RegExp(name) });
+    await listRow.getByRole("button", { name: "Liability actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);
+
+// The same journey for the Receivable group (#422) — the flat-group case: no
+// Home screen, so entry is launched from the list toolbar, and the entry view
+// renders one ungrouped list.
+// covers: INV-JOURNEYS-05
+test(
+  "receivable bulk monthly-entry: list → save → re-open shows overwrite",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E bulk receivable ${Date.now()}`;
+
+    await page.goto("/receivables");
+    await page.getByRole("button", { name: "New receivable" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // Launch from the list toolbar (flat group has no Home).
+    await page.getByTestId("receivables-enter-month").click();
+    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+
+    const row = page.locator("li").filter({ hasText: name });
+    await expect(row.getByText("No previous value")).toBeVisible();
+    await expect(page.getByTestId("receivable-entry-dirty-count")).toHaveText("0 changed");
+
+    await row.getByRole("textbox").fill("4500000");
+    await expect(page.getByTestId("receivable-entry-dirty-count")).toHaveText("1 changed");
+    const rMonth = await page.getByTestId("receivable-entry-month").inputValue();
+    await page.getByTestId("receivable-entry-asof").fill(`${rMonth}-01`);
+
+    await page.getByTestId("receivable-entry-save").click();
+    await expect(page).toHaveURL(/\/receivables$/);
+    await expect(page.getByRole("button", { name: "New receivable" }).first()).toBeVisible();
+
+    await page.getByTestId("receivables-enter-month").click();
+    const savedRow = page.locator("li").filter({ hasText: name });
+    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByRole("textbox")).toHaveValue("4500000");
+
+    // Cleanup: delete via the list row actions menu.
+    await page.goto("/receivables");
+    const listRow = page.getByRole("row", { name: new RegExp(name) });
+    await listRow.getByRole("button", { name: "Receivable actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);

@@ -63,6 +63,11 @@ func (h *Handlers) Mount(r chi.Router) {
 		// chart (epic #204). Value-only — receivables carry no cost basis.
 		// Static single segment, so no clash with the /{id}/… routes below.
 		r.Get("/time-series", h.handleReceivableTimeSeries)
+		// Bulk monthly-entry (ADR-0046): one save for many positions of the
+		// Receivable group. Static two-segment "snapshots/…" paths, so chi
+		// prefers them over the /{id}/… param routes below.
+		r.Get("/snapshots/entry", h.handleEntryList)
+		r.Post("/snapshots/bulk", h.handleBulkCreateSnapshots)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGet)
 			r.Patch("/", h.handleUpdate)
