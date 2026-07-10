@@ -1,4 +1,4 @@
-package assets
+package liabilities
 
 import (
 	"encoding/json"
@@ -12,15 +12,16 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
-// bulkSnapshotRow is one dirty position value in a bulk monthly-entry batch.
+// Bulk monthly-entry for the Liability group (ADR-0046). Structural twin of the
+// Asset handler — same amount-only shape, dirty-only atomic save, per-row 422 —
+// against the liability repo.
+
 type bulkSnapshotRow struct {
-	AssetID  string           `json:"asset_id" validate:"required,uuid"`
-	Amount   *decimal.Decimal `json:"amount"   validate:"required"`
-	Currency string           `json:"currency" validate:"required,iso4217"`
+	LiabilityID string           `json:"liability_id" validate:"required,uuid"`
+	Amount      *decimal.Decimal `json:"amount"       validate:"required"`
+	Currency    string           `json:"currency"     validate:"required,iso4217"`
 }
 
-// bulkSnapshotReq is a whole bulk monthly-entry save (ADR-0046): one batch-level
-// target month + as-of date, and the dirty rows only.
 type bulkSnapshotReq struct {
 	YearMonth string  `json:"year_month" validate:"required"`
 	AsOfDate  *string `json:"as_of_date"`
@@ -34,21 +35,21 @@ type bulkSnapshotResp struct {
 	Written int `json:"written"`
 }
 
-// bulkRowError reports one rejected row, keyed by asset so the UI marks exactly
-// that row (ADR-0046). Code mirrors the repo's rejection reason.
+// bulkRowError reports one rejected row, keyed by liability so the UI marks
+// exactly that row (ADR-0046).
 type bulkRowError struct {
-	AssetID string `json:"asset_id"`
-	Code    string `json:"code"`
+	LiabilityID string `json:"liability_id"`
+	Code        string `json:"code"`
 }
 
 type bulkSnapshotErrResp struct {
 	Errors []bulkRowError `json:"errors"`
 }
 
-// entryRowResp is one asset in the bulk monthly-entry list. PrefillAmount /
-// CarriedFrom are null for an asset with no history at or before the month.
+// entryRowResp is one liability in the bulk monthly-entry list. PrefillAmount /
+// CarriedFrom are null for a liability with no history at or before the month.
 type entryRowResp struct {
-	AssetID         string  `json:"asset_id"`
+	LiabilityID     string  `json:"liability_id"`
 	DisplayName     string  `json:"display_name"`
 	Currency        string  `json:"currency"`
 	Subtype         string  `json:"subtype"`
@@ -63,11 +64,9 @@ type entryListResp struct {
 	Rows      []entryRowResp `json:"rows"`
 }
 
-// handleAssetEntryList returns the bulk monthly-entry list for a target month:
-// eligible assets with carry-forward prefill (ADR-0046). The when-control
-// defaults (target month, as-of date from carryover_date_mode) are composed
-// client-side, which already owns that date machinery.
-func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) {
+// handleEntryList returns the bulk monthly-entry list for a target month:
+// eligible liabilities with carry-forward prefill (ADR-0046).
+func (h *Handlers) handleEntryList(w http.ResponseWriter, r *http.Request) {
 	ym, err := parseYearMonth(r.URL.Query().Get("year_month"))
 	if err != nil {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
@@ -78,16 +77,16 @@ func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	rows, err := h.repo.ListAssetEntryRows(r.Context(), ym)
+	rows, err := h.repo.ListLiabilityEntryRows(r.Context(), ym)
 	if err != nil {
-		httperr.WriteRepo(w, "asset entry list", err)
+		httperr.WriteRepo(w, "liability entry list", err)
 		return
 	}
 
 	resp := entryListResp{YearMonth: ym.Format("2006-01"), Rows: make([]entryRowResp, len(rows))}
 	for i, row := range rows {
 		out := entryRowResp{
-			AssetID:       row.AssetID.String(),
+			LiabilityID:   row.LiabilityID.String(),
 			DisplayName:   row.DisplayName,
 			Currency:      row.Currency,
 			Subtype:       row.Subtype,
@@ -110,8 +109,8 @@ func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// handleBulkCreateSnapshots writes a bulk monthly-entry batch for the Asset
-// group — atomically, dirty-rows-only, upserting on (asset_id, year_month).
+// handleBulkCreateSnapshots writes a bulk monthly-entry batch for the Liability
+// group — atomically, dirty-rows-only, upserting on (liability_id, year_month).
 func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Request) {
 	var req bulkSnapshotReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -147,33 +146,33 @@ func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Requ
 		asOf = &t
 	}
 
-	rows := make([]repo.BulkAssetSnapshotRow, len(req.Rows))
+	rows := make([]repo.BulkLiabilitySnapshotRow, len(req.Rows))
 	for i, row := range req.Rows {
-		id, err := uuid.Parse(row.AssetID)
+		id, err := uuid.Parse(row.LiabilityID)
 		if err != nil {
-			writeInvalidID(w, "asset_id")
+			writeInvalidID(w, "liability_id")
 			return
 		}
-		rows[i] = repo.BulkAssetSnapshotRow{
-			AssetID:  id,
-			Amount:   *row.Amount,
-			Currency: row.Currency,
+		rows[i] = repo.BulkLiabilitySnapshotRow{
+			LiabilityID: id,
+			Amount:      *row.Amount,
+			Currency:    row.Currency,
 		}
 	}
 
-	written, rowErrs, err := h.repo.BulkUpsertAssetSnapshots(r.Context(), repo.BulkUpsertAssetSnapshotsParams{
+	written, rowErrs, err := h.repo.BulkUpsertLiabilitySnapshots(r.Context(), repo.BulkUpsertLiabilitySnapshotsParams{
 		YearMonth: ym,
 		AsOfDate:  asOf,
 		Rows:      rows,
 	})
 	if err != nil {
-		httperr.WriteRepo(w, "bulk asset snapshots", err)
+		httperr.WriteRepo(w, "bulk liability snapshots", err)
 		return
 	}
 	if len(rowErrs) > 0 {
 		resp := bulkSnapshotErrResp{Errors: make([]bulkRowError, len(rowErrs))}
 		for i, e := range rowErrs {
-			resp.Errors[i] = bulkRowError{AssetID: e.PositionID.String(), Code: e.Reason}
+			resp.Errors[i] = bulkRowError{LiabilityID: e.PositionID.String(), Code: e.Reason}
 		}
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return

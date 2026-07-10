@@ -7,6 +7,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { http, HttpResponse, type HttpHandler } from "msw";
 import { screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
@@ -259,7 +260,13 @@ describe("non-investment descriptors (conformance)", () => {
     "$label loads and surfaces its declared columns",
     async ({ descriptor, rowTestId, headlineTestId, name, secondary, handlers }) => {
       server.use(...commonHandlers, ...handlers);
-      renderWithProviders(<PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />);
+      // MemoryRouter: a descriptor may render a routed toolbar action (the
+      // Receivable group's bulk monthly-entry launch is a <Link>, ADR-0046).
+      renderWithProviders(
+        <MemoryRouter>
+          <PositionListScreen descriptor={descriptor} onSelect={vi.fn()} />
+        </MemoryRouter>,
+      );
 
       const row = await screen.findByTestId(rowTestId);
       expect(within(row).getByText(name)).toBeInTheDocument();

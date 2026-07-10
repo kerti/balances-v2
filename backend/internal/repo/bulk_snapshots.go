@@ -34,10 +34,12 @@ const (
 )
 
 // BulkSnapshotRowError identifies one row that failed pre-write validation,
-// keyed by asset so the UI can mark exactly that row (ADR-0046).
+// keyed by position so the UI can mark exactly that row (ADR-0046). Shared
+// across the amount-only groups (Asset/Liability/Receivable) — PositionID is
+// the asset/liability/receivable id depending on which bulk save produced it.
 type BulkSnapshotRowError struct {
-	AssetID uuid.UUID
-	Reason  string
+	PositionID uuid.UUID
+	Reason     string
 }
 
 // AssetEntryRow is one row of the bulk monthly-entry list (ADR-0046): an
@@ -142,7 +144,7 @@ func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAs
 	var rowErrs []BulkSnapshotRowError
 	for _, row := range p.Rows {
 		if _, ok := eligibleSet[row.AssetID]; !ok {
-			rowErrs = append(rowErrs, BulkSnapshotRowError{AssetID: row.AssetID, Reason: BulkRowIneligible})
+			rowErrs = append(rowErrs, BulkSnapshotRowError{PositionID: row.AssetID, Reason: BulkRowIneligible})
 		}
 	}
 	if len(rowErrs) > 0 {
@@ -173,6 +175,322 @@ func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAs
 
 	if err := tx.Commit(ctx); err != nil {
 		return 0, nil, fmt.Errorf("bulk asset snapshots: commit: %w", err)
+	}
+	return len(p.Rows), nil, nil
+}
+
+// ----- Liability bulk monthly-entry (ADR-0046) -----------------------------
+//
+// Structural twin of the Asset methods above, against the liabilities /
+// liability_snapshots tables. Kept as a parallel implementation rather than a
+// generic one because the sqlc-generated queries are per-table (distinct
+// param/row types) and the repo package already duplicates asset/liability/
+// receivable this way.
+
+// BulkLiabilitySnapshotRow is one liability's value in a bulk monthly-entry
+// batch — dirty-only; the target month and as-of date are batch-level.
+type BulkLiabilitySnapshotRow struct {
+	LiabilityID uuid.UUID
+	Amount      decimal.Decimal
+	Currency    string
+}
+
+// BulkUpsertLiabilitySnapshotsParams carries a whole batch: one target month,
+// one as-of date, N dirty rows.
+type BulkUpsertLiabilitySnapshotsParams struct {
+	YearMonth time.Time
+	AsOfDate  *time.Time
+	Rows      []BulkLiabilitySnapshotRow
+}
+
+// LiabilityEntryRow is one row of the bulk monthly-entry list: an eligible
+// liability with its carry-forward prefill. PrefillAmount/CarriedFrom are nil
+// for a liability with no snapshot at or before the target month.
+type LiabilityEntryRow struct {
+	LiabilityID     uuid.UUID
+	DisplayName     string
+	Currency        string
+	Subtype         string
+	OwnershipType   string
+	SoleOwnerUserID *uuid.UUID
+	PrefillAmount   *decimal.Decimal
+	CarriedFrom     *time.Time
+}
+
+// ListLiabilityEntryRows returns the bulk monthly-entry list for a target
+// month: every eligible liability with its most-recent snapshot at or before
+// that month as the carry-forward prefill.
+func (r *LiabilityRepo) ListLiabilityEntryRows(ctx context.Context, yearMonth time.Time) ([]LiabilityEntryRow, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	liabilities, err := r.q.ListEligibleLiabilitiesForMonth(ctx, db.ListEligibleLiabilitiesForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("liability entry rows: list eligible: %w", err)
+	}
+	if len(liabilities) == 0 {
+		return nil, nil
+	}
+
+	ids := make([]uuid.UUID, len(liabilities))
+	for i, l := range liabilities {
+		ids[i] = l.ID
+	}
+	latest, err := r.q.ListLatestSnapshotsByLiabilityIDsAsOfMonth(ctx, db.ListLatestSnapshotsByLiabilityIDsAsOfMonthParams{
+		LiabilityIds: ids,
+		YearMonth:    yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("liability entry rows: list prefill: %w", err)
+	}
+	prefill := make(map[uuid.UUID]db.ListLatestSnapshotsByLiabilityIDsAsOfMonthRow, len(latest))
+	for _, s := range latest {
+		prefill[s.LiabilityID] = s
+	}
+
+	rows := make([]LiabilityEntryRow, len(liabilities))
+	for i, l := range liabilities {
+		row := LiabilityEntryRow{
+			LiabilityID:     l.ID,
+			DisplayName:     l.DisplayName,
+			Currency:        l.NativeCurrency,
+			Subtype:         l.Subtype,
+			OwnershipType:   l.OwnershipType,
+			SoleOwnerUserID: l.SoleOwnerUserID,
+		}
+		if s, ok := prefill[l.ID]; ok {
+			amt := s.Amount
+			ym := s.YearMonth
+			row.PrefillAmount = &amt
+			row.CarriedFrom = &ym
+		}
+		rows[i] = row
+	}
+	return rows, nil
+}
+
+// BulkUpsertLiabilitySnapshots writes a bulk monthly-entry batch in a single
+// transaction — all-or-nothing (ADR-0046). Every row is validated for
+// month-aware eligibility first; if any row is ineligible the batch writes
+// nothing and the offending rows are returned. Otherwise each row upserts on
+// (liability_id, year_month). Returns the number of rows written and any
+// per-row rejections.
+func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p BulkUpsertLiabilitySnapshotsParams) (int, []BulkSnapshotRowError, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(p.Rows) == 0 {
+		return 0, nil, nil
+	}
+
+	eligible, err := r.q.ListEligibleLiabilityIDsForMonth(ctx, db.ListEligibleLiabilityIDsForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   p.YearMonth,
+	})
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk liability snapshots: list eligible: %w", err)
+	}
+	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
+	for _, id := range eligible {
+		eligibleSet[id] = struct{}{}
+	}
+
+	var rowErrs []BulkSnapshotRowError
+	for _, row := range p.Rows {
+		if _, ok := eligibleSet[row.LiabilityID]; !ok {
+			rowErrs = append(rowErrs, BulkSnapshotRowError{PositionID: row.LiabilityID, Reason: BulkRowIneligible})
+		}
+	}
+	if len(rowErrs) > 0 {
+		return 0, rowErrs, nil
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk liability snapshots: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	for _, row := range p.Rows {
+		if _, err := qtx.UpsertLiabilitySnapshot(ctx, db.UpsertLiabilitySnapshotParams{
+			ID:          row.LiabilityID,
+			YearMonth:   p.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    p.AsOfDate,
+			Description: nil,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}); err != nil {
+			return 0, nil, fmt.Errorf("bulk liability snapshots: upsert %s: %w", row.LiabilityID, err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, nil, fmt.Errorf("bulk liability snapshots: commit: %w", err)
+	}
+	return len(p.Rows), nil, nil
+}
+
+// ----- Receivable bulk monthly-entry (ADR-0046) ----------------------------
+//
+// Structural twin of the Asset/Liability methods, against receivables /
+// receivable_snapshots. Receivables are a flat group with no subtype, so
+// ReceivableEntryRow carries none — the entry view renders one ungrouped list.
+
+// BulkReceivableSnapshotRow is one receivable's value in a bulk monthly-entry
+// batch — dirty-only; the target month and as-of date are batch-level.
+type BulkReceivableSnapshotRow struct {
+	ReceivableID uuid.UUID
+	Amount       decimal.Decimal
+	Currency     string
+}
+
+// BulkUpsertReceivableSnapshotsParams carries a whole batch: one target month,
+// one as-of date, N dirty rows.
+type BulkUpsertReceivableSnapshotsParams struct {
+	YearMonth time.Time
+	AsOfDate  *time.Time
+	Rows      []BulkReceivableSnapshotRow
+}
+
+// ReceivableEntryRow is one row of the bulk monthly-entry list: an eligible
+// receivable with its carry-forward prefill. PrefillAmount/CarriedFrom are nil
+// for a receivable with no snapshot at or before the target month.
+type ReceivableEntryRow struct {
+	ReceivableID    uuid.UUID
+	DisplayName     string
+	Currency        string
+	OwnershipType   string
+	SoleOwnerUserID *uuid.UUID
+	PrefillAmount   *decimal.Decimal
+	CarriedFrom     *time.Time
+}
+
+// ListReceivableEntryRows returns the bulk monthly-entry list for a target
+// month: every eligible receivable with its most-recent snapshot at or before
+// that month as the carry-forward prefill.
+func (r *ReceivableRepo) ListReceivableEntryRows(ctx context.Context, yearMonth time.Time) ([]ReceivableEntryRow, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	receivables, err := r.q.ListEligibleReceivablesForMonth(ctx, db.ListEligibleReceivablesForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("receivable entry rows: list eligible: %w", err)
+	}
+	if len(receivables) == 0 {
+		return nil, nil
+	}
+
+	ids := make([]uuid.UUID, len(receivables))
+	for i, rv := range receivables {
+		ids[i] = rv.ID
+	}
+	latest, err := r.q.ListLatestSnapshotsByReceivableIDsAsOfMonth(ctx, db.ListLatestSnapshotsByReceivableIDsAsOfMonthParams{
+		ReceivableIds: ids,
+		YearMonth:     yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("receivable entry rows: list prefill: %w", err)
+	}
+	prefill := make(map[uuid.UUID]db.ListLatestSnapshotsByReceivableIDsAsOfMonthRow, len(latest))
+	for _, s := range latest {
+		prefill[s.ReceivableID] = s
+	}
+
+	rows := make([]ReceivableEntryRow, len(receivables))
+	for i, rv := range receivables {
+		row := ReceivableEntryRow{
+			ReceivableID:    rv.ID,
+			DisplayName:     rv.DisplayName,
+			Currency:        rv.NativeCurrency,
+			OwnershipType:   rv.OwnershipType,
+			SoleOwnerUserID: rv.SoleOwnerUserID,
+		}
+		if s, ok := prefill[rv.ID]; ok {
+			amt := s.Amount
+			ym := s.YearMonth
+			row.PrefillAmount = &amt
+			row.CarriedFrom = &ym
+		}
+		rows[i] = row
+	}
+	return rows, nil
+}
+
+// BulkUpsertReceivableSnapshots writes a bulk monthly-entry batch in a single
+// transaction — all-or-nothing (ADR-0046). Every row is validated for
+// month-aware eligibility first; if any row is ineligible the batch writes
+// nothing and the offending rows are returned. Otherwise each row upserts on
+// (receivable_id, year_month). Returns the number of rows written and any
+// per-row rejections.
+func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p BulkUpsertReceivableSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(p.Rows) == 0 {
+		return 0, nil, nil
+	}
+
+	eligible, err := r.q.ListEligibleReceivableIDsForMonth(ctx, db.ListEligibleReceivableIDsForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   p.YearMonth,
+	})
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk receivable snapshots: list eligible: %w", err)
+	}
+	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
+	for _, id := range eligible {
+		eligibleSet[id] = struct{}{}
+	}
+
+	var rowErrs []BulkSnapshotRowError
+	for _, row := range p.Rows {
+		if _, ok := eligibleSet[row.ReceivableID]; !ok {
+			rowErrs = append(rowErrs, BulkSnapshotRowError{PositionID: row.ReceivableID, Reason: BulkRowIneligible})
+		}
+	}
+	if len(rowErrs) > 0 {
+		return 0, rowErrs, nil
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk receivable snapshots: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	for _, row := range p.Rows {
+		if _, err := qtx.UpsertReceivableSnapshot(ctx, db.UpsertReceivableSnapshotParams{
+			ID:          row.ReceivableID,
+			YearMonth:   p.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    p.AsOfDate,
+			Description: nil,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}); err != nil {
+			return 0, nil, fmt.Errorf("bulk receivable snapshots: upsert %s: %w", row.ReceivableID, err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, nil, fmt.Errorf("bulk receivable snapshots: commit: %w", err)
 	}
 	return len(p.Rows), nil, nil
 }

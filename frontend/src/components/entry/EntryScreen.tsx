@@ -1,0 +1,291 @@
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
+import { Wallet, RotateCcw } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { thisYearMonth, monthEndDateCapped, monthStartDate } from "@/lib/dateLimits";
+import { formatYearMonth } from "@/lib/format";
+import { errorMessage } from "@/lib/errorMessage";
+import { ownershipLabel } from "@/lib/ownership";
+import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { useSession } from "@/hooks/useSession";
+import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBulkEntry";
+import type { EntryGroupConfig } from "@/components/entry/groups";
+
+// EntryScreen is the bulk monthly-entry view for one amount-only group
+// (ADR-0046): one screen listing every position eligible for a chosen month,
+// each with its last value carried forward, a batch-level "when" control, and
+// one Save. Only rows the user actually changed are sent (dirty-only);
+// untouched positions ride the carry-forward rule. The group's endpoints,
+// grouping, labels, and testid prefix arrive as `config`, so Asset (#421),
+// Liability, and Receivable (#422) share this one component — the read-only
+// ADR-0043 list core stays untouched; this is launched *from* the list.
+export function EntryScreen({ config }: { config: EntryGroupConfig }) {
+  const { t } = useTranslation(["common", "assets", "liabilities"]);
+  const navigate = useNavigate();
+  const tid = config.testidPrefix;
+
+  const [yearMonth, setYearMonth] = useState(thisYearMonth());
+  // as_of_date must fall within the target month (backend CHECK), so it seeds
+  // to the end of that month (capped at today) rather than the single-snapshot
+  // carryover_date_mode date, which does not generalise to an arbitrarily
+  // chosen target month.
+  const [asOfDate, setAsOfDate] = useState(monthEndDateCapped(thisYearMonth()));
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [prevYearMonth, setPrevYearMonth] = useState(yearMonth);
+
+  const list = useEntryList(config, yearMonth);
+  const save = useBulkSaveSnapshots(config);
+  const { data: members } = useHouseholdMembers();
+  const { data: me } = useSession();
+
+  // Guarded setState-during-render (no useEffect — lint bans setState-in-effect,
+  // ADR-0041 follow-up): when the month changes, re-seed the as-of default,
+  // clear edits, and drop any stale save error.
+  if (prevYearMonth !== yearMonth) {
+    setPrevYearMonth(yearMonth);
+    setAsOfDate(monthEndDateCapped(yearMonth));
+    setEdits({});
+    save.reset();
+  }
+
+  const rows = list.data?.rows ?? [];
+
+  // Per-row rejections from a 422 (ADR-0046) come back as data, keyed by
+  // position.
+  const rowErrors: Record<string, string> = {};
+  if (save.data && !save.data.ok) {
+    for (const e of save.data.errors) rowErrors[e.position_id] = e.code;
+  }
+  // A thrown error is any non-2xx that isn't the per-row 422.
+  const hasEnvelopeError = save.isError;
+
+  function valueFor(row: EntryRow): string {
+    return edits[row.position_id] ?? row.prefill_amount ?? "";
+  }
+  // A row is dirty when the user typed a non-empty value that differs from the
+  // carried-forward prefill.
+  function isDirty(row: EntryRow): boolean {
+    const v = edits[row.position_id];
+    if (v === undefined) return false;
+    const trimmed = v.trim();
+    return trimmed !== "" && trimmed !== (row.prefill_amount ?? "");
+  }
+
+  const dirtyRows = rows.filter(isDirty).map((r) => ({
+    position_id: r.position_id,
+    amount: (edits[r.position_id] ?? "").trim(),
+    currency: r.currency,
+  }));
+
+  // Group eligible rows by subtype (rows arrive pre-ordered by subtype then
+  // name). A flat group (empty subtypeOrder) renders one ungrouped section.
+  const grouped = new Map<string, EntryRow[]>();
+  for (const r of rows) {
+    const g = grouped.get(r.subtype) ?? [];
+    g.push(r);
+    grouped.set(r.subtype, g);
+  }
+  const orderedSubtypes = [
+    ...config.subtypeOrder.filter((s) => grouped.has(s)),
+    ...[...grouped.keys()].filter((s) => !config.subtypeOrder.includes(s)),
+  ];
+  const flat = config.subtypeOrder.length === 0;
+
+  // resetRow drops the user's override so the field falls back to its
+  // carried-forward prefill (empty for a position with no history).
+  function resetRow(id: string) {
+    setEdits((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function renderRow(row: EntryRow) {
+    const dirty = isDirty(row);
+    return (
+      <li
+        key={row.position_id}
+        className="flex items-center gap-3 py-2"
+        data-testid={`${tid}-entry-row-${row.position_id}`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            {dirty && (
+              <span
+                className="size-1.5 shrink-0 rounded-full bg-amber-500"
+                data-testid={`${tid}-entry-dirty-${row.position_id}`}
+                aria-hidden
+              />
+            )}
+            <span className="truncate font-medium">{row.display_name}</span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {ownershipLabel(row.ownership_type, row.sole_owner_user_id, members, me)}
+            {" · "}
+            {row.carried_from === yearMonth ? (
+              // A snapshot already exists for the chosen month — the prefill IS
+              // this month's value, so editing it overwrites (upsert). Warn.
+              <span
+                className="text-amber-600"
+                data-testid={`${tid}-entry-overwrite-${row.position_id}`}
+              >
+                {t("bulkEntry.overwritesThisMonth")}
+              </span>
+            ) : row.carried_from ? (
+              t("bulkEntry.carriedFrom", {
+                month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`),
+              })
+            ) : (
+              t("bulkEntry.noHistory")
+            )}
+          </div>
+          {rowErrors[row.position_id] && (
+            <div
+              className="text-xs text-destructive"
+              data-testid={`${tid}-entry-error-${row.position_id}`}
+            >
+              {t("bulkEntry.rowError")}
+            </div>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{row.currency}</span>
+        <Input
+          className={`w-36${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+          inputMode="decimal"
+          value={valueFor(row)}
+          onChange={(e) => setEdits({ ...edits, [row.position_id]: e.target.value })}
+          data-testid={`${tid}-entry-amount-${row.position_id}`}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={`size-8 shrink-0${dirty ? "" : " invisible"}`}
+          onClick={() => resetRow(row.position_id)}
+          aria-label={t("bulkEntry.undo")}
+          title={t("bulkEntry.undo")}
+          disabled={!dirty}
+          data-testid={`${tid}-entry-undo-${row.position_id}`}
+        >
+          <RotateCcw className="size-4" />
+        </Button>
+      </li>
+    );
+  }
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (dirtyRows.length === 0) return;
+    save.mutate(
+      { year_month: yearMonth, as_of_date: asOfDate, rows: dirtyRows },
+      { onSuccess: (result) => result.ok && navigate(config.backRoute) },
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl p-4">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate(config.backRoute)}
+        className="-ml-2 mb-1"
+        data-testid={`${tid}-entry-back`}
+      >
+        {t("common:actions.back")}
+      </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("bulkEntry.title")}</CardTitle>
+          <CardDescription>{t("bulkEntry.description")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-year-month">{t("fields.month")}</Label>
+                <Input
+                  id="bulk-year-month"
+                  type="month"
+                  max={thisYearMonth()}
+                  value={yearMonth}
+                  onChange={(e) => setYearMonth(e.target.value)}
+                  data-testid={`${tid}-entry-month`}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="bulk-as-of">{t("fields.statementDate")}</Label>
+                <Input
+                  id="bulk-as-of"
+                  type="date"
+                  min={monthStartDate(yearMonth)}
+                  max={monthEndDateCapped(yearMonth)}
+                  value={asOfDate}
+                  onChange={(e) => setAsOfDate(e.target.value)}
+                  data-testid={`${tid}-entry-asof`}
+                />
+              </div>
+            </div>
+
+            {list.isPending ? (
+              <p className="text-sm text-muted-foreground">{t("loading")}</p>
+            ) : rows.length === 0 ? (
+              <p className="text-sm text-muted-foreground" data-testid={`${tid}-entry-empty`}>
+                {t("bulkEntry.empty")}
+              </p>
+            ) : flat ? (
+              <ul className="divide-y">{rows.map(renderRow)}</ul>
+            ) : (
+              <div className="space-y-4">
+                {orderedSubtypes.map((subtype) => {
+                  const meta = config.subtypeMeta[subtype];
+                  const Icon = meta?.icon ?? Wallet;
+                  return (
+                    <div key={subtype} data-testid={`${tid}-entry-group-${subtype}`}>
+                      <div className="mb-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Icon className="size-4" />
+                        {meta && config.labelNs
+                          ? t(`${config.labelNs}:home.categoryLabel.${meta.labelKey}`)
+                          : subtype}
+                      </div>
+                      <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {hasEnvelopeError && (
+              <p className="text-sm text-destructive">{errorMessage(save.error)}</p>
+            )}
+
+            <div className="flex items-center justify-between">
+              <span
+                className="text-sm text-muted-foreground"
+                data-testid={`${tid}-entry-dirty-count`}
+              >
+                {t("bulkEntry.changedCount", { count: dirtyRows.length })}
+              </span>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => navigate(config.backRoute)}>
+                  {t("cancel")}
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={dirtyRows.length === 0 || save.isPending}
+                  data-testid={`${tid}-entry-save`}
+                >
+                  {save.isPending ? t("actions.saving") : t("bulkEntry.save")}
+                </Button>
+              </div>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

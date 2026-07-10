@@ -135,6 +135,99 @@ func (q *Queries) GetReceivableSnapshotByID(ctx context.Context, arg GetReceivab
 	return i, err
 }
 
+const listEligibleReceivableIDsForMonth = `-- name: ListEligibleReceivableIDsForMonth :many
+SELECT id
+FROM receivables
+WHERE household_id = $1::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= $2::date)
+`
+
+type ListEligibleReceivableIDsForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+// ListEligibleReceivableIDsForMonth returns the ids of the household's
+// receivables that may legitimately hold a snapshot for the given target month
+// (ADR-0046 month-aware eligibility): owned, not deleted, and either still
+// active or terminated in the target month or later. A receivable terminated
+// *before* the target month never appears — its forward contribution is already
+// frozen by the carry-forward rule. No created_at guard, for the same reason as
+// the Asset entry list: created_at is a record timestamp, not economic
+// existence, and gating on it would block legitimate backfill/onboarding.
+func (q *Queries) ListEligibleReceivableIDsForMonth(ctx context.Context, arg ListEligibleReceivableIDsForMonthParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listEligibleReceivableIDsForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEligibleReceivablesForMonth = `-- name: ListEligibleReceivablesForMonth :many
+SELECT id, display_name, native_currency, ownership_type, sole_owner_user_id
+FROM receivables
+WHERE household_id = $1::uuid
+  AND deleted_at IS NULL
+  AND (terminated_at IS NULL OR terminated_at >= $2::date)
+ORDER BY display_name
+`
+
+type ListEligibleReceivablesForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+type ListEligibleReceivablesForMonthRow struct {
+	ID              uuid.UUID  `json:"id"`
+	DisplayName     string     `json:"display_name"`
+	NativeCurrency  string     `json:"native_currency"`
+	OwnershipType   string     `json:"ownership_type"`
+	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
+}
+
+// ListEligibleReceivablesForMonth is ListEligibleReceivableIDsForMonth plus the
+// display fields the bulk monthly-entry list needs (ADR-0046): name and native
+// currency. Receivables are a flat group with no subtype, so the entry view
+// renders one ungrouped list; rows are ordered by display name.
+func (q *Queries) ListEligibleReceivablesForMonth(ctx context.Context, arg ListEligibleReceivablesForMonthParams) ([]ListEligibleReceivablesForMonthRow, error) {
+	rows, err := q.db.Query(ctx, listEligibleReceivablesForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEligibleReceivablesForMonthRow
+	for rows.Next() {
+		var i ListEligibleReceivablesForMonthRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.NativeCurrency,
+			&i.OwnershipType,
+			&i.SoleOwnerUserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listLatestReceivableSnapshotsByReceivableIDs = `-- name: ListLatestReceivableSnapshotsByReceivableIDs :many
 SELECT DISTINCT ON (receivable_id) id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
 FROM receivable_snapshots
@@ -166,6 +259,50 @@ func (q *Queries) ListLatestReceivableSnapshotsByReceivableIDs(ctx context.Conte
 			&i.UpdatedAt,
 			&i.DeletedAt,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestSnapshotsByReceivableIDsAsOfMonth = `-- name: ListLatestSnapshotsByReceivableIDsAsOfMonth :many
+SELECT DISTINCT ON (receivable_id) receivable_id, amount, year_month
+FROM receivable_snapshots
+WHERE receivable_id = ANY($1::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= $2::date
+ORDER BY receivable_id, year_month DESC
+`
+
+type ListLatestSnapshotsByReceivableIDsAsOfMonthParams struct {
+	ReceivableIds []uuid.UUID `json:"receivable_ids"`
+	YearMonth     time.Time   `json:"year_month"`
+}
+
+type ListLatestSnapshotsByReceivableIDsAsOfMonthRow struct {
+	ReceivableID uuid.UUID       `json:"receivable_id"`
+	Amount       decimal.Decimal `json:"amount"`
+	YearMonth    time.Time       `json:"year_month"`
+}
+
+// ListLatestSnapshotsByReceivableIDsAsOfMonth returns, per receivable, the
+// most-recent snapshot at or before the target month — the carry-forward
+// prefill for the entry list. Month-bounded so a value entered ahead of the
+// target does not leak backwards as the prefill.
+func (q *Queries) ListLatestSnapshotsByReceivableIDsAsOfMonth(ctx context.Context, arg ListLatestSnapshotsByReceivableIDsAsOfMonthParams) ([]ListLatestSnapshotsByReceivableIDsAsOfMonthRow, error) {
+	rows, err := q.db.Query(ctx, listLatestSnapshotsByReceivableIDsAsOfMonth, arg.ReceivableIds, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLatestSnapshotsByReceivableIDsAsOfMonthRow
+	for rows.Next() {
+		var i ListLatestSnapshotsByReceivableIDsAsOfMonthRow
+		if err := rows.Scan(&i.ReceivableID, &i.Amount, &i.YearMonth); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
