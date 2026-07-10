@@ -198,7 +198,17 @@ func serveCmd() error {
 	tagRepo := repo.NewTagRepo(pool)
 	tagsH := tags.New(tagRepo)
 
-	srv := httpserver.New(pool, cfg, authH, assetsH, liabilitiesH, receivablesH, investmentsH, incomeH, reportsH, fxRatesH, tagsH)
+	srv := httpserver.New(pool, cfg, httpserver.Handlers{
+		Auth:        authH,
+		Assets:      assetsH,
+		Liabilities: liabilitiesH,
+		Receivables: receivablesH,
+		Investments: investmentsH,
+		Income:      incomeH,
+		Reports:     reportsH,
+		FxRates:     fxRatesH,
+		Tags:        tagsH,
+	})
 
 	httpSrv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),

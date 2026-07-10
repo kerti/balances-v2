@@ -40,36 +40,43 @@ type Server struct {
 	router       chi.Router
 }
 
-func New(
-	pool *pgxpool.Pool,
-	cfg *config.Config,
-	authH *auth.Handlers,
-	assetsH *assets.Handlers,
-	liabilitiesH *liabilities.Handlers,
-	receivablesH *receivables.Handlers,
-	investmentsH *investments.Handlers,
-	incomeH *income.Handlers,
-	reportsH *reports.Handlers,
-	fxRatesH *fxrates.Handlers,
-	tagsH *tags.Handlers,
-) *Server {
+// Handlers bundles the per-domain HTTP handler groups New wires into the
+// router. Passing them as one named struct instead of eleven same-shaped
+// positional pointer args removes a whole class of silent transposition bugs —
+// the old signature let a caller swap, say, assetsH and liabilitiesH with no
+// compiler complaint (issue #366). backupH is not a member: New constructs it
+// internally from deps it already holds (pool + cfg + Auth), so requiring every
+// caller to build it would only duplicate that wiring.
+type Handlers struct {
+	Auth        *auth.Handlers
+	Assets      *assets.Handlers
+	Liabilities *liabilities.Handlers
+	Receivables *receivables.Handlers
+	Investments *investments.Handlers
+	Income      *income.Handlers
+	Reports     *reports.Handlers
+	FxRates     *fxrates.Handlers
+	Tags        *tags.Handlers
+}
+
+func New(pool *pgxpool.Pool, cfg *config.Config, h Handlers) *Server {
 	s := &Server{
 		pool:         pool,
 		cfg:          cfg,
-		authH:        authH,
-		assetsH:      assetsH,
-		liabilitiesH: liabilitiesH,
-		receivablesH: receivablesH,
-		investmentsH: investmentsH,
-		incomeH:      incomeH,
-		reportsH:     reportsH,
-		fxRatesH:     fxRatesH,
-		tagsH:        tagsH,
+		authH:        h.Auth,
+		assetsH:      h.Assets,
+		liabilitiesH: h.Liabilities,
+		receivablesH: h.Receivables,
+		investmentsH: h.Investments,
+		incomeH:      h.Income,
+		reportsH:     h.Reports,
+		fxRatesH:     h.FxRates,
+		tagsH:        h.Tags,
 		// Backup reads across every table from the shared pool; it needs the pool,
 		// the instance URL (stamped into the envelope), and the auth handler to
 		// re-issue the caller's session after a restore wipes it and to send the
 		// best-effort post-restore notifications (#176).
-		backupH: backup.New(pool, cfg.BackendURL, authH, authH, cfg.AuthLocalEnabled, backup.DemoConfig{
+		backupH: backup.New(pool, cfg.BackendURL, h.Auth, h.Auth, cfg.AuthLocalEnabled, backup.DemoConfig{
 			Enabled:    cfg.DemoMode,
 			ResetToken: cfg.DemoResetToken,
 			Email:      cfg.DemoEmail,

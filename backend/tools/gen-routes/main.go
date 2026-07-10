@@ -174,15 +174,17 @@ func buildRouter() (chi.Router, error) {
 	srv := httpserver.New(
 		nil, // pool: constructors only stash it; no query runs during wiring
 		cfg,
-		authH,
-		assets.New(repo.NewAssetRepo(nil)),
-		liabilities.New(repo.NewLiabilityRepo(nil)),
-		receivables.New(repo.NewReceivableRepo(nil)),
-		investments.New(repo.NewInvestmentRepo(nil)),
-		income.New(repo.NewIncomeRepo(nil)),
-		reports.New(repo.NewMonthlyReportRepo(nil)),
-		fxrates.New(repo.NewFxRateRepo(nil)),
-		tags.New(repo.NewTagRepo(nil)),
+		httpserver.Handlers{
+			Auth:        authH,
+			Assets:      assets.New(repo.NewAssetRepo(nil)),
+			Liabilities: liabilities.New(repo.NewLiabilityRepo(nil)),
+			Receivables: receivables.New(repo.NewReceivableRepo(nil)),
+			Investments: investments.New(repo.NewInvestmentRepo(nil)),
+			Income:      income.New(repo.NewIncomeRepo(nil)),
+			Reports:     reports.New(repo.NewMonthlyReportRepo(nil)),
+			FxRates:     fxrates.New(repo.NewFxRateRepo(nil)),
+			Tags:        tags.New(repo.NewTagRepo(nil)),
+		},
 	)
 
 	router, ok := srv.Handler().(chi.Router)
