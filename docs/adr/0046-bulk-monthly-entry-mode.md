@@ -49,6 +49,20 @@ for them anywhere in the code, and a bond's total value is already the `amount` 
 snapshot. So **qty×price is exactly Stock/MutualFund/Gold**, and Bond/TimeDeposit belong wholly to the
 accrued slice (S4, #424).
 
+**Refinement (found during the S4 build, #424):** the #424 issue body, drafted before the S3 correction
+settled, described the accrued view as covering "positions with `coupon_disposition = accrues`" carrying
+"a single accrued_interest tab-stop." Both were narrowed against the accrued shape as actually enforced.
+(1) **Scope is all Bond/TimeDeposit, not just `accrues`** — every bond/time_deposit takes the accrued
+shape; coupon disposition drives only the per-row *default* (accrues → forced entry, pays-out and time
+deposits → 0), exactly as the per-position dialog does, which is also what the issue's own second
+acceptance criterion ("default 0 vs forced-entry") requires. (2) **Two tab-stops, not one** — the accrued
+branch's `amount` (total value) is always required alongside `accrued_interest`, so the entry row carries
+both figures (with principal = total − accrued shown as the derived line), matching
+`CreateAccruedInterestSnapshotDialog`. (3) **TimeDeposit term window is honoured** — an out-of-term month
+excludes a deposit from the list and rejects a write row (the repo-layer confinement of #62, folded into
+the accrued eligibility query), so the bulk path cannot write a snapshot the per-position form would
+reject.
+
 ### Statement-aligned, per-type batching — not one omnibus save
 
 Households do not receive one omnibus statement; bank emails arrive together, the brokerage statement

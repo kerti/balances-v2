@@ -671,3 +671,186 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 	}
 	return len(p.Rows), nil, nil
 }
+
+// ----- Investment bulk monthly-entry, accrued shape (ADR-0046, #424) ----------
+//
+// Structural twin of the qty×price methods above, but against the accrued
+// branch of the Investment group — Bond/TimeDeposit, whose snapshots take
+// accrued_interest (quantity/price null) per ADR-0022's shape XOR. Unlike
+// qty×price, `amount` is entered directly (a bond's total value already *is*
+// its snapshot amount, not a derived product), so a row carries the two figures
+// the per-position accrued dialog takes: the total value and the accrued
+// component. Eligibility is filtered to the two accrued subtypes, so a
+// qty×price investment can never be written through this path.
+
+// BulkInvestmentAccruedSnapshotRow is one investment's accrued value in a bulk
+// monthly-entry batch — dirty-only; the target month and as-of date are
+// batch-level. Both figures are stored as given: Amount is the total value,
+// AccruedInterest the accrued component (quantity/price stay null).
+type BulkInvestmentAccruedSnapshotRow struct {
+	InvestmentID    uuid.UUID
+	Amount          decimal.Decimal
+	AccruedInterest decimal.Decimal
+	Currency        string
+}
+
+// BulkUpsertInvestmentAccruedSnapshotsParams carries a whole batch: one target
+// month, one as-of date, N dirty rows.
+type BulkUpsertInvestmentAccruedSnapshotsParams struct {
+	YearMonth time.Time
+	AsOfDate  *time.Time
+	Rows      []BulkInvestmentAccruedSnapshotRow
+}
+
+// InvestmentAccruedEntryRow is one row of the accrued bulk monthly-entry list:
+// an eligible Bond/TimeDeposit with its carry-forward prefill and (for bonds)
+// coupon disposition. PrefillAmount / PrefillAccruedInterest / CarriedFrom are
+// nil for an investment with no snapshot at or before the target month.
+// CouponDisposition is nil for a time deposit (no bond_details row); the entry
+// list treats nil as pays_out (accrued default 0).
+type InvestmentAccruedEntryRow struct {
+	InvestmentID           uuid.UUID
+	DisplayName            string
+	Currency               string
+	Subtype                string
+	OwnershipType          string
+	SoleOwnerUserID        *uuid.UUID
+	CouponDisposition      *string
+	PrefillAmount          *decimal.Decimal
+	PrefillAccruedInterest *decimal.Decimal
+	CarriedFrom            *time.Time
+}
+
+// ListInvestmentAccruedEntryRows returns the accrued bulk monthly-entry list for
+// a target month: every eligible Bond/TimeDeposit with the total value + accrued
+// interest of its most-recent snapshot at or before that month as the
+// carry-forward prefill, plus each bond's coupon disposition so the entry view
+// can seed the accrued default.
+func (r *InvestmentRepo) ListInvestmentAccruedEntryRows(ctx context.Context, yearMonth time.Time) ([]InvestmentAccruedEntryRow, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	investments, err := r.q.ListEligibleAccruedInvestmentsForMonth(ctx, db.ListEligibleAccruedInvestmentsForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("accrued entry rows: list eligible: %w", err)
+	}
+	if len(investments) == 0 {
+		return nil, nil
+	}
+
+	ids := make([]uuid.UUID, len(investments))
+	for i, iv := range investments {
+		ids[i] = iv.ID
+	}
+	latest, err := r.q.ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth(ctx, db.ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthParams{
+		InvestmentIds: ids,
+		YearMonth:     yearMonth,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("accrued entry rows: list prefill: %w", err)
+	}
+	prefill := make(map[uuid.UUID]db.ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthRow, len(latest))
+	for _, s := range latest {
+		prefill[s.InvestmentID] = s
+	}
+
+	rows := make([]InvestmentAccruedEntryRow, len(investments))
+	for i, iv := range investments {
+		row := InvestmentAccruedEntryRow{
+			InvestmentID:      iv.ID,
+			DisplayName:       iv.DisplayName,
+			Currency:          iv.NativeCurrency,
+			Subtype:           iv.Subtype,
+			OwnershipType:     iv.OwnershipType,
+			SoleOwnerUserID:   iv.SoleOwnerUserID,
+			CouponDisposition: iv.CouponDisposition,
+		}
+		if s, ok := prefill[iv.ID]; ok {
+			amt := s.Amount
+			ym := s.YearMonth
+			row.PrefillAmount = &amt
+			row.PrefillAccruedInterest = s.AccruedInterest
+			row.CarriedFrom = &ym
+		}
+		rows[i] = row
+	}
+	return rows, nil
+}
+
+// BulkUpsertInvestmentAccruedSnapshots writes an accrued bulk monthly-entry
+// batch in a single transaction — all-or-nothing (ADR-0046). Every row is
+// validated for month-aware eligibility (owned, not deleted, still within its
+// termination bound, and one of the two accrued subtypes) before any write; if
+// any row is ineligible the batch writes nothing and the offending rows are
+// returned. Otherwise each row upserts on (investment_id, year_month) with the
+// total value stored as `amount` and accrued_interest set (quantity/price null —
+// the shape CHECK's accrued branch). Returns the number of rows written and any
+// per-row rejections.
+func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Context, p BulkUpsertInvestmentAccruedSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	if len(p.Rows) == 0 {
+		return 0, nil, nil
+	}
+
+	eligible, err := r.q.ListEligibleAccruedInvestmentIDsForMonth(ctx, db.ListEligibleAccruedInvestmentIDsForMonthParams{
+		HouseholdID: hid,
+		YearMonth:   p.YearMonth,
+	})
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk accrued snapshots: list eligible: %w", err)
+	}
+	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
+	for _, id := range eligible {
+		eligibleSet[id] = struct{}{}
+	}
+
+	var rowErrs []BulkSnapshotRowError
+	for _, row := range p.Rows {
+		if _, ok := eligibleSet[row.InvestmentID]; !ok {
+			rowErrs = append(rowErrs, BulkSnapshotRowError{PositionID: row.InvestmentID, Reason: BulkRowIneligible})
+		}
+	}
+	if len(rowErrs) > 0 {
+		return 0, rowErrs, nil
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return 0, nil, fmt.Errorf("bulk accrued snapshots: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	for _, row := range p.Rows {
+		amount := row.Amount
+		accrued := row.AccruedInterest
+		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
+			ID:              row.InvestmentID,
+			YearMonth:       p.YearMonth,
+			Amount:          amount,
+			Currency:        row.Currency,
+			Quantity:        nil,
+			PricePerUnit:    nil,
+			AccruedInterest: &accrued,
+			AsOfDate:        p.AsOfDate,
+			Description:     nil,
+			CreatedBy:       &user,
+			HouseholdID:     hid,
+		}); err != nil {
+			return 0, nil, fmt.Errorf("bulk accrued snapshots: upsert %s: %w", row.InvestmentID, err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, nil, fmt.Errorf("bulk accrued snapshots: commit: %w", err)
+	}
+	return len(p.Rows), nil, nil
+}

@@ -57,6 +57,26 @@ function deriveProduct(quantity: string, price: string): { valid: boolean; amoun
   return { valid: true, amount: (q * p).toString() };
 }
 
+// isNumeric reports whether a raw input string is a present, finite number —
+// the accrued shape's completeness test for each of its two directly-entered
+// fields (total value, accrued interest).
+function isNumeric(s: string): boolean {
+  return s.trim() !== "" && !Number.isNaN(Number(s));
+}
+
+// derivePrincipal computes total value − accrued interest, the "of which
+// principal" figure the per-position accrued dialog shows. Mirrors
+// CreateAccruedInterestSnapshotDialog.derivePrincipal, surfaced here as the
+// accrued shape's derived display column.
+function derivePrincipal(amount: string, accrued: string): { valid: boolean; amount: string } {
+  const a = Number(amount);
+  const i = Number(accrued);
+  if (!amount || !accrued || Number.isNaN(a) || Number.isNaN(i)) {
+    return { valid: false, amount: "" };
+  }
+  return { valid: true, amount: (a - i).toString() };
+}
+
 // amount-only (Asset/Liability/Receivable): one value field, no computed line.
 export const amountOnlyShape: EntryShape = {
   fields: [{ key: "amount", testidSuffix: "amount", labelKey: null, widthClass: "w-36" }],
@@ -88,4 +108,37 @@ export const qtyPriceShape: EntryShape = {
   }),
   complete: (v) => deriveProduct(v.quantity, v.price_per_unit).valid,
   derived: (v) => deriveProduct(v.quantity, v.price_per_unit),
+};
+
+// accrued (Bond/TimeDeposit, #424): two directly-entered tab-stops — the total
+// value (stored as `amount`) and the accrued-interest component — the accrued
+// branch of investment_snapshot_shape. Unlike qty×price, `amount` is entered,
+// not computed (a bond's total value already *is* its snapshot amount); the
+// derived column shows the principal (total − accrued), mirroring the
+// per-position accrued dialog's "of which principal" line. When a row has no
+// history, the accrued field's default follows coupon disposition — empty for an
+// `accrues` bond (force a real entry, #66) and 0 otherwise (pays-out bonds and
+// time deposits, whose coupon lands in the bank each period).
+export const accruedShape: EntryShape = {
+  fields: [
+    {
+      key: "amount",
+      testidSuffix: "amount",
+      labelKey: "bulkEntry.totalValue",
+      widthClass: "w-28",
+    },
+    {
+      key: "accrued_interest",
+      testidSuffix: "accrued",
+      labelKey: "bulkEntry.accrued",
+      widthClass: "w-24",
+    },
+  ],
+  prefill: (row) => ({
+    amount: row.prefill_amount ?? "",
+    accrued_interest:
+      row.prefill_accrued_interest ?? (row.coupon_disposition === "accrues" ? "" : "0"),
+  }),
+  complete: (v) => isNumeric(v.amount) && isNumeric(v.accrued_interest),
+  derived: (v) => derivePrincipal(v.amount, v.accrued_interest),
 };

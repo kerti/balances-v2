@@ -25,6 +25,7 @@ import {
   liabilityEntryConfig,
   receivableEntryConfig,
   investmentEntryConfig,
+  investmentAccruedEntryConfig,
 } from "@/components/entry/groups";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
@@ -240,6 +241,10 @@ const router = createBrowserRouter([
       // Investments
       { path: "investments", element: <InvestmentsHome /> },
       { path: "investments/enter/prices", element: <EntryScreen config={investmentEntryConfig} /> },
+      {
+        path: "investments/enter/accrued",
+        element: <EntryScreen config={investmentAccruedEntryConfig} />,
+      },
       {
         path: "investments/stocks",
         element: (

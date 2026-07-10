@@ -125,6 +125,134 @@ func (q *Queries) GetInvestmentSnapshotByID(ctx context.Context, arg GetInvestme
 	return i, err
 }
 
+const listEligibleAccruedInvestmentIDsForMonth = `-- name: ListEligibleAccruedInvestmentIDsForMonth :many
+
+SELECT i.id
+FROM investments i
+LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+WHERE i.household_id = $1::uuid
+  AND i.deleted_at IS NULL
+  AND i.subtype IN ('bond', 'time_deposit')
+  AND (i.terminated_at IS NULL OR i.terminated_at >= $2::date)
+  AND (
+    i.subtype <> 'time_deposit'
+    OR (date_trunc('month', td.placement_date)::date <= $2::date
+        AND date_trunc('month', td.maturity_date)::date >= $2::date)
+  )
+`
+
+type ListEligibleAccruedInvestmentIDsForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+// ----- bulk monthly-entry, accrued shape (ADR-0046, #424) --------------------
+//
+// Bond/TimeDeposit only: the two subtypes whose snapshots take the
+// accrued_interest branch of investment_snapshot_shape (accrued_interest set,
+// quantity/price null). Stock/MutualFund/Gold (the qty×price branch) are the
+// separate #423 slice above. A row carries the total value (amount) and the
+// accrued-interest component — the same two figures the per-position accrued
+// dialog takes — so, unlike qty×price, `amount` is entered directly (a bond's
+// total value already *is* its snapshot amount), not derived. Eligibility
+// mirrors the qty×price/asset rule (owned, not deleted, active or terminated in
+// the target month or later); created_at is deliberately not gated (a record
+// timestamp, not economic existence). A time deposit's snapshots are further
+// confined to its term window (placement month..maturity month, issue #62) — the
+// same repo-layer bound the per-position form applies — so an out-of-term month
+// excludes it from the list and rejects a hand-crafted write row. The
+// coupon_disposition of a bond drives only the entry list's per-row accrued
+// default (empty vs 0), so it is joined in for the list; time deposits have no
+// bond_details row and default to 0.
+func (q *Queries) ListEligibleAccruedInvestmentIDsForMonth(ctx context.Context, arg ListEligibleAccruedInvestmentIDsForMonthParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listEligibleAccruedInvestmentIDsForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEligibleAccruedInvestmentsForMonth = `-- name: ListEligibleAccruedInvestmentsForMonth :many
+SELECT i.id, i.display_name, i.native_currency, i.subtype, i.ownership_type,
+       i.sole_owner_user_id, bd.coupon_disposition
+FROM investments i
+LEFT JOIN bond_details bd ON bd.investment_id = i.id
+LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+WHERE i.household_id = $1::uuid
+  AND i.deleted_at IS NULL
+  AND i.subtype IN ('bond', 'time_deposit')
+  AND (i.terminated_at IS NULL OR i.terminated_at >= $2::date)
+  AND (
+    i.subtype <> 'time_deposit'
+    OR (date_trunc('month', td.placement_date)::date <= $2::date
+        AND date_trunc('month', td.maturity_date)::date >= $2::date)
+  )
+ORDER BY i.subtype, i.display_name
+`
+
+type ListEligibleAccruedInvestmentsForMonthParams struct {
+	HouseholdID uuid.UUID `json:"household_id"`
+	YearMonth   time.Time `json:"year_month"`
+}
+
+type ListEligibleAccruedInvestmentsForMonthRow struct {
+	ID                uuid.UUID  `json:"id"`
+	DisplayName       string     `json:"display_name"`
+	NativeCurrency    string     `json:"native_currency"`
+	Subtype           string     `json:"subtype"`
+	OwnershipType     string     `json:"ownership_type"`
+	SoleOwnerUserID   *uuid.UUID `json:"sole_owner_user_id"`
+	CouponDisposition *string    `json:"coupon_disposition"`
+}
+
+// ListEligibleAccruedInvestmentsForMonth is the ID query plus the display fields
+// the entry list needs (ADR-0046), and each bond's coupon_disposition (via a
+// LEFT JOIN on bond_details) so the entry view can seed the accrued default the
+// per-position form uses (accrues → forced entry, pays_out/time-deposit → 0).
+// A time deposit has no bond_details row, so coupon_disposition is NULL — the
+// repo treats NULL as pays_out. Time deposits are also confined to their term
+// window (same predicate as the ID query). Ordered by subtype then name so rows
+// arrive pre-grouped.
+func (q *Queries) ListEligibleAccruedInvestmentsForMonth(ctx context.Context, arg ListEligibleAccruedInvestmentsForMonthParams) ([]ListEligibleAccruedInvestmentsForMonthRow, error) {
+	rows, err := q.db.Query(ctx, listEligibleAccruedInvestmentsForMonth, arg.HouseholdID, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListEligibleAccruedInvestmentsForMonthRow
+	for rows.Next() {
+		var i ListEligibleAccruedInvestmentsForMonthRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.NativeCurrency,
+			&i.Subtype,
+			&i.OwnershipType,
+			&i.SoleOwnerUserID,
+			&i.CouponDisposition,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listEligibleQtyPriceInvestmentIDsForMonth = `-- name: ListEligibleQtyPriceInvestmentIDsForMonth :many
 
 SELECT id
@@ -311,6 +439,57 @@ func (q *Queries) ListInvestmentSnapshotsForInvestment(ctx context.Context, arg 
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listLatestAccruedSnapshotsByInvestmentIDsAsOfMonth = `-- name: ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth :many
+SELECT DISTINCT ON (investment_id) investment_id, amount, accrued_interest, year_month
+FROM investment_snapshots
+WHERE investment_id = ANY($1::uuid[])
+  AND deleted_at IS NULL
+  AND year_month <= $2::date
+ORDER BY investment_id, year_month DESC
+`
+
+type ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthParams struct {
+	InvestmentIds []uuid.UUID `json:"investment_ids"`
+	YearMonth     time.Time   `json:"year_month"`
+}
+
+type ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthRow struct {
+	InvestmentID    uuid.UUID        `json:"investment_id"`
+	Amount          decimal.Decimal  `json:"amount"`
+	AccruedInterest *decimal.Decimal `json:"accrued_interest"`
+	YearMonth       time.Time        `json:"year_month"`
+}
+
+// ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth returns, per investment,
+// the most-recent snapshot at or before the target month — the carry-forward
+// prefill for the accrued entry list. Carries amount (the total value tab-stop)
+// and accrued_interest (the second tab-stop), month-bounded so a value entered
+// ahead of the target does not leak backwards as the prefill.
+func (q *Queries) ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth(ctx context.Context, arg ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthParams) ([]ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthRow, error) {
+	rows, err := q.db.Query(ctx, listLatestAccruedSnapshotsByInvestmentIDsAsOfMonth, arg.InvestmentIds, arg.YearMonth)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthRow
+	for rows.Next() {
+		var i ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonthRow
+		if err := rows.Scan(
+			&i.InvestmentID,
+			&i.Amount,
+			&i.AccruedInterest,
+			&i.YearMonth,
 		); err != nil {
 			return nil, err
 		}

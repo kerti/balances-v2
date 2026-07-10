@@ -246,3 +246,69 @@ test(
     await expect(page.getByText(name)).toHaveCount(0);
   },
 );
+
+test(
+  "investment accrued bulk monthly-entry: list → save → re-open shows overwrite",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E bulk bond ${Date.now()}`;
+
+    await page.goto("/investments/bonds");
+    await page.getByRole("button", { name: "New bond" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("New bond position")).toBeVisible();
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Issuer").fill("E2E Treasury");
+    await dialog.getByLabel("Face value").fill("1000000");
+    await dialog.getByLabel("Coupon rate (% per year)").fill("6.5");
+    await dialog.getByLabel("Maturity date").fill("2030-01-01");
+    await dialog.getByLabel("Placement date").fill("2024-01-01");
+    await dialog.getByLabel("Risk profile").selectOption("medium");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // Launch the accrued value-entry view from the Investments Home header.
+    await page.goto("/investments");
+    await expect(page.getByTestId("investments-home")).toBeVisible();
+    await page.getByTestId("investments-enter-accrued").click();
+    await expect(page.getByText("Enter this month's bond & deposit values")).toBeVisible();
+
+    // The new bond is listed with no history and nothing counted as changed.
+    const row = page.locator("li").filter({ hasText: name });
+    await expect(row.getByText("No previous value")).toBeVisible();
+    await expect(page.getByTestId("investment-accrued-entry-dirty-count")).toHaveText("0 changed");
+
+    // A govt-primary bond defaults to pays-out, so accrued seeds to 0; typing
+    // only the total value already completes the row (accrued has its default).
+    await row.getByLabel("Total value").fill("1010000");
+    await expect(page.getByTestId("investment-accrued-entry-dirty-count")).toHaveText("1 changed");
+
+    // Pin the statement date to the first of the chosen month (UTC-safe; see the
+    // asset journey above for why).
+    const month = await page.getByTestId("investment-accrued-entry-month").inputValue();
+    await page.getByTestId("investment-accrued-entry-asof").fill(`${month}-01`);
+
+    await page.getByTestId("investment-accrued-entry-save").click();
+    await expect(page).toHaveURL(/\/investments$/);
+    await expect(page.getByTestId("investments-home")).toBeVisible();
+
+    // Re-open the same month: the write persisted, so the row carries forward its
+    // own total value + accrued and warns the next save overwrites it.
+    await page.getByTestId("investments-enter-accrued").click();
+    const savedRow = page.locator("li").filter({ hasText: name });
+    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByLabel("Total value")).toHaveValue("1010000");
+    await expect(savedRow.getByLabel("Accrued")).toHaveValue("0");
+
+    // Cleanup: delete the parent bond from its detail page.
+    await page.goto("/investments/bonds");
+    await page
+      .getByRole("row", { name: new RegExp(name) })
+      .getByText(name)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);

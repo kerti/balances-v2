@@ -66,9 +66,11 @@ export const routes = {
   investments: "/investments",
   // Bulk monthly-entry, qty×price shape (ADR-0046, #423): the Stock/MutualFund/
   // Gold price-entry view. Static `enter/prices` segments, so no clash with the
-  // `/investments/:subtype/:id` detail routes. The accrued Bond/TimeDeposit
-  // entry (#424) will add its own `enter/accrued` sibling.
+  // `/investments/:subtype/:id` detail routes.
   investmentsEnterPrices: "/investments/enter/prices",
+  // Bulk monthly-entry, accrued shape (ADR-0046, #424): the Bond/TimeDeposit
+  // total-value + accrued-interest view. Sibling `enter/accrued` segments.
+  investmentsEnterAccrued: "/investments/enter/accrued",
   stocks: "/investments/stocks",
   stock: (id: string) => `/investments/stocks/${id}`,
   mutualFunds: "/investments/mutual-funds",
