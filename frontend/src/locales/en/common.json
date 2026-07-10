@@ -256,6 +256,15 @@
     "changedCount": "{{count}} changed",
     "save": "Save all",
     "overwritesThisMonth": "Will overwrite",
-    "undo": "Undo"
+    "undo": "Undo",
+    "quantity": "Quantity",
+    "pricePerUnit": "Price per unit",
+    "investments": {
+      "trigger": "Enter prices",
+      "title": "Enter this month's prices",
+      "description": "Update the units and price for each holding for the chosen month. The value is worked out for you, and only the ones you change are saved.",
+      "empty": "No holdings are eligible for this month yet.",
+      "rowError": "This holding can't take a value for this month."
+    }
   }
 }

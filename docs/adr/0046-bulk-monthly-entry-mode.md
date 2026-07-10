@@ -37,9 +37,17 @@ currency) but owns the editable/batch-save interaction; the read-only list core 
 of "reuse the descriptor, stay per-type, no new top-level nav" holds — it is launched *from* the list.
 
 The three snapshot input shapes ([[adr-0022]]) map to their entry views unchanged: **amount-only**
-(Asset/Liability/Receivable), **qty×price** (Stock/MutualFund/Gold, and Bond/TimeDeposit total-value),
-**accrued** (Bond/TimeDeposit `accrues` disposition — its coupon-disposition default, 0 vs forced
-entry, carries over from the per-position form).
+(Asset/Liability/Receivable), **qty×price** (Stock/MutualFund/Gold), **accrued** (Bond/TimeDeposit —
+total value + accrued interest, with the `accrues` vs `pays_out` coupon-disposition default carrying
+over from the per-position form).
+
+**Correction (found during the S3 build, #423):** an earlier draft of this line put "Bond/TimeDeposit
+total-value" under **qty×price**. That was wrong. The [[adr-0022]] shape XOR — enforced by both the
+`investment_snapshot_shape` CHECK and `validateInvestmentSnapshotShape` — binds bond/time_deposit to
+the **accrued** shape (accrued_interest required, quantity/price forbidden); there is no qty×price path
+for them anywhere in the code, and a bond's total value is already the `amount` field of its accrued
+snapshot. So **qty×price is exactly Stock/MutualFund/Gold**, and Bond/TimeDeposit belong wholly to the
+accrued slice (S4, #424).
 
 ### Statement-aligned, per-type batching — not one omnibus save
 

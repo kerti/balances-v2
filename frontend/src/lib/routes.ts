@@ -64,6 +64,11 @@ export const routes = {
 
   // Investments — home + five subtype lists, each with a detail under it.
   investments: "/investments",
+  // Bulk monthly-entry, qty×price shape (ADR-0046, #423): the Stock/MutualFund/
+  // Gold price-entry view. Static `enter/prices` segments, so no clash with the
+  // `/investments/:subtype/:id` detail routes. The accrued Bond/TimeDeposit
+  // entry (#424) will add its own `enter/accrued` sibling.
+  investmentsEnterPrices: "/investments/enter/prices",
   stocks: "/investments/stocks",
   stock: (id: string) => `/investments/stocks/${id}`,
   mutualFunds: "/investments/mutual-funds",

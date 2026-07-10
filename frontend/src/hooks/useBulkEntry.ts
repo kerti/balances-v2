@@ -7,7 +7,7 @@ import { api, ApiError, isEnvelope, type ErrorEnvelope } from "@/api/client";
 // — so a small data-layer config carries the API base + that field name, and
 // these hooks normalise every group to a single `position_id`-keyed shape the
 // EntryScreen renders uniformly.
-export type EntryGroup = "assets" | "liabilities" | "receivables";
+export type EntryGroup = "assets" | "liabilities" | "receivables" | "investments";
 
 // EntryDataConfig is the data-layer half of a group's entry config: where its
 // endpoints live, the wire name of its position id, and the query keys a
@@ -20,9 +20,14 @@ export type EntryDataConfig = {
 };
 
 // One row of the bulk monthly-entry list, normalised: an eligible position with
-// its carry-forward prefill. prefill_amount / carried_from are null for a
-// position with no snapshot at or before the target month. `subtype` is "" for
-// a flat group (receivables). `position_id` abstracts the per-group id field.
+// its carry-forward prefill. carried_from is null for a position with no
+// snapshot at or before the target month. `subtype` is "" for a flat group
+// (receivables). `position_id` abstracts the per-group id field.
+//
+// The prefill fields are shape-specific (ADR-0022): amount-only groups populate
+// `prefill_amount`; the qty×price group (#423) populates `prefill_quantity` +
+// `prefill_price` instead. An `EntryShape` reads whichever pair its group uses;
+// the unused ones stay null.
 export type EntryRow = {
   position_id: string;
   display_name: string;
@@ -31,6 +36,8 @@ export type EntryRow = {
   ownership_type: "sole" | "joint";
   sole_owner_user_id: string | null;
   prefill_amount: string | null;
+  prefill_quantity: string | null;
+  prefill_price: string | null;
   carried_from: string | null;
 };
 
@@ -39,11 +46,14 @@ export type EntryList = {
   rows: EntryRow[];
 };
 
-// One dirty row the user changed — the client sends only these.
+// One dirty row the user changed — the client sends only these. `fields` holds
+// the shape's wire columns keyed by name (amount-only: `{ amount }`; qty×price:
+// `{ quantity, price_per_unit }`), spread flat into the save body alongside the
+// group's id field and currency.
 export type BulkSnapshotRow = {
   position_id: string;
-  amount: string;
   currency: string;
+  fields: Record<string, string>;
 };
 
 export type BulkSaveArgs = {
@@ -68,7 +78,9 @@ type RawEntryRow = Record<string, unknown> & {
   subtype?: string;
   ownership_type: "sole" | "joint";
   sole_owner_user_id: string | null;
-  prefill_amount: string | null;
+  prefill_amount?: string | null;
+  prefill_quantity?: string | null;
+  prefill_price?: string | null;
   carried_from: string | null;
 };
 
@@ -91,7 +103,9 @@ export function useEntryList(cfg: EntryDataConfig, yearMonth: string | null) {
           subtype: r.subtype ?? "",
           ownership_type: r.ownership_type,
           sole_owner_user_id: r.sole_owner_user_id,
-          prefill_amount: r.prefill_amount,
+          prefill_amount: r.prefill_amount ?? null,
+          prefill_quantity: r.prefill_quantity ?? null,
+          prefill_price: r.prefill_price ?? null,
           carried_from: r.carried_from,
         })),
       };
@@ -117,8 +131,8 @@ export function useBulkSaveSnapshots(cfg: EntryDataConfig) {
         as_of_date: args.as_of_date,
         rows: args.rows.map((r) => ({
           [cfg.idField]: r.position_id,
-          amount: r.amount,
           currency: r.currency,
+          ...r.fields,
         })),
       };
       const res = await fetch(`${cfg.apiBase}/bulk`, {

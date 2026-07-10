@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { thisYearMonth, monthEndDateCapped, monthStartDate } from "@/lib/dateLimits";
-import { formatYearMonth } from "@/lib/format";
+import { formatYearMonth, formatCurrency } from "@/lib/format";
 import { errorMessage } from "@/lib/errorMessage";
 import { ownershipLabel } from "@/lib/ownership";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBulkEntry";
 import type { EntryGroupConfig } from "@/components/entry/groups";
+import type { EntryFieldValues } from "@/components/entry/shapes";
 
 // EntryScreen is the bulk monthly-entry view for one amount-only group
 // (ADR-0046): one screen listing every position eligible for a chosen month,
@@ -24,9 +25,13 @@ import type { EntryGroupConfig } from "@/components/entry/groups";
 // Liability, and Receivable (#422) share this one component — the read-only
 // ADR-0043 list core stays untouched; this is launched *from* the list.
 export function EntryScreen({ config }: { config: EntryGroupConfig }) {
-  const { t } = useTranslation(["common", "assets", "liabilities"]);
+  const { t } = useTranslation(["common", "assets", "liabilities", "investments"]);
   const navigate = useNavigate();
   const tid = config.testidPrefix;
+  const shape = config.shape;
+  // Copy prefix: "bulkEntry" (account wording) unless a group overrides it
+  // (investments → holdings wording). Field labels stay under bulkEntry.*.
+  const copy = config.copyPrefix ?? "bulkEntry";
 
   const [yearMonth, setYearMonth] = useState(thisYearMonth());
   // as_of_date must fall within the target month (backend CHECK), so it seeds
@@ -34,7 +39,10 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // carryover_date_mode date, which does not generalise to an arbitrarily
   // chosen target month.
   const [asOfDate, setAsOfDate] = useState(monthEndDateCapped(thisYearMonth()));
-  const [edits, setEdits] = useState<Record<string, string>>({});
+  // Per-position edits: only the fields the user actually typed. An untouched
+  // field falls back to the row's shape prefill (see valueFor). Keyed by
+  // position id, then by shape field key ("amount"; or "quantity"/"price…").
+  const [edits, setEdits] = useState<Record<string, EntryFieldValues>>({});
   const [prevYearMonth, setPrevYearMonth] = useState(yearMonth);
 
   const list = useEntryList(config, yearMonth);
@@ -63,22 +71,34 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // A thrown error is any non-2xx that isn't the per-row 422.
   const hasEnvelopeError = save.isError;
 
-  function valueFor(row: EntryRow): string {
-    return edits[row.position_id] ?? row.prefill_amount ?? "";
+  // valueFor returns the shown value of one field: the user's edit if any, else
+  // the row's shape prefill for that field ("" when the position has no
+  // history).
+  function valueFor(row: EntryRow, fieldKey: string): string {
+    const edited = edits[row.position_id]?.[fieldKey];
+    if (edited !== undefined) return edited;
+    return shape.prefill(row)[fieldKey] ?? "";
   }
-  // A row is dirty when the user typed a non-empty value that differs from the
-  // carried-forward prefill.
+  // The merged field values for a row: prefill overlaid with the user's edits.
+  function mergedValues(row: EntryRow): EntryFieldValues {
+    const out: EntryFieldValues = {};
+    for (const f of shape.fields) out[f.key] = valueFor(row, f.key).trim();
+    return out;
+  }
+  // A row is dirty when its values are complete (all required fields present)
+  // and at least one differs from the carried-forward prefill. An incomplete
+  // qty×price pair (only one of quantity/price typed) is not yet saveable.
   function isDirty(row: EntryRow): boolean {
-    const v = edits[row.position_id];
-    if (v === undefined) return false;
-    const trimmed = v.trim();
-    return trimmed !== "" && trimmed !== (row.prefill_amount ?? "");
+    const values = mergedValues(row);
+    if (!shape.complete(values)) return false;
+    const pf = shape.prefill(row);
+    return shape.fields.some((f) => values[f.key] !== (pf[f.key] ?? "").trim());
   }
 
   const dirtyRows = rows.filter(isDirty).map((r) => ({
     position_id: r.position_id,
-    amount: (edits[r.position_id] ?? "").trim(),
     currency: r.currency,
+    fields: mergedValues(r),
   }));
 
   // Group eligible rows by subtype (rows arrive pre-ordered by subtype then
@@ -149,18 +169,41 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
               className="text-xs text-destructive"
               data-testid={`${tid}-entry-error-${row.position_id}`}
             >
-              {t("bulkEntry.rowError")}
+              {t(`${copy}.rowError`)}
             </div>
           )}
         </div>
         <span className="text-xs text-muted-foreground">{row.currency}</span>
-        <Input
-          className={`w-36${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
-          inputMode="decimal"
-          value={valueFor(row)}
-          onChange={(e) => setEdits({ ...edits, [row.position_id]: e.target.value })}
-          data-testid={`${tid}-entry-amount-${row.position_id}`}
-        />
+        <div className="flex items-center gap-2">
+          {shape.fields.map((f) => (
+            <Input
+              key={f.key}
+              className={`${f.widthClass}${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+              inputMode="decimal"
+              aria-label={f.labelKey ? t(`common:${f.labelKey}`) : undefined}
+              placeholder={f.labelKey ? t(`common:${f.labelKey}`) : undefined}
+              value={valueFor(row, f.key)}
+              onChange={(e) =>
+                setEdits((prev) => ({
+                  ...prev,
+                  [row.position_id]: { ...(prev[row.position_id] ?? {}), [f.key]: e.target.value },
+                }))
+              }
+              data-testid={`${tid}-entry-${f.testidSuffix}-${row.position_id}`}
+            />
+          ))}
+          {shape.derived && (
+            <span
+              className="w-28 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
+              data-testid={`${tid}-entry-value-${row.position_id}`}
+            >
+              {(() => {
+                const d = shape.derived!(mergedValues(row));
+                return d.valid ? formatCurrency(d.amount, row.currency) : "—";
+              })()}
+            </span>
+          )}
+        </div>
         <Button
           type="button"
           variant="ghost"
@@ -200,8 +243,8 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       </Button>
       <Card>
         <CardHeader>
-          <CardTitle>{t("bulkEntry.title")}</CardTitle>
-          <CardDescription>{t("bulkEntry.description")}</CardDescription>
+          <CardTitle>{t(`${copy}.title`)}</CardTitle>
+          <CardDescription>{t(`${copy}.description`)}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
@@ -235,7 +278,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
               <p className="text-sm text-muted-foreground">{t("loading")}</p>
             ) : rows.length === 0 ? (
               <p className="text-sm text-muted-foreground" data-testid={`${tid}-entry-empty`}>
-                {t("bulkEntry.empty")}
+                {t(`${copy}.empty`)}
               </p>
             ) : flat ? (
               <ul className="divide-y">{rows.map(renderRow)}</ul>
