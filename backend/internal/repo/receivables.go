@@ -52,26 +52,10 @@ type UpdateReceivableParams struct {
 	DueDate          *time.Time
 }
 
+// CreateReceivable is the no-tag, no-history degenerate of
+// CreateReceivableWithSnapshots (issue #366).
 func (r *ReceivableRepo) CreateReceivable(ctx context.Context, p CreateReceivableParams) (*db.Receivable, error) {
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-	row, err := r.q.CreateReceivable(ctx, db.CreateReceivableParams{
-		HouseholdID:      hid,
-		DisplayName:      p.DisplayName,
-		Description:      p.Description,
-		OwnershipType:    p.OwnershipType,
-		SoleOwnerUserID:  p.SoleOwnerUserID,
-		NativeCurrency:   p.NativeCurrency,
-		CounterpartyName: p.CounterpartyName,
-		DueDate:          p.DueDate,
-		CreatedBy:        &user,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create receivable: %w", err)
-	}
-	return &row, nil
+	return r.CreateReceivableWithSnapshots(ctx, p, nil, nil)
 }
 
 func (r *ReceivableRepo) GetReceivable(ctx context.Context, id uuid.UUID) (*db.Receivable, error) {

@@ -49,50 +49,11 @@ type UpdatePropertyParams struct {
 	AnnualAppreciationRate *decimal.Decimal
 }
 
+// CreateProperty is CreatePropertyWithSnapshots with no tag and no seeded
+// history — the tag-assign and snapshot-upsert loops are no-ops when both are
+// nil, so the plain create is just the degenerate call (issue #366).
 func (r *AssetRepo) CreateProperty(ctx context.Context, p CreatePropertyParams) (*Property, error) {
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	qtx := r.q.WithTx(tx)
-	asset, err := qtx.CreateAsset(ctx, db.CreateAssetParams{
-		HouseholdID:     hid,
-		DisplayName:     p.DisplayName,
-		Description:     p.Description,
-		Subtype:         "property",
-		OwnershipType:   p.OwnershipType,
-		SoleOwnerUserID: p.SoleOwnerUserID,
-		NativeCurrency:  p.NativeCurrency,
-		CreatedBy:       &user,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create asset: %w", err)
-	}
-
-	details, err := qtx.CreatePropertyDetails(ctx, db.CreatePropertyDetailsParams{
-		AssetID:                asset.ID,
-		PropertyType:           p.PropertyType,
-		Address:                p.Address,
-		AcquisitionDate:        p.AcquisitionDate,
-		AcquisitionCost:        p.AcquisitionCost,
-		AnnualAppreciationRate: p.AnnualAppreciationRate,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create property_details: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
-	}
-
-	return &Property{Asset: asset, Details: details}, nil
+	return r.CreatePropertyWithSnapshots(ctx, p, nil, nil)
 }
 
 func (r *AssetRepo) GetProperty(ctx context.Context, id uuid.UUID) (*Property, error) {
