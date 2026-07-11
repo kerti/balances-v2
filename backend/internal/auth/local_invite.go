@@ -46,7 +46,7 @@ func (h *Handlers) handleLocalInvitePreview(w http.ResponseWriter, r *http.Reque
 	}
 
 	invite, err := h.q.GetInvitationByTokenHash(ctx, HashToken(token))
-	if err != nil || !inviteAcceptable(invite) {
+	if err != nil || !inviteAcceptable(invite, h.now()) {
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			slog.Error("invite preview: lookup", "err", err)
 			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
@@ -202,11 +202,11 @@ func (h *Handlers) commitLocalInvite(ctx context.Context, tokenHash, passwordHas
 // inviteAcceptable reports whether an invitation row is still pending and within
 // its TTL — the read-only check the preview uses. The POST accept does not rely on
 // it: there the conditional UPDATE re-checks both facts atomically.
-func inviteAcceptable(inv db.HouseholdInvitation) bool {
+func inviteAcceptable(inv db.HouseholdInvitation, now time.Time) bool {
 	if inv.UsedAt.Valid {
 		return false
 	}
-	return inv.ExpiresAt.Valid && inv.ExpiresAt.Time.After(time.Now())
+	return inv.ExpiresAt.Valid && inv.ExpiresAt.Time.After(now)
 }
 
 func isUniqueViolation(err error) bool {

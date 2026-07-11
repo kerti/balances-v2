@@ -43,7 +43,7 @@ func (h *Handlers) NotifyRestore(ctx context.Context, householdID, restorerID uu
 		}
 	}
 	restorerName := restorer.DisplayName // empty only if the restorer is somehow absent
-	now := time.Now()                    // formatted per-recipient (locale + time zone) below
+	now := h.now()                       // formatted per-recipient (locale + time zone) below
 
 	for _, m := range members {
 		var msg email.Message

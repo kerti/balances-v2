@@ -75,7 +75,7 @@ func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	expiresAt := time.Now().Add(invitationTTL)
+	expiresAt := h.now().Add(invitationTTL)
 
 	invite, err := h.q.CreateInvitation(ctx, db.CreateInvitationParams{
 		HouseholdID:  inviter.HouseholdID,

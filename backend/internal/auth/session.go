@@ -91,7 +91,7 @@ func (h *Handlers) SessionMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		newExpiresAt := time.Now().Add(h.sessionTTL)
+		newExpiresAt := h.now().Add(h.sessionTTL)
 		_ = h.q.TouchSession(ctx, db.TouchSessionParams{
 			ExpiresAt: pgtype.Timestamptz{Time: newExpiresAt, Valid: true},
 			ID:        session.ID,

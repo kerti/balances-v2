@@ -108,7 +108,7 @@ func (h *Handlers) issueResetToken(ctx context.Context, email string) {
 		slog.Error("reset request: generate token", "err", err)
 		return
 	}
-	expiresAt := time.Now().Add(passwordResetTTL)
+	expiresAt := h.now().Add(passwordResetTTL)
 	if _, err := h.q.CreatePasswordResetToken(ctx, db.CreatePasswordResetTokenParams{
 		TokenHash: tokenHash,
 		UserID:    user.ID,
@@ -151,7 +151,7 @@ func (h *Handlers) handleLocalResetPreview(w http.ResponseWriter, r *http.Reques
 	}
 
 	row, err := h.q.GetPasswordResetToken(ctx, HashToken(token))
-	if err != nil || !resetTokenUsable(row) {
+	if err != nil || !resetTokenUsable(row, h.now()) {
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			slog.Error("reset preview: lookup", "err", err)
 			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
@@ -295,11 +295,11 @@ func (h *Handlers) commitPasswordReset(ctx context.Context, tokenHash, passwordH
 // resetTokenUsable reports whether a reset token row is still unused and within
 // its TTL — the read-only check the preview uses. The POST set does not rely on
 // it: there the conditional UPDATE re-checks both facts atomically.
-func resetTokenUsable(row db.PasswordResetToken) bool {
+func resetTokenUsable(row db.PasswordResetToken, now time.Time) bool {
 	if row.UsedAt.Valid {
 		return false
 	}
-	return row.ExpiresAt.Valid && row.ExpiresAt.Time.After(time.Now())
+	return row.ExpiresAt.Valid && row.ExpiresAt.Time.After(now)
 }
 
 // resetURL builds the link a member follows to set a new password. Always a

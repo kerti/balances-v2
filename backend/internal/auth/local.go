@@ -10,7 +10,6 @@ import (
 	"net/mail"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -273,7 +272,7 @@ func (h *Handlers) beginLocalOnboarding(ctx context.Context, w http.ResponseWrit
 	if err != nil {
 		return err
 	}
-	expiresAt := time.Now().Add(onboardingHandshakeTTL)
+	expiresAt := h.now().Add(onboardingHandshakeTTL)
 	if _, err := h.q.CreateOnboardingHandshake(ctx, db.CreateOnboardingHandshakeParams{
 		ID:               token,
 		GoogleSub:        nil,
