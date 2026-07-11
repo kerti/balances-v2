@@ -91,8 +91,24 @@ emit() {
   echo "$SEP"
   echo
 
-  ( cd "$ROOT/frontend" && npx --yes generate-license-file@"$GLF_VERSION" \
-      --input package.json --output "$tmp/fe.txt" --overwrite ) >/dev/null 2>&1
+  # Platform-gated native binaries (lightningcss / @tailwindcss/oxide /
+  # @rolldown/binding / fsevents) are build-time only — they never enter the
+  # browser bundle, and `npm ci` installs only the host's variant, so letting
+  # them into the notices makes the output differ per OS. Exclude the complete
+  # cross-platform set, sourced from package-lock.json (which lists every os/cpu
+  # variant regardless of host), so the notices are reproducible everywhere.
+  ( cd "$ROOT/frontend" && GLF_OUT="$tmp/fe.txt" GLF_CFG="$tmp/glf.json" node -e '
+      const fs = require("fs");
+      const lock = require("./package-lock.json");
+      const exclude = new Set();
+      for (const [k, v] of Object.entries(lock.packages || {})) {
+        if (k && (v.os || v.cpu)) exclude.add(k.replace(/^.*node_modules\//, ""));
+      }
+      const cfg = { inputs: ["package.json"], output: process.env.GLF_OUT,
+                    overwrite: true, exclude: [...exclude].sort() };
+      fs.writeFileSync(process.env.GLF_CFG, JSON.stringify(cfg, null, 2));
+    ' && npx --yes generate-license-file@"$GLF_VERSION" -c "$tmp/glf.json" --no-spinner \
+    ) >/dev/null 2>&1
   cat "$tmp/fe.txt"
 }
 
