@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShowInactiveToggle } from "@/components/ShowInactiveToggle";
-import { StatusBadge } from "@/components/StatusBadge";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { ImportPositionDialog } from "@/components/ImportPositionDialog";
+import { ShowInactiveToggle } from "@/components/common/ShowInactiveToggle";
+import { StatusBadge } from "@/components/common/StatusBadge";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { ImportPositionDialog } from "@/components/dialogs/ImportPositionDialog";
 import { PositionListTable } from "@/components/positionList/PositionListTable";
 import { PositionListCards } from "@/components/positionList/PositionListCards";
 import { useIsMobile } from "@/hooks/use-mobile";

@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SortableHeader } from "@/components/SortableHeader";
+import { SortableHeader } from "@/components/common/SortableHeader";
 import { RowActionsMenu } from "@/components/positionList/RowActionsMenu";
 import { cn } from "@/lib/utils";
 import type { PositionListRendererProps } from "@/components/positionList/types";

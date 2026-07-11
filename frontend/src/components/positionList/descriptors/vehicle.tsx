@@ -1,5 +1,5 @@
-import { CreateVehicleDialog } from "@/components/CreateVehicleDialog";
-import { EditVehicleDialog } from "@/components/EditVehicleDialog";
+import { CreateVehicleDialog } from "@/components/dialogs/CreateVehicleDialog";
+import { EditVehicleDialog } from "@/components/dialogs/EditVehicleDialog";
 import { useVehicles, useDeleteVehicle, useImportCreateVehicle } from "@/hooks/useVehicles";
 import { nonInvestmentDescriptor } from "@/components/positionList/presets/nonInvestment";
 import type { VehicleListItem } from "@/api/types";

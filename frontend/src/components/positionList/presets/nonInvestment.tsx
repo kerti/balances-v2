@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { ListHeadline } from "@/components/ListHeadline";
+import { ListHeadline } from "@/components/common/ListHeadline";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession, type Me } from "@/hooks/useSession";
 import { ownershipLabel } from "@/lib/ownership";

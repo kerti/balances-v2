@@ -1,5 +1,5 @@
-import { CreateStockDialog } from "@/components/CreateStockDialog";
-import { EditStockDialog } from "@/components/EditStockDialog";
+import { CreateStockDialog } from "@/components/dialogs/CreateStockDialog";
+import { EditStockDialog } from "@/components/dialogs/EditStockDialog";
 import { useStocks, useDeleteStock, useImportCreateStock } from "@/hooks/useInvestments";
 import { investmentDescriptor } from "@/components/positionList/presets/investment";
 import type { StockListItem } from "@/api/types";
