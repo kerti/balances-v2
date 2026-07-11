@@ -10,16 +10,26 @@ coverage on calculations and tenancy.
 
 ### Test database: `testcontainers-go`
 
-Integration tests run against a real Postgres container spun up per `go test` invocation.
+Integration tests run against a real Postgres container, started once per test binary (Go
+package) and shared by every test in it — `internal/testutil.NewTestDB`.
 
 - Programmatic Docker management; same setup works on local OrbStack and on any CI runner with
   Docker available.
-- The ~2–5s container startup is paid once per test binary, not per test function.
-- Tests within a run are isolated by wrapping each test in a transaction (`BEGIN` in setup,
-  `ROLLBACK` in `t.Cleanup`), which avoids cross-test pollution without paying a container-per-test
-  cost.
+- The ~2–5s container startup **and** the migration run are paid once per package — a `sync.Once`
+  in `internal/testutil` — not per test function.
+- Tests are isolated by **truncating every application table between them**, not by
+  transaction-wrapping. Each `NewTestDB` call runs `TRUNCATE … RESTART IDENTITY CASCADE` over all
+  `public` tables except goose's `goose_db_version`, so every test opens on an empty but
+  still-migrated schema. The table list is read from the catalog, so a new migration's tables are
+  swept automatically with no test change. Tests within a package run sequentially (none call
+  `t.Parallel`), so the shared pool needs no locking.
+- Truncate-between rather than a per-test outer transaction is deliberate: the code under test is
+  itself transactional (restore/erasure wipe-and-load, the reset set-password consume) and reaches
+  for multiple pooled connections, both of which a wrapping `BEGIN…ROLLBACK` would mask or
+  deadlock. The cost is that a test must not leak rows another relies on, which the blanket
+  truncate makes moot.
 - Migrations are applied to the fresh container at startup using the same goose runner (ADR-0019)
-  the app uses.
+  the app uses, against the embedded migration FS the app ships — so tests run bit-identical schema.
 
 **Considered alternatives:**
 - A long-running docker-compose Postgres shared by all test runs. Faster local loop, but tests
