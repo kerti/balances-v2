@@ -1,0 +1,52 @@
+<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.22"/>
+      <stop offset="70%" stop-color="#6366F1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1280" height="640" fill="#0F172A"/>
+  <circle cx="1180" cy="620" r="360" fill="url(#glow)"/>
+
+  <!-- glyph, plated -->
+  <g transform="translate(100,64)">
+    <rect width="132" height="132" rx="29" fill="#111c33"/>
+    <g transform="translate(25.7,27.3) scale(0.475)"><g transform="translate(-43,-39)">
+      <circle cx="128" cy="58" r="13" fill="#6366F1"/>
+      <rect x="124" y="71" width="8" height="42" rx="4" fill="#E2E8F0"/>
+      <rect x="52" y="108" width="152" height="10" rx="5" fill="#E2E8F0"/>
+      <rect x="69" y="118" width="4" height="22" fill="#475569"/>
+      <rect x="183" y="118" width="4" height="22" fill="#475569"/>
+      <rect x="49"  y="140" width="44" height="16" rx="3" fill="#6366F1"/>
+      <rect x="49"  y="160" width="44" height="16" rx="3" fill="#818CF8"/>
+      <rect x="49"  y="180" width="44" height="16" rx="3" fill="#A5B4FC"/>
+      <rect x="163" y="140" width="44" height="16" rx="3" fill="#334155"/>
+      <rect x="163" y="160" width="44" height="16" rx="3" fill="#334155"/>
+    </g></g>
+  </g>
+
+  <text x="256" y="168" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="92" font-weight="700" letter-spacing="-1" fill="#F8FAFC">Balances</text>
+
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="52">
+    <text x="100" y="316" fill="#E2E8F0">Track your household's net worth</text>
+    <text x="100" y="384" fill="#818CF8">without itemising a single transaction.</text>
+  </g>
+
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="400" font-size="30" fill="#94A3B8">
+    <text x="100" y="466">Enter your balances once a month.</text>
+    <text x="100" y="508">Snapshot-based, self-hostable, multi-currency.</text>
+  </g>
+
+  <!-- chips -->
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="500" font-size="24" fill="#A5B4FC">
+    <rect x="100" y="556" width="222" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <text x="211" y="590" text-anchor="middle">Household-first</text>
+    <rect x="338" y="556" width="204" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <text x="440" y="590" text-anchor="middle">Snapshot-first</text>
+    <rect x="558" y="556" width="168" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <text x="642" y="590" text-anchor="middle">Self-hosted</text>
+    <rect x="742" y="556" width="204" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
+    <text x="844" y="590" text-anchor="middle">Multi-currency</text>
+  </g>
+</svg>
