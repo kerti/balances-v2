@@ -17,7 +17,9 @@ const E2E_OIDC_CLIENT_SECRET = "e2e-secret";
 
 export default defineConfig({
   testDir: "./e2e",
-  // Single household, single shared DB: tests must not run concurrently.
+  // Single household, single shared DB: tests must not run concurrently. The
+  // path to parallelism (per-worker Household isolation, and its trigger) is
+  // recorded in ADR-0047 — no change until the suite roughly doubles.
   fullyParallel: false,
   workers: 1,
   forbidOnly: !!process.env.CI,
