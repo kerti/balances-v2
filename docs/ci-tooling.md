@@ -19,6 +19,7 @@ Last reviewed: 2026-06-17 (post-alpha.4; pre-alpha hardening landed in #70).
 | **SHA-pinned actions** | Third-party Actions pinned to commit SHA (supply-chain) | all `.github/workflows/*` | added 2026-06-13 (#70); `# vN` comment lets Dependabot bump pins |
 | **E2E (Playwright)** | Smoke gate per-PR + nightly full suite | `e2e.yml` → `e2e-run.yml` | added 2026-06-13 (#70); tiered via `{ tag: '@smoke' }`; offline harness (mock-oidc + `services: postgres`) |
 | **gitleaks** | Secret scanning (full git history) | `gitleaks.yml` | added 2026-06-13 (#70); defence-in-depth behind native push-protection; pinned binary + `.gitleaks.toml` |
+| **Upgrade contract** | Nightly: prev release tag's migrations → HEAD's migrate + boot on a real N-1 schema | `upgrade-contract.yml` → `scripts/upgrade-contract.sh` | added 2026-07-11 (#368); automates the #229 manual rehearsal; `services: postgres`, `make upgrade-contract` locally |
 
 ## Why these three
 
