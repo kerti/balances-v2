@@ -47,6 +47,10 @@ FROM gcr.io/distroless/static-debian12:nonroot@sha256:d093aa3e30dbadd3efe1310db0
 WORKDIR /app
 COPY --from=build /out/balances /app/balances
 COPY --from=web /web/dist /app/web
+# Third-party license notices travel with the artifact they cover (issue #345):
+# the aggregate for the Go binary + SPA bundle, plus the curated font OFL texts.
+COPY THIRD-PARTY-NOTICES /app/THIRD-PARTY-NOTICES
+COPY frontend/licenses /app/licenses
 EXPOSE 8080
 USER nonroot:nonroot
 # WEB_DIR (set in fly.toml) makes the binary serve /app/web alongside /api.

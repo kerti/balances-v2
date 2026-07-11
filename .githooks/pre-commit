@@ -22,9 +22,22 @@ fi
 regex=$(grep -vE '^[[:space:]]*($|#)' "$pf" | paste -sd'|' -)
 [ -z "$regex" ] && exit 0
 
+# Third-party attribution files are third-party names/emails *by design* — the
+# generated THIRD-PARTY-NOTICES and the vendored font licenses under
+# frontend/licenses/ reproduce upstream copyright lines to satisfy notice
+# obligations (issue #345). Scanning them for PII is a category error and would
+# block every `make licenses` regen, so they're exempt from the guard.
+is_attribution() {
+  case "$1" in
+    THIRD-PARTY-NOTICES|frontend/licenses/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # NOTE: filenames with spaces aren't handled (none in this repo); revisit if that changes.
 bad=""
 for f in $(git diff --cached --name-only --diff-filter=ACM); do
+  if is_attribution "$f"; then continue; fi
   if git diff --cached --no-color -U0 -- "$f" \
       | grep -E '^\+' | grep -vE '^\+\+\+' \
       | grep -iqE "$regex"; then

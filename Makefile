@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -71,6 +71,10 @@ help:
 	@echo "  frontend-install        npm install"
 	@echo "  frontend-dev            run the vite dev server in the foreground"
 	@echo "  frontend-build          production build"
+	@echo ""
+	@echo "Release artifacts / licensing (issue #345):"
+	@echo "  licenses                regenerate THIRD-PARTY-NOTICES from Go + npm deps + fonts"
+	@echo "  licenses-check          CI gate: fail if THIRD-PARTY-NOTICES is stale"
 	@echo ""
 	@echo "Background dev servers (see issue #30):"
 	@echo "  backend-restart         restart the background backend (logs: $(BACKEND_LOG))"
@@ -158,6 +162,29 @@ api-routes:
 # without rewriting it.
 api-routes-check:
 	( cd backend && go run ./tools/gen-routes -check )
+
+# Regenerate THIRD-PARTY-NOTICES — the aggregated license/copyright texts for
+# everything that ships in a release artifact (GHCR image + SPA bundle):
+# go-licenses over the linked Go module graph, generate-license-file over the
+# production npm deps, and the curated font OFL texts in frontend/licenses/.
+# Run after any dependency change. Needs frontend deps installed (make
+# frontend-install) and network on first run (fetches the pinned tools). See
+# scripts/gen-third-party-notices.sh and issue #345.
+licenses:
+	@bash scripts/gen-third-party-notices.sh
+
+# The CI gate (also in `make check`): fails if THIRD-PARTY-NOTICES is stale
+# relative to the current dependencies, without rewriting it. Mirrors the
+# api-routes / gen-ts-types freshness gates.
+licenses-check:
+	@tmp=$$(mktemp); \
+	bash scripts/gen-third-party-notices.sh $$tmp >/dev/null; \
+	if ! diff -q THIRD-PARTY-NOTICES $$tmp >/dev/null 2>&1; then \
+	  echo "✗ THIRD-PARTY-NOTICES is stale — run 'make licenses' and commit the result" >&2; \
+	  diff THIRD-PARTY-NOTICES $$tmp | head -40 >&2; \
+	  rm -f $$tmp; exit 1; \
+	fi; \
+	rm -f $$tmp
 
 frontend-install:
 	( cd frontend && npm install )
@@ -353,6 +380,7 @@ check:
 	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
 	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >/tmp/balances-check-ts-types.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-ts-types.log'; fail=1; }; \
 	printf '%-14s' 'api-routes';   (cd backend && go run ./tools/gen-routes -check)   >/tmp/balances-check-api-routes.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-api-routes.log'; fail=1; }; \
+	printf '%-14s' 'licenses';     $(MAKE) -s licenses-check                          >/tmp/balances-check-licenses.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-licenses.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
 # Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the
