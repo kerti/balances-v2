@@ -1,5 +1,5 @@
-import { CreateMutualFundDialog } from "@/components/CreateMutualFundDialog";
-import { EditMutualFundDialog } from "@/components/EditMutualFundDialog";
+import { CreateMutualFundDialog } from "@/components/dialogs/CreateMutualFundDialog";
+import { EditMutualFundDialog } from "@/components/dialogs/EditMutualFundDialog";
 import {
   useMutualFunds,
   useDeleteMutualFund,

@@ -1,5 +1,5 @@
-import { CreateTimeDepositDialog } from "@/components/CreateTimeDepositDialog";
-import { EditTimeDepositDialog } from "@/components/EditTimeDepositDialog";
+import { CreateTimeDepositDialog } from "@/components/dialogs/CreateTimeDepositDialog";
+import { EditTimeDepositDialog } from "@/components/dialogs/EditTimeDepositDialog";
 import {
   useTimeDeposits,
   useDeleteTimeDeposit,

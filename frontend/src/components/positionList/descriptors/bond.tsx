@@ -1,5 +1,5 @@
-import { CreateBondDialog } from "@/components/CreateBondDialog";
-import { EditBondDialog } from "@/components/EditBondDialog";
+import { CreateBondDialog } from "@/components/dialogs/CreateBondDialog";
+import { EditBondDialog } from "@/components/dialogs/EditBondDialog";
 import { useBonds, useDeleteBond, useImportCreateBond } from "@/hooks/useInvestments";
 import { investmentDescriptor } from "@/components/positionList/presets/investment";
 import { maturityClass, maturityInfo } from "@/lib/maturity";

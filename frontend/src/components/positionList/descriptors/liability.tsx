@@ -1,5 +1,5 @@
-import { CreateLiabilityDialog } from "@/components/CreateLiabilityDialog";
-import { EditLiabilityDialog } from "@/components/EditLiabilityDialog";
+import { CreateLiabilityDialog } from "@/components/dialogs/CreateLiabilityDialog";
+import { EditLiabilityDialog } from "@/components/dialogs/EditLiabilityDialog";
 import {
   useLiabilities,
   useDeleteLiability,

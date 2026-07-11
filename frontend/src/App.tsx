@@ -9,17 +9,17 @@ import {
 } from "react-router";
 import { useSession } from "@/hooks/useSession";
 import { routes } from "@/lib/routes";
-import { SignInScreen } from "@/components/SignInScreen";
-import { OnboardingScreen } from "@/components/OnboardingScreen";
-import { InviteAcceptScreen } from "@/components/InviteAcceptScreen";
-import { ResetRequestScreen } from "@/components/ResetRequestScreen";
-import { ResetSetScreen } from "@/components/ResetSetScreen";
-import { HouseholdErasedScreen } from "@/components/HouseholdErasedScreen";
-import { AppShell } from "@/components/AppShell";
-import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
-import { DashboardScreen } from "@/components/DashboardScreen";
-import { AssetsHome } from "@/components/AssetsHome";
-import { AssetEntryScreen } from "@/components/AssetEntryScreen";
+import { SignInScreen } from "@/components/screens/SignInScreen";
+import { OnboardingScreen } from "@/components/screens/OnboardingScreen";
+import { InviteAcceptScreen } from "@/components/screens/InviteAcceptScreen";
+import { ResetRequestScreen } from "@/components/screens/ResetRequestScreen";
+import { ResetSetScreen } from "@/components/screens/ResetSetScreen";
+import { HouseholdErasedScreen } from "@/components/screens/HouseholdErasedScreen";
+import { AppShell } from "@/components/shell/AppShell";
+import { RouteErrorBoundary } from "@/components/shell/RouteErrorBoundary";
+import { DashboardScreen } from "@/components/screens/DashboardScreen";
+import { AssetsHome } from "@/components/screens/AssetsHome";
+import { AssetEntryScreen } from "@/components/screens/AssetEntryScreen";
 import { EntryScreen } from "@/components/entry/EntryScreen";
 import {
   liabilityEntryConfig,
@@ -29,33 +29,33 @@ import {
 } from "@/components/entry/groups";
 import { PositionListScreen } from "@/components/positionList/PositionListScreen";
 import { bankAccountDescriptor } from "@/components/positionList/descriptors/bankAccount";
-import { BankAccountDetail } from "@/components/BankAccountDetail";
+import { BankAccountDetail } from "@/components/detail/BankAccountDetail";
 import { propertyDescriptor } from "@/components/positionList/descriptors/property";
-import { PropertyDetail } from "@/components/PropertyDetail";
+import { PropertyDetail } from "@/components/detail/PropertyDetail";
 import { vehicleDescriptor } from "@/components/positionList/descriptors/vehicle";
-import { VehicleDetail } from "@/components/VehicleDetail";
-import { LiabilitiesHome } from "@/components/LiabilitiesHome";
+import { VehicleDetail } from "@/components/detail/VehicleDetail";
+import { LiabilitiesHome } from "@/components/screens/LiabilitiesHome";
 import {
   liabilityPersonalDescriptor,
   liabilityInstitutionalDescriptor,
 } from "@/components/positionList/descriptors/liability";
-import { LiabilityDetail } from "@/components/LiabilityDetail";
+import { LiabilityDetail } from "@/components/detail/LiabilityDetail";
 import { receivableDescriptor } from "@/components/positionList/descriptors/receivable";
-import { ReceivableDetail } from "@/components/ReceivableDetail";
-import { InvestmentsHome } from "@/components/InvestmentsHome";
+import { ReceivableDetail } from "@/components/detail/ReceivableDetail";
+import { InvestmentsHome } from "@/components/screens/InvestmentsHome";
 import { stockDescriptor } from "@/components/positionList/descriptors/stock";
-import { StockDetail } from "@/components/StockDetail";
+import { StockDetail } from "@/components/detail/StockDetail";
 import { mutualFundDescriptor } from "@/components/positionList/descriptors/mutualFund";
-import { MutualFundDetail } from "@/components/MutualFundDetail";
+import { MutualFundDetail } from "@/components/detail/MutualFundDetail";
 import { bondDescriptor } from "@/components/positionList/descriptors/bond";
-import { BondDetail } from "@/components/BondDetail";
+import { BondDetail } from "@/components/detail/BondDetail";
 import { timeDepositDescriptor } from "@/components/positionList/descriptors/timeDeposit";
-import { TimeDepositDetail } from "@/components/TimeDepositDetail";
+import { TimeDepositDetail } from "@/components/detail/TimeDepositDetail";
 import { goldDescriptor } from "@/components/positionList/descriptors/gold";
-import { GoldDetail } from "@/components/GoldDetail";
-import { IncomeScreen } from "@/components/IncomeScreen";
-import { TagsScreen } from "@/components/TagsScreen";
-import { SettingsScreen } from "@/components/SettingsScreen";
+import { GoldDetail } from "@/components/detail/GoldDetail";
+import { IncomeScreen } from "@/components/screens/IncomeScreen";
+import { TagsScreen } from "@/components/screens/TagsScreen";
+import { SettingsScreen } from "@/components/screens/SettingsScreen";
 
 // The list screens and detail pages predate the router: they take an
 // `onSelect(id)` / `onBack()` callback and the entity id as a prop, with no

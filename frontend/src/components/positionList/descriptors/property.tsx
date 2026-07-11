@@ -1,5 +1,5 @@
-import { CreatePropertyDialog } from "@/components/CreatePropertyDialog";
-import { EditPropertyDialog } from "@/components/EditPropertyDialog";
+import { CreatePropertyDialog } from "@/components/dialogs/CreatePropertyDialog";
+import { EditPropertyDialog } from "@/components/dialogs/EditPropertyDialog";
 import { useProperties, useDeleteProperty, useImportCreateProperty } from "@/hooks/useProperties";
 import { nonInvestmentDescriptor } from "@/components/positionList/presets/nonInvestment";
 import type { PropertyListItem } from "@/api/types";

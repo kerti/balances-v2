@@ -11,9 +11,9 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { routes } from "@/lib/routes";
-import { SnapshotChart } from "@/components/SnapshotChart";
-import { CreateReceivableDialog } from "@/components/CreateReceivableDialog";
-import { EditReceivableDialog } from "@/components/EditReceivableDialog";
+import { SnapshotChart } from "@/components/charts/SnapshotChart";
+import { CreateReceivableDialog } from "@/components/dialogs/CreateReceivableDialog";
+import { EditReceivableDialog } from "@/components/dialogs/EditReceivableDialog";
 import {
   useReceivables,
   useDeleteReceivable,

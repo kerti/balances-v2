@@ -1,5 +1,5 @@
-import { CreateBankAccountDialog } from "@/components/CreateBankAccountDialog";
-import { EditBankAccountDialog } from "@/components/EditBankAccountDialog";
+import { CreateBankAccountDialog } from "@/components/dialogs/CreateBankAccountDialog";
+import { EditBankAccountDialog } from "@/components/dialogs/EditBankAccountDialog";
 import {
   useBankAccounts,
   useDeleteBankAccount,
