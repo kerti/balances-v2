@@ -1,0 +1,61 @@
+# Upgrade contract (#368 / CF-27): nightly automation of the manual rehearsal
+# #229 ran once — prove the current main's migrations apply cleanly on top of
+# the previous release tag's schema and the app boots on the result. Catches a
+# migration that is invalid against what actually shipped, going forward.
+#
+# Not a PR gate: it needs a prior release tag and reaches back through history,
+# so it runs nightly + on demand, like the full E2E suite. Self-contained, no
+# secrets — a `services: postgres` stands in for the dev container; the boot
+# check runs local-auth only (no OIDC, no mail), so nothing leaves the runner.
+name: Upgrade contract
+
+on:
+  schedule:
+    # Nightly 04:00 UTC — an hour ahead of the full E2E cron to spread load.
+    - cron: '0 4 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      prev_ref:
+        description: Baseline ref to upgrade from (default = latest tag reachable from HEAD)
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  upgrade-contract:
+    name: migrate prev-release → HEAD + boot
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: balances
+          POSTGRES_PASSWORD: balances
+          # Pre-created empty target DB — the script writes here directly, so no
+          # docker-exec db-create step is needed (unlike the local Makefile target).
+          POSTGRES_DB: balances_upgrade
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U balances"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://balances:balances@localhost:5432/balances_upgrade?sslmode=disable
+      PREV_REF: ${{ github.event.inputs.prev_ref }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # Full history + tags so `git describe --tags` and `git worktree add`
+          # can resolve and check out the previous release.
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - name: Run upgrade contract
+        run: bash scripts/upgrade-contract.sh

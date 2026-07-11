@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
+.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -39,6 +39,13 @@ PG_DB        := balances
 E2E_DB       := balances_e2e
 E2E_DATABASE_URL := $(shell echo "$(DATABASE_URL)" | sed 's|/balances?|/$(E2E_DB)?|')
 
+# Upgrade contract (#368/#229): a throwaway DB, recreated empty each run, that
+# the previous release tag's binary migrates first and HEAD's binary migrates on
+# top of — never the dev DB. UPGRADE_PORT keeps the boot check off :8080.
+UPGRADE_DB   := balances_upgrade
+UPGRADE_DATABASE_URL := $(shell echo "$(DATABASE_URL)" | sed 's|/balances?|/$(UPGRADE_DB)?|')
+UPGRADE_PORT := 8098
+
 help:
 	@echo "balances-v2 — make targets (run 'make <target>')"
 	@echo ""
@@ -78,6 +85,7 @@ help:
 	@echo "  e2e-db-create           create the balances_e2e database if missing"
 	@echo "  e2e-seed                migrate + reset balances_e2e to the fixture"
 	@echo "  e2e-backend             run the backend against balances_e2e (foreground)"
+	@echo "  upgrade-contract        migrate prev release tag -> HEAD on a throwaway DB + boot check (#368)"
 	@echo "  e2e-mock-oidc           run the fake OIDC provider (foreground, :8090)"
 	@echo ""
 	@echo "Workflow helpers (terse output; see docs/agents/dev.md):"
@@ -287,6 +295,21 @@ e2e-seed: e2e-db-create
 
 e2e-backend: e2e-db-create
 	@( cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances serve )
+
+# upgrade-contract: prove HEAD's migrations apply cleanly on top of the previous
+# release tag's schema and the app boots on the result (#368, automates #229).
+# Recreates a throwaway DB in the running container each run (FORCE-drops any
+# stale connections); leaves the dev DB untouched. PREV_REF overrides the
+# baseline (defaults to the most recent tag reachable from HEAD).
+upgrade-contract:
+	@docker exec $(PG_CONTAINER) psql -U $(PG_USER) -d postgres -tAc \
+	  "DROP DATABASE IF EXISTS $(UPGRADE_DB) WITH (FORCE)" >/dev/null
+	@docker exec $(PG_CONTAINER) createdb -U $(PG_USER) $(UPGRADE_DB)
+	@DATABASE_URL="$(UPGRADE_DATABASE_URL)" HEALTHZ_PORT=$(UPGRADE_PORT) bash scripts/upgrade-contract.sh; \
+	  status=$$?; \
+	  docker exec $(PG_CONTAINER) psql -U $(PG_USER) -d postgres -tAc \
+	    "DROP DATABASE IF EXISTS $(UPGRADE_DB) WITH (FORCE)" >/dev/null || true; \
+	  exit $$status
 
 servers-status:
 	@if pgrep -f 'cmd/balances serve' >/dev/null; then \
