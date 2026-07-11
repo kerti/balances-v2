@@ -85,7 +85,11 @@ body {
   --secondary: oklch(0.94 0.001 106.424);
   --secondary-foreground: oklch(0.216 0.006 56.043);
   --muted: oklch(0.94 0.001 106.424);
-  --muted-foreground: oklch(0.553 0.013 58.071);
+  /* Darkened from L=0.553 so muted secondary text clears WCAG AA (4.5:1) on a
+     muted surface too, not just on --background: the shared CardFooter is
+     bg-muted/50, so muted-foreground-on-muted (the AppInfo footer on every
+     pre-auth screen) was a 4.19:1 near-miss (#368). L=0.52 lands ≈4.8:1. */
+  --muted-foreground: oklch(0.52 0.013 58.071);
   --accent: oklch(0.94 0.001 106.424);
   --accent-foreground: oklch(0.216 0.006 56.043);
   --destructive: oklch(0.577 0.245 27.325);
