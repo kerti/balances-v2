@@ -14,7 +14,10 @@ import { useTranslation } from "react-i18next";
 import { InvestmentListHeadline } from "@/components/common/InvestmentListHeadline";
 import { ListTimeGraph } from "@/components/charts/ListTimeGraph";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
-import { RiskProfileFilter, type RiskProfileFilterValue } from "@/components/common/RiskProfileFilter";
+import {
+  RiskProfileFilter,
+  type RiskProfileFilterValue,
+} from "@/components/common/RiskProfileFilter";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
