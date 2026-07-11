@@ -101,6 +101,9 @@ func newAuthHarness(t *testing.T) *authHarness {
 		// goroutine (keeping SMTP off the response timing); the test cares about the
 		// behaviour, not the off-thread scheduling.
 		dispatch: func(fn func()) { fn() },
+		// Real clock; boundary tests that need a fixed instant build via New with
+		// WithNow (see clock_test.go) or set h.now directly on the returned harness.
+		now: time.Now,
 	}
 
 	r := chi.NewRouter()
