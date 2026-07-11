@@ -28,18 +28,18 @@
 
   <text x="256" y="168" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="92" font-weight="700" letter-spacing="-1" fill="#F8FAFC">Balances</text>
 
-  <g font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-weight="700" font-size="52">
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="52">
     <text x="100" y="316" fill="#E2E8F0">Track your household's net worth</text>
     <text x="100" y="384" fill="#818CF8">without itemising a single transaction.</text>
   </g>
 
-  <g font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-weight="400" font-size="30" fill="#94A3B8">
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="400" font-size="30" fill="#94A3B8">
     <text x="100" y="466">Enter your balances once a month.</text>
     <text x="100" y="508">Snapshot-based, self-hostable, multi-currency.</text>
   </g>
 
   <!-- chips -->
-  <g font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-weight="500" font-size="24" fill="#A5B4FC">
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="500" font-size="24" fill="#A5B4FC">
     <rect x="100" y="556" width="222" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
     <text x="211" y="590" text-anchor="middle">Household-first</text>
     <rect x="338" y="556" width="204" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
