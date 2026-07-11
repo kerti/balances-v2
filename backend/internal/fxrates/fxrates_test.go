@@ -13,9 +13,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/fxrates"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -61,7 +61,7 @@ func (h *harness) doAs(t *testing.T, method, path string, body any, user *db.Use
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if user != nil {
-		req = req.WithContext(auth.WithUser(req.Context(), *user))
+		req = req.WithContext(identity.WithUser(req.Context(), *user))
 	}
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)

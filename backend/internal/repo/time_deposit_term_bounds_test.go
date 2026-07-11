@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -22,7 +22,7 @@ func newTermBoundsTD(t *testing.T) (*repo.InvestmentRepo, context.Context, *repo
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	rate, _ := decimal.NewFromString("5.5")

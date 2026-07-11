@@ -48,48 +48,10 @@ type UpdateBankAccountParams struct {
 	AccountType     string
 }
 
+// CreateBankAccount is the no-tag, no-history degenerate of
+// CreateBankAccountWithSnapshots (issue #366).
 func (r *AssetRepo) CreateBankAccount(ctx context.Context, p CreateBankAccountParams) (*BankAccount, error) {
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	qtx := r.q.WithTx(tx)
-	asset, err := qtx.CreateAsset(ctx, db.CreateAssetParams{
-		HouseholdID:     hid,
-		DisplayName:     p.DisplayName,
-		Description:     p.Description,
-		Subtype:         "bank_account",
-		OwnershipType:   p.OwnershipType,
-		SoleOwnerUserID: p.SoleOwnerUserID,
-		NativeCurrency:  p.NativeCurrency,
-		CreatedBy:       &user,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create asset: %w", err)
-	}
-
-	details, err := qtx.CreateBankAccountDetails(ctx, db.CreateBankAccountDetailsParams{
-		AssetID:       asset.ID,
-		BankName:      p.BankName,
-		AccountNumber: p.AccountNumber,
-		AccountType:   p.AccountType,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create bank_account_details: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
-	}
-
-	return &BankAccount{Asset: asset, Details: details}, nil
+	return r.CreateBankAccountWithSnapshots(ctx, p, nil, nil)
 }
 
 func (r *AssetRepo) GetBankAccount(ctx context.Context, id uuid.UUID) (*BankAccount, error) {

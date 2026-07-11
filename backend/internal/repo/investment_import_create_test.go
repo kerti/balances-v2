@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -25,7 +25,7 @@ func investmentRepoFor(t *testing.T) (*repo.InvestmentRepo, context.Context) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	return repo.NewInvestmentRepo(tdb.Pool), auth.WithUser(context.Background(), alice)
+	return repo.NewInvestmentRepo(tdb.Pool), identity.WithUser(context.Background(), alice)
 }
 
 // covers: INV-IMPORT-03
@@ -268,7 +268,7 @@ func TestInvestmentRepo_LookupAndTagSeed(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), alice)
+	ctx := identity.WithUser(context.Background(), alice)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 	tag, err := repo.NewTagRepo(tdb.Pool).CreateTag(ctx, "Brokerage", "#22c55e")
 	if err != nil {

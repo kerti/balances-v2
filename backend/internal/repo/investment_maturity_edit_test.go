@@ -7,8 +7,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -26,7 +26,7 @@ func TestUpdateMaturityTransaction_SyncsTerminationAndCloseSnapshot(t *testing.T
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	interestRate, _ := decimal.NewFromString("5.5")
@@ -128,7 +128,7 @@ func TestUpdateMaturityTransaction_SameMonthEdit(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	ctx := auth.WithUser(context.Background(), user)
+	ctx := identity.WithUser(context.Background(), user)
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
 	interestRate, _ := decimal.NewFromString("4.0")

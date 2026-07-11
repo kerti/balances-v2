@@ -50,51 +50,10 @@ type UpdateVehicleParams struct {
 	AnnualDepreciationRate *decimal.Decimal
 }
 
+// CreateVehicle is the no-tag, no-history degenerate of
+// CreateVehicleWithSnapshots (issue #366).
 func (r *AssetRepo) CreateVehicle(ctx context.Context, p CreateVehicleParams) (*Vehicle, error) {
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := r.pool.Begin(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("begin tx: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	qtx := r.q.WithTx(tx)
-	asset, err := qtx.CreateAsset(ctx, db.CreateAssetParams{
-		HouseholdID:     hid,
-		DisplayName:     p.DisplayName,
-		Description:     p.Description,
-		Subtype:         "vehicle",
-		OwnershipType:   p.OwnershipType,
-		SoleOwnerUserID: p.SoleOwnerUserID,
-		NativeCurrency:  p.NativeCurrency,
-		CreatedBy:       &user,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create asset: %w", err)
-	}
-
-	details, err := qtx.CreateVehicleDetails(ctx, db.CreateVehicleDetailsParams{
-		AssetID:                asset.ID,
-		VehicleType:            p.VehicleType,
-		Make:                   p.Make,
-		Model:                  p.Model,
-		Year:                   p.Year,
-		PlateNumber:            p.PlateNumber,
-		AnnualDepreciationRate: p.AnnualDepreciationRate,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create vehicle_details: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, fmt.Errorf("commit: %w", err)
-	}
-
-	return &Vehicle{Asset: asset, Details: details}, nil
+	return r.CreateVehicleWithSnapshots(ctx, p, nil, nil)
 }
 
 func (r *AssetRepo) GetVehicle(ctx context.Context, id uuid.UUID) (*Vehicle, error) {

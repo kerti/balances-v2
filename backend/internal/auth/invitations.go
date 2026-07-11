@@ -15,6 +15,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 type createInvitationReq struct {
@@ -36,7 +37,7 @@ type createInvitationResp struct {
 
 func (h *Handlers) handleCreateInvitation(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	inviter, ok := UserFromContext(ctx)
+	inviter, ok := identity.UserFromContext(ctx)
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return

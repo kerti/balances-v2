@@ -9,7 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
@@ -218,7 +218,7 @@ func TestInvestmentImportCreate_MutualFundAndGold(t *testing.T) {
 // covers: INV-IMPORT-04
 func TestInvestmentImportCreate_OwnerAndTag(t *testing.T) {
 	h := newHarness(t)
-	tag, err := repo.NewTagRepo(h.pool).CreateTag(auth.WithUser(context.Background(), h.user), "Brokerage", "#22c55e")
+	tag, err := repo.NewTagRepo(h.pool).CreateTag(identity.WithUser(context.Background(), h.user), "Brokerage", "#22c55e")
 	if err != nil {
 		t.Fatalf("CreateTag: %v", err)
 	}

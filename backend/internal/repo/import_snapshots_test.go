@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -25,8 +25,8 @@ func TestAssetRepo_ImportAssetSnapshots(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	r := repo.NewAssetRepo(tdb.Pool)
 
@@ -123,8 +123,8 @@ func TestLiabilityRepo_ImportLiabilitySnapshots(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	r := repo.NewLiabilityRepo(tdb.Pool)
 
@@ -220,8 +220,8 @@ func TestReceivableRepo_ImportReceivableSnapshots(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	r := repo.NewReceivableRepo(tdb.Pool)
 
@@ -316,8 +316,8 @@ func TestInvestmentRepo_ImportInvestmentSnapshots(t *testing.T) {
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 
 	r := repo.NewInvestmentRepo(tdb.Pool)
 

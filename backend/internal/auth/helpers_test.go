@@ -28,6 +28,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
@@ -138,7 +139,7 @@ func (h *authHarness) doRaw(t *testing.T, method, path string, body any, user *d
 		req.Header.Set("Content-Type", "application/json")
 	}
 	if user != nil {
-		req = req.WithContext(WithUser(req.Context(), *user))
+		req = req.WithContext(identity.WithUser(req.Context(), *user))
 	}
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)

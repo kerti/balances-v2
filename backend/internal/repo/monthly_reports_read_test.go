@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -23,7 +23,7 @@ func TestMonthlyReportRepo_ReadPaths(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 
 	// One Jan-2026 snapshot puts Jan..current in range; 2020 stays out of range.
 	acct := createAsset(t, q, alice.HouseholdID, &alice.ID, nil, "joint")
@@ -77,7 +77,7 @@ func TestMonthlyReportRepo_MonthRangeCoherence(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 
 	// Jan + Mar snapshots → engine materializes Jan..current (Feb carried).
 	acct := createAsset(t, q, alice.HouseholdID, &alice.ID, nil, "joint")

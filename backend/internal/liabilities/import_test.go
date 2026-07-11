@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/xuri/excelize/v2"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
 
@@ -58,7 +58,7 @@ func (h *handlerHarness) doUpload(t *testing.T, path string, xlsx []byte) *httpt
 	}
 	req := httptest.NewRequest("POST", path, &body)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
-	req = req.WithContext(auth.WithUser(req.Context(), h.user))
+	req = req.WithContext(identity.WithUser(req.Context(), h.user))
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)
 	return rec

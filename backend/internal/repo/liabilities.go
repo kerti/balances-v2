@@ -64,32 +64,10 @@ type UpdateLiabilityParams struct {
 	MaturityDate     *time.Time
 }
 
+// CreateLiability is the no-tag, no-history degenerate of
+// CreateLiabilityWithSnapshots (issue #366).
 func (r *LiabilityRepo) CreateLiability(ctx context.Context, p CreateLiabilityParams) (*db.Liability, error) {
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	row, err := r.q.CreateLiability(ctx, db.CreateLiabilityParams{
-		HouseholdID:      hid,
-		DisplayName:      p.DisplayName,
-		Description:      p.Description,
-		Subtype:          p.Subtype,
-		OwnershipType:    p.OwnershipType,
-		SoleOwnerUserID:  p.SoleOwnerUserID,
-		NativeCurrency:   p.NativeCurrency,
-		CounterpartyName: p.CounterpartyName,
-		Principal:        p.Principal,
-		InterestRate:     p.InterestRate,
-		TermMonths:       p.TermMonths,
-		StartDate:        p.StartDate,
-		MaturityDate:     p.MaturityDate,
-		CreatedBy:        &user,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("create liability: %w", err)
-	}
-	return &row, nil
+	return r.CreateLiabilityWithSnapshots(ctx, p, nil, nil)
 }
 
 func (r *LiabilityRepo) GetLiability(ctx context.Context, id uuid.UUID) (*db.Liability, error) {

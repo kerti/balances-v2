@@ -10,9 +10,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // eraseHouseholdReq carries the confirm-by-name gate: the caller must type the
@@ -49,7 +49,7 @@ type eraseHouseholdResp struct {
 // deletion notice to every other member, captured BEFORE the wipe runs since
 // there is nothing left to query afterwards.
 func (h *Handlers) handleEraseHousehold(w http.ResponseWriter, r *http.Request) {
-	user, ok := auth.UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return

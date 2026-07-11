@@ -29,7 +29,7 @@ import (
 func TestServer_Healthz(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 
-	s := httpserver.New(tdb.Pool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
+	s := httpserver.New(tdb.Pool, &config.Config{}, httpserver.Handlers{Auth: localOnlyAuth(t, tdb.Pool)})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -72,7 +72,7 @@ func TestServer_Healthz_DeployEnvFromRuntime(t *testing.T) {
 	t.Setenv("DEPLOY_ENV", "self-hosted")
 
 	tdb := testutil.NewTestDB(t)
-	s := httpserver.New(tdb.Pool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
+	s := httpserver.New(tdb.Pool, &config.Config{}, httpserver.Handlers{Auth: localOnlyAuth(t, tdb.Pool)})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
@@ -104,7 +104,7 @@ func TestServer_Healthz_DBError(t *testing.T) {
 	}
 	deadPool.Close()
 
-	s := httpserver.New(deadPool, &config.Config{}, localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil)
+	s := httpserver.New(deadPool, &config.Config{}, httpserver.Handlers{Auth: localOnlyAuth(t, tdb.Pool)})
 
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)

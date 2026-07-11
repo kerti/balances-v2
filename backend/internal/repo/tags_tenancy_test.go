@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -28,8 +28,8 @@ func TestTagRepo(t *testing.T) {
 	if aliceUser.HouseholdID == bobUser.HouseholdID {
 		t.Fatalf("fixture: alice and bob ended up in the same household")
 	}
-	aliceCtx := auth.WithUser(context.Background(), aliceUser)
-	bobCtx := auth.WithUser(context.Background(), bobUser)
+	aliceCtx := identity.WithUser(context.Background(), aliceUser)
+	bobCtx := identity.WithUser(context.Background(), bobUser)
 
 	tr := repo.NewTagRepo(tdb.Pool)
 	rr := repo.NewReceivableRepo(tdb.Pool)

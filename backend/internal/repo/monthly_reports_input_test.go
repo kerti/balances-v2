@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -26,7 +26,7 @@ func TestMonthlyReportRepo_MixedPortfolio(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 
 	jan := ymUTC(2026, time.January)
 	decPtr := func(s string) *decimal.Decimal { d := decimal.RequireFromString(s); return &d }
@@ -143,7 +143,7 @@ func TestMonthlyReportRepo_RebuildAllNoData(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
 	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), alice)
+	aliceCtx := identity.WithUser(context.Background(), alice)
 
 	r := repo.NewMonthlyReportRepo(tdb.Pool)
 	if err := r.RebuildAll(aliceCtx); err != nil {
@@ -164,7 +164,7 @@ func TestMonthlyReportRepo_RebuildAllNoData(t *testing.T) {
 func TestMonthlyReportRepo_Unauthenticated(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	r := repo.NewMonthlyReportRepo(tdb.Pool)
-	ctx := context.Background() // no auth.WithUser
+	ctx := context.Background() // no identity.WithUser
 
 	month := ymUTC(2026, time.January)
 	cases := []struct {

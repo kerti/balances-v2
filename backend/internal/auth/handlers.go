@@ -21,6 +21,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 const (
@@ -532,7 +533,7 @@ func meResponseFor(user db.User, hh db.Household) meResponse {
 }
 
 func (h *Handlers) handleMe(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return
@@ -603,7 +604,7 @@ var supportedCarryoverDateModes = map[string]struct{}{
 //	          present + null   → 400 (no clear semantics; mode always set)
 //	          absent           → unchanged
 func (h *Handlers) handleUpdateMe(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return
@@ -757,7 +758,7 @@ type householdMember struct {
 }
 
 func (h *Handlers) handleListHouseholdMembers(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return
@@ -801,7 +802,7 @@ type updateHouseholdSettingsReq struct {
 // non-reporting currency still exist — their values would silently be summed as
 // reporting currency.
 func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.Request) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return

@@ -7,9 +7,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // maxRestoreUpload caps the uploaded backup size. Backups are gzipped JSON and
@@ -23,7 +23,7 @@ const maxRestoreUpload = 50 << 20 // 50 MB
 // parse + integrity + graph + membership checks, so a file that previews cleanly
 // is one that commit will accept.
 func (h *Handlers) handleRestorePreview(w http.ResponseWriter, r *http.Request) {
-	user, ok := auth.UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return
@@ -80,7 +80,7 @@ type RestorePreview struct {
 // deletes every session, so afterwards it re-issues one for the caller (re-linked
 // by google_sub) to keep them signed in across the restore (ADR-0017).
 func (h *Handlers) handleRestoreCommit(w http.ResponseWriter, r *http.Request) {
-	user, ok := auth.UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return

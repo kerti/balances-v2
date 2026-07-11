@@ -53,7 +53,7 @@ func TestServing_SingleOriginPath(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	s := httpserver.New(
 		tdb.Pool, &config.Config{WebDir: dir},
-		localOnlyAuth(t, tdb.Pool), nil, nil, nil, nil, nil, nil, nil, nil,
+		httpserver.Handlers{Auth: localOnlyAuth(t, tdb.Pool)},
 	)
 	h := s.Handler()
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -28,8 +28,8 @@ func TestAssetRepo_TimeSeries(t *testing.T) {
 	if alice.HouseholdID == bob.HouseholdID {
 		t.Fatalf("fixture: alice and bob ended up in the same household")
 	}
-	aliceCtx := auth.WithUser(context.Background(), alice)
-	bobCtx := auth.WithUser(context.Background(), bob)
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
 	r := repo.NewAssetRepo(tdb.Pool)
 
 	// Bob's household is empty → short-circuit returns an empty slice.

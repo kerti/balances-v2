@@ -13,6 +13,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 // Founder-assisted in-app member reactivation (ADR-0039/#283). The no-mail home
@@ -49,7 +50,7 @@ import (
 // on any failure — an unauthenticated request is 401, a non-founder member 403 —
 // so callers just `return` on !ok.
 func (h *Handlers) requireFounder(w http.ResponseWriter, r *http.Request) (db.User, bool) {
-	user, ok := UserFromContext(r.Context())
+	user, ok := identity.UserFromContext(r.Context())
 	if !ok {
 		httperr.Write(w, http.StatusUnauthorized, httperr.CodeUnauthorized, nil)
 		return db.User{}, false

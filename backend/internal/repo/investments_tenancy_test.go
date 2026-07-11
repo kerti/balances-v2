@@ -8,8 +8,8 @@ import (
 
 	"github.com/shopspring/decimal"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
@@ -32,8 +32,8 @@ func TestInvestmentRepo_TenancyAndCRUD(t *testing.T) {
 		t.Fatalf("fixture: alice and bob ended up in the same household")
 	}
 
-	aliceCtx := auth.WithUser(context.Background(), aliceUser)
-	bobCtx := auth.WithUser(context.Background(), bobUser)
+	aliceCtx := identity.WithUser(context.Background(), aliceUser)
+	bobCtx := identity.WithUser(context.Background(), bobUser)
 
 	r := repo.NewInvestmentRepo(tdb.Pool)
 
@@ -655,8 +655,8 @@ func TestInvestmentRepo_LinkRolloverSuccessor(t *testing.T) {
 
 	aliceUser := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	bobUser := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	aliceCtx := auth.WithUser(context.Background(), aliceUser)
-	bobCtx := auth.WithUser(context.Background(), bobUser)
+	aliceCtx := identity.WithUser(context.Background(), aliceUser)
+	bobCtx := identity.WithUser(context.Background(), bobUser)
 
 	r := repo.NewInvestmentRepo(tdb.Pool)
 	rate, _ := decimal.NewFromString("0.055")
@@ -798,7 +798,7 @@ func TestInvestmentRepo_SnapshotShapeValidation(t *testing.T) {
 	q := db.New(tdb.Pool)
 
 	aliceUser := testutil.CreateHouseholdWithUser(t, q, "Alice")
-	aliceCtx := auth.WithUser(context.Background(), aliceUser)
+	aliceCtx := identity.WithUser(context.Background(), aliceUser)
 
 	r := repo.NewInvestmentRepo(tdb.Pool)
 

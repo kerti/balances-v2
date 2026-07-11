@@ -12,14 +12,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 )
 
 func TestWithUserAndUserFromContext(t *testing.T) {
 	user := db.User{ID: uuid.New(), DisplayName: "Probe"}
 
 	t.Run("round-trip", func(t *testing.T) {
-		ctx := WithUser(context.Background(), user)
-		got, ok := UserFromContext(ctx)
+		ctx := identity.WithUser(context.Background(), user)
+		got, ok := identity.UserFromContext(ctx)
 		if !ok {
 			t.Fatal("UserFromContext: ok=false on WithUser ctx")
 		}
@@ -29,7 +30,7 @@ func TestWithUserAndUserFromContext(t *testing.T) {
 	})
 
 	t.Run("empty context yields no user", func(t *testing.T) {
-		_, ok := UserFromContext(context.Background())
+		_, ok := identity.UserFromContext(context.Background())
 		if ok {
 			t.Error("UserFromContext: want ok=false on empty ctx")
 		}
@@ -61,7 +62,7 @@ func TestRequireAuth(t *testing.T) {
 		called = false
 		user := db.User{ID: uuid.New()}
 		req := httptest.NewRequest("GET", "/probe", nil)
-		req = req.WithContext(WithUser(req.Context(), user))
+		req = req.WithContext(identity.WithUser(req.Context(), user))
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
@@ -81,7 +82,7 @@ func TestSessionMiddleware(t *testing.T) {
 	h := newAuthHarness(t)
 
 	probe := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user, ok := UserFromContext(r.Context())
+		user, ok := identity.UserFromContext(r.Context())
 		if !ok {
 			w.WriteHeader(http.StatusNoContent)
 			return

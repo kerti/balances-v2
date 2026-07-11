@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
 )
 
@@ -147,7 +147,7 @@ func TestRestoreLocalRoundTripCarriesCredential(t *testing.T) {
 
 	// The old box: a local household owned by the restorer, exported to a backup.
 	orig := createLocalHouseholdWithUser(t, q, "Restorer", email, oldBoxHash)
-	origCtx := auth.WithUser(context.Background(), orig)
+	origCtx := identity.WithUser(context.Background(), orig)
 	seedHousehold(origCtx, t, tdb.Pool, orig)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 	gzipped := exportBytes(origCtx, t, h)
@@ -216,7 +216,7 @@ func TestBackupExcludesLocalCredential(t *testing.T) {
 
 	const secret = "argon2id$THIS-MUST-NOT-LEAK"
 	u := createLocalHouseholdWithUser(t, q, "Solo", "solo@example.com", secret)
-	ctx := auth.WithUser(context.Background(), u)
+	ctx := identity.WithUser(context.Background(), u)
 	seedHousehold(ctx, t, tdb.Pool, u)
 	h := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 
@@ -259,7 +259,7 @@ func TestRestoreStrandingEndpoint(t *testing.T) {
 
 	// A local-member backup, built on a local-enabled instance.
 	local := createLocalHouseholdWithUser(t, q, "Local", "local@example.com", "argon2id$H")
-	localCtx := auth.WithUser(context.Background(), local)
+	localCtx := identity.WithUser(context.Background(), local)
 	seedHousehold(localCtx, t, tdb.Pool, local)
 	exporter := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, true, DemoConfig{})
 	gzipped := exportBytes(localCtx, t, exporter)
@@ -268,7 +268,7 @@ func TestRestoreStrandingEndpoint(t *testing.T) {
 	// Google member of a different household — stranding is checked before
 	// membership, so any authenticated caller trips it.
 	bob := testutil.CreateHouseholdWithUser(t, q, "Bob")
-	bobCtx := auth.WithUser(context.Background(), bob)
+	bobCtx := identity.WithUser(context.Background(), bob)
 	googleOnly := New(tdb.Pool, "http://test.local", &stubIssuer{}, &stubNotifier{}, false, DemoConfig{})
 
 	for _, ep := range []struct {
