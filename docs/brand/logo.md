@@ -33,6 +33,18 @@ Design constraints honoured (see memories / `CONTEXT.md`):
 | `wordmark-light.svg` | Horizontal lockup, light bg  | 284×88  | Glyph + outlined "Balances". |
 | `wordmark-dark.svg`  | Horizontal lockup, dark bg   | 284×88  | Glyph + outlined "Balances". |
 
+### Social preview
+
+`social-card.svg` (in this directory, not `svg/`) is the 1280×640 GitHub social-preview card — glyph +
+wordmark + value-prop over the navy plate. Regenerate the upload PNG with:
+
+```sh
+rsvg-convert -w 2560 -h 1280 docs/brand/social-card.svg -o social-card.png
+```
+
+GitHub has no API for the social preview — upload the PNG manually under repo **Settings → General →
+Social preview**.
+
 ## Colour tokens
 
 The **indigo accent is constant across themes**; only the *ink* (post/beam/hangers) swaps.
