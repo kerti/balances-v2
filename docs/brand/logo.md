@@ -92,9 +92,10 @@ The mark is drawn on a **256 design grid** (`shapes()` in `gen.py`). Tight conte
 - **IBM Plex Sans, weight 700 (Bold), tracking −40** font units, outlined to `<path>`.
 - **Outlined, not live text** — a logo must render identically on every device. The shipped
   wordmark SVGs contain **zero font dependency** (no `<text>`, no `font-family`).
-- Licence: **SIL Open Font License (OFL)** — free to embed and outline. If/when the wordmark
-  ships in the app, drop the OFL text at `frontend/licenses/IBMPlexSans-OFL.txt` as attribution
-  (courtesy; outlines in a logo don't legally require it).
+- Licence: **SIL Open Font License (OFL)** — free to embed and outline. The wordmark now ships,
+  so the OFL text lives at `frontend/licenses/IBMPlexSans-OFL.txt` as attribution (courtesy;
+  outlines in a logo don't legally require it) and is folded into the shipped `THIRD-PARTY-NOTICES`
+  by `make licenses` (issue #345).
 
 To change the word, weight, or tracking, edit the constants at the top of `outline.py`
 (`WEIGHT`, `TRACK`, `FONT_PX`, `TEXT`) and regenerate.
