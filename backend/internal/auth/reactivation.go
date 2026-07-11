@@ -180,7 +180,7 @@ func (h *Handlers) handleReactivateMember(w http.ResponseWriter, r *http.Request
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
 	}
-	expiresAt := time.Now().Add(RelayTokenTTL)
+	expiresAt := h.now().Add(RelayTokenTTL)
 	if _, err := h.q.CreatePasswordResetToken(ctx, db.CreatePasswordResetTokenParams{
 		TokenHash: tokenHash,
 		UserID:    target.ID,

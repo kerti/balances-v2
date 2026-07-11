@@ -43,7 +43,7 @@ func (h *Handlers) beginOnboarding(ctx context.Context, w http.ResponseWriter, c
 	if err != nil {
 		return err
 	}
-	expiresAt := time.Now().Add(onboardingHandshakeTTL)
+	expiresAt := h.now().Add(onboardingHandshakeTTL)
 	if _, err := h.q.CreateOnboardingHandshake(ctx, db.CreateOnboardingHandshakeParams{
 		ID:               token,
 		GoogleSub:        &c.Sub,

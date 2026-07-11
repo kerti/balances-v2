@@ -116,9 +116,23 @@ type Handlers struct {
 	// the SMTP round-trip never lands in the response timing (the no-enumeration
 	// timing guarantee, #282). Tests swap in a synchronous variant for determinism.
 	dispatch func(func())
+	// now is the clock every expiry/TTL computation in this package reads from
+	// (session lifetime, invitation and reset-token windows, onboarding
+	// handshakes). Production takes the zero-option path and gets time.Now; tests
+	// inject a fixed clock via WithNow to pin boundary conditions (#368).
+	now func() time.Time
 }
 
-func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
+// Option mutates a Handlers during construction. Production wiring passes no
+// options; tests use them to inject deterministic seams (see WithNow).
+type Option func(*Handlers)
+
+// WithNow overrides the clock used for all expiry/TTL math in this package.
+func WithNow(fn func() time.Time) Option {
+	return func(h *Handlers) { h.now = fn }
+}
+
+func New(ctx context.Context, q *db.Queries, cfg Config, opts ...Option) (*Handlers, error) {
 	if !cfg.GoogleEnabled && !cfg.LocalEnabled {
 		return nil, errors.New("auth: no provider enabled (set GoogleEnabled and/or LocalEnabled)")
 	}
@@ -140,7 +154,7 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 	if cfg.BackendURL == "" {
 		return nil, errors.New("auth: backend url is required")
 	}
-	return &Handlers{
+	h := &Handlers{
 		q:                 q,
 		pool:              cfg.Pool,
 		googleOAuth:       g,
@@ -161,7 +175,12 @@ func New(ctx context.Context, q *db.Queries, cfg Config) (*Handlers, error) {
 		emailFrom:         cfg.EmailFrom,
 		trustProxyHeaders: cfg.TrustProxyHeaders,
 		dispatch:          func(fn func()) { go fn() },
-	}, nil
+		now:               time.Now,
+	}
+	for _, opt := range opts {
+		opt(h)
+	}
+	return h, nil
 }
 
 // Mount registers auth routes under the provided router. The caller is expected
@@ -375,7 +394,7 @@ func (h *Handlers) IssueSession(ctx context.Context, w http.ResponseWriter, user
 	if err != nil {
 		return fmt.Errorf("generate session id: %w", err)
 	}
-	expiresAt := time.Now().Add(h.sessionTTL)
+	expiresAt := h.now().Add(h.sessionTTL)
 	var ua *string
 	if userAgent != "" {
 		ua = &userAgent
@@ -429,7 +448,7 @@ func (h *Handlers) resolveInviteHint(ctx context.Context, inviteToken, email str
 	if invite.InvitedEmail != email || invite.UsedAt.Valid {
 		return nil
 	}
-	if !invite.ExpiresAt.Valid || invite.ExpiresAt.Time.Before(time.Now()) {
+	if !invite.ExpiresAt.Valid || invite.ExpiresAt.Time.Before(h.now()) {
 		return nil
 	}
 	id := invite.ID
