@@ -42,6 +42,11 @@ wordmark + value-prop over the navy plate. Regenerate the upload PNG with:
 rsvg-convert -w 2560 -h 1280 docs/brand/social-card.svg -o social-card.png
 ```
 
+The card sets type in **IBM Plex Sans** as live text, so that font must be visible to fontconfig at
+render time (`fc-match "IBM Plex Sans"` should not fall back) — otherwise it silently substitutes a
+system sans. `IBMPlexSans-var.ttf` ships in this directory; install it (or point fontconfig at it)
+before regenerating.
+
 GitHub has no API for the social preview — upload the PNG manually under repo **Settings → General →
 Social preview**.
 
