@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectNoA11yViolations } from "./axe";
 
 // Dashboard → "Download PDF" (#187, ADR-0044). Seeded Alice is
 // auto-authenticated (global-setup), but the seed fixture carries no net
@@ -39,6 +40,10 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   // --- Dashboard: download the PDF ---
   await page.getByRole("link", { name: "Dashboard" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+
+  // a11y smoke on the populated dashboard — the main authed aggregate view,
+  // charts + figures + header actions all mounted (#368).
+  await expectNoA11yViolations(page, "dashboard (with net worth)");
 
   const btn = page.getByTestId("download-pdf-button");
   await expect(btn).toBeVisible();

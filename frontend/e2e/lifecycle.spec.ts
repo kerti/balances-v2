@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectNoA11yViolations } from "./axe";
 
 // Position lifecycle through the real UI + backend (M4.6, ADR-0009): create a
 // bank account, close it (active → closed via the dedicated Terminate dialog),
@@ -35,6 +36,10 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   // Active position: badge muted-active, snapshot entry available.
   await expect(statusBadge).toHaveText("Active");
   await expect(page.getByRole("button", { name: "New" })).toBeVisible();
+
+  // a11y smoke on a position detail screen — status badge, action buttons, and
+  // the snapshots table represent the app's core CRUD surface (#368).
+  await expectNoA11yViolations(page, "position detail screen");
 
   // --- Close (active → closed; date auto-fills today, note optional) ---
   await page.getByRole("button", { name: "Close", exact: true }).click();

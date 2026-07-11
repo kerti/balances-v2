@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectNoA11yViolations } from "./axe";
 
 // Drives the REAL OAuth login flow end-to-end: Sign-in link -> /auth/google/start
 // -> mock OIDC authorize -> callback -> minted session -> back to the app. This is
@@ -21,6 +22,10 @@ test(
 
     const signIn = page.getByTestId("signin-google");
     await expect(signIn).toBeVisible();
+
+    // a11y smoke on the pre-auth sign-in screen — the one surface every user
+    // meets before authenticating (#368).
+    await expectNoA11yViolations(page, "pre-auth sign-in screen");
 
     // Full-page navigation through the redirect chain; auto-waiting assertions
     // below cover the async settle back on the e2e frontend origin.
