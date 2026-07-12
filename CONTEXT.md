@@ -259,10 +259,12 @@ Assets only (nothing else settles same-day). The depletable-buffer and liquidity
 this pool.
 
 **Inflation rate**: A per-`(Household, year_month)` figure modelling the same way as an **FX rate** —
-month-stamped, manually entered from a reputable source (v1), carried forward. It feeds only the
-Fund Resilience projection. Before any month is entered, an **assumed annual inflation** Household
-setting (a sensible default) stands in; stored monthly figures, once present, refine it via the
-trailing-12 average. A household has one reporting currency, so one inflation series per Household.
+household-scoped, month-stamped, manually entered from a reputable source (v1), no currency
+dimension (one series per Household). Each entry is an **annualized (YoY) percentage** (the headline
+figure sources publish), and may be **negative** in a deflation month. It feeds only the Fund
+Resilience projection. Before any month is entered, an **assumed annual inflation** Household setting
+(annual %, default 3.5) stands in; stored monthly figures, once present, override it via the
+trailing-12 average (converted annual→monthly in the projection).
 
 **Passive income (two scopes)**: The word "passive income" resolves to *different sets* depending on
 the metric, and both are named to keep them apart:

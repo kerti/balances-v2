@@ -64,6 +64,11 @@ var (
 	// so the caller should edit the existing rate instead. Mapped to 409.
 	ErrFxRateExists = errors.New("repo: fx rate already exists for that month and currency")
 
+	// ErrInflationRateExists is returned when creating an inflation rate that
+	// collides with an existing (household, year_month) row — the identity is
+	// unique, so the caller should edit the existing rate instead. Mapped to 409.
+	ErrInflationRateExists = errors.New("repo: inflation rate already exists for that month")
+
 	// ErrForeignPositionsExist is returned when turning multi-currency off while
 	// positions denominated in a non-reporting currency still exist (their
 	// values would silently be treated as reporting currency). Mapped to 409.

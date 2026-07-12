@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 )
 
 const countForeignCurrencyPositions = `-- name: CountForeignCurrencyPositions :one
@@ -40,7 +41,7 @@ INSERT INTO households (
 ) VALUES (
     $1, $2
 )
-RETURNING id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled
+RETURNING id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation
 `
 
 type CreateHouseholdParams struct {
@@ -61,12 +62,13 @@ func (q *Queries) CreateHousehold(ctx context.Context, arg CreateHouseholdParams
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.MultiCurrencyEnabled,
+		&i.AssumedAnnualInflation,
 	)
 	return i, err
 }
 
 const getHouseholdByID = `-- name: GetHouseholdByID :one
-SELECT id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled
+SELECT id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation
 FROM households
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -84,27 +86,30 @@ func (q *Queries) GetHouseholdByID(ctx context.Context, id uuid.UUID) (Household
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.MultiCurrencyEnabled,
+		&i.AssumedAnnualInflation,
 	)
 	return i, err
 }
 
 const updateHouseholdSettings = `-- name: UpdateHouseholdSettings :one
 UPDATE households
-SET display_name           = $2,
-    reporting_currency     = $3,
-    multi_currency_enabled = $4,
-    updated_by             = $5,
-    updated_at             = now()
+SET display_name             = $2,
+    reporting_currency       = $3,
+    multi_currency_enabled   = $4,
+    assumed_annual_inflation = $5,
+    updated_by               = $6,
+    updated_at               = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled
+RETURNING id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation
 `
 
 type UpdateHouseholdSettingsParams struct {
-	ID                   uuid.UUID  `json:"id"`
-	DisplayName          string     `json:"display_name"`
-	ReportingCurrency    string     `json:"reporting_currency"`
-	MultiCurrencyEnabled bool       `json:"multi_currency_enabled"`
-	UpdatedBy            *uuid.UUID `json:"updated_by"`
+	ID                     uuid.UUID       `json:"id"`
+	DisplayName            string          `json:"display_name"`
+	ReportingCurrency      string          `json:"reporting_currency"`
+	MultiCurrencyEnabled   bool            `json:"multi_currency_enabled"`
+	AssumedAnnualInflation decimal.Decimal `json:"assumed_annual_inflation"`
+	UpdatedBy              *uuid.UUID      `json:"updated_by"`
 }
 
 func (q *Queries) UpdateHouseholdSettings(ctx context.Context, arg UpdateHouseholdSettingsParams) (Household, error) {
@@ -113,6 +118,7 @@ func (q *Queries) UpdateHouseholdSettings(ctx context.Context, arg UpdateHouseho
 		arg.DisplayName,
 		arg.ReportingCurrency,
 		arg.MultiCurrencyEnabled,
+		arg.AssumedAnnualInflation,
 		arg.UpdatedBy,
 	)
 	var i Household
@@ -126,6 +132,7 @@ func (q *Queries) UpdateHouseholdSettings(ctx context.Context, arg UpdateHouseho
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.MultiCurrencyEnabled,
+		&i.AssumedAnnualInflation,
 	)
 	return i, err
 }

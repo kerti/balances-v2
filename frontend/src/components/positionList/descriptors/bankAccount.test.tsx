@@ -41,6 +41,7 @@ const me: Me = {
   time_zone: "UTC",
   reporting_currency: "USD",
   multi_currency_enabled: false,
+  assumed_annual_inflation: "3.5",
   is_founder: true,
 };
 

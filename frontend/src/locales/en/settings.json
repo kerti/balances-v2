@@ -51,6 +51,15 @@
     "addRate": "Add rate",
     "empty": "No rates entered yet."
   },
+  "inflation": {
+    "title": "Inflation",
+    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualized (year-on-year) figure each month — the estimate averages the last 12 months when available.",
+    "assumedLabel": "Assumed annual %",
+    "month": "Month",
+    "rate": "Annual %",
+    "addRate": "Add rate",
+    "empty": "No monthly figures entered — the assumed rate is used."
+  },
   "invite": {
     "title": "Invite someone to your household",
     "description": "They'll receive an email with a sign-in link.",
