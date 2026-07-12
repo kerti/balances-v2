@@ -34,7 +34,7 @@ func (q *Queries) DeleteMonthlyReportsOutsideRange(ctx context.Context, arg Dele
 }
 
 const getMonthlyReport = `-- name: GetMonthlyReport :one
-SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx
+SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension
 FROM monthly_reports
 WHERE household_id = $1 AND year_month = $2
 `
@@ -77,6 +77,7 @@ func (q *Queries) GetMonthlyReport(ctx context.Context, arg GetMonthlyReportPara
 		&i.FxRatesUsed,
 		&i.StalePositions,
 		&i.MissingFx,
+		&i.EarnedIncomePension,
 	)
 	return i, err
 }
@@ -492,7 +493,7 @@ func (q *Queries) ListLiabilitySnapshotsForReport(ctx context.Context, household
 
 const listMonthlyReports = `-- name: ListMonthlyReports :many
 
-SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx
+SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension
 FROM monthly_reports
 WHERE household_id = $1
 ORDER BY year_month
@@ -547,6 +548,7 @@ func (q *Queries) ListMonthlyReports(ctx context.Context, householdID uuid.UUID)
 			&i.FxRatesUsed,
 			&i.StalePositions,
 			&i.MissingFx,
+			&i.EarnedIncomePension,
 		); err != nil {
 			return nil, err
 		}
@@ -691,7 +693,7 @@ INSERT INTO monthly_reports (
     household_id, year_month, generated_at,
     nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments,
     earned_income_total, earned_income_salary, earned_income_business,
-    earned_income_rental, earned_income_gift, earned_income_tax_refund,
+    earned_income_rental, earned_income_pension, earned_income_gift, earned_income_tax_refund,
     earned_income_insurance, earned_income_other,
     investment_return_total, investment_return_stock, investment_return_mutual_fund,
     investment_return_bond, investment_return_gold, investment_return_time_deposit,
@@ -700,10 +702,10 @@ INSERT INTO monthly_reports (
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
-    $8, $9, $10, $11, $12, $13, $14, $15,
-    $16, $17, $18, $19, $20, $21,
-    $22, $23,
-    $24, $25, $26, $27
+    $8, $9, $10, $11, $12, $13, $14, $15, $16,
+    $17, $18, $19, $20, $21, $22,
+    $23, $24,
+    $25, $26, $27, $28
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -716,6 +718,7 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     earned_income_salary           = EXCLUDED.earned_income_salary,
     earned_income_business         = EXCLUDED.earned_income_business,
     earned_income_rental           = EXCLUDED.earned_income_rental,
+    earned_income_pension          = EXCLUDED.earned_income_pension,
     earned_income_gift             = EXCLUDED.earned_income_gift,
     earned_income_tax_refund       = EXCLUDED.earned_income_tax_refund,
     earned_income_insurance        = EXCLUDED.earned_income_insurance,
@@ -732,7 +735,7 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     stale_positions                = EXCLUDED.stale_positions,
     fx_rates_used                  = EXCLUDED.fx_rates_used,
     missing_fx                     = EXCLUDED.missing_fx
-RETURNING id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx
+RETURNING id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension
 `
 
 type UpsertMonthlyReportParams struct {
@@ -747,6 +750,7 @@ type UpsertMonthlyReportParams struct {
 	EarnedIncomeSalary          *decimal.Decimal `json:"earned_income_salary"`
 	EarnedIncomeBusiness        *decimal.Decimal `json:"earned_income_business"`
 	EarnedIncomeRental          *decimal.Decimal `json:"earned_income_rental"`
+	EarnedIncomePension         *decimal.Decimal `json:"earned_income_pension"`
 	EarnedIncomeGift            *decimal.Decimal `json:"earned_income_gift"`
 	EarnedIncomeTaxRefund       *decimal.Decimal `json:"earned_income_tax_refund"`
 	EarnedIncomeInsurance       *decimal.Decimal `json:"earned_income_insurance"`
@@ -778,6 +782,7 @@ func (q *Queries) UpsertMonthlyReport(ctx context.Context, arg UpsertMonthlyRepo
 		arg.EarnedIncomeSalary,
 		arg.EarnedIncomeBusiness,
 		arg.EarnedIncomeRental,
+		arg.EarnedIncomePension,
 		arg.EarnedIncomeGift,
 		arg.EarnedIncomeTaxRefund,
 		arg.EarnedIncomeInsurance,
@@ -826,6 +831,7 @@ func (q *Queries) UpsertMonthlyReport(ctx context.Context, arg UpsertMonthlyRepo
 		&i.FxRatesUsed,
 		&i.StalePositions,
 		&i.MissingFx,
+		&i.EarnedIncomePension,
 	)
 	return i, err
 }

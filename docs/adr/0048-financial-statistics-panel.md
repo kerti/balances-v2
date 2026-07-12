@@ -132,8 +132,11 @@ the schema.
 ### Scope: an epic of sequenced slices
 
 1. **This ADR.**
-2. **Pension income category** — enum value + migration, `EarnedIncomePension` engine breakdown
-   column, income form + i18n, backup-format bump. (Passive-Income Ratio depends on it.)
+2. **Pension income category** — enum value + migration (extend `income_category_check`),
+   `EarnedIncomePension` engine breakdown column, income form + i18n. **No backup change**: category
+   is a plain `text` value (not a shape change per `format.go`'s bump rule) and restore relies on the
+   DB CHECK, so backups carry `pension` automatically once the CHECK allows it. (Passive-Income Ratio
+   depends on it.)
 3. **Monthly inflation model** — FX-like `(household, year_month)` store + repo + entry surface +
    carry-forward + backup inclusion, and the `assumed_annual_inflation` setting fallback.
 4. **Statistics panel** — the four-ratio computation package + PDF rendering replacing the ADR-0045
@@ -164,8 +167,12 @@ the schema.
 ## Consequences
 
 - **New Income category `Pension`** ripples through the enum, a migration, the engine's earned-income
-  breakdown (`EarnedIncomePension`), the income form + i18n, and the **backup format version**
-  (ADR-0036 immutability ⇒ a version bump, not an edit).
+  breakdown (`EarnedIncomePension`), and the income form + i18n. It needs **no backup-format bump**:
+  a new allowed value for the existing `category` `text` column is not a *shape* change (the
+  criterion in `backup/format.go`), and restore re-inserts income against the live DB CHECK — so a
+  backup carries `pension` with no envelope change. An older build importing a file that contains
+  `pension` fails cleanly at the DB CHECK, which is acceptable and inherent to any additive enum
+  value; bumping the version would instead reject *every* newer backup, including pension-free ones.
 - **A new stored data class (monthly inflation)** plus one Household setting — the first
   report-input the household enters that is neither a Position nor an FX rate. Included in backups.
 - **"Passive income" is now a two-scoped domain term** — the CONTEXT glossary names both scopes to

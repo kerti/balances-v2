@@ -198,6 +198,7 @@ export function CreateIncomeDialog({
                   {t("income:categoryOptions.business_income")}
                 </option>
                 <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
+                <option value="pension">{t("income:categoryOptions.pension")}</option>
                 <option value="gift">{t("income:categoryOptions.gift")}</option>
                 <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
                 <option value="insurance_payout">
