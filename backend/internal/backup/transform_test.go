@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/identity"
 	"github.com/kerti/balances-v2/backend/internal/testutil"
@@ -129,6 +131,32 @@ func TestV1ToV2BackfillsCouponDisposition(t *testing.T) {
 	}
 	if got := env.Household.Bonds[1].CouponDisposition; got != "accrues" {
 		t.Errorf("set disposition mutated to %q, want accrues", got)
+	}
+}
+
+// The second real format transform (v2→v3, #412): a v2 backup predates the
+// households.assumed_annual_inflation column, so the field decodes to the decimal
+// zero value. transforms[2] must backfill the column DEFAULT (3.5) — otherwise it
+// would restore as 0% (wrong) or trip the NOT NULL column — while leaving a value
+// that was actually set on a v3 file untouched. (A v2 file never carries a real
+// value here, so "is zero" unambiguously means "absent".)
+func TestV2ToV3BackfillsAssumedInflation(t *testing.T) {
+	absent := &Envelope{Household: HouseholdData{Household: db.Household{}}} // zero → absent
+	if err := transforms[2](absent); err != nil {
+		t.Fatalf("transforms[2]: %v", err)
+	}
+	if got := absent.Household.Household.AssumedAnnualInflation; !got.Equal(decimal.RequireFromString("3.5")) {
+		t.Errorf("absent assumed_annual_inflation backfilled to %s, want 3.5", got)
+	}
+
+	set := &Envelope{Household: HouseholdData{
+		Household: db.Household{AssumedAnnualInflation: decimal.RequireFromString("2")},
+	}}
+	if err := transforms[2](set); err != nil {
+		t.Fatalf("transforms[2]: %v", err)
+	}
+	if got := set.Household.Household.AssumedAnnualInflation; !got.Equal(decimal.RequireFromString("2")) {
+		t.Errorf("set assumed_annual_inflation mutated to %s, want 2", got)
 	}
 }
 

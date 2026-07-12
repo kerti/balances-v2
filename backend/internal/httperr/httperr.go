@@ -59,6 +59,8 @@ func WriteRepo(w http.ResponseWriter, op string, err error) {
 		Write(w, http.StatusBadRequest, CodeInvalidTransactionShape, nil)
 	case errors.Is(err, errs.ErrFxRateExists):
 		Write(w, http.StatusConflict, CodeFxRateExists, nil)
+	case errors.Is(err, errs.ErrInflationRateExists):
+		Write(w, http.StatusConflict, CodeInflationRateExists, nil)
 	case errors.Is(err, errs.ErrForeignPositionsExist):
 		Write(w, http.StatusConflict, CodeForeignPositionsExist, nil)
 	case errors.Is(err, errs.ErrPositionNotActive):

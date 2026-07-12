@@ -6,6 +6,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
 
@@ -14,7 +16,7 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("200 enable multi-currency", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusOK)
 		body := decodeBody[householdSettings](t, rec)
@@ -25,7 +27,32 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("400 bad reporting currency", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "Alice's Household", "reporting_currency": "RUPIAH", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "RUPIAH", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("200 sets assumed_annual_inflation", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "4.25",
+		})
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[householdSettings](t, rec)
+		if !body.AssumedAnnualInflation.Equal(decimal.RequireFromString("4.25")) {
+			t.Errorf("assumed_annual_inflation: got %s, want 4.25", body.AssumedAnnualInflation)
+		}
+	})
+
+	t.Run("400 missing assumed_annual_inflation", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
+	})
+
+	t.Run("400 assumed_annual_inflation below floor", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "-100",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
@@ -38,21 +65,21 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 			t.Fatalf("seed USD asset: %v", err)
 		}
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": false,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": false, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusConflict)
 	})
 
 	t.Run("401 unauthenticated", func(t *testing.T) {
 		rec := h.doRaw(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
 		}, nil)
 		requireStatus(t, rec, http.StatusUnauthorized)
 	})
 
 	t.Run("200 renames the household", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "The Newlyweds", "reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "The Newlyweds", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusOK)
 		body := decodeBody[householdSettings](t, rec)
@@ -68,7 +95,7 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("200 trims surrounding whitespace", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "  Spaced Out  ", "reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": "  Spaced Out  ", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusOK)
 		body := decodeBody[householdSettings](t, rec)
@@ -79,21 +106,21 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 
 	t.Run("400 empty display name", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": "   ", "reporting_currency": "IDR", "multi_currency_enabled": false,
+			"display_name": "   ", "reporting_currency": "IDR", "multi_currency_enabled": false, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
 
 	t.Run("400 display name over 60 chars", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": strings.Repeat("a", 61), "reporting_currency": "IDR", "multi_currency_enabled": false,
+			"display_name": strings.Repeat("a", 61), "reporting_currency": "IDR", "multi_currency_enabled": false, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
 
 	t.Run("200 exactly 60 chars", func(t *testing.T) {
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
-			"display_name": strings.Repeat("a", 60), "reporting_currency": "IDR", "multi_currency_enabled": true,
+			"display_name": strings.Repeat("a", 60), "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "3.5",
 		})
 		requireStatus(t, rec, http.StatusOK)
 	})

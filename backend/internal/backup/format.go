@@ -32,7 +32,12 @@ import (
 // file has no such key on its bond entries, which would restore as NULL and trip
 // the column's NOT NULL/CHECK constraint, so transforms[1] backfills 'pays_out'
 // (the column's DEFAULT, reproducing pre-#66 behaviour).
-const FormatVersion = 2
+//
+// v2 → v3 (#412, ADR-0048): a new `inflation_rates` section (a v2 file simply
+// has none — restores as empty) and a NOT NULL households.assumed_annual_inflation
+// column (a v2 file has no such key, which would restore as NULL and trip the
+// constraint, so transforms[2] backfills the column DEFAULT of 3.5).
+const FormatVersion = 3
 
 // Fidelity selects what a backup carries (ADR-0036).
 type Fidelity string
@@ -104,8 +109,9 @@ type HouseholdData struct {
 	InvestmentTransactions []db.InvestmentTransaction `json:"investment_transactions"`
 
 	// Standalone flows.
-	Income  []db.Income `json:"income"`
-	FxRates []db.FxRate `json:"fx_rates"`
+	Income         []db.Income        `json:"income"`
+	FxRates        []db.FxRate        `json:"fx_rates"`
+	InflationRates []db.InflationRate `json:"inflation_rates"`
 }
 
 // SectionCounts returns the per-section row counts keyed by the section's JSON
@@ -135,5 +141,6 @@ func (d *HouseholdData) SectionCounts() map[string]int {
 		"investment_transactions": len(d.InvestmentTransactions),
 		"income":                  len(d.Income),
 		"fx_rates":                len(d.FxRates),
+		"inflation_rates":         len(d.InflationRates),
 	}
 }

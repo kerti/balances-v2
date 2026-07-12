@@ -63,6 +63,17 @@ export type FxRate = {
   updated_at: string;
 };
 
+export type InflationRate = {
+  id: string;
+  household_id: string;
+  year_month: string;
+  rate: string;
+  created_by: string | null;
+  created_at: string;
+  updated_by: string | null;
+  updated_at: string;
+};
+
 export type Income = {
   id: string;
   household_id: string;

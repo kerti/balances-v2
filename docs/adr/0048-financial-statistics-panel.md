@@ -99,11 +99,17 @@ N (Fund Resilience) = first m where Pₘ ≤ 0
 ### Inflation: stored monthly like an FX rate, with a setting fallback
 
 `i` is a per-`(Household, year_month)` figure entered manually from a reputable source (source TBD),
-carried forward — **structurally identical to an FX rate**. It feeds *only* Fund Resilience. Because
-the source is not yet wired and early months will be empty, an **`assumed_annual_inflation` Household
-setting** (sensible default) drives the projection out of the box; stored monthly figures, once
-present, refine it via the trailing-12 average. One reporting currency per Household ⇒ one inflation
-series. Annual figures convert to a monthly rate as `(1 + a)^(1/12) − 1`.
+**structurally identical to an FX rate** (household-scoped, month-stamped, soft-deleted, no currency
+dimension — one series per household). It feeds *only* Fund Resilience. Each monthly entry is an
+**annualized (YoY) percentage** — the headline figure sources publish and the same basis as the
+setting below — *not* a month-over-month change; the two would otherwise be different
+representations to reconcile. The projection averages the annualized figures over the trailing-12
+window to an effective annual rate, then converts once to a monthly rate as `(1 + a)^(1/12) − 1`.
+Because the source is not yet wired and early months will be empty, an **`assumed_annual_inflation`
+Household setting** (annual %, **default 3.5** — slightly conservative vs recent Indonesian CPI, so
+the runway estimate errs short/safe) drives the projection out of the box; stored monthly figures,
+once present, override it via that trailing-12 average. Deflation months are allowed (the value may
+be negative — no positivity constraint, unlike the FX rate).
 
 ### Presentation: numbers + plain-language explanation, no colour/targets yet
 

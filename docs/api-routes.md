@@ -6,7 +6,7 @@ Every HTTP route the backend serves, walked from the live chi router so it canno
 
 Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and session semantics are ADR-0038/0039. See [architecture.md](architecture.md) for the request flow these routes sit in.
 
-162 routes.
+166 routes.
 
 | Method | Path |
 | ------ | ---- |
@@ -55,6 +55,10 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/income/{id}/` |
 | PATCH | `/api/income/{id}/` |
 | DELETE | `/api/income/{id}/` |
+| GET | `/api/inflation-rates/` |
+| POST | `/api/inflation-rates/` |
+| PATCH | `/api/inflation-rates/{id}/` |
+| DELETE | `/api/inflation-rates/{id}/` |
 | GET | `/api/investments/bonds/` |
 | POST | `/api/investments/bonds/` |
 | POST | `/api/investments/bonds/import` |

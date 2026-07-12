@@ -103,10 +103,11 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 	// if they were IDR (ADR-0002 — the converter no-ops entirely when this is
 	// false, silently, with no missing-fx warning either).
 	if _, err := q.UpdateHouseholdSettings(ctx, db.UpdateHouseholdSettingsParams{
-		ID:                   household.ID,
-		DisplayName:          household.DisplayName,
-		ReportingCurrency:    household.ReportingCurrency,
-		MultiCurrencyEnabled: true,
+		ID:                     household.ID,
+		DisplayName:            household.DisplayName,
+		ReportingCurrency:      household.ReportingCurrency,
+		MultiCurrencyEnabled:   true,
+		AssumedAnnualInflation: household.AssumedAnnualInflation,
 	}); err != nil {
 		return fmt.Errorf("demo reset: enable multi-currency: %w", err)
 	}

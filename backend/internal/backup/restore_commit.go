@@ -118,6 +118,7 @@ var wipeDeletes = []string{
 	// Standalone flows.
 	`DELETE FROM income                  WHERE household_id = $1`,
 	`DELETE FROM fx_rates                WHERE household_id = $1`,
+	`DELETE FROM inflation_rates         WHERE household_id = $1`,
 	// Positions (now free of detail/history/invitation references).
 	`DELETE FROM assets                  WHERE household_id = $1`,
 	`DELETE FROM investments             WHERE household_id = $1`,
@@ -186,6 +187,7 @@ func loadHousehold(ctx context.Context, tx pgx.Tx, d *HouseholdData) error {
 		{"investment_transactions", d.InvestmentTransactions},
 		{"income", d.Income},
 		{"fx_rates", d.FxRates},
+		{"inflation_rates", d.InflationRates},
 	}
 	for _, s := range sections {
 		if err := insertSection(ctx, tx, s.table, s.rows); err != nil {
@@ -227,8 +229,8 @@ func insertHousehold(ctx context.Context, tx pgx.Tx, h *db.Household) error {
 	}
 	const stmt = `
 		INSERT INTO households
-			(id, display_name, reporting_currency, created_at, updated_at, deleted_at, multi_currency_enabled)
-		SELECT id, display_name, reporting_currency, created_at, updated_at, deleted_at, multi_currency_enabled
+			(id, display_name, reporting_currency, created_at, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation)
+		SELECT id, display_name, reporting_currency, created_at, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation
 		FROM json_populate_record(NULL::households, $1::json)`
 	if _, err := tx.Exec(ctx, stmt, raw); err != nil {
 		return fmt.Errorf("restore load household: %w", err)

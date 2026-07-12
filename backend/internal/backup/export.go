@@ -281,6 +281,11 @@ func (h *Handlers) gather(ctx context.Context, hid uuid.UUID, fidelity Fidelity)
 			d.FxRates = v
 			return e
 		}},
+		{"inflation_rates", func() error {
+			v, e := h.q.ListInflationRatesForExport(ctx, db.ListInflationRatesForExportParams{HouseholdID: hid, IncludeDeleted: incl})
+			d.InflationRates = v
+			return e
+		}},
 	}
 
 	for _, s := range steps {
