@@ -271,6 +271,7 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		EarnedIncomeSalary:    ptr(rep.earnedIncome.salary),
 		EarnedIncomeBusiness:  ptr(rep.earnedIncome.business),
 		EarnedIncomeRental:    ptr(rep.earnedIncome.rental),
+		EarnedIncomePension:   ptr(rep.earnedIncome.pension),
 		EarnedIncomeGift:      ptr(rep.earnedIncome.gift),
 		EarnedIncomeTaxRefund: ptr(rep.earnedIncome.taxRefund),
 		EarnedIncomeInsurance: ptr(rep.earnedIncome.insurance),
