@@ -41,8 +41,13 @@ type reportCopy struct {
 
 	staleNote string // footnote for carried-forward values
 
-	statsSoon string   // #412 placeholder caption
-	statRows  []string // reserved statistic labels shown with an em-dash (#412)
+	// financial-health panel (#412, ADR-0048)
+	statRows       []string // the four ratio labels, in render order
+	statDescs      []string // parallel one-sentence explanation for each ratio
+	statUndefined  string   // note shown when a ratio's inputs are unavailable
+	statIndefinite string   // Fund Resilience value when the pool never depletes
+	statMonthUnit  string   // Fund Resilience value, singular ("%s month")
+	statMonthsUnit string   // Fund Resilience value, plural ("%s months")
 
 	deltaVs    string // "vs %s" — month-over-month comparison suffix
 	footerPage string // "Page %d of %s" (%s = total-pages alias)
@@ -79,10 +84,19 @@ var reportCatalog = map[string]reportCopy{
 		fxTitle:          "Exchange Rates Used",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* carried forward from an earlier month's statement",
-		statsSoon:        "Financial-health indicators are coming soon.",
 		deltaVs:          "vs %s",
 		footerPage:       "Page %d of %s",
 		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
+		statDescs: []string{
+			"Share of earned income kept after living expenses, averaged over the past year.",
+			"Passive income — rent, pension and investment returns — as a share of living expenses; 100% means it fully covers them. Living expenses are estimated, and this figure moves with the market.",
+			"Cash held in bank accounts as a share of total investments. A ceiling gauge: a high figure can signal idle cash that could be put to work.",
+			"How long investments would last if active income stopped, drawing estimated living expenses net of continuing passive income.",
+		},
+		statUndefined:    "Not enough history yet to calculate.",
+		statIndefinite:   "Indefinite",
+		statMonthUnit:    "%s month",
+		statMonthsUnit:   "%s months",
 		chartAssets:      "Assets Composition",
 		chartInvestments: "Investments Composition",
 		chartLiabilities: "Liabilities Composition",
@@ -112,10 +126,19 @@ var reportCatalog = map[string]reportCopy{
 		fxTitle:          "Kurs yang Digunakan",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
-		statsSoon:        "Indikator kesehatan keuangan akan segera hadir.",
 		deltaVs:          "vs %s",
 		footerPage:       "Halaman %d dari %s",
 		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
+		statDescs: []string{
+			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir.",
+			"Pendapatan pasif — sewa, pensiun dan imbal hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",
+			"Kas di rekening bank sebagai bagian dari total investasi. Tolok ukur batas atas: angka tinggi menandakan kas menganggur yang bisa didayagunakan.",
+			"Berapa lama investasi akan bertahan bila pendapatan aktif berhenti, dikurangi perkiraan pengeluaran setelah dipotong pendapatan pasif yang terus berjalan.",
+		},
+		statUndefined:    "Riwayat belum cukup untuk dihitung.",
+		statIndefinite:   "Tak terbatas",
+		statMonthUnit:    "%s bulan",
+		statMonthsUnit:   "%s bulan",
 		chartAssets:      "Komposisi Harta",
 		chartInvestments: "Komposisi Investasi",
 		chartLiabilities: "Komposisi Hutang",

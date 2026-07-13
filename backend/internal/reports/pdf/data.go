@@ -54,6 +54,34 @@ type Delta struct {
 	Prev    time.Time // the month compared against
 }
 
+// Stats is the financial-health panel (ADR-0048, #412): four household-health
+// ratios derived at render time from the report series, positions, inflation
+// and the assumed-inflation setting — never materialized. The zero value is
+// all-undefined, which renders the reserved em-dash panel unchanged.
+type Stats struct {
+	CashFlow         Ratio      // savings rate; may be negative
+	PassiveIncome    Ratio      // total passive income ÷ living expenses; market-sensitive, may be negative
+	InstantLiquidity Ratio      // bank cash ÷ total investments; a ceiling gauge
+	Resilience       Resilience // investment-pool depletion runway
+}
+
+// Ratio is one percentage indicator. Defined=false renders an em-dash + the
+// undefined note (inputs unavailable — see ADR-0048's edge states); Percent is
+// only meaningful when Defined.
+type Ratio struct {
+	Defined bool
+	Percent float64
+}
+
+// Resilience is the Fund Resilience runway: how many months the investment pool
+// would last if active income stopped, or Indefinite when it never depletes
+// within the ~100-year horizon (financial independence reached).
+type Resilience struct {
+	Defined    bool
+	Indefinite bool
+	Months     int
+}
+
 // Input is everything the renderer needs for one month's report. Assembled by
 // the reports handler from the aggregate report, position detail, the report
 // series, and household members.
@@ -69,4 +97,5 @@ type Input struct {
 	CashFlow          *CashFlow // nil on the baseline month
 	FxRates           []FxRate
 	Trend             []TrendPoint
+	Stats             Stats // financial-health panel (ADR-0048); zero value = reserved em-dash panel
 }

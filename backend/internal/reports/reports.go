@@ -81,11 +81,16 @@ func (h *Handlers) handlePDF(w http.ResponseWriter, r *http.Request) {
 		httperr.WriteRepo(w, "reporting currency", err)
 		return
 	}
+	inflation, assumedInflation, err := h.repo.ReportInflation(ctx)
+	if err != nil {
+		httperr.WriteRepo(w, "inflation rates", err)
+		return
+	}
 	locale := "en-GB"
 	if u, ok := identity.UserFromContext(ctx); ok && u.Locale != "" {
 		locale = u.Locale
 	}
-	body, err := pdf.Render(buildPDFInput(row, positions, series, members, currency, locale, version.Version))
+	body, err := pdf.Render(buildPDFInput(row, positions, series, members, inflation, assumedInflation, currency, locale, version.Version))
 	if err != nil {
 		httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 		return
