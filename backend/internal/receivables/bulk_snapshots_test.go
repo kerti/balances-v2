@@ -253,3 +253,31 @@ func TestReceivableSnapshotHandlers_EntryList(t *testing.T) {
 		t.Errorf("receivable with no history should have null prefill, got %v / %v", fr.PrefillAmount, fr.CarriedFrom)
 	}
 }
+
+// covers: INV-SNAPSHOTS-07
+func TestReceivableSnapshotHandlers_EntryList_SoleOwner(t *testing.T) {
+	h := newHarness(t)
+	rec := h.do(t, "POST", "/receivables", map[string]any{
+		"display_name":       "Alice's private loan out",
+		"ownership_type":     "sole",
+		"sole_owner_user_id": h.user.ID.String(),
+		"native_currency":    "IDR",
+		"counterparty_name":  "Counterparty",
+	})
+	requireStatus(t, rec, http.StatusCreated)
+
+	got := h.do(t, "GET", "/receivables/snapshots/entry?year_month=2026-05", nil)
+	requireStatus(t, got, http.StatusOK)
+	body := decodeBody[struct {
+		Rows []struct {
+			SoleOwnerUserID *string `json:"sole_owner_user_id"`
+		} `json:"rows"`
+	}](t, got)
+
+	if len(body.Rows) != 1 {
+		t.Fatalf("want 1 entry row for the sole receivable, got %d", len(body.Rows))
+	}
+	if body.Rows[0].SoleOwnerUserID == nil || *body.Rows[0].SoleOwnerUserID != h.user.ID.String() {
+		t.Errorf("sole-owned receivable entry row: want sole_owner_user_id %s, got %v", h.user.ID, body.Rows[0].SoleOwnerUserID)
+	}
+}

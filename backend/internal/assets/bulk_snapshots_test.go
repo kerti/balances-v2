@@ -307,3 +307,41 @@ func TestAssetSnapshotHandlers_EntryList(t *testing.T) {
 		t.Errorf("asset with no history should have null prefill, got %v / %v", fr.PrefillAmount, fr.CarriedFrom)
 	}
 }
+
+// covers: INV-SNAPSHOTS-07
+func TestAssetSnapshotHandlers_EntryList_SoleOwner(t *testing.T) {
+	h := newHarness(t)
+	rec := h.do(t, "POST", "/bank-accounts", map[string]any{
+		"display_name":       "Alice's private account",
+		"ownership_type":     "sole",
+		"sole_owner_user_id": h.user.ID.String(),
+		"native_currency":    "IDR",
+		"bank_name":          "TestBank",
+		"account_number":     "9999",
+		"account_type":       "savings",
+	})
+	requireStatus(t, rec, http.StatusCreated)
+	acct := decodeBody[*repo.BankAccount](t, rec)
+
+	got := h.do(t, "GET", "/assets/snapshots/entry?year_month=2026-05", nil)
+	requireStatus(t, got, http.StatusOK)
+	body := decodeBody[struct {
+		Rows []struct {
+			AssetID         string  `json:"asset_id"`
+			SoleOwnerUserID *string `json:"sole_owner_user_id"`
+		} `json:"rows"`
+	}](t, got)
+
+	var found bool
+	for _, r := range body.Rows {
+		if r.AssetID == acct.Asset.ID.String() {
+			found = true
+			if r.SoleOwnerUserID == nil || *r.SoleOwnerUserID != h.user.ID.String() {
+				t.Errorf("sole-owned asset entry row: want sole_owner_user_id %s, got %v", h.user.ID, r.SoleOwnerUserID)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("sole-owned asset missing from entry list")
+	}
+}

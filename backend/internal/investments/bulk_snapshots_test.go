@@ -333,3 +333,52 @@ func TestInvestmentSnapshotHandlers_QtyPriceEntryList(t *testing.T) {
 			fr.PrefillQuantity, fr.PrefillPrice, fr.CarriedFrom)
 	}
 }
+
+// covers: INV-SNAPSHOTS-08
+// covers: INV-SNAPSHOTS-09
+func TestInvestmentSnapshotHandlers_EntryList_SoleOwner(t *testing.T) {
+	h := newHarness(t)
+	// A sole-owned qty×price position (gold) and a sole-owned accrued position
+	// (bond) — one drives each entry endpoint's sole-owner presentation branch.
+	requireStatus(t, h.do(t, "POST", "/investments/golds", map[string]any{
+		"display_name":       "Alice's private gold",
+		"ownership_type":     "sole",
+		"sole_owner_user_id": h.user.ID.String(),
+		"native_currency":    "IDR",
+		"form":               "bar",
+		"purity":             "0.9999",
+		"risk_profile":       "medium",
+	}), http.StatusCreated)
+	requireStatus(t, h.do(t, "POST", "/investments/bonds", map[string]any{
+		"display_name":       "Alice's private bond",
+		"ownership_type":     "sole",
+		"sole_owner_user_id": h.user.ID.String(),
+		"native_currency":    "IDR",
+		"bond_type":          "secondary_market",
+		"issuer":             "Govt of Indonesia",
+		"coupon_rate":        "6.25",
+		"coupon_frequency":   "semi_annual",
+		"coupon_disposition": "accrues",
+		"maturity_date":      "2030-01-01",
+		"risk_profile":       "medium",
+	}), http.StatusCreated)
+
+	assertSoleRow := func(t *testing.T, path string) {
+		t.Helper()
+		got := h.do(t, "GET", path, nil)
+		requireStatus(t, got, http.StatusOK)
+		body := decodeBody[struct {
+			Rows []struct {
+				SoleOwnerUserID *string `json:"sole_owner_user_id"`
+			} `json:"rows"`
+		}](t, got)
+		if len(body.Rows) != 1 {
+			t.Fatalf("%s: want 1 sole-owned entry row, got %d", path, len(body.Rows))
+		}
+		if body.Rows[0].SoleOwnerUserID == nil || *body.Rows[0].SoleOwnerUserID != h.user.ID.String() {
+			t.Errorf("%s: want sole_owner_user_id %s, got %v", path, h.user.ID, body.Rows[0].SoleOwnerUserID)
+		}
+	}
+	assertSoleRow(t, "/investments/snapshots/entry?year_month=2026-05")
+	assertSoleRow(t, "/investments/snapshots/accrued/entry?year_month=2026-05")
+}
