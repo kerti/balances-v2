@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -118,6 +119,12 @@ func TestInflationRatesHandlers_Create(t *testing.T) {
 			"year_month": "2026-02",
 		}), http.StatusBadRequest)
 	})
+	t.Run("201 full YYYY-MM-DD is normalized to first-of-month", func(t *testing.T) {
+		ir := h.create(t, "2026-07-15", "2")
+		if ir.YearMonth.Day() != 1 || ir.YearMonth.Month() != time.July || ir.YearMonth.Year() != 2026 {
+			t.Errorf("year_month: got %s, want 2026-07-01", ir.YearMonth.Format("2006-01-02"))
+		}
+	})
 }
 
 func TestInflationRatesHandlers_ListUpdateDelete(t *testing.T) {
@@ -145,6 +152,12 @@ func TestInflationRatesHandlers_ListUpdateDelete(t *testing.T) {
 	})
 	t.Run("update invalid id 400", func(t *testing.T) {
 		requireStatus(t, h.do(t, "PATCH", "/inflation-rates/not-a-uuid", map[string]any{"rate": "1"}), http.StatusBadRequest)
+	})
+	t.Run("update invalid json 400", func(t *testing.T) {
+		requireStatus(t, h.do(t, "PATCH", "/inflation-rates/"+created.ID.String(), "{nope"), http.StatusBadRequest)
+	})
+	t.Run("update missing rate 400", func(t *testing.T) {
+		requireStatus(t, h.do(t, "PATCH", "/inflation-rates/"+created.ID.String(), map[string]any{}), http.StatusBadRequest)
 	})
 	t.Run("delete 204 then gone", func(t *testing.T) {
 		requireStatus(t, h.do(t, "DELETE", "/inflation-rates/"+created.ID.String(), nil), http.StatusNoContent)

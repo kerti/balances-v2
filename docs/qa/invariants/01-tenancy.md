@@ -19,3 +19,4 @@ is the isolation guarantee for one resource. Severity: **Critical**.
 | INV-TENANCY-10 | Income reads & mutations never cross households | ADR-0005 | Critical |
 | INV-TENANCY-11 | FX-rate reads & mutations never cross households | ADR-0005 | Critical |
 | INV-TENANCY-12 | Tag reads, assignment & breakdown never cross households | ADR-0005, ADR-0028 | Critical |
+| INV-TENANCY-13 | Inflation-rate reads & mutations never cross households | ADR-0005, ADR-0048 | Critical |
