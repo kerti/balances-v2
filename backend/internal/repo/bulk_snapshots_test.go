@@ -2,6 +2,7 @@ package repo_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -373,5 +374,134 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 	})
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
+	}
+}
+
+// TestBulkRepo_Unauthenticated asserts every bulk monthly-entry repo entry point
+// rejects a context with no authenticated user before touching the DB — the
+// per-table tenancy floor (ADR-0046). Each function's currentUser guard is the
+// same shape but a separate branch per group, so coverage only attributes here
+// when each is driven directly.
+//
+// covers: INV-SNAPSHOTS-06
+// covers: INV-SNAPSHOTS-07
+// covers: INV-SNAPSHOTS-08
+// covers: INV-SNAPSHOTS-09
+func TestBulkRepo_Unauthenticated(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	ar := repo.NewAssetRepo(tdb.Pool)
+	lr := repo.NewLiabilityRepo(tdb.Pool)
+	rr := repo.NewReceivableRepo(tdb.Pool)
+	ir := repo.NewInvestmentRepo(tdb.Pool)
+	ctx := context.Background() // no user attached
+
+	calls := map[string]func() error{
+		"ListAssetEntryRows":             func() error { _, e := ar.ListAssetEntryRows(ctx, targetMonth); return e },
+		"ListLiabilityEntryRows":         func() error { _, e := lr.ListLiabilityEntryRows(ctx, targetMonth); return e },
+		"ListReceivableEntryRows":        func() error { _, e := rr.ListReceivableEntryRows(ctx, targetMonth); return e },
+		"ListInvestmentEntryRows":        func() error { _, e := ir.ListInvestmentEntryRows(ctx, targetMonth); return e },
+		"ListInvestmentAccruedEntryRows": func() error { _, e := ir.ListInvestmentAccruedEntryRows(ctx, targetMonth); return e },
+		"BulkUpsertAssetSnapshots": func() error {
+			_, _, e := ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
+				YearMonth: targetMonth,
+				Rows:      []repo.BulkAssetSnapshotRow{{AssetID: uuid.New(), Amount: di(1), Currency: "IDR"}},
+			})
+			return e
+		},
+		"BulkUpsertLiabilitySnapshots": func() error {
+			_, _, e := lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
+				YearMonth: targetMonth,
+				Rows:      []repo.BulkLiabilitySnapshotRow{{LiabilityID: uuid.New(), Amount: di(1), Currency: "IDR"}},
+			})
+			return e
+		},
+		"BulkUpsertReceivableSnapshots": func() error {
+			_, _, e := rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
+				YearMonth: targetMonth,
+				Rows:      []repo.BulkReceivableSnapshotRow{{ReceivableID: uuid.New(), Amount: di(1), Currency: "IDR"}},
+			})
+			return e
+		},
+		"BulkUpsertInvestmentSnapshots": func() error {
+			_, _, e := ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
+				YearMonth: targetMonth,
+				Rows:      []repo.BulkInvestmentSnapshotRow{{InvestmentID: uuid.New(), Quantity: di(1), PricePerUnit: di(1), Currency: "IDR"}},
+			})
+			return e
+		},
+		"BulkUpsertInvestmentAccruedSnapshots": func() error {
+			_, _, e := ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
+				YearMonth: targetMonth,
+				Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: di(0), Currency: "IDR"}},
+			})
+			return e
+		},
+	}
+	for name, call := range calls {
+		if err := call(); !errors.Is(err, repo.ErrUnauthenticated) {
+			t.Errorf("%s: want ErrUnauthenticated, got %v", name, err)
+		}
+	}
+}
+
+// TestBulkRepo_EmptyHousehold drives the len==0 short-circuits: a household with
+// no positions lists an empty entry set for every group, and an empty batch is a
+// no-op that writes nothing.
+//
+// covers: INV-SNAPSHOTS-06
+// covers: INV-SNAPSHOTS-07
+// covers: INV-SNAPSHOTS-08
+// covers: INV-SNAPSHOTS-09
+func TestBulkRepo_EmptyHousehold(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	ctx := identity.WithUser(context.Background(), user)
+	ar := repo.NewAssetRepo(tdb.Pool)
+	lr := repo.NewLiabilityRepo(tdb.Pool)
+	rr := repo.NewReceivableRepo(tdb.Pool)
+	ir := repo.NewInvestmentRepo(tdb.Pool)
+
+	// No positions of any kind → every entry list is empty.
+	lists := map[string]func() (int, error){
+		"asset":             func() (int, error) { r, e := ar.ListAssetEntryRows(ctx, targetMonth); return len(r), e },
+		"liability":         func() (int, error) { r, e := lr.ListLiabilityEntryRows(ctx, targetMonth); return len(r), e },
+		"receivable":        func() (int, error) { r, e := rr.ListReceivableEntryRows(ctx, targetMonth); return len(r), e },
+		"investment":        func() (int, error) { r, e := ir.ListInvestmentEntryRows(ctx, targetMonth); return len(r), e },
+		"investmentAccrued": func() (int, error) { r, e := ir.ListInvestmentAccruedEntryRows(ctx, targetMonth); return len(r), e },
+	}
+	for name, list := range lists {
+		if n, err := list(); err != nil || n != 0 {
+			t.Errorf("%s entry list on empty household: want (0, nil), got (%d, %v)", name, n, err)
+		}
+	}
+
+	// An empty batch is a no-op for every group (currentUser passes, len==0 short-circuits).
+	batches := map[string]func() (int, error){
+		"asset": func() (int, error) {
+			n, _, e := ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{YearMonth: targetMonth})
+			return n, e
+		},
+		"liability": func() (int, error) {
+			n, _, e := lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{YearMonth: targetMonth})
+			return n, e
+		},
+		"receivable": func() (int, error) {
+			n, _, e := rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{YearMonth: targetMonth})
+			return n, e
+		},
+		"investment": func() (int, error) {
+			n, _, e := ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{YearMonth: targetMonth})
+			return n, e
+		},
+		"investmentAccrued": func() (int, error) {
+			n, _, e := ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{YearMonth: targetMonth})
+			return n, e
+		},
+	}
+	for name, batch := range batches {
+		if n, err := batch(); err != nil || n != 0 {
+			t.Errorf("%s empty batch: want (0, nil), got (%d, %v)", name, n, err)
+		}
 	}
 }
