@@ -97,6 +97,35 @@ func TestBuildStats_UndefinedEdges(t *testing.T) {
 	})
 }
 
+// covers: INV-FINANCE-20
+func TestBuildStats_NullFlowColumnsTreatedAsZero(t *testing.T) {
+	// A partially-populated flow month — the nullable income columns are NULL
+	// (nil pointers) while expenses and the investment stock are present. decOr
+	// must read the absent columns as zero rather than nil-deref, so the panel
+	// still computes: income 0 leaves cash-flow undefined, passive income is a
+	// defined 0% (no passive cash, no investment return), and the stock-based
+	// gauges stay defined.
+	m := ym(2026, time.June)
+	partial := db.MonthlyReport{
+		YearMonth:             m,
+		NwInvestments:         dec("10000"),
+		DerivedLivingExpenses: decp("600"),
+		// EarnedIncomeTotal / Rental / Pension / InvestmentReturnTotal all nil.
+	}
+	series := []db.MonthlyReport{partial}
+
+	st := buildStats(&partial, []repo.PositionDetail{bank("500")}, series, nil, decimal.Zero)
+
+	if st.CashFlow.Defined {
+		t.Error("cash-flow should be undefined when income column is NULL (read as 0)")
+	}
+	assertPct(t, "passive-income", st.PassiveIncome, 0)
+	assertPct(t, "instant-liquidity", st.InstantLiquidity, 5)
+	if !st.Resilience.Defined {
+		t.Errorf("resilience should be defined from the stock + flow month, got %+v", st.Resilience)
+	}
+}
+
 func TestBuildStats_NegativePassiveIncome(t *testing.T) {
 	// A market loss (negative Investment Return) can drag total passive income —
 	// and the ratio — negative. This is intended and labelled (ADR-0048).

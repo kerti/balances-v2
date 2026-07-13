@@ -112,4 +112,12 @@ func TestRenderStatsPanelStates(t *testing.T) {
 	if _, err := Render(in); err != nil {
 		t.Fatalf("indefinite stats Render: %v", err)
 	}
+
+	// A one-month runway takes the singular unit branch ("%s month", not
+	// "%s months") in resilienceValue — the plural/indefinite cases above leave
+	// it untested.
+	in.Stats.Resilience = Resilience{Defined: true, Months: 1}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("singular-month resilience Render: %v", err)
+	}
 }
