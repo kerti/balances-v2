@@ -291,19 +291,57 @@ func (d *doc) deltaText(dl *Delta) (string, [3]int) {
 	return text, col
 }
 
-// statistics renders the deferred (#412) health-indicator panel as a reserved
-// placeholder block directly under the headline — the prominent slot the ratios
-// will fill later, with no reflow when they do. The future rows are shown with
-// an em-dash so the slot reads as intentionally reserved, not empty.
+// statistics renders the financial-health panel (#412, ADR-0048) directly under
+// the headline: four household-health ratios, each a bold value plus one short
+// plain-language explanation. No colour-coding or targets in v1 — the values
+// stay neutral ink. A ratio whose inputs are unavailable shows an em-dash with a
+// short note, keeping the reserved slot intact.
 func (d *doc) statistics() {
 	d.sectionTitle(d.c.statistics)
-	for _, label := range d.c.statRows {
-		d.line(label, "—", 2, lineOpt{mutedText: true})
+	s := d.in.Stats
+	d.statRow(d.c.statRows[0], d.c.statDescs[0], d.pctValue(s.CashFlow), s.CashFlow.Defined)
+	d.statRow(d.c.statRows[1], d.c.statDescs[1], d.pctValue(s.PassiveIncome), s.PassiveIncome.Defined)
+	d.statRow(d.c.statRows[2], d.c.statDescs[2], d.pctValue(s.InstantLiquidity), s.InstantLiquidity.Defined)
+	d.statRow(d.c.statRows[3], d.c.statDescs[3], d.resilienceValue(), s.Resilience.Defined)
+}
+
+// statRow draws one ratio: a bold label + right-aligned value, then a muted,
+// wrapped explanation beneath. When the ratio is undefined the value collapses
+// to an em-dash and the explanation to the shared "not enough history" note.
+func (d *doc) statRow(label, desc, value string, defined bool) {
+	d.keepTogether(16)
+	opt := lineOpt{bold: true}
+	if !defined {
+		value = "—"
+		opt.mutedText = true
+		desc = d.c.statUndefined
 	}
+	d.line(label, value, 2, opt)
 	d.pdf.SetFont("Geist", "", 7.5)
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
-	d.pdf.SetX(d.x0)
-	d.pdf.CellFormat(d.w, 4.5, d.c.statsSoon, "", 1, "L", false, 0, "")
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, desc, "", "L", false)
+	d.pdf.Ln(1)
+}
+
+// pctValue formats a ratio as a locale-aware percentage to one decimal place;
+// the sign is carried naturally, so a deficit or a market loss prints negative.
+func (d *doc) pctValue(r Ratio) string {
+	return moneyfmt.FormatNumber(fmt.Sprintf("%.1f", r.Percent), d.in.Locale) + "%"
+}
+
+// resilienceValue formats the Fund Resilience runway as a month count (singular
+// aware) or the localized "indefinite" word when the pool never depletes.
+func (d *doc) resilienceValue() string {
+	r := d.in.Stats.Resilience
+	if r.Indefinite {
+		return d.c.statIndefinite
+	}
+	unit := d.c.statMonthsUnit
+	if r.Months == 1 {
+		unit = d.c.statMonthUnit
+	}
+	return fmt.Sprintf(unit, moneyfmt.FormatNumber(fmt.Sprintf("%d", r.Months), d.in.Locale))
 }
 
 func (d *doc) assets() {

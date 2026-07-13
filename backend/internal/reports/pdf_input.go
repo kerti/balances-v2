@@ -2,6 +2,7 @@ package reports
 
 import (
 	"encoding/json"
+	"math"
 	"sort"
 	"time"
 
@@ -26,7 +27,7 @@ type userBreakdownJSON struct {
 // itemized position detail, the report series (for the trend), and household
 // members (for owner + per-member labels). All numbers already come resolved to
 // the reporting currency by the report engine (ADR-0045).
-func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, series []db.MonthlyReport, members []db.User, currency, locale, appVersion string) pdf.Input {
+func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, series []db.MonthlyReport, members []db.User, inflation []db.InflationRate, assumedAnnualInflation decimal.Decimal, currency, locale, appVersion string) pdf.Input {
 	nameByID := map[uuid.UUID]string{}
 	for _, m := range members {
 		name := m.DisplayName
@@ -81,7 +82,139 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		CashFlow:          buildCashFlow(row, nameByID, joint),
 		FxRates:           buildFxRates(row.FxRatesUsed),
 		Trend:             buildTrend(series, row.YearMonth),
+		Stats:             buildStats(row, positions, series, inflation, assumedAnnualInflation),
 	}
+}
+
+// resilienceHorizonMonths caps the Fund Resilience depletion simulation at ~100
+// years; a pool that survives it is reported as "indefinite" (ADR-0048).
+const resilienceHorizonMonths = 1200
+
+// buildStats derives the financial-health panel (ADR-0048): four ratios computed
+// at render time from the report series + positions + inflation, never
+// materialized. Flow inputs are a trailing-12-month average (the reported month
+// and the eleven preceding calendar months, fewer when history is shorter);
+// stocks (net worth, investments, cash) are read at the reported month as-is. A
+// ratio whose inputs are unavailable stays undefined (rendered as an em-dash).
+func buildStats(row *db.MonthlyReport, positions []repo.PositionDetail, series []db.MonthlyReport, inflation []db.InflationRate, assumedAnnualInflation decimal.Decimal) pdf.Stats {
+	upto := row.YearMonth
+	lo := upto.AddDate(0, -11, 0)
+	inWindow := func(t time.Time) bool { return !t.Before(lo) && !t.After(upto) }
+
+	// Trailing-12 flow sums over the months in the window that carry flow data
+	// (the baseline month has no derived expenses/income and is skipped).
+	var incomeSum, expSum, passiveCashSum, totalPassiveSum decimal.Decimal
+	var gSum float64 // Σ monthly investment-return rate, for the pool's growth g
+	var gN, flowN int
+	for i := range series {
+		s := &series[i]
+		if !inWindow(s.YearMonth) || s.DerivedLivingExpenses == nil {
+			continue
+		}
+		flowN++
+		// Passive *cash* income (Rental + Pension) excludes Investment Return —
+		// the projection already models that as the pool's own growth g, so
+		// counting it here too would double-count it (ADR-0048).
+		passiveCash := decOr(s.EarnedIncomeRental).Add(decOr(s.EarnedIncomePension))
+		incomeSum = incomeSum.Add(decOr(s.EarnedIncomeTotal))
+		expSum = expSum.Add(*s.DerivedLivingExpenses)
+		passiveCashSum = passiveCashSum.Add(passiveCash)
+		totalPassiveSum = totalPassiveSum.Add(passiveCash.Add(decOr(s.InvestmentReturnTotal)))
+		if s.NwInvestments.IsPositive() {
+			r, _ := decOr(s.InvestmentReturnTotal).Div(s.NwInvestments).Float64()
+			gSum += r
+			gN++
+		}
+	}
+
+	hundred := decimal.NewFromInt(100)
+	var st pdf.Stats
+
+	// Cash-Flow (savings rate) = (Income − LivingExpenses) / Income.
+	if flowN > 0 && incomeSum.IsPositive() {
+		pct, _ := incomeSum.Sub(expSum).Div(incomeSum).Mul(hundred).Float64()
+		st.CashFlow = pdf.Ratio{Defined: true, Percent: pct}
+	}
+	// Passive-Income = TotalPassiveIncome / LivingExpenses (≥100% ⇒ FI).
+	if flowN > 0 && expSum.IsPositive() {
+		pct, _ := totalPassiveSum.Div(expSum).Mul(hundred).Float64()
+		st.PassiveIncome = pdf.Ratio{Defined: true, Percent: pct}
+	}
+	// Instant-Liquidity = bank cash / total investments (a ceiling gauge). Bank
+	// cash is same-day-accessible Assets only; the denominator is the reported
+	// month's investment value (a stock), so this is defined even on the baseline.
+	if row.NwInvestments.IsPositive() {
+		bank := decimal.Zero
+		for i := range positions {
+			p := &positions[i]
+			if p.Group == "asset" && p.Subtype == "bank_account" {
+				bank = bank.Add(p.Amount)
+			}
+		}
+		pct, _ := bank.Div(row.NwInvestments).Mul(hundred).Float64()
+		st.InstantLiquidity = pdf.Ratio{Defined: true, Percent: pct}
+	}
+	// Fund Resilience: depletion projection of the investment pool (needs
+	// investments > 0 and at least one flow month).
+	if row.NwInvestments.IsPositive() && flowN > 0 {
+		n := decimal.NewFromInt(int64(flowN))
+		p0, _ := row.NwInvestments.Float64()
+		e0, _ := expSum.Div(n).Float64()
+		pi0, _ := passiveCashSum.Div(n).Float64()
+		g := 0.0
+		if gN > 0 {
+			g = gSum / float64(gN)
+		}
+		st.Resilience = simulateResilience(p0, e0, pi0, g, monthlyInflation(inflation, assumedAnnualInflation, lo, upto))
+	}
+	return st
+}
+
+// monthlyInflation converts the household's inflation assumption to a monthly
+// rate for the Fund Resilience projection. Stored annualized figures within the
+// trailing-12 window are averaged to an effective annual rate; with none, the
+// assumed_annual_inflation setting is used. Either way the annual percentage is
+// converted once as (1 + a)^(1/12) − 1 (ADR-0048).
+func monthlyInflation(rates []db.InflationRate, assumedAnnual decimal.Decimal, lo, upto time.Time) float64 {
+	sum := decimal.Zero
+	n := 0
+	for i := range rates {
+		if r := &rates[i]; !r.YearMonth.Before(lo) && !r.YearMonth.After(upto) {
+			sum = sum.Add(r.Rate)
+			n++
+		}
+	}
+	annual := assumedAnnual
+	if n > 0 {
+		annual = sum.Div(decimal.NewFromInt(int64(n)))
+	}
+	a, _ := annual.Float64()
+	return math.Pow(1+a/100, 1.0/12) - 1
+}
+
+// simulateResilience projects the investment pool forward month by month until
+// it depletes, or reports Indefinite past the horizon. Each month the pool grows
+// by g and is drawn down by living expenses net of continuing passive cash
+// income; both the expense and the passive-income legs inflate at i (ADR-0048).
+func simulateResilience(pool, expenses, passiveCash, g, i float64) pdf.Resilience {
+	for m := 1; m <= resilienceHorizonMonths; m++ {
+		pool = pool*(1+g) - (expenses - passiveCash)
+		if pool <= 0 {
+			return pdf.Resilience{Defined: true, Months: m}
+		}
+		expenses *= 1 + i
+		passiveCash *= 1 + i
+	}
+	return pdf.Resilience{Defined: true, Indefinite: true}
+}
+
+// decOr dereferences an optional report figure, treating a nil (absent) column
+// as zero.
+func decOr(d *decimal.Decimal) decimal.Decimal {
+	if d == nil {
+		return decimal.Zero
+	}
+	return *d
 }
 
 // buildDelta computes the month-over-month net-worth change: against the report

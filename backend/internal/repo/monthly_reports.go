@@ -91,6 +91,26 @@ func (r *MonthlyReportRepo) GetReport(ctx context.Context, yearMonth time.Time) 
 	return &row, nil
 }
 
+// ReportInflation returns the household's manual inflation series (annualized %
+// per month, ADR-0048) plus the assumed_annual_inflation fallback setting — the
+// Fund Resilience inputs for the PDF statistics panel (#412). Both are read in
+// one call so the report handler makes a single round-trip for the panel.
+func (r *MonthlyReportRepo) ReportInflation(ctx context.Context) ([]db.InflationRate, decimal.Decimal, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, decimal.Zero, err
+	}
+	rates, err := r.q.ListInflationRatesByHousehold(ctx, hid)
+	if err != nil {
+		return nil, decimal.Zero, fmt.Errorf("list inflation rates: %w", err)
+	}
+	hh, err := r.q.GetHouseholdByID(ctx, hid)
+	if err != nil {
+		return nil, decimal.Zero, fmt.Errorf("get household: %w", err)
+	}
+	return rates, hh.AssumedAnnualInflation, nil
+}
+
 // Members returns the household's users, for resolving position-owner and
 // per-member cash-flow labels in the PDF report (ADR-0045).
 func (r *MonthlyReportRepo) Members(ctx context.Context) ([]db.User, error) {

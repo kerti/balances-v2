@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/02-finance.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**18 / 18** invariants in this zone have at least one covering test (**18** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**21 / 21** invariants in this zone have at least one covering test (**21** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -26,3 +26,6 @@
 | INV-FINANCE-16 | A foreign currency with no rate ≤ M is excluded from net worth and flagged in missing_fx — never summed 1:1 | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-17 | With multi-currency off, amounts sum at face value — no conversion, missing_fx, or fx_rates_used | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-18 | Itemized per-position detail (`GET /api/reports/{yearMonth}/positions`) sums, per group, to the same `nw_assets`/`nw_liabilities`/`nw_investments`/`nw_receivables` the aggregate report shows for that month — same carry-forward/FX/termination rules, extracted not reimplemented | `backend/internal/repo/monthly_reports_engine_positions_test.go` |
+| INV-FINANCE-19 | The four statistics-panel ratios compute from trailing-12 flow averages + reported-month stocks: Cash-Flow = (Income−LivingExpenses)/Income, Passive-Income = TotalPassive/LivingExpenses, Instant-Liquidity = bank cash/investments; all render-time derived, never materialized | `backend/internal/reports/pdf_stats_test.go` |
+| INV-FINANCE-20 | A statistics ratio with unavailable inputs is undefined (rendered "—"): no flow month (baseline/<1 month), Income ≤ 0, LivingExpenses ≤ 0, or investments = 0; Instant-Liquidity is a stock and stays defined on the baseline when investments > 0 | `backend/internal/reports/pdf_stats_test.go` |
+| INV-FINANCE-21 | Fund Resilience projects the investment pool to depletion (or "indefinite" past the ~100-yr horizon); its draw-offset is passive *cash* income (Rental + Pension) only — Investment Return stays out of the offset (it is the pool's growth g), guarding the double-count | `backend/internal/reports/pdf_stats_test.go` |
