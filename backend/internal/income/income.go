@@ -47,14 +47,15 @@ func (h *Handlers) Mount(r chi.Router) {
 // ----- requests -----------------------------------------------------------
 //
 // Category enum (closed set, ADR-0008; DB CHECK in the 00001 baseline, extended
-// with `pension` in 00012 per ADR-0048) is mirrored in the validator tag below.
+// with `pension` and `interest` in 00012 per ADR-0048) is mirrored in the
+// validator tag below.
 // Update both the migration CHECK and this tag if it changes.
 
 type createReq struct {
 	Date            string           `json:"date"               validate:"required"`
 	Amount          *decimal.Decimal `json:"amount"             validate:"required"`
 	Currency        string           `json:"currency"           validate:"required,iso4217"`
-	Category        string           `json:"category"           validate:"required,oneof=salary business_income rental_income pension gift tax_refund insurance_payout other"`
+	Category        string           `json:"category"           validate:"required,oneof=salary business_income rental_income pension interest gift tax_refund insurance_payout other"`
 	Description     *string          `json:"description"`
 	OwnershipType   string           `json:"ownership_type"     validate:"required,oneof=sole joint"`
 	SoleOwnerUserID *uuid.UUID       `json:"sole_owner_user_id" validate:"required_if=OwnershipType sole"`
@@ -65,7 +66,7 @@ type updateReq struct {
 	Date            string           `json:"date"               validate:"required"`
 	Amount          *decimal.Decimal `json:"amount"             validate:"required"`
 	Currency        string           `json:"currency"           validate:"required,iso4217"`
-	Category        string           `json:"category"           validate:"required,oneof=salary business_income rental_income pension gift tax_refund insurance_payout other"`
+	Category        string           `json:"category"           validate:"required,oneof=salary business_income rental_income pension interest gift tax_refund insurance_payout other"`
 	Description     *string          `json:"description"`
 	OwnershipType   string           `json:"ownership_type"     validate:"required,oneof=sole joint"`
 	SoleOwnerUserID *uuid.UUID       `json:"sole_owner_user_id" validate:"required_if=OwnershipType sole"`

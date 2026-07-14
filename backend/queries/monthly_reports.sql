@@ -37,14 +37,16 @@ INSERT INTO monthly_reports (
     investment_return_total, investment_return_stock, investment_return_mutual_fund,
     investment_return_bond, investment_return_gold, investment_return_time_deposit,
     asset_value_change, derived_living_expenses,
-    user_breakdowns, stale_positions, fx_rates_used, missing_fx
+    user_breakdowns, stale_positions, fx_rates_used, missing_fx,
+    earned_income_interest
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
     $8, $9, $10, $11, $12, $13, $14, $15, $16,
     $17, $18, $19, $20, $21, $22,
     $23, $24,
-    $25, $26, $27, $28
+    $25, $26, $27, $28,
+    $29
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -58,6 +60,7 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     earned_income_business         = EXCLUDED.earned_income_business,
     earned_income_rental           = EXCLUDED.earned_income_rental,
     earned_income_pension          = EXCLUDED.earned_income_pension,
+    earned_income_interest         = EXCLUDED.earned_income_interest,
     earned_income_gift             = EXCLUDED.earned_income_gift,
     earned_income_tax_refund       = EXCLUDED.earned_income_tax_refund,
     earned_income_insurance        = EXCLUDED.earned_income_insurance,

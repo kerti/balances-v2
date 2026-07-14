@@ -89,7 +89,7 @@ var reportCatalog = map[string]reportCopy{
 		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
 		statDescs: []string{
 			"Share of earned income kept after living expenses, averaged over the past year.",
-			"Passive income — rent, pension and investment returns — as a share of living expenses; 100% means it fully covers them. Living expenses are estimated, and this figure moves with the market.",
+			"Passive income — rent, pension, interest and investment returns — as a share of living expenses; 100% means it fully covers them. Living expenses are estimated, and this figure moves with the market.",
 			"Cash held in bank accounts as a share of total investments. A ceiling gauge: a high figure can signal idle cash that could be put to work.",
 			"How long investments would last if active income stopped, drawing estimated living expenses net of continuing passive income.",
 		},
@@ -131,7 +131,7 @@ var reportCatalog = map[string]reportCopy{
 		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
 		statDescs: []string{
 			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir.",
-			"Pendapatan pasif — sewa, pensiun dan imbal hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",
+			"Pendapatan pasif — sewa, pensiun, bunga dan imbal hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",
 			"Kas di rekening bank sebagai bagian dari total investasi. Tolok ukur batas atas: angka tinggi menandakan kas menganggur yang bisa didayagunakan.",
 			"Berapa lama investasi akan bertahan bila pendapatan aktif berhenti, dikurangi perkiraan pengeluaran setelah dipotong pendapatan pasif yang terus berjalan.",
 		},

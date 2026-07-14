@@ -278,6 +278,7 @@ type MonthlyReport struct {
 	StalePositions              []byte             `json:"stale_positions"`
 	MissingFx                   []byte             `json:"missing_fx"`
 	EarnedIncomePension         *decimal.Decimal   `json:"earned_income_pension"`
+	EarnedIncomeInterest        *decimal.Decimal   `json:"earned_income_interest"`
 }
 
 type MutualFundDetail struct {

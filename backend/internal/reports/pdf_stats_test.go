@@ -186,6 +186,29 @@ func TestBuildStats_ResilienceExcludesInvestmentReturnFromDraw(t *testing.T) {
 	}
 }
 
+// covers: INV-FINANCE-22
+func TestBuildStats_InterestCountsAsPassiveCash(t *testing.T) {
+	// Bank/deposit interest is passive *cash* income (external, not pool return),
+	// so it offsets the resilience draw exactly like Rental/Pension and — because
+	// it never appears in InvestmentReturn — carries no double-count. Mirrors the
+	// Pension pin above (INV-FINANCE-21): a 50-cash offset extends 6 → 7 months.
+	m := ym(2026, time.June)
+
+	noOffset := []db.MonthlyReport{flowMonth(m, "500", "200", "0", "0", "10", "1000")}
+	base := buildStats(&noOffset[0], nil, noOffset, nil, decimal.Zero).Resilience
+	if base.Months != 6 {
+		t.Errorf("no-offset runway: got %+v, want 6 months", base)
+	}
+
+	withInterest := noOffset[0]
+	withInterest.EarnedIncomeInterest = decp("50")
+	series := []db.MonthlyReport{withInterest}
+	ext := buildStats(&series[0], nil, series, nil, decimal.Zero).Resilience
+	if ext.Months != 7 {
+		t.Errorf("interest-offset runway: got %+v, want 7 months (interest extends it)", ext)
+	}
+}
+
 func TestBuildStats_TrailingWindowExcludesOlderMonths(t *testing.T) {
 	report := ym(2026, time.June)
 	series := []db.MonthlyReport{

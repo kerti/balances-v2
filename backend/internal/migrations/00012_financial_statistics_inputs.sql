@@ -3,19 +3,24 @@
 -- income category and the monthly inflation model, batched into one migration
 -- (both are unreleased inputs to the same panel).
 --
--- Pension is recurring, clearly-passive income the app lacked; the panel needs it
--- both as its own line and as half of "passive cash income" (rental + pension).
--- Additive: widens the income category CHECK and adds the matching monthly_reports
--- earned-income breakdown column. A new allowed `text` value is not a shape change
--- — restore validates categories against this CHECK — so this half needs no
--- backup-format bump.
+-- Pension and Interest are recurring, clearly-passive income the app lacked; the
+-- panel needs each both as its own line and as part of "passive cash income"
+-- (rental + pension + interest). Interest is bank/deposit interest that lands as
+-- cash — an external stream, not investment-pool return — so it never overlaps
+-- with InvestmentReturn (no double-count in either passive scope). Additive:
+-- widens the income category CHECK and adds the matching monthly_reports
+-- earned-income breakdown columns. A new allowed `text` value is not a shape
+-- change — restore validates categories against this CHECK — so this half needs
+-- no backup-format bump.
 ALTER TABLE public.income DROP CONSTRAINT income_category_check;
 ALTER TABLE public.income
     ADD CONSTRAINT income_category_check
-        CHECK ((category = ANY (ARRAY['salary'::text, 'business_income'::text, 'rental_income'::text, 'pension'::text, 'gift'::text, 'tax_refund'::text, 'insurance_payout'::text, 'other'::text])));
+        CHECK ((category = ANY (ARRAY['salary'::text, 'business_income'::text, 'rental_income'::text, 'pension'::text, 'interest'::text, 'gift'::text, 'tax_refund'::text, 'insurance_payout'::text, 'other'::text])));
 
 ALTER TABLE public.monthly_reports
     ADD COLUMN earned_income_pension numeric(20,4);
+ALTER TABLE public.monthly_reports
+    ADD COLUMN earned_income_interest numeric(20,4);
 
 -- Monthly inflation rate + assumed-inflation setting. Structurally an FX rate
 -- minus the currency dimension: household-scoped, one annualized (YoY) percentage
@@ -52,6 +57,7 @@ ALTER TABLE public.households
 ALTER TABLE public.households DROP COLUMN assumed_annual_inflation;
 DROP TABLE public.inflation_rates;
 
+ALTER TABLE public.monthly_reports DROP COLUMN earned_income_interest;
 ALTER TABLE public.monthly_reports DROP COLUMN earned_income_pension;
 
 ALTER TABLE public.income DROP CONSTRAINT income_category_check;

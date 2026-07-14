@@ -57,23 +57,30 @@ sale settles in days) are the denominator, not the numerator.
 
 ### Passive income has two named scopes (to avoid double-counting)
 
-- **Passive cash income** = `RentalIncome + Pension`. Cash that keeps arriving after active income
-  stops → the Fund Resilience draw-offset. **Excludes** Investment Return, which the projection
-  already models as the pool's own growth `g`; counting it as income too would double-count it.
+- **Passive cash income** = `RentalIncome + Pension + Interest`. Cash that keeps arriving after active
+  income stops → the Fund Resilience draw-offset. `Interest` is bank/deposit interest — an external
+  cash stream, distinct from Investment Return (bank cash is not in the investment pool), so it
+  carries no double-count. **Excludes** Investment Return, which the projection already models as the
+  pool's own growth `g`; counting it as income too would double-count it.
 - **Total passive income** = passive cash income **+ InvestmentReturn** → the Passive-Income Ratio
   numerator. Including unrealised returns makes this ratio market-sensitive and **occasionally
   negative** — a labelled, deliberate property (it matches the household's existing workbook).
 
 Active vs passive is **category-derived**, not a per-event flag: Active = `Salary + BusinessIncome`;
-Passive = `RentalIncome + Pension`; the rest (`Gift/TaxRefund/InsurancePayout/Other`) are neither. A
-per-event override is deferred (see Considered alternatives).
+Passive = `RentalIncome + Pension + Interest`; the rest (`Gift/TaxRefund/InsurancePayout/Other`) are
+neither. A per-event override is deferred (see Considered alternatives).
+
+> The realized-cash boundary is the axis that keeps passive cash non-double-counting: rent, pension
+> and bank interest are cash that has *left* any instrument, so they offset the draw without also
+> being counted in `g`. A future slice extends this to bond coupons that **pay out** (vs. accrue),
+> the one remaining realized-cash stream currently folded into Investment Return.
 
 ### Fund Resilience: monthly depletion projection
 
 ```
 P₀ = total investment value (NwInvestments)          — investments only
 E₀ = trailing-12-avg living expenses (the residual)
-PI₀ = trailing-12-avg passive cash income (Rental + Pension)
+PI₀ = trailing-12-avg passive cash income (Rental + Pension + Interest)
 g  = trailing-12-avg monthly investment-return rate  (InvestmentReturnTotal / NwInvestments)
 i  = monthly inflation rate (see below)
 
@@ -132,8 +139,8 @@ The ratios are **pure functions** of the already-materialized report series + po
 `pdf_input`), **not** stored as new `monthly_reports` columns. They depend on a trailing window and
 on inflation that may be entered *after* a report is generated, so materializing them would
 immediately stale; re-deriving on render is always fresh and needs no migration for the ratios
-themselves. Only the genuinely-new *inputs* (Pension category, inflation series, the setting) touch
-the schema.
+themselves. Only the genuinely-new *inputs* (Pension and Interest categories, inflation series, the
+setting) touch the schema.
 
 ### Scope: an epic of sequenced slices
 
@@ -147,6 +154,14 @@ the schema.
    carry-forward + backup inclusion, and the `assumed_annual_inflation` setting fallback.
 4. **Statistics panel** — the four-ratio computation package + PDF rendering replacing the ADR-0045
    placeholder block, plus `reportCopy` explanatory strings (en-GB / id-ID).
+5. **Interest income category** — bank/deposit interest as a passive *cash* stream. Same shape as
+   the Pension slice (enum value folded into the 00012 CHECK + `EarnedIncomeInterest` breakdown
+   column + engine bucket + income form + i18n, no backup change) plus one line folding it into the
+   passive-cash scope. Untracked today, so it never overlaps Investment Return — no double-count.
+6. **Coupon-payout passive-cash extension** — bond coupons with `coupon_disposition = 'pays_out'`
+   (migration 00006) are realized cash that has left the instrument, so they belong in passive cash
+   alongside rent/pension/interest; accruing coupons stay in `g`. Touches the investment-return
+   engine (bigger than an enum slice); sequenced after slice 5.
 
 ## Considered alternatives
 
@@ -154,6 +169,13 @@ the schema.
   active/passive decision on every Income entry (friction for a non-technical audience) plus a column
   and a backfill rule, for flexibility (a passive business, a `Pension` mis-filed as `Other`) the
   category mapping already covers. Deferred as a future refinement.
+- **Reclassify "safe / low-volatility" investment returns as passive cash.** Rejected — volatility is
+  the wrong axis. For the Passive-Income Ratio those returns are *already* in the numerator (total
+  passive = passive cash + all InvestmentReturn), so splitting a "safe" subset out is a no-op relabel.
+  For Fund Resilience they *are* the pool's growth `g`, so counting them as a draw-offset double-counts.
+  The distinction that actually matters is **realized cash that left the instrument** (rent, pension,
+  bank interest, paid-out coupons) vs. **mark-to-market pool growth** (accruing coupons, equity
+  markup) — which is what slices 5–6 implement.
 - **Two-tier liquidity (cash + marketable investments).** Rejected — "instant" means same-day, which
   is `bank_account` only; a broader pool blurs the ceiling-gauge reading and overlaps Fund Resilience.
 - **Instant-Liquidity ÷ monthly expenses (emergency-fund months).** Rejected — that is Fund

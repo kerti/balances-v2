@@ -132,7 +132,7 @@ type userBreakdown struct {
 }
 
 type earnedIncomeAmounts struct {
-	total, salary, business, rental, pension, gift, taxRefund, insurance, other decimal.Decimal
+	total, salary, business, rental, pension, interest, gift, taxRefund, insurance, other decimal.Decimal
 }
 
 func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
@@ -146,6 +146,8 @@ func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
 		e.rental = e.rental.Add(v)
 	case "pension":
 		e.pension = e.pension.Add(v)
+	case "interest":
+		e.interest = e.interest.Add(v)
 	case "gift":
 		e.gift = e.gift.Add(v)
 	case "tax_refund":
