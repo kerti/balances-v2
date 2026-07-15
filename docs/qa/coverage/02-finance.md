@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/02-finance.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**22 / 22** invariants in this zone have at least one covering test (**22** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**23 / 23** invariants in this zone have at least one covering test (**23** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -30,3 +30,4 @@
 | INV-FINANCE-20 | A statistics ratio with unavailable inputs is undefined (rendered "—"): no flow month (baseline/<1 month), Income ≤ 0, LivingExpenses ≤ 0, or investments = 0; Instant-Liquidity is a stock and stays defined on the baseline when investments > 0 | `backend/internal/reports/pdf_stats_test.go` |
 | INV-FINANCE-21 | Fund Resilience projects the investment pool to depletion (or "indefinite" past the ~100-yr horizon); its draw-offset is passive *cash* income (Rental + Pension + Interest) only — Investment Return stays out of the offset (it is the pool's growth g), guarding the double-count | `backend/internal/reports/pdf_stats_test.go` |
 | INV-FINANCE-22 | Interest (bank/deposit) is passive *cash* income: it folds into the passive-cash scope alongside Rental + Pension (draw-offset + Passive-Income numerator) and, being external cash never present in Investment Return, carries no double-count | `backend/internal/reports/pdf_stats_test.go` |
+| INV-FINANCE-23 | A position's first snapshot is an acquisition, not a revaluation/return: its birth month contributes nothing to asset-value-change (property/vehicle) or investment-return — there is no prior value to diff against — so a fixed asset financed by cash + debt books zero living-expenses; only net worth reflects the acquisition | `backend/internal/repo/monthly_reports_engine_test.go` |
