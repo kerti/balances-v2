@@ -117,10 +117,15 @@ func buildStats(row *db.MonthlyReport, positions []repo.PositionDetail, series [
 		// so counting it here too would double-count it (ADR-0048). Interest is
 		// bank/deposit interest that lands as external cash, not pool return, so
 		// it belongs here and carries no such overlap.
-		passiveCash := decOr(s.EarnedIncomeRental).
-			Add(decOr(s.EarnedIncomePension)).
-			Add(decOr(s.EarnedIncomeInterest))
-		incomeSum = incomeSum.Add(decOr(s.EarnedIncomeTotal))
+		// Routine-only income (ADR-0048 amendment / INV-FINANCE-19,-21,-24): the
+		// ratios judge the household against income it relies on, so every income
+		// term is the materialized routine subtotal, not the all-regularity total.
+		// A one-off (severance, THR, insurance payout) is excluded here while still
+		// counting toward net worth, the income statement, and living expenses.
+		passiveCash := decOr(s.EarnedIncomeRentalRoutine).
+			Add(decOr(s.EarnedIncomePensionRoutine)).
+			Add(decOr(s.EarnedIncomeInterestRoutine))
+		incomeSum = incomeSum.Add(decOr(s.EarnedIncomeTotalRoutine))
 		expSum = expSum.Add(*s.DerivedLivingExpenses)
 		passiveCashSum = passiveCashSum.Add(passiveCash)
 		totalPassiveSum = totalPassiveSum.Add(passiveCash.Add(decOr(s.InvestmentReturnTotal)))

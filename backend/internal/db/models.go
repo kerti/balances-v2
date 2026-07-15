@@ -279,6 +279,10 @@ type MonthlyReport struct {
 	MissingFx                   []byte             `json:"missing_fx"`
 	EarnedIncomePension         *decimal.Decimal   `json:"earned_income_pension"`
 	EarnedIncomeInterest        *decimal.Decimal   `json:"earned_income_interest"`
+	EarnedIncomeTotalRoutine    *decimal.Decimal   `json:"earned_income_total_routine"`
+	EarnedIncomeRentalRoutine   *decimal.Decimal   `json:"earned_income_rental_routine"`
+	EarnedIncomePensionRoutine  *decimal.Decimal   `json:"earned_income_pension_routine"`
+	EarnedIncomeInterestRoutine *decimal.Decimal   `json:"earned_income_interest_routine"`
 }
 
 type MutualFundDetail struct {

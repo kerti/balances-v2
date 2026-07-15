@@ -38,7 +38,9 @@ INSERT INTO monthly_reports (
     investment_return_bond, investment_return_gold, investment_return_time_deposit,
     asset_value_change, derived_living_expenses,
     user_breakdowns, stale_positions, fx_rates_used, missing_fx,
-    earned_income_interest
+    earned_income_interest,
+    earned_income_total_routine, earned_income_rental_routine,
+    earned_income_pension_routine, earned_income_interest_routine
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -46,7 +48,8 @@ INSERT INTO monthly_reports (
     $17, $18, $19, $20, $21, $22,
     $23, $24,
     $25, $26, $27, $28,
-    $29
+    $29,
+    $30, $31, $32, $33
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -76,7 +79,11 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     user_breakdowns                = EXCLUDED.user_breakdowns,
     stale_positions                = EXCLUDED.stale_positions,
     fx_rates_used                  = EXCLUDED.fx_rates_used,
-    missing_fx                     = EXCLUDED.missing_fx
+    missing_fx                     = EXCLUDED.missing_fx,
+    earned_income_total_routine    = EXCLUDED.earned_income_total_routine,
+    earned_income_rental_routine   = EXCLUDED.earned_income_rental_routine,
+    earned_income_pension_routine  = EXCLUDED.earned_income_pension_routine,
+    earned_income_interest_routine = EXCLUDED.earned_income_interest_routine
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds
@@ -152,7 +159,7 @@ WHERE i.household_id = $1 AND i.deleted_at IS NULL;
 -- ----- engine inputs: income + investment transactions (slice 2) ----------
 
 -- name: ListIncomeForReport :many
-SELECT date, amount, currency, category, ownership_type, sole_owner_user_id
+SELECT date, amount, currency, category, regularity, ownership_type, sole_owner_user_id
 FROM income
 WHERE household_id = $1 AND deleted_at IS NULL;
 

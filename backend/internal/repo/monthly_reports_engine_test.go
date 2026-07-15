@@ -432,6 +432,53 @@ func TestEngine_InvestmentBirthIsNotReturn(t *testing.T) {
 	}
 }
 
+// Routine subtotals: the engine materializes a routine-only split of the income
+// terms the statistics panel needs (total + the passive-cash categories), so an
+// incidental one-off is excluded from those subtotals while still landing in the
+// all-regularity totals (and thus net worth / living expenses).
+// covers: INV-FINANCE-24
+func TestEngine_RoutineIncomeSubtotals(t *testing.T) {
+	bank := uuid.New()
+	feb := ym(2026, time.February)
+	in := reportEngineInput{
+		positions: []reportPosition{{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"}},
+		snapshots: []reportSnapshot{
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("1000")},
+			{positionID: bank, yearMonth: feb, amount: dec("1000")},
+		},
+		income: []reportIncome{
+			{yearMonth: feb, amount: dec("1000"), category: "salary", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("500"), category: "salary", regularity: "incidental", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("200"), category: "rental_income", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("50"), category: "rental_income", regularity: "incidental", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("100"), category: "pension", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("30"), category: "interest", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("10"), category: "interest", regularity: "incidental", ownershipType: "joint"},
+		},
+		currentMonth: feb,
+	}
+	ei := findMonth(t, generateMonthlyReports(in), feb).earnedIncome
+
+	// All-regularity totals include the incidental rows.
+	if !ei.total.Equal(dec("1890")) {
+		t.Errorf("total: got %s, want 1890 (all income)", ei.total)
+	}
+	// Routine subtotals exclude them.
+	for _, c := range []struct {
+		name      string
+		got, want decimal.Decimal
+	}{
+		{"totalRoutine", ei.totalRoutine, dec("1330")},  // 1000+200+100+30
+		{"rentalRoutine", ei.rentalRoutine, dec("200")}, // 50 incidental excluded
+		{"pensionRoutine", ei.pensionRoutine, dec("100")},
+		{"interestRoutine", ei.interestRoutine, dec("30")}, // 10 incidental excluded
+	} {
+		if !c.got.Equal(c.want) {
+			t.Errorf("%s: got %s, want %s", c.name, c.got, c.want)
+		}
+	}
+}
+
 // Multi-currency: a foreign holding is converted to the reporting currency at
 // the month's rate, and the rate is recorded in fx_rates_used.
 // covers: INV-FINANCE-15
