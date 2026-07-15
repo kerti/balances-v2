@@ -467,7 +467,7 @@ function FxRatesCard() {
   const canAdd = month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
 
   return (
-    <Card>
+    <Card data-testid="fx-rates-card">
       <CardHeader>
         <CardTitle className="text-base">{t("fx.title")}</CardTitle>
         <CardDescription>{t("fx.description")}</CardDescription>
