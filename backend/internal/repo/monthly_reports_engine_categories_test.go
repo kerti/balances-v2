@@ -38,6 +38,7 @@ func TestEngine_IncomeCategoriesAndReturnSubtypes(t *testing.T) {
 		"business_income":  "20",
 		"rental_income":    "30",
 		"pension":          "80",
+		"interest":         "90",
 		"gift":             "40",
 		"tax_refund":       "50",
 		"insurance_payout": "60",
@@ -60,13 +61,13 @@ func TestEngine_IncomeCategoriesAndReturnSubtypes(t *testing.T) {
 	ei := r.earnedIncome
 	if !ei.salary.Equal(dec("10")) || !ei.business.Equal(dec("20")) ||
 		!ei.rental.Equal(dec("30")) || !ei.pension.Equal(dec("80")) ||
-		!ei.gift.Equal(dec("40")) ||
+		!ei.interest.Equal(dec("90")) || !ei.gift.Equal(dec("40")) ||
 		!ei.taxRefund.Equal(dec("50")) || !ei.insurance.Equal(dec("60")) ||
 		!ei.other.Equal(dec("70")) {
 		t.Errorf("earned income per-category mismatch: %+v", ei)
 	}
-	if !ei.total.Equal(dec("360")) { // 10+20+30+80+40+50+60+70
-		t.Errorf("earned income total: got %s, want 360", ei.total)
+	if !ei.total.Equal(dec("450")) { // 10+20+30+80+90+40+50+60+70
+		t.Errorf("earned income total: got %s, want 450", ei.total)
 	}
 
 	if r.investmentReturn == nil {

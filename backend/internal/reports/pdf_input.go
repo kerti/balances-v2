@@ -112,10 +112,14 @@ func buildStats(row *db.MonthlyReport, positions []repo.PositionDetail, series [
 			continue
 		}
 		flowN++
-		// Passive *cash* income (Rental + Pension) excludes Investment Return —
-		// the projection already models that as the pool's own growth g, so
-		// counting it here too would double-count it (ADR-0048).
-		passiveCash := decOr(s.EarnedIncomeRental).Add(decOr(s.EarnedIncomePension))
+		// Passive *cash* income (Rental + Pension + Interest) excludes Investment
+		// Return — the projection already models that as the pool's own growth g,
+		// so counting it here too would double-count it (ADR-0048). Interest is
+		// bank/deposit interest that lands as external cash, not pool return, so
+		// it belongs here and carries no such overlap.
+		passiveCash := decOr(s.EarnedIncomeRental).
+			Add(decOr(s.EarnedIncomePension)).
+			Add(decOr(s.EarnedIncomeInterest))
 		incomeSum = incomeSum.Add(decOr(s.EarnedIncomeTotal))
 		expSum = expSum.Add(*s.DerivedLivingExpenses)
 		passiveCashSum = passiveCashSum.Add(passiveCash)

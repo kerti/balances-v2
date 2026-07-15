@@ -344,6 +344,7 @@ export type IncomeCategory =
   | "business_income"
   | "rental_income"
   | "pension"
+  | "interest"
   | "gift"
   | "tax_refund"
   | "insurance_payout"

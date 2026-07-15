@@ -170,6 +170,24 @@ func TestIncomeHandlers_Create(t *testing.T) {
 		}
 	})
 
+	t.Run("201 interest category accepted", func(t *testing.T) {
+		// Interest income category (ADR-0048, #412 stats epic) — bank/deposit
+		// interest, a passive *cash* stream.
+		rec := h.do(t, "POST", "/income", map[string]any{
+			"date":           "2026-05-25",
+			"amount":         "125000",
+			"currency":       "IDR",
+			"category":       "interest",
+			"ownership_type": "joint",
+			"regularity":     "routine",
+		})
+		requireStatus(t, rec, http.StatusCreated)
+		body := decodeBody[db.Income](t, rec)
+		if body.Category != "interest" {
+			t.Errorf("category: got %q, want interest", body.Category)
+		}
+	})
+
 	t.Run("400 invalid json", func(t *testing.T) {
 		rec := h.do(t, "POST", "/income", "{not-json")
 		requireStatus(t, rec, http.StatusBadRequest)

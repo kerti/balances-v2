@@ -215,15 +215,16 @@ business income, rental income, gifts, refunds, payouts. Distinct from Investmen
 
 Each Income event has: `date`, `amount`, `currency`, `category` (closed enum), `description` (free
 text, optional), and `ownership` (`SoleOwner` or `Joint`). Categories: **Salary**,
-**BusinessIncome**, **RentalIncome**, **Pension**, **Gift**, **TaxRefund**, **InsurancePayout**,
-**Other**. `description` provides sub-categorisation within a category — e.g., base monthly pay and
+**BusinessIncome**, **RentalIncome**, **Pension**, **Interest**, **Gift**, **TaxRefund**,
+**InsurancePayout**, **Other**. `Interest` is bank/deposit interest received as cash (distinct from
+Investment Return). `description` provides sub-categorisation within a category — e.g., base monthly pay and
 travel per-diem are both `Salary`, distinguished by description in drill-downs but rolled up at the
 category level for top-line reporting.
 
 **Active vs Passive income**: A **category-derived** partition over Income, used by the financial
 statistics ([[adr-0048]]) — it is *not* a stored per-event attribute. **Active income** (earned by
 labour): `Salary` + `BusinessIncome`. **Passive income** (received without ongoing labour):
-`RentalIncome` + `Pension`. The remaining categories (`Gift` / `TaxRefund` / `InsurancePayout` /
+`RentalIncome` + `Pension` + `Interest`. The remaining categories (`Gift` / `TaxRefund` / `InsurancePayout` /
 `Other`) are **neither** — irregular, one-off, excluded from both. Investment returns are passive in
 spirit but are *not* an Income category (they live in **Investment Return**); whether they count as
 "passive" depends on the metric (see **Passive income (two scopes)** below). A per-event active/passive
@@ -268,9 +269,10 @@ trailing-12 average (converted annual→monthly in the projection).
 
 **Passive income (two scopes)**: The word "passive income" resolves to *different sets* depending on
 the metric, and both are named to keep them apart:
-- **Passive cash income** = `RentalIncome` + `Pension`. Real cash that keeps arriving after active
-  income stops — used as the draw-offset in Fund Resilience. Excludes Investment Return (which the
-  projection already models as the pool's own growth, so counting it here would double-count).
+- **Passive cash income** = `RentalIncome` + `Pension` + `Interest`. Real cash that keeps arriving
+  after active income stops — used as the draw-offset in Fund Resilience. `Interest` is external bank
+  cash, not pool return, so it belongs here cleanly. Excludes Investment Return (which the projection
+  already models as the pool's own growth, so counting it here would double-count).
 - **Total passive income** = passive cash income + **Investment Return**. The Passive-Income Ratio
   numerator. Because it includes Investment Return (unrealised marks included), it **swings with the
   market and can go negative** in a bad year — a deliberate, labelled property.
