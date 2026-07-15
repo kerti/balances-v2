@@ -53,7 +53,30 @@ CREATE UNIQUE INDEX inflation_rates_household_year_month_idx
 ALTER TABLE public.households
     ADD COLUMN assumed_annual_inflation numeric(9,4) NOT NULL DEFAULT 3.5;
 
+-- Routine-only earned-income subtotals for the statistics panel (ADR-0048
+-- amendment): the ratios judge the household against income it relies on, so
+-- each stat income term is filtered to regularity='routine'. The engine buckets
+-- income by category and discards regularity, and the ratios cannot recompute
+-- from raw income (native-currency vs these FX-converted columns), so the routine
+-- split is materialized here alongside the category breakdown. total_routine
+-- feeds Cash-Flow; rental+pension+interest_routine feed the passive-cash scope.
+-- Additive numeric columns — no backup-format bump (same rule as the category
+-- columns above).
+ALTER TABLE public.monthly_reports
+    ADD COLUMN earned_income_total_routine numeric(20,4);
+ALTER TABLE public.monthly_reports
+    ADD COLUMN earned_income_rental_routine numeric(20,4);
+ALTER TABLE public.monthly_reports
+    ADD COLUMN earned_income_pension_routine numeric(20,4);
+ALTER TABLE public.monthly_reports
+    ADD COLUMN earned_income_interest_routine numeric(20,4);
+
 -- +goose Down
+ALTER TABLE public.monthly_reports DROP COLUMN earned_income_interest_routine;
+ALTER TABLE public.monthly_reports DROP COLUMN earned_income_pension_routine;
+ALTER TABLE public.monthly_reports DROP COLUMN earned_income_rental_routine;
+ALTER TABLE public.monthly_reports DROP COLUMN earned_income_total_routine;
+
 ALTER TABLE public.households DROP COLUMN assumed_annual_inflation;
 DROP TABLE public.inflation_rates;
 

@@ -15,15 +15,22 @@ import (
 // flowMonth builds a report row carrying income-statement flows (a non-baseline
 // month). NwInvestments is the reported stock; the *Total flows drive the
 // trailing-12 averages.
+// flowMonth's income is treated as fully routine (the routine subtotals mirror
+// the totals) — the statistics read the *_routine columns (ADR-0048 amendment),
+// so a fixture with no incidental income sets them equal. TestBuildStats_
+// IncidentalIncomeExcluded exercises the routine < total case.
 func flowMonth(m time.Time, income, expenses, rental, pension, invReturn, nwInv string) db.MonthlyReport {
 	return db.MonthlyReport{
-		YearMonth:             m,
-		NwInvestments:         dec(nwInv),
-		EarnedIncomeTotal:     decp(income),
-		EarnedIncomeRental:    decp(rental),
-		EarnedIncomePension:   decp(pension),
-		InvestmentReturnTotal: decp(invReturn),
-		DerivedLivingExpenses: decp(expenses),
+		YearMonth:                  m,
+		NwInvestments:              dec(nwInv),
+		EarnedIncomeTotal:          decp(income),
+		EarnedIncomeRental:         decp(rental),
+		EarnedIncomePension:        decp(pension),
+		InvestmentReturnTotal:      decp(invReturn),
+		DerivedLivingExpenses:      decp(expenses),
+		EarnedIncomeTotalRoutine:   decp(income),
+		EarnedIncomeRentalRoutine:  decp(rental),
+		EarnedIncomePensionRoutine: decp(pension),
 	}
 }
 
@@ -202,11 +209,40 @@ func TestBuildStats_InterestCountsAsPassiveCash(t *testing.T) {
 
 	withInterest := noOffset[0]
 	withInterest.EarnedIncomeInterest = decp("50")
+	withInterest.EarnedIncomeInterestRoutine = decp("50") // routine passive cash — the stats read the routine column
 	series := []db.MonthlyReport{withInterest}
 	ext := buildStats(&series[0], nil, series, nil, decimal.Zero).Resilience
 	if ext.Months != 7 {
 		t.Errorf("interest-offset runway: got %+v, want 7 months (interest extends it)", ext)
 	}
+}
+
+// Incidental income is excluded from every statistics income term: the ratios
+// read the routine subtotals, so a windfall inflates the all-regularity totals
+// but not the ratios (ADR-0048 amendment).
+// covers: INV-FINANCE-19, INV-FINANCE-24
+func TestBuildStats_IncidentalIncomeExcluded(t *testing.T) {
+	m := ym(2026, time.June)
+	row := db.MonthlyReport{
+		YearMonth:                  m,
+		NwInvestments:              dec("10000"),
+		EarnedIncomeTotal:          decp("2000"), // 1000 routine + 1000 windfall
+		EarnedIncomeTotalRoutine:   decp("1000"),
+		EarnedIncomeRental:         decp("200"), // all incidental
+		EarnedIncomeRentalRoutine:  decp("0"),
+		EarnedIncomePension:        decp("100"),
+		EarnedIncomePensionRoutine: decp("100"), // routine
+		InvestmentReturnTotal:      decp("0"),
+		DerivedLivingExpenses:      decp("600"),
+	}
+	series := []db.MonthlyReport{row}
+	st := buildStats(&series[0], nil, series, nil, decimal.Zero)
+
+	// Cash-Flow uses routine income (1000−600)/1000 = 40%, not (2000−600)/2000 = 70%.
+	assertPct(t, "cash-flow", st.CashFlow, 40)
+	// Passive-Income uses routine passive cash: (rentalRoutine 0 + pensionRoutine
+	// 100 + IR 0) / 600 = 16.67%, not (200+100)/600 = 50%.
+	assertPct(t, "passive-income", st.PassiveIncome, 100.0/600*100)
 }
 
 func TestBuildStats_TrailingWindowExcludesOlderMonths(t *testing.T) {

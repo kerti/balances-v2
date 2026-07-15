@@ -50,8 +50,13 @@
   },
   "regularity": {
     "label": "Regularity",
+    "question": "Can you count on this income regularly?",
     "routine": "Routine",
     "incidental": "Incidental",
+    "routineOption": "Yes, it's regular",
+    "routineHint": "Pay, pension, rent, steady gig work",
+    "incidentalOption": "No, it's a one-off",
+    "incidentalHint": "Bonus, severance, gift, tax refund, insurance payout",
     "routineRowLabel": "Routine income",
     "incidentalRowLabel": "Incidental income"
   },

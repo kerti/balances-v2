@@ -297,12 +297,17 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		EarnedIncomeTaxRefund: ptr(rep.earnedIncome.taxRefund),
 		EarnedIncomeInsurance: ptr(rep.earnedIncome.insurance),
 		EarnedIncomeOther:     ptr(rep.earnedIncome.other),
-		AssetValueChange:      rep.assetValueChange, // nil on baseline
-		DerivedLivingExpenses: rep.livingExpenses,   // nil on baseline
-		UserBreakdowns:        ub,
-		StalePositions:        stale,
-		FxRatesUsed:           fxUsed,
-		MissingFx:             missingFx,
+
+		EarnedIncomeTotalRoutine:    ptr(rep.earnedIncome.totalRoutine),
+		EarnedIncomeRentalRoutine:   ptr(rep.earnedIncome.rentalRoutine),
+		EarnedIncomePensionRoutine:  ptr(rep.earnedIncome.pensionRoutine),
+		EarnedIncomeInterestRoutine: ptr(rep.earnedIncome.interestRoutine),
+		AssetValueChange:            rep.assetValueChange, // nil on baseline
+		DerivedLivingExpenses:       rep.livingExpenses,   // nil on baseline
+		UserBreakdowns:              ub,
+		StalePositions:              stale,
+		FxRatesUsed:                 fxUsed,
+		MissingFx:                   missingFx,
 	}
 	if rep.investmentReturn != nil { // suppressed on the baseline month
 		params.InvestmentReturnTotal = ptr(rep.investmentReturn.total)
@@ -489,6 +494,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, inc := range incomes {
 		in.income = append(in.income, reportIncome{
 			yearMonth: inc.Date, amount: inc.Amount, currency: inc.Currency, category: inc.Category,
+			regularity:    inc.Regularity,
 			ownershipType: inc.OwnershipType, soleOwnerID: inc.SoleOwnerUserID,
 		})
 	}

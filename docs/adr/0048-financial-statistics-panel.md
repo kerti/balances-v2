@@ -213,3 +213,91 @@ setting) touch the schema.
   `GET /api/reports/{yearMonth}/pdf` render path; only inputs touch the schema.
 - New QA invariants are warranted (e.g. the passive-income double-count guard: resilience draw-offset
   excludes Investment Return; the "indefinite" detection; undefined-state em-dash rendering).
+
+## Amendment — 2026-07-15: statistics compute on *routine* income only
+
+Slice 4 shipped reading `EarnedIncome*` / `InvestmentReturnTotal` from the materialized report,
+which bucket income by **category only** — so the panel averages **all** income, routine and
+incidental alike. A one-off (severance, THR, insurance payout, a windfall gift) therefore flatters
+every income-based ratio and, worse, is projected by **Fund Resilience as a recurring draw-offset it
+will never actually pay**. That is a correctness bug in the survival projection, not a preference.
+
+### Decision
+
+Every income-derived statistics input is filtered to `regularity = 'routine'`:
+
+- **Cash-Flow** `Income` = routine `EarnedIncomeTotal`.
+- **Passive-Income** and **Fund Resilience** passive cash = routine `Rental + Pension + Interest`.
+- **`LivingExpenses` is unchanged (all-income)** — spending is observed reality; a spent windfall was
+  still spent. Only the *income baseline* the ratios judge against becomes "income you rely on". This
+  asymmetry is deliberate: expenses are observed, the income baseline is chosen.
+- `InvestmentReturn` and all **stocks** (net worth, investments, cash) are untouched — no regularity
+  dimension. Instant-Liquidity has no income term and is unaffected.
+
+Applies to **all four ratios**, not resilience alone, so "income" means one thing across the panel.
+
+### Routine vs incidental is the lever — no global toggle
+
+Considered a per-household "include incidental income" setting so gig/informal-income households
+could opt one-off income in. **Rejected.** The `regularity` flag already on every income row *is*
+that lever, at finer grain than a global switch, and the two would fight — in an "include-all" mode
+the per-row tag means nothing. Instead we **sharpen what the flag means**:
+
+> **Routine** = income you *rely on* for planning, even if lumpy or variable (a freelancer's project
+> fees, commission, irregular gig pay). **Incidental** = a windfall you should *not* build survival
+> on (severance, inheritance, one-off gift, insurance payout, a bonus you won't bank on).
+
+Under that definition one lever serves both households the toggle was meant for: the gig worker tags
+relied-upon income **routine** (counted); the conservative planner leaves windfalls **incidental**
+(excluded). A global setting would be redundant, add density for a non-technical audience, and
+contradict this ADR's no-new-per-household-settings-in-v1 stance. A full docs site is likewise the
+wrong tool — a non-technical member won't leave the app to read a manual for a two-option field.
+
+### Legibility: make the choice self-evident at the point of entry
+
+Because `regularity` is now load-bearing for a non-technical audience, the income form earns its keep
+without new screens:
+
+1. **Reframe the control as the question, not the jargon** — "Routine / Incidental" becomes *"Can
+   you count on this income regularly?"* → **Yes, it's regular** / **No, it's a one-off**, each with a
+   one-line example set (en-GB / id-ID).
+2. **Smart default from the chosen category** — Salary / Pension / Rental / Interest / Business →
+   default **routine**; Gift / TaxRefund / InsurancePayout → default **incidental**; user can flip.
+   The category already encodes most of the answer, so the common case needs no decision and the
+   sharpened definition only bites on the genuine edge (lumpy-but-relied-upon gig income).
+3. **Teach at the point of consumption** — the Fund-Resilience / Passive-Income explanatory strings
+   gain a clause: *"Counts income you marked as regular — one-offs like bonuses or severance are left
+   out."* The number and the entry form then teach the same rule.
+
+An on-control ⓘ popover is a deferred fast-follow, only if usage testing shows confusion.
+
+### Mechanism: materialize routine subtotals
+
+`regularity` is discarded when the engine buckets income by category, and the ratios cannot recompute
+it from the raw `income` table because those amounts are native-currency while the report columns are
+FX-converted — recomputing FX outside the engine reimplements it (against INV-FINANCE-18). So the
+routine split is **materialized like the category breakdown already is**:
+
+- `reportIncome` carries `regularity`; `loadEngineInput` selects it.
+- `earnedIncomeAmounts` accumulates routine subtotals alongside the category totals.
+- Additive migration: `earned_income_total_routine`, `earned_income_rental_routine`,
+  `earned_income_pension_routine`, `earned_income_interest_routine` on `monthly_reports`.
+- `buildStats` reads the `_routine` columns for the income terms above.
+
+This revises the "no new report columns" line only for **inputs** — exactly as the Pension and
+Interest slices already added category columns; the *ratios* themselves stay render-time-derived and
+unmaterialized. No backup-format bump (additive numeric columns, same rule as the category columns).
+
+### Invariants
+
+- **INV-FINANCE-19** amended — Cash-Flow / Passive-Income income terms are the trailing-12 average of
+  **routine** income; LivingExpenses stays all-income.
+- **INV-FINANCE-21** amended — the Fund Resilience draw-offset is **routine** passive cash income.
+- **INV-FINANCE-24** (new) — `incidental` income is excluded from every statistics income term while
+  still counting in full toward net worth, the income statement, and LivingExpenses.
+
+### Slice
+
+7. **Routine-aware statistics** — engine routine subtotals + additive migration + `buildStats` read +
+   the three legibility changes (reframed control, category-driven default, panel caption) + i18n.
+   Existing reports regenerate on next read (staleness watermark); no data migration.

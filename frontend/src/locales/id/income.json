@@ -50,8 +50,13 @@
   },
   "regularity": {
     "label": "Keteraturan",
+    "question": "Apakah pemasukan ini bisa Anda andalkan secara rutin?",
     "routine": "Rutin",
     "incidental": "Insidental",
+    "routineOption": "Ya, ini rutin",
+    "routineHint": "Gaji, pensiun, sewa, pekerjaan lepas yang tetap",
+    "incidentalOption": "Tidak, ini sekali waktu",
+    "incidentalHint": "Bonus, pesangon, hadiah, pengembalian pajak, klaim asuransi",
     "routineRowLabel": "Pemasukan rutin",
     "incidentalRowLabel": "Pemasukan insidental"
   },

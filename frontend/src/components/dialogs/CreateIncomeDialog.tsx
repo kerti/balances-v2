@@ -39,6 +39,26 @@ type FormState = {
   ownership_type: "sole" | "joint";
   sole_owner_user_id: string | null;
   regularity: Regularity;
+  // True once the user has hand-picked a regularity. Guards the smart default
+  // (see categoryDefaultRegularity) from clobbering a deliberate choice when
+  // the category is changed afterwards.
+  regularityTouched: boolean;
+};
+
+// The category answers "can you count on this regularly?" for the common case,
+// so we pre-select the matching regularity when a category is chosen. The user
+// can always flip it; the genuine edge (lumpy-but-relied-upon gig income) is
+// where they will.
+const categoryDefaultRegularity: Record<IncomeCategory, Regularity> = {
+  salary: "routine",
+  business_income: "routine",
+  rental_income: "routine",
+  pension: "routine",
+  interest: "routine",
+  gift: "incidental",
+  tax_refund: "incidental",
+  insurance_payout: "incidental",
+  other: "routine",
 };
 
 export type DuplicateSeed = {
@@ -75,6 +95,7 @@ function initialForm(seed?: DuplicateSeed): FormState {
       sole_owner_user_id: null,
       // Default routine: salary-dominant case (M4.5 grilling lineage).
       regularity: "routine",
+      regularityTouched: false,
     };
   }
   return {
@@ -86,6 +107,9 @@ function initialForm(seed?: DuplicateSeed): FormState {
     ownership_type: seed.ownership_type,
     sole_owner_user_id: seed.sole_owner_user_id,
     regularity: seed.regularity,
+    // A duplicated row's regularity was a deliberate choice — treat it as
+    // touched so changing the category here won't overwrite it.
+    regularityTouched: true,
   };
 }
 
@@ -183,12 +207,18 @@ export function CreateIncomeDialog({
                 required
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={form.category}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const category = e.target.value as IncomeCategory;
                   setForm({
                     ...form,
-                    category: e.target.value as IncomeCategory,
-                  })
-                }
+                    category,
+                    // Smart default: pre-select regularity from the category
+                    // unless the user has already hand-picked one.
+                    regularity: form.regularityTouched
+                      ? form.regularity
+                      : categoryDefaultRegularity[category],
+                  });
+                }}
               >
                 <option value="" disabled>
                   {t("income:categoryOptions.placeholder")}
@@ -250,27 +280,43 @@ export function CreateIncomeDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label>{t("income:regularity.label")}</Label>
-            <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-2">
+            <Label>{t("income:regularity.question")}</Label>
+            <div className="grid gap-2 text-sm">
+              <label className="flex items-start gap-2">
                 <input
                   type="radio"
                   name="regularity"
                   value="routine"
+                  className="mt-0.5"
                   checked={form.regularity === "routine"}
-                  onChange={() => setForm({ ...form, regularity: "routine" })}
+                  onChange={() =>
+                    setForm({ ...form, regularity: "routine", regularityTouched: true })
+                  }
                 />
-                {t("income:regularity.routine")}
+                <span>
+                  <span className="font-medium">{t("income:regularity.routineOption")}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t("income:regularity.routineHint")}
+                  </span>
+                </span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className="flex items-start gap-2">
                 <input
                   type="radio"
                   name="regularity"
                   value="incidental"
+                  className="mt-0.5"
                   checked={form.regularity === "incidental"}
-                  onChange={() => setForm({ ...form, regularity: "incidental" })}
+                  onChange={() =>
+                    setForm({ ...form, regularity: "incidental", regularityTouched: true })
+                  }
                 />
-                {t("income:regularity.incidental")}
+                <span>
+                  <span className="font-medium">{t("income:regularity.incidentalOption")}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t("income:regularity.incidentalHint")}
+                  </span>
+                </span>
               </label>
             </div>
           </div>

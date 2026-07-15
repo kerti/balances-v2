@@ -88,6 +88,7 @@ type reportIncome struct {
 	amount        decimal.Decimal
 	currency      string
 	category      string
+	regularity    string // "routine" | "incidental" — feeds the statistics routine subtotals
 	ownershipType string
 	soleOwnerID   *uuid.UUID
 }
@@ -133,10 +134,20 @@ type userBreakdown struct {
 
 type earnedIncomeAmounts struct {
 	total, salary, business, rental, pension, interest, gift, taxRefund, insurance, other decimal.Decimal
+	// Routine-only subtotals for the statistics panel (ADR-0048 amendment):
+	// income the household relies on (regularity="routine"). total feeds the
+	// Cash-Flow ratio; rental+pension+interest feed the passive-cash scope
+	// (Passive-Income + Fund Resilience draw-offset). Incidental income lands in
+	// the fields above but not these.
+	totalRoutine, rentalRoutine, pensionRoutine, interestRoutine decimal.Decimal
 }
 
-func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
+func (e *earnedIncomeAmounts) add(category, regularity string, v decimal.Decimal) {
 	e.total = e.total.Add(v)
+	routine := regularity == "routine"
+	if routine {
+		e.totalRoutine = e.totalRoutine.Add(v)
+	}
 	switch category {
 	case "salary":
 		e.salary = e.salary.Add(v)
@@ -144,10 +155,19 @@ func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
 		e.business = e.business.Add(v)
 	case "rental_income":
 		e.rental = e.rental.Add(v)
+		if routine {
+			e.rentalRoutine = e.rentalRoutine.Add(v)
+		}
 	case "pension":
 		e.pension = e.pension.Add(v)
+		if routine {
+			e.pensionRoutine = e.pensionRoutine.Add(v)
+		}
 	case "interest":
 		e.interest = e.interest.Add(v)
+		if routine {
+			e.interestRoutine = e.interestRoutine.Add(v)
+		}
 	case "gift":
 		e.gift = e.gift.Add(v)
 	case "tax_refund":
@@ -482,7 +502,7 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				continue
 			}
 			m.recordRate(fx, inc.currency, rate)
-			m.earnedIncome.add(inc.category, conv)
+			m.earnedIncome.add(inc.category, inc.regularity, conv)
 			key := ownerKey(inc.ownershipType, inc.soleOwnerID)
 			b := m.userBreakdowns[key]
 			b.EarnedIncome = b.EarnedIncome.Add(conv)
