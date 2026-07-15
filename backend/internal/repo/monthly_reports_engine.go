@@ -544,7 +544,11 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				now, okNow := fx.carried(byPos[p.id], idx)
 				prev, okPrev := fx.carried(byPos[p.id], idx-1)
 				if !okNow || !okPrev {
-					continue // currency unconvertible — flagged in the NW pass
+					// No prior value to diff against: the position is not yet born
+					// (its first snapshot is an acquisition, not a return —
+					// INV-FINANCE-23) or its currency is unconvertible (flagged in
+					// the NW pass).
+					continue
 				}
 				cf := cashByPos[p.id][idx]
 				r := now.Sub(prev).Add(cf.out).Sub(cf.in)
@@ -660,13 +664,19 @@ func generatePositionDetail(in reportEngineInput, targetMonth time.Time) []Posit
 	return out
 }
 
-// carried converts the most recent snapshot with month <= idx; (0,true) when
-// none exists (contributes nothing), (0,false) when one exists but its currency
-// has no rate at idx.
+// carried converts the most recent snapshot with month <= idx. The bool is
+// "has a carried value": false when none exists yet (before the position's
+// first snapshot) or when one exists but its currency has no rate at idx.
+// Both income-statement callers difference two carried values, so a false on
+// either side skips the position — a position's first snapshot is an
+// acquisition, not a revaluation/return, and must not diff against a phantom
+// zero prior value (INV-FINANCE-23). The net-worth pass does not use this; it
+// reads latestAtOrBefore directly, so an absent snapshot simply omits the
+// position from the sum (INV-FINANCE-04).
 func (fx fxConverter) carried(ss []monthAmount, idx int) (decimal.Decimal, bool) {
 	c, ok := latestAtOrBefore(ss, idx)
 	if !ok {
-		return decimal.Zero, true
+		return decimal.Zero, false
 	}
 	v, _, cok := fx.convert(c.amount, c.currency, idx)
 	return v, cok
