@@ -33,6 +33,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # init and analyze are pinned in lockstep in codeql.yml — a version
+      # mismatch between them is a hard CI failure, so they must bump together.
+      codeql-action:
+        patterns:
+          - "github/codeql-action/*"
 
   - package-ecosystem: docker
     directory: /
