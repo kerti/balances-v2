@@ -283,6 +283,7 @@ type MonthlyReport struct {
 	EarnedIncomeRentalRoutine   *decimal.Decimal   `json:"earned_income_rental_routine"`
 	EarnedIncomePensionRoutine  *decimal.Decimal   `json:"earned_income_pension_routine"`
 	EarnedIncomeInterestRoutine *decimal.Decimal   `json:"earned_income_interest_routine"`
+	EngineVersion               *int32             `json:"engine_version"`
 }
 
 type MutualFundDetail struct {

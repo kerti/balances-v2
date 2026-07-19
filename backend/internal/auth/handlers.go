@@ -860,9 +860,19 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 	}
 	// assumed_annual_inflation is an annual percentage; it may be negative
 	// (deflation) but is bounded to catch fat-finger entry. -100 is the floor
-	// (prices cannot fall more than 100% in a year).
-	if req.AssumedAnnualInflation == nil ||
-		req.AssumedAnnualInflation.LessThanOrEqual(decimal.NewFromInt(-100)) ||
+	// (prices cannot fall more than 100% in a year). The field postdates the
+	// endpoint (slice 3), so a body omitting it keeps the current value rather
+	// than 400-ing older clients out of renaming the household.
+	if req.AssumedAnnualInflation == nil {
+		hh, err := h.q.GetHouseholdByID(r.Context(), user.HouseholdID)
+		if err != nil {
+			slog.Error("get household for settings default", "err", err)
+			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+			return
+		}
+		req.AssumedAnnualInflation = &hh.AssumedAnnualInflation
+	}
+	if req.AssumedAnnualInflation.LessThanOrEqual(decimal.NewFromInt(-100)) ||
 		req.AssumedAnnualInflation.GreaterThan(decimal.NewFromInt(1000)) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
 			"field": "assumed_annual_inflation",

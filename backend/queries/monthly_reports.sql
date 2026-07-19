@@ -40,7 +40,8 @@ INSERT INTO monthly_reports (
     user_breakdowns, stale_positions, fx_rates_used, missing_fx,
     earned_income_interest,
     earned_income_total_routine, earned_income_rental_routine,
-    earned_income_pension_routine, earned_income_interest_routine
+    earned_income_pension_routine, earned_income_interest_routine,
+    engine_version
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -49,7 +50,8 @@ INSERT INTO monthly_reports (
     $23, $24,
     $25, $26, $27, $28,
     $29,
-    $30, $31, $32, $33
+    $30, $31, $32, $33,
+    $34
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -83,7 +85,8 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     earned_income_total_routine    = EXCLUDED.earned_income_total_routine,
     earned_income_rental_routine   = EXCLUDED.earned_income_rental_routine,
     earned_income_pension_routine  = EXCLUDED.earned_income_pension_routine,
-    earned_income_interest_routine = EXCLUDED.earned_income_interest_routine
+    earned_income_interest_routine = EXCLUDED.earned_income_interest_routine,
+    engine_version                 = EXCLUDED.engine_version
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds

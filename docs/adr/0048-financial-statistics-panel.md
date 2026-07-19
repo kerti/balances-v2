@@ -300,4 +300,7 @@ unmaterialized. No backup-format bump (additive numeric columns, same rule as th
 
 7. **Routine-aware statistics** — engine routine subtotals + additive migration + `buildStats` read +
    the three legibility changes (reframed control, category-driven default, panel caption) + i18n.
-   Existing reports regenerate on next read (staleness watermark); no data migration.
+   Existing reports regenerate on next read; no data migration. The staleness watermark alone cannot
+   see this (pure-DDL migration, no input row changes), so each report row carries an
+   `engine_version` stamp and `needsRegen` forces regeneration on mismatch — pre-migration rows read
+   as version-NULL and regenerate (INV-STALENESS-04).

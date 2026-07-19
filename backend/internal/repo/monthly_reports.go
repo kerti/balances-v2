@@ -20,6 +20,13 @@ import (
 // columns that the engine always computes a value for.
 func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 
+// reportEngineVersion is stamped into every materialized report row. Bump it on
+// any engine-logic or report-schema change whose output differs for unchanged
+// inputs — the data-driven watermark can't see those, so needsRegen also
+// regenerates when a row's stamp doesn't match. Rows from before the stamp
+// existed read as NULL and always regenerate.
+const reportEngineVersion int32 = 1
+
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
 // the inputs are newer than what's materialized, then return the cached rows.
@@ -190,15 +197,19 @@ func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) err
 }
 
 // needsRegen is the coarse-but-correct slice-1 staleness check: regenerate the
-// whole household when the materialized month set differs from the engine's or
-// any materialized row predates the input watermark (ADR-0006 conservative
-// rule — over-regenerates cheaply for one household, never serves stale).
+// whole household when the materialized month set differs from the engine's,
+// any materialized row predates the input watermark, or any row was written by
+// a different engine version (ADR-0006 conservative rule — over-regenerates
+// cheaply for one household, never serves stale).
 func needsRegen(reports []monthlyReportData, existing []db.MonthlyReport, watermark pgtype.Timestamptz) bool {
 	if len(existing) != len(reports) {
 		return true
 	}
 	have := make(map[int]pgtype.Timestamptz, len(existing))
 	for _, e := range existing {
+		if e.EngineVersion == nil || *e.EngineVersion != reportEngineVersion {
+			return true
+		}
 		have[monthIndex(e.YearMonth)] = e.GeneratedAt
 	}
 	for _, rep := range reports {
@@ -309,6 +320,8 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		FxRatesUsed:                 fxUsed,
 		MissingFx:                   missingFx,
 	}
+	ev := reportEngineVersion
+	params.EngineVersion = &ev
 	if rep.investmentReturn != nil { // suppressed on the baseline month
 		params.InvestmentReturnTotal = ptr(rep.investmentReturn.total)
 		params.InvestmentReturnStock = ptr(rep.investmentReturn.stock)
