@@ -23,6 +23,11 @@ import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
 import { SUPPORTED_CARRYOVER_DATE_MODES, type CarryoverDateMode } from "@/lib/dateLimits";
 import { useFxRates, useCreateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
+import {
+  useInflationRates,
+  useCreateInflationRate,
+  useDeleteInflationRate,
+} from "@/hooks/useInflationRates";
 import { formatYearMonth } from "@/lib/format";
 import { InviteForm } from "@/components/common/InviteForm";
 import { ReactivationCard } from "@/components/common/ReactivationCard";
@@ -46,6 +51,7 @@ export function SettingsScreen() {
       display_name: me.household_display_name,
       reporting_currency: reportingCurrency,
       multi_currency_enabled: me.multi_currency_enabled,
+      assumed_annual_inflation: me.assumed_annual_inflation,
     });
 
   const toggleMulti = (enabled: boolean) =>
@@ -53,6 +59,7 @@ export function SettingsScreen() {
       display_name: me.household_display_name,
       reporting_currency: me.reporting_currency,
       multi_currency_enabled: enabled,
+      assumed_annual_inflation: me.assumed_annual_inflation,
     });
 
   return (
@@ -118,6 +125,8 @@ export function SettingsScreen() {
       </Card>
 
       {me.multi_currency_enabled && <FxRatesCard />}
+
+      <InflationCard />
 
       <InviteForm />
 
@@ -210,6 +219,7 @@ function HouseholdNameCard() {
         display_name: trimmed,
         reporting_currency: me.reporting_currency,
         multi_currency_enabled: me.multi_currency_enabled,
+        assumed_annual_inflation: me.assumed_annual_inflation,
       },
       { onSuccess: () => setDraft(null) },
     );
@@ -457,7 +467,7 @@ function FxRatesCard() {
   const canAdd = month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
 
   return (
-    <Card>
+    <Card data-testid="fx-rates-card">
       <CardHeader>
         <CardTitle className="text-base">{t("fx.title")}</CardTitle>
         <CardDescription>{t("fx.description")}</CardDescription>
@@ -539,6 +549,154 @@ function FxRatesCard() {
             </TableBody>
           </Table>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// InflationCard holds the assumed-annual-inflation setting (the Fund Resilience
+// fallback) plus the manual monthly inflation table (ADR-0048). Unlike FX it is
+// always shown — inflation is not gated by the multi-currency toggle — and its
+// rates are annualized (YoY) percentages that may be negative (deflation).
+function InflationCard() {
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+  const { data: rates, isPending } = useInflationRates();
+  const createRate = useCreateInflationRate();
+  const deleteRate = useDeleteInflationRate();
+
+  const [assumed, setAssumed] = useState<string | null>(null);
+  const [month, setMonth] = useState("");
+  const [rate, setRate] = useState("");
+
+  if (!me) return null;
+
+  const assumedValue = assumed ?? me.assumed_annual_inflation;
+  const assumedDirty =
+    assumedValue.trim() !== me.assumed_annual_inflation && assumedValue.trim() !== "";
+
+  const saveAssumed = () =>
+    updateSettings.mutate(
+      {
+        display_name: me.household_display_name,
+        reporting_currency: me.reporting_currency,
+        multi_currency_enabled: me.multi_currency_enabled,
+        assumed_annual_inflation: assumedValue.trim(),
+      },
+      { onSuccess: () => setAssumed(null) },
+    );
+
+  const add = () => {
+    createRate.mutate(
+      { year_month: month, rate },
+      {
+        onSuccess: () => {
+          setMonth("");
+          setRate("");
+        },
+      },
+    );
+  };
+
+  // A rate may be negative (deflation) or zero; only require a parseable number.
+  const canAdd = month !== "" && rate.trim() !== "" && !Number.isNaN(Number(rate));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">{t("inflation.title")}</CardTitle>
+        <CardDescription>{t("inflation.description")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="flex items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
+            <Input
+              id="assumed-inflation"
+              inputMode="decimal"
+              className="w-28"
+              value={assumedValue}
+              onChange={(e) => setAssumed(e.target.value)}
+            />
+          </div>
+          <Button
+            variant="outline"
+            onClick={saveAssumed}
+            disabled={updateSettings.isPending || !assumedDirty}
+          >
+            {t("common:save")}
+          </Button>
+        </div>
+
+        {updateSettings.isError && (
+          <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
+        )}
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label htmlFor="inflation-month">{t("inflation.month")}</Label>
+              <Input
+                id="inflation-month"
+                type="month"
+                className="w-40"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="inflation-rate">{t("inflation.rate")}</Label>
+              <Input
+                id="inflation-rate"
+                inputMode="decimal"
+                className="w-36"
+                // Example numeric rate; not translatable copy.
+                placeholder={"3.5"}
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+              />
+            </div>
+            <Button onClick={add} disabled={!canAdd || createRate.isPending}>
+              {t("inflation.addRate")}
+            </Button>
+          </div>
+
+          {createRate.isError && (
+            <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
+          )}
+
+          {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
+
+          {rates && rates.length === 0 && (
+            <p className="text-sm text-muted-foreground">{t("inflation.empty")}</p>
+          )}
+
+          {rates && rates.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("inflation.month")}</TableHead>
+                  <TableHead>{t("inflation.rate")}</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rates.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{formatYearMonth(r.year_month)}</TableCell>
+                    <TableCell className="tabular-nums">{r.rate}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
+                        {t("common:delete")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -85,15 +85,16 @@ type GoldDetail struct {
 }
 
 type Household struct {
-	ID                   uuid.UUID          `json:"id"`
-	DisplayName          string             `json:"display_name"`
-	ReportingCurrency    string             `json:"reporting_currency"`
-	CreatedBy            *uuid.UUID         `json:"created_by"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedBy            *uuid.UUID         `json:"updated_by"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
-	DeletedAt            pgtype.Timestamptz `json:"deleted_at"`
-	MultiCurrencyEnabled bool               `json:"multi_currency_enabled"`
+	ID                     uuid.UUID          `json:"id"`
+	DisplayName            string             `json:"display_name"`
+	ReportingCurrency      string             `json:"reporting_currency"`
+	CreatedBy              *uuid.UUID         `json:"created_by"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedBy              *uuid.UUID         `json:"updated_by"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt              pgtype.Timestamptz `json:"deleted_at"`
+	MultiCurrencyEnabled   bool               `json:"multi_currency_enabled"`
+	AssumedAnnualInflation decimal.Decimal    `json:"assumed_annual_inflation"`
 }
 
 type HouseholdInvitation struct {
@@ -123,6 +124,18 @@ type Income struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 	Regularity      string             `json:"regularity"`
+}
+
+type InflationRate struct {
+	ID          uuid.UUID          `json:"id"`
+	HouseholdID uuid.UUID          `json:"household_id"`
+	YearMonth   time.Time          `json:"year_month"`
+	Rate        decimal.Decimal    `json:"rate"`
+	CreatedBy   *uuid.UUID         `json:"created_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedBy   *uuid.UUID         `json:"updated_by"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Investment struct {
@@ -264,6 +277,13 @@ type MonthlyReport struct {
 	FxRatesUsed                 []byte             `json:"fx_rates_used"`
 	StalePositions              []byte             `json:"stale_positions"`
 	MissingFx                   []byte             `json:"missing_fx"`
+	EarnedIncomePension         *decimal.Decimal   `json:"earned_income_pension"`
+	EarnedIncomeInterest        *decimal.Decimal   `json:"earned_income_interest"`
+	EarnedIncomeTotalRoutine    *decimal.Decimal   `json:"earned_income_total_routine"`
+	EarnedIncomeRentalRoutine   *decimal.Decimal   `json:"earned_income_rental_routine"`
+	EarnedIncomePensionRoutine  *decimal.Decimal   `json:"earned_income_pension_routine"`
+	EarnedIncomeInterestRoutine *decimal.Decimal   `json:"earned_income_interest_routine"`
+	EngineVersion               *int32             `json:"engine_version"`
 }
 
 type MutualFundDetail struct {

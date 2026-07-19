@@ -343,6 +343,8 @@ export type IncomeCategory =
   | "salary"
   | "business_income"
   | "rental_income"
+  | "pension"
+  | "interest"
   | "gift"
   | "tax_refund"
   | "insurance_payout"
@@ -419,3 +421,8 @@ export type MissingFx = {
 // ----- FX rates (M5 slice 3) --------------------------------------------
 
 export type FxRate = Generated.FxRate;
+
+// ----- Inflation rates (#412, ADR-0048) ---------------------------------
+// Household-scoped annualized (YoY) % per month; feeds Fund Resilience. No
+// currency dimension, may be negative (deflation).
+export type InflationRate = Generated.InflationRate;

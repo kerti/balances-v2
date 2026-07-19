@@ -354,6 +354,131 @@ func TestEngine_IncomeStatement(t *testing.T) {
 	}
 }
 
+// A property first-recorded after the baseline is an acquisition, not
+// appreciation: its birth must not land in asset-value-change, and a purchase
+// financed by cash + debt must book zero living expenses (real-world fixture:
+// Pucang Anom 2014-03 / Pondok Permai 2021-01 — bank cash drawn down + a debt
+// drawn to fund a property whose full value used to leak into living expenses).
+// covers: INV-FINANCE-23, INV-FINANCE-10, INV-FINANCE-06
+func TestEngine_FinancedAcquisitionNoPhantomSpend(t *testing.T) {
+	bank, prop, debt := uuid.New(), uuid.New(), uuid.New()
+	in := reportEngineInput{
+		positions: []reportPosition{
+			{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"},
+			{id: prop, group: groupAsset, subtype: "property", ownershipType: "joint"},
+			{id: debt, group: groupLiability, subtype: "personal", ownershipType: "joint"},
+		},
+		snapshots: []reportSnapshot{
+			// Baseline: only the bank account exists.
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("1000")},
+			// Feb: bank drains 750 (down-payment), a 250 debt is drawn, and the
+			// property is first recorded at 1000 (= 750 cash + 250 debt).
+			{positionID: bank, yearMonth: ym(2026, time.February), amount: dec("250")},
+			{positionID: prop, yearMonth: ym(2026, time.February), amount: dec("1000")},
+			{positionID: debt, yearMonth: ym(2026, time.February), amount: dec("250")},
+		},
+		currentMonth: ym(2026, time.February),
+	}
+	reports := generateMonthlyReports(in)
+	jan := findMonth(t, reports, ym(2026, time.January))
+	feb := findMonth(t, reports, ym(2026, time.February))
+
+	// The property is in net worth the month it appears (acquisition is real).
+	if !feb.nwTotal.Equal(dec("1000")) {
+		t.Errorf("Feb net worth: got %s, want 1000 (bank 250 + property 1000 − debt 250)", feb.nwTotal)
+	}
+	// But its birth is not a revaluation — asset-value-change stays zero.
+	if feb.assetValueChange == nil || !feb.assetValueChange.Equal(dec("0")) {
+		t.Errorf("Feb asset value change: %v, want 0 (property birth is acquisition, not appreciation)", feb.assetValueChange)
+	}
+	// And the financed purchase books no phantom spending.
+	if feb.livingExpenses == nil || !feb.livingExpenses.Equal(dec("0")) {
+		t.Errorf("Feb living expenses: %v, want 0 (cash + debt fully fund the acquisition)", feb.livingExpenses)
+	}
+	// Identity still closes: ΔNW == earned + return + assetΔ − expenses.
+	deltaNW := feb.nwTotal.Sub(jan.nwTotal)
+	rhs := feb.earnedIncome.total.Add(feb.investmentReturn.total).Add(*feb.assetValueChange).Sub(*feb.livingExpenses)
+	if !deltaNW.Equal(rhs) {
+		t.Errorf("identity broken: ΔNW=%s != earned+return+assetΔ−expenses=%s", deltaNW, rhs)
+	}
+}
+
+// The investment-return pass shares the same acquisition rule: a snapshot-only
+// investment first-recorded after the baseline (no buy transaction to net it)
+// must not book its full value as return in its birth month.
+// covers: INV-FINANCE-23, INV-FINANCE-08
+func TestEngine_InvestmentBirthIsNotReturn(t *testing.T) {
+	bank, fund := uuid.New(), uuid.New()
+	in := reportEngineInput{
+		positions: []reportPosition{
+			{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"},
+			{id: fund, group: groupInvestment, subtype: "mutual_fund", ownershipType: "joint"},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("1000")},
+			// Feb: 300 cash moves into a newly-recorded fund (snapshot only, no txn).
+			{positionID: bank, yearMonth: ym(2026, time.February), amount: dec("700")},
+			{positionID: fund, yearMonth: ym(2026, time.February), amount: dec("300")},
+		},
+		currentMonth: ym(2026, time.February),
+	}
+	feb := findMonth(t, generateMonthlyReports(in), ym(2026, time.February))
+
+	if feb.investmentReturn == nil || !feb.investmentReturn.total.Equal(dec("0")) {
+		t.Errorf("Feb investment return: %+v, want total=0 (fund birth is acquisition, not return)", feb.investmentReturn)
+	}
+	if feb.livingExpenses == nil || !feb.livingExpenses.Equal(dec("0")) {
+		t.Errorf("Feb living expenses: %v, want 0 (cash-funded holding, no phantom spend)", feb.livingExpenses)
+	}
+}
+
+// Routine subtotals: the engine materializes a routine-only split of the income
+// terms the statistics panel needs (total + the passive-cash categories), so an
+// incidental one-off is excluded from those subtotals while still landing in the
+// all-regularity totals (and thus net worth / living expenses).
+// covers: INV-FINANCE-24
+func TestEngine_RoutineIncomeSubtotals(t *testing.T) {
+	bank := uuid.New()
+	feb := ym(2026, time.February)
+	in := reportEngineInput{
+		positions: []reportPosition{{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"}},
+		snapshots: []reportSnapshot{
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("1000")},
+			{positionID: bank, yearMonth: feb, amount: dec("1000")},
+		},
+		income: []reportIncome{
+			{yearMonth: feb, amount: dec("1000"), category: "salary", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("500"), category: "salary", regularity: "incidental", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("200"), category: "rental_income", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("50"), category: "rental_income", regularity: "incidental", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("100"), category: "pension", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("30"), category: "interest", regularity: "routine", ownershipType: "joint"},
+			{yearMonth: feb, amount: dec("10"), category: "interest", regularity: "incidental", ownershipType: "joint"},
+		},
+		currentMonth: feb,
+	}
+	ei := findMonth(t, generateMonthlyReports(in), feb).earnedIncome
+
+	// All-regularity totals include the incidental rows.
+	if !ei.total.Equal(dec("1890")) {
+		t.Errorf("total: got %s, want 1890 (all income)", ei.total)
+	}
+	// Routine subtotals exclude them.
+	for _, c := range []struct {
+		name      string
+		got, want decimal.Decimal
+	}{
+		{"totalRoutine", ei.totalRoutine, dec("1330")},  // 1000+200+100+30
+		{"rentalRoutine", ei.rentalRoutine, dec("200")}, // 50 incidental excluded
+		{"pensionRoutine", ei.pensionRoutine, dec("100")},
+		{"interestRoutine", ei.interestRoutine, dec("30")}, // 10 incidental excluded
+	} {
+		if !c.got.Equal(c.want) {
+			t.Errorf("%s: got %s, want %s", c.name, c.got, c.want)
+		}
+	}
+}
+
 // Multi-currency: a foreign holding is converted to the reporting currency at
 // the month's rate, and the rate is recorded in fx_rates_used.
 // covers: INV-FINANCE-15

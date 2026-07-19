@@ -64,6 +64,7 @@ var targets = []target{
 	{file: "internal/db/models.go", structName: "AssetSnapshot", tsName: "AssetSnapshot"},
 	{file: "internal/db/models.go", structName: "Tag", tsName: "Tag", nullableFields: map[string]bool{"deleted_at": true}},
 	{file: "internal/db/models.go", structName: "FxRate", tsName: "FxRate"},
+	{file: "internal/db/models.go", structName: "InflationRate", tsName: "InflationRate"},
 	{file: "internal/db/models.go", structName: "Income", tsName: "Income"},
 	{file: "internal/db/models.go", structName: "Investment", tsName: "Investment"},
 	{file: "internal/db/models.go", structName: "InvestmentSnapshot", tsName: "InvestmentSnapshot"},

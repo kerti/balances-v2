@@ -183,7 +183,7 @@ func TestBuildPDFInputHidesZeroPositions(t *testing.T) {
 		{Name: "Paid-off loan", Group: "liability", Subtype: "personal", OwnershipType: "joint",
 			NativeCurrency: "IDR", NativeAmount: decimal.Zero, Amount: decimal.Zero},
 	}
-	in := buildPDFInput(row, positions, nil, nil, "IDR", "en-GB", "dev")
+	in := buildPDFInput(row, positions, nil, nil, nil, decimal.Zero, "IDR", "en-GB", "dev")
 	if len(in.Positions) != 1 {
 		t.Fatalf("positions: got %d, want 1 (two zero rows dropped)", len(in.Positions))
 	}

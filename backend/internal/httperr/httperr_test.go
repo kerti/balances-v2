@@ -63,6 +63,7 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"InvalidTransactionType", errs.ErrInvalidTransactionType, http.StatusBadRequest, CodeInvalidTransactionType},
 		{"InvalidTransactionShape", errs.ErrInvalidTransactionShape, http.StatusBadRequest, CodeInvalidTransactionShape},
 		{"FxRateExists", errs.ErrFxRateExists, http.StatusConflict, CodeFxRateExists},
+		{"InflationRateExists", errs.ErrInflationRateExists, http.StatusConflict, CodeInflationRateExists},
 		{"ForeignPositionsExist", errs.ErrForeignPositionsExist, http.StatusConflict, CodeForeignPositionsExist},
 		{"PositionNotActive", errs.ErrPositionNotActive, http.StatusConflict, CodePositionNotActive},
 		{"TagNameExists", errs.ErrTagNameExists, http.StatusConflict, CodeTagNameExists},

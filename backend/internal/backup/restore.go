@@ -9,6 +9,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
@@ -50,12 +51,25 @@ type transformFunc func(*Envelope) error
 // predates the column, so each bond entry is missing the key (decodes to "") and
 // would otherwise restore as NULL into a NOT NULL column. Defaulting to
 // 'pays_out' reproduces the column DEFAULT and pre-#66 behaviour.
+//
+// transforms[2] (v2→v3, #412) backfills households.assumed_annual_inflation: a v2
+// file predates the column, so the key is absent and decodes to the decimal zero
+// value, which would restore as 0% (wrong) — or, once the column is NOT NULL,
+// trip the constraint. Defaulting to 3.5 reproduces the column DEFAULT. A v2 file
+// never carries a real value here, so "is zero" unambiguously means "absent".
+// The new inflation_rates section needs no transform — a v2 file simply has none.
 var transforms = map[int]transformFunc{
 	1: func(e *Envelope) error {
 		for i := range e.Household.Bonds {
 			if e.Household.Bonds[i].CouponDisposition == "" {
 				e.Household.Bonds[i].CouponDisposition = "pays_out"
 			}
+		}
+		return nil
+	},
+	2: func(e *Envelope) error {
+		if e.Household.Household.AssumedAnnualInflation.IsZero() {
+			e.Household.Household.AssumedAnnualInflation = decimal.NewFromFloat(3.5)
 		}
 		return nil
 	},

@@ -42,10 +42,14 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   // click and let the FX-rates card's appearance confirm the flip stuck.
   await page.getByLabel("Enable multi-currency tracking").click();
   await expect(page.getByText("Exchange rates", { exact: true })).toBeVisible();
-  await page.getByLabel("Month").fill(month);
-  await page.getByLabel("Currency", { exact: true }).fill("USD");
-  await page.getByLabel("Rate").fill("16000");
-  await page.getByRole("button", { name: "Add rate" }).click();
+  // Scope to the Exchange-rates card: the inflation card (slice 3) mirrors this
+  // card's shape — Month/Rate labels and an "Add rate" button — so unscoped
+  // accessible-name lookups are ambiguous across the two Settings cards.
+  const fxCard = page.getByTestId("fx-rates-card");
+  await fxCard.locator("#fx-month").fill(month);
+  await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
+  await fxCard.getByLabel("Rate").fill("16000");
+  await fxCard.getByRole("button", { name: "Add rate" }).click();
   await expect(page.getByRole("cell", { name: "USD" })).toBeVisible();
 
   // --- Dashboard: pick "Also in: USD" → headline gains the ≈ approximation ---

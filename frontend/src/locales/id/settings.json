@@ -51,6 +51,15 @@
     "addRate": "Tambah kurs",
     "empty": "Belum ada kurs."
   },
+  "inflation": {
+    "title": "Inflasi",
+    "description": "Digunakan untuk memperkirakan berapa lama investasi Anda bertahan jika pemasukan berhenti (ketahanan dana). Tetapkan asumsi laju tahunan, dan bila mau, masukkan angka tahunan (year-on-year) aktual tiap bulan — perkiraan memakai rata-rata 12 bulan terakhir bila tersedia.",
+    "assumedLabel": "Asumsi % tahunan",
+    "month": "Bulan",
+    "rate": "% Tahunan",
+    "addRate": "Tambah laju",
+    "empty": "Belum ada angka bulanan — asumsi laju yang dipakai."
+  },
   "invite": {
     "title": "Undang anggota rumah tangga",
     "description": "Mereka akan menerima email berisi tautan masuk.",

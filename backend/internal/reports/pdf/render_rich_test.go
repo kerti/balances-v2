@@ -49,6 +49,12 @@ func richInput() Input {
 			{Label: "Feb 26", NetWorth: 6100000000},
 			{Label: "Jun 26", NetWorth: 6274520495.58},
 		},
+		Stats: Stats{
+			CashFlow:         Ratio{Defined: true, Percent: 18.4},
+			PassiveIncome:    Ratio{Defined: true, Percent: -4.2}, // market-sensitive, can print negative
+			InstantLiquidity: Ratio{Defined: true, Percent: 5.3},
+			Resilience:       Resilience{Defined: true, Months: 137},
+		},
 	}
 }
 
@@ -84,5 +90,34 @@ func TestRenderBaselineCashFlow(t *testing.T) {
 	in.YoY = nil
 	if _, err := Render(in); err != nil {
 		t.Fatalf("baseline Render: %v", err)
+	}
+}
+
+// The zero-value Stats (all ratios undefined) must render the reserved em-dash
+// panel with the "not enough history" note, and the Indefinite resilience value,
+// rather than panic.
+func TestRenderStatsPanelStates(t *testing.T) {
+	in := richInput()
+	in.Stats = Stats{} // all undefined
+	if _, err := Render(in); err != nil {
+		t.Fatalf("undefined stats Render: %v", err)
+	}
+
+	in.Stats = Stats{
+		CashFlow:         Ratio{Defined: true, Percent: 42},
+		PassiveIncome:    Ratio{Defined: true, Percent: 120},
+		InstantLiquidity: Ratio{Defined: true, Percent: 3.1},
+		Resilience:       Resilience{Defined: true, Indefinite: true},
+	}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("indefinite stats Render: %v", err)
+	}
+
+	// A one-month runway takes the singular unit branch ("%s month", not
+	// "%s months") in resilienceValue — the plural/indefinite cases above leave
+	// it untested.
+	in.Stats.Resilience = Resilience{Defined: true, Months: 1}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("singular-month resilience Render: %v", err)
 	}
 }

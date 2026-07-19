@@ -20,6 +20,13 @@ import (
 // columns that the engine always computes a value for.
 func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 
+// reportEngineVersion is stamped into every materialized report row. Bump it on
+// any engine-logic or report-schema change whose output differs for unchanged
+// inputs — the data-driven watermark can't see those, so needsRegen also
+// regenerates when a row's stamp doesn't match. Rows from before the stamp
+// existed read as NULL and always regenerate.
+const reportEngineVersion int32 = 1
+
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
 // the inputs are newer than what's materialized, then return the cached rows.
@@ -89,6 +96,26 @@ func (r *MonthlyReportRepo) GetReport(ctx context.Context, yearMonth time.Time) 
 		return nil, fmt.Errorf("get monthly report: %w", err)
 	}
 	return &row, nil
+}
+
+// ReportInflation returns the household's manual inflation series (annualized %
+// per month, ADR-0048) plus the assumed_annual_inflation fallback setting — the
+// Fund Resilience inputs for the PDF statistics panel (#412). Both are read in
+// one call so the report handler makes a single round-trip for the panel.
+func (r *MonthlyReportRepo) ReportInflation(ctx context.Context) ([]db.InflationRate, decimal.Decimal, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, decimal.Zero, err
+	}
+	rates, err := r.q.ListInflationRatesByHousehold(ctx, hid)
+	if err != nil {
+		return nil, decimal.Zero, fmt.Errorf("list inflation rates: %w", err)
+	}
+	hh, err := r.q.GetHouseholdByID(ctx, hid)
+	if err != nil {
+		return nil, decimal.Zero, fmt.Errorf("get household: %w", err)
+	}
+	return rates, hh.AssumedAnnualInflation, nil
 }
 
 // Members returns the household's users, for resolving position-owner and
@@ -170,15 +197,19 @@ func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) err
 }
 
 // needsRegen is the coarse-but-correct slice-1 staleness check: regenerate the
-// whole household when the materialized month set differs from the engine's or
-// any materialized row predates the input watermark (ADR-0006 conservative
-// rule — over-regenerates cheaply for one household, never serves stale).
+// whole household when the materialized month set differs from the engine's,
+// any materialized row predates the input watermark, or any row was written by
+// a different engine version (ADR-0006 conservative rule — over-regenerates
+// cheaply for one household, never serves stale).
 func needsRegen(reports []monthlyReportData, existing []db.MonthlyReport, watermark pgtype.Timestamptz) bool {
 	if len(existing) != len(reports) {
 		return true
 	}
 	have := make(map[int]pgtype.Timestamptz, len(existing))
 	for _, e := range existing {
+		if e.EngineVersion == nil || *e.EngineVersion != reportEngineVersion {
+			return true
+		}
 		have[monthIndex(e.YearMonth)] = e.GeneratedAt
 	}
 	for _, rep := range reports {
@@ -271,17 +302,26 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		EarnedIncomeSalary:    ptr(rep.earnedIncome.salary),
 		EarnedIncomeBusiness:  ptr(rep.earnedIncome.business),
 		EarnedIncomeRental:    ptr(rep.earnedIncome.rental),
+		EarnedIncomePension:   ptr(rep.earnedIncome.pension),
+		EarnedIncomeInterest:  ptr(rep.earnedIncome.interest),
 		EarnedIncomeGift:      ptr(rep.earnedIncome.gift),
 		EarnedIncomeTaxRefund: ptr(rep.earnedIncome.taxRefund),
 		EarnedIncomeInsurance: ptr(rep.earnedIncome.insurance),
 		EarnedIncomeOther:     ptr(rep.earnedIncome.other),
-		AssetValueChange:      rep.assetValueChange, // nil on baseline
-		DerivedLivingExpenses: rep.livingExpenses,   // nil on baseline
-		UserBreakdowns:        ub,
-		StalePositions:        stale,
-		FxRatesUsed:           fxUsed,
-		MissingFx:             missingFx,
+
+		EarnedIncomeTotalRoutine:    ptr(rep.earnedIncome.totalRoutine),
+		EarnedIncomeRentalRoutine:   ptr(rep.earnedIncome.rentalRoutine),
+		EarnedIncomePensionRoutine:  ptr(rep.earnedIncome.pensionRoutine),
+		EarnedIncomeInterestRoutine: ptr(rep.earnedIncome.interestRoutine),
+		AssetValueChange:            rep.assetValueChange, // nil on baseline
+		DerivedLivingExpenses:       rep.livingExpenses,   // nil on baseline
+		UserBreakdowns:              ub,
+		StalePositions:              stale,
+		FxRatesUsed:                 fxUsed,
+		MissingFx:                   missingFx,
 	}
+	ev := reportEngineVersion
+	params.EngineVersion = &ev
 	if rep.investmentReturn != nil { // suppressed on the baseline month
 		params.InvestmentReturnTotal = ptr(rep.investmentReturn.total)
 		params.InvestmentReturnStock = ptr(rep.investmentReturn.stock)
@@ -467,6 +507,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, inc := range incomes {
 		in.income = append(in.income, reportIncome{
 			yearMonth: inc.Date, amount: inc.Amount, currency: inc.Currency, category: inc.Category,
+			regularity:    inc.Regularity,
 			ownershipType: inc.OwnershipType, soleOwnerID: inc.SoleOwnerUserID,
 		})
 	}

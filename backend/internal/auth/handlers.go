@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
@@ -511,19 +512,20 @@ func (h *Handlers) handleLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 type meResponse struct {
-	ID                   uuid.UUID `json:"id"`
-	HouseholdID          uuid.UUID `json:"household_id"`
-	HouseholdDisplayName string    `json:"household_display_name"`
-	DisplayName          string    `json:"display_name"`
-	Nickname             *string   `json:"nickname"`
-	Email                string    `json:"email"`
-	PictureURL           *string   `json:"picture_url"`
-	Locale               string    `json:"locale"`
-	Theme                string    `json:"theme"`
-	CarryoverDateMode    string    `json:"carryover_date_mode"`
-	TimeZone             string    `json:"time_zone"`
-	ReportingCurrency    string    `json:"reporting_currency"`
-	MultiCurrencyEnabled bool      `json:"multi_currency_enabled"`
+	ID                     uuid.UUID       `json:"id"`
+	HouseholdID            uuid.UUID       `json:"household_id"`
+	HouseholdDisplayName   string          `json:"household_display_name"`
+	DisplayName            string          `json:"display_name"`
+	Nickname               *string         `json:"nickname"`
+	Email                  string          `json:"email"`
+	PictureURL             *string         `json:"picture_url"`
+	Locale                 string          `json:"locale"`
+	Theme                  string          `json:"theme"`
+	CarryoverDateMode      string          `json:"carryover_date_mode"`
+	TimeZone               string          `json:"time_zone"`
+	ReportingCurrency      string          `json:"reporting_currency"`
+	MultiCurrencyEnabled   bool            `json:"multi_currency_enabled"`
+	AssumedAnnualInflation decimal.Decimal `json:"assumed_annual_inflation"`
 	// IsFounder marks the household's lineage root (created_by IS NULL). Not a
 	// privilege in the domain (ADR-0017: Founder is lineage only) — the SPA uses it
 	// only to surface the founder-scoped operator affordance, in-app member
@@ -534,20 +536,21 @@ type meResponse struct {
 
 func meResponseFor(user db.User, hh db.Household) meResponse {
 	return meResponse{
-		ID:                   user.ID,
-		HouseholdID:          user.HouseholdID,
-		HouseholdDisplayName: hh.DisplayName,
-		DisplayName:          user.DisplayName,
-		Nickname:             user.Nickname,
-		Email:                user.Email,
-		PictureURL:           user.PictureUrl,
-		Locale:               user.Locale,
-		Theme:                user.Theme,
-		IsFounder:            user.CreatedBy == nil,
-		CarryoverDateMode:    user.CarryoverDateMode,
-		TimeZone:             user.TimeZone,
-		ReportingCurrency:    hh.ReportingCurrency,
-		MultiCurrencyEnabled: hh.MultiCurrencyEnabled,
+		ID:                     user.ID,
+		HouseholdID:            user.HouseholdID,
+		HouseholdDisplayName:   hh.DisplayName,
+		DisplayName:            user.DisplayName,
+		Nickname:               user.Nickname,
+		Email:                  user.Email,
+		PictureURL:             user.PictureUrl,
+		Locale:                 user.Locale,
+		Theme:                  user.Theme,
+		IsFounder:              user.CreatedBy == nil,
+		CarryoverDateMode:      user.CarryoverDateMode,
+		TimeZone:               user.TimeZone,
+		ReportingCurrency:      hh.ReportingCurrency,
+		MultiCurrencyEnabled:   hh.MultiCurrencyEnabled,
+		AssumedAnnualInflation: hh.AssumedAnnualInflation,
 	}
 }
 
@@ -802,16 +805,18 @@ func (h *Handlers) handleListHouseholdMembers(w http.ResponseWriter, r *http.Req
 }
 
 type householdSettings struct {
-	ID                   uuid.UUID `json:"id"`
-	DisplayName          string    `json:"display_name"`
-	ReportingCurrency    string    `json:"reporting_currency"`
-	MultiCurrencyEnabled bool      `json:"multi_currency_enabled"`
+	ID                     uuid.UUID       `json:"id"`
+	DisplayName            string          `json:"display_name"`
+	ReportingCurrency      string          `json:"reporting_currency"`
+	MultiCurrencyEnabled   bool            `json:"multi_currency_enabled"`
+	AssumedAnnualInflation decimal.Decimal `json:"assumed_annual_inflation"`
 }
 
 type updateHouseholdSettingsReq struct {
-	DisplayName          string `json:"display_name"`
-	ReportingCurrency    string `json:"reporting_currency"`
-	MultiCurrencyEnabled bool   `json:"multi_currency_enabled"`
+	DisplayName            string           `json:"display_name"`
+	ReportingCurrency      string           `json:"reporting_currency"`
+	MultiCurrencyEnabled   bool             `json:"multi_currency_enabled"`
+	AssumedAnnualInflation *decimal.Decimal `json:"assumed_annual_inflation"`
 }
 
 // handleUpdateHouseholdSettings sets the Household's display name (#265, any
@@ -853,6 +858,28 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 		})
 		return
 	}
+	// assumed_annual_inflation is an annual percentage; it may be negative
+	// (deflation) but is bounded to catch fat-finger entry. -100 is the floor
+	// (prices cannot fall more than 100% in a year). The field postdates the
+	// endpoint (slice 3), so a body omitting it keeps the current value rather
+	// than 400-ing older clients out of renaming the household.
+	if req.AssumedAnnualInflation == nil {
+		hh, err := h.q.GetHouseholdByID(r.Context(), user.HouseholdID)
+		if err != nil {
+			slog.Error("get household for settings default", "err", err)
+			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
+			return
+		}
+		req.AssumedAnnualInflation = &hh.AssumedAnnualInflation
+	}
+	if req.AssumedAnnualInflation.LessThanOrEqual(decimal.NewFromInt(-100)) ||
+		req.AssumedAnnualInflation.GreaterThan(decimal.NewFromInt(1000)) {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
+			"field": "assumed_annual_inflation",
+			"rule":  "range",
+		})
+		return
+	}
 	if !req.MultiCurrencyEnabled {
 		n, err := h.q.CountForeignCurrencyPositions(r.Context(), db.CountForeignCurrencyPositionsParams{
 			HouseholdID:    user.HouseholdID,
@@ -869,11 +896,12 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 		}
 	}
 	hh, err := h.q.UpdateHouseholdSettings(r.Context(), db.UpdateHouseholdSettingsParams{
-		ID:                   user.HouseholdID,
-		DisplayName:          displayName,
-		ReportingCurrency:    req.ReportingCurrency,
-		MultiCurrencyEnabled: req.MultiCurrencyEnabled,
-		UpdatedBy:            &user.ID,
+		ID:                     user.HouseholdID,
+		DisplayName:            displayName,
+		ReportingCurrency:      req.ReportingCurrency,
+		MultiCurrencyEnabled:   req.MultiCurrencyEnabled,
+		AssumedAnnualInflation: *req.AssumedAnnualInflation,
+		UpdatedBy:              &user.ID,
 	})
 	if err != nil {
 		slog.Error("update household settings", "err", err)
@@ -882,9 +910,10 @@ func (h *Handlers) handleUpdateHouseholdSettings(w http.ResponseWriter, r *http.
 	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(householdSettings{
-		ID:                   hh.ID,
-		DisplayName:          hh.DisplayName,
-		ReportingCurrency:    hh.ReportingCurrency,
-		MultiCurrencyEnabled: hh.MultiCurrencyEnabled,
+		ID:                     hh.ID,
+		DisplayName:            hh.DisplayName,
+		ReportingCurrency:      hh.ReportingCurrency,
+		MultiCurrencyEnabled:   hh.MultiCurrencyEnabled,
+		AssumedAnnualInflation: hh.AssumedAnnualInflation,
 	})
 }

@@ -105,6 +105,8 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
                   {t("income:categoryOptions.business_income")}
                 </option>
                 <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
+                <option value="pension">{t("income:categoryOptions.pension")}</option>
+                <option value="interest">{t("income:categoryOptions.interest")}</option>
                 <option value="gift">{t("income:categoryOptions.gift")}</option>
                 <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
                 <option value="insurance_payout">
@@ -153,27 +155,39 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label>{t("income:regularity.label")}</Label>
-            <div className="flex gap-4 text-sm">
-              <label className="flex items-center gap-2">
+            <Label>{t("income:regularity.question")}</Label>
+            <div className="grid gap-2 text-sm">
+              <label className="flex items-start gap-2">
                 <input
                   type="radio"
                   name="edit_regularity"
                   value="routine"
+                  className="mt-0.5"
                   checked={form.regularity === "routine"}
                   onChange={() => setForm({ ...form, regularity: "routine" })}
                 />
-                {t("income:regularity.routine")}
+                <span>
+                  <span className="font-medium">{t("income:regularity.routineOption")}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t("income:regularity.routineHint")}
+                  </span>
+                </span>
               </label>
-              <label className="flex items-center gap-2">
+              <label className="flex items-start gap-2">
                 <input
                   type="radio"
                   name="edit_regularity"
                   value="incidental"
+                  className="mt-0.5"
                   checked={form.regularity === "incidental"}
                   onChange={() => setForm({ ...form, regularity: "incidental" })}
                 />
-                {t("income:regularity.incidental")}
+                <span>
+                  <span className="font-medium">{t("income:regularity.incidentalOption")}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {t("income:regularity.incidentalHint")}
+                  </span>
+                </span>
               </label>
             </div>
           </div>

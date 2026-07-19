@@ -21,6 +21,7 @@ var (
 	ErrInvalidTransactionShape  = errs.ErrInvalidTransactionShape
 	ErrInvalidLifecycle         = errs.ErrInvalidLifecycle
 	ErrFxRateExists             = errs.ErrFxRateExists
+	ErrInflationRateExists      = errs.ErrInflationRateExists
 	ErrForeignPositionsExist    = errs.ErrForeignPositionsExist
 	ErrPositionNotActive        = errs.ErrPositionNotActive
 	ErrTagNameExists            = errs.ErrTagNameExists

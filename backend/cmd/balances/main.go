@@ -27,6 +27,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/fxrates"
 	"github.com/kerti/balances-v2/backend/internal/httpserver"
 	"github.com/kerti/balances-v2/backend/internal/income"
+	"github.com/kerti/balances-v2/backend/internal/inflationrates"
 	"github.com/kerti/balances-v2/backend/internal/investments"
 	"github.com/kerti/balances-v2/backend/internal/liabilities"
 	"github.com/kerti/balances-v2/backend/internal/migrations"
@@ -195,19 +196,23 @@ func serveCmd() error {
 	fxRateRepo := repo.NewFxRateRepo(pool)
 	fxRatesH := fxrates.New(fxRateRepo)
 
+	inflationRateRepo := repo.NewInflationRateRepo(pool)
+	inflationRatesH := inflationrates.New(inflationRateRepo)
+
 	tagRepo := repo.NewTagRepo(pool)
 	tagsH := tags.New(tagRepo)
 
 	srv := httpserver.New(pool, cfg, httpserver.Handlers{
-		Auth:        authH,
-		Assets:      assetsH,
-		Liabilities: liabilitiesH,
-		Receivables: receivablesH,
-		Investments: investmentsH,
-		Income:      incomeH,
-		Reports:     reportsH,
-		FxRates:     fxRatesH,
-		Tags:        tagsH,
+		Auth:           authH,
+		Assets:         assetsH,
+		Liabilities:    liabilitiesH,
+		Receivables:    receivablesH,
+		Investments:    investmentsH,
+		Income:         incomeH,
+		Reports:        reportsH,
+		FxRates:        fxRatesH,
+		InflationRates: inflationRatesH,
+		Tags:           tagsH,
 	})
 
 	httpSrv := &http.Server{

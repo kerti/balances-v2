@@ -88,6 +88,7 @@ type reportIncome struct {
 	amount        decimal.Decimal
 	currency      string
 	category      string
+	regularity    string // "routine" | "incidental" — feeds the statistics routine subtotals
 	ownershipType string
 	soleOwnerID   *uuid.UUID
 }
@@ -132,11 +133,21 @@ type userBreakdown struct {
 }
 
 type earnedIncomeAmounts struct {
-	total, salary, business, rental, gift, taxRefund, insurance, other decimal.Decimal
+	total, salary, business, rental, pension, interest, gift, taxRefund, insurance, other decimal.Decimal
+	// Routine-only subtotals for the statistics panel (ADR-0048 amendment):
+	// income the household relies on (regularity="routine"). total feeds the
+	// Cash-Flow ratio; rental+pension+interest feed the passive-cash scope
+	// (Passive-Income + Fund Resilience draw-offset). Incidental income lands in
+	// the fields above but not these.
+	totalRoutine, rentalRoutine, pensionRoutine, interestRoutine decimal.Decimal
 }
 
-func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
+func (e *earnedIncomeAmounts) add(category, regularity string, v decimal.Decimal) {
 	e.total = e.total.Add(v)
+	routine := regularity == "routine"
+	if routine {
+		e.totalRoutine = e.totalRoutine.Add(v)
+	}
 	switch category {
 	case "salary":
 		e.salary = e.salary.Add(v)
@@ -144,6 +155,19 @@ func (e *earnedIncomeAmounts) add(category string, v decimal.Decimal) {
 		e.business = e.business.Add(v)
 	case "rental_income":
 		e.rental = e.rental.Add(v)
+		if routine {
+			e.rentalRoutine = e.rentalRoutine.Add(v)
+		}
+	case "pension":
+		e.pension = e.pension.Add(v)
+		if routine {
+			e.pensionRoutine = e.pensionRoutine.Add(v)
+		}
+	case "interest":
+		e.interest = e.interest.Add(v)
+		if routine {
+			e.interestRoutine = e.interestRoutine.Add(v)
+		}
 	case "gift":
 		e.gift = e.gift.Add(v)
 	case "tax_refund":
@@ -478,7 +502,7 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				continue
 			}
 			m.recordRate(fx, inc.currency, rate)
-			m.earnedIncome.add(inc.category, conv)
+			m.earnedIncome.add(inc.category, inc.regularity, conv)
 			key := ownerKey(inc.ownershipType, inc.soleOwnerID)
 			b := m.userBreakdowns[key]
 			b.EarnedIncome = b.EarnedIncome.Add(conv)
@@ -540,7 +564,11 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				now, okNow := fx.carried(byPos[p.id], idx)
 				prev, okPrev := fx.carried(byPos[p.id], idx-1)
 				if !okNow || !okPrev {
-					continue // currency unconvertible — flagged in the NW pass
+					// No prior value to diff against: the position is not yet born
+					// (its first snapshot is an acquisition, not a return —
+					// INV-FINANCE-23) or its currency is unconvertible (flagged in
+					// the NW pass).
+					continue
 				}
 				cf := cashByPos[p.id][idx]
 				r := now.Sub(prev).Add(cf.out).Sub(cf.in)
@@ -656,13 +684,19 @@ func generatePositionDetail(in reportEngineInput, targetMonth time.Time) []Posit
 	return out
 }
 
-// carried converts the most recent snapshot with month <= idx; (0,true) when
-// none exists (contributes nothing), (0,false) when one exists but its currency
-// has no rate at idx.
+// carried converts the most recent snapshot with month <= idx. The bool is
+// "has a carried value": false when none exists yet (before the position's
+// first snapshot) or when one exists but its currency has no rate at idx.
+// Both income-statement callers difference two carried values, so a false on
+// either side skips the position — a position's first snapshot is an
+// acquisition, not a revaluation/return, and must not diff against a phantom
+// zero prior value (INV-FINANCE-23). The net-worth pass does not use this; it
+// reads latestAtOrBefore directly, so an absent snapshot simply omits the
+// position from the sum (INV-FINANCE-04).
 func (fx fxConverter) carried(ss []monthAmount, idx int) (decimal.Decimal, bool) {
 	c, ok := latestAtOrBefore(ss, idx)
 	if !ok {
-		return decimal.Zero, true
+		return decimal.Zero, false
 	}
 	v, _, cok := fx.convert(c.amount, c.currency, idx)
 	return v, cok

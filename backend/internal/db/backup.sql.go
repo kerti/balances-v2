@@ -13,7 +13,7 @@ import (
 
 const getHouseholdForExport = `-- name: GetHouseholdForExport :one
 
-SELECT id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled FROM households WHERE id = $1
+SELECT id, display_name, reporting_currency, created_by, created_at, updated_by, updated_at, deleted_at, multi_currency_enabled, assumed_annual_inflation FROM households WHERE id = $1
 `
 
 // Backup export reads (ADR-0036, issue #174).
@@ -41,6 +41,7 @@ func (q *Queries) GetHouseholdForExport(ctx context.Context, householdID uuid.UU
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.MultiCurrencyEnabled,
+		&i.AssumedAnnualInflation,
 	)
 	return i, err
 }

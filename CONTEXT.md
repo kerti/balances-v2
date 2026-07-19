@@ -215,10 +215,21 @@ business income, rental income, gifts, refunds, payouts. Distinct from Investmen
 
 Each Income event has: `date`, `amount`, `currency`, `category` (closed enum), `description` (free
 text, optional), and `ownership` (`SoleOwner` or `Joint`). Categories: **Salary**,
-**BusinessIncome**, **RentalIncome**, **Gift**, **TaxRefund**, **InsurancePayout**, **Other**.
-`description` provides sub-categorisation within a category — e.g., base monthly pay and travel
-per-diem are both `Salary`, distinguished by description in drill-downs but rolled up at the category
-level for top-line reporting.
+**BusinessIncome**, **RentalIncome**, **Pension**, **Interest**, **Gift**, **TaxRefund**,
+**InsurancePayout**, **Other**. `Interest` is bank/deposit interest received as cash (distinct from
+Investment Return). `description` provides sub-categorisation within a category — e.g., base monthly pay and
+travel per-diem are both `Salary`, distinguished by description in drill-downs but rolled up at the
+category level for top-line reporting.
+
+**Active vs Passive income**: A **category-derived** partition over Income, used by the financial
+statistics ([[adr-0048]]) — it is *not* a stored per-event attribute. **Active income** (earned by
+labour): `Salary` + `BusinessIncome`. **Passive income** (received without ongoing labour):
+`RentalIncome` + `Pension` + `Interest`. The remaining categories (`Gift` / `TaxRefund` / `InsurancePayout` /
+`Other`) are **neither** — irregular, one-off, excluded from both. Investment returns are passive in
+spirit but are *not* an Income category (they live in **Investment Return**); whether they count as
+"passive" depends on the metric (see **Passive income (two scopes)** below). A per-event active/passive
+override is a deliberately-deferred future refinement — the category mapping is the source of truth
+today.
 
 Like Investment cash events (ADR-0003), Income events do **not** auto-update bank-account snapshots.
 The cash arrives via the next bank statement; the Income event supports the income-statement view and
@@ -235,6 +246,52 @@ changing hands. Living Expenses are the residual — itemised expense tracking i
 (ADR-0001). Because Investment Return already absorbs investment mark changes (they cancel in the
 residual) and Asset Value Change pulls out property/vehicle marks, the residual is a genuine
 **cash-spending** proxy, not a catch-all conflating non-cash depreciation with spending.
+
+### Financial statistics
+
+**Financial statistics**: A household-health scorecard on the monthly report ([[adr-0048]]) — four
+ratios that turn the raw net-worth figures into "how are we doing" signals for a non-technical
+audience. Every flow input (income, living expenses, passive income, investment return) is smoothed
+as a **trailing-12-month average** (or fewer months when the history is shorter) so a single
+lumpy month does not dominate. Rendered as a placeholder slot until built (ADR-0045 reserved it).
+
+**Instant Liquidity**: **Cash / cash-equivalent accessible now** — in this domain, `bank_account`
+Assets only (nothing else settles same-day). The depletable-buffer and liquidity metrics build on
+this pool.
+
+**Inflation rate**: A per-`(Household, year_month)` figure modelling the same way as an **FX rate** —
+household-scoped, month-stamped, manually entered from a reputable source (v1), no currency
+dimension (one series per Household). Each entry is an **annualized (YoY) percentage** (the headline
+figure sources publish), and may be **negative** in a deflation month. It feeds only the Fund
+Resilience projection. Before any month is entered, an **assumed annual inflation** Household setting
+(annual %, default 3.5) stands in; stored monthly figures, once present, override it via the
+trailing-12 average (converted annual→monthly in the projection).
+
+**Passive income (two scopes)**: The word "passive income" resolves to *different sets* depending on
+the metric, and both are named to keep them apart:
+- **Passive cash income** = `RentalIncome` + `Pension` + `Interest`. Real cash that keeps arriving
+  after active income stops — used as the draw-offset in Fund Resilience. `Interest` is external bank
+  cash, not pool return, so it belongs here cleanly. Excludes Investment Return (which the projection
+  already models as the pool's own growth, so counting it here would double-count).
+- **Total passive income** = passive cash income + **Investment Return**. The Passive-Income Ratio
+  numerator. Because it includes Investment Return (unrealised marks included), it **swings with the
+  market and can go negative** in a bad year — a deliberate, labelled property.
+
+**The four ratios**:
+- **Cash-Flow Ratio** (savings rate) = `(Income − Living Expenses) / Income`, a percentage. Share of
+  earned income kept rather than spent.
+- **Passive-Income Ratio** = `Total passive income / Living Expenses`, a percentage. `≥ 100%` means
+  passive income alone covers the household's spending — financial independence.
+- **Instant-Liquidity Ratio** = `Instant Liquidity / total Investment value`, a percentage. A **cap**
+  gauge, not a floor: *above* the household's target (default intent ~5%) signals idle cash that
+  should be moved into investments.
+- **Fund Resilience**: a month-by-month **depletion projection** answering "if all active income
+  stopped next month, how many months until the investments are exhausted, given current lifestyle?"
+  Starting from total Investment value, each month the pool grows by the (derived, trailing-12)
+  investment-return rate and is drawn down by living expenses net of continuing passive cash income;
+  expenses and passive income both inflate by the inflation rate each month. Reported in **months**,
+  or **"indefinite"** when the pool never depletes (the household has effectively reached financial
+  independence). The living-expenses figure is the derived residual, and the statistic says so.
 
 ### Backup and restore
 

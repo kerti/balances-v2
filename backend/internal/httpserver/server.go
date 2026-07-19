@@ -17,6 +17,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/config"
 	"github.com/kerti/balances-v2/backend/internal/fxrates"
 	"github.com/kerti/balances-v2/backend/internal/income"
+	"github.com/kerti/balances-v2/backend/internal/inflationrates"
 	"github.com/kerti/balances-v2/backend/internal/investments"
 	"github.com/kerti/balances-v2/backend/internal/liabilities"
 	"github.com/kerti/balances-v2/backend/internal/receivables"
@@ -25,19 +26,20 @@ import (
 )
 
 type Server struct {
-	pool         *pgxpool.Pool
-	cfg          *config.Config
-	authH        *auth.Handlers
-	assetsH      *assets.Handlers
-	liabilitiesH *liabilities.Handlers
-	receivablesH *receivables.Handlers
-	investmentsH *investments.Handlers
-	incomeH      *income.Handlers
-	reportsH     *reports.Handlers
-	fxRatesH     *fxrates.Handlers
-	tagsH        *tags.Handlers
-	backupH      *backup.Handlers
-	router       chi.Router
+	pool            *pgxpool.Pool
+	cfg             *config.Config
+	authH           *auth.Handlers
+	assetsH         *assets.Handlers
+	liabilitiesH    *liabilities.Handlers
+	receivablesH    *receivables.Handlers
+	investmentsH    *investments.Handlers
+	incomeH         *income.Handlers
+	reportsH        *reports.Handlers
+	fxRatesH        *fxrates.Handlers
+	inflationRatesH *inflationrates.Handlers
+	tagsH           *tags.Handlers
+	backupH         *backup.Handlers
+	router          chi.Router
 }
 
 // Handlers bundles the per-domain HTTP handler groups New wires into the
@@ -48,30 +50,32 @@ type Server struct {
 // internally from deps it already holds (pool + cfg + Auth), so requiring every
 // caller to build it would only duplicate that wiring.
 type Handlers struct {
-	Auth        *auth.Handlers
-	Assets      *assets.Handlers
-	Liabilities *liabilities.Handlers
-	Receivables *receivables.Handlers
-	Investments *investments.Handlers
-	Income      *income.Handlers
-	Reports     *reports.Handlers
-	FxRates     *fxrates.Handlers
-	Tags        *tags.Handlers
+	Auth           *auth.Handlers
+	Assets         *assets.Handlers
+	Liabilities    *liabilities.Handlers
+	Receivables    *receivables.Handlers
+	Investments    *investments.Handlers
+	Income         *income.Handlers
+	Reports        *reports.Handlers
+	FxRates        *fxrates.Handlers
+	InflationRates *inflationrates.Handlers
+	Tags           *tags.Handlers
 }
 
 func New(pool *pgxpool.Pool, cfg *config.Config, h Handlers) *Server {
 	s := &Server{
-		pool:         pool,
-		cfg:          cfg,
-		authH:        h.Auth,
-		assetsH:      h.Assets,
-		liabilitiesH: h.Liabilities,
-		receivablesH: h.Receivables,
-		investmentsH: h.Investments,
-		incomeH:      h.Income,
-		reportsH:     h.Reports,
-		fxRatesH:     h.FxRates,
-		tagsH:        h.Tags,
+		pool:            pool,
+		cfg:             cfg,
+		authH:           h.Auth,
+		assetsH:         h.Assets,
+		liabilitiesH:    h.Liabilities,
+		receivablesH:    h.Receivables,
+		investmentsH:    h.Investments,
+		incomeH:         h.Income,
+		reportsH:        h.Reports,
+		fxRatesH:        h.FxRates,
+		inflationRatesH: h.InflationRates,
+		tagsH:           h.Tags,
 		// Backup reads across every table from the shared pool; it needs the pool,
 		// the instance URL (stamped into the envelope), and the auth handler to
 		// re-issue the caller's session after a restore wipes it and to send the
@@ -119,6 +123,7 @@ func (s *Server) buildRouter() chi.Router {
 		s.incomeH.Mount(r)
 		s.reportsH.Mount(r)
 		s.fxRatesH.Mount(r)
+		s.inflationRatesH.Mount(r)
 		s.tagsH.Mount(r)
 		s.backupH.Mount(r)
 	})

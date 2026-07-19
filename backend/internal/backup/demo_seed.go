@@ -107,6 +107,31 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uu
 	if err := seedDemoIncome(ctx, pool, ownerID, member2ID); err != nil {
 		return err
 	}
+	if err := seedDemoInflation(ctx, pool); err != nil {
+		return err
+	}
+	return nil
+}
+
+// seedDemoInflation seeds a handful of recent monthly inflation figures
+// (ADR-0048) — annualized YoY percentages around recent Indonesian CPI — so the
+// statistics panel's Fund Resilience runs off stored figures rather than only
+// the assumed_annual_inflation fallback. Seeded across the trailing-12 window
+// the projection averages, oldest months left empty to exercise the fallback too.
+func seedDemoInflation(ctx context.Context, pool *pgxpool.Pool) error {
+	rates := repo.NewInflationRateRepo(pool)
+	months := demoMonths()
+	// Plausible recent YoY CPI, most-recent last.
+	pct := []string{"3.4", "3.1", "2.9", "2.8", "3.0", "3.2", "3.3", "2.9", "2.7", "2.6", "2.8", "3.0"}
+	recent := months[len(months)-len(pct):]
+	for i, ym := range recent {
+		if _, err := rates.CreateInflationRate(ctx, repo.CreateInflationRateParams{
+			YearMonth: ym,
+			Rate:      decimal.RequireFromString(pct[i]),
+		}); err != nil {
+			return fmt.Errorf("demo reset: seed inflation rate: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -918,6 +943,44 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 			Regularity:      "routine",
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed salary income: %w", err)
+		}
+	}
+
+	// A routine monthly Pension for the second member (ADR-0048) — a passive
+	// *cash* stream, so the statistics panel's Passive-Income Ratio and Fund
+	// Resilience read meaningfully rather than off a single incidental rental.
+	pensionDesc := "Monthly pension"
+	for _, ym := range months {
+		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
+			Date:            dayIn(ym, 3),
+			Amount:          demoDecimal(2_500_000),
+			Currency:        demoCurrency,
+			Category:        "pension",
+			Description:     &pensionDesc,
+			OwnershipType:   "sole",
+			SoleOwnerUserID: &member2ID,
+			Regularity:      "routine",
+		}); err != nil {
+			return fmt.Errorf("demo reset: seed pension income: %w", err)
+		}
+	}
+
+	// A routine monthly bank Interest for the household (ADR-0048 slice 5) — the
+	// other half of the passive *cash* scope, external to the investment pool, so
+	// the Passive-Income Ratio and Fund Resilience have interest as well as
+	// rent/pension feeding the draw-offset.
+	interestDesc := "Savings account interest"
+	for _, ym := range months {
+		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
+			Date:          dayIn(ym, 25),
+			Amount:        demoDecimal(300_000),
+			Currency:      demoCurrency,
+			Category:      "interest",
+			Description:   &interestDesc,
+			OwnershipType: "joint",
+			Regularity:    "routine",
+		}); err != nil {
+			return fmt.Errorf("demo reset: seed interest income: %w", err)
 		}
 	}
 

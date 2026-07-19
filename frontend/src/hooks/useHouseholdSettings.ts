@@ -14,6 +14,7 @@ export function useUpdateHouseholdSettings() {
       display_name: string;
       reporting_currency: string;
       multi_currency_enabled: boolean;
+      assumed_annual_inflation: string;
     }) =>
       api("/api/household/settings", {
         method: "PATCH",

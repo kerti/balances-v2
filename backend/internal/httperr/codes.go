@@ -79,6 +79,10 @@ const (
 	// on (household, year_month, currency).
 	CodeFxRateExists Code = "FX_RATE_EXISTS"
 
+	// CodeInflationRateExists maps repo.ErrInflationRateExists -> 409 —
+	// uniqueness collision on (household, year_month).
+	CodeInflationRateExists Code = "INFLATION_RATE_EXISTS"
+
 	// CodeForeignPositionsExist maps repo.ErrForeignPositionsExist -> 409 —
 	// turning multi-currency off while non-reporting-currency positions
 	// remain.
