@@ -65,7 +65,9 @@ func (h *Handlers) handleCreate(w http.ResponseWriter, r *http.Request) {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidYearMonth, nil)
 		return
 	}
-	// No positivity check: a negative rate is a valid deflation month.
+	if !writeRateInBounds(w, *req.Rate) {
+		return
+	}
 	row, err := h.repo.CreateInflationRate(r.Context(), repo.CreateInflationRateParams{
 		YearMonth: ym, Rate: *req.Rate,
 	})
@@ -100,6 +102,9 @@ func (h *Handlers) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		httperr.WriteValidation(w, err)
 		return
 	}
+	if !writeRateInBounds(w, *req.Rate) {
+		return
+	}
 	row, err := h.repo.UpdateInflationRate(r.Context(), id, *req.Rate)
 	if err != nil {
 		httperr.WriteRepo(w, "update inflation rate", err)
@@ -122,6 +127,23 @@ func (h *Handlers) handleDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 // ----- helpers ------------------------------------------------------------
+
+// writeRateInBounds enforces the same (-100, 1000] bound as
+// assumed_annual_inflation (auth handler): deflation is valid, but a rate
+// <= -100 makes the annual→monthly conversion (1+a/100)^(1/12) take a
+// non-positive base — NaN, which the resilience simulation reads as an
+// indefinite runway. Writes the validation error and returns false when out of
+// bounds.
+func writeRateInBounds(w http.ResponseWriter, rate decimal.Decimal) bool {
+	if rate.LessThanOrEqual(decimal.NewFromInt(-100)) || rate.GreaterThan(decimal.NewFromInt(1000)) {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
+			"field": "rate",
+			"rule":  "range",
+		})
+		return false
+	}
+	return true
+}
 
 // parseYearMonth accepts "YYYY-MM" or "YYYY-MM-DD" and returns the
 // first-of-month UTC. An unparseable string yields (zero, false).

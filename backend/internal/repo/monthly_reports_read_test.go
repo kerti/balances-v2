@@ -139,3 +139,71 @@ func TestMonthlyReportRepo_MonthRangeCoherence(t *testing.T) {
 		}
 	})
 }
+
+// TestMonthlyReportRepo_EngineVersionForcesRegen proves the engine-version
+// stamp closes the watermark's blind spot: the watermark is data-driven (input
+// updated_at), so a row written by a different engine version — or before the
+// stamp existed, as migration 00012 leaves every pre-existing row NULL —
+// regenerates on the next read even though no input row changed. A matching
+// stamp with an unmoved watermark stays a cache hit.
+//
+// covers: INV-STALENESS-04
+func TestMonthlyReportRepo_EngineVersionForcesRegen(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	aliceCtx := identity.WithUser(context.Background(), alice)
+
+	acct := createAsset(t, q, alice.HouseholdID, &alice.ID, nil, "joint")
+	_ = createAssetSnapshot(t, q, alice.HouseholdID, acct, ymUTC(2026, time.January), "100")
+
+	r := repo.NewMonthlyReportRepo(tdb.Pool)
+
+	rows, err := r.ListReports(aliceCtx)
+	if err != nil {
+		t.Fatalf("ListReports materialize: %v", err)
+	}
+	if len(rows) == 0 {
+		t.Fatal("no reports materialized")
+	}
+	for _, row := range rows {
+		if row.EngineVersion == nil {
+			t.Fatalf("materialized %s row missing engine_version stamp", row.YearMonth.Format("2006-01"))
+		}
+	}
+	genBefore := rows[0].GeneratedAt.Time
+
+	t.Run("matching version with unmoved watermark is a cache hit", func(t *testing.T) {
+		again, err := r.ListReports(aliceCtx)
+		if err != nil {
+			t.Fatalf("ListReports cached: %v", err)
+		}
+		if !again[0].GeneratedAt.Time.Equal(genBefore) {
+			t.Errorf("generated_at moved %s -> %s; regen fired without version or input change",
+				genBefore, again[0].GeneratedAt.Time)
+		}
+	})
+
+	t.Run("version-unknown rows regenerate despite unchanged inputs", func(t *testing.T) {
+		if _, err := tdb.Pool.Exec(context.Background(),
+			`UPDATE monthly_reports SET engine_version = NULL WHERE household_id = $1`,
+			alice.HouseholdID); err != nil {
+			t.Fatalf("null engine_version: %v", err)
+		}
+
+		rows, err := r.ListReports(aliceCtx)
+		if err != nil {
+			t.Fatalf("ListReports after version null: %v", err)
+		}
+		for _, row := range rows {
+			if row.EngineVersion == nil {
+				t.Errorf("%s row still version-unknown; regen did not fire", row.YearMonth.Format("2006-01"))
+			}
+		}
+		if !rows[0].GeneratedAt.Time.After(genBefore) {
+			t.Errorf("generated_at %s not after %s; stale rows were served",
+				rows[0].GeneratedAt.Time, genBefore)
+		}
+	})
+}

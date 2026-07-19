@@ -119,6 +119,16 @@ func TestInflationRatesHandlers_Create(t *testing.T) {
 			"year_month": "2026-02",
 		}), http.StatusBadRequest)
 	})
+	t.Run("400 rate at or below -100", func(t *testing.T) {
+		requireStatus(t, h.do(t, "POST", "/inflation-rates", map[string]any{
+			"year_month": "2026-04", "rate": "-100",
+		}), http.StatusBadRequest)
+	})
+	t.Run("400 rate above 1000", func(t *testing.T) {
+		requireStatus(t, h.do(t, "POST", "/inflation-rates", map[string]any{
+			"year_month": "2026-04", "rate": "1000.01",
+		}), http.StatusBadRequest)
+	})
 	t.Run("201 full YYYY-MM-DD is normalized to first-of-month", func(t *testing.T) {
 		ir := h.create(t, "2026-07-15", "2")
 		if ir.YearMonth.Day() != 1 || ir.YearMonth.Month() != time.July || ir.YearMonth.Year() != 2026 {
@@ -158,6 +168,9 @@ func TestInflationRatesHandlers_ListUpdateDelete(t *testing.T) {
 	})
 	t.Run("update missing rate 400", func(t *testing.T) {
 		requireStatus(t, h.do(t, "PATCH", "/inflation-rates/"+created.ID.String(), map[string]any{}), http.StatusBadRequest)
+	})
+	t.Run("update rate out of bounds 400", func(t *testing.T) {
+		requireStatus(t, h.do(t, "PATCH", "/inflation-rates/"+created.ID.String(), map[string]any{"rate": "-100"}), http.StatusBadRequest)
 	})
 	t.Run("delete 204 then gone", func(t *testing.T) {
 		requireStatus(t, h.do(t, "DELETE", "/inflation-rates/"+created.ID.String(), nil), http.StatusNoContent)

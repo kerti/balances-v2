@@ -71,7 +71,27 @@ ALTER TABLE public.monthly_reports
 ALTER TABLE public.monthly_reports
     ADD COLUMN earned_income_interest_routine numeric(20,4);
 
+-- Engine-version stamp: the staleness watermark is data-driven (input
+-- updated_at), so an engine/schema change that touches no input row — like this
+-- migration's new NULL columns on pre-existing rows — would otherwise be served
+-- stale forever. Each report row records the engine version that wrote it;
+-- needsRegen regenerates on mismatch. Nullable so every pre-existing row reads
+-- as version-unknown and regenerates on next read.
+ALTER TABLE public.monthly_reports
+    ADD COLUMN engine_version integer;
+
 -- +goose Down
+ALTER TABLE public.monthly_reports DROP COLUMN engine_version;
+
+-- Re-homing pension/interest income rows must precede the CHECK re-add below:
+-- re-adding the narrowed constraint with such rows present would abort the Down
+-- mid-way, leaving a half-reverted schema. Lossy by design (down migrations
+-- are); the updated_at bump trips the report watermark so reports regenerate
+-- without the now-dropped category columns.
+UPDATE public.income
+    SET category = 'other', updated_at = now()
+    WHERE category IN ('pension', 'interest');
+
 ALTER TABLE public.monthly_reports DROP COLUMN earned_income_interest_routine;
 ALTER TABLE public.monthly_reports DROP COLUMN earned_income_pension_routine;
 ALTER TABLE public.monthly_reports DROP COLUMN earned_income_rental_routine;

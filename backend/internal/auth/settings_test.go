@@ -43,11 +43,22 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 		}
 	})
 
-	t.Run("400 missing assumed_annual_inflation", func(t *testing.T) {
+	t.Run("200 omitted assumed_annual_inflation keeps the current value", func(t *testing.T) {
+		// The field postdates the endpoint (slice 3); an older client omitting
+		// it must not be 400-ed out of renaming, and must not clobber the value.
 		rec := h.do(t, "PATCH", "/household/settings", map[string]any{
+			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true, "assumed_annual_inflation": "5.75",
+		})
+		requireStatus(t, rec, http.StatusOK)
+
+		rec = h.do(t, "PATCH", "/household/settings", map[string]any{
 			"display_name": "Alice's Household", "reporting_currency": "IDR", "multi_currency_enabled": true,
 		})
-		requireStatus(t, rec, http.StatusBadRequest)
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[householdSettings](t, rec)
+		if !body.AssumedAnnualInflation.Equal(decimal.RequireFromString("5.75")) {
+			t.Errorf("assumed_annual_inflation: got %s, want 5.75 (current value kept)", body.AssumedAnnualInflation)
+		}
 	})
 
 	t.Run("400 assumed_annual_inflation below floor", func(t *testing.T) {
