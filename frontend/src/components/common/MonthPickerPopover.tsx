@@ -68,6 +68,17 @@ export function MonthPickerPopover({
   const selectedYear = yearOf(selected);
   const selectedMonthIdx = monthIdxOf(selected);
 
+  // Prev/next walk the sorted *available* months, not calendar months — a
+  // multi-year gap in `months` collapses to a single click since the arrows
+  // jump to the nearest neighbour in this list, never into an empty month.
+  const sortedKeys = Array.from(isoByKey.keys()).sort();
+  const selectedPos = sortedKeys.indexOf(ymKey(selected));
+  const prevIso = selectedPos > 0 ? isoByKey.get(sortedKeys[selectedPos - 1]) : undefined;
+  const nextIso =
+    selectedPos >= 0 && selectedPos < sortedKeys.length - 1
+      ? isoByKey.get(sortedKeys[selectedPos + 1])
+      : undefined;
+
   // Format the trigger label from the UTC parts via a canonical noon-UTC ISO
   // so a local-timezone rollover never shifts the displayed month (the raw
   // `selected` may be a bare "YYYY-MM" or a midnight-Z ISO).
@@ -87,70 +98,94 @@ export function MonthPickerPopover({
   }
 
   return (
-    <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="lg"
-          data-testid="month-picker-trigger"
-          className="justify-between gap-2"
-        >
-          {selectedLabel}
-          <ChevronDown className="size-4 opacity-60" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64" data-testid="month-picker-content">
-        <div className="mb-2 flex items-center justify-between">
+    <div className="inline-flex items-center -space-x-px">
+      <Button
+        variant="ghost"
+        size="icon-lg"
+        data-testid="month-picker-prev"
+        disabled={!prevIso}
+        onClick={() => prevIso && onSelect(prevIso)}
+        aria-label={t("monthPicker.prevMonth")}
+        className="relative rounded-r-none border-border focus-visible:z-10 dark:border-input"
+      >
+        <ChevronLeft className="size-4" />
+      </Button>
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon-sm"
-            data-testid="month-picker-year-prev"
-            disabled={viewYear <= minYear}
-            onClick={() => setViewYear((y) => Math.max(minYear, y - 1))}
-            aria-label={t("monthPicker.prevYear")}
+            variant="outline"
+            size="lg"
+            data-testid="month-picker-trigger"
+            className="relative min-w-40 justify-between gap-2 rounded-none focus-visible:z-10"
           >
-            <ChevronLeft className="size-4" />
+            {selectedLabel}
+            <ChevronDown className="size-4 opacity-60" />
           </Button>
-          <span className="text-sm font-medium" data-testid="month-picker-year-label">
-            {viewYear}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            data-testid="month-picker-year-next"
-            disabled={viewYear >= maxYear}
-            onClick={() => setViewYear((y) => Math.min(maxYear, y + 1))}
-            aria-label={t("monthPicker.nextYear")}
-          >
-            <ChevronRight className="size-4" />
-          </Button>
-        </div>
-        <div className="grid grid-cols-4 gap-1">
-          {MONTH_KEYS.map((monthKey, idx) => {
-            const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
-            const iso = isoByKey.get(key);
-            const disabled = !iso;
-            const isSelected = viewYear === selectedYear && idx === selectedMonthIdx;
-            return (
-              <Button
-                key={key}
-                variant={isSelected ? "default" : "ghost"}
-                size="sm"
-                data-testid={`month-picker-cell-${key}`}
-                disabled={disabled}
-                onClick={() => {
-                  if (!iso) return;
-                  onSelect(iso);
-                  setOpen(false);
-                }}
-                className={cn("h-8", disabled && "opacity-40")}
-              >
-                {t(`common:months.${monthKey}`)}
-              </Button>
-            );
-          })}
-        </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverTrigger>
+        <PopoverContent className="w-64" data-testid="month-picker-content">
+          <div className="mb-2 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              data-testid="month-picker-year-prev"
+              disabled={viewYear <= minYear}
+              onClick={() => setViewYear((y) => Math.max(minYear, y - 1))}
+              aria-label={t("monthPicker.prevYear")}
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <span className="text-sm font-medium" data-testid="month-picker-year-label">
+              {viewYear}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              data-testid="month-picker-year-next"
+              disabled={viewYear >= maxYear}
+              onClick={() => setViewYear((y) => Math.min(maxYear, y + 1))}
+              aria-label={t("monthPicker.nextYear")}
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 gap-1">
+            {MONTH_KEYS.map((monthKey, idx) => {
+              const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
+              const iso = isoByKey.get(key);
+              const disabled = !iso;
+              const isSelected = viewYear === selectedYear && idx === selectedMonthIdx;
+              return (
+                <Button
+                  key={key}
+                  variant={isSelected ? "default" : "ghost"}
+                  size="sm"
+                  data-testid={`month-picker-cell-${key}`}
+                  disabled={disabled}
+                  onClick={() => {
+                    if (!iso) return;
+                    onSelect(iso);
+                    setOpen(false);
+                  }}
+                  className={cn("h-8", disabled && "opacity-40")}
+                >
+                  {t(`common:months.${monthKey}`)}
+                </Button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <Button
+        variant="ghost"
+        size="icon-lg"
+        data-testid="month-picker-next"
+        disabled={!nextIso}
+        onClick={() => nextIso && onSelect(nextIso)}
+        aria-label={t("monthPicker.nextMonth")}
+        className="relative rounded-l-none border-border focus-visible:z-10 dark:border-input"
+      >
+        <ChevronRight className="size-4" />
+      </Button>
+    </div>
   );
 }

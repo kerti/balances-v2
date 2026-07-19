@@ -84,7 +84,9 @@
   },
   "monthPicker": {
     "prevYear": "Tahun sebelumnya",
-    "nextYear": "Tahun berikutnya"
+    "nextYear": "Tahun berikutnya",
+    "prevMonth": "Bulan sebelumnya",
+    "nextMonth": "Bulan berikutnya"
   },
   "downloadPdf": {
     "button": "Unduh PDF",

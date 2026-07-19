@@ -84,7 +84,9 @@
   },
   "monthPicker": {
     "prevYear": "Previous year",
-    "nextYear": "Next year"
+    "nextYear": "Next year",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "downloadPdf": {
     "button": "Download PDF",
