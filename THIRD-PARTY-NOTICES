@@ -9073,7 +9073,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 The following npm package may be included in this product:
 
- - enhanced-resolve@5.21.6
+ - enhanced-resolve@5.24.2
 
 This package contains the following license:
 
@@ -11096,10 +11096,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 The following npm packages may be included in this product:
 
- - @tailwindcss/node@4.3.2
- - @tailwindcss/oxide@4.3.2
- - @tailwindcss/vite@4.3.2
- - tailwindcss@4.3.2
+ - @tailwindcss/node@4.3.3
+ - @tailwindcss/oxide@4.3.3
+ - @tailwindcss/vite@4.3.3
  - tailwindcss@4.3.3
 
 These packages each contain the following license:
