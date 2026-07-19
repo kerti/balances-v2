@@ -4875,7 +4875,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - vite@8.1.3
+ - vite@8.1.5
 
 This package contains the following license:
 
@@ -10573,7 +10573,7 @@ SOFTWARE.
 
 The following npm package may be included in this product:
 
- - rolldown@1.1.4
+ - rolldown@1.1.5
 
 This package contains the following license:
 
@@ -10607,7 +10607,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 The following npm package may be included in this product:
 
- - @oxc-project/types@0.138.0
+ - @oxc-project/types@0.139.0
 
 This package contains the following license:
 
@@ -12164,7 +12164,7 @@ SOFTWARE.
 The following npm packages may be included in this product:
 
  - picomatch@2.3.2
- - picomatch@4.0.4
+ - picomatch@4.0.5
 
 These packages each contain the following license:
 
@@ -12561,7 +12561,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - postcss@8.5.16
+ - postcss@8.5.20
 
 This package contains the following license:
 
@@ -12619,7 +12619,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - nanoid@3.3.12
+ - nanoid@3.3.16
 
 This package contains the following license:
 
