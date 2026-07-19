@@ -22,6 +22,11 @@ updates:
       # PR so it doesn't drown the runtime-dependency bumps.
       dev-dependencies:
         dependency-type: development
+    ignore:
+      # TS7 breaks typescript-eslint@8.64's peer range (<6.1.0) and
+      # i18next's (^5||^6) — re-enable once the toolchain catches up.
+      - dependency-name: "typescript"
+        versions: ["7.x"]
 
   - package-ecosystem: github-actions
     directory: /
