@@ -1,17 +1,18 @@
 import { test, expect } from "@playwright/test";
 
-// User-defined Tags smoke (ADR-0028, slice 2). Covers the three new surfaces:
-// the Settings Tags management card (create + delete), the detail-screen
-// DetailTagControl (assign + persist across reload), and the /tags report
-// route. Self-cleaning: deletes the bank account and the tag it creates, so the
-// seed's empty tag + bank-account lists are restored. A unique tag name per run
-// dodges the per-household unique-name constraint if a prior run died dirty.
-test("tags: create in settings, assign on a position, report route, cleanup", async ({ page }) => {
+// User-defined Tags smoke (ADR-0028, slice 2). Covers the three surfaces:
+// the /tags page's management card (create + delete — merged onto the report
+// page instead of living in Settings), the detail-screen DetailTagControl
+// (assign + persist across reload), and the report itself. Self-cleaning:
+// deletes the bank account and the tag it creates, so the seed's empty tag +
+// bank-account lists are restored. A unique tag name per run dodges the
+// per-household unique-name constraint if a prior run died dirty.
+test("tags: create on /tags, assign on a position, report renders, cleanup", async ({ page }) => {
   const tagName = `E2E Tag ${Date.now()}`;
   const acctName = `E2E Tagged Acct ${Date.now()}`;
 
-  // --- Create a tag in Settings ---
-  await page.goto("/settings");
+  // --- Create a tag on the Tags page ---
+  await page.goto("/tags");
   await page.getByTestId("new-tag-name").fill(tagName);
   await page.getByTestId("add-tag").click();
   await expect(page.getByTestId("tag-list").getByText(tagName)).toBeVisible();
@@ -58,7 +59,7 @@ test("tags: create in settings, assign on a position, report route, cleanup", as
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
 
-  await page.goto("/settings");
+  await page.goto("/tags");
   await page.getByTestId("delete-tag").click();
   await page
     .getByRole("alertdialog")

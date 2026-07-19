@@ -5,8 +5,8 @@
     "saved": "Tag updated"
   },
   "manage": {
-    "title": "Tags",
-    "description": "Group positions however you like, then see the totals on the Tags report.",
+    "title": "Manage tags",
+    "description": "Group positions however you like — the breakdown below reflects any changes.",
     "empty": "No tags yet. Add one below.",
     "newLabel": "New tag",
     "namePlaceholder": "e.g. BCA, Retirement",

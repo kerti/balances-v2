@@ -60,7 +60,14 @@ const NAV: Section[] = [
   },
   { labelKey: "income", to: routes.income },
   { labelKey: "tags", to: routes.tags },
-  { labelKey: "settings", to: routes.settings },
+  {
+    labelKey: "settings",
+    to: routes.settings,
+    children: [
+      { labelKey: "fxRates", to: routes.settingsFxRates },
+      { labelKey: "inflationRates", to: routes.settingsInflationRates },
+    ],
+  },
 ];
 
 // Uses shadcn's default text-sm for both main and sub items so the menu reads at

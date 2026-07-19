@@ -5,8 +5,8 @@
     "saved": "Tag diperbarui"
   },
   "manage": {
-    "title": "Tag",
-    "description": "Kelompokkan posisi sesuka Anda, lalu lihat totalnya di laporan Tag.",
+    "title": "Kelola tag",
+    "description": "Kelompokkan posisi sesuka Anda — rincian di bawah mengikuti setiap perubahan.",
     "empty": "Belum ada tag. Tambahkan di bawah.",
     "newLabel": "Tag baru",
     "namePlaceholder": "mis. BCA, Dana Pensiun",

@@ -89,6 +89,11 @@ export const routes = {
   tags: "/tags",
 
   settings: "/settings",
+  // Lookup/reference tables (ADR-0048 calls the inflation store "FX-like") —
+  // nested under Settings since neither has a report view of its own the way
+  // Tags does (routes.tags), just CRUD tables.
+  settingsFxRates: "/settings/fx-rates",
+  settingsInflationRates: "/settings/inflation-rates",
 } as const;
 
 // positionDetail resolves a position's detail-page path from the (group,

@@ -4,10 +4,11 @@ import { test, expect } from "@playwright/test";
 // M5 slice 4). The monthly report is stored in the reporting currency; the
 // dashboard projects the headline net worth into a second currency at the
 // month's FX rate (carry-forward). This: seeds a net worth (account + snapshot),
-// enables multi-currency + enters a USD rate in Settings, then picks "Also in:
-// USD" on the dashboard and asserts the "≈" approximation renders a real
-// amount. Self-cleaning — deletes the snapshot, account, and rate, and turns
-// multi-currency back off, restoring the seed state. See ADR-0024.
+// enables multi-currency in Settings + enters a USD rate on the Exchange Rates
+// subpage, then picks "Also in: USD" on the dashboard and asserts the "≈"
+// approximation renders a real amount. Self-cleaning — deletes the snapshot,
+// account, and rate, and turns multi-currency back off, restoring the seed
+// state. See ADR-0024.
 test("dashboard side-by-side currency: project net worth into USD", async ({ page }) => {
   const account = `E2E fx account ${Date.now()}`;
   const desc = `E2E fx snapshot ${Date.now()}`;
@@ -36,15 +37,16 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
 
-  // --- Settings: enable multi-currency, then enter a USD rate for this month ---
+  // --- Settings: enable multi-currency, then enter a USD rate on the
+  // Exchange Rates subpage for this month ---
   await page.getByRole("link", { name: "Settings" }).click();
   // Controlled checkbox: the toggle is async (mutation → session refetch), so
-  // click and let the FX-rates card's appearance confirm the flip stuck.
+  // click and let the "Manage exchange rates" link's appearance confirm the
+  // flip stuck (the Exchange Rates subpage stays reachable from the sidebar
+  // either way, but only shows the CRUD form once multi-currency is on).
   await page.getByLabel("Enable multi-currency tracking").click();
-  await expect(page.getByText("Exchange rates", { exact: true })).toBeVisible();
-  // Scope to the Exchange-rates card: the inflation card (slice 3) mirrors this
-  // card's shape — Month/Rate labels and an "Add rate" button — so unscoped
-  // accessible-name lookups are ambiguous across the two Settings cards.
+  await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
+  await page.getByRole("link", { name: "Exchange Rates", exact: true }).click();
   const fxCard = page.getByTestId("fx-rates-card");
   await fxCard.locator("#fx-month").fill(month);
   await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
@@ -78,9 +80,11 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText(account)).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Exchange Rates", exact: true }).click();
   await page.getByRole("row", { name: /USD/ }).getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
+
+  await page.getByRole("link", { name: "Settings" }).click();
   await page.getByLabel("Enable multi-currency tracking").click();
-  await expect(page.getByText("Exchange rates", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Manage exchange rates" })).toHaveCount(0);
 });
