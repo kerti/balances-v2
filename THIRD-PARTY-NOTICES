@@ -11100,6 +11100,7 @@ The following npm packages may be included in this product:
  - @tailwindcss/oxide@4.3.2
  - @tailwindcss/vite@4.3.2
  - tailwindcss@4.3.2
+ - tailwindcss@4.3.3
 
 These packages each contain the following license:
 
