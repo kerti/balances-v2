@@ -304,3 +304,54 @@ unmaterialized. No backup-format bump (additive numeric columns, same rule as th
    see this (pure-DDL migration, no input row changes), so each report row carries an
    `engine_version` stamp and `needsRegen` forces regeneration on mismatch — pre-migration rows read
    as version-NULL and regenerate (INV-STALENESS-04).
+
+## Amendment — 2026-07-20: paid-out bond coupons are passive cash (slice 6, #476)
+
+Slice 6 of the scope above. The **open question** it flagged — *do `pays_out` coupons surface as
+`InvestmentReturn`, or vanish into the bank balance?* — resolves to the former: a paid-out coupon is
+recorded as a Coupon Transaction, and the engine's per-position return (`ΔSnapshot + cash_out −
+cash_in`, INV-FINANCE-08) already books its `cash_out` as bond `InvestmentReturn`. So it lands in the
+pool's own-return `g` today, **not** in passive cash — the exact miscount slice 6 exists to fix. This
+is therefore a **reclassification for the resilience projection**, not a new capture.
+
+### Decision
+
+The realized-cash axis (see Considered alternatives) puts a paid-out coupon in **passive cash**: it is
+external cash that left the pool, dependable like rent/pension/interest. But the **domain keeps coupon
+yield inside Investment Return** (CONTEXT: investment return covers yield from
+Coupons/Dividends/Distributions), and the income statement + `investment_return_total` must not lose
+it. The two requirements are reconciled by a two-scope split at render time, not by moving the coupon
+out of investment return:
+
+- The engine **materializes** the paid-out slice on its own — `passive_coupon_cash` on
+  `monthly_reports`, summed from `pays_out`-disposition Coupon Transactions — leaving
+  `investment_return_total` (coupon included) untouched.
+- `buildStats` **adds** `passive_coupon_cash` to the passive-cash scope (Passive-Income numerator +
+  Fund Resilience draw-offset) **and subtracts** it from own-return `g` (`ownReturn =
+  InvestmentReturnTotal − passiveCouponCash`). The Passive-Income **numerator is unchanged** by the
+  split (passive cash gains the coupon, own return loses it — the "no-op relabel" the rejected
+  low-volatility alternative would have been *for the ratio*); the substantive change is in **Fund
+  Resilience**, where the coupon stops compounding on the whole pool as `g` and becomes a fixed,
+  inflating draw-offset. That is the real fix — a paid-out coupon shouldn't grow the pool it left.
+
+**Accruing** coupons (`coupon_disposition = 'accrues'`) record no Coupon Transaction — their yield is
+snapshot growth — so they never enter `passive_coupon_cash` and stay mark-to-market in `g`, unchanged.
+The disposition is read into the engine via a `LEFT JOIN bond_details` on `ListInvestmentsForReport`
+and gates the tally, so a mis-entered coupon on an accruing bond is not swept into passive cash.
+
+### Mechanism
+
+- `reportPosition` carries `couponDisposition`; the engine builds a `pays_out` bond set and tallies
+  each month's paid-out coupon `cash_out` into `couponCashByMonth`, surfaced as
+  `monthlyReportData.passiveCouponCash` (nil on the baseline, mirroring `investmentReturn`).
+- Additive migration `00013`: `passive_coupon_cash numeric(20,4)` on `monthly_reports`. No
+  backup-format bump (a report column is rematerialized from inputs on restore — reports aren't
+  backed up). `reportEngineVersion → 2` trips `needsRegen` so pre-existing rows recompute the column
+  (INV-STALENESS-04), same pattern as slice 7.
+
+### Invariants
+
+- **INV-FINANCE-25** (new) — a paid-out coupon is passive cash: added to the passive-cash scope and
+  removed from own-return `g`, while its yield stays in `investment_return_total`; accruing coupons
+  stay in `g`. Guards the resilience double-count from the coupon angle, extending the INV-FINANCE-21/
+  -22 family.

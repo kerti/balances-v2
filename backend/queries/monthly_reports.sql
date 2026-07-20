@@ -41,6 +41,7 @@ INSERT INTO monthly_reports (
     earned_income_interest,
     earned_income_total_routine, earned_income_rental_routine,
     earned_income_pension_routine, earned_income_interest_routine,
+    passive_coupon_cash,
     engine_version
 ) VALUES (
     $1, $2, now(),
@@ -51,7 +52,8 @@ INSERT INTO monthly_reports (
     $25, $26, $27, $28,
     $29,
     $30, $31, $32, $33,
-    $34
+    $34,
+    $35
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -86,6 +88,7 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     earned_income_rental_routine   = EXCLUDED.earned_income_rental_routine,
     earned_income_pension_routine  = EXCLUDED.earned_income_pension_routine,
     earned_income_interest_routine = EXCLUDED.earned_income_interest_routine,
+    passive_coupon_cash            = EXCLUDED.passive_coupon_cash,
     engine_version                 = EXCLUDED.engine_version
 RETURNING *;
 
@@ -154,9 +157,11 @@ WHERE household_id = $1 AND deleted_at IS NULL;
 -- name: ListInvestmentsForReport :many
 SELECT i.id, i.display_name, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
        i.native_currency, i.rolled_from_investment_id,
-       td.principal AS td_principal, td.placement_date AS td_placement_date
+       td.principal AS td_principal, td.placement_date AS td_placement_date,
+       bd.coupon_disposition AS coupon_disposition
 FROM investments i
 LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+LEFT JOIN bond_details bd ON bd.investment_id = i.id
 WHERE i.household_id = $1 AND i.deleted_at IS NULL;
 
 -- ----- engine inputs: income + investment transactions (slice 2) ----------

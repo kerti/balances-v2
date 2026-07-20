@@ -25,7 +25,7 @@ func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 // inputs — the data-driven watermark can't see those, so needsRegen also
 // regenerates when a row's stamp doesn't match. Rows from before the stamp
 // existed read as NULL and always regenerate.
-const reportEngineVersion int32 = 1
+const reportEngineVersion int32 = 2
 
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
@@ -330,6 +330,7 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		params.InvestmentReturnGold = ptr(rep.investmentReturn.gold)
 		params.InvestmentReturnTimeDeposit = ptr(rep.investmentReturn.timeDeposit)
 	}
+	params.PassiveCouponCash = rep.passiveCouponCash // nil on baseline
 	return params, nil
 }
 
@@ -453,7 +454,8 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 		p := reportPosition{
 			id: i.ID, name: i.DisplayName, group: groupInvestment, subtype: i.Subtype, ownershipType: i.OwnershipType,
 			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt,
-			rolledFrom: i.RolledFromInvestmentID,
+			rolledFrom:        i.RolledFromInvestmentID,
+			couponDisposition: i.CouponDisposition,
 		}
 		// TimeDeposit placement cash_in (issue #27): the principal + placement
 		// date feed the engine's synthetic flow so the placement month nets to 0
