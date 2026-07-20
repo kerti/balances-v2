@@ -315,6 +315,13 @@ func (d *doc) deltaText(dl *Delta) (string, [3]int) {
 // short note, keeping the reserved slot intact.
 func (d *doc) statistics() {
 	d.sectionTitle(d.c.statistics)
+	// Convention note: flow inputs are trailing-12 averages, balances are as-of
+	// month. Explains the smoothing so a ratio isn't misread against one month.
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, d.c.statNote, "", "L", false)
+	d.pdf.Ln(2)
 	s := d.in.Stats
 	d.statRow(d.c.statRows[0], d.c.statDescs[0], d.pctValue(s.CashFlow), s.CashFlow.Defined)
 	d.statRow(d.c.statRows[1], d.c.statDescs[1], d.pctValue(s.PassiveIncome), s.PassiveIncome.Defined)

@@ -46,6 +46,7 @@ type reportCopy struct {
 	staleNote string // footnote for carried-forward values
 
 	// financial-health panel (#412, ADR-0048)
+	statNote       string   // section intro: the trailing-12 smoothing convention
 	statRows       []string // the four ratio labels, in render order
 	statDescs      []string // parallel one-sentence explanation for each ratio
 	statUndefined  string   // note shown when a ratio's inputs are unavailable
@@ -94,6 +95,7 @@ var reportCatalog = map[string]reportCopy{
 		staleNote:        "* carried forward from an earlier month's statement",
 		deltaVs:          "vs %s",
 		footerPage:       "Page %d of %s",
+		statNote:         "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month.",
 		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
 		statDescs: []string{
 			"Share of earned income kept after living expenses, averaged over the past year. Counts income you marked as regular — one-offs like bonuses or severance are left out.",
@@ -140,6 +142,7 @@ var reportCatalog = map[string]reportCopy{
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
 		deltaVs:          "vs %s",
 		footerPage:       "Halaman %d dari %s",
+		statNote:         "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini.",
 		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
 		statDescs: []string{
 			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti bonus atau pesangon tidak disertakan.",
