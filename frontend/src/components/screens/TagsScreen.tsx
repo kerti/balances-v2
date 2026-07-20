@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { InvestmentPieChart, type PieSlice } from "@/components/charts/InvestmentPieChart";
 import { TagBadge } from "@/components/common/TagBadge";
+import { TagsCard } from "@/components/common/TagsCard";
 import { useTags, useTagBreakdown } from "@/hooks/useTags";
 import { aggregateTagBreakdown, type TagCell } from "@/lib/tagBreakdown";
 import { formatCurrency } from "@/lib/format";
@@ -19,10 +20,14 @@ function cellKey(c: TagCell) {
   return c.tagId ?? "untagged";
 }
 
-// TagsScreen is the breakdown report (ADR-0028): per currency, a pie of
-// holdings proportion by Tag plus a table of holdings / liabilities / net,
-// with an Untagged bucket. No FX — a multi-currency household sees one card
-// per currency, matching the list/home convention.
+// TagsScreen is the breakdown report (ADR-0028) plus tag maintenance — merged
+// onto one page rather than splitting management into a Settings subpage,
+// since a "manage" surface and its own report were needless duplication when
+// they lived in two places. Per currency: a pie of holdings proportion by Tag
+// plus a table of holdings / liabilities / net, with an Untagged bucket. No
+// FX — a multi-currency household sees one card per currency, matching the
+// list/home convention. The management card always renders (a user must be
+// able to create a tag before there's anything to break down).
 export function TagsScreen() {
   const { t } = useTranslation(["tags", "common"]);
   const { data: tags } = useTags();
@@ -52,6 +57,8 @@ export function TagsScreen() {
         <h1 className="text-2xl font-semibold tracking-tight">{t("report.title")}</h1>
         <p className="text-sm text-muted-foreground">{t("report.subtitle")}</p>
       </div>
+
+      <TagsCard />
 
       {!isLoading && breakdowns.length === 0 && (
         <p className="text-sm text-muted-foreground" data-testid="tags-empty">

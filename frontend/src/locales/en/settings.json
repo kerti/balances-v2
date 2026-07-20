@@ -1,6 +1,12 @@
 {
   "title": "Settings",
   "subtitle": "Reporting currency, multi-currency tracking, and household invitations.",
+  "sections": {
+    "profile": "Profile",
+    "household": "Household",
+    "membership": "Membership",
+    "data": "Data"
+  },
   "nickname": {
     "title": "Your name",
     "description": "A short nickname shown in ownership labels and owner pickers. Leave it blank to use your full name ({{displayName}}).",
@@ -40,7 +46,8 @@
     "title": "Currency",
     "description": "Net worth is reported in this currency. Turn on multi-currency to hold positions in other currencies and enter monthly exchange rates.",
     "reportingLabel": "Reporting currency",
-    "multiToggle": "Enable multi-currency tracking"
+    "multiToggle": "Enable multi-currency tracking",
+    "manageFx": "Manage exchange rates →"
   },
   "fx": {
     "title": "Exchange rates",
@@ -49,16 +56,23 @@
     "currency": "Currency",
     "rate": "Rate",
     "addRate": "Add rate",
-    "empty": "No rates entered yet."
+    "empty": "No rates entered yet.",
+    "disabledHint": "Exchange rates only apply once multi-currency tracking is on.",
+    "disabledLink": "Go to Currency settings"
   },
   "inflation": {
     "title": "Inflation",
-    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualized (year-on-year) figure each month — the estimate averages the last 12 months when available.",
+    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualized (year-on-year) figure each month on the Inflation Rates page — the estimate averages the last 12 months when available.",
     "assumedLabel": "Assumed annual %",
     "month": "Month",
     "rate": "Annual %",
     "addRate": "Add rate",
-    "empty": "No monthly figures entered — the assumed rate is used."
+    "empty": "No monthly figures entered — the assumed rate is used.",
+    "manageRates": "Manage monthly rates →"
+  },
+  "inflationRatesPage": {
+    "title": "Inflation Rates",
+    "subtitle": "Enter the actual annualized (year-on-year) inflation figure for any month you have it. Months you leave blank fall back to the assumed rate on the Settings page."
   },
   "invite": {
     "title": "Invite someone to your household",

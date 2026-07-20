@@ -17,6 +17,8 @@
   "income": "Pemasukan",
   "tags": "Tag",
   "settings": "Pengaturan",
+  "fxRates": "Kurs",
+  "inflationRates": "Laju Inflasi",
   "footer": {
     "deploy": {
       "preview": "Pratinjau",

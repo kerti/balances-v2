@@ -1,18 +1,11 @@
-import { useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Link } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { errorMessage } from "@/lib/errorMessage";
 import { useSession } from "@/hooks/useSession";
 import { useUpdateMe } from "@/hooks/useUpdateMe";
@@ -22,19 +15,21 @@ import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
 import { SUPPORTED_CARRYOVER_DATE_MODES, type CarryoverDateMode } from "@/lib/dateLimits";
-import { useFxRates, useCreateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
-import {
-  useInflationRates,
-  useCreateInflationRate,
-  useDeleteInflationRate,
-} from "@/hooks/useInflationRates";
-import { formatYearMonth } from "@/lib/format";
+import { routes } from "@/lib/routes";
 import { InviteForm } from "@/components/common/InviteForm";
 import { ReactivationCard } from "@/components/common/ReactivationCard";
-import { TagsCard } from "@/components/common/TagsCard";
 import { BackupCard } from "@/components/common/BackupCard";
 import { RestoreCard } from "@/components/common/RestoreCard";
 import { EraseCard } from "@/components/common/EraseCard";
+
+// SectionHeading groups related cards on the Settings home page. Purely
+// visual — no route split, unlike the Assets/Liabilities/Investments sidebar
+// groups — because none of Profile/Household/Membership/Data hold a
+// browsable list of records the way those groups' children do (just a
+// handful of scalar fields or single actions each).
+function SectionHeading({ children }: { children: ReactNode }) {
+  return <h2 className="text-lg font-medium tracking-tight">{children}</h2>;
+}
 
 export function SettingsScreen() {
   const { t } = useTranslation(["settings", "common"]);
@@ -69,17 +64,14 @@ export function SettingsScreen() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
+      <SectionHeading>{t("sections.profile")}</SectionHeading>
       <NicknameCard />
-
-      <HouseholdNameCard />
-
       <LanguageCard />
-
       <ThemeCard />
-
       <CarryoverDateCard />
 
-      <TagsCard />
+      <SectionHeading>{t("sections.household")}</SectionHeading>
+      <HouseholdNameCard />
 
       <Card>
         <CardHeader>
@@ -121,21 +113,24 @@ export function SettingsScreen() {
           {updateSettings.isError && (
             <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
           )}
+
+          {me.multi_currency_enabled && (
+            <Link to={routes.settingsFxRates} className="block text-sm underline">
+              {t("currency.manageFx")}
+            </Link>
+          )}
         </CardContent>
       </Card>
 
-      {me.multi_currency_enabled && <FxRatesCard />}
+      <AssumedInflationCard />
 
-      <InflationCard />
-
+      <SectionHeading>{t("sections.membership")}</SectionHeading>
       <InviteForm />
-
       <ReactivationCard />
 
+      <SectionHeading>{t("sections.data")}</SectionHeading>
       <BackupCard />
-
       <RestoreCard />
-
       <EraseCard />
     </div>
   );
@@ -441,134 +436,15 @@ function CarryoverDateCard() {
   );
 }
 
-function FxRatesCard() {
-  const { t } = useTranslation(["settings", "common"]);
-  const { data: rates, isPending } = useFxRates();
-  const createRate = useCreateFxRate();
-  const deleteRate = useDeleteFxRate();
-
-  const [month, setMonth] = useState("");
-  const [currency, setCurrency] = useState("");
-  const [rate, setRate] = useState("");
-
-  const add = () => {
-    createRate.mutate(
-      { year_month: month, currency: currency.toUpperCase(), rate },
-      {
-        onSuccess: () => {
-          setMonth("");
-          setCurrency("");
-          setRate("");
-        },
-      },
-    );
-  };
-
-  const canAdd = month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
-
-  return (
-    <Card data-testid="fx-rates-card">
-      <CardHeader>
-        <CardTitle className="text-base">{t("fx.title")}</CardTitle>
-        <CardDescription>{t("fx.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="fx-month">{t("fx.month")}</Label>
-            <Input
-              id="fx-month"
-              type="month"
-              className="w-40"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="fx-currency">{t("fx.currency")}</Label>
-            <Input
-              id="fx-currency"
-              className="w-24 uppercase"
-              maxLength={3}
-              // ISO currency code — a data token, not translatable copy.
-              placeholder={"USD"}
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="fx-rate">{t("fx.rate")}</Label>
-            <Input
-              id="fx-rate"
-              inputMode="decimal"
-              className="w-36"
-              // Example numeric rate; not translatable copy.
-              placeholder={"16000"}
-              value={rate}
-              onChange={(e) => setRate(e.target.value)}
-            />
-          </div>
-          <Button onClick={add} disabled={!canAdd || createRate.isPending}>
-            {t("fx.addRate")}
-          </Button>
-        </div>
-
-        {createRate.isError && (
-          <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
-        )}
-
-        {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
-
-        {rates && rates.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t("fx.empty")}</p>
-        )}
-
-        {rates && rates.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("fx.month")}</TableHead>
-                <TableHead>{t("fx.currency")}</TableHead>
-                <TableHead>{t("fx.rate")}</TableHead>
-                <TableHead className="w-16"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rates.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                  <TableCell>{r.currency}</TableCell>
-                  <TableCell className="tabular-nums">{r.rate}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
-                      {t("common:delete")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// InflationCard holds the assumed-annual-inflation setting (the Fund Resilience
-// fallback) plus the manual monthly inflation table (ADR-0048). Unlike FX it is
-// always shown — inflation is not gated by the multi-currency toggle — and its
-// rates are annualized (YoY) percentages that may be negative (deflation).
-function InflationCard() {
+// AssumedInflationCard holds only the assumed-annual-inflation setting (the
+// Fund Resilience fallback, ADR-0048) — a single household preference, so it
+// stays on the Settings home page. The monthly lookup table lives on its own
+// subpage (routes.settingsInflationRates), linked from here.
+function AssumedInflationCard() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateSettings = useUpdateHouseholdSettings();
-  const { data: rates, isPending } = useInflationRates();
-  const createRate = useCreateInflationRate();
-  const deleteRate = useDeleteInflationRate();
-
   const [assumed, setAssumed] = useState<string | null>(null);
-  const [month, setMonth] = useState("");
-  const [rate, setRate] = useState("");
 
   if (!me) return null;
 
@@ -587,28 +463,13 @@ function InflationCard() {
       { onSuccess: () => setAssumed(null) },
     );
 
-  const add = () => {
-    createRate.mutate(
-      { year_month: month, rate },
-      {
-        onSuccess: () => {
-          setMonth("");
-          setRate("");
-        },
-      },
-    );
-  };
-
-  // A rate may be negative (deflation) or zero; only require a parseable number.
-  const canAdd = month !== "" && rate.trim() !== "" && !Number.isNaN(Number(rate));
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">{t("inflation.title")}</CardTitle>
         <CardDescription>{t("inflation.description")}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <div className="flex items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
@@ -633,70 +494,9 @@ function InflationCard() {
           <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
         )}
 
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="inflation-month">{t("inflation.month")}</Label>
-              <Input
-                id="inflation-month"
-                type="month"
-                className="w-40"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="inflation-rate">{t("inflation.rate")}</Label>
-              <Input
-                id="inflation-rate"
-                inputMode="decimal"
-                className="w-36"
-                // Example numeric rate; not translatable copy.
-                placeholder={"3.5"}
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-              />
-            </div>
-            <Button onClick={add} disabled={!canAdd || createRate.isPending}>
-              {t("inflation.addRate")}
-            </Button>
-          </div>
-
-          {createRate.isError && (
-            <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
-          )}
-
-          {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
-
-          {rates && rates.length === 0 && (
-            <p className="text-sm text-muted-foreground">{t("inflation.empty")}</p>
-          )}
-
-          {rates && rates.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("inflation.month")}</TableHead>
-                  <TableHead>{t("inflation.rate")}</TableHead>
-                  <TableHead className="w-16"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rates.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                    <TableCell className="tabular-nums">{r.rate}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
-                        {t("common:delete")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+        <Link to={routes.settingsInflationRates} className="block text-sm underline">
+          {t("inflation.manageRates")}
+        </Link>
       </CardContent>
     </Card>
   );

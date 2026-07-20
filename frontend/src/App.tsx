@@ -56,6 +56,8 @@ import { GoldDetail } from "@/components/detail/GoldDetail";
 import { IncomeScreen } from "@/components/screens/IncomeScreen";
 import { TagsScreen } from "@/components/screens/TagsScreen";
 import { SettingsScreen } from "@/components/screens/SettingsScreen";
+import { SettingsFxRatesScreen } from "@/components/screens/SettingsFxRatesScreen";
+import { SettingsInflationRatesScreen } from "@/components/screens/SettingsInflationRatesScreen";
 
 // The list screens and detail pages predate the router: they take an
 // `onSelect(id)` / `onBack()` callback and the entity id as a prop, with no
@@ -373,6 +375,8 @@ const router = createBrowserRouter([
       { path: "tags", element: <TagsScreen /> },
 
       { path: "settings", element: <SettingsScreen /> },
+      { path: "settings/fx-rates", element: <SettingsFxRatesScreen /> },
+      { path: "settings/inflation-rates", element: <SettingsInflationRatesScreen /> },
 
       // Unknown path → dashboard.
       { path: "*", element: <Navigate to={routes.dashboard} replace /> },
