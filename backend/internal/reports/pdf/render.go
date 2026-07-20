@@ -327,6 +327,27 @@ func (d *doc) statistics() {
 	d.statRow(d.c.statRows[1], d.c.statDescs[1], d.pctValue(s.PassiveIncome), s.PassiveIncome.Defined)
 	d.statRow(d.c.statRows[2], d.c.statDescs[2], d.pctValue(s.InstantLiquidity), s.InstantLiquidity.Defined)
 	d.statRow(d.c.statRows[3], d.c.statDescs[3], d.resilienceValue(), s.Resilience.Defined)
+	d.statInputs(s.Inputs)
+}
+
+// statInputs renders the reproducibility block: the trailing-12 operands behind
+// the two flow ratios, plus their formulas in words, so the numbers can be
+// plugged back in by hand. Muted and small — an under-the-hood footnote, not a
+// headline. Collapses entirely when undefined (baseline, no flow month).
+func (d *doc) statInputs(in StatInputs) {
+	if !in.Defined {
+		return
+	}
+	d.keepTogether(22)
+	d.pdf.Ln(1)
+	d.subGroup(d.c.statInputsTitle)
+	d.line(d.c.statInputIncome, d.money(in.AvgIncome), 5, lineOpt{mutedText: true})
+	d.line(d.c.statInputExpenses, d.money(in.AvgExpenses), 5, lineOpt{mutedText: true})
+	d.line(d.c.statInputPassive, d.money(in.AvgPassive), 5, lineOpt{mutedText: true})
+	d.pdf.SetFont("Geist", "", 7)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 5)
+	d.pdf.MultiCell(d.w-5, 3.4, d.c.statFormulaCash+"\n"+d.c.statFormulaPass, "", "L", false)
 }
 
 // statRow draws one ratio: a bold label + right-aligned value, then a muted,

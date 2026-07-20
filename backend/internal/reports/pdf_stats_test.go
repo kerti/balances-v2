@@ -62,6 +62,41 @@ func TestBuildStats_FourRatios_SingleMonth(t *testing.T) {
 	}
 }
 
+// The reproducibility block must let the reader recompute the two flow ratios
+// by hand: Cash-Flow = (AvgIncome − AvgExpenses)/AvgIncome, Passive-Income =
+// AvgPassive/AvgExpenses. The surfaced averages must be the exact operands.
+// covers: INV-FINANCE-27
+func TestBuildStats_InputsReproduceFlowRatios(t *testing.T) {
+	// Two flow months so the averages are genuine means, not a single month.
+	series := []db.MonthlyReport{
+		flowMonth(ym(2026, time.May), "1000", "600", "100", "50", "200", "10000"),
+		flowMonth(ym(2026, time.June), "1400", "800", "140", "60", "300", "10000"),
+	}
+	row := &series[1]
+
+	st := buildStats(row, []repo.PositionDetail{bank("500")}, series, nil, decimal.Zero)
+
+	in := st.Inputs
+	if !in.Defined {
+		t.Fatal("inputs: want defined")
+	}
+	if in.Months != 2 {
+		t.Errorf("months: got %d, want 2", in.Months)
+	}
+	// Averages over the two months: income (1000+1400)/2=1200, expenses
+	// (600+800)/2=700, total passive ((100+50+200)+(140+60+300))/2=425.
+	if in.AvgIncome != "1200" || in.AvgExpenses != "700" || in.AvgPassive != "425" {
+		t.Fatalf("avgs: got income=%q expenses=%q passive=%q, want 1200/700/425",
+			in.AvgIncome, in.AvgExpenses, in.AvgPassive)
+	}
+	// Plugging the surfaced averages into the formulas reproduces the ratios.
+	ai, ae, ap := dec(in.AvgIncome), dec(in.AvgExpenses), dec(in.AvgPassive)
+	wantCash, _ := ai.Sub(ae).Div(ai).Mul(decimal.NewFromInt(100)).Float64()
+	wantPass, _ := ap.Div(ae).Mul(decimal.NewFromInt(100)).Float64()
+	assertPct(t, "cash-flow reproduced", st.CashFlow, wantCash)
+	assertPct(t, "passive-income reproduced", st.PassiveIncome, wantPass)
+}
+
 // covers: INV-FINANCE-20
 func TestBuildStats_UndefinedEdges(t *testing.T) {
 	m := ym(2026, time.June)

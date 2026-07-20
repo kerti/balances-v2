@@ -57,6 +57,13 @@ func richInput() Input {
 			PassiveIncome:    Ratio{Defined: true, Percent: -4.2}, // market-sensitive, can print negative
 			InstantLiquidity: Ratio{Defined: true, Percent: 5.3},
 			Resilience:       Resilience{Defined: true, Months: 137},
+			Inputs: StatInputs{
+				Defined:     true,
+				AvgIncome:   "68000000",
+				AvgExpenses: "55000000",
+				AvgPassive:  "3950000",
+				Months:      12,
+			},
 		},
 	}
 }

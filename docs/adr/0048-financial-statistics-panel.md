@@ -403,9 +403,34 @@ replacement. Considered replacing member rows with the source split — rejected
   suppressed). `cashFlow()` (`reports/pdf/render.go`) renders a "By source" sub-group + the coupon
   line. Copy strings added for `en` + `id`.
 
+### Stats reproducibility inputs + expenses-are-estimated note
+
+Two companion clarity changes shipped alongside the drill-down (owner-facing, `en` + `id`):
+
+- **Reproducibility inputs.** Under the four ratios the panel now prints a muted "Inputs — 12-mo avg,
+  regular income only" block: the trailing-12 *routine-income* per-month averages the two **flow**
+  ratios divide (`AvgIncome`, `AvgExpenses`, `AvgPassive`), plus the two formulas in words. The reader
+  plugs them back in: `Cash-Flow = (AvgIncome − AvgExpenses)/AvgIncome`, `Passive-Income =
+  AvgPassive/AvgExpenses`. Averages, not sums — `sum/sum == avg/avg`, so the ratio is identical while
+  the figures read as a typical month. Scope is deliberate: only the two flow ratios are
+  formula-reproducible. **Instant-Liquidity** is point-in-time stocks (bank cash ÷ investments,
+  readable off the balance sheet), **Fund Resilience** is a depletion simulation — neither is a
+  one-line plug-in, so neither is expanded. Surfaced with the stats (not in the all-income Cash Flow
+  section) so the routine/all-income basis clash never lands inside a section where
+  `Active + Passive == Income` must hold. `buildStats` fills `Stats.Inputs` (`StatInputs`) from the
+  sums it already accumulates; `statInputs()` renders it, collapsing on the baseline.
+- **Expenses are an estimate, stated.** Living expenses are never recorded — the engine derives them
+  as a residual (`earned_income + investment_return + asset_value_change − Δnet_worth`). The Cash Flow
+  row label is now "Living Expenses (estimated)" and the stats convention note spells out the
+  derivation, so the estimate is explicit at the point of reading.
+
 ### Invariants
 
 - **INV-FINANCE-26** (new) — the report's earned-income drill-down decomposes the month's income by
   source with `Active + Passive == earned_income_total` (single-month, all-income basis, deliberately
   unlike the trailing-12 routine passive ratio); paid-out coupon cash surfaces as a separate additive
   line and is never folded into the earned-income total or the cash-flow Net.
+- **INV-FINANCE-27** (new) — the stats reproducibility inputs are the exact trailing-12 routine
+  operands the flow ratios divide (per-month averages), so `Cash-Flow == (AvgIncome −
+  AvgExpenses)/AvgIncome` and `Passive-Income == AvgPassive/AvgExpenses` recompute by hand; defined
+  exactly when the flow ratios are.

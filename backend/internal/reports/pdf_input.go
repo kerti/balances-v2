@@ -187,6 +187,19 @@ func buildStats(row *db.MonthlyReport, positions []repo.PositionDetail, series [
 		}
 		st.Resilience = simulateResilience(p0, e0, pi0, g, monthlyInflation(inflation, assumedAnnualInflation, lo, upto))
 	}
+	// Reproducibility inputs: the trailing-12 operands behind the two flow ratios,
+	// as per-month averages (sum/n; ratio is sum/sum == avg/avg). Defined exactly
+	// when the flow ratios are (≥1 flow month in the window). See ADR-0048.
+	if flowN > 0 {
+		n := decimal.NewFromInt(int64(flowN))
+		st.Inputs = pdf.StatInputs{
+			Defined:     true,
+			AvgIncome:   incomeSum.Div(n).String(),
+			AvgExpenses: expSum.Div(n).String(),
+			AvgPassive:  totalPassiveSum.Div(n).String(),
+			Months:      flowN,
+		}
+	}
 	return st
 }
 

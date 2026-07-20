@@ -74,6 +74,21 @@ type Stats struct {
 	PassiveIncome    Ratio      // total passive income ÷ living expenses; market-sensitive, may be negative
 	InstantLiquidity Ratio      // bank cash ÷ total investments; a ceiling gauge
 	Resilience       Resilience // investment-pool depletion runway
+	Inputs           StatInputs // the trailing-12 operands behind the two flow ratios
+}
+
+// StatInputs is the trailing-12 (routine-income) operands the two flow ratios
+// divide, surfaced so the owner can reproduce the percentages by hand:
+// Cash-Flow = (AvgIncome − AvgExpenses) / AvgIncome; Passive-Income =
+// AvgPassive / AvgExpenses. Averages, not sums — sum/sum equals avg/avg, so the
+// ratio is identical while the figures read as "typical month". Undefined on the
+// baseline (no flow month in the window), where the flow ratios are undefined too.
+type StatInputs struct {
+	Defined     bool
+	AvgIncome   string // avg monthly earned income, regular only (routine), decimal string
+	AvgExpenses string // avg monthly derived living expenses (estimated), decimal string
+	AvgPassive  string // avg monthly total passive income (passive cash + investment return)
+	Months      int    // flow months averaged over (≤12)
 }
 
 // Ratio is one percentage indicator. Defined=false renders an em-dash + the
