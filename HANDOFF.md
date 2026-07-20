@@ -20,8 +20,8 @@ Read these first, in order:
 ## Where we are now
 
 M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
-2026-07-06. CI is green. **`v0.9.0-alpha.1` is the latest preview release**; **`v0.8.0-rc.1` is demo's
-current release** (until the next manual promote — ADR-0049) on the `preview`/`demo` environments
+2026-07-06. CI is green. **`v0.9.0-alpha.1` is the latest preview release** and, promoted manually
+(ADR-0049), **demo's current release too** on the `preview`/`demo` environments
 (`https://preview.<personal-domain>` / `https://demo.<personal-domain>`) via the tag-driven pipeline
 (ADR-0029/0030/0031, routing revised by 0049). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
