@@ -27,12 +27,16 @@ type reportCopy struct {
 	nonCurrentAssets string
 
 	// cash-flow rows
-	cashIn      string
-	cashOut     string
-	income      string
-	expenses    string
-	netCashFlow string
-	joint       string
+	cashIn         string
+	cashOut        string
+	income         string
+	bySource       string // sub-heading for the active/passive income split
+	activeIncome   string
+	passiveIncome  string
+	couponsPaidOut string // paid-out bond-coupon cash, additive line
+	expenses       string
+	netCashFlow    string
+	joint          string
 
 	totalPrefix string // "Total" / "Jumlah" — combined with a section name
 
@@ -42,12 +46,23 @@ type reportCopy struct {
 	staleNote string // footnote for carried-forward values
 
 	// financial-health panel (#412, ADR-0048)
+	statNote       string   // section intro: trailing-12 smoothing + expenses-are-estimated
 	statRows       []string // the four ratio labels, in render order
 	statDescs      []string // parallel one-sentence explanation for each ratio
 	statUndefined  string   // note shown when a ratio's inputs are unavailable
 	statIndefinite string   // Fund Resilience value when the pool never depletes
+	statYearUnit   string   // Fund Resilience value, singular ("%s year")
+	statYearsUnit  string   // Fund Resilience value, plural ("%s years")
 	statMonthUnit  string   // Fund Resilience value, singular ("%s month")
 	statMonthsUnit string   // Fund Resilience value, plural ("%s months")
+
+	// reproducibility block: the trailing-12 operands behind the two flow ratios
+	statInputsTitle   string // sub-heading for the inputs block
+	statInputIncome   string // avg monthly income (routine) label
+	statInputExpenses string // avg monthly living expenses (estimated) label
+	statInputPassive  string // avg monthly total passive income label
+	statFormulaCash   string // Cash-Flow ratio formula, in words
+	statFormulaPass   string // Passive-Income ratio formula, in words
 
 	deltaVs    string // "vs %s" — month-over-month comparison suffix
 	footerPage string // "Page %d of %s" (%s = total-pages alias)
@@ -77,7 +92,11 @@ var reportCatalog = map[string]reportCopy{
 		cashIn:           "Cash In",
 		cashOut:          "Cash Out",
 		income:           "Income",
-		expenses:         "Living Expenses",
+		bySource:         "By source",
+		activeIncome:     "Active income",
+		passiveIncome:    "Passive income",
+		couponsPaidOut:   "Bond coupons paid out",
+		expenses:         "Living Expenses (estimated)",
 		netCashFlow:      "Net Cash Flow",
 		joint:            "Joint",
 		totalPrefix:      "Total",
@@ -86,6 +105,7 @@ var reportCatalog = map[string]reportCopy{
 		staleNote:        "* carried forward from an earlier month's statement",
 		deltaVs:          "vs %s",
 		footerPage:       "Page %d of %s",
+		statNote:         "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month. Living expenses are never recorded directly: they're derived as what came in (income and investment returns) minus the change in your net worth, so every expense figure is an estimate.",
 		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
 		statDescs: []string{
 			"Share of earned income kept after living expenses, averaged over the past year. Counts income you marked as regular — one-offs like bonuses or severance are left out.",
@@ -93,14 +113,22 @@ var reportCatalog = map[string]reportCopy{
 			"Cash held in bank accounts as a share of total investments. A ceiling gauge: a high figure can signal idle cash that could be put to work.",
 			"How long investments would last if active income stopped, drawing estimated living expenses net of continuing passive income. Counts only income you marked as regular — one-offs like severance are excluded.",
 		},
-		statUndefined:    "Not enough history yet to calculate.",
-		statIndefinite:   "Indefinite",
-		statMonthUnit:    "%s month",
-		statMonthsUnit:   "%s months",
-		chartAssets:      "Assets Composition",
-		chartInvestments: "Investments Composition",
-		chartLiabilities: "Liabilities Composition",
-		chartTrend:       "Net Worth — last 12 months",
+		statUndefined:     "Not enough history yet to calculate.",
+		statIndefinite:    "Indefinite",
+		statYearUnit:      "%s year",
+		statYearsUnit:     "%s years",
+		statMonthUnit:     "%s month",
+		statMonthsUnit:    "%s months",
+		statInputsTitle:   "Inputs — 12-mo avg, regular income only",
+		statInputIncome:   "Avg income",
+		statInputExpenses: "Avg living expenses",
+		statInputPassive:  "Avg total passive income",
+		statFormulaCash:   "Cash-Flow = (income − living expenses) ÷ income",
+		statFormulaPass:   "Passive-Income = total passive income ÷ living expenses",
+		chartAssets:       "Assets Composition",
+		chartInvestments:  "Investments Composition",
+		chartLiabilities:  "Liabilities Composition",
+		chartTrend:        "Net Worth — last 12 months",
 	},
 	"id-ID": {
 		title:            "Laporan Keuangan Bulanan",
@@ -119,7 +147,11 @@ var reportCatalog = map[string]reportCopy{
 		cashIn:           "Kas Masuk",
 		cashOut:          "Kas Keluar",
 		income:           "Pendapatan",
-		expenses:         "Pengeluaran",
+		bySource:         "Berdasarkan sumber",
+		activeIncome:     "Pendapatan aktif",
+		passiveIncome:    "Pendapatan pasif",
+		couponsPaidOut:   "Kupon obligasi dibayarkan",
+		expenses:         "Pengeluaran (estimasi)",
 		netCashFlow:      "Arus Kas Bersih",
 		joint:            "Bersama",
 		totalPrefix:      "Jumlah",
@@ -128,6 +160,7 @@ var reportCatalog = map[string]reportCopy{
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
 		deltaVs:          "vs %s",
 		footerPage:       "Halaman %d dari %s",
+		statNote:         "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pendapatan dan imbal hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",
 		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
 		statDescs: []string{
 			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti bonus atau pesangon tidak disertakan.",
@@ -135,14 +168,22 @@ var reportCatalog = map[string]reportCopy{
 			"Kas di rekening bank sebagai bagian dari total investasi. Tolok ukur batas atas: angka tinggi menandakan kas menganggur yang bisa didayagunakan.",
 			"Berapa lama investasi akan bertahan bila pendapatan aktif berhenti, dikurangi perkiraan pengeluaran setelah dipotong pendapatan pasif yang terus berjalan. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti pesangon tidak disertakan.",
 		},
-		statUndefined:    "Riwayat belum cukup untuk dihitung.",
-		statIndefinite:   "Tak terbatas",
-		statMonthUnit:    "%s bulan",
-		statMonthsUnit:   "%s bulan",
-		chartAssets:      "Komposisi Harta",
-		chartInvestments: "Komposisi Investasi",
-		chartLiabilities: "Komposisi Hutang",
-		chartTrend:       "Kekayaan Bersih — 12 Bulan Terakhir",
+		statUndefined:     "Riwayat belum cukup untuk dihitung.",
+		statIndefinite:    "Tak terbatas",
+		statYearUnit:      "%s tahun",
+		statYearsUnit:     "%s tahun",
+		statMonthUnit:     "%s bulan",
+		statMonthsUnit:    "%s bulan",
+		statInputsTitle:   "Masukan — rata-rata 12 bln, pendapatan rutin saja",
+		statInputIncome:   "Rata-rata pendapatan",
+		statInputExpenses: "Rata-rata pengeluaran",
+		statInputPassive:  "Rata-rata total pendapatan pasif",
+		statFormulaCash:   "Arus Kas = (pendapatan − pengeluaran) ÷ pendapatan",
+		statFormulaPass:   "Pendapatan Pasif = total pendapatan pasif ÷ pengeluaran",
+		chartAssets:       "Komposisi Harta",
+		chartInvestments:  "Komposisi Investasi",
+		chartLiabilities:  "Komposisi Hutang",
+		chartTrend:        "Kekayaan Bersih — 12 Bulan Terakhir",
 	},
 }
 

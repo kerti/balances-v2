@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-pdf/fpdf"
@@ -315,11 +316,39 @@ func (d *doc) deltaText(dl *Delta) (string, [3]int) {
 // short note, keeping the reserved slot intact.
 func (d *doc) statistics() {
 	d.sectionTitle(d.c.statistics)
+	// Convention note: flow inputs are trailing-12 averages, balances are as-of
+	// month. Explains the smoothing so a ratio isn't misread against one month.
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, d.c.statNote, "", "L", false)
+	d.pdf.Ln(2)
 	s := d.in.Stats
 	d.statRow(d.c.statRows[0], d.c.statDescs[0], d.pctValue(s.CashFlow), s.CashFlow.Defined)
 	d.statRow(d.c.statRows[1], d.c.statDescs[1], d.pctValue(s.PassiveIncome), s.PassiveIncome.Defined)
 	d.statRow(d.c.statRows[2], d.c.statDescs[2], d.pctValue(s.InstantLiquidity), s.InstantLiquidity.Defined)
 	d.statRow(d.c.statRows[3], d.c.statDescs[3], d.resilienceValue(), s.Resilience.Defined)
+	d.statInputs(s.Inputs)
+}
+
+// statInputs renders the reproducibility block: the trailing-12 operands behind
+// the two flow ratios, plus their formulas in words, so the numbers can be
+// plugged back in by hand. Muted and small — an under-the-hood footnote, not a
+// headline. Collapses entirely when undefined (baseline, no flow month).
+func (d *doc) statInputs(in StatInputs) {
+	if !in.Defined {
+		return
+	}
+	d.keepTogether(22)
+	d.pdf.Ln(1)
+	d.subGroup(d.c.statInputsTitle)
+	d.line(d.c.statInputIncome, d.money(in.AvgIncome), 5, lineOpt{mutedText: true})
+	d.line(d.c.statInputExpenses, d.money(in.AvgExpenses), 5, lineOpt{mutedText: true})
+	d.line(d.c.statInputPassive, d.money(in.AvgPassive), 5, lineOpt{mutedText: true})
+	d.pdf.SetFont("Geist", "", 7)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 5)
+	d.pdf.MultiCell(d.w-5, 3.4, d.c.statFormulaCash+"\n"+d.c.statFormulaPass, "", "L", false)
 }
 
 // statRow draws one ratio: a bold label + right-aligned value, then a muted,
@@ -347,18 +376,33 @@ func (d *doc) pctValue(r Ratio) string {
 	return moneyfmt.FormatNumber(fmt.Sprintf("%.1f", r.Percent), d.in.Locale) + "%"
 }
 
-// resilienceValue formats the Fund Resilience runway as a month count (singular
-// aware) or the localized "indefinite" word when the pool never depletes.
+// resilienceValue formats the Fund Resilience runway as "Y years M months"
+// (each part singular-aware, dropped when zero) or the localized "indefinite"
+// word when the pool never depletes. A sub-year runway reads as months only;
+// an exact multiple of 12 reads as years only.
 func (d *doc) resilienceValue() string {
 	r := d.in.Stats.Resilience
 	if r.Indefinite {
 		return d.c.statIndefinite
 	}
-	unit := d.c.statMonthsUnit
-	if r.Months == 1 {
-		unit = d.c.statMonthUnit
+	num := func(n int) string { return moneyfmt.FormatNumber(fmt.Sprintf("%d", n), d.in.Locale) }
+	years, months := r.Months/12, r.Months%12
+	var parts []string
+	if years > 0 {
+		unit := d.c.statYearsUnit
+		if years == 1 {
+			unit = d.c.statYearUnit
+		}
+		parts = append(parts, fmt.Sprintf(unit, num(years)))
 	}
-	return fmt.Sprintf(unit, moneyfmt.FormatNumber(fmt.Sprintf("%d", r.Months), d.in.Locale))
+	if months > 0 || years == 0 { // always show months when there are no years (incl. 0)
+		unit := d.c.statMonthsUnit
+		if months == 1 {
+			unit = d.c.statMonthUnit
+		}
+		parts = append(parts, fmt.Sprintf(unit, num(months)))
+	}
+	return strings.Join(parts, " ")
 }
 
 func (d *doc) assets() {
@@ -375,12 +419,17 @@ func (d *doc) assets() {
 		d.subtypeHeader(subtypeLabel(d.in.Locale, "bank_account"))
 		for _, owner := range ownersOf(banks) {
 			ps := ownerPositions(banks, owner)
-			d.line(owner, "", 5, lineOpt{mutedText: true, size: 8.5})
+			// Owner is a grouping level above the account rows, so its label and
+			// subtotal must not read smaller than the leaves they contain: bold
+			// muted label (weight marks the header), and a subtotal at the same
+			// size as its rows — quieter than the bold ink subtype total, but no
+			// longer smaller than the amounts it sums.
+			d.line(owner, "", 5, lineOpt{bold: true, mutedText: true, size: 9})
 			for _, p := range ps {
 				d.position(p, 8)
 			}
 			d.line(d.c.total(owner), d.money(sum(ps).String()), 5,
-				lineOpt{mutedText: true, size: 8, topBorder: true})
+				lineOpt{mutedText: true, size: 9, topBorder: true})
 		}
 		d.line(d.c.total(subtypeLabel(d.in.Locale, "bank_account")), d.money(sum(banks).String()), 2,
 			lineOpt{bold: true, topBorder: true})
@@ -473,6 +522,16 @@ func (d *doc) cashFlow() {
 		d.line(m.Label, d.money(m.Amount), 5, lineOpt{})
 	}
 	d.line(d.c.income, d.money(cf.Income), 2, lineOpt{bold: true, topBorder: true})
+	// By-source split of that income: Active + Passive == Income (single-month
+	// total basis). Paid-out bond coupons are passive cash carried inside
+	// investment return, so they print as a separate additive line below — not
+	// part of the Income total or Net (ADR-0048 PR2).
+	d.subGroup(d.c.bySource)
+	d.line(d.c.activeIncome, d.money(cf.Active), 5, lineOpt{})
+	d.line(d.c.passiveIncome, d.money(cf.Passive), 5, lineOpt{})
+	if cf.Coupons != "" {
+		d.line(d.c.couponsPaidOut, d.money(cf.Coupons), 5, lineOpt{mutedText: true})
+	}
 	d.subtypeHeader(d.c.cashOut)
 	d.line(d.c.expenses, d.money(cf.Expenses), 5, lineOpt{})
 	d.line(d.c.netCashFlow, d.money(cf.Net), 0,

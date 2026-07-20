@@ -240,6 +240,64 @@ func TestBuildCashFlow(t *testing.T) {
 		}
 	})
 
+	// covers: INV-FINANCE-26
+	t.Run("active/passive decompose income by source; coupons ride separately", func(t *testing.T) {
+		row := &db.MonthlyReport{
+			DerivedLivingExpenses: decp("30000000"),
+			EarnedIncomeTotal:     decp("60000000"),
+			// Active sources
+			EarnedIncomeSalary:    decp("40000000"),
+			EarnedIncomeBusiness:  decp("5000000"),
+			EarnedIncomeGift:      decp("1000000"),
+			EarnedIncomeTaxRefund: decp("500000"),
+			EarnedIncomeInsurance: decp("500000"),
+			EarnedIncomeOther:     decp("1000000"),
+			// Passive sources
+			EarnedIncomeRental:   decp("8000000"),
+			EarnedIncomePension:  decp("3000000"),
+			EarnedIncomeInterest: decp("1000000"),
+			// Coupon cash rides inside investment return, not earned income
+			PassiveCouponCash: decp("2000000"),
+			UserBreakdowns:    []byte(`{}`),
+		}
+		cf := buildCashFlow(row, names, "Joint")
+		if cf == nil {
+			t.Fatal("want a cash flow")
+		}
+		if cf.Active != "48000000" { // 40M+5M+1M+0.5M+0.5M+1M
+			t.Errorf("active: got %q, want 48000000", cf.Active)
+		}
+		if cf.Passive != "12000000" { // 8M+3M+1M
+			t.Errorf("passive: got %q, want 12000000", cf.Passive)
+		}
+		// Active + Passive == Income (the by-source decomposition is exact).
+		if got := dec(cf.Active).Add(dec(cf.Passive)).String(); got != cf.Income {
+			t.Errorf("active+passive = %q, want == income %q", got, cf.Income)
+		}
+		// Coupons are additive: reported, but not folded into Income or Net.
+		if cf.Coupons != "2000000" {
+			t.Errorf("coupons: got %q, want 2000000", cf.Coupons)
+		}
+		if cf.Income != "60000000" || cf.Net != "30000000" {
+			t.Errorf("income/net: got %q/%q, want 60000000/30000000", cf.Income, cf.Net)
+		}
+	})
+
+	t.Run("coupons empty string when zero", func(t *testing.T) {
+		row := &db.MonthlyReport{
+			DerivedLivingExpenses: decp("100"),
+			EarnedIncomeTotal:     decp("0"),
+			UserBreakdowns:        []byte(`{}`),
+		}
+		cf := buildCashFlow(row, names, "Joint")
+		if cf.Coupons != "" {
+			t.Errorf("coupons: got %q, want empty", cf.Coupons)
+		}
+		if cf.Active != "0" || cf.Passive != "0" {
+			t.Errorf("active/passive: got %q/%q, want 0/0", cf.Active, cf.Passive)
+		}
+	})
+
 	t.Run("nil earned-income total treated as zero", func(t *testing.T) {
 		row := &db.MonthlyReport{
 			DerivedLivingExpenses: decp("500"),

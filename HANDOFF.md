@@ -74,7 +74,10 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 `v0.9.0-alpha.1` (2026-07-20).** Prioritized by real-user feedback from M7 (not pre-specified).
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
 `v0.9.0-alpha.1` (#412 closed, ADR-0048). Coupon-payout passive-cash extension (#476, ADR-0048
-amendment, migration `00013`) merged to main 2026-07-20 — **UNRELEASED**, next cut owed.
+amendment, migration `00013`) merged to main 2026-07-20 — **UNRELEASED**, next cut owed. PDF monthly
+report reorganised into five page groups (#495, 2026-07-20) then given an earned-income drill-down —
+Active/Passive by-source split under Cash Flow, coupons as a separate additive line (ADR-0048 PR2
+amendment, INV-FINANCE-26; layout/copy only, no migration) — also **UNRELEASED**.
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's

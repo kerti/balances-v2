@@ -26,9 +26,20 @@ type CashMember struct {
 // CashFlow is the month's income statement reduced to cash terms: earned income
 // in (by member) minus living expenses out. Nil on the first reported month
 // (no prior month → no derived expenses).
+//
+// Active/Passive decompose Income by source on a single-month total basis (incl.
+// one-offs) — Active+Passive == Income. This deliberately differs from the
+// statistics panel's passive ratio (trailing-12, routine-only): the drill-down
+// answers "where did this month's income come from", the ratio judges reliance.
+// Coupons is paid-out bond-coupon cash — passive cash that rides inside
+// InvestmentReturn (not EarnedIncome), so it prints as a separate additive line
+// and is not summed into Income or Net. See ADR-0048.
 type CashFlow struct {
 	Members  []CashMember
 	Income   string // total earned income, decimal string
+	Active   string // active income (salary/business/gift/tax-refund/insurance/other), decimal string
+	Passive  string // passive income (rental/pension/interest), decimal string
+	Coupons  string // paid-out bond-coupon cash; "" when zero, additive line, not in Income/Net
 	Expenses string // derived living expenses, decimal string
 	Net      string // Income − Expenses, decimal string
 }
@@ -63,6 +74,21 @@ type Stats struct {
 	PassiveIncome    Ratio      // total passive income ÷ living expenses; market-sensitive, may be negative
 	InstantLiquidity Ratio      // bank cash ÷ total investments; a ceiling gauge
 	Resilience       Resilience // investment-pool depletion runway
+	Inputs           StatInputs // the trailing-12 operands behind the two flow ratios
+}
+
+// StatInputs is the trailing-12 (routine-income) operands the two flow ratios
+// divide, surfaced so the owner can reproduce the percentages by hand:
+// Cash-Flow = (AvgIncome − AvgExpenses) / AvgIncome; Passive-Income =
+// AvgPassive / AvgExpenses. Averages, not sums — sum/sum equals avg/avg, so the
+// ratio is identical while the figures read as "typical month". Undefined on the
+// baseline (no flow month in the window), where the flow ratios are undefined too.
+type StatInputs struct {
+	Defined     bool
+	AvgIncome   string // avg monthly earned income, regular only (routine), decimal string
+	AvgExpenses string // avg monthly derived living expenses (estimated), decimal string
+	AvgPassive  string // avg monthly total passive income (passive cash + investment return)
+	Months      int    // flow months averaged over (≤12)
 }
 
 // Ratio is one percentage indicator. Defined=false renders an em-dash + the
