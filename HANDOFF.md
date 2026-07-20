@@ -20,9 +20,10 @@ Read these first, in order:
 ## Where we are now
 
 M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
-2026-07-06. CI is green. **`v0.8.0-alpha.2` is the latest preview release**; **`v0.7.0-rc.2` is demo's
-current release** on the `preview`/`demo` environments (`https://preview.<personal-domain>` /
-`https://demo.<personal-domain>`) via the tag-driven pipeline (ADR-0029/0030/0031). Single-origin: one
+2026-07-06. CI is green. **`v0.9.0-alpha.1` is the latest preview release** and, promoted manually
+(ADR-0049), **demo's current release too** on the `preview`/`demo` environments
+(`https://preview.<personal-domain>` / `https://demo.<personal-domain>`) via the tag-driven pipeline
+(ADR-0029/0030/0031, routing revised by 0049). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
 mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with Fly-managed TLS.
 
@@ -59,12 +60,21 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
     tail (session tokens hashed at rest #361/#398, deploy-aware rate-limiter IP #363/#399, local-invite
     race hardening #340/#400, healthz leak + second CSRF layer + image scan #364/#402). Migration:
     additive backfill (`00011`, in-place session-id hash, non-destructive).
+  - `v0.8.0-rc.1` — demo promotion under the old `rc→demo` routing; no new features over alpha.2
+    (routing later decoupled from maturity, ADR-0049).
+  - `v0.9.0-alpha.1` — financial statistics panel (#412, ADR-0048: four household-health ratios +
+    Pension/Interest income categories + monthly inflation input); bulk monthly-entry mode (#372,
+    ADR-0046); deploy target decoupled from release maturity (#489/#491, ADR-0049 — pre-releases →
+    `preview`, `demo` manual-promoted); Settings reorg (FX/inflation subpages, Tags → report, #488);
+    PDF version footer (#414); month-picker prev/next arrows (#487). Migration: additive (`00012`).
 
 ## What's next
 
-**M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`), second cut
-2026-07-09 (`v0.8.0-alpha.2`).** Prioritized by real-user feedback from M7 (not pre-specified).
-PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2 — ratios deferred (#412). Next, in order:
+**M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`); latest
+`v0.9.0-alpha.1` (2026-07-20).** Prioritized by real-user feedback from M7 (not pre-specified).
+PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
+`v0.9.0-alpha.1` (#412 closed, ADR-0048) — coupon-payout passive-cash extension deferred to #476.
+Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
    eventual standup, tracked via #218 (Neon isolation) and #299's remaining GDPR scope, not its own
