@@ -73,6 +73,29 @@ func TestRenderRichReport(t *testing.T) {
 	}
 }
 
+// A statement with only assets (no liabilities, receivables, or investments)
+// must render without panicking — exercising the false branch of each page-group
+// presence gate (hasLiabilities/hasReceivables/hasInvestments) so an absent
+// section skips its page break rather than leaving a blank page.
+func TestRenderSparsePageGroups(t *testing.T) {
+	in := richInput()
+	in.Positions = []Position{
+		{Group: "asset", Subtype: "bank_account", Name: "Everyday", OwnerLabel: "Alice", Amount: "500000000"},
+	}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("sparse Render: %v", err)
+	}
+
+	// And the mirror case: only investments, no own-book sections — exercises the
+	// false branches of hasAssets/hasLiabilities/hasReceivables.
+	in.Positions = []Position{
+		{Group: "investment", Subtype: "stock", Name: "US Stock", OwnerLabel: "Alice", Amount: "77500000"},
+	}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("investments-only Render: %v", err)
+	}
+}
+
 func TestRenderRichReportEN(t *testing.T) {
 	in := richInput()
 	in.Locale = "en-GB"

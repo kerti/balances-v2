@@ -75,16 +75,33 @@ func Render(in Input) ([]byte, error) {
 	pdf.AddPage()
 	pdf.SetDrawColor(rule[0], rule[1], rule[2])
 	pdf.SetLineWidth(0.2)
+	// Five page groups, one page break between each (no break within a group). A
+	// group only breaks when it has content, so an empty section leaves no blank
+	// page. Group 1: headline + charts. 2: statistics + cash flow. 3: assets.
+	// 4: liabilities + receivables. 5: investments (+ trailing fx/stale notes).
 	d.header()
 	d.headline()
+	d.trendChart()        // headline visual: net-worth trend leads
+	d.compositionCharts() // then the composition donuts
+
+	d.pdf.AddPage() // group 2 — statistics + cash flow always render
 	d.statistics()
-	d.assets()
-	d.liabilities()
-	d.investments()
-	d.receivables()
 	d.cashFlow()
+
+	if d.hasAssets() {
+		d.pdf.AddPage() // group 3 — assets
+		d.assets()
+	}
+	if d.hasLiabilities() || d.hasReceivables() {
+		d.pdf.AddPage() // group 4 — liabilities + receivables (the household's own book)
+		d.liabilities()
+		d.receivables()
+	}
+	if d.hasInvestments() {
+		d.pdf.AddPage() // group 5 — investments (market-valued portfolio)
+		d.investments()
+	}
 	d.fxRates()
-	d.charts()
 	d.staleFootnote()
 
 	var buf bytes.Buffer
@@ -476,11 +493,34 @@ func (d *doc) fxRates() {
 	}
 }
 
-func (d *doc) charts() {
+// trendChart draws the 12-month net-worth trend line — the report's headline
+// visual, placed directly under the net-worth figure (no big section title of
+// its own, since it belongs to the headline band). Absent (<2 points, e.g. the
+// baseline or second reported month) it collapses the slot entirely rather than
+// leaving a blank gap under the figure.
+func (d *doc) trendChart() {
+	if len(d.in.Trend) < 2 {
+		return
+	}
+	d.pdf.Ln(1)
+	d.keepTogether(30) // keep the trend title with the line
+	d.pdf.SetFont("Geist", "B", 8.5)
+	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
+	d.pdf.SetX(d.x0)
+	d.pdf.CellFormat(d.w, 5, d.c.chartTrend, "", 1, "L", false, 0, "")
+	drawTrend(d.pdf, d.x0, d.pdf.GetY()+3, d.w, 23, d.in.Trend, d.money(d.in.NetWorth))
+	d.pdf.SetY(d.pdf.GetY() + 25)
+}
+
+// compositionCharts draws the asset/investment/liability composition donuts.
+// Relocated (with the trend) to sit under the headline: the visual summary
+// leads, the itemized statement follows. No-op when no group has a positive
+// composition.
+func (d *doc) compositionCharts() {
 	assetsComp := d.composition("asset", []string{"bank_account", "property", "vehicle"})
 	invComp := d.composition("investment", []string{"mutual_fund", "bond", "gold", "stock", "time_deposit"})
 	liabComp := d.composition("liability", []string{"institutional", "personal"})
-	if len(assetsComp)+len(invComp)+len(liabComp) == 0 && len(d.in.Trend) < 2 {
+	if len(assetsComp)+len(invComp)+len(liabComp) == 0 {
 		return
 	}
 	d.keepTogether(62) // keep the section title with the donut row
@@ -520,16 +560,6 @@ func (d *doc) charts() {
 		}
 	}
 	d.pdf.SetY(maxY + 4)
-
-	if len(d.in.Trend) >= 2 {
-		d.keepTogether(38) // keep the trend title with the line
-		d.pdf.SetFont("Geist", "B", 8.5)
-		d.pdf.SetTextColor(ink[0], ink[1], ink[2])
-		d.pdf.SetX(d.x0)
-		d.pdf.CellFormat(d.w, 5, d.c.chartTrend, "", 1, "L", false, 0, "")
-		drawTrend(d.pdf, d.x0, d.pdf.GetY()+4, d.w, 26, d.in.Trend, d.money(d.in.NetWorth))
-		d.pdf.SetY(d.pdf.GetY() + 34)
-	}
 }
 
 func (d *doc) staleFootnote() {
@@ -560,6 +590,34 @@ func (d *doc) positions(group, subtype string) []Position {
 		return decAmt(out[i].Amount).GreaterThan(decAmt(out[j].Amount))
 	})
 	return out
+}
+
+// hasSubtypes reports whether any of the given subtypes has a position in the
+// group — mirroring exactly the subtypes a section renders, so a page group only
+// breaks when its section will actually draw content.
+func (d *doc) hasSubtypes(group string, subtypes ...string) bool {
+	for _, st := range subtypes {
+		if len(d.positions(group, st)) > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+func (d *doc) hasAssets() bool {
+	return d.hasSubtypes("asset", "bank_account", "property", "vehicle")
+}
+
+func (d *doc) hasLiabilities() bool {
+	return d.hasSubtypes("liability", "institutional", "personal")
+}
+
+func (d *doc) hasReceivables() bool {
+	return len(d.positions("receivable", "")) > 0
+}
+
+func (d *doc) hasInvestments() bool {
+	return d.hasSubtypes("investment", "mutual_fund", "bond", "gold", "stock", "time_deposit")
 }
 
 func (d *doc) composition(group string, order []string) []slice {
