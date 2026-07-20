@@ -355,3 +355,57 @@ and gates the tally, so a mis-entered coupon on an accruing bond is not swept in
   removed from own-return `g`, while its yield stays in `investment_return_total`; accruing coupons
   stay in `g`. Guards the resilience double-count from the coupon angle, extending the INV-FINANCE-21/
   -22 family.
+
+## Amendment — 2026-07-21: earned-income drill-down under cash flow (PDF report PR2)
+
+The downloadable monthly PDF report (ADR-0045) shows a Cash Flow section — earned income in (by
+household member) minus living expenses out. It gave no answer to *where* the income came from: the
+only active/passive signal in the app was the statistics **passive-income ratio**, a percentage with
+no rupiah behind it. This adds a by-source drill-down of the month's earned income, directly under
+the existing member breakdown. Second of two PDF-report PRs (PR1 was the page-group layout reorder,
+#495); the layout is unchanged here — this is net-new content in the Cash In block.
+
+### Decision
+
+Under the Income total, the report prints the same month's earned income split two ways that must
+reconcile:
+
+- **Active** = `salary + business + gift + tax_refund + insurance + other`.
+- **Passive** = `rental + pension + interest`.
+- **Active + Passive == Income** exactly — one income list, no line shown twice. The buckets are the
+  engine's own single-month source columns on `monthly_reports` (`earned_income_*`, **not** the
+  `_routine` subtotals), so the split is a decomposition of `earned_income_total`, not a re-read.
+
+**Single-month total basis, incl. one-offs.** This deliberately differs from the statistics
+passive-income ratio, which is trailing-12 and **routine-only** (INV-FINANCE-24). The two answer
+different questions — the drill-down says "where did *this month's* cash come from", the ratio judges
+"how much income does the household *rely on*". The mismatch is intentional; the code and this ADR
+say so, so nobody "fixes" it into agreement.
+
+**Paid-out bond coupons ride as a separate additive line.** Coupon cash is passive cash but lives
+inside `investment_return_total`, not `earned_income_total` (INV-FINANCE-25). Folding it into Passive
+would break `Active + Passive == Income` and double-count it against the cash-flow Net. So
+`passive_coupon_cash` prints as its own "Bond coupons paid out" line below the split, informational
+only — never summed into Income or Net.
+
+**Member rows kept.** The existing by-member Cash In breakdown stays; the by-source split is added
+below it as a second lens on the same total (two decompositions of one Income figure), not a
+replacement. Considered replacing member rows with the source split — rejected: "who earned it" and
+"active vs passive" are both wanted, and the section has room.
+
+### Mechanism
+
+- No schema change, no migration, no engine change — every input already materialized on
+  `monthly_reports` (the `earned_income_*` source columns since the stats epic, `passive_coupon_cash`
+  since slice 6 / migration `00013`).
+- `buildCashFlow` (`reports/pdf_input.go`) sums the source columns into `CashFlow.Active` /
+  `.Passive` and copies `passive_coupon_cash` into `.Coupons` (blank string when zero, so the line is
+  suppressed). `cashFlow()` (`reports/pdf/render.go`) renders a "By source" sub-group + the coupon
+  line. Copy strings added for `en` + `id`.
+
+### Invariants
+
+- **INV-FINANCE-26** (new) — the report's earned-income drill-down decomposes the month's income by
+  source with `Active + Passive == earned_income_total` (single-month, all-income basis, deliberately
+  unlike the trailing-12 routine passive ratio); paid-out coupon cash surfaces as a separate additive
+  line and is never folded into the earned-income total or the cash-flow Net.

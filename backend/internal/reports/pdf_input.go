@@ -315,9 +315,34 @@ func buildCashFlow(row *db.MonthlyReport, nameByID map[uuid.UUID]string, joint s
 		income = *row.EarnedIncomeTotal
 	}
 	expenses := *row.DerivedLivingExpenses
+
+	// By-source decomposition of this month's earned income (single-month total,
+	// incl. one-offs). Active + Passive == Income by construction (the engine's
+	// source columns sum to EarnedIncomeTotal). See ADR-0048 PR2 amendment.
+	active := decOr(row.EarnedIncomeSalary).
+		Add(decOr(row.EarnedIncomeBusiness)).
+		Add(decOr(row.EarnedIncomeGift)).
+		Add(decOr(row.EarnedIncomeTaxRefund)).
+		Add(decOr(row.EarnedIncomeInsurance)).
+		Add(decOr(row.EarnedIncomeOther))
+	passive := decOr(row.EarnedIncomeRental).
+		Add(decOr(row.EarnedIncomePension)).
+		Add(decOr(row.EarnedIncomeInterest))
+
+	// Paid-out bond-coupon cash is passive cash that lives inside investment
+	// return, not earned income (INV-FINANCE-25). Surface it as a separate
+	// additive line, never folded into Income/Net; blank when zero.
+	coupons := ""
+	if c := decOr(row.PassiveCouponCash); c.IsPositive() {
+		coupons = c.String()
+	}
+
 	return &pdf.CashFlow{
 		Members:  members,
 		Income:   income.String(),
+		Active:   active.String(),
+		Passive:  passive.String(),
+		Coupons:  coupons,
 		Expenses: expenses.String(),
 		Net:      income.Sub(expenses).String(),
 	}

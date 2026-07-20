@@ -27,12 +27,16 @@ type reportCopy struct {
 	nonCurrentAssets string
 
 	// cash-flow rows
-	cashIn      string
-	cashOut     string
-	income      string
-	expenses    string
-	netCashFlow string
-	joint       string
+	cashIn         string
+	cashOut        string
+	income         string
+	bySource       string // sub-heading for the active/passive income split
+	activeIncome   string
+	passiveIncome  string
+	couponsPaidOut string // paid-out bond-coupon cash, additive line
+	expenses       string
+	netCashFlow    string
+	joint          string
 
 	totalPrefix string // "Total" / "Jumlah" — combined with a section name
 
@@ -77,6 +81,10 @@ var reportCatalog = map[string]reportCopy{
 		cashIn:           "Cash In",
 		cashOut:          "Cash Out",
 		income:           "Income",
+		bySource:         "By source",
+		activeIncome:     "Active income",
+		passiveIncome:    "Passive income",
+		couponsPaidOut:   "Bond coupons paid out",
 		expenses:         "Living Expenses",
 		netCashFlow:      "Net Cash Flow",
 		joint:            "Joint",
@@ -119,6 +127,10 @@ var reportCatalog = map[string]reportCopy{
 		cashIn:           "Kas Masuk",
 		cashOut:          "Kas Keluar",
 		income:           "Pendapatan",
+		bySource:         "Berdasarkan sumber",
+		activeIncome:     "Pendapatan aktif",
+		passiveIncome:    "Pendapatan pasif",
+		couponsPaidOut:   "Kupon obligasi dibayarkan",
 		expenses:         "Pengeluaran",
 		netCashFlow:      "Arus Kas Bersih",
 		joint:            "Bersama",

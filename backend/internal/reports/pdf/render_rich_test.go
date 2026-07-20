@@ -40,6 +40,9 @@ func richInput() Input {
 				{Label: "Bob", Amount: "35000000"},
 			},
 			Income:   "75000000",
+			Active:   "60000000", // 60M active + 15M passive == 75M income
+			Passive:  "15000000",
+			Coupons:  "2000000", // additive coupon-cash line
 			Expenses: "90000000",
 			Net:      "-15000000", // negative → exercises the red net-cash-flow path
 		},

@@ -473,6 +473,16 @@ func (d *doc) cashFlow() {
 		d.line(m.Label, d.money(m.Amount), 5, lineOpt{})
 	}
 	d.line(d.c.income, d.money(cf.Income), 2, lineOpt{bold: true, topBorder: true})
+	// By-source split of that income: Active + Passive == Income (single-month
+	// total basis). Paid-out bond coupons are passive cash carried inside
+	// investment return, so they print as a separate additive line below — not
+	// part of the Income total or Net (ADR-0048 PR2).
+	d.subGroup(d.c.bySource)
+	d.line(d.c.activeIncome, d.money(cf.Active), 5, lineOpt{})
+	d.line(d.c.passiveIncome, d.money(cf.Passive), 5, lineOpt{})
+	if cf.Coupons != "" {
+		d.line(d.c.couponsPaidOut, d.money(cf.Coupons), 5, lineOpt{mutedText: true})
+	}
 	d.subtypeHeader(d.c.cashOut)
 	d.line(d.c.expenses, d.money(cf.Expenses), 5, lineOpt{})
 	d.line(d.c.netCashFlow, d.money(cf.Net), 0,
