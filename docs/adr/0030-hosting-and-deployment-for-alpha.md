@@ -107,6 +107,12 @@ at that env's hostname.
 
 ### Tag-driven deployment
 
+> **Superseded by [[adr-0049]] (2026-07-20).** The suffix→environment routing below is replaced:
+> every pre-release tag (`-alpha`/`-rc`/`-beta`) now deploys to `preview`, and `demo` is promoted
+> **manually** from any tag via `workflow_dispatch`. Maturity no longer picks the target. The rest of
+> this section (GitHub Environments, `release_command` migrations, single `flyctl deploy`, per-env
+> OAuth/secrets) is unchanged. See [[adr-0049]] for the current routing.
+
 A single `.github/workflows/deploy.yml` triggers on `v*` tag push and routes by tag shape:
 
 ```

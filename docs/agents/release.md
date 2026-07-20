@@ -6,13 +6,17 @@ single-origin image, runs `goose up` inside Fly, and rolls out to the routed env
 The first alpha (`v0.6.0-alpha.1`) was hand-written; every cut **from `v0.6.0-alpha.2` onward** follows
 this runbook and auto-generates notes from merged PRs.
 
-Tag → environment routing (`deploy.yml`):
+Tag → environment routing (`deploy.yml`, revised by ADR-0049 — target is decoupled from maturity):
 
-| Tag shape          | Environment  | Approval        |
-|--------------------|--------------|-----------------|
-| `*-alpha.N`        | `preview`    | auto            |
-| `*-rc.N` / `*-beta.N` | `demo`    | auto            |
-| `vX.Y.Z` (no suffix) | `production` | GitHub Environment gate |
+| Tag shape            | Environment  | Trigger                                             |
+|----------------------|--------------|----------------------------------------------------|
+| `*-alpha.N` / `*-rc.N` / `*-beta.N` | `preview`    | auto on tag push (private, maintainer-only) |
+| any tag              | `demo`       | **manual** `workflow_dispatch` (public, disposable — promotes the tag's GHCR image, no rebuild) |
+| `vX.Y.Z` (no suffix) | `production` | dormant — deferred indefinitely (a future ADR when prod is real) |
+
+Maturity (`alpha`/`rc`/`beta`) shapes only the **release notes**, not the target: every pre-release
+lands on `preview`; `demo` runs whatever tag you deliberately promote. An `rc` again means only
+"feature-frozen candidate" — cut one when that's true, not to reach an environment.
 
 ## Pick the version
 
