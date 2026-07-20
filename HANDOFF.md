@@ -110,10 +110,15 @@ contract, not the "Balances" brand; migration immutability + major-vs-minor disc
 Milestone-close still rolls to the next minor's alpha (M6→M7 precedent) unless a milestone happens to
 coincide with dropping the suffix for a real production cut.
 
-**Deploying:** push a SemVer tag — `*-alpha.N` → `preview`, `*-rc.N`/`*-beta.N` → `demo` (both auto).
-`deploy.yml` routes by tag and runs `flyctl deploy` (builds the SPA+API image, `goose up` via
-`release_command`, rolls out). Backend runtime secrets live on Fly (`fly secrets`); only
-`FLY_API_TOKEN` is in each env's GitHub Environment (`preview`, `demo`).
+**Deploying (ADR-0049 — target decoupled from maturity):** push any **pre-release** tag
+(`*-alpha.N`/`*-rc.N`/`*-beta.N`) → auto-deploy to `preview` (private, maintainer-only, signups
+closed). `demo` (public, disposable) is **promoted manually** — a `workflow_dispatch` deploys a chosen
+tag's GHCR image to `balances-demo` with no rebuild (build-once/promote-many, ADR-0033). Maturity
+shapes only the release notes now, not the target; `rc` again means only "feature-frozen candidate."
+Bare `vX.Y.Z`→production route stays dormant (prod deferred indefinitely). `deploy.yml` runs `flyctl
+deploy --image ghcr.io/kerti/balances:<tag>` (`goose up` via `release_command`). Backend runtime
+secrets live on Fly (`fly secrets`); only `FLY_API_TOKEN` is in each env's GitHub Environment
+(`preview`, `demo`). *(deploy.yml `route`-job rewrite is a pending slice — #489.)*
 
 Don't auto-start the next item — the user pauses between items to direct. The deferred backlog below
 holds the smaller, optional items.
