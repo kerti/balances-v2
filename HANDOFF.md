@@ -73,7 +73,8 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 **M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`); latest
 `v0.9.0-alpha.1` (2026-07-20).** Prioritized by real-user feedback from M7 (not pre-specified).
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
-`v0.9.0-alpha.1` (#412 closed, ADR-0048) — coupon-payout passive-cash extension deferred to #476.
+`v0.9.0-alpha.1` (#412 closed, ADR-0048). Coupon-payout passive-cash extension (#476, ADR-0048
+amendment, migration `00013`) merged to main 2026-07-20 — **UNRELEASED**, next cut owed.
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
