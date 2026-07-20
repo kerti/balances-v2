@@ -269,13 +269,22 @@ trailing-12 average (converted annual→monthly in the projection).
 
 **Passive income (two scopes)**: The word "passive income" resolves to *different sets* depending on
 the metric, and both are named to keep them apart:
-- **Passive cash income** = `RentalIncome` + `Pension` + `Interest`. Real cash that keeps arriving
-  after active income stops — used as the draw-offset in Fund Resilience. `Interest` is external bank
-  cash, not pool return, so it belongs here cleanly. Excludes Investment Return (which the projection
-  already models as the pool's own growth, so counting it here would double-count).
-- **Total passive income** = passive cash income + **Investment Return**. The Passive-Income Ratio
-  numerator. Because it includes Investment Return (unrealised marks included), it **swings with the
-  market and can go negative** in a bad year — a deliberate, labelled property.
+- **Passive cash income** = `RentalIncome` + `Pension` + `Interest` + **paid-out bond coupons**
+  (`coupon_disposition='pays_out'`, materialized as `passive_coupon_cash`, #476). Real cash that keeps
+  arriving after active income stops — used as the draw-offset in Fund Resilience. `Interest` is
+  external bank cash; a paid-out coupon is realized cash that left the pool for the bank — both belong
+  here cleanly. Excludes Investment Return *own growth* (which the projection already models as the
+  pool's own growth, so counting it here would double-count). The coupon slice is the one subtlety:
+  the domain keeps coupon yield inside Investment Return, so the paid-out coupon is **added to passive
+  cash and removed from own-return `g`** at render time — the numerator is unchanged, but the Fund
+  Resilience `g`/draw-offset partition moves (it stops compounding and becomes a fixed draw-offset).
+  **Accruing** coupons record no Coupon Transaction; their yield lands as snapshot growth and stays in
+  `g`, mark-to-market — never counted as passive cash.
+- **Total passive income** = passive cash income + **Investment Return own growth** (= Investment
+  Return less the paid-out coupon already in passive cash). The Passive-Income Ratio numerator; the
+  coupon split leaves it unchanged (passive cash gains the coupon, own growth loses it). Because it
+  includes Investment Return (unrealised marks included), it **swings with the market and can go
+  negative** in a bad year — a deliberate, labelled property.
 
 **The four ratios**:
 - **Cash-Flow Ratio** (savings rate) = `(Income − Living Expenses) / Income`, a percentage. Share of

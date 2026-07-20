@@ -73,6 +73,12 @@ type reportPosition struct {
 	// the predecessor's maturity terminal value, routed here as a cash_in, so a
 	// rolled TD takes no synthetic TdPrincipal placement.
 	rolledFrom *uuid.UUID
+	// Bond coupon disposition (#66, "pays_out" | "accrues"), nil for non-bonds.
+	// A pays_out bond's Coupon Transactions are dependable external cash: the
+	// statistics panel counts them as passive cash rather than pool growth
+	// (ADR-0048 amendment / #476 / INV-FINANCE-25). Accruing bonds record no
+	// Coupon Transaction, so their yield stays in snapshot growth (g) untouched.
+	couponDisposition *string
 }
 
 // reportSnapshot is one monthly observation in its native currency.
@@ -230,13 +236,20 @@ type monthlyReportData struct {
 	nwInvestments    decimal.Decimal
 	earnedIncome     earnedIncomeAmounts
 	investmentReturn *investmentReturnAmounts // nil on baseline
-	assetValueChange *decimal.Decimal         // nil on baseline
-	livingExpenses   *decimal.Decimal         // nil on baseline
-	userBreakdowns   map[string]userBreakdown
-	stalePositions   []stalePosition
-	missingFx        []missingFxEntry
-	fxRatesUsed      map[string]decimal.Decimal
-	missingSeen      map[string]bool // dedup helper, not serialised
+	// passiveCouponCash is the month's paid-out bond coupon cash (pays_out
+	// disposition), materialised for the statistics passive-cash scope. It is a
+	// slice of investmentReturn.bond (the domain keeps coupon yield inside
+	// investment return), surfaced separately so buildStats can add it to passive
+	// cash and remove it from own-return g (ADR-0048 amendment, INV-FINANCE-25).
+	// nil on the baseline, mirroring investmentReturn.
+	passiveCouponCash *decimal.Decimal
+	assetValueChange  *decimal.Decimal // nil on baseline
+	livingExpenses    *decimal.Decimal // nil on baseline
+	userBreakdowns    map[string]userBreakdown
+	stalePositions    []stalePosition
+	missingFx         []missingFxEntry
+	fxRatesUsed       map[string]decimal.Decimal
+	missingSeen       map[string]bool // dedup helper, not serialised
 }
 
 type monthAmount struct {
@@ -335,10 +348,26 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		incomeByMonth[monthIndex(inc.yearMonth)] = append(incomeByMonth[monthIndex(inc.yearMonth)], inc)
 	}
 
+	// Bonds whose coupons pay out to the bank (pays_out disposition): their Coupon
+	// Transactions are dependable external cash, tallied per month into
+	// couponCashByMonth so the statistics panel can count them as passive cash
+	// rather than pool growth (ADR-0048 amendment, #476, INV-FINANCE-25). The
+	// coupon still flows into investment_return_total below (the domain keeps
+	// coupon yield inside investment return) — this is a parallel slice, not a
+	// removal. Accruing bonds record no Coupon Transaction, so they never appear
+	// here and their yield stays in own-return g.
+	paysOutBond := make(map[uuid.UUID]bool)
+	for _, p := range in.positions {
+		if p.subtype == "bond" && p.couponDisposition != nil && *p.couponDisposition == "pays_out" {
+			paysOutBond[p.id] = true
+		}
+	}
+
 	// Convert transaction cash flows at the transaction's own month (= the
 	// report month they affect). Unconvertible currencies are dropped and
 	// flagged per month so the report still generates.
 	cashByPos := make(map[uuid.UUID]map[int]cashFlow)
+	couponCashByMonth := make(map[int]decimal.Decimal)
 	txnMissing := make(map[int]map[string]bool)
 	txnRates := make(map[int]map[string]decimal.Decimal)
 	for _, t := range in.transactions {
@@ -361,6 +390,9 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				txnRates[mi] = make(map[string]decimal.Decimal)
 			}
 			txnRates[mi][t.currency] = rate
+		}
+		if t.txnType == "coupon" && paysOutBond[t.investmentID] {
+			couponCashByMonth[mi] = couponCashByMonth[mi].Add(outC)
 		}
 		m := cashByPos[t.investmentID]
 		if m == nil {
@@ -579,6 +611,13 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				m.userBreakdowns[key] = b
 			}
 			m.investmentReturn = ret
+
+			// The month's paid-out coupon cash (a slice of ret.bond above), surfaced
+			// for the statistics passive-cash scope. Set on every flow month, zero
+			// when there were no pays_out coupons — mirrors investmentReturn's
+			// non-nil-off-baseline shape so buildStats reads it via decOr.
+			coupon := couponCashByMonth[idx]
+			m.passiveCouponCash = &coupon
 
 			avc := decimal.Zero
 			for _, p := range positions {

@@ -217,6 +217,44 @@ func TestBuildStats_InterestCountsAsPassiveCash(t *testing.T) {
 	}
 }
 
+// covers: INV-FINANCE-25
+func TestBuildStats_PaidOutCouponIsPassiveCashNotPoolGrowth(t *testing.T) {
+	// A paid-out bond coupon is dependable external cash: it offsets the resilience
+	// draw like Rental/Pension/Interest and must NOT also compound in the pool's
+	// own-return g. The coupon slice lives inside InvestmentReturnTotal (the domain
+	// keeps coupon yield in investment return), so buildStats adds PassiveCouponCash
+	// to passive cash and subtracts it from own return. Pinning the exact runway
+	// catches a regression that leaves the coupon in g or drops it from the offset.
+	m := ym(2026, time.June)
+
+	// Baseline: own return 10 on a 1000 pool → g = 0.01, draw 200 → 6-month runway.
+	noCoupon := []db.MonthlyReport{flowMonth(m, "500", "200", "0", "0", "10", "1000")}
+	base := buildStats(&noCoupon[0], nil, noCoupon, nil, decimal.Zero)
+	if base.Resilience.Months != 6 {
+		t.Fatalf("no-coupon runway: got %+v, want 6 months", base.Resilience)
+	}
+	// Passive-Income = (0 passive + 10 return) / 200 = 5%.
+	assertPct(t, "passive-income no-coupon", base.PassiveIncome, 10.0/200*100)
+
+	// Same own return (10), plus 50 of paid-out coupon. InvestmentReturnTotal
+	// carries the coupon (60 = 10 own + 50 coupon); PassiveCouponCash carves it out.
+	withCoupon := noCoupon[0]
+	withCoupon.InvestmentReturnTotal = decp("60")
+	withCoupon.PassiveCouponCash = decp("50")
+	series := []db.MonthlyReport{withCoupon}
+	st := buildStats(&series[0], nil, series, nil, decimal.Zero)
+
+	// g still 0.01 (coupon removed from own return) AND the 50 offsets the draw →
+	// runway extends 6 → 7 months, exactly like a 50-Pension offset.
+	if st.Resilience.Months != 7 {
+		t.Errorf("coupon-offset runway: got %+v, want 7 months (coupon offsets draw, not g)", st.Resilience)
+	}
+	// Passive-Income numerator is unchanged by the split: passiveCash gains 50,
+	// own return loses 50, so (50 + 10) / 200 = 30% — identical to leaving the
+	// full 60 in investment return with no carve-out.
+	assertPct(t, "passive-income with-coupon", st.PassiveIncome, 60.0/200*100)
+}
+
 // Incidental income is excluded from every statistics income term: the ratios
 // read the routine subtotals, so a windfall inflates the all-regularity totals
 // but not the ratios (ADR-0048 amendment).

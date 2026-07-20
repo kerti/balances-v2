@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/02-finance.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**24 / 24** invariants in this zone have at least one covering test (**24** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**25 / 25** invariants in this zone have at least one covering test (**25** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -32,3 +32,4 @@
 | INV-FINANCE-22 | Interest (bank/deposit) is passive *cash* income: it folds into the passive-cash scope alongside Rental + Pension (draw-offset + Passive-Income numerator) and, being external cash never present in Investment Return, carries no double-count | `backend/internal/reports/pdf_stats_test.go` |
 | INV-FINANCE-23 | A position's first snapshot is an acquisition, not a revaluation/return: its birth month contributes nothing to asset-value-change (property/vehicle) or investment-return — there is no prior value to diff against — so a fixed asset financed by cash + debt books zero living-expenses; only net worth reflects the acquisition | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-24 | Income tagged `incidental` is excluded from every statistics income term (Cash-Flow income, Passive-Income + Fund Resilience passive cash) — the panel judges against income the household relies on; incidental income still counts in full toward net worth, the income statement, and LivingExpenses. Backed by materialized routine subtotals, not a re-read of raw income (native-currency vs FX-converted, per INV-FINANCE-18) | `backend/internal/repo/monthly_reports_engine_test.go`<br>`backend/internal/reports/pdf_stats_test.go` |
+| INV-FINANCE-25 | A paid-out bond coupon (`coupon_disposition='pays_out'`) is passive *cash*: the engine materializes it as `passive_coupon_cash`, and buildStats adds it to the passive-cash scope (Passive-Income numerator + Fund Resilience draw-offset) **and** subtracts it from own-return `g` — the two-scope split that guards the double-count. The coupon yield stays inside `investment_return_total` (the domain keeps it there), so the Passive-Income numerator is unchanged by the split; only the resilience `g`/offset partition moves. Accruing coupons (no Coupon Transaction) never enter `passive_coupon_cash` and stay mark-to-market in `g` | `backend/internal/repo/monthly_reports_engine_test.go`<br>`backend/internal/reports/pdf_stats_test.go` |

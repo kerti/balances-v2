@@ -599,6 +599,54 @@ func TestEngine_InvestmentReturnWithCashFlow(t *testing.T) {
 	}
 }
 
+// A paid-out bond coupon (pays_out disposition) is tallied into passiveCouponCash
+// so the statistics panel can count it as passive cash rather than pool growth
+// (#476, INV-FINANCE-25). The disposition gates the tally: an accruing bond's
+// coupon is excluded (its yield belongs to snapshot growth / own-return g). The
+// coupon still flows into investment_return (the domain keeps coupon yield in
+// investment return), so this is a parallel slice, not a removal.
+// covers: INV-FINANCE-25
+func TestEngine_PaidOutCouponTalliedAsPassiveCash(t *testing.T) {
+	paysOut, accrues := uuid.New(), uuid.New()
+	jan, feb := ym(2026, time.January), ym(2026, time.February)
+	coupon := dec("50")
+	in := reportEngineInput{
+		positions: []reportPosition{
+			{id: paysOut, group: groupInvestment, subtype: "bond", ownershipType: "joint", couponDisposition: strp("pays_out")},
+			{id: accrues, group: groupInvestment, subtype: "bond", ownershipType: "joint", couponDisposition: strp("accrues")},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: paysOut, yearMonth: jan, amount: dec("1000")},
+			{positionID: paysOut, yearMonth: feb, amount: dec("1000")}, // flat: coupon paid out to the bank
+			{positionID: accrues, yearMonth: jan, amount: dec("1000")},
+			{positionID: accrues, yearMonth: feb, amount: dec("1050")}, // coupon accrued into the instrument
+		},
+		transactions: []reportTransaction{
+			{investmentID: paysOut, yearMonth: feb, txnType: "coupon", amount: &coupon},
+			{investmentID: accrues, yearMonth: feb, txnType: "coupon", amount: &coupon},
+		},
+		currentMonth: feb,
+	}
+	reports := generateMonthlyReports(in)
+	baseline := findMonth(t, reports, jan)
+	m := findMonth(t, reports, feb)
+
+	// Only the pays_out coupon lands in passiveCouponCash; the accrues coupon is
+	// gated out by disposition.
+	if m.passiveCouponCash == nil || !m.passiveCouponCash.Equal(dec("50")) {
+		t.Fatalf("Feb passiveCouponCash: %v, want 50 (pays_out only)", m.passiveCouponCash)
+	}
+	// The baseline month carries no income statement, so no coupon tally.
+	if baseline.passiveCouponCash != nil {
+		t.Errorf("baseline passiveCouponCash: got %v, want nil", baseline.passiveCouponCash)
+	}
+	// Coupon yield is retained in investment return (not stripped): pays_out
+	// (0 Δsnapshot + 50 cash_out) + accrues (50 Δsnapshot + 50 cash_out) = 150.
+	if m.investmentReturn == nil || !m.investmentReturn.bond.Equal(dec("150")) {
+		t.Errorf("Feb bond return: %+v, want 150 (coupon yield retained in investment return)", m.investmentReturn)
+	}
+}
+
 // Maturity with both portions cashed out (#25): on truthful data — a 0-value
 // close snapshot at the maturity month plus the cash_out transaction — the
 // engine books interest only, and the position leaves no net-worth bubble.

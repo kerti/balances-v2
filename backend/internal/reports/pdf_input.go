@@ -112,25 +112,36 @@ func buildStats(row *db.MonthlyReport, positions []repo.PositionDetail, series [
 			continue
 		}
 		flowN++
-		// Passive *cash* income (Rental + Pension + Interest) excludes Investment
-		// Return — the projection already models that as the pool's own growth g,
-		// so counting it here too would double-count it (ADR-0048). Interest is
-		// bank/deposit interest that lands as external cash, not pool return, so
-		// it belongs here and carries no such overlap.
+		// Passive *cash* income excludes the pool's own return g — the projection
+		// already models that as growth, so counting it here too would double-count
+		// it (ADR-0048). It is realized external cash that left the pool: Rental +
+		// Pension + bank/deposit Interest, plus paid-out bond coupons (pays_out
+		// disposition, #476). The coupon slice sits inside InvestmentReturnTotal
+		// (the domain keeps coupon yield in investment return), so it is added to
+		// passive cash here and removed from own-return g below — the two-scope
+		// split that guards the double-count (INV-FINANCE-25). Accruing coupons
+		// never enter passiveCouponCash and stay in g, mark-to-market, untouched.
 		// Routine-only income (ADR-0048 amendment / INV-FINANCE-19,-21,-24): the
 		// ratios judge the household against income it relies on, so every income
 		// term is the materialized routine subtotal, not the all-regularity total.
 		// A one-off (severance, THR, insurance payout) is excluded here while still
 		// counting toward net worth, the income statement, and living expenses.
+		couponCash := decOr(s.PassiveCouponCash)
 		passiveCash := decOr(s.EarnedIncomeRentalRoutine).
 			Add(decOr(s.EarnedIncomePensionRoutine)).
-			Add(decOr(s.EarnedIncomeInterestRoutine))
+			Add(decOr(s.EarnedIncomeInterestRoutine)).
+			Add(couponCash)
+		// Own return excludes the paid-out coupon slice: it is passive cash, not
+		// pool growth. The Passive-Income numerator is unchanged by the split
+		// (passiveCash gains couponCash, ownReturn loses it), but the resilience
+		// draw-offset gains it and g no longer compounds it (INV-FINANCE-25).
+		ownReturn := decOr(s.InvestmentReturnTotal).Sub(couponCash)
 		incomeSum = incomeSum.Add(decOr(s.EarnedIncomeTotalRoutine))
 		expSum = expSum.Add(*s.DerivedLivingExpenses)
 		passiveCashSum = passiveCashSum.Add(passiveCash)
-		totalPassiveSum = totalPassiveSum.Add(passiveCash.Add(decOr(s.InvestmentReturnTotal)))
+		totalPassiveSum = totalPassiveSum.Add(passiveCash.Add(ownReturn))
 		if s.NwInvestments.IsPositive() {
-			r, _ := decOr(s.InvestmentReturnTotal).Div(s.NwInvestments).Float64()
+			r, _ := ownReturn.Div(s.NwInvestments).Float64()
 			gSum += r
 			gN++
 		}
