@@ -154,3 +154,30 @@ func TestRenderStatsPanelStates(t *testing.T) {
 		t.Fatalf("singular-month resilience Render: %v", err)
 	}
 }
+
+// resilienceValue renders the runway as "Y years M months", each part
+// singular-aware and dropped when zero — a sub-year runway is months only, an
+// exact multiple of 12 is years only.
+func TestResilienceValue_YearsMonths(t *testing.T) {
+	cases := []struct {
+		months     int
+		indefinite bool
+		want       string
+	}{
+		{months: 5, want: "5 months"},
+		{months: 1, want: "1 month"},
+		{months: 0, want: "0 months"},
+		{months: 12, want: "1 year"},
+		{months: 13, want: "1 year 1 month"},
+		{months: 24, want: "2 years"},
+		{months: 137, want: "11 years 5 months"}, // was "137 months"
+		{indefinite: true, want: "Indefinite"},
+	}
+	for _, c := range cases {
+		d := &doc{c: copyFor("en-GB"), in: Input{Locale: "en-GB",
+			Stats: Stats{Resilience: Resilience{Defined: true, Months: c.months, Indefinite: c.indefinite}}}}
+		if got := d.resilienceValue(); got != c.want {
+			t.Errorf("months=%d indefinite=%v: got %q, want %q", c.months, c.indefinite, got, c.want)
+		}
+	}
+}

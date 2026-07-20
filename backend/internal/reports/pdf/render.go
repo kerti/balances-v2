@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/go-pdf/fpdf"
@@ -375,18 +376,33 @@ func (d *doc) pctValue(r Ratio) string {
 	return moneyfmt.FormatNumber(fmt.Sprintf("%.1f", r.Percent), d.in.Locale) + "%"
 }
 
-// resilienceValue formats the Fund Resilience runway as a month count (singular
-// aware) or the localized "indefinite" word when the pool never depletes.
+// resilienceValue formats the Fund Resilience runway as "Y years M months"
+// (each part singular-aware, dropped when zero) or the localized "indefinite"
+// word when the pool never depletes. A sub-year runway reads as months only;
+// an exact multiple of 12 reads as years only.
 func (d *doc) resilienceValue() string {
 	r := d.in.Stats.Resilience
 	if r.Indefinite {
 		return d.c.statIndefinite
 	}
-	unit := d.c.statMonthsUnit
-	if r.Months == 1 {
-		unit = d.c.statMonthUnit
+	num := func(n int) string { return moneyfmt.FormatNumber(fmt.Sprintf("%d", n), d.in.Locale) }
+	years, months := r.Months/12, r.Months%12
+	var parts []string
+	if years > 0 {
+		unit := d.c.statYearsUnit
+		if years == 1 {
+			unit = d.c.statYearUnit
+		}
+		parts = append(parts, fmt.Sprintf(unit, num(years)))
 	}
-	return fmt.Sprintf(unit, moneyfmt.FormatNumber(fmt.Sprintf("%d", r.Months), d.in.Locale))
+	if months > 0 || years == 0 { // always show months when there are no years (incl. 0)
+		unit := d.c.statMonthsUnit
+		if months == 1 {
+			unit = d.c.statMonthUnit
+		}
+		parts = append(parts, fmt.Sprintf(unit, num(months)))
+	}
+	return strings.Join(parts, " ")
 }
 
 func (d *doc) assets() {
@@ -403,12 +419,17 @@ func (d *doc) assets() {
 		d.subtypeHeader(subtypeLabel(d.in.Locale, "bank_account"))
 		for _, owner := range ownersOf(banks) {
 			ps := ownerPositions(banks, owner)
-			d.line(owner, "", 5, lineOpt{mutedText: true, size: 8.5})
+			// Owner is a grouping level above the account rows, so its label and
+			// subtotal must not read smaller than the leaves they contain: bold
+			// muted label (weight marks the header), and a subtotal at the same
+			// size as its rows — quieter than the bold ink subtype total, but no
+			// longer smaller than the amounts it sums.
+			d.line(owner, "", 5, lineOpt{bold: true, mutedText: true, size: 9})
 			for _, p := range ps {
 				d.position(p, 8)
 			}
 			d.line(d.c.total(owner), d.money(sum(ps).String()), 5,
-				lineOpt{mutedText: true, size: 8, topBorder: true})
+				lineOpt{mutedText: true, size: 9, topBorder: true})
 		}
 		d.line(d.c.total(subtypeLabel(d.in.Locale, "bank_account")), d.money(sum(banks).String()), 2,
 			lineOpt{bold: true, topBorder: true})

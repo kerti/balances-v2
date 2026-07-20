@@ -51,6 +51,8 @@ type reportCopy struct {
 	statDescs      []string // parallel one-sentence explanation for each ratio
 	statUndefined  string   // note shown when a ratio's inputs are unavailable
 	statIndefinite string   // Fund Resilience value when the pool never depletes
+	statYearUnit   string   // Fund Resilience value, singular ("%s year")
+	statYearsUnit  string   // Fund Resilience value, plural ("%s years")
 	statMonthUnit  string   // Fund Resilience value, singular ("%s month")
 	statMonthsUnit string   // Fund Resilience value, plural ("%s months")
 
@@ -113,6 +115,8 @@ var reportCatalog = map[string]reportCopy{
 		},
 		statUndefined:     "Not enough history yet to calculate.",
 		statIndefinite:    "Indefinite",
+		statYearUnit:      "%s year",
+		statYearsUnit:     "%s years",
 		statMonthUnit:     "%s month",
 		statMonthsUnit:    "%s months",
 		statInputsTitle:   "Inputs — 12-mo avg, regular income only",
@@ -166,6 +170,8 @@ var reportCatalog = map[string]reportCopy{
 		},
 		statUndefined:     "Riwayat belum cukup untuk dihitung.",
 		statIndefinite:    "Tak terbatas",
+		statYearUnit:      "%s tahun",
+		statYearsUnit:     "%s tahun",
 		statMonthUnit:     "%s bulan",
 		statMonthsUnit:    "%s bulan",
 		statInputsTitle:   "Masukan — rata-rata 12 bln, pendapatan rutin saja",
