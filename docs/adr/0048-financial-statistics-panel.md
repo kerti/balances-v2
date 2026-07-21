@@ -541,18 +541,32 @@ The performance block answers "how did the investments *perform*"; it does not s
 the performance tables: new money deployed into investments, as a share of the opening pool, so the
 reader sees `pool growth ≈ return% + placement%` for the month.
 
-**Definition — new bank-sourced money only.** Placement = **Buy** transactions + **fresh TimeDeposit
-placements**, FX-converted. It deliberately **excludes**:
-- **TD rollover funding** (`rolled_to_new` principal/interest, issue #27). A rolled-over TD is funded
-  by its predecessor's maturity — the money **never touches the bank**, it recycles internally. Counting
-  it would make a TD on `auto_renew` read as a massive *recurring* placement every renewal — pure
-  double-count of the same capital. The engine already books rollover funding as a distinct cash_in
-  leg, so the exclusion is a clean tap, not a heuristic.
-- **Cash `fee` inflows** — a cost charged against the instrument, not money the household deployed.
+**Definition — NET new money into the pool.** Placement is a **net monthly capital flow**:
 
-Gross, not net: placement is *money in*, not netted against Sells. A rebalance (sell A → buy B) is
-neither saving nor spending, but netting it would hide the deployment; withdrawals are a separate
-concept (an outflow line), deliberately out of scope here.
+```
+placement = (Buys + fresh TD placements)  −  (Sells + cash_out maturity principal/interest)
+```
+
+all FX-converted. It **excludes**:
+- **TD rollover funding + rolled-to-new maturities** (`rolled_to_new`, issue #27). A rolled TD is funded
+  by its predecessor's maturity — the money **never touches the bank**, it recycles internally. It falls
+  out of *both* legs (the rollover cash_in is not a Buy; the rolled maturity's disposition isn't
+  `cash_out`), so an `auto_renew` TD nets to 0, not a recurring phantom placement.
+- **Cash `fee` inflows** — a cost, not deployment.
+- **Coupons / dividends / distributions** — income *yield*, not principal returning; they do **not** net
+  against placement.
+
+**Net, not gross — corrected from the first cut.** The first version was gross (Buys + placements only)
+and **double-counted recycled capital**: a matured bond that pays out to the bank (`cash_out`) and is
+reinvested the same month into a new bond read as a full fresh placement, even though it is the *same*
+capital cycling through — counted once when the old bond was bought and again on reinvestment. (Illustration:
+a bond of 100 matures paying out to the bank and 100 is reinvested into a new bond the same month,
+alongside a genuine 25 of fresh deployment — gross reads 125, the correct net is 25.) Netting principal
+returns fixes it and is the same rule that makes a **rebalance** (sell A → buy B) net
+to ~0. A **net-withdrawal month** (matured/sold more than deployed) legitimately goes **negative** —
+a real, labelled signal that the household drew down its investments; the rate then reads negative, not
+"—". Because the flow is *monthly net*, a maturity in one month and its reinvestment in the next show as
+a negative then a positive that wash out over the trailing window — the correct behaviour.
 
 **Rate base = the opening pool**, the same denominator as the return rate (chosen so the two compose:
 `return% + placement% ≈ this-month pool growth`, ex-withdrawals). Undefined → "—" on a zero/absent
@@ -566,17 +580,21 @@ because it is growth; placement *averages* because it is a contribution. The cod
 so nobody "fixes" them into agreement.
 
 - **Mechanism.** Migration `00014` adds one more column, `investment_placement numeric(20,4)` (nil on
-  the baseline). The engine accumulates `placementByMonth` from Buy cash_in + the synthetic fresh-TD
-  placement cash_in (skipping the rollover-funding loop and cash fees). `buildInvestmentPerformance`
-  computes the this-month and trailing figures at render; `perfPlacementRow` renders the line (% in
-  both columns, amount muted beneath each). `engine_version → 4`.
+  the baseline). The engine nets two per-month accumulators — `placementByMonth` (Buy cash_in + the
+  synthetic fresh-TD placement cash_in) minus `returnedByMonth` (Sell proceeds + `cash_out`-disposition
+  maturity principal/interest); the rollover-funding loop and cash fees touch neither, coupons/dividends
+  are not netted. `buildInvestmentPerformance` computes the this-month and trailing figures at render;
+  `perfPlacementRow` renders the line (% in both columns, amount muted beneath each). `engine_version →
+  4` (the placement leg is part of v4; its net correction is pre-release, so no separate bump).
 
 ### Invariants (placement)
 
-- **INV-FINANCE-32** (new) — `investment_placement` is **new bank-sourced money into investments**:
-  Buy transactions + fresh TD placements, FX-converted; it **excludes** TD rollover funding
-  (`rolled_to_new`, internal recycling that never hits the bank) and cash `fee` inflows. Rendered as a
-  share of the **opening** invested pool (undefined → "—" on a zero/absent pool), whose trailing-12
-  figure is the **arithmetic average** (`Σplacement / Σopening-pool`; amount `Σ / n`) — deliberately
-  **not** the geometric compound of the return rate (INV-FINANCE-31), because placement is a flow, not
-  a compounding growth rate.
+- **INV-FINANCE-32** (new) — `investment_placement` is the month's **net new money into investments**:
+  `(Buys + fresh TD placements) − (Sells + cash_out maturity principal/interest)`, FX-converted. It
+  **excludes** TD rollover funding and rolled-to-new maturities (recycled capital that never touches the
+  bank — off both legs, so an `auto_renew` TD nets to 0), cash `fee` inflows, and coupons/dividends/
+  distributions (income yield, not principal, so they do not net). Reinvesting a matured bond nets to
+  ~0; a net-withdrawal month is **negative** (not "—"). Rendered as a share of the **opening** invested
+  pool (undefined → "—" only on a zero/absent pool), whose trailing-12 figure is the **arithmetic
+  average** (`Σplacement / Σopening-pool`; amount `Σ / n`) — deliberately **not** the geometric compound
+  of the return rate (INV-FINANCE-31), because placement is a flow, not a compounding growth rate.

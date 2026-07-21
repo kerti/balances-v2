@@ -123,8 +123,50 @@ func TestEngine_PlacementExcludesRollover(t *testing.T) {
 		t.Errorf("Jan baseline: investmentPlacement should be nil, got %v", jan.investmentPlacement)
 	}
 	// Feb placement = 200 (Buy) + 300 (fresh TD) = 500. The 105 rollover funding is
-	// excluded.
+	// excluded, and the rolled-to-new maturity is NOT netted (it never hit the bank).
 	if feb2.investmentPlacement == nil || !feb2.investmentPlacement.Equal(dec("500")) {
-		t.Fatalf("Feb placement: %v, want 500 (Buy 200 + fresh TD 300; rollover 105 excluded)", feb2.investmentPlacement)
+		t.Fatalf("Feb placement: %v, want 500 (Buy 200 + fresh TD 300; rollover 105 excluded, not netted)", feb2.investmentPlacement)
+	}
+}
+
+// Placement is NET: a matured bond paid to the bank (cash_out) and reinvested the
+// same month nets to ~0 — it is the same capital cycling, not new money. Only the
+// genuinely-new buy survives. Guards the reinvested-principal double-count (a
+// matured bond paid to the bank and rebought into a new bond the same month).
+// covers: INV-FINANCE-32
+func TestEngine_PlacementNetsReturnedPrincipal(t *testing.T) {
+	bank, oldBond, newBond, stock := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	feb := ym(2026, time.February)
+	maturedPrincipal := dec("100")
+	reinvest := dec("100")
+	newBuy := dec("50")
+	in := reportEngineInput{
+		positions: []reportPosition{
+			{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"},
+			{id: oldBond, group: groupInvestment, subtype: "bond", riskProfile: "low", ownershipType: "joint", terminatedAt: &feb},
+			{id: newBond, group: groupInvestment, subtype: "bond", riskProfile: "low", ownershipType: "joint"},
+			{id: stock, group: groupInvestment, subtype: "stock", riskProfile: "high", ownershipType: "joint"},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("1000")},
+			{positionID: bank, yearMonth: feb, amount: dec("1000")},
+			{positionID: oldBond, yearMonth: ym(2026, time.January), amount: dec("100")},
+			{positionID: oldBond, yearMonth: feb, amount: dec("0")}, // matured, paid to bank
+			{positionID: newBond, yearMonth: feb, amount: dec("100")},
+			{positionID: stock, yearMonth: feb, amount: dec("50")},
+		},
+		transactions: []reportTransaction{
+			{investmentID: oldBond, yearMonth: feb, txnType: "maturity",
+				principalAmount: &maturedPrincipal, principalDisposition: strp("cash_out"), interestDisposition: strp("cash_out")},
+			{investmentID: newBond, yearMonth: feb, txnType: "buy", amount: &reinvest},
+			{investmentID: stock, yearMonth: feb, txnType: "buy", amount: &newBuy},
+		},
+		currentMonth: feb,
+	}
+	feb2 := findMonth(t, generateMonthlyReports(in), feb)
+
+	// Net = buys(100 reinvest + 50 new) − returned(100 matured cash_out) = 50.
+	if feb2.investmentPlacement == nil || !feb2.investmentPlacement.Equal(dec("50")) {
+		t.Fatalf("Feb net placement: %v, want 50 (buys 150 − matured principal 100)", feb2.investmentPlacement)
 	}
 }

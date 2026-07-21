@@ -321,13 +321,16 @@ zero/absent opening base (first month held, or fully exited) has an **undefined*
 This is a *money-weighted opening-base approximation*, not a textbook IRR/time-weighted return — the
 month-granularity snapshot model carries no intra-month dated cash flows, and the domain says so.
 
-**Investment placement**: New money the Household **deployed into investments** in a month — Buy
-transactions + fresh TimeDeposit placements — shown in the same block as a share of the opening pool,
-so `pool growth ≈ investment-return % + placement %`. It **excludes** TD rollover funding (recycled
-principal that never touches the bank) and cash fees — only fresh money from the Household's accounts
-counts. Gross (money in), not netted against Sells. Its trailing-12 figure is an **arithmetic
-average** (a typical month's deployment), *not* the geometric compound used for return — placement is a
-flow you average, not a compounding growth rate.
+**Investment placement**: The month's **net new money into investments** — `(Buys + fresh TimeDeposit
+placements) − (Sells + cash_out maturity principal/interest)` — shown in the same block as a share of
+the opening pool, so `pool growth ≈ investment-return % + placement %`. It **excludes** TD rollover
+funding / rolled-to-new maturities (recycled principal that never touches the bank — off both legs, so
+an auto-renewing TD nets to 0), cash fees, and coupons/dividends (income yield, not principal, so they
+don't net). It is **net, not gross**: reinvesting a matured bond nets to ~0 (the same capital cycling,
+not new money), a rebalance nets to ~0, and a net-withdrawal month goes **negative** (a real drawdown
+signal, not "—"). Its trailing-12 figure is an **arithmetic average** (a typical month's net flow),
+*not* the geometric compound used for return — placement is a flow you average, not a compounding
+growth rate.
 
 ### Backup and restore
 

@@ -427,12 +427,18 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	// flagged per month so the report still generates.
 	cashByPos := make(map[uuid.UUID]map[int]cashFlow)
 	couponCashByMonth := make(map[int]decimal.Decimal)
-	// placementByMonth is new money deployed into investments from the bank — Buy
-	// transactions + fresh TD placements, FX-converted. It deliberately excludes
-	// rollover funding (recycled principal, never touches the bank) and cash fees
-	// (a cost). Materialized as investment_placement for the render's "how much of
-	// the pool's growth was new money vs return" split (ADR-0048 / INV-FINANCE-32).
+	// placementByMonth / returnedByMonth net to investment_placement: NEW money
+	// deployed into investments from the bank, net of principal that came back.
+	//   placement (in)  = Buy transactions + fresh TD placements.
+	//   returned (out)  = Sells + cash_out maturity principal/interest.
+	// The net excludes rollover funding and rolled-to-new maturities (recycled
+	// capital that never touches the bank — off both legs) and cash fees (a cost),
+	// and does NOT net coupons/dividends/distributions (income yield, not
+	// principal). Reinvesting a matured bond nets to ~0 (INV-FINANCE-32); a pure
+	// withdrawal month goes negative. FX-converted. Materialized for the render's
+	// "how much of the pool's growth was new money vs return" split.
 	placementByMonth := make(map[int]decimal.Decimal)
+	returnedByMonth := make(map[int]decimal.Decimal)
 	txnMissing := make(map[int]map[string]bool)
 	txnRates := make(map[int]map[string]decimal.Decimal)
 	for _, t := range in.transactions {
@@ -459,10 +465,30 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		if t.txnType == "coupon" && paysOutBond[t.investmentID] {
 			couponCashByMonth[mi] = couponCashByMonth[mi].Add(outC)
 		}
-		// A Buy is new money placed into investments (INV-FINANCE-32). Sells,
-		// coupons/dividends/distributions (cash_out) and cash fees are not.
-		if t.txnType == "buy" {
+		// Net-placement legs (INV-FINANCE-32). A Buy is new money in. Sells and
+		// cash_out maturity principal/interest are money that came back — they net
+		// against placement (reinvested matured principal / rebalancing is not new
+		// money). Coupons/dividends/distributions are income yield, not principal,
+		// so they don't net. Rolled-to-new maturity portions never touch the bank
+		// (their disposition isn't cash_out), so they fall out of both legs.
+		switch t.txnType {
+		case "buy":
 			placementByMonth[mi] = placementByMonth[mi].Add(inC)
+		case "sell":
+			returnedByMonth[mi] = returnedByMonth[mi].Add(outC)
+		case "maturity":
+			var raw decimal.Decimal
+			if t.principalDisposition != nil && *t.principalDisposition == "cash_out" {
+				raw = raw.Add(decOrZero(t.principalAmount))
+			}
+			if t.interestDisposition != nil && *t.interestDisposition == "cash_out" {
+				raw = raw.Add(decOrZero(t.interestAmount))
+			}
+			if raw.IsPositive() {
+				if c, _, ok := fx.convert(raw, t.currency, mi); ok {
+					returnedByMonth[mi] = returnedByMonth[mi].Add(c)
+				}
+			}
 		}
 		m := cashByPos[t.investmentID]
 		if m == nil {
@@ -696,10 +722,10 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			coupon := couponCashByMonth[idx]
 			m.passiveCouponCash = &coupon
 
-			// New money placed into investments this month (Buys + fresh TD
-			// placements, excl. rollovers/fees). Set on every flow month, zero when
-			// nothing was deployed (INV-FINANCE-32).
-			placement := placementByMonth[idx]
+			// Net new money into investments this month: (Buys + fresh TD placements)
+			// − (Sells + cash_out maturity principal/interest). Set on every flow
+			// month; negative in a net-withdrawal month (INV-FINANCE-32).
+			placement := placementByMonth[idx].Sub(returnedByMonth[idx])
 			m.investmentPlacement = &placement
 
 			avc := decimal.Zero

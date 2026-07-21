@@ -80,8 +80,9 @@ Active/Passive by-source split under Cash Flow, coupons as a separate additive l
 amendment, INV-FINANCE-26; layout/copy only, no migration) — also **UNRELEASED**. Investment-
 performance block added to the PDF report (2026-07-21): investment return as a *rate* — this month
 beside its trailing-12 compound — in three cuts (total, by risk profile, by instrument type), plus a
-**placement** line (new money deployed as a share of the opening pool; excludes TD rollovers/fees;
-trailing-12 = arithmetic avg, not compound); leads the investments page (ADR-0048 amendment, migration
+**placement** line (**net** new money = Buys+fresh TD − Sells − cash_out maturity principal, as a share
+of the opening pool; excludes rollovers/fees/coupons; can go negative; trailing-12 = arithmetic avg, not
+compound); leads the investments page (ADR-0048 amendment, migration
 `00014`, engine_version 2→4, INV-FINANCE-29/30/31/32) — also **UNRELEASED**. Next cut owed carries
 `00013` + `00014`.
 Next, in order:
