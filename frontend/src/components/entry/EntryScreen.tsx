@@ -202,7 +202,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-4">
+    <div className="mx-auto max-w-3xl p-4">
       <Button
         variant="ghost"
         size="sm"
@@ -219,7 +219,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            {/* items-end keeps both inputs on one line even when a label wraps
+                to two rows on a narrow phone ("Statement date" vs "Month"). */}
+            <div className="grid grid-cols-2 items-end gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="bulk-year-month">{t("fields.month")}</Label>
                 <Input
