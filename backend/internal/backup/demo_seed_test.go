@@ -157,4 +157,47 @@ func TestSeedDemoData_Reconciles(t *testing.T) {
 	if minChecking.IsNegative() {
 		t.Errorf("Everyday Checking dips to %s — the cash plug goes insolvent", minChecking)
 	}
+
+	// Every market position's final snapshot quantity must equal the net of its
+	// Buy/Sell ledger — the "values tally with the ledger" property at the heart
+	// of the #497 fix (and the frontend reconcileQuantity banner). This is what
+	// keeps the engine's return as clean price appreciation rather than a phantom
+	// loss; without it the seeder could drift snapshot qty from the trades.
+	qtyRows, err := tdb.Pool.Query(ctx, `
+		SELECT i.display_name,
+		       (SELECT s.quantity FROM investment_snapshots s
+		          WHERE s.investment_id = i.id ORDER BY s.year_month DESC LIMIT 1) AS final_qty,
+		       COALESCE(SUM(CASE t.transaction_type
+		                      WHEN 'buy'  THEN t.quantity
+		                      WHEN 'sell' THEN -t.quantity
+		                      ELSE 0 END), 0) AS net_txn_qty
+		FROM investments i
+		LEFT JOIN investment_transactions t ON t.investment_id = i.id
+		WHERE i.household_id = $1 AND i.subtype IN ('stock', 'mutual_fund', 'gold')
+		GROUP BY i.id, i.display_name
+		ORDER BY i.display_name`, household.ID)
+	if err != nil {
+		t.Fatalf("query quantity tally: %v", err)
+	}
+	defer qtyRows.Close()
+
+	var marketPositions int
+	for qtyRows.Next() {
+		var name string
+		var finalQty, netTxnQty decimal.Decimal
+		if err := qtyRows.Scan(&name, &finalQty, &netTxnQty); err != nil {
+			t.Fatalf("scan quantity tally: %v", err)
+		}
+		marketPositions++
+		if !finalQty.Equal(netTxnQty) {
+			t.Errorf("%s: final snapshot qty %s != net Buy/Sell ledger qty %s — snapshot has drifted from the trades",
+				name, finalQty, netTxnQty)
+		}
+	}
+	if err := qtyRows.Err(); err != nil {
+		t.Fatalf("iterate quantity tally: %v", err)
+	}
+	if marketPositions < 6 {
+		t.Errorf("checked %d market positions, want the seeded 6 (2 each of stock/mutual_fund/gold)", marketPositions)
+	}
 }
