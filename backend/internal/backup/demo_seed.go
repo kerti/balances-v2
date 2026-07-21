@@ -81,6 +81,156 @@ func demoDecimal(f float64) decimal.Decimal {
 	return decimal.NewFromFloat(f).Round(2)
 }
 
+// demoRevaluationSeries projects a base value forward by a signed annual rate,
+// compounded monthly exactly as the app's own revaluation helper does
+// (frontend/src/lib/revaluation.ts): value[i] = base * (1 + annualRatePct/100)^(i/12).
+// A positive rate appreciates (property), a negative rate depreciates (vehicle),
+// so a seeded property/vehicle trail actually tracks the
+// annual_appreciation_rate / annual_depreciation_rate the position advertises,
+// rather than an unrelated sinusoidal curve. annualRatePct is a percent (4 = 4%
+// per year), matching how those rate fields are stored and displayed.
+func demoRevaluationSeries(base, annualRatePct float64, n int) []float64 {
+	vals := make([]float64, n)
+	factor := 1 + annualRatePct/100
+	for i := 0; i < n; i++ {
+		vals[i] = base * math.Pow(factor, float64(i)/12)
+	}
+	return vals
+}
+
+// demoStepDownSeries models an irregular paydown/settlement: it starts at base
+// and subtracts one whole-nominal payment at each month listed in payments,
+// holding flat in between — so a receivable/loan reads as real sporadic
+// repayments (IDR 50,000 here, a USD 1 there) rather than a smooth curve. The
+// value in month i is base − nominal × (payment months ≤ i). Payment months
+// beyond the series length are ignored; the schedule must not drive the balance
+// negative (base ≥ nominal × len(payments)).
+func demoStepDownSeries(base, nominal float64, payments []int, n int) []float64 {
+	vals := make([]float64, n)
+	for i := 0; i < n; i++ {
+		var paid int
+		for _, p := range payments {
+			if p <= i {
+				paid++
+			}
+		}
+		vals[i] = base - nominal*float64(paid)
+	}
+	return vals
+}
+
+// demoTrade is one Buy (deltaQty > 0) or Sell (deltaQty < 0) in a market
+// position's ledger, at month index deltaQty into demoMonths. The snapshot
+// quantity a position holds in month i is the running sum of every trade with
+// monthIdx <= i (cumulativeQty) — so the snapshot value always equals the
+// ledger's net quantity times that month's price, and the engine's per-month
+// return (INV-FINANCE-08, ΔSnapshot + cash_out − cash_in) collapses to pure
+// price appreciation on the previously-held lot with zero phantom loss (#497).
+type demoTrade struct {
+	monthIdx int
+	deltaQty float64
+}
+
+// cumulativeQty is the net quantity held after every trade dated at or before
+// uptoIdx — the snapshot quantity seedMarketSnapshots stamps for that month.
+func cumulativeQty(trades []demoTrade, uptoIdx int) float64 {
+	var q float64
+	for _, t := range trades {
+		if t.monthIdx <= uptoIdx {
+			q += t.deltaQty
+		}
+	}
+	return q
+}
+
+// demoCheckingOpening is the Everyday Checking balance in the baseline (oldest)
+// month. The baseline books no Living Expenses — the engine has no prior month
+// to diff against — so this is a free starting position; every later month's
+// balance is derived from it by the cash-flow recurrence in checkingSeries.
+const demoCheckingOpening = 12_000_000.0
+
+// demoExpenseSeries is the household's chosen monthly living-expenses curve — a
+// modest base with gentle lifestyle creep (tracking the salary drift) plus a
+// mild seasonal swing, always well under monthly income so the checking plug
+// trends upward. Because the checking account is seeded as the reconciling plug
+// (checkingSeries), the engine's *derived* Living Expenses come out equal to
+// this series (± a small foreign-currency revaluation leak), rather than an
+// arbitrary residual (#497, INV-FINANCE-28).
+func demoExpenseSeries() []float64 {
+	e := make([]float64, demoMonthCount)
+	for i := range e {
+		e[i] = 5_200_000.0 + 25_000.0*float64(i) + 350_000.0*math.Sin(float64(i)*1.05)
+	}
+	return e
+}
+
+// demoCashLedger accumulates the household's monthly IDR cash flows as the rest
+// of the demo is seeded, so the Everyday Checking balance can be seeded last as
+// the reconciling plug (seedDemoCheckingPlug). Every cash movement a real
+// household routes through its bank is recorded here: income in, net investment
+// purchases out, transfers into the other bank/savings series, debt principal
+// paid, money lent, and the chosen living expenses. Foreign-currency positions
+// are deliberately *not* recorded — their IDR value carries an FX revaluation
+// that isn't cash — so they leak a small (kept tiny) wobble into the engine's
+// derived expenses instead of the checking balance (see seedDemoData).
+type demoCashLedger struct {
+	income       []float64 // earned income landing in the bank
+	investNetIn  []float64 // engine cash_in − cash_out: +Buy/placement, −Sell/Dividend/Distribution/Coupon
+	savingsDelta []float64 // month-over-month change in the other (IDR) bank/savings series
+	recvDelta    []float64 // month-over-month change in (IDR) receivables — positive = money lent
+	liabDelta    []float64 // month-over-month change in (IDR) liability magnitude — negative = paid down
+	expenses     []float64 // chosen living-expenses series
+}
+
+func newDemoCashLedger() *demoCashLedger {
+	n := demoMonthCount
+	return &demoCashLedger{
+		income:       make([]float64, n),
+		investNetIn:  make([]float64, n),
+		savingsDelta: make([]float64, n),
+		recvDelta:    make([]float64, n),
+		liabDelta:    make([]float64, n),
+		expenses:     demoExpenseSeries(),
+	}
+}
+
+func (l *demoCashLedger) addIncome(monthIdx int, amt float64) { l.income[monthIdx] += amt }
+
+// addInvest records a signed investment cash flow: positive for a Buy (cash out
+// of the bank, into the position), negative for a payout the household receives
+// (Sell/Dividend/Distribution/Coupon). Mirrors the engine's transactionCashFlows
+// sign convention so the checking plug funds exactly what the return math books.
+func (l *demoCashLedger) addInvest(monthIdx int, cashIn float64) { l.investNetIn[monthIdx] += cashIn }
+
+// recordSeriesDelta feeds a seeded IDR position's month-over-month changes into
+// one of the delta buckets, so the checking plug accounts for the cash those
+// changes represent (a savings deposit, debt paid down, money lent/repaid).
+func recordSeriesDelta(dst, series []float64) {
+	for i := 1; i < len(series); i++ {
+		dst[i] += series[i] - series[i-1]
+	}
+}
+
+// checkingSeries derives the Everyday Checking balance for every month from the
+// opening balance and the accumulated cash flows, forcing the engine's derived
+// Living Expenses to equal demoExpenseSeries. The recurrence is the cash-flow
+// rearrangement of the engine's comprehensive-income identity (INV-FINANCE-28):
+//
+//	livingExpenses = income − Δbank − Δreceivables + Δliabilities − netInvestCashIn
+//
+// solved for Δchecking (Δbank restricted to this account, the plug):
+//
+//	Δchecking = income − Δsavings − Δreceivables + Δliabilities − netInvestCashIn − expenses
+func (l *demoCashLedger) checkingSeries() []float64 {
+	n := len(l.expenses)
+	c := make([]float64, n)
+	c[0] = demoCheckingOpening
+	for i := 1; i < n; i++ {
+		c[i] = c[i-1] + l.income[i] - l.savingsDelta[i] - l.recvDelta[i] + l.liabDelta[i] - l.investNetIn[i] - l.expenses[i]
+	}
+	return c
+}
+
 // seedDemoData wipes-then-rebuilds the shared demo Household's entire toy
 // dataset (ADR-0041, #217): at least two Positions per Asset/Investment
 // subtype plus Liabilities, Receivables, Income, and Tags, each carrying a
@@ -88,6 +238,13 @@ func demoDecimal(f float64) decimal.Decimal {
 // every position type, tag breakdown, income category, and a year-over-year
 // net-worth comparison in action rather than an empty-feeling dashboard.
 func seedDemoData(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID) error {
+	// The demo is seeded as one coherent household cash flow: every position's
+	// cash movements accumulate in ledger, and the Everyday Checking account is
+	// seeded last as the reconciling plug (seedDemoCheckingPlug) so the engine's
+	// derived Living Expenses stay positive and equal to demoExpenseSeries every
+	// month (#497, INV-FINANCE-28) rather than an arbitrary residual. Order
+	// matters: checking must be seeded after every other cash flow is recorded.
+	ledger := newDemoCashLedger()
 	tags, err := seedDemoTags(ctx, pool)
 	if err != nil {
 		return err
@@ -95,20 +252,44 @@ func seedDemoData(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uu
 	if err := seedDemoFxRates(ctx, pool); err != nil {
 		return err
 	}
-	if err := seedDemoAssets(ctx, pool, ownerID, member2ID, tags); err != nil {
+	checkingID, err := seedDemoAssets(ctx, pool, ownerID, member2ID, tags, ledger)
+	if err != nil {
 		return err
 	}
-	if err := seedDemoInvestments(ctx, pool, ownerID, member2ID, tags); err != nil {
+	if err := seedDemoInvestments(ctx, pool, ownerID, member2ID, tags, ledger); err != nil {
 		return err
 	}
-	if err := seedDemoLiabilitiesAndReceivables(ctx, pool, ownerID, member2ID, tags); err != nil {
+	if err := seedDemoLiabilitiesAndReceivables(ctx, pool, ownerID, member2ID, tags, ledger); err != nil {
 		return err
 	}
-	if err := seedDemoIncome(ctx, pool, ownerID, member2ID); err != nil {
+	if err := seedDemoIncome(ctx, pool, ownerID, member2ID, ledger); err != nil {
 		return err
 	}
 	if err := seedDemoInflation(ctx, pool); err != nil {
 		return err
+	}
+	if err := seedDemoCheckingPlug(ctx, pool, checkingID, ledger); err != nil {
+		return err
+	}
+	return nil
+}
+
+// seedDemoCheckingPlug seeds the Everyday Checking snapshot trail from the
+// accumulated cash ledger (checkingSeries) — the reconciling balance that makes
+// the household's income, spending, investment purchases and payouts tally
+// (#497, INV-FINANCE-28). Seeded last, after every other cash flow is recorded.
+func seedDemoCheckingPlug(ctx context.Context, pool *pgxpool.Pool, assetID uuid.UUID, ledger *demoCashLedger) error {
+	assets := repo.NewAssetRepo(pool)
+	series := ledger.checkingSeries()
+	for i, ym := range demoMonths() {
+		if _, err := assets.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
+			AssetID:   assetID,
+			YearMonth: ym,
+			Amount:    demoDecimal(series[i]),
+			Currency:  demoCurrency,
+		}); err != nil {
+			return fmt.Errorf("demo reset: seed checking plug snapshot: %w", err)
+		}
 	}
 	return nil
 }
@@ -194,7 +375,7 @@ func seedDemoFxRates(ctx context.Context, pool *pgxpool.Pool) error {
 // currency must match the Position's own native_currency — a snapshot tagged
 // with the wrong currency either skips FX conversion entirely (if it
 // happens to equal the reporting currency) or converts at the wrong rate.
-func seedAssetSnapshots(ctx context.Context, assets *repo.AssetRepo, assetID uuid.UUID, base, growth, wobble float64, phaseIdx int, currency string) error {
+func seedAssetSnapshots(ctx context.Context, assets *repo.AssetRepo, assetID uuid.UUID, base, growth, wobble float64, phaseIdx int, currency string) ([]float64, error) {
 	months := demoMonths()
 	series := demoSeries(base, growth, wobble, phaseIdx, len(months))
 	for i, ym := range months {
@@ -204,24 +385,76 @@ func seedAssetSnapshots(ctx context.Context, assets *repo.AssetRepo, assetID uui
 			Amount:    demoDecimal(series[i]),
 			Currency:  currency,
 		}); err != nil {
-			return fmt.Errorf("demo reset: seed asset snapshot: %w", err)
+			return nil, fmt.Errorf("demo reset: seed asset snapshot: %w", err)
+		}
+	}
+	return series, nil
+}
+
+// seedRevaluationSnapshots backfills a Property / Vehicle value trail as a
+// clean annual-rate revaluation (demoRevaluationSeries) rather than the
+// sinusoidal demoSeries — so the trail matches the position's advertised
+// annual_appreciation_rate / annual_depreciation_rate. Property/vehicle
+// revaluation is pure mark-to-market: it cancels out of the engine's
+// living-expenses identity (avc − avc), so unlike bank/savings it feeds no cash
+// ledger. annualRatePct is signed (positive appreciates, negative depreciates).
+func seedRevaluationSnapshots(ctx context.Context, assets *repo.AssetRepo, assetID uuid.UUID, base, annualRatePct float64, currency string) error {
+	months := demoMonths()
+	series := demoRevaluationSeries(base, annualRatePct, len(months))
+	for i, ym := range months {
+		if _, err := assets.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
+			AssetID:   assetID,
+			YearMonth: ym,
+			Amount:    demoDecimal(series[i]),
+			Currency:  currency,
+		}); err != nil {
+			return fmt.Errorf("demo reset: seed revaluation snapshot: %w", err)
 		}
 	}
 	return nil
 }
 
-// seedMarketSnapshots backfills the full demoMonths quantity+price trail for
-// a Stock / MutualFund / Gold Position, given a precomputed price series of
-// the same length (shared with seedInvestmentTrade so a Buy recorded at
-// month i prices at exactly the snapshot price for that month). Quantity is
-// held steady across the trail — the ledger's net Buy/Sell quantity must
-// equal qty by the last month, or the frontend's reconcileQuantity check
-// flags a mismatch banner. currency must match the Position's own
-// native_currency (see seedAssetSnapshots).
-func seedMarketSnapshots(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, qty decimal.Decimal, prices []float64, currency string) error {
+// seedMarketPosition seeds a Stock / MutualFund / Gold Position's full trail —
+// snapshots and the Buy/Sell ledger that backs them — from a single trade
+// schedule, so the snapshot quantity each month equals the ledger's net
+// quantity (cumulativeQty) and their values can never drift apart (#497). Every
+// trade also records its cash flow into ledger so the checking plug funds it.
+// The first trade should be dated at month 0 (the acquisition, a baseline month
+// that books no return per INV-FINANCE-23) so the position is present across the
+// whole history rather than appearing mid-chart. prices is the shared price
+// series (the same one passed to seedMarketSnapshots), so a Buy at month i
+// prices at exactly that month's snapshot price. currency must match the
+// Position's own native_currency (see seedAssetSnapshots).
+func seedMarketPosition(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, trades []demoTrade, prices []float64, currency string, ledger *demoCashLedger) error {
+	if err := seedMarketSnapshots(ctx, investments, investmentID, trades, prices, currency); err != nil {
+		return err
+	}
+	for _, t := range trades {
+		txnType := repo.TxnTypeBuy
+		qty := t.deltaQty
+		if qty < 0 {
+			txnType = repo.TxnTypeSell
+			qty = -qty
+		}
+		if err := seedInvestmentTrade(ctx, investments, investmentID, txnType, demoMonths(), t.monthIdx, qty, prices, ledger); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// seedMarketSnapshots backfills the full demoMonths quantity+price trail for a
+// Stock / MutualFund / Gold Position, given a precomputed price series of the
+// same length. The quantity held in month i is the running sum of every trade
+// dated at or before it (cumulativeQty) — so the snapshot always equals the
+// ledger's net Buy/Sell quantity times that month's price, the frontend's
+// reconcileQuantity check holds by construction, and the engine's per-month
+// return collapses to pure price appreciation (INV-FINANCE-08, #497). currency
+// must match the Position's own native_currency (see seedAssetSnapshots).
+func seedMarketSnapshots(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, trades []demoTrade, prices []float64, currency string) error {
 	for i, ym := range demoMonths() {
 		price := demoDecimal(prices[i])
-		q := qty
+		q := demoDecimal(cumulativeQty(trades, i))
 		if _, err := investments.CreateInvestmentSnapshot(ctx, repo.CreateInvestmentSnapshotParams{
 			InvestmentID: investmentID,
 			YearMonth:    ym,
@@ -242,7 +475,7 @@ func seedMarketSnapshots(ctx context.Context, investments *repo.InvestmentRepo, 
 // shows for that month. months/prices must be the same slice the caller used
 // to seed that position's snapshots (the full demoMonths for Stock/
 // MutualFund/Gold, or demoRecentMonths for Bond/TimeDeposit).
-func seedInvestmentTrade(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, txnType string, months []time.Time, monthIdx int, quantity float64, prices []float64) error {
+func seedInvestmentTrade(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, txnType string, months []time.Time, monthIdx int, quantity float64, prices []float64, ledger *demoCashLedger) error {
 	qty := demoDecimal(quantity)
 	price := demoDecimal(prices[monthIdx])
 	amount := qty.Mul(price)
@@ -258,6 +491,12 @@ func seedInvestmentTrade(ctx context.Context, investments *repo.InvestmentRepo, 
 	}); err != nil {
 		return fmt.Errorf("demo reset: seed %s trade: %w", txnType, err)
 	}
+	// A Buy is cash out of the bank into the position, a Sell is cash back in.
+	cashIn, _ := amount.Float64()
+	if txnType == repo.TxnTypeSell {
+		cashIn = -cashIn
+	}
+	ledger.addInvest(monthIdx, cashIn)
 	return nil
 }
 
@@ -265,7 +504,7 @@ func seedInvestmentTrade(ctx context.Context, investments *repo.InvestmentRepo, 
 // Distribution, Coupon, or Fee — none of which carry Quantity/PricePerUnit
 // (ADR-0009's transaction-shape rules). months follows the same convention as
 // seedInvestmentTrade.
-func seedInvestmentCashEvent(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, txnType string, months []time.Time, monthIdx, day int, amount float64) error {
+func seedInvestmentCashEvent(ctx context.Context, investments *repo.InvestmentRepo, investmentID uuid.UUID, txnType string, months []time.Time, monthIdx, day int, amount float64, ledger *demoCashLedger) error {
 	amt := demoDecimal(amount)
 	date := dayIn(months[monthIdx], day)
 	if _, err := investments.CreateInvestmentTransaction(ctx, repo.CreateInvestmentTransactionParams{
@@ -276,6 +515,15 @@ func seedInvestmentCashEvent(ctx context.Context, investments *repo.InvestmentRe
 		Amount:          &amt,
 	}); err != nil {
 		return fmt.Errorf("demo reset: seed %s: %w", txnType, err)
+	}
+	// Dividend/Distribution/Coupon are cash the household receives (cash_out of
+	// the position → into the bank); a quantity-less Fee is a capitalised cost
+	// paid from the bank (cash_in, matching the engine's transactionCashFlows).
+	amtF, _ := amt.Float64()
+	if txnType == repo.TxnTypeFee {
+		ledger.addInvest(monthIdx, amtF)
+	} else {
+		ledger.addInvest(monthIdx, -amtF)
 	}
 	return nil
 }
@@ -318,10 +566,8 @@ func seedInterestBearingSnapshots(ctx context.Context, investments *repo.Investm
 // seedLiabilitySnapshots backfills the full demoMonths balance trail for a
 // Liability. currency must match the Position's own native_currency (see
 // seedAssetSnapshots).
-func seedLiabilitySnapshots(ctx context.Context, liabilities *repo.LiabilityRepo, liabilityID uuid.UUID, base, growth, wobble float64, phaseIdx int, currency string) error {
-	months := demoMonths()
-	series := demoSeries(base, growth, wobble, phaseIdx, len(months))
-	for i, ym := range months {
+func seedLiabilitySnapshots(ctx context.Context, liabilities *repo.LiabilityRepo, liabilityID uuid.UUID, series []float64, currency string) error {
+	for i, ym := range demoMonths() {
 		if _, err := liabilities.CreateLiabilitySnapshot(ctx, repo.CreateLiabilitySnapshotParams{
 			LiabilityID: liabilityID,
 			YearMonth:   ym,
@@ -337,10 +583,8 @@ func seedLiabilitySnapshots(ctx context.Context, liabilities *repo.LiabilityRepo
 // seedReceivableSnapshots backfills the full demoMonths balance trail for a
 // Receivable. currency must match the Position's own native_currency (see
 // seedAssetSnapshots).
-func seedReceivableSnapshots(ctx context.Context, receivables *repo.ReceivableRepo, receivableID uuid.UUID, base, growth, wobble float64, phaseIdx int, currency string) error {
-	months := demoMonths()
-	series := demoSeries(base, growth, wobble, phaseIdx, len(months))
-	for i, ym := range months {
+func seedReceivableSnapshots(ctx context.Context, receivables *repo.ReceivableRepo, receivableID uuid.UUID, series []float64, currency string) error {
+	for i, ym := range demoMonths() {
 		if _, err := receivables.CreateReceivableSnapshot(ctx, repo.CreateReceivableSnapshotParams{
 			ReceivableID: receivableID,
 			YearMonth:    ym,
@@ -356,12 +600,16 @@ func seedReceivableSnapshots(ctx context.Context, receivables *repo.ReceivableRe
 // seedDemoAssets seeds two Positions each of BankAccount, Property, and
 // Vehicle — the three Asset subtypes (ADR-0022) — with a full snapshot trail
 // and a mix of sole/joint ownership and tag assignment. Bases are tuned for a
-// modest ~400M IDR household net worth (not a wealthy one) so the ~100M
-// year-over-year increase reads as a meaningful share of the whole, not a
-// rounding error — checking/savings/property/vehicle growth rates are
-// boosted well past realistic bank/property rates for the same reason (this
-// is a demo selling the growth story, not a rate-accuracy model).
-func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID) error {
+// modest ~400M IDR household net worth (not a wealthy one). Property and
+// vehicle trails revalue at realistic annual rates (seedRevaluationSnapshots,
+// matching each position's advertised appreciation/depreciation rate) rather
+// than a boosted curve — the growth story now comes from the coherent cash
+// flow and modest, believable revaluation, not an inflated appreciation rate.
+// The Everyday Checking account is the one
+// exception: it is NOT seeded here but returned to the caller and seeded last
+// as the household cash plug (seedDemoCheckingPlug), and the Joint Savings
+// series is recorded into the ledger so the plug funds its deposits.
+func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID, ledger *demoCashLedger) (uuid.UUID, error) {
 	assets := repo.NewAssetRepo(pool)
 	tagRepo := repo.NewTagRepo(pool)
 	months := demoMonths()
@@ -377,11 +625,10 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		AccountType:     "savings",
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed bank account (checking): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed bank account (checking): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, checking.Asset.ID, 3_000_000, 0.05, 0.03, 0, demoCurrency); err != nil {
-		return err
-	}
+	// Checking snapshots are seeded last by seedDemoCheckingPlug — it is the
+	// reconciling cash balance derived from every other position's flows.
 
 	savings, err := assets.CreateBankAccount(ctx, repo.CreateBankAccountParams{
 		DisplayName:    "Joint Savings",
@@ -392,13 +639,16 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		AccountType:    "savings",
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed bank account (savings): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed bank account (savings): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, savings.Asset.ID, 9_000_000, 0.03, 0.015, 1, demoCurrency); err != nil {
-		return err
+	savingsSeries, err := seedAssetSnapshots(ctx, assets, savings.Asset.ID, 9_000_000, 0.03, 0.015, 1, demoCurrency)
+	if err != nil {
+		return uuid.Nil, err
 	}
+	// Savings deposits are real cash out of checking — record so the plug funds them.
+	recordSeriesDelta(ledger.savingsDelta, savingsSeries)
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupAsset, savings.Asset.ID, tagPtr(tags, "Emergency Fund")); err != nil {
-		return fmt.Errorf("demo reset: tag joint savings: %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: tag joint savings: %w", err)
 	}
 
 	familyHome, err := assets.CreateProperty(ctx, repo.CreatePropertyParams{
@@ -409,16 +659,19 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		Address:                strPtr("Jl. Demo Raya No. 1"),
 		AcquisitionDate:        &acqLong,
 		AcquisitionCost:        decimalPtr(200_000_000),
-		AnnualAppreciationRate: decimalPtr(0.04),
+		AnnualAppreciationRate: decimalPtr(4), // 4%/yr (≈ 200M acquisition compounded over the 6-year hold)
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed property (family home): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed property (family home): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, familyHome.Asset.ID, 250_000_000, 0.015, 0.008, 2, demoCurrency); err != nil {
-		return err
+	// Property/vehicle value changes are revaluation, not cash — they cancel out
+	// of the engine's living-expenses identity, so their series feed no ledger.
+	// The trail compounds the advertised annual rate rather than wobbling.
+	if err := seedRevaluationSnapshots(ctx, assets, familyHome.Asset.ID, 250_000_000, 4, demoCurrency); err != nil {
+		return uuid.Nil, err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupAsset, familyHome.Asset.ID, tagPtr(tags, "Big Ticket")); err != nil {
-		return fmt.Errorf("demo reset: tag family home: %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: tag family home: %w", err)
 	}
 
 	rental, err := assets.CreateProperty(ctx, repo.CreatePropertyParams{
@@ -430,13 +683,13 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		Address:                strPtr("Jl. Demo Kedua No. 12"),
 		AcquisitionDate:        &acqLong,
 		AcquisitionCost:        decimalPtr(145_000_000),
-		AnnualAppreciationRate: decimalPtr(0.035),
+		AnnualAppreciationRate: decimalPtr(3.5), // 3.5%/yr
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed property (rental): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed property (rental): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, rental.Asset.ID, 165_000_000, 0.02, 0.008, 3, demoCurrency); err != nil {
-		return err
+	if err := seedRevaluationSnapshots(ctx, assets, rental.Asset.ID, 165_000_000, 3.5, demoCurrency); err != nil {
+		return uuid.Nil, err
 	}
 
 	car, err := assets.CreateVehicle(ctx, repo.CreateVehicleParams{
@@ -448,16 +701,16 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		Model:                  strPtr("Demo Sedan"),
 		Year:                   int32Ptr(2022),
 		PlateNumber:            strPtr("B 1234 DEM"),
-		AnnualDepreciationRate: decimalPtr(0.08),
+		AnnualDepreciationRate: decimalPtr(8), // 8%/yr — stored unsigned; the trail declines
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed vehicle (car): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed vehicle (car): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, car.Asset.ID, 50_000_000, -0.02, 0.01, 4, demoCurrency); err != nil {
-		return err
+	if err := seedRevaluationSnapshots(ctx, assets, car.Asset.ID, 50_000_000, -8, demoCurrency); err != nil {
+		return uuid.Nil, err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupAsset, car.Asset.ID, tagPtr(tags, "Big Ticket")); err != nil {
-		return fmt.Errorf("demo reset: tag family car: %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: tag family car: %w", err)
 	}
 
 	bike, err := assets.CreateVehicle(ctx, repo.CreateVehicleParams{
@@ -470,13 +723,13 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		Model:                  strPtr("Scoot 125"),
 		Year:                   int32Ptr(2023),
 		PlateNumber:            strPtr("B 5678 DEM"),
-		AnnualDepreciationRate: decimalPtr(0.1),
+		AnnualDepreciationRate: decimalPtr(10), // 10%/yr — bikes shed value faster than cars
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed vehicle (bike): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed vehicle (bike): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, bike.Asset.ID, 5_000_000, -0.05, 0.02, 5, demoCurrency); err != nil {
-		return err
+	if err := seedRevaluationSnapshots(ctx, assets, bike.Asset.ID, 5_000_000, -10, demoCurrency); err != nil {
+		return uuid.Nil, err
 	}
 
 	// USD Savings — a foreign-currency account (common in Indonesia for
@@ -493,24 +746,29 @@ func seedDemoAssets(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		AccountType:     "savings",
 	})
 	if err != nil {
-		return fmt.Errorf("demo reset: seed bank account (USD savings): %w", err)
+		return uuid.Nil, fmt.Errorf("demo reset: seed bank account (USD savings): %w", err)
 	}
-	if err := seedAssetSnapshots(ctx, assets, usdSavings.Asset.ID, 600, 0.02, 0.01, 20, "USD"); err != nil {
-		return err
+	// USD Savings is deliberately kept small and left out of the cash ledger: its
+	// IDR value carries an FX revaluation that isn't cash, so its monthly change
+	// leaks a small (kept tiny) wobble into the engine's derived expenses rather
+	// than distorting the IDR-reconciled checking plug.
+	if _, err := seedAssetSnapshots(ctx, assets, usdSavings.Asset.ID, 600, 0.02, 0.01, 20, "USD"); err != nil {
+		return uuid.Nil, err
 	}
 
-	return nil
+	return checking.Asset.ID, nil
 }
 
 // seedDemoInvestments seeds two Positions each of the five Investment
 // subtypes (Stock, MutualFund, Bond, Gold, TimeDeposit — ADR-0022) with a
-// full snapshot trail across the full history window (so no position
-// "appears" mid-chart with a discontinuous jump in the net-worth series).
+// full snapshot trail across the full history window (each holds an opening
+// lot from month 0, so no position "appears" mid-chart with a discontinuous
+// jump in the net-worth series) that then accumulates as later Buys land.
 // Stock/MutualFund/Gold prices are kept at realistic market levels
 // (rescaling a real per-share/per-gram price would look wrong to anyone who
 // knows it) — the modest-household rescale instead shrinks the quantity
 // held.
-func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID) error {
+func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID, ledger *demoCashLedger) error {
 	investments := repo.NewInvestmentRepo(pool)
 	tagRepo := repo.NewTagRepo(pool)
 	months := demoMonths()
@@ -528,25 +786,17 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed stock (BBCA): %w", err)
 	}
 	stock1Prices := demoSeries(9_500, 0.012, 0.04, 6, len(months))
-	if err := seedMarketSnapshots(ctx, investments, stock1.Investment.ID, decimal.RequireFromString("20"), stock1Prices, demoCurrency); err != nil {
+	// Ledger: an opening lot (month 0, the acquisition) plus follow-on Buys
+	// sprinkled across the trail, netting to 20 shares — snapshot quantity steps
+	// with each Buy so the value tracks the ledger (#497). A Dividend and a
+	// small capitalized custody Fee round out a realistic cost basis.
+	if err := seedMarketPosition(ctx, investments, stock1.Investment.ID, []demoTrade{{0, 10}, {5, 6}, {17, 4}}, stock1Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
-	// Ledger: two Buys netting to the 20 shares held throughout the snapshot
-	// trail, a Dividend, and a small capitalized custody Fee — realistic cost
-	// basis instead of a bare snapshot trail. Indices land in the most recent
-	// 12 months (demoExtraHistoryMonths offset) — the earlier backfilled
-	// history has snapshots but no recorded ledger detail, same as a
-	// long-held position whose oldest purchases predate careful bookkeeping.
-	if err := seedInvestmentTrade(ctx, investments, stock1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+0, 12, stock1Prices); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, stock1.Investment.ID, repo.TxnTypeDividend, months, 13, 15, 100_000, ledger); err != nil {
 		return err
 	}
-	if err := seedInvestmentTrade(ctx, investments, stock1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+3, 8, stock1Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentCashEvent(ctx, investments, stock1.Investment.ID, repo.TxnTypeDividend, months, demoExtraHistoryMonths+7, 15, 100_000); err != nil {
-		return err
-	}
-	if err := seedInvestmentCashEvent(ctx, investments, stock1.Investment.ID, repo.TxnTypeFee, months, demoExtraHistoryMonths+9, 20, 15_000); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, stock1.Investment.ID, repo.TxnTypeFee, months, 22, 20, 15_000, ledger); err != nil {
 		return err
 	}
 
@@ -562,15 +812,12 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed stock (ASII): %w", err)
 	}
 	stock2Prices := demoSeries(5_200, 0.008, 0.05, 7, len(months))
-	if err := seedMarketSnapshots(ctx, investments, stock2.Investment.ID, decimal.RequireFromString("40"), stock2Prices, demoCurrency); err != nil {
+	// Ledger: an opening lot and one later top-up Buy netting to 40 shares, plus
+	// a Dividend.
+	if err := seedMarketPosition(ctx, investments, stock2.Investment.ID, []demoTrade{{0, 25}, {9, 15}}, stock2Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
-	// Ledger: a single lump-sum Buy at the full 40-share position, plus a
-	// Dividend.
-	if err := seedInvestmentTrade(ctx, investments, stock2.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+1, 40, stock2Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentCashEvent(ctx, investments, stock2.Investment.ID, repo.TxnTypeDividend, months, demoExtraHistoryMonths+7, 15, 130_000); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, stock2.Investment.ID, repo.TxnTypeDividend, months, 20, 15, 130_000, ledger); err != nil {
 		return err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupInvestment, stock2.Investment.ID, tagPtr(tags, "Short-term Goals")); err != nil {
@@ -591,21 +838,12 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed mutual fund (equity growth): %w", err)
 	}
 	mf1Prices := demoSeries(1_450, 0.01, 0.03, 8, len(months))
-	if err := seedMarketSnapshots(ctx, investments, mf1.Investment.ID, decimal.RequireFromString("200"), mf1Prices, demoCurrency); err != nil {
+	// Ledger: an opening lot, two accumulating Buys and a partial profit-take
+	// Sell netting to 200 units, plus a Distribution.
+	if err := seedMarketPosition(ctx, investments, mf1.Investment.ID, []demoTrade{{0, 100}, {4, 80}, {11, 40}, {20, -20}}, mf1Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
-	// Ledger: two Buys and a partial profit-take Sell netting to the 200
-	// units held throughout the trail, plus a Distribution.
-	if err := seedInvestmentTrade(ctx, investments, mf1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+0, 120, mf1Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentTrade(ctx, investments, mf1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+4, 100, mf1Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentTrade(ctx, investments, mf1.Investment.ID, repo.TxnTypeSell, months, demoExtraHistoryMonths+8, 20, mf1Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentCashEvent(ctx, investments, mf1.Investment.ID, repo.TxnTypeDistribution, months, demoExtraHistoryMonths+10, 10, 60_000); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, mf1.Investment.ID, repo.TxnTypeDistribution, months, 15, 10, 60_000, ledger); err != nil {
 		return err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupInvestment, mf1.Investment.ID, tagPtr(tags, "Retirement")); err != nil {
@@ -625,15 +863,15 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed mutual fund (money market): %w", err)
 	}
 	mf2Prices := demoSeries(1_050, 0.002, 0.005, 9, len(months))
-	if err := seedMarketSnapshots(ctx, investments, mf2.Investment.ID, decimal.RequireFromString("1000"), mf2Prices, demoCurrency); err != nil {
+	// Ledger: an opening lot and one top-up Buy netting to 1,000 units, plus two
+	// Distributions (money-market funds pay out routinely).
+	if err := seedMarketPosition(ctx, investments, mf2.Investment.ID, []demoTrade{{0, 600}, {7, 400}}, mf2Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
-	// Ledger: a single lump-sum Buy at the full 1,000-unit position, plus a
-	// Distribution (money-market funds pay out routinely).
-	if err := seedInvestmentTrade(ctx, investments, mf2.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+0, 1000, mf2Prices); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, mf2.Investment.ID, repo.TxnTypeDistribution, months, 12, 10, 40_000, ledger); err != nil {
 		return err
 	}
-	if err := seedInvestmentCashEvent(ctx, investments, mf2.Investment.ID, repo.TxnTypeDistribution, months, demoExtraHistoryMonths+9, 10, 40_000); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, mf2.Investment.ID, repo.TxnTypeDistribution, months, 24, 10, 40_000, ledger); err != nil {
 		return err
 	}
 
@@ -668,7 +906,7 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 	// month since placement: face * annual rate / 12.
 	bond1MonthlyCoupon := 10_000_000 * 6.25 / 100 / 12
 	for i := 1; i < len(months); i++ {
-		if err := seedInvestmentCashEvent(ctx, investments, bond1.Investment.ID, repo.TxnTypeCoupon, months, i, 10, bond1MonthlyCoupon); err != nil {
+		if err := seedInvestmentCashEvent(ctx, investments, bond1.Investment.ID, repo.TxnTypeCoupon, months, i, 10, bond1MonthlyCoupon, ledger); err != nil {
 			return err
 		}
 	}
@@ -709,7 +947,10 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 	}); err != nil {
 		return fmt.Errorf("demo reset: seed bond (Astra Sedaya) placement buy: %w", err)
 	}
-	if err := seedInvestmentCashEvent(ctx, investments, bond2.Investment.ID, repo.TxnTypeFee, months, 0, 1, 30_000); err != nil {
+	// The placement Buy and brokerage Fee both land in the baseline month, which
+	// books no Living Expenses, so they need no checking funding (passing ledger
+	// records them harmlessly at index 0, which the plug recurrence skips).
+	if err := seedInvestmentCashEvent(ctx, investments, bond2.Investment.ID, repo.TxnTypeFee, months, 0, 1, 30_000, ledger); err != nil {
 		return err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupInvestment, bond2.Investment.ID, tagPtr(tags, "Short-term Goals")); err != nil {
@@ -729,18 +970,13 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed gold (bar): %w", err)
 	}
 	gold1Prices := demoSeries(1_150_000, 0.008, 0.02, 12, len(months))
-	if err := seedMarketSnapshots(ctx, investments, gold1.Investment.ID, decimal.RequireFromString("10"), gold1Prices, demoCurrency); err != nil {
-		return err
-	}
-	// Ledger: two Buys netting to the 10 grams held, plus a storage/insurance
+	// Ledger: an opening lot and two accumulating Buys netting to 10 grams
+	// (the household's largest recurring cash outlays), plus a storage/insurance
 	// Fee (Gold has no income transaction type).
-	if err := seedInvestmentTrade(ctx, investments, gold1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+0, 6, gold1Prices); err != nil {
+	if err := seedMarketPosition(ctx, investments, gold1.Investment.ID, []demoTrade{{0, 5}, {8, 3}, {17, 2}}, gold1Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
-	if err := seedInvestmentTrade(ctx, investments, gold1.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+5, 4, gold1Prices); err != nil {
-		return err
-	}
-	if err := seedInvestmentCashEvent(ctx, investments, gold1.Investment.ID, repo.TxnTypeFee, months, demoExtraHistoryMonths+9, 25, 8_000); err != nil {
+	if err := seedInvestmentCashEvent(ctx, investments, gold1.Investment.ID, repo.TxnTypeFee, months, 21, 25, 8_000, ledger); err != nil {
 		return err
 	}
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupInvestment, gold1.Investment.ID, tagPtr(tags, "Retirement")); err != nil {
@@ -759,11 +995,8 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 		return fmt.Errorf("demo reset: seed gold (digital): %w", err)
 	}
 	gold2Prices := demoSeries(1_150_000, 0.008, 0.02, 13, len(months))
-	if err := seedMarketSnapshots(ctx, investments, gold2.Investment.ID, decimal.RequireFromString("4"), gold2Prices, demoCurrency); err != nil {
-		return err
-	}
-	// Ledger: a single lump-sum Buy at the full 4-gram position.
-	if err := seedInvestmentTrade(ctx, investments, gold2.Investment.ID, repo.TxnTypeBuy, months, demoExtraHistoryMonths+2, 4, gold2Prices); err != nil {
+	// Ledger: an opening lot and one later top-up Buy netting to 4 grams.
+	if err := seedMarketPosition(ctx, investments, gold2.Investment.ID, []demoTrade{{0, 2}, {13, 2}}, gold2Prices, demoCurrency, ledger); err != nil {
 		return err
 	}
 
@@ -827,13 +1060,14 @@ func seedDemoInvestments(ctx context.Context, pool *pgxpool.Pool, ownerID, membe
 }
 
 // seedDemoLiabilitiesAndReceivables seeds two Liabilities (one personal, one
-// institutional) and two Receivables, each with a snapshot trail. Liability
-// paydown rates are boosted the same way seedDemoAssets boosts asset growth —
-// see that function's comment — since faster debt paydown is exactly the
-// other half of the "modest household growing quickly" story. Receivables
-// are left at realistic paydown rates: they're too small a share of net
-// worth to matter to the headline number either way.
-func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID) error {
+// institutional) and two Receivables, each with a snapshot trail. Debt paydown
+// and receivable movements are real cash out of / into the bank, so their IDR
+// series changes are recorded into the ledger (the checking plug funds them);
+// paydown rates are kept realistic rather than boosted, since debt paydown is
+// now a genuine monthly cash outflow the checking balance must cover, not a
+// free net-worth boost. The USD receivable is left out of the ledger (its IDR
+// change carries FX revaluation that isn't cash — see seedDemoAssets).
+func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, tags map[string]uuid.UUID, ledger *demoCashLedger) error {
 	liabilities := repo.NewLiabilityRepo(pool)
 	receivables := repo.NewReceivableRepo(pool)
 	tagRepo := repo.NewTagRepo(pool)
@@ -854,9 +1088,14 @@ func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, 
 	if err != nil {
 		return fmt.Errorf("demo reset: seed liability (family loan): %w", err)
 	}
-	if err := seedLiabilitySnapshots(ctx, liabilities, familyLoan.ID, 4_000_000, -0.05, 0, 16, demoCurrency); err != nil {
+	// Repaid to the parents in sporadic IDR 250,000 chunks — flat between
+	// payments, not a smooth curve. 11 payments over the trail net 2.75M off the
+	// 4M principal, leaving 1.25M still owed at the end.
+	familyLoanSeries := demoStepDownSeries(4_000_000, 250_000, []int{1, 4, 5, 9, 12, 16, 17, 20, 23, 24, 26}, len(months))
+	if err := seedLiabilitySnapshots(ctx, liabilities, familyLoan.ID, familyLoanSeries, demoCurrency); err != nil {
 		return err
 	}
+	recordSeriesDelta(ledger.liabDelta, familyLoanSeries)
 
 	mortgageStart := earliest.AddDate(-2, 0, 0)
 	mortgageMaturity := mortgageStart.AddDate(15, 0, 0)
@@ -875,9 +1114,16 @@ func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, 
 	if err != nil {
 		return fmt.Errorf("demo reset: seed liability (mortgage): %w", err)
 	}
-	if err := seedLiabilitySnapshots(ctx, liabilities, mortgage.ID, 175_000_000, -0.01, 0, 17, demoCurrency); err != nil {
+	// A realistic principal paydown (~0.4%/mo) — this is now a genuine monthly
+	// cash outflow funded from checking, not a free net-worth boost, so it can't
+	// run at the boosted rate an independent snapshot curve once used. Kept as a
+	// smooth amortising curve (an institutional mortgage pays a fixed schedule),
+	// unlike the sporadic personal loans/receivables around it.
+	mortgageSeries := demoSeries(175_000_000, -0.004, 0, 17, len(months))
+	if err := seedLiabilitySnapshots(ctx, liabilities, mortgage.ID, mortgageSeries, demoCurrency); err != nil {
 		return err
 	}
+	recordSeriesDelta(ledger.liabDelta, mortgageSeries)
 	if err := tagRepo.AssignTag(ctx, repo.TagGroupLiability, mortgage.ID, tagPtr(tags, "Big Ticket")); err != nil {
 		return fmt.Errorf("demo reset: tag mortgage: %w", err)
 	}
@@ -894,9 +1140,15 @@ func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, 
 	if err != nil {
 		return fmt.Errorf("demo reset: seed receivable (friend): %w", err)
 	}
-	if err := seedReceivableSnapshots(ctx, receivables, friendLoan.ID, 1_000_000, -0.02, 0, 18, demoCurrency); err != nil {
+	// The friend repays in sporadic IDR 50,000 instalments — flat most months,
+	// a payment here and there. 10 payments net 500k off the 1M lent, leaving
+	// 500k outstanding at the due date.
+	friendLoanSeries := demoStepDownSeries(1_000_000, 50_000, []int{2, 5, 6, 10, 13, 14, 18, 21, 22, 25}, len(months))
+	if err := seedReceivableSnapshots(ctx, receivables, friendLoan.ID, friendLoanSeries, demoCurrency); err != nil {
 		return err
 	}
+	// Repayments trickle back into the bank — a small positive cash flow.
+	recordSeriesDelta(ledger.recvDelta, friendLoanSeries)
 
 	// USD-denominated — an overseas freelance client paying in USD, plausible
 	// for the "sole" freelancer member. One of the "select few" USD positions
@@ -913,7 +1165,11 @@ func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, 
 	if err != nil {
 		return fmt.Errorf("demo reset: seed receivable (invoice): %w", err)
 	}
-	if err := seedReceivableSnapshots(ctx, receivables, invoice.ID, 50, 0.01, 0.05, 19, "USD"); err != nil {
+	// The client settles the invoice in sporadic USD 1 instalments — flat
+	// between payments, not a smooth curve. Left out of the cash ledger like the
+	// other USD positions (its IDR change carries FX revaluation that isn't cash).
+	invoiceSeries := demoStepDownSeries(50, 1, []int{1, 3, 4, 8, 11, 12, 16, 19, 20, 24, 25}, len(months))
+	if err := seedReceivableSnapshots(ctx, receivables, invoice.ID, invoiceSeries, "USD"); err != nil {
 		return err
 	}
 
@@ -925,13 +1181,14 @@ func seedDemoLiabilitiesAndReceivables(ctx context.Context, pool *pgxpool.Pool, 
 // so the income-statement view has real category variety. Amounts are scaled
 // to match the modest ~400M IDR household seedDemoAssets targets, rather than
 // the much larger salary a 2B-net-worth household would imply.
-func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID) error {
+func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID uuid.UUID, ledger *demoCashLedger) error {
 	income := repo.NewIncomeRepo(pool)
 	months := demoMonths()
 
 	for i, ym := range months {
 		desc := "Monthly salary"
-		amount := demoDecimal(5_000_000 + float64(i)*30_000)
+		amountF := 5_000_000 + float64(i)*30_000
+		amount := demoDecimal(amountF)
 		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
 			Date:            dayIn(ym, 25),
 			Amount:          amount,
@@ -944,13 +1201,14 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed salary income: %w", err)
 		}
+		ledger.addIncome(i, amountF)
 	}
 
 	// A routine monthly Pension for the second member (ADR-0048) — a passive
 	// *cash* stream, so the statistics panel's Passive-Income Ratio and Fund
 	// Resilience read meaningfully rather than off a single incidental rental.
 	pensionDesc := "Monthly pension"
-	for _, ym := range months {
+	for i, ym := range months {
 		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
 			Date:            dayIn(ym, 3),
 			Amount:          demoDecimal(2_500_000),
@@ -963,6 +1221,7 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed pension income: %w", err)
 		}
+		ledger.addIncome(i, 2_500_000)
 	}
 
 	// A routine monthly bank Interest for the household (ADR-0048 slice 5) — the
@@ -970,7 +1229,7 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 	// the Passive-Income Ratio and Fund Resilience have interest as well as
 	// rent/pension feeding the draw-offset.
 	interestDesc := "Savings account interest"
-	for _, ym := range months {
+	for i, ym := range months {
 		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
 			Date:          dayIn(ym, 25),
 			Amount:        demoDecimal(300_000),
@@ -982,6 +1241,7 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed interest income: %w", err)
 		}
+		ledger.addIncome(i, 300_000)
 	}
 
 	// monthIdx values land in the most recent 12 months (demoExtraHistoryMonths
@@ -1016,6 +1276,7 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed incidental income (%s): %w", inc.category, err)
 		}
+		ledger.addIncome(inc.monthIdx, inc.amount)
 	}
 
 	return nil
