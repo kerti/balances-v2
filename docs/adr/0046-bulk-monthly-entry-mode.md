@@ -141,16 +141,21 @@ projection (`EntryRowView`) and the same `onFieldChange`/`onReset` callbacks, an
 renderer unchanged. No logic forks into a renderer.
 
 - **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
-  and computed value in a cramped horizontal group right, the reset action trailing. For a
-  multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels the input columns **once per
-  group** — the inputs' placeholders vanish the moment a value carries forward, so without it a
-  desktop row gives no clue which field is units and which is price. Currency sits in a fixed-width
-  column so the labels line up over their inputs. Amount-only (one unlabelled field) renders no
-  header.
+  (numbers right-aligned) and computed value in a cramped horizontal group right, the reset action
+  trailing. For a multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels the input
+  columns — the placeholders vanish the moment a value carries forward, so without it a desktop row
+  gives no clue which field is units and which is price. The header renders as the **right cluster of
+  the group title line** (one label per column, **once per investment type**), sharing that vertical
+  space rather than taking a row of its own. **Currency** shows once, on the derived total (symbol
+  left, number right, via `formatCurrencyParts`) — a standalone currency column next to the quantity
+  was redundant with the total and read as if it labelled the quantity, so it is dropped for
+  multi-field shapes. Amount-only (one unlabelled field, no total) keeps a small currency column
+  before its input and renders no header.
 - **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
   fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
-  its own **full-width** line (its label shown when the shape names one), then a footer carrying the
-  computed value and the row actions. The value input and the reset control meet the a11y floor
+  its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then
+  a footer carrying the computed value and the row actions. Currency shows once, at the card's
+  top-right. The value input and the reset control meet the a11y floor
   (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
   read or edit the primary value.
 

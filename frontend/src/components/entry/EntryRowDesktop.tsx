@@ -5,35 +5,35 @@ import { Button } from "@/components/ui/button";
 import { EntryRowMeta, type EntryRowRendererProps } from "@/components/entry/entryRow";
 import type { EntryShape } from "@/components/entry/shapes";
 
-// Currency sits in a fixed-width column so multi-field rows line their inputs up
-// under EntryRowDesktopHeader (a variable-width code would drift the columns).
+// Amount-only rows show the currency in a fixed-width column left of the single
+// input (they have no computed total to carry it). Multi-field shapes drop this
+// column — the currency already prints on their derived total (below), so a
+// second copy next to the quantity was redundant and misleading.
 const CURRENCY_COL = "w-10 shrink-0 text-right";
+// The derived-total column: currency symbol left, number right, tabular-nums.
+const DERIVED_COL = "w-28 shrink-0";
 
 // EntryRowDesktopHeader labels the input columns once per group (ADR-0046
 // Presentation / UX): with the shape's placeholders hidden the moment a value
 // carries forward, a qty×price / accrued row otherwise gives no clue which field
-// is units and which is price. It mirrors the row's right-hand cluster —
-// name-spacer, currency-spacer, one label per field at its own widthClass, a
-// value-spacer and an action-spacer — so the labels sit over their inputs.
-// Amount-only shapes (a single unlabelled field) render no header. Decorative
-// (aria-hidden): the inputs keep their own aria-labels.
+// is units and which is price. It renders as the right-hand cluster of the group
+// title line (sharing that vertical space) and mirrors the row's right cluster —
+// one right-aligned label per field at its own widthClass, then a value-column
+// spacer and an action spacer — so the labels sit over their inputs. Amount-only
+// shapes (a single unlabelled field) render nothing. Decorative (aria-hidden):
+// the inputs keep their own aria-labels.
 export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
   const { t } = useTranslation("common");
   if (!shape.fields.some((f) => f.labelKey)) return null;
   return (
-    <div
-      className="flex items-center gap-3 pb-1 text-xs font-medium text-muted-foreground"
-      aria-hidden
-    >
-      <div className="min-w-0 flex-1" />
-      <span className={CURRENCY_COL} />
+    <div className="flex items-center gap-3 text-xs" aria-hidden>
       <div className="flex items-center gap-2">
         {shape.fields.map((f) => (
-          <span key={f.key} className={`${f.widthClass} truncate`}>
+          <span key={f.key} className={`${f.widthClass} truncate text-right`}>
             {f.labelKey ? t(f.labelKey) : ""}
           </span>
         ))}
-        {shape.derived && <span className="w-28 shrink-0" />}
+        {shape.derived && <span className={DERIVED_COL} />}
       </div>
       <span className="size-8 shrink-0" />
     </div>
@@ -53,18 +53,21 @@ export function EntryRowDesktop({
   onReset,
 }: EntryRowRendererProps) {
   const { t } = useTranslation("common");
-  const { dirty, positionId } = view;
+  const { dirty, positionId, derived } = view;
   return (
     <li className="flex items-center gap-3 py-2" data-testid={`${tid}-entry-row-${positionId}`}>
       <div className="min-w-0 flex-1">
         <EntryRowMeta view={view} tid={tid} copy={copy} />
       </div>
-      <span className={`${CURRENCY_COL} text-xs text-muted-foreground`}>{view.currency}</span>
+      {/* Currency only where there's no total to carry it (amount-only). */}
+      {!shape.derived && (
+        <span className={`${CURRENCY_COL} text-xs text-muted-foreground`}>{view.currency}</span>
+      )}
       <div className="flex items-center gap-2">
         {shape.fields.map((f) => (
           <Input
             key={f.key}
-            className={`${f.widthClass}${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+            className={`${f.widthClass} text-right${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
             inputMode="decimal"
             aria-label={f.labelKey ? t(f.labelKey) : undefined}
             placeholder={f.labelKey ? t(f.labelKey) : undefined}
@@ -73,12 +76,19 @@ export function EntryRowDesktop({
             data-testid={`${tid}-entry-${f.testidSuffix}-${positionId}`}
           />
         ))}
-        {view.derived !== null && (
+        {derived !== null && (
           <span
-            className="w-28 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
+            className={`${DERIVED_COL} flex items-baseline gap-1.5 text-sm tabular-nums text-muted-foreground`}
             data-testid={`${tid}-entry-value-${positionId}`}
           >
-            {view.derived}
+            {derived.value !== null ? (
+              <>
+                <span>{derived.symbol}</span>
+                <span className="ml-auto">{derived.value}</span>
+              </>
+            ) : (
+              <span className="ml-auto">{"—"}</span>
+            )}
           </span>
         )}
       </div>

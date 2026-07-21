@@ -41,7 +41,7 @@ export function EntryRowMobile({
             )}
             <Input
               id={inputId}
-              className={`h-11 w-full text-base${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+              className={`h-11 w-full text-right text-base${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
               inputMode="decimal"
               aria-label={f.labelKey ? t(f.labelKey) : undefined}
               value={view.fieldValues[f.key] ?? ""}
@@ -54,11 +54,13 @@ export function EntryRowMobile({
 
       <div className="flex items-center justify-between gap-2">
         {view.derived !== null ? (
+          // Currency already sits at the card's top-right, so the footer total
+          // shows the number alone ("—" until the inputs are complete).
           <span
             className="text-sm tabular-nums text-muted-foreground"
             data-testid={`${tid}-entry-value-${positionId}`}
           >
-            {view.derived}
+            {view.derived.value ?? "—"}
           </span>
         ) : (
           <span />

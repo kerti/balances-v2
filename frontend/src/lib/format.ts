@@ -48,6 +48,40 @@ export function formatCurrency(amount: string, currency: string, locale?: Locale
   }).format(n);
 }
 
+// formatCurrencyParts splits a currency render into its symbol and its number
+// so a caller can lay them out in separate columns — the symbol left-aligned,
+// the number right-aligned — instead of the single ragged string formatCurrency
+// returns. Same locale + per-currency decimal rules as formatCurrency. `value`
+// is null when the amount isn't a finite number (the caller shows a placeholder);
+// `symbol` is always resolved (from a formatted zero) so it can head the column
+// even before a value exists.
+export function formatCurrencyParts(
+  amount: string,
+  currency: string,
+  locale?: Locale,
+): { symbol: string; value: string | null } {
+  const decimals = NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+  const fmt = new Intl.NumberFormat(resolve(locale), {
+    style: "currency",
+    currency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  const symbol = fmt
+    .formatToParts(0)
+    .filter((p) => p.type === "currency")
+    .map((p) => p.value)
+    .join("");
+  const n = Number(amount);
+  if (amount.trim() === "" || Number.isNaN(n)) return { symbol, value: null };
+  const value = fmt
+    .formatToParts(n)
+    .filter((p) => p.type !== "currency" && p.type !== "literal")
+    .map((p) => p.value)
+    .join("");
+  return { symbol, value };
+}
+
 // "2024-05-01T00:00:00Z" → en: "May 2024", id: "Mei 2024"
 export function formatYearMonth(iso: string, locale?: Locale): string {
   const d = new Date(iso);

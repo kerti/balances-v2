@@ -24,9 +24,12 @@ export type EntryRowView = {
   error: boolean;
   // Shown value per field key (the user's edit, else the carry-forward prefill).
   fieldValues: EntryFieldValues;
-  // Formatted derived value (qty×price / accrued), "—" when the inputs are
-  // incomplete, or null when the shape has no derived column (amount-only).
-  derived: string | null;
+  // The derived-value column (qty×price computes value, accrued computes
+  // principal): the currency symbol and the formatted number, split so the
+  // renderer can align the symbol left and the number right. `value` is null
+  // while the inputs are incomplete (renderer shows "—"); the whole field is
+  // null when the shape has no derived column at all (amount-only).
+  derived: { symbol: string; value: string | null } | null;
 };
 
 export type EntryRowRendererProps = {

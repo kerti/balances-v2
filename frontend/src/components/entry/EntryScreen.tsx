@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { thisYearMonth, monthEndDateCapped, monthStartDate } from "@/lib/dateLimits";
-import { formatYearMonth, formatCurrency } from "@/lib/format";
+import { formatYearMonth, formatCurrencyParts } from "@/lib/format";
 import { errorMessage } from "@/lib/errorMessage";
 import { ownershipLabel } from "@/lib/ownership";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
@@ -143,10 +143,12 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     const fieldValues: EntryFieldValues = {};
     for (const f of shape.fields) fieldValues[f.key] = valueFor(row, f.key);
 
-    let derived: string | null = null;
+    let derived: { symbol: string; value: string | null } | null = null;
     if (shape.derived) {
       const d = shape.derived(mergedValues(row));
-      derived = d.valid ? formatCurrency(d.amount, row.currency) : "—";
+      // Pass "" for an incomplete row so formatCurrencyParts returns value:null
+      // (the symbol still resolves) — the renderer shows "—" but keeps the column.
+      derived = formatCurrencyParts(d.valid ? d.amount : "", row.currency);
     }
 
     let when: EntryWhen;
@@ -254,10 +256,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                 {t(`${copy}.empty`)}
               </p>
             ) : flat ? (
-              <div>
-                {!isMobile && <EntryRowDesktopHeader shape={shape} />}
-                <ul className="divide-y">{rows.map(renderRow)}</ul>
-              </div>
+              <ul className="divide-y">{rows.map(renderRow)}</ul>
             ) : (
               <div className="space-y-4">
                 {orderedSubtypes.map((subtype) => {
@@ -265,15 +264,21 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                   const Icon = meta?.icon ?? Wallet;
                   return (
                     <div key={subtype} data-testid={`${tid}-entry-group-${subtype}`}>
-                      <div className="mb-1 flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                        <Icon className="size-4" />
-                        {meta && config.labelNs
-                          ? t(`${config.labelNs}:home.categoryLabel.${meta.labelKey}`)
-                          : subtype}
+                      {/* The group title shares its line with the desktop column
+                          headers (once per investment type; mobile labels each
+                          field inline). EntryRowDesktopHeader is null for
+                          amount-only, leaving the plain title. */}
+                      <div className="mb-1 flex items-center gap-3 text-sm font-medium text-muted-foreground">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <Icon className="size-4 shrink-0" />
+                          <span className="truncate">
+                            {meta && config.labelNs
+                              ? t(`${config.labelNs}:home.categoryLabel.${meta.labelKey}`)
+                              : subtype}
+                          </span>
+                        </div>
+                        {!isMobile && <EntryRowDesktopHeader shape={shape} />}
                       </div>
-                      {/* Column headers once per investment type (desktop only;
-                          mobile labels each field inline). Null for amount-only. */}
-                      {!isMobile && <EntryRowDesktopHeader shape={shape} />}
                       <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
                     </div>
                   );
