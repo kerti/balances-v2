@@ -10,8 +10,11 @@ import type { EntryShape } from "@/components/entry/shapes";
 // column — the currency already prints on their derived total (below), so a
 // second copy next to the quantity was redundant and misleading.
 const CURRENCY_COL = "w-10 shrink-0 text-right";
-// The derived-total column: currency symbol left, number right, tabular-nums.
-const DERIVED_COL = "w-28 shrink-0";
+// The derived-total column: its own column, set off from the inputs (ml-3), with
+// the whole "symbol number" unit right-aligned (justify-end) so large totals
+// don't clip and the numbers line up on the right. Wide enough for household IDR
+// figures.
+const DERIVED_COL = "w-40 shrink-0 ml-3";
 
 // EntryRowDesktopHeader labels the input columns once per group (ADR-0046
 // Presentation / UX): with the shape's placeholders hidden the moment a value
@@ -33,8 +36,8 @@ export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
             {f.labelKey ? t(f.labelKey) : ""}
           </span>
         ))}
-        {shape.derived && <span className={DERIVED_COL} />}
       </div>
+      {shape.derived && <span className={DERIVED_COL} />}
       <span className="size-8 shrink-0" />
     </div>
   );
@@ -76,22 +79,22 @@ export function EntryRowDesktop({
             data-testid={`${tid}-entry-${f.testidSuffix}-${positionId}`}
           />
         ))}
-        {derived !== null && (
-          <span
-            className={`${DERIVED_COL} flex items-baseline gap-1.5 text-sm tabular-nums text-muted-foreground`}
-            data-testid={`${tid}-entry-value-${positionId}`}
-          >
-            {derived.value !== null ? (
-              <>
-                <span>{derived.symbol}</span>
-                <span className="ml-auto">{derived.value}</span>
-              </>
-            ) : (
-              <span className="ml-auto">{"—"}</span>
-            )}
-          </span>
-        )}
       </div>
+      {derived !== null && (
+        <span
+          className={`${DERIVED_COL} flex items-baseline justify-end gap-1.5 text-sm tabular-nums text-muted-foreground`}
+          data-testid={`${tid}-entry-value-${positionId}`}
+        >
+          {derived.value !== null ? (
+            <>
+              <span>{derived.symbol}</span>
+              <span>{derived.value}</span>
+            </>
+          ) : (
+            "—"
+          )}
+        </span>
+      )}
       <Button
         type="button"
         variant="ghost"
