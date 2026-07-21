@@ -13,6 +13,7 @@ import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
 import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
 import { preferredName } from "@/lib/names";
+import { netWorthComposition } from "@/lib/netWorthComposition";
 import { positionDetail } from "@/lib/routes";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
@@ -68,6 +69,33 @@ export function DashboardScreen() {
   const isProvisional = selected === latest;
   const currency = selected.reporting_currency;
 
+  // The net-worth line decomposed into its three secondary composition lines
+  // (assets with receivables folded in, liabilities as a positive magnitude,
+  // investments) — ADR-0001 Presentation / INV-PRESENTATION-07. Colours are the
+  // CVD-validated composition tokens from index.css; labels reuse the breakdown
+  // strings so the chart legend and the "Where it's held" card agree.
+  const composition = netWorthComposition(reports);
+  const compositionSeries = [
+    {
+      key: "assets",
+      label: t("breakdown.assets"),
+      color: "var(--chart-assets)",
+      snapshots: composition.assets,
+    },
+    {
+      key: "liabilities",
+      label: t("breakdown.liabilities"),
+      color: "var(--chart-liabilities)",
+      snapshots: composition.liabilities,
+    },
+    {
+      key: "investments",
+      label: t("breakdown.investments"),
+      color: "var(--chart-investments)",
+      snapshots: composition.investments,
+    },
+  ];
+
   // Side-by-side currencies the user can pick (multi-currency households only).
   const displayCurrencies = me?.multi_currency_enabled
     ? availableDisplayCurrencies(rates ?? [], currency)
@@ -107,6 +135,9 @@ export function DashboardScreen() {
               amount: r.nw_total,
             }))}
             currency={currency}
+            primaryLabel={t("chart.netWorthLegend")}
+            primaryColor="var(--chart-networth)"
+            extraSeries={compositionSeries}
           />
         </CardContent>
       </Card>

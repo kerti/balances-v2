@@ -39,6 +39,7 @@
   "chart": {
     "title": "Net worth over time",
     "amountLegend": "Amount",
+    "netWorthLegend": "Net worth",
     "costLegend": "Cost",
     "maturedMarker": "Matured",
     "soldMarker": "Sold"

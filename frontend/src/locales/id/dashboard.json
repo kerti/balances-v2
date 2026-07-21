@@ -39,6 +39,7 @@
   "chart": {
     "title": "Kekayaan bersih dari waktu ke waktu",
     "amountLegend": "Nominal",
+    "netWorthLegend": "Kekayaan bersih",
     "costLegend": "Modal",
     "maturedMarker": "Jatuh tempo",
     "soldMarker": "Dijual"
