@@ -128,6 +128,46 @@ scoped to one type, it is one snapshot table and one transaction. The materializ
 ([[adr-0006]]) is regenerated **once after commit** for the affected month (and any later months whose
 carry-forward it changes, via the existing regen reach) — never once per row.
 
+## Presentation / UX
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the entry row **diverges its mobile layout**
+from the web layout: the cramped horizontal input row does not survive the squeeze for the
+non-technical phone audience [[adr-0025]] centres. `EntryScreen` stays the single source of truth —
+it owns all data, dirty-tracking, per-row field state, batch validation, and the atomic Save — and
+delegates only the **row** to one of two renderers, picked at runtime by `useIsMobile()` (the single
+768px boolean); one tree is ever in the DOM. Both consume the same presentation-neutral row
+projection (`EntryRowView`) and the same `onFieldChange`/`onReset` callbacks, and expose the **same
+`data-testid`s** for the same semantic elements, so the entry vitest/E2E assertions run against either
+renderer unchanged. No logic forks into a renderer.
+
+- **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
+  (numbers right-aligned) and computed value in a cramped horizontal group right, the reset action
+  trailing. For a multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels the input
+  columns — the placeholders vanish the moment a value carries forward, so without it a desktop row
+  gives no clue which field is units and which is price. The header renders as the **right cluster of
+  the group title line** (one label per column, **once per investment type**), sharing that vertical
+  space rather than taking a row of its own. **Currency** shows once, in its own fixed column
+  **between the last input and the total** (`formatCurrencyParts` supplies the locale symbol), with
+  the total number right-aligned in its own column beside it (`tabular-nums`, wide enough that
+  household IDR figures don't clip) — reading `[qty] [price] IDR 15.000` with each of the symbol and
+  the number aligned in its own column. The old standalone currency column before the inputs was
+  redundant with the total and read as if it labelled the quantity, so it is dropped for multi-field
+  shapes. Amount-only (one unlabelled field, no total) keeps a small currency column before its input
+  and renders no header.
+- **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
+  fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
+  its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then
+  a footer carrying the computed value and the row actions. Currency shows once, at the card's
+  top-right. The value input and the reset control meet the a11y floor
+  (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
+  read or edit the primary value.
+
+This slice is **amount-only** (Asset / Liability / Receivable — one value field, no computed line). It
+establishes the reusable `EntryRowDesktop`/`EntryRowMobile` split and the shared `EntryRowView`
+projection that the qty×price and accrued shapes extend without re-forking the container. A `@smoke`
+Playwright spec asserts the correct renderer mounts at mobile vs desktop width and the value stays
+reachable; deep per-shape behaviour stays in the existing amount-only journeys.
+
 ## Considered alternatives
 
 - **One screen, every position, heterogeneous rows.** The literal reading of the finding. Fights the

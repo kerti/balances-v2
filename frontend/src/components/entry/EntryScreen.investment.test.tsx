@@ -80,6 +80,12 @@ it("renders eligible investments grouped by subtype with qty + price prefill and
   const gold = screen.getByTestId("investment-entry-group-gold");
   expect(gold).toHaveTextContent(/gold/i);
   expect(within(gold).getByTestId("investment-entry-row-g1")).toBeInTheDocument();
+
+  // Desktop labels the two tab-stops once per group so a carried-forward row
+  // (placeholders gone) still tells units from price. getByText matches only the
+  // header span — placeholders/aria-labels on the inputs are not text content.
+  expect(within(stocks).getByText("Quantity")).toBeInTheDocument();
+  expect(within(stocks).getByText("Price per unit")).toBeInTheDocument();
 });
 
 // covers: INV-SNAPSHOTS-06
