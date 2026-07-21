@@ -439,6 +439,46 @@ func (d *doc) investmentPerformance() {
 	for _, r := range p.ByType {
 		d.perfRow(subtypeLabel(d.in.Locale, r.Key), r, false)
 	}
+
+	// Placement: new money in as a share of the pool (this month | 12-mo avg),
+	// amount shown under both columns. Suppressed on a baseline reported month.
+	if p.HasPlacement {
+		d.pdf.Ln(2)
+		d.pdf.SetFont("Geist", "", 7.5)
+		d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+		d.pdf.SetX(d.x0 + 2)
+		d.pdf.MultiCell(d.w-2, 3.6, d.c.perfPlaceNote, "", "L", false)
+		d.pdf.Ln(1)
+		d.perfPlacementRow(d.c.perfPlacement, p.Placement)
+	}
+}
+
+// perfPlacementRow draws the placement line: label + this-month % + 12-mo %, then
+// a muted second line carrying the amount under each column (this-month placement
+// and the 12-month average).
+func (d *doc) perfPlacementRow(label string, r PerfRow) {
+	d.keepTogether(14)
+	const indent = 2.0
+	labelW := d.w - indent - 2*perfColW
+	d.pdf.SetFont("Geist", "B", 9)
+	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
+	d.pdf.SetX(d.x0 + indent)
+	d.pdf.CellFormat(labelW, lineH, label, "", 0, "L", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.perfPct(r.Month), "", 0, "R", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.perfPct(r.Trailing), "", 1, "R", false, 0, "")
+
+	moneyOrBlank := func(a string) string {
+		if a == "" {
+			return ""
+		}
+		return d.money(a)
+	}
+	d.pdf.SetFont("Geist", "", 7)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + indent)
+	d.pdf.CellFormat(labelW, 3.6, "", "", 0, "L", false, 0, "")
+	d.pdf.CellFormat(perfColW, 3.6, moneyOrBlank(r.Month.Amount), "", 0, "R", false, 0, "")
+	d.pdf.CellFormat(perfColW, 3.6, moneyOrBlank(r.Trailing.Amount), "", 1, "R", false, 0, "")
 }
 
 // perfHeader draws the two right-aligned column captions ("This month" / "12-mo")

@@ -25,10 +25,10 @@ func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 // inputs — the data-driven watermark can't see those, so needsRegen also
 // regenerates when a row's stamp doesn't match. Rows from before the stamp
 // existed read as NULL and always regenerate.
-// v3 (migration 00014): per-risk investment return + per-bucket closing
-// investment value materialized for the investment-performance breakdown
-// (ADR-0048 amendment).
-const reportEngineVersion int32 = 3
+// v4 (migration 00014): per-risk investment return + per-bucket closing
+// investment value + new-money investment_placement materialized for the
+// investment-performance breakdown (ADR-0048 amendment).
+const reportEngineVersion int32 = 4
 
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
@@ -350,7 +350,8 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		params.InvestmentReturnMedium = ptr(rep.investmentReturn.medium)
 		params.InvestmentReturnHigh = ptr(rep.investmentReturn.high)
 	}
-	params.PassiveCouponCash = rep.passiveCouponCash // nil on baseline
+	params.PassiveCouponCash = rep.passiveCouponCash     // nil on baseline
+	params.InvestmentPlacement = rep.investmentPlacement // nil on baseline
 	return params, nil
 }
 

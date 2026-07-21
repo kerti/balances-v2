@@ -106,6 +106,37 @@ func TestBuildInvestmentPerformance_RatesAndCompound(t *testing.T) {
 	}
 }
 
+// Placement is new money as a share of the opening pool; its trailing-12 figure
+// is the arithmetic average (Σplacement/Σopening-pool for %, Σ/n for amount), not
+// the geometric compound used for return.
+// covers: INV-FINANCE-32
+func TestBuildInvestmentPerformance_Placement(t *testing.T) {
+	jan, feb, mar := ym(2026, time.January), ym(2026, time.February), ym(2026, time.March)
+	series := []db.MonthlyReport{
+		{YearMonth: jan, NwInvestments: dec("1000")}, // baseline: no placement
+		// Feb: placed 100 on a 1000 opening pool = 10%.
+		{YearMonth: feb, NwInvestments: dec("1200"), InvestmentPlacement: decp("100")},
+		// Mar (reported): placed 300 on a 1200 opening pool = 25%.
+		{YearMonth: mar, NwInvestments: dec("1600"), InvestmentPlacement: decp("300")},
+	}
+	row := &series[2]
+	perf := buildInvestmentPerformance(row, series)
+	if !perf.HasPlacement {
+		t.Fatal("HasPlacement = false, want true")
+	}
+	// This month: 300 / 1200 = 25%.
+	assertRate(t, "placement this-month", perf.Placement.Month, 25)
+	if perf.Placement.Month.Amount != "300" {
+		t.Errorf("placement this-month amount: got %q, want \"300\"", perf.Placement.Month.Amount)
+	}
+	// Trailing-12 = Σplacement / Σopening-pool = (100+300) / (1000+1200) = 400/2200
+	// = 18.18% — arithmetic (avg/avg), NOT a compound. Amount = 400/2 = 200.
+	assertRate(t, "placement trailing", perf.Placement.Trailing, 400.0/2200*100)
+	if perf.Placement.Trailing.Amount != "200" {
+		t.Errorf("placement trailing amount: got %q, want \"200\" (Σ/n = 400/2)", perf.Placement.Trailing.Amount)
+	}
+}
+
 // No investments in the reported month → the whole block is suppressed.
 // covers: INV-FINANCE-30
 func TestBuildInvestmentPerformance_SuppressedWithoutInvestments(t *testing.T) {

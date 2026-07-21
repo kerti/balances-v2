@@ -34,7 +34,7 @@ func (q *Queries) DeleteMonthlyReportsOutsideRange(ctx context.Context, arg Dele
 }
 
 const getMonthlyReport = `-- name: GetMonthlyReport :one
-SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high
+SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high, investment_placement
 FROM monthly_reports
 WHERE household_id = $1 AND year_month = $2
 `
@@ -96,6 +96,7 @@ func (q *Queries) GetMonthlyReport(ctx context.Context, arg GetMonthlyReportPara
 		&i.InvestmentValueLow,
 		&i.InvestmentValueMedium,
 		&i.InvestmentValueHigh,
+		&i.InvestmentPlacement,
 	)
 	return i, err
 }
@@ -519,7 +520,7 @@ func (q *Queries) ListLiabilitySnapshotsForReport(ctx context.Context, household
 
 const listMonthlyReports = `-- name: ListMonthlyReports :many
 
-SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high
+SELECT id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high, investment_placement
 FROM monthly_reports
 WHERE household_id = $1
 ORDER BY year_month
@@ -593,6 +594,7 @@ func (q *Queries) ListMonthlyReports(ctx context.Context, householdID uuid.UUID)
 			&i.InvestmentValueLow,
 			&i.InvestmentValueMedium,
 			&i.InvestmentValueHigh,
+			&i.InvestmentPlacement,
 		); err != nil {
 			return nil, err
 		}
@@ -751,7 +753,8 @@ INSERT INTO monthly_reports (
     investment_return_low, investment_return_medium, investment_return_high,
     investment_value_stock, investment_value_mutual_fund, investment_value_bond,
     investment_value_gold, investment_value_time_deposit,
-    investment_value_low, investment_value_medium, investment_value_high
+    investment_value_low, investment_value_medium, investment_value_high,
+    investment_placement
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -766,7 +769,8 @@ INSERT INTO monthly_reports (
     $36, $37, $38,
     $39, $40, $41,
     $42, $43,
-    $44, $45, $46
+    $44, $45, $46,
+    $47
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -813,8 +817,9 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     investment_value_time_deposit  = EXCLUDED.investment_value_time_deposit,
     investment_value_low           = EXCLUDED.investment_value_low,
     investment_value_medium        = EXCLUDED.investment_value_medium,
-    investment_value_high          = EXCLUDED.investment_value_high
-RETURNING id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high
+    investment_value_high          = EXCLUDED.investment_value_high,
+    investment_placement           = EXCLUDED.investment_placement
+RETURNING id, household_id, year_month, generated_at, nw_total, nw_assets, nw_liabilities, nw_receivables, nw_investments, earned_income_total, earned_income_salary, earned_income_business, earned_income_rental, earned_income_gift, earned_income_tax_refund, earned_income_insurance, earned_income_other, investment_return_total, investment_return_stock, investment_return_mutual_fund, investment_return_bond, investment_return_gold, investment_return_time_deposit, asset_value_change, derived_living_expenses, user_breakdowns, fx_rates_used, stale_positions, missing_fx, earned_income_pension, earned_income_interest, earned_income_total_routine, earned_income_rental_routine, earned_income_pension_routine, earned_income_interest_routine, engine_version, passive_coupon_cash, investment_return_low, investment_return_medium, investment_return_high, investment_value_stock, investment_value_mutual_fund, investment_value_bond, investment_value_gold, investment_value_time_deposit, investment_value_low, investment_value_medium, investment_value_high, investment_placement
 `
 
 type UpsertMonthlyReportParams struct {
@@ -864,6 +869,7 @@ type UpsertMonthlyReportParams struct {
 	InvestmentValueLow          *decimal.Decimal `json:"investment_value_low"`
 	InvestmentValueMedium       *decimal.Decimal `json:"investment_value_medium"`
 	InvestmentValueHigh         *decimal.Decimal `json:"investment_value_high"`
+	InvestmentPlacement         *decimal.Decimal `json:"investment_placement"`
 }
 
 func (q *Queries) UpsertMonthlyReport(ctx context.Context, arg UpsertMonthlyReportParams) (MonthlyReport, error) {
@@ -914,6 +920,7 @@ func (q *Queries) UpsertMonthlyReport(ctx context.Context, arg UpsertMonthlyRepo
 		arg.InvestmentValueLow,
 		arg.InvestmentValueMedium,
 		arg.InvestmentValueHigh,
+		arg.InvestmentPlacement,
 	)
 	var i MonthlyReport
 	err := row.Scan(
@@ -965,6 +972,7 @@ func (q *Queries) UpsertMonthlyReport(ctx context.Context, arg UpsertMonthlyRepo
 		&i.InvestmentValueLow,
 		&i.InvestmentValueMedium,
 		&i.InvestmentValueHigh,
+		&i.InvestmentPlacement,
 	)
 	return i, err
 }

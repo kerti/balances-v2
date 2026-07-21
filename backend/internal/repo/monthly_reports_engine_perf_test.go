@@ -71,3 +71,60 @@ func TestEngine_InvestmentPerformanceBreakdown(t *testing.T) {
 		t.Errorf("value risk partition: Σ=%s != nwInvestments=%s", riskSum, feb.nwInvestments)
 	}
 }
+
+// investment_placement counts new bank-sourced money into investments — Buys +
+// fresh TD placements — and MUST exclude TD rollover funding (rolled_to_new,
+// internal recycling that never touches the bank), else an auto-renewing TD reads
+// as a huge recurring placement.
+// covers: INV-FINANCE-32
+func TestEngine_PlacementExcludesRollover(t *testing.T) {
+	bank, stock := uuid.New(), uuid.New()
+	freshTD := uuid.New()
+	oldTD, newTD := uuid.New(), uuid.New()
+	feb := ym(2026, time.February)
+	principal, interest := dec("100"), dec("5")
+	tdPrincipal := dec("300")
+	buyAmt := dec("200")
+	in := reportEngineInput{
+		positions: []reportPosition{
+			{id: bank, group: groupAsset, subtype: "bank_account", ownershipType: "joint"},
+			{id: stock, group: groupInvestment, subtype: "stock", riskProfile: "medium", ownershipType: "joint"},
+			// A fresh TD placed in Feb (real bank money → counts).
+			{id: freshTD, group: groupInvestment, subtype: "time_deposit", riskProfile: "low", ownershipType: "joint",
+				placementAmount: &tdPrincipal, placementMonth: &feb, currency: "IDR"},
+			// A rolled-over TD: old matures into new (recycled → must NOT count).
+			{id: oldTD, group: groupInvestment, subtype: "time_deposit", riskProfile: "low", ownershipType: "joint", terminatedAt: &feb},
+			{id: newTD, group: groupInvestment, subtype: "time_deposit", riskProfile: "low", ownershipType: "joint", rolledFrom: &oldTD},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: bank, yearMonth: ym(2026, time.January), amount: dec("5000")},
+			{positionID: bank, yearMonth: feb, amount: dec("5000")},
+			{positionID: stock, yearMonth: ym(2026, time.January), amount: dec("500")},
+			{positionID: stock, yearMonth: feb, amount: dec("700")}, // +200 from the Buy below
+			{positionID: freshTD, yearMonth: feb, amount: dec("300")},
+			{positionID: oldTD, yearMonth: ym(2026, time.January), amount: dec("100")},
+			{positionID: oldTD, yearMonth: feb, amount: dec("0")},
+			{positionID: newTD, yearMonth: feb, amount: dec("105")},
+		},
+		transactions: []reportTransaction{
+			{investmentID: stock, yearMonth: feb, txnType: "buy", amount: &buyAmt}, // a 200 Buy
+			{investmentID: oldTD, yearMonth: feb, txnType: "maturity",
+				principalAmount: &principal, interestAmount: &interest,
+				principalDisposition: strp("rolled_to_new"), interestDisposition: strp("rolled_to_new")},
+		},
+		currentMonth: feb,
+	}
+	reports := generateMonthlyReports(in)
+	jan := findMonth(t, reports, ym(2026, time.January))
+	feb2 := findMonth(t, reports, feb)
+
+	// Baseline: no flow, placement suppressed.
+	if jan.investmentPlacement != nil {
+		t.Errorf("Jan baseline: investmentPlacement should be nil, got %v", jan.investmentPlacement)
+	}
+	// Feb placement = 200 (Buy) + 300 (fresh TD) = 500. The 105 rollover funding is
+	// excluded.
+	if feb2.investmentPlacement == nil || !feb2.investmentPlacement.Equal(dec("500")) {
+		t.Fatalf("Feb placement: %v, want 500 (Buy 200 + fresh TD 300; rollover 105 excluded)", feb2.investmentPlacement)
+	}
+}

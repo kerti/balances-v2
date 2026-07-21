@@ -46,7 +46,8 @@ INSERT INTO monthly_reports (
     investment_return_low, investment_return_medium, investment_return_high,
     investment_value_stock, investment_value_mutual_fund, investment_value_bond,
     investment_value_gold, investment_value_time_deposit,
-    investment_value_low, investment_value_medium, investment_value_high
+    investment_value_low, investment_value_medium, investment_value_high,
+    investment_placement
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -61,7 +62,8 @@ INSERT INTO monthly_reports (
     $36, $37, $38,
     $39, $40, $41,
     $42, $43,
-    $44, $45, $46
+    $44, $45, $46,
+    $47
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -108,7 +110,8 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     investment_value_time_deposit  = EXCLUDED.investment_value_time_deposit,
     investment_value_low           = EXCLUDED.investment_value_low,
     investment_value_medium        = EXCLUDED.investment_value_medium,
-    investment_value_high          = EXCLUDED.investment_value_high
+    investment_value_high          = EXCLUDED.investment_value_high,
+    investment_placement           = EXCLUDED.investment_placement
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds

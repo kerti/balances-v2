@@ -222,6 +222,45 @@ func buildInvestmentPerformance(row *db.MonthlyReport, series []db.MonthlyReport
 	for _, k := range subtypeKeys {
 		perf.ByType = append(perf.ByType, row1(k))
 	}
+
+	// Placement: new money in as a share of the opening pool. Trailing-12 is an
+	// arithmetic average, NOT the geometric compound used for return — placement
+	// is a flow you average to a typical month, not a compounding growth rate
+	// (ADR-0048 amendment / INV-FINANCE-32). % over the window is Σplacement /
+	// Σopening-pool (avg/avg); the amount is Σplacement / n.
+	if row.InvestmentPlacement != nil {
+		pr := pdf.PerfRow{Key: "placement"}
+		pr.Month.Amount = row.InvestmentPlacement.String()
+		if prev := prevOf(row); prev != nil && prev.NwInvestments.IsPositive() {
+			f, _ := row.InvestmentPlacement.Div(prev.NwInvestments).Float64()
+			pr.Month.Defined = true
+			pr.Month.Percent = f * 100
+		}
+		sumPlace, sumPool, n := decimal.Zero, decimal.Zero, 0
+		for i := range series {
+			s := &series[i]
+			if s.YearMonth.Before(lo) || s.YearMonth.After(upto) || s.InvestmentPlacement == nil {
+				continue
+			}
+			prev := prevOf(s)
+			if prev == nil || !prev.NwInvestments.IsPositive() {
+				continue
+			}
+			sumPlace = sumPlace.Add(*s.InvestmentPlacement)
+			sumPool = sumPool.Add(prev.NwInvestments)
+			n++
+		}
+		if n > 0 {
+			pr.Trailing.Amount = sumPlace.Div(decimal.NewFromInt(int64(n))).String()
+			if sumPool.IsPositive() {
+				f, _ := sumPlace.Div(sumPool).Float64()
+				pr.Trailing.Defined = true
+				pr.Trailing.Percent = f * 100
+			}
+		}
+		perf.HasPlacement = true
+		perf.Placement = pr
+	}
 	return perf
 }
 

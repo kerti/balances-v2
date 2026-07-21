@@ -79,9 +79,11 @@ report reorganised into five page groups (#495, 2026-07-20) then given an earned
 Active/Passive by-source split under Cash Flow, coupons as a separate additive line (ADR-0048 PR2
 amendment, INV-FINANCE-26; layout/copy only, no migration) — also **UNRELEASED**. Investment-
 performance block added to the PDF report (2026-07-21): investment return as a *rate* — this month
-beside its trailing-12 compound — in three cuts (total, by risk profile, by instrument type); leads
-the investments page (ADR-0048 amendment, migration `00014`, engine_version 2→3, INV-FINANCE-29/30/31)
-— also **UNRELEASED**. Next cut owed carries `00013` + `00014`.
+beside its trailing-12 compound — in three cuts (total, by risk profile, by instrument type), plus a
+**placement** line (new money deployed as a share of the opening pool; excludes TD rollovers/fees;
+trailing-12 = arithmetic avg, not compound); leads the investments page (ADR-0048 amendment, migration
+`00014`, engine_version 2→4, INV-FINANCE-29/30/31/32) — also **UNRELEASED**. Next cut owed carries
+`00013` + `00014`.
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's

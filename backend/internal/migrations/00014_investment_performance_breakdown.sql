@@ -21,9 +21,18 @@
 --     base is the existing nw_investments (no duplicate column). Both partitions
 --     reconcile to nw_investments (INV-FINANCE-29).
 --
+-- investment_placement is the month's *new money placed into investments from
+-- the bank* — Buy transactions + fresh TimeDeposit placements, FX-converted.
+-- It deliberately EXCLUDES TD rollover funding (rolled_to_new principal/interest,
+-- which never touches the bank — pure internal recycling that would otherwise
+-- read as a huge recurring placement every renewal) and cash `fee` inflows (a
+-- cost, not deployment). The render divides it by the opening (prior-month)
+-- invested value to show what share of the pool's growth came from new money vs
+-- market return (ADR-0048 amendment). Nil on the baseline (no flow).
+--
 -- A new report column is not a backup-format shape change — restore
 -- rematerialises reports from inputs — so no format bump. The engine_version bump
--- (reportEngineVersion 2 -> 3) trips needsRegen so pre-existing rows recompute
+-- (reportEngineVersion 2 -> 4) trips needsRegen so pre-existing rows recompute
 -- these columns on next read; no manual backfill.
 ALTER TABLE public.monthly_reports
     ADD COLUMN investment_return_low numeric(20,4),
@@ -36,7 +45,8 @@ ALTER TABLE public.monthly_reports
     ADD COLUMN investment_value_time_deposit numeric(20,4),
     ADD COLUMN investment_value_low numeric(20,4),
     ADD COLUMN investment_value_medium numeric(20,4),
-    ADD COLUMN investment_value_high numeric(20,4);
+    ADD COLUMN investment_value_high numeric(20,4),
+    ADD COLUMN investment_placement numeric(20,4);
 
 -- +goose Down
 ALTER TABLE public.monthly_reports
@@ -50,4 +60,5 @@ ALTER TABLE public.monthly_reports
     DROP COLUMN investment_value_time_deposit,
     DROP COLUMN investment_value_low,
     DROP COLUMN investment_value_medium,
-    DROP COLUMN investment_value_high;
+    DROP COLUMN investment_value_high,
+    DROP COLUMN investment_placement;

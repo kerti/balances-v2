@@ -298,13 +298,17 @@ type monthlyReportData struct {
 	// cash and remove it from own-return g (ADR-0048 amendment, INV-FINANCE-25).
 	// nil on the baseline, mirroring investmentReturn.
 	passiveCouponCash *decimal.Decimal
-	assetValueChange  *decimal.Decimal // nil on baseline
-	livingExpenses    *decimal.Decimal // nil on baseline
-	userBreakdowns    map[string]userBreakdown
-	stalePositions    []stalePosition
-	missingFx         []missingFxEntry
-	fxRatesUsed       map[string]decimal.Decimal
-	missingSeen       map[string]bool // dedup helper, not serialised
+	// investmentPlacement is new money placed into investments from the bank (Buys
+	// + fresh TD placements, excl. rollovers/fees). nil on the baseline, like the
+	// other flow figures (ADR-0048 amendment / INV-FINANCE-32).
+	investmentPlacement *decimal.Decimal
+	assetValueChange    *decimal.Decimal // nil on baseline
+	livingExpenses      *decimal.Decimal // nil on baseline
+	userBreakdowns      map[string]userBreakdown
+	stalePositions      []stalePosition
+	missingFx           []missingFxEntry
+	fxRatesUsed         map[string]decimal.Decimal
+	missingSeen         map[string]bool // dedup helper, not serialised
 }
 
 type monthAmount struct {
@@ -423,6 +427,12 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	// flagged per month so the report still generates.
 	cashByPos := make(map[uuid.UUID]map[int]cashFlow)
 	couponCashByMonth := make(map[int]decimal.Decimal)
+	// placementByMonth is new money deployed into investments from the bank — Buy
+	// transactions + fresh TD placements, FX-converted. It deliberately excludes
+	// rollover funding (recycled principal, never touches the bank) and cash fees
+	// (a cost). Materialized as investment_placement for the render's "how much of
+	// the pool's growth was new money vs return" split (ADR-0048 / INV-FINANCE-32).
+	placementByMonth := make(map[int]decimal.Decimal)
 	txnMissing := make(map[int]map[string]bool)
 	txnRates := make(map[int]map[string]decimal.Decimal)
 	for _, t := range in.transactions {
@@ -448,6 +458,11 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		}
 		if t.txnType == "coupon" && paysOutBond[t.investmentID] {
 			couponCashByMonth[mi] = couponCashByMonth[mi].Add(outC)
+		}
+		// A Buy is new money placed into investments (INV-FINANCE-32). Sells,
+		// coupons/dividends/distributions (cash_out) and cash fees are not.
+		if t.txnType == "buy" {
+			placementByMonth[mi] = placementByMonth[mi].Add(inC)
 		}
 		m := cashByPos[t.investmentID]
 		if m == nil {
@@ -492,6 +507,9 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		c := m[mi]
 		c.in = c.in.Add(inC)
 		m[mi] = c
+		// A fresh TD placement is new money into investments, like a Buy. (Rollover
+		// funding below is NOT — it never touches the bank; INV-FINANCE-32.)
+		placementByMonth[mi] = placementByMonth[mi].Add(inC)
 	}
 
 	// Rollover funding cash_in (issue #27 rollover). A rolled TD takes no
@@ -677,6 +695,12 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			// non-nil-off-baseline shape so buildStats reads it via decOr.
 			coupon := couponCashByMonth[idx]
 			m.passiveCouponCash = &coupon
+
+			// New money placed into investments this month (Buys + fresh TD
+			// placements, excl. rollovers/fees). Set on every flow month, zero when
+			// nothing was deployed (INV-FINANCE-32).
+			placement := placementByMonth[idx]
+			m.investmentPlacement = &placement
 
 			avc := decimal.Zero
 			for _, p := range positions {

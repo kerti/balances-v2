@@ -296,6 +296,7 @@ type MonthlyReport struct {
 	InvestmentValueLow          *decimal.Decimal   `json:"investment_value_low"`
 	InvestmentValueMedium       *decimal.Decimal   `json:"investment_value_medium"`
 	InvestmentValueHigh         *decimal.Decimal   `json:"investment_value_high"`
+	InvestmentPlacement         *decimal.Decimal   `json:"investment_placement"`
 }
 
 type MutualFundDetail struct {

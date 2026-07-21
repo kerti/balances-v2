@@ -321,6 +321,14 @@ zero/absent opening base (first month held, or fully exited) has an **undefined*
 This is a *money-weighted opening-base approximation*, not a textbook IRR/time-weighted return — the
 month-granularity snapshot model carries no intra-month dated cash flows, and the domain says so.
 
+**Investment placement**: New money the Household **deployed into investments** in a month — Buy
+transactions + fresh TimeDeposit placements — shown in the same block as a share of the opening pool,
+so `pool growth ≈ investment-return % + placement %`. It **excludes** TD rollover funding (recycled
+principal that never touches the bank) and cash fees — only fresh money from the Household's accounts
+counts. Gross (money in), not netted against Sells. Its trailing-12 figure is an **arithmetic
+average** (a typical month's deployment), *not* the geometric compound used for return — placement is a
+flow you average, not a compounding growth rate.
+
 ### Backup and restore
 
 **Backup**: A single portable artifact holding a Household's *entire* data — every Position, Snapshot,

@@ -73,6 +73,8 @@ type reportCopy struct {
 	perfByRisk      string // sub-heading: by risk profile
 	perfByType      string // sub-heading: by instrument type
 	perfAmount      string // muted "%s this month" amount-context line
+	perfPlacement   string // placement row label (new money in, % of pool)
+	perfPlaceNote   string // muted note explaining placement + rollover exclusion
 
 	deltaVs    string // "vs %s" — month-over-month comparison suffix
 	footerPage string // "Page %d of %s" (%s = total-pages alias)
@@ -143,6 +145,8 @@ var reportCatalog = map[string]reportCopy{
 		perfByRisk:        "By risk profile",
 		perfByType:        "By instrument type",
 		perfAmount:        "%s this month",
+		perfPlacement:     "New money placed",
+		perfPlaceNote:     "New money you deployed into investments, as a share of the pool it added to — this month beside its 12-month average. Only fresh money from your accounts counts: rollovers and reinvested principal are excluded.",
 		chartAssets:       "Assets Composition",
 		chartInvestments:  "Investments Composition",
 		chartLiabilities:  "Liabilities Composition",
@@ -206,6 +210,8 @@ var reportCatalog = map[string]reportCopy{
 		perfByRisk:        "Berdasarkan profil risiko",
 		perfByType:        "Berdasarkan jenis instrumen",
 		perfAmount:        "%s bulan ini",
+		perfPlacement:     "Dana baru ditempatkan",
+		perfPlaceNote:     "Dana baru yang Anda tempatkan ke investasi, sebagai bagian dari pool yang ditambahnya — bulan ini di samping rata-rata 12 bulannya. Hanya dana baru dari rekening Anda yang dihitung: perpanjangan (rollover) dan penempatan ulang pokok tidak disertakan.",
 		chartAssets:       "Komposisi Harta",
 		chartInvestments:  "Komposisi Investasi",
 		chartLiabilities:  "Komposisi Hutang",

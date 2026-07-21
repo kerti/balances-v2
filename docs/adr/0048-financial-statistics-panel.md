@@ -509,7 +509,8 @@ INV-FINANCE-08/23). The rate is that numerator over an invested-capital **base**
 - **Engine** (`repo/monthly_reports_engine.go`): `reportPosition` gains `riskProfile`; the net-worth
   pass accumulates per-subtype and per-risk closing value alongside `nw_investments`; the
   income-statement pass adds a per-risk return tally beside the existing per-subtype one. `engine_version`
-  bumps **2 → 3**, so the staleness watermark rebuilds every month on deploy (no manual backfill).
+  bumps **2 → 4** (v3 = this breakdown; v4 folds in the placement column below), so the staleness
+  watermark rebuilds every month on deploy (no manual backfill).
 - **Render** (`reports/pdf_input.go` + `pdf/render.go` + `pdf/reportcopy.go`): a new
   `buildInvestmentPerformance` walks the report series, computing each bucket's this-month rate
   (return ÷ prior-month base) and trailing-12 compound; a new performance block renders the three
@@ -531,3 +532,51 @@ INV-FINANCE-08/23). The rate is that numerator over an invested-capital **base**
 - **INV-FINANCE-31** (new) — the trailing-12 investment-return rate is the geometric compound
   `Π(1 + rₘ) − 1` over in-window months with a defined base (months with a zero/absent opening base
   contribute no factor), **not** the arithmetic mean of the monthly rates.
+
+### Placement — new money as a share of the pool
+
+The performance block answers "how did the investments *perform*"; it does not say "how much did we
+*put in*". A pool can grow because it appreciated (return) or because the household deployed new money
+(placement) — two different stories the report should keep apart. This adds a **placement** line below
+the performance tables: new money deployed into investments, as a share of the opening pool, so the
+reader sees `pool growth ≈ return% + placement%` for the month.
+
+**Definition — new bank-sourced money only.** Placement = **Buy** transactions + **fresh TimeDeposit
+placements**, FX-converted. It deliberately **excludes**:
+- **TD rollover funding** (`rolled_to_new` principal/interest, issue #27). A rolled-over TD is funded
+  by its predecessor's maturity — the money **never touches the bank**, it recycles internally. Counting
+  it would make a TD on `auto_renew` read as a massive *recurring* placement every renewal — pure
+  double-count of the same capital. The engine already books rollover funding as a distinct cash_in
+  leg, so the exclusion is a clean tap, not a heuristic.
+- **Cash `fee` inflows** — a cost charged against the instrument, not money the household deployed.
+
+Gross, not net: placement is *money in*, not netted against Sells. A rebalance (sell A → buy B) is
+neither saving nor spending, but netting it would hide the deployment; withdrawals are a separate
+concept (an outflow line), deliberately out of scope here.
+
+**Rate base = the opening pool**, the same denominator as the return rate (chosen so the two compose:
+`return% + placement% ≈ this-month pool growth`, ex-withdrawals). Undefined → "—" on a zero/absent
+opening pool (INV-FINANCE-30's convention).
+
+**Trailing-12 is an arithmetic average, NOT the geometric compound used for return.** Placement is a
+*flow* you average to a "typical month" (`Σplacement / Σopening-pool` for the %, `Σplacement / n` for
+the amount) — it is not a compounding growth rate, so compounding it would be meaningless. This is a
+deliberate, documented asymmetry with the return trailing figure (INV-FINANCE-31): return *compounds*
+because it is growth; placement *averages* because it is a contribution. The code and this ADR say so,
+so nobody "fixes" them into agreement.
+
+- **Mechanism.** Migration `00014` adds one more column, `investment_placement numeric(20,4)` (nil on
+  the baseline). The engine accumulates `placementByMonth` from Buy cash_in + the synthetic fresh-TD
+  placement cash_in (skipping the rollover-funding loop and cash fees). `buildInvestmentPerformance`
+  computes the this-month and trailing figures at render; `perfPlacementRow` renders the line (% in
+  both columns, amount muted beneath each). `engine_version → 4`.
+
+### Invariants (placement)
+
+- **INV-FINANCE-32** (new) — `investment_placement` is **new bank-sourced money into investments**:
+  Buy transactions + fresh TD placements, FX-converted; it **excludes** TD rollover funding
+  (`rolled_to_new`, internal recycling that never hits the bank) and cash `fee` inflows. Rendered as a
+  share of the **opening** invested pool (undefined → "—" on a zero/absent pool), whose trailing-12
+  figure is the **arithmetic average** (`Σplacement / Σopening-pool`; amount `Σ / n`) — deliberately
+  **not** the geometric compound of the return rate (INV-FINANCE-31), because placement is a flow, not
+  a compounding growth rate.

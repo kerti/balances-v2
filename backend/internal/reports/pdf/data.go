@@ -110,6 +110,15 @@ type InvestmentPerf struct {
 	Total   PerfRow
 	ByRisk  []PerfRow // low, medium, high — undefined-rate rows kept (labelled "—")
 	ByType  []PerfRow // stock, mutual_fund, bond, gold, time_deposit
+
+	// Placement is new money deployed into investments (Buys + fresh TD
+	// placements, excl. rollovers/fees), as a share of the opening invested pool —
+	// "how much of the pool's growth was new money vs return". Month and Trailing
+	// each carry the % (headline) and the underlying amount (Month = this month,
+	// Trailing = 12-month average). HasPlacement is false on a baseline reported
+	// month (no flow), which suppresses the row.
+	HasPlacement bool
+	Placement    PerfRow
 }
 
 // PerfRow is one investment-performance line for a bucket: its this-month rate
