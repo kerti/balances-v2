@@ -146,12 +146,14 @@ renderer unchanged. No logic forks into a renderer.
   columns — the placeholders vanish the moment a value carries forward, so without it a desktop row
   gives no clue which field is units and which is price. The header renders as the **right cluster of
   the group title line** (one label per column, **once per investment type**), sharing that vertical
-  space rather than taking a row of its own. **Currency** shows once, on the derived total, which
-  renders as a right-aligned `symbol number` unit (`formatCurrencyParts`) in its own wide column set
-  off from the inputs — so large household totals don't clip and the numbers line up on the right. A
-  standalone currency column next to the quantity was redundant with the total and read as if it
-  labelled the quantity, so it is dropped for multi-field shapes. Amount-only (one unlabelled field,
-  no total) keeps a small currency column before its input and renders no header.
+  space rather than taking a row of its own. **Currency** shows once, in its own fixed column
+  **between the last input and the total** (`formatCurrencyParts` supplies the locale symbol), with
+  the total number right-aligned in its own column beside it (`tabular-nums`, wide enough that
+  household IDR figures don't clip) — reading `[qty] [price] IDR 15.000` with each of the symbol and
+  the number aligned in its own column. The old standalone currency column before the inputs was
+  redundant with the total and read as if it labelled the quantity, so it is dropped for multi-field
+  shapes. Amount-only (one unlabelled field, no total) keeps a small currency column before its input
+  and renders no header.
 - **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
   fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
   its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then

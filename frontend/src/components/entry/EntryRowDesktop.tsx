@@ -10,21 +10,24 @@ import type { EntryShape } from "@/components/entry/shapes";
 // column — the currency already prints on their derived total (below), so a
 // second copy next to the quantity was redundant and misleading.
 const CURRENCY_COL = "w-10 shrink-0 text-right";
-// The derived-total column: its own column, set off from the inputs (ml-3), with
-// the whole "symbol number" unit right-aligned (justify-end) so large totals
-// don't clip and the numbers line up on the right. Wide enough for household IDR
-// figures.
-const DERIVED_COL = "w-40 shrink-0 ml-3";
+// A multi-field shape's derived total is a two-column cluster set off from the
+// inputs (ml-3): the currency symbol in its own fixed column (so the symbols
+// line up by themselves), then the total number right-aligned in its own column
+// (tabular-nums, wide enough for household IDR figures). Reads "[qty] [price]
+// IDR 15.000" with the symbol between the last input and the number.
+const MONEY_CLUSTER = "ml-3 flex items-center gap-2";
+const SYMBOL_COL = "w-9 shrink-0 text-right";
+const TOTAL_COL = "w-32 shrink-0 text-right tabular-nums";
 
 // EntryRowDesktopHeader labels the input columns once per group (ADR-0046
 // Presentation / UX): with the shape's placeholders hidden the moment a value
 // carries forward, a qty×price / accrued row otherwise gives no clue which field
 // is units and which is price. It renders as the right-hand cluster of the group
 // title line (sharing that vertical space) and mirrors the row's right cluster —
-// one right-aligned label per field at its own widthClass, then a value-column
-// spacer and an action spacer — so the labels sit over their inputs. Amount-only
-// shapes (a single unlabelled field) render nothing. Decorative (aria-hidden):
-// the inputs keep their own aria-labels.
+// one right-aligned label per field at its own widthClass, then a money-cluster
+// spacer (symbol + total) and an action spacer — so the labels sit over their
+// inputs. Amount-only shapes (a single unlabelled field) render nothing.
+// Decorative (aria-hidden): the inputs keep their own aria-labels.
 export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
   const { t } = useTranslation("common");
   if (!shape.fields.some((f) => f.labelKey)) return null;
@@ -37,7 +40,12 @@ export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
           </span>
         ))}
       </div>
-      {shape.derived && <span className={DERIVED_COL} />}
+      {shape.derived && (
+        <div className={MONEY_CLUSTER}>
+          <span className={SYMBOL_COL} />
+          <span className={TOTAL_COL} />
+        </div>
+      )}
       <span className="size-8 shrink-0" />
     </div>
   );
@@ -81,19 +89,12 @@ export function EntryRowDesktop({
         ))}
       </div>
       {derived !== null && (
-        <span
-          className={`${DERIVED_COL} flex items-baseline justify-end gap-1.5 text-sm tabular-nums text-muted-foreground`}
-          data-testid={`${tid}-entry-value-${positionId}`}
-        >
-          {derived.value !== null ? (
-            <>
-              <span>{derived.symbol}</span>
-              <span>{derived.value}</span>
-            </>
-          ) : (
-            "—"
-          )}
-        </span>
+        <div className={`${MONEY_CLUSTER} text-sm text-muted-foreground`}>
+          <span className={SYMBOL_COL}>{derived.symbol}</span>
+          <span className={TOTAL_COL} data-testid={`${tid}-entry-value-${positionId}`}>
+            {derived.value ?? "—"}
+          </span>
+        </div>
       )}
       <Button
         type="button"
