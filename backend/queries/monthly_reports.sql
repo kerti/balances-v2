@@ -42,7 +42,11 @@ INSERT INTO monthly_reports (
     earned_income_total_routine, earned_income_rental_routine,
     earned_income_pension_routine, earned_income_interest_routine,
     passive_coupon_cash,
-    engine_version
+    engine_version,
+    investment_return_low, investment_return_medium, investment_return_high,
+    investment_value_stock, investment_value_mutual_fund, investment_value_bond,
+    investment_value_gold, investment_value_time_deposit,
+    investment_value_low, investment_value_medium, investment_value_high
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -53,7 +57,11 @@ INSERT INTO monthly_reports (
     $29,
     $30, $31, $32, $33,
     $34,
-    $35
+    $35,
+    $36, $37, $38,
+    $39, $40, $41,
+    $42, $43,
+    $44, $45, $46
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -89,7 +97,18 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     earned_income_pension_routine  = EXCLUDED.earned_income_pension_routine,
     earned_income_interest_routine = EXCLUDED.earned_income_interest_routine,
     passive_coupon_cash            = EXCLUDED.passive_coupon_cash,
-    engine_version                 = EXCLUDED.engine_version
+    engine_version                 = EXCLUDED.engine_version,
+    investment_return_low          = EXCLUDED.investment_return_low,
+    investment_return_medium       = EXCLUDED.investment_return_medium,
+    investment_return_high         = EXCLUDED.investment_return_high,
+    investment_value_stock         = EXCLUDED.investment_value_stock,
+    investment_value_mutual_fund   = EXCLUDED.investment_value_mutual_fund,
+    investment_value_bond          = EXCLUDED.investment_value_bond,
+    investment_value_gold          = EXCLUDED.investment_value_gold,
+    investment_value_time_deposit  = EXCLUDED.investment_value_time_deposit,
+    investment_value_low           = EXCLUDED.investment_value_low,
+    investment_value_medium        = EXCLUDED.investment_value_medium,
+    investment_value_high          = EXCLUDED.investment_value_high
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds
@@ -155,7 +174,7 @@ WHERE household_id = $1 AND deleted_at IS NULL;
 -- the placement-month snapshot 0→principal reads as pure return. td.principal /
 -- td.placement_date are NULL for non-TD subtypes.
 -- name: ListInvestmentsForReport :many
-SELECT i.id, i.display_name, i.subtype, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
+SELECT i.id, i.display_name, i.subtype, i.risk_profile, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
        i.native_currency, i.rolled_from_investment_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date,
        bd.coupon_disposition AS coupon_disposition

@@ -83,7 +83,146 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		FxRates:           buildFxRates(row.FxRatesUsed),
 		Trend:             buildTrend(series, row.YearMonth),
 		Stats:             buildStats(row, positions, series, inflation, assumedAnnualInflation),
+		InvestmentPerf:    buildInvestmentPerformance(row, series),
 	}
+}
+
+// riskKeys / subtypeKeys fix the row order of the two investment-performance
+// partitions (ADR-0048 amendment). Both are complete: every Investment has one
+// risk_profile and one subtype.
+var (
+	riskKeys    = []string{"low", "medium", "high"}
+	subtypeKeys = []string{"stock", "mutual_fund", "bond", "gold", "time_deposit"}
+)
+
+// bucketReturn / bucketValue read one bucket's materialized monthly return and
+// closing invested value off a report row, keyed by the bucket token. Return is
+// nil on the baseline month (no flow); value is set on every month. The "total"
+// value base is nw_investments (always present), so it is returned as a non-nil
+// pointer.
+func bucketReturn(r *db.MonthlyReport, key string) *decimal.Decimal {
+	switch key {
+	case "total":
+		return r.InvestmentReturnTotal
+	case "low":
+		return r.InvestmentReturnLow
+	case "medium":
+		return r.InvestmentReturnMedium
+	case "high":
+		return r.InvestmentReturnHigh
+	case "stock":
+		return r.InvestmentReturnStock
+	case "mutual_fund":
+		return r.InvestmentReturnMutualFund
+	case "bond":
+		return r.InvestmentReturnBond
+	case "gold":
+		return r.InvestmentReturnGold
+	case "time_deposit":
+		return r.InvestmentReturnTimeDeposit
+	}
+	return nil
+}
+
+func bucketValue(r *db.MonthlyReport, key string) *decimal.Decimal {
+	switch key {
+	case "total":
+		return &r.NwInvestments
+	case "low":
+		return r.InvestmentValueLow
+	case "medium":
+		return r.InvestmentValueMedium
+	case "high":
+		return r.InvestmentValueHigh
+	case "stock":
+		return r.InvestmentValueStock
+	case "mutual_fund":
+		return r.InvestmentValueMutualFund
+	case "bond":
+		return r.InvestmentValueBond
+	case "gold":
+		return r.InvestmentValueGold
+	case "time_deposit":
+		return r.InvestmentValueTimeDeposit
+	}
+	return nil
+}
+
+// buildInvestmentPerformance derives the investment-performance block (ADR-0048
+// amendment): each bucket's this-month return rate (return ÷ prior-month opening
+// invested value) beside its trailing-12 geometric compound. Computed at render
+// time from the series, never materialized — the same seam as the four ratios.
+// Suppressed (Defined=false) when the reported month holds no investments.
+func buildInvestmentPerformance(row *db.MonthlyReport, series []db.MonthlyReport) pdf.InvestmentPerf {
+	if !row.NwInvestments.IsPositive() {
+		return pdf.InvestmentPerf{}
+	}
+	byMonth := make(map[string]*db.MonthlyReport, len(series))
+	for i := range series {
+		byMonth[series[i].YearMonth.Format("2006-01")] = &series[i]
+	}
+	prevOf := func(r *db.MonthlyReport) *db.MonthlyReport {
+		return byMonth[r.YearMonth.AddDate(0, -1, 0).Format("2006-01")]
+	}
+	upto := row.YearMonth
+	lo := upto.AddDate(0, -11, 0)
+
+	// monthRate is a bucket's return over its opening (prior-month) invested value,
+	// defined only when that base is positive and a return exists (INV-FINANCE-30).
+	monthRate := func(r *db.MonthlyReport, key string) (float64, bool) {
+		ret := bucketReturn(r, key)
+		prev := prevOf(r)
+		if ret == nil || prev == nil {
+			return 0, false
+		}
+		base := bucketValue(prev, key)
+		if base == nil || !base.IsPositive() {
+			return 0, false
+		}
+		f, _ := ret.Div(*base).Float64()
+		return f, true
+	}
+
+	row1 := func(key string) pdf.PerfRow {
+		out := pdf.PerfRow{Key: key}
+		// This month: rate + the underlying return amount for context.
+		if ret := bucketReturn(row, key); ret != nil {
+			out.Month.Amount = ret.String()
+		}
+		if r, ok := monthRate(row, key); ok {
+			out.Month.Defined = true
+			out.Month.Percent = r * 100
+		}
+		// Trailing-12: geometric compound Π(1+rₘ)−1 over in-window months with a
+		// defined base; a month with a zero/absent base contributes no factor
+		// (INV-FINANCE-31). Undefined when no month in the window qualifies.
+		product := 1.0
+		n := 0
+		for i := range series {
+			s := &series[i]
+			if s.YearMonth.Before(lo) || s.YearMonth.After(upto) {
+				continue
+			}
+			if r, ok := monthRate(s, key); ok {
+				product *= 1 + r
+				n++
+			}
+		}
+		if n > 0 {
+			out.Trailing.Defined = true
+			out.Trailing.Percent = (product - 1) * 100
+		}
+		return out
+	}
+
+	perf := pdf.InvestmentPerf{Defined: true, Total: row1("total")}
+	for _, k := range riskKeys {
+		perf.ByRisk = append(perf.ByRisk, row1(k))
+	}
+	for _, k := range subtypeKeys {
+		perf.ByType = append(perf.ByType, row1(k))
+	}
+	return perf
 }
 
 // resilienceHorizonMonths caps the Fund Resilience depletion simulation at ~100

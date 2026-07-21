@@ -99,6 +99,37 @@ type Ratio struct {
 	Percent float64
 }
 
+// InvestmentPerf is the investment-performance block (ADR-0048 amendment):
+// investment return read as a *rate* (return ÷ opening invested capital), three
+// cuts — Total, by risk profile, by instrument type — each a this-month rate
+// beside its trailing-12-month compound. Derived at render time from the report
+// series; never materialized. Defined=false suppresses the block (the household
+// held no investments in the reported month).
+type InvestmentPerf struct {
+	Defined bool
+	Total   PerfRow
+	ByRisk  []PerfRow // low, medium, high — undefined-rate rows kept (labelled "—")
+	ByType  []PerfRow // stock, mutual_fund, bond, gold, time_deposit
+}
+
+// PerfRow is one investment-performance line for a bucket: its this-month rate
+// and its trailing-12 compound rate. Key is the bucket token ("total", a risk
+// level, or a subtype) that copy resolves to a localized label.
+type PerfRow struct {
+	Key      string
+	Month    Rate // this month: return ÷ prior-month opening value
+	Trailing Rate // trailing-12 geometric compound of in-window monthly rates
+}
+
+// Rate is one investment-return rate cell. Defined=false renders "—" (opening
+// base zero or absent — INV-FINANCE-30). Amount is the underlying reporting-
+// currency return for context ("" when not shown, e.g. the trailing cell).
+type Rate struct {
+	Defined bool
+	Percent float64
+	Amount  string
+}
+
 // Resilience is the Fund Resilience runway: how many months the investment pool
 // would last if active income stopped, or Indefinite when it never depletes
 // within the ~100-year horizon (financial independence reached).
@@ -123,5 +154,6 @@ type Input struct {
 	CashFlow          *CashFlow // nil on the baseline month
 	FxRates           []FxRate
 	Trend             []TrendPoint
-	Stats             Stats // financial-health panel (ADR-0048); zero value = reserved em-dash panel
+	Stats             Stats          // financial-health panel (ADR-0048); zero value = reserved em-dash panel
+	InvestmentPerf    InvestmentPerf // investment-performance rates (ADR-0048 amendment); Defined=false suppresses
 }

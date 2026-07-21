@@ -22,7 +22,13 @@ friends) or **institutional** (formal — mortgage, bank loan, outstanding credi
 
 **Receivable**: Money owed *to* the Household by another party.
 
-**Investment**: A position in a tradable or fixed-income instrument. Subtypes below.
+**Investment**: A position in a tradable or fixed-income instrument. Subtypes below. Every Investment
+also carries a **Risk profile** — `low | medium | high`, a `NOT NULL` forced choice on create (no
+default, so the Household commits deliberately; mutable after). It is the Household's own read of the
+position's risk, orthogonal to `subtype`, and is a first-class reporting dimension (the investment
+risk pie, and the investment-performance breakdown on the PDF report). Contrast the free-form,
+optional, at-most-one **Tag** (a *chosen* grouping, default Untagged) — a Risk profile is mandatory,
+closed-enum, and every Investment has exactly one.
 
 ### Investment subtypes
 
@@ -301,6 +307,19 @@ the metric, and both are named to keep them apart:
   expenses and passive income both inflate by the inflation rate each month. Reported in **months**,
   or **"indefinite"** when the pool never depletes (the household has effectively reached financial
   independence). The living-expenses figure is the derived residual, and the statistic says so.
+
+**Investment performance**: A separate PDF-report block ([[adr-0048]] amendment) reading investment
+**return as a rate** rather than a rupiah figure — return over the capital it was earned on. A
+bucket's rate = its return ÷ its **opening** (prior-month) invested value; opening (not average or
+closing) capital, "return on what you started the month holding". Shown three ways — **total**, by
+**Risk profile** (`low/medium/high`), by **instrument type** (`subtype`) — each paired with its
+**trailing-12-month** figure. Both partitions are complete (both attributes are `NOT NULL` on every
+Investment), so the *amounts* reconcile to the total; the *rates* do not sum (each divides by its own
+base) — deliberate. The trailing-12 rate is the **geometric compound** `Π(1 + rₘ) − 1` of in-window
+monthly rates, not their arithmetic mean (which overstates a compounding series). A bucket with a
+zero/absent opening base (first month held, or fully exited) has an **undefined** rate, rendered "—".
+This is a *money-weighted opening-base approximation*, not a textbook IRR/time-weighted return — the
+month-granularity snapshot model carries no intra-month dated cash flows, and the domain says so.
 
 ### Backup and restore
 

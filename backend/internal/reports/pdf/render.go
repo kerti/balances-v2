@@ -45,12 +45,13 @@ var (
 )
 
 const (
-	marginL = 18.0
-	marginT = 16.0
-	marginR = 18.0
-	marginB = 16.0
-	valueW  = 46.0 // right-aligned amount column width (mm)
-	lineH   = 5.0
+	marginL  = 18.0
+	marginT  = 16.0
+	marginR  = 18.0
+	marginB  = 16.0
+	valueW   = 46.0 // right-aligned amount column width (mm)
+	lineH    = 5.0
+	perfColW = 26.0 // investment-performance rate column width (mm), two per row
 )
 
 type doc struct {
@@ -99,7 +100,8 @@ func Render(in Input) ([]byte, error) {
 		d.receivables()
 	}
 	if d.hasInvestments() {
-		d.pdf.AddPage() // group 5 — investments (market-valued portfolio)
+		d.pdf.AddPage()           // group 5 — investments (market-valued portfolio)
+		d.investmentPerformance() // performance rates lead, then the itemized portfolio
 		d.investments()
 	}
 	d.fxRates()
@@ -403,6 +405,88 @@ func (d *doc) resilienceValue() string {
 		parts = append(parts, fmt.Sprintf(unit, num(months)))
 	}
 	return strings.Join(parts, " ")
+}
+
+// investmentPerformance renders the investment-performance block (ADR-0048
+// amendment): the month's investment return as a *rate* — this month beside its
+// trailing-12 compound — in three cuts (all investments, by risk profile, by
+// instrument type). Each data row carries the muted this-month return amount for
+// context. Leads group 5, ahead of the itemized portfolio; suppressed when the
+// household held no investments (Defined=false).
+func (d *doc) investmentPerformance() {
+	p := d.in.InvestmentPerf
+	if !p.Defined {
+		return
+	}
+	d.sectionTitle(d.c.investmentPerf)
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, d.c.perfNote, "", "L", false)
+	d.pdf.Ln(2)
+
+	d.perfHeader()
+	d.perfRow(d.c.perfTotal, p.Total, true)
+
+	d.pdf.Ln(1)
+	d.subGroup(d.c.perfByRisk)
+	for _, r := range p.ByRisk {
+		d.perfRow(riskLabel(d.in.Locale, r.Key), r, false)
+	}
+
+	d.pdf.Ln(1)
+	d.subGroup(d.c.perfByType)
+	for _, r := range p.ByType {
+		d.perfRow(subtypeLabel(d.in.Locale, r.Key), r, false)
+	}
+}
+
+// perfHeader draws the two right-aligned column captions ("This month" / "12-mo")
+// over the rate columns.
+func (d *doc) perfHeader() {
+	d.pdf.SetFont("Geist", "", 7)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.CellFormat(d.w-2-2*perfColW, lineH, "", "", 0, "L", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.c.perfColMonth, "", 0, "R", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.c.perfColTrailing, "", 1, "R", false, 0, "")
+}
+
+// perfRow draws one performance line: label + two rate cells (this month, 12-mo),
+// then a muted this-month return-amount line beneath. The total row is bold.
+func (d *doc) perfRow(label string, r PerfRow, bold bool) {
+	d.keepTogether(12)
+	style := ""
+	if bold {
+		style = "B"
+	}
+	const indent = 2.0
+	d.pdf.SetFont("Geist", style, 9)
+	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
+	d.pdf.SetX(d.x0 + indent)
+	d.pdf.CellFormat(d.w-indent-2*perfColW, lineH, label, "", 0, "L", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.perfPct(r.Month), "", 0, "R", false, 0, "")
+	d.pdf.CellFormat(perfColW, lineH, d.perfPct(r.Trailing), "", 1, "R", false, 0, "")
+	if r.Month.Amount != "" && !decAmt(r.Month.Amount).IsZero() {
+		d.pdf.SetFont("Geist", "", 7)
+		d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+		d.pdf.SetX(d.x0 + indent + 3)
+		d.pdf.CellFormat(d.w-indent-3, 3.6, fmt.Sprintf(d.c.perfAmount, d.money(r.Month.Amount)), "", 1, "L", false, 0, "")
+	}
+}
+
+// perfPct formats a rate cell: a locale-aware signed percentage to one decimal,
+// or an em-dash when the rate is undefined (opening base zero/absent —
+// INV-FINANCE-30).
+func (d *doc) perfPct(r Rate) string {
+	if !r.Defined {
+		return "—"
+	}
+	sign := "+"
+	if r.Percent < 0 {
+		sign = "−"
+	}
+	return sign + moneyfmt.FormatNumber(fmt.Sprintf("%.1f", math.Abs(r.Percent)), d.in.Locale) + "%"
 }
 
 func (d *doc) assets() {
