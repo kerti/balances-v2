@@ -137,6 +137,81 @@ func TestBuildInvestmentPerformance_Placement(t *testing.T) {
 	}
 }
 
+// Every bucket (all 5 subtypes + all 3 risk levels) carries a return and an
+// opening base, so each bucketReturn/bucketValue key is exercised and every
+// this-month rate resolves. Guards the full breakdown, not just the buckets a
+// sparse fixture happens to populate.
+// covers: INV-FINANCE-29, INV-FINANCE-30
+func TestBuildInvestmentPerformance_AllBuckets(t *testing.T) {
+	jan, feb := ym(2026, time.January), ym(2026, time.February)
+	series := []db.MonthlyReport{
+		{
+			YearMonth:     jan,
+			NwInvestments: dec("900"),
+			// Opening bases: 5 subtypes × 180 = 900; 3 risks × 300 = 900.
+			InvestmentValueStock: decp("180"), InvestmentValueMutualFund: decp("180"),
+			InvestmentValueBond: decp("180"), InvestmentValueGold: decp("180"),
+			InvestmentValueTimeDeposit: decp("180"),
+			InvestmentValueLow:         decp("300"), InvestmentValueMedium: decp("300"), InvestmentValueHigh: decp("300"),
+		},
+		{
+			YearMonth:             feb,
+			NwInvestments:         dec("990"),
+			InvestmentReturnTotal: decp("90"),
+			// Each subtype return 18 (→10% on its 180 base); each risk return 30 (→10% on 300).
+			InvestmentReturnStock: decp("18"), InvestmentReturnMutualFund: decp("18"),
+			InvestmentReturnBond: decp("18"), InvestmentReturnGold: decp("18"),
+			InvestmentReturnTimeDeposit: decp("18"),
+			InvestmentReturnLow:         decp("30"), InvestmentReturnMedium: decp("30"), InvestmentReturnHigh: decp("30"),
+		},
+	}
+	perf := buildInvestmentPerformance(&series[1], series)
+	if !perf.Defined {
+		t.Fatal("perf.Defined = false, want true")
+	}
+	assertRate(t, "total", perf.Total.Month, 10)
+	for _, r := range perf.ByRisk {
+		assertRate(t, "risk "+r.Key, r.Month, 10)
+	}
+	for _, r := range perf.ByType {
+		assertRate(t, "type "+r.Key, r.Month, 10)
+	}
+}
+
+// The trailing figures are bounded to the 12-month window (the reported month +
+// 11 priors), and a month whose opening base is zero contributes no factor to
+// either the return compound or the placement average.
+// covers: INV-FINANCE-31, INV-FINANCE-32
+func TestBuildInvestmentPerformance_WindowBoundedAndZeroBaseSkipped(t *testing.T) {
+	// 14 months; reported = the last. The two earliest fall outside the window;
+	// Feb-2025's pool is 0, so Mar-2025's opening base is 0 and is skipped.
+	var series []db.MonthlyReport
+	base := ym(2025, time.January)
+	for i := 0; i < 14; i++ {
+		pool := "1000"
+		if i == 1 {
+			pool = "0"
+		}
+		r := db.MonthlyReport{YearMonth: base.AddDate(0, i, 0), NwInvestments: dec(pool)}
+		if i > 0 {
+			r.InvestmentReturnTotal = decp("100")
+			r.InvestmentPlacement = decp("50")
+		}
+		series = append(series, r)
+	}
+	perf := buildInvestmentPerformance(&series[13], series)
+	if !perf.Total.Trailing.Defined {
+		t.Error("total trailing should be defined (in-window months qualify)")
+	}
+	if !perf.HasPlacement || !perf.Placement.Trailing.Defined {
+		t.Error("placement trailing should be defined")
+	}
+	// In-window qualifying months each rate 100/1000 = 10%; the zero-base month and
+	// the out-of-window months are excluded, so the placement trailing % is a clean
+	// 50/1000 = 5% average, not diluted by the skipped months.
+	assertRate(t, "placement trailing (window-bounded, zero-base skipped)", perf.Placement.Trailing, 5)
+}
+
 // No investments in the reported month → the whole block is suppressed.
 // covers: INV-FINANCE-30
 func TestBuildInvestmentPerformance_SuppressedWithoutInvestments(t *testing.T) {

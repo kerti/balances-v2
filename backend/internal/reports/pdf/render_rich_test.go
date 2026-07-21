@@ -65,6 +65,24 @@ func richInput() Input {
 				Months:      12,
 			},
 		},
+		InvestmentPerf: InvestmentPerf{
+			Defined: true,
+			Total:   PerfRow{Key: "total", Month: Rate{Defined: true, Percent: 1.2, Amount: "3400000"}, Trailing: Rate{Defined: true, Percent: 9.8}},
+			ByRisk: []PerfRow{
+				{Key: "low", Month: Rate{Defined: true, Percent: 0.5, Amount: "1100000"}, Trailing: Rate{Defined: true, Percent: 4.2}},
+				{Key: "medium"}, // undefined → em-dash both cells
+				{Key: "high", Month: Rate{Defined: true, Percent: -2.1, Amount: "-900000"}, Trailing: Rate{Defined: true, Percent: 6.0}},
+			},
+			ByType: []PerfRow{
+				{Key: "stock", Month: Rate{Defined: true, Percent: 3.0, Amount: "2000000"}, Trailing: Rate{Defined: true, Percent: 12.0}},
+				{Key: "mutual_fund", Month: Rate{Defined: true, Percent: 1.0, Amount: "800000"}, Trailing: Rate{Defined: true, Percent: 8.0}},
+				{Key: "bond", Month: Rate{Defined: true, Percent: 0.4, Amount: "400000"}, Trailing: Rate{Defined: true, Percent: 5.0}},
+				{Key: "gold"}, // month + trailing undefined (never held) → em-dash, no muted amount line
+				{Key: "time_deposit", Month: Rate{Defined: true, Percent: 0.3, Amount: "300000"}, Trailing: Rate{Defined: true, Percent: 3.6}},
+			},
+			HasPlacement: true,
+			Placement:    PerfRow{Key: "placement", Month: Rate{Defined: true, Percent: 0.8, Amount: "8000000"}, Trailing: Rate{Defined: true, Percent: 6.0, Amount: "5500000"}},
+		},
 	}
 }
 
@@ -111,6 +129,45 @@ func TestRenderRichReportEN(t *testing.T) {
 	in.Locale = "en-GB"
 	if _, err := Render(in); err != nil {
 		t.Fatalf("en-GB rich Render: %v", err)
+	}
+}
+
+// The investment-performance block's edge states must render without panicking:
+// suppression (Defined=false), all-undefined rates (em-dash cells with no muted
+// amount line), a skipped placement row (HasPlacement=false), and a placement row
+// with a negative this-month rate + an undefined trailing cell / blank trailing
+// amount (perfPct em-dash + moneyOrBlank("")).
+func TestRenderInvestmentPerfEdges(t *testing.T) {
+	// Defined=false but investments present → the block early-returns (suppressed).
+	in := richInput()
+	in.InvestmentPerf = InvestmentPerf{Defined: false}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("suppressed perf Render: %v", err)
+	}
+
+	// All rates undefined (em-dash), placement row skipped.
+	in = richInput()
+	in.InvestmentPerf = InvestmentPerf{
+		Defined: true,
+		Total:   PerfRow{Key: "total"},
+		ByRisk:  []PerfRow{{Key: "low"}, {Key: "medium"}, {Key: "high"}},
+		ByType:  []PerfRow{{Key: "stock"}, {Key: "mutual_fund"}, {Key: "bond"}, {Key: "gold"}, {Key: "time_deposit"}},
+		// HasPlacement false → placement row skipped.
+	}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("undefined perf Render: %v", err)
+	}
+
+	// Placement with a negative this-month rate and an undefined trailing cell +
+	// blank trailing amount.
+	in = richInput()
+	in.InvestmentPerf.Placement = PerfRow{
+		Key:      "placement",
+		Month:    Rate{Defined: true, Percent: -1.5, Amount: "-2000000"},
+		Trailing: Rate{}, // undefined %, blank amount
+	}
+	if _, err := Render(in); err != nil {
+		t.Fatalf("edge placement Render: %v", err)
 	}
 }
 

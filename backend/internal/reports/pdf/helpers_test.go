@@ -110,6 +110,20 @@ func TestSubtypeLabel(t *testing.T) {
 	}
 }
 
+func TestRiskLabel(t *testing.T) {
+	if got := riskLabel("id-ID", "high"); got != "Risiko tinggi" {
+		t.Errorf("id-ID high: got %q", got)
+	}
+	// Unknown locale falls back to en-GB.
+	if got := riskLabel("fr-FR", "low"); got != "Low risk" {
+		t.Errorf("fr-FR fallback: got %q", got)
+	}
+	// Unknown risk passes through verbatim.
+	if got := riskLabel("en-GB", "extreme"); got != "extreme" {
+		t.Errorf("unknown risk: got %q", got)
+	}
+}
+
 func TestJointLabel(t *testing.T) {
 	if got := JointLabel("id-ID"); got != "Bersama" {
 		t.Errorf("id-ID joint: got %q", got)
