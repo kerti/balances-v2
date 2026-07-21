@@ -101,6 +101,15 @@ body {
   --chart-3: oklch(0.457 0.24 277.023);
   --chart-4: oklch(0.673 0.182 276.935);
   --chart-5: oklch(0.785 0.115 274.713);
+  /* Dashboard net-worth chart (ADR-0001 Presentation). Net worth is drawn as
+     a neutral graphite area — the authoritative aggregate — which frees the
+     hue wheel for a CVD-safe categorical triple over its three components
+     (assets / liabilities / investments, investments warm). Validated with the
+     dataviz palette script against the card surface, light mode. */
+  --chart-networth: #44403c;
+  --chart-assets: #2a78d6;
+  --chart-liabilities: #c43e70;
+  --chart-investments: #bf6a00;
   --radius: 0.625rem;
   --sidebar: oklch(0.955 0.001 106.423);
   --sidebar-foreground: oklch(0.147 0.004 49.25);
@@ -137,6 +146,12 @@ body {
   --chart-3: oklch(0.511 0.262 276.966);
   --chart-4: oklch(0.785 0.115 274.713);
   --chart-5: oklch(0.87 0.065 274.039);
+  /* Net-worth chart, dark variants — graphite inverts to a light warm grey;
+     the triple is lightened for the dark surface, re-validated (dark mode). */
+  --chart-networth: #d6d3cd;
+  --chart-assets: #3987e5;
+  --chart-liabilities: #d55181;
+  --chart-investments: #cc7a0d;
   --sidebar: oklch(0.24 0.006 56.043);
   --sidebar-foreground: oklch(0.985 0.001 106.423);
   --sidebar-primary: oklch(0.673 0.182 276.935);

@@ -25,6 +25,16 @@ type Props = {
   // ends at the last real value instead of cratering to 0) and labels that
   // point with a Sold/Matured marker (#25). Non-investment groups omit it.
   status?: string | null;
+  // Optional secondary composition lines drawn beneath the primary area
+  // (dashboard net-worth view, ADR-0001 Presentation). Detail screens omit it.
+  extraSeries?: {
+    key: string;
+    label: string;
+    color: string;
+    snapshots: SnapshotLike[];
+  }[];
+  primaryLabel?: string;
+  primaryColor?: string;
 };
 
 // Lazy boundary so recharts + the shadcn chart wrapper land in a
@@ -33,7 +43,15 @@ type Props = {
 // even request the chunk on empty data.
 const SnapshotChartImpl = lazyWithReload(() => import("./SnapshotChartImpl"));
 
-export function SnapshotChart({ snapshots, currency, costSeries, status }: Props) {
+export function SnapshotChart({
+  snapshots,
+  currency,
+  costSeries,
+  status,
+  extraSeries,
+  primaryLabel,
+  primaryColor,
+}: Props) {
   if (snapshots.length === 0) return null;
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
@@ -42,6 +60,9 @@ export function SnapshotChart({ snapshots, currency, costSeries, status }: Props
         currency={currency}
         costSeries={costSeries}
         status={status}
+        extraSeries={extraSeries}
+        primaryLabel={primaryLabel}
+        primaryColor={primaryColor}
       />
     </Suspense>
   );

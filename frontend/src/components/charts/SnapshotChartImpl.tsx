@@ -24,14 +24,40 @@ type CostPoint = {
   cost: number;
 };
 
+// A secondary composition line drawn beneath the primary area (dashboard
+// net-worth view, ADR-0001 Presentation). Each carries its own snapshot series
+// over the same month domain as `snapshots`; `key` is the data/config key,
+// `color` a CSS var. Detail screens pass none and are visually unchanged.
+type ExtraSeries = {
+  key: string;
+  label: string;
+  color: string;
+  snapshots: SnapshotLike[];
+};
+
 type Props = {
   snapshots: SnapshotLike[];
   currency: string;
   costSeries?: CostPoint[];
   status?: string | null;
+  extraSeries?: ExtraSeries[];
+  // Legend label for the primary area. Defaults to the generic "Amount"
+  // (detail screens); the dashboard passes "Net worth" so the legend reads
+  // clearly beside the composition lines.
+  primaryLabel?: string;
+  // Colour of the primary area. Defaults to --chart-1 (detail screens); the
+  // dashboard passes the neutral graphite so the coloured composition lines
+  // read against it.
+  primaryColor?: string;
 };
 
-function toChartData(snapshots: SnapshotLike[], costSeries?: CostPoint[]) {
+type ChartPoint = { month: string; amount: number; cost?: number } & Record<string, unknown>;
+
+function toChartData(
+  snapshots: SnapshotLike[],
+  costSeries?: CostPoint[],
+  extraSeries?: ExtraSeries[],
+) {
   // Lookups by year_month prefix — caller passes either the bare "YYYY-MM"
   // or the API's "YYYY-MM-DDT..." shape, both reduce to the same key via
   // slice(0, 7).
@@ -43,6 +69,13 @@ function toChartData(snapshots: SnapshotLike[], costSeries?: CostPoint[]) {
   for (const c of costSeries ?? []) {
     costByMonth.set(c.year_month.slice(0, 7), c.cost);
   }
+  // Each extra series gets its own month→value lookup + carry-forward cursor,
+  // keyed by the series key so points carry one field per line.
+  const extras = (extraSeries ?? []).map((s) => {
+    const byMonth = new Map<string, number>();
+    for (const p of s.snapshots) byMonth.set(p.year_month.slice(0, 7), Number(p.amount));
+    return { key: s.key, byMonth, last: 0 };
+  });
 
   const months = [...amountByMonth.keys()].sort();
   if (months.length === 0) return [];
@@ -58,18 +91,30 @@ function toChartData(snapshots: SnapshotLike[], costSeries?: CostPoint[]) {
     if (amountByMonth.has(ym)) lastAmount = amountByMonth.get(ym)!;
     if (costByMonth.has(ym)) lastCost = costByMonth.get(ym);
     const [y, m] = ym.split("-").map(Number);
-    const point: { month: string; amount: number; cost?: number } = {
+    const point: ChartPoint = {
       month: formatChartMonth(new Date(y, m - 1, 1)),
       amount: lastAmount,
     };
     if (hasCost && lastCost !== undefined) point.cost = lastCost;
+    for (const e of extras) {
+      if (e.byMonth.has(ym)) e.last = e.byMonth.get(ym)!;
+      point[e.key] = e.last;
+    }
     return point;
   });
 }
 
-export default function SnapshotChartImpl({ snapshots, currency, costSeries, status }: Props) {
+export default function SnapshotChartImpl({
+  snapshots,
+  currency,
+  costSeries,
+  status,
+  extraSeries,
+  primaryLabel,
+  primaryColor,
+}: Props) {
   const { t } = useTranslation("dashboard");
-  const data = toChartData(snapshots, costSeries);
+  const data = toChartData(snapshots, costSeries, extraSeries);
 
   // A terminated position carries a truthful 0-value close snapshot at its
   // termination month (#25). Drawn as-is the value line craters to 0, which
@@ -90,12 +135,14 @@ export default function SnapshotChartImpl({ snapshots, currency, costSeries, sta
       : null;
 
   const hasCost = (costSeries ?? []).length > 0;
+  const extras = extraSeries ?? [];
+  const hasExtras = extras.length > 0;
   // ChartConfig is built per-render so the legend label picks up the active
   // locale. Cheap — single key, no per-row computation.
   const chartConfig = {
     amount: {
-      label: t("chart.amountLegend"),
-      color: "var(--chart-1)",
+      label: primaryLabel ?? t("chart.amountLegend"),
+      color: primaryColor ?? "var(--chart-1)",
     },
     ...(hasCost && {
       cost: {
@@ -106,6 +153,10 @@ export default function SnapshotChartImpl({ snapshots, currency, costSeries, sta
         color: "var(--muted-foreground)",
       },
     }),
+    // Composition lines (dashboard net-worth view) carry their own label +
+    // color, so `--color-<key>` resolves for both the line and its legend/
+    // tooltip swatch.
+    ...Object.fromEntries(extras.map((s) => [s.key, { label: s.label, color: s.color }])),
   } satisfies ChartConfig;
 
   return (
@@ -176,6 +227,21 @@ export default function SnapshotChartImpl({ snapshots, currency, costSeries, sta
             isAnimationActive={false}
           />
         )}
+        {extras.map((s) => (
+          // Composition lines sit beneath the net-worth area — thin, unfilled,
+          // dotless — so the headline area reads first; they are context, not
+          // co-equal series (ADR-0001 Presentation).
+          <Line
+            key={s.key}
+            dataKey={s.key}
+            type="monotone"
+            stroke={`var(--color-${s.key})`}
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 3 }}
+            isAnimationActive={false}
+          />
+        ))}
         {marker && (
           <ReferenceDot
             x={marker.month}
@@ -198,7 +264,7 @@ export default function SnapshotChartImpl({ snapshots, currency, costSeries, sta
             }}
           />
         )}
-        {hasCost && <ChartLegend content={<ChartLegendContent />} />}
+        {(hasCost || hasExtras) && <ChartLegend content={<ChartLegendContent />} />}
       </AreaChart>
     </ChartContainer>
   );
