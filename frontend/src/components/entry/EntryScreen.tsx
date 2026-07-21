@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
-import { Wallet, RotateCcw } from "lucide-react";
+import { Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,9 +12,13 @@ import { errorMessage } from "@/lib/errorMessage";
 import { ownershipLabel } from "@/lib/ownership";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBulkEntry";
+import { EntryRowDesktop } from "@/components/entry/EntryRowDesktop";
+import { EntryRowMobile } from "@/components/entry/EntryRowMobile";
 import type { EntryGroupConfig } from "@/components/entry/groups";
 import type { EntryFieldValues } from "@/components/entry/shapes";
+import type { EntryRowView, EntryWhen } from "@/components/entry/entryRow";
 
 // EntryScreen is the bulk monthly-entry view for one amount-only group
 // (ADR-0046): one screen listing every position eligible for a chosen month,
@@ -49,6 +53,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   const save = useBulkSaveSnapshots(config);
   const { data: members } = useHouseholdMembers();
   const { data: me } = useSession();
+  // ADR-0050: a single 768px boolean picks which row renderer mounts — one tree
+  // in the DOM, one set of testids. All behaviour below stays in this container.
+  const isMobile = useIsMobile();
 
   // Guarded setState-during-render (no useEffect — lint bans setState-in-effect,
   // ADR-0041 follow-up): when the month changes, re-seed the as-of default,
@@ -125,99 +132,63 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     });
   }
 
+  // The renderer differs only in leaf layout (ADR-0050); both take the same
+  // presentation-neutral EntryRowView and the same field-change/reset callbacks.
+  const RowRenderer = isMobile ? EntryRowMobile : EntryRowDesktop;
+
+  // rowView projects one EntryRow into the presentation-neutral shape both
+  // renderers consume — resolving the container-only knowledge (edits, members,
+  // the chosen month, the shape's derived value) into plain display data.
+  function rowView(row: EntryRow): EntryRowView {
+    const fieldValues: EntryFieldValues = {};
+    for (const f of shape.fields) fieldValues[f.key] = valueFor(row, f.key);
+
+    let derived: string | null = null;
+    if (shape.derived) {
+      const d = shape.derived(mergedValues(row));
+      derived = d.valid ? formatCurrency(d.amount, row.currency) : "—";
+    }
+
+    let when: EntryWhen;
+    if (row.carried_from === yearMonth) {
+      // A snapshot already exists for the chosen month — the prefill IS this
+      // month's value, so editing it overwrites (upsert).
+      when = { kind: "overwrite" };
+    } else if (row.carried_from) {
+      when = { kind: "carried", month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`) };
+    } else {
+      when = { kind: "none" };
+    }
+
+    return {
+      positionId: row.position_id,
+      displayName: row.display_name,
+      currency: row.currency,
+      dirty: isDirty(row),
+      ownership: ownershipLabel(row.ownership_type, row.sole_owner_user_id, members, me),
+      when,
+      error: Boolean(rowErrors[row.position_id]),
+      fieldValues,
+      derived,
+    };
+  }
+
   function renderRow(row: EntryRow) {
-    const dirty = isDirty(row);
     return (
-      <li
+      <RowRenderer
         key={row.position_id}
-        className="flex items-center gap-3 py-2"
-        data-testid={`${tid}-entry-row-${row.position_id}`}
-      >
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            {dirty && (
-              <span
-                className="size-1.5 shrink-0 rounded-full bg-amber-500"
-                data-testid={`${tid}-entry-dirty-${row.position_id}`}
-                aria-hidden
-              />
-            )}
-            <span className="truncate font-medium">{row.display_name}</span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {ownershipLabel(row.ownership_type, row.sole_owner_user_id, members, me)}
-            {" · "}
-            {row.carried_from === yearMonth ? (
-              // A snapshot already exists for the chosen month — the prefill IS
-              // this month's value, so editing it overwrites (upsert). Warn.
-              <span
-                className="text-amber-600"
-                data-testid={`${tid}-entry-overwrite-${row.position_id}`}
-              >
-                {t("bulkEntry.overwritesThisMonth")}
-              </span>
-            ) : row.carried_from ? (
-              t("bulkEntry.carriedFrom", {
-                month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`),
-              })
-            ) : (
-              t("bulkEntry.noHistory")
-            )}
-          </div>
-          {rowErrors[row.position_id] && (
-            <div
-              className="text-xs text-destructive"
-              data-testid={`${tid}-entry-error-${row.position_id}`}
-            >
-              {t(`${copy}.rowError`)}
-            </div>
-          )}
-        </div>
-        <span className="text-xs text-muted-foreground">{row.currency}</span>
-        <div className="flex items-center gap-2">
-          {shape.fields.map((f) => (
-            <Input
-              key={f.key}
-              className={`${f.widthClass}${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
-              inputMode="decimal"
-              aria-label={f.labelKey ? t(`common:${f.labelKey}`) : undefined}
-              placeholder={f.labelKey ? t(`common:${f.labelKey}`) : undefined}
-              value={valueFor(row, f.key)}
-              onChange={(e) =>
-                setEdits((prev) => ({
-                  ...prev,
-                  [row.position_id]: { ...(prev[row.position_id] ?? {}), [f.key]: e.target.value },
-                }))
-              }
-              data-testid={`${tid}-entry-${f.testidSuffix}-${row.position_id}`}
-            />
-          ))}
-          {shape.derived && (
-            <span
-              className="w-28 shrink-0 text-right text-sm tabular-nums text-muted-foreground"
-              data-testid={`${tid}-entry-value-${row.position_id}`}
-            >
-              {(() => {
-                const d = shape.derived!(mergedValues(row));
-                return d.valid ? formatCurrency(d.amount, row.currency) : "—";
-              })()}
-            </span>
-          )}
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={`size-8 shrink-0${dirty ? "" : " invisible"}`}
-          onClick={() => resetRow(row.position_id)}
-          aria-label={t("bulkEntry.undo")}
-          title={t("bulkEntry.undo")}
-          disabled={!dirty}
-          data-testid={`${tid}-entry-undo-${row.position_id}`}
-        >
-          <RotateCcw className="size-4" />
-        </Button>
-      </li>
+        view={rowView(row)}
+        shape={shape}
+        tid={tid}
+        copy={copy}
+        onFieldChange={(fieldKey, value) =>
+          setEdits((prev) => ({
+            ...prev,
+            [row.position_id]: { ...(prev[row.position_id] ?? {}), [fieldKey]: value },
+          }))
+        }
+        onReset={() => resetRow(row.position_id)}
+      />
     );
   }
 

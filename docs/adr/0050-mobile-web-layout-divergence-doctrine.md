@@ -94,8 +94,11 @@ one-off:
 
 - **Wide table → stacked cards.** One card per row; label→value pairs stacked; the primary value
   promoted to the card headline. (details ×10, Income, Tags, Fx/Inflation.)
-- **Cramped horizontal input row → stacked fields.** Each tab-stop on its own full-width line; the
-  computed/derived value as a footer line; row actions in the footer. (the three entry shapes.)
+- **Cramped horizontal input row → stacked fields.** Each tab-stop on its own full-width line (its
+  label shown when the shape names one); the computed/derived value and the row actions in a footer.
+  (the three entry shapes.) **Proven** on the amount-only entry slice ([[adr-0046]] `## Presentation /
+  UX`, #502): laid out cleanly as written, so the transform is no longer provisional; the qty×price
+  and accrued shapes reuse the same `EntryRowMobile`/`EntryRowDesktop` split.
 - **Multi-column dashboard/hub grid → single-column stack**, charts full-width, secondary cards
   below the fold. (Dashboard + three hubs.)
 

@@ -300,3 +300,58 @@ test(
     await expect(page.getByText(name)).toHaveCount(0);
   },
 );
+
+// ADR-0050 S1 (#502): the amount-only entry row diverges its mobile layout via
+// the runtime pick-one renderer — one tree in the DOM, same testids at both
+// widths. This asserts the CORRECT renderer mounts per viewport and the value
+// stays reachable: at <768px the stacked EntryRowMobile (full-width h-11 input,
+// the ≥44px tap floor), at ≥768px the cramped EntryRowDesktop (w-36). Deep
+// per-shape behaviour is already covered by the amount-only journeys above.
+// covers: INV-JOURNEYS-05
+test(
+  "asset entry row diverges renderer at the 768px boundary",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const account = `E2E divergence account ${Date.now()}`;
+
+    await page.goto("/assets/bank-accounts");
+    await page.getByRole("button", { name: "New bank account" }).first().click();
+    const acctDialog = page.getByRole("dialog");
+    await acctDialog.getByLabel("Display name").fill(account);
+    await acctDialog.getByLabel("Bank name").fill("E2E Bank");
+    await acctDialog.getByLabel("Account number").fill("1234567890");
+    await acctDialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
+
+    // --- Mobile width: the stacked renderer mounts, value input is a full-width
+    //     ≥44px target, and no horizontal scroll is needed to reach it. ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/assets");
+    await page.getByTestId("assets-enter-month").click();
+    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    const mobileRow = page.locator("li").filter({ hasText: account });
+    const mobileInput = mobileRow.getByRole("textbox");
+    await expect(mobileInput).toHaveClass(/h-11/);
+    await expect(mobileInput).toBeInViewport();
+    const boundingBox = await mobileInput.boundingBox();
+    expect(boundingBox!.height).toBeGreaterThanOrEqual(44);
+
+    // --- Desktop width: reload swaps to the cramped renderer (w-36 input). ---
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.reload();
+    await page.getByTestId("assets-enter-month").click();
+    const desktopRow = page.locator("li").filter({ hasText: account });
+    await expect(desktopRow.getByRole("textbox")).toHaveClass(/w-36/);
+
+    // --- Cleanup ---
+    await page.goto("/assets/bank-accounts");
+    await page
+      .getByRole("row", { name: new RegExp(account) })
+      .getByText(account)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(account)).toHaveCount(0);
+  },
+);

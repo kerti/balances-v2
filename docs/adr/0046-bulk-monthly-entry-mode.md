@@ -128,6 +128,33 @@ scoped to one type, it is one snapshot table and one transaction. The materializ
 ([[adr-0006]]) is regenerated **once after commit** for the affected month (and any later months whose
 carry-forward it changes, via the existing regen reach) — never once per row.
 
+## Presentation / UX
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the entry row **diverges its mobile layout**
+from the web layout: the cramped horizontal input row does not survive the squeeze for the
+non-technical phone audience [[adr-0025]] centres. `EntryScreen` stays the single source of truth —
+it owns all data, dirty-tracking, per-row field state, batch validation, and the atomic Save — and
+delegates only the **row** to one of two renderers, picked at runtime by `useIsMobile()` (the single
+768px boolean); one tree is ever in the DOM. Both consume the same presentation-neutral row
+projection (`EntryRowView`) and the same `onFieldChange`/`onReset` callbacks, and expose the **same
+`data-testid`s** for the same semantic elements, so the entry vitest/E2E assertions run against either
+renderer unchanged. No logic forks into a renderer.
+
+- **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
+  and computed value in a cramped horizontal group right, the reset action trailing.
+- **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
+  fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
+  its own **full-width** line (its label shown when the shape names one), then a footer carrying the
+  computed value and the row actions. The value input and the reset control meet the a11y floor
+  (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
+  read or edit the primary value.
+
+This slice is **amount-only** (Asset / Liability / Receivable — one value field, no computed line). It
+establishes the reusable `EntryRowDesktop`/`EntryRowMobile` split and the shared `EntryRowView`
+projection that the qty×price and accrued shapes extend without re-forking the container. A `@smoke`
+Playwright spec asserts the correct renderer mounts at mobile vs desktop width and the value stays
+reachable; deep per-shape behaviour stays in the existing amount-only journeys.
+
 ## Considered alternatives
 
 - **One screen, every position, heterogeneous rows.** The literal reading of the finding. Fights the
