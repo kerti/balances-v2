@@ -20,8 +20,8 @@ Read these first, in order:
 ## Where we are now
 
 M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
-2026-07-06. CI is green. **`v0.9.0-alpha.1` is the latest preview release** and, promoted manually
-(ADR-0049), **demo's current release too** on the `preview`/`demo` environments
+2026-07-06. CI is green. **`v0.9.0-alpha.2` is the latest preview release** and, promoted manually
+(ADR-0049), **demo's current release too** — on the `preview`/`demo` environments
 (`https://preview.<personal-domain>` / `https://demo.<personal-domain>`) via the tag-driven pipeline
 (ADR-0029/0030/0031, routing revised by 0049). Single-origin: one
 Fly app per environment (region `sin`) serves the SPA + `/api`; Neon Postgres (per-env branch), Resend
@@ -67,24 +67,24 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
     ADR-0046); deploy target decoupled from release maturity (#489/#491, ADR-0049 — pre-releases →
     `preview`, `demo` manual-promoted); Settings reorg (FX/inflation subpages, Tags → report, #488);
     PDF version footer (#414); month-picker prev/next arrows (#487). Migration: additive (`00012`).
+  - `v0.9.0-alpha.2` — PDF monthly report reorganised into five page groups with the net-worth trend
+    as the headline (#495); earned-income drill-down under Cash Flow — Active/Passive by-source split
+    + coupons on their own line (#496, ADR-0048 PR2, INV-FINANCE-26); investment-performance block —
+    return-as-rate (this-month vs trailing-12) three ways + net placement line, leading the investments
+    page (#499, ADR-0048 amendment, INV-FINANCE-29/30/31/32); dashboard net-worth chart decomposed into
+    assets/liabilities/investments lines (#500); paid-out bond coupons counted as passive cash in the
+    stats (#476/#493, INV-FINANCE-25); demo data reconciled as one household cash flow (#497/#498).
+    Migration: additive (`00013` + `00014`, engine_version → 4).
 
 ## What's next
 
 **M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`); latest
-`v0.9.0-alpha.1` (2026-07-20).** Prioritized by real-user feedback from M7 (not pre-specified).
+`v0.9.0-alpha.2` (2026-07-21).** Prioritized by real-user feedback from M7 (not pre-specified).
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
-`v0.9.0-alpha.1` (#412 closed, ADR-0048). Coupon-payout passive-cash extension (#476, ADR-0048
-amendment, migration `00013`) merged to main 2026-07-20 — **UNRELEASED**, next cut owed. PDF monthly
-report reorganised into five page groups (#495, 2026-07-20) then given an earned-income drill-down —
-Active/Passive by-source split under Cash Flow, coupons as a separate additive line (ADR-0048 PR2
-amendment, INV-FINANCE-26; layout/copy only, no migration) — also **UNRELEASED**. Investment-
-performance block added to the PDF report (2026-07-21): investment return as a *rate* — this month
-beside its trailing-12 compound — in three cuts (total, by risk profile, by instrument type), plus a
-**placement** line (**net** new money = Buys+fresh TD − Sells − cash_out maturity principal, as a share
-of the opening pool; excludes rollovers/fees/coupons; can go negative; trailing-12 = arithmetic avg, not
-compound); leads the investments page (ADR-0048 amendment, migration
-`00014`, engine_version 2→4, INV-FINANCE-29/30/31/32) — also **UNRELEASED**. Next cut owed carries
-`00013` + `00014`.
+`v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail (coupon passive-cash,
+PDF five-group reorg + income drill-down, investment-performance block) shipped in `v0.9.0-alpha.2`.
+Nothing unreleased on `main`.
+
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's
