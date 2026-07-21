@@ -14,7 +14,7 @@ import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBulkEntry";
-import { EntryRowDesktop } from "@/components/entry/EntryRowDesktop";
+import { EntryRowDesktop, EntryRowDesktopHeader } from "@/components/entry/EntryRowDesktop";
 import { EntryRowMobile } from "@/components/entry/EntryRowMobile";
 import type { EntryGroupConfig } from "@/components/entry/groups";
 import type { EntryFieldValues } from "@/components/entry/shapes";
@@ -254,7 +254,10 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                 {t(`${copy}.empty`)}
               </p>
             ) : flat ? (
-              <ul className="divide-y">{rows.map(renderRow)}</ul>
+              <div>
+                {!isMobile && <EntryRowDesktopHeader shape={shape} />}
+                <ul className="divide-y">{rows.map(renderRow)}</ul>
+              </div>
             ) : (
               <div className="space-y-4">
                 {orderedSubtypes.map((subtype) => {
@@ -268,6 +271,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                           ? t(`${config.labelNs}:home.categoryLabel.${meta.labelKey}`)
                           : subtype}
                       </div>
+                      {/* Column headers once per investment type (desktop only;
+                          mobile labels each field inline). Null for amount-only. */}
+                      {!isMobile && <EntryRowDesktopHeader shape={shape} />}
                       <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
                     </div>
                   );

@@ -141,7 +141,12 @@ projection (`EntryRowView`) and the same `onFieldChange`/`onReset` callbacks, an
 renderer unchanged. No logic forks into a renderer.
 
 - **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
-  and computed value in a cramped horizontal group right, the reset action trailing.
+  and computed value in a cramped horizontal group right, the reset action trailing. For a
+  multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels the input columns **once per
+  group** — the inputs' placeholders vanish the moment a value carries forward, so without it a
+  desktop row gives no clue which field is units and which is price. Currency sits in a fixed-width
+  column so the labels line up over their inputs. Amount-only (one unlabelled field) renders no
+  header.
 - **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
   fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
   its own **full-width** line (its label shown when the shape names one), then a footer carrying the
