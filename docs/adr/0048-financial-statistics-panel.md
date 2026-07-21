@@ -434,3 +434,167 @@ Two companion clarity changes shipped alongside the drill-down (owner-facing, `e
   operands the flow ratios divide (per-month averages), so `Cash-Flow == (AvgIncome −
   AvgExpenses)/AvgIncome` and `Passive-Income == AvgPassive/AvgExpenses` recompute by hand; defined
   exactly when the flow ratios are.
+
+## Amendment — 2026-07-21: investment-performance rates on the PDF report
+
+The report reports investment **return** only as a rupiah figure folded into the comprehensive-income
+identity (`ΔNet Worth = Earned Income + Investment Return + Asset Value Change − Living Expenses`), and
+the only rate the panel carries about investments is the Instant-Liquidity **cap** gauge. Neither
+answers "how are the investments *performing*". This adds a dedicated investment-performance block to
+the PDF report: the month's investment return expressed as a **rate**, three ways (total, by **risk
+profile**, by **instrument type**), each paired with its **trailing-12-month** figure so a single
+lumpy month does not read as the trend. The objective is a read on performance, not another rupiah
+tally — so the headline is a rate, with the underlying amount shown muted alongside for context.
+
+### Why a rate, not an amount
+
+A return *amount* ("investments earned Rp 12M this month") is tangible but says nothing about
+performance: Rp 12M is excellent on a Rp 100M pool and dismal on a Rp 3B one. Performance is the
+amount **over the capital it was earned on**. The numerator already exists — `investment_return_total`
+and the per-subtype `investment_return_*` columns are the domain's genuine return
+(`ΔSnapshot_value + cash_paid_out − cash_paid_in`, contributions already netted out, ADR-0003 /
+INV-FINANCE-08/23). The rate is that numerator over an invested-capital **base**.
+
+### Decision
+
+- **Rate = bucket return ÷ bucket _opening_ invested value**, where the opening value is the bucket's
+  invested value at the **prior** month-end (its most-recent snapshot value carried forward, the same
+  net-worth carry-forward rule). Opening (not average or closing) capital: "return on what you started
+  the month holding". Big mid-month contributions distort a period return slightly — accepted for a
+  household read; we do **not** compute a money-weighted IRR (rejected below).
+- **Three cuts, each `this month` and `trailing-12`:**
+  - **Total** — `investment_return_total ÷ opening total investment value`.
+  - **By risk profile** — one row each for `low` / `medium` / `high`. `risk_profile` is a `NOT NULL`
+    forced-choice attribute on every Investment (baseline schema, CHECK `low|medium|high`), so this is
+    a clean partition with no residual bucket.
+  - **By instrument type** — one row each for `stock` / `mutual_fund` / `bond` / `gold` /
+    `time_deposit`. `subtype` is likewise single-valued and total on every Investment.
+- **Trailing-12 is the geometric compound, not the arithmetic mean.** The trailing figure is
+  `Π(1 + rₘ) − 1` over the in-window months (the reported month and the eleven preceding, fewer when
+  history is shorter), where `rₘ` is that month's bucket rate. Averaging monthly rates arithmetically
+  overstates a compounding series (a `+50% / −50%` pair means `−25%`, not `0%`); the panel would lie.
+  A month whose opening base is zero contributes **no factor** (it is skipped, like a zero-flow month
+  in the ratio window), rather than forcing the product to zero.
+- **Amounts add, rates do not.** Reconciliation guards are on the amounts: `Σ_risk return =
+  Σ_subtype return = investment_return_total`. The three *rate* headlines do **not** sum to the total
+  rate (each bucket divides by its own base) — that is correct and expected, and the copy does not
+  imply otherwise.
+- **Zero / absent opening base → "—".** A bucket held for the first month (no prior snapshot → opening
+  base 0), or fully exited, has an undefined rate; it renders an em-dash, never `÷0` or a misleading
+  `0%`. The muted amount still prints when a return exists. Follows the existing undefined-state
+  convention (INV-FINANCE-22).
+
+### Rejected
+
+- **Money-weighted (IRR) or true time-weighted return.** Correct-to-the-textbook but needs
+  intra-month dated cash flows and sub-period linking the month-granularity snapshot model does not
+  carry; opening-base return is the honest approximation at this data resolution, and the ADR labels
+  it as such.
+- **Arithmetic mean of monthly rates** — overstates, see above.
+- **Amount-led with rate secondary.** Reversed after grilling: the stated objective is a performance
+  read, which is the rate; the amount is the context number.
+
+### Mechanism
+
+- **Materialize the amounts + bases, derive the rates at render** — the same boundary as the four
+  ratios (rates are never stored, ADR-0048 "Computed at render time"). Migration `00014` adds, all
+  `numeric(20,4)` nullable (nil on the baseline month, like the existing per-subtype returns):
+  - per-risk return — `investment_return_{low,medium,high}`;
+  - per-instrument-type opening-base source — `investment_value_{stock,mutual_fund,bond,gold,time_deposit}`;
+  - per-risk opening-base source — `investment_value_{low,medium,high}`.
+
+  The total opening base is the existing `nw_investments` (no duplicate column). The `investment_value_*`
+  columns are each month's **closing** invested value per bucket; the render reads the *prior* month's
+  column as the current month's opening base (carry-forward already applied by the engine).
+- **Engine** (`repo/monthly_reports_engine.go`): `reportPosition` gains `riskProfile`; the net-worth
+  pass accumulates per-subtype and per-risk closing value alongside `nw_investments`; the
+  income-statement pass adds a per-risk return tally beside the existing per-subtype one. `engine_version`
+  bumps **2 → 4** (v3 = this breakdown; v4 folds in the placement column below), so the staleness
+  watermark rebuilds every month on deploy (no manual backfill).
+- **Render** (`reports/pdf_input.go` + `pdf/render.go` + `pdf/reportcopy.go`): a new
+  `buildInvestmentPerformance` walks the report series, computing each bucket's this-month rate
+  (return ÷ prior-month base) and trailing-12 compound; a new performance block renders the three
+  small tables (`this month | 12-mo`). Copy strings for `en` + `id`.
+- **No new route, no API-shape change** — the PDF handler renders from the materialized row; the JSON
+  `reportResponse` is left untouched (the per-risk columns are render-only for now).
+
+### Invariants
+
+- **INV-FINANCE-29** (new) — investment return and closing value each reconcile across **both**
+  partitions of the Investment group: `Σ investment_return_{low,medium,high} == investment_return_total`
+  and `Σ investment_value_{low,medium,high} == Σ investment_value_{stock,mutual_fund,bond,gold,time_deposit}
+  == nw_investments`. Both `risk_profile` and `subtype` are `NOT NULL`, single-valued, and total on
+  every Investment, so each is a complete partition with no residual bucket.
+- **INV-FINANCE-30** (new) — a bucket's this-month investment-return rate is `bucket return ÷ bucket
+  opening (prior-month) invested value`; it is **undefined** (renders "—", never `÷0` or `0%`) when
+  the opening base is zero or absent. Extends the undefined-state convention (INV-FINANCE-22) to the
+  performance block.
+- **INV-FINANCE-31** (new) — the trailing-12 investment-return rate is the geometric compound
+  `Π(1 + rₘ) − 1` over in-window months with a defined base (months with a zero/absent opening base
+  contribute no factor), **not** the arithmetic mean of the monthly rates.
+
+### Placement — new money as a share of the pool
+
+The performance block answers "how did the investments *perform*"; it does not say "how much did we
+*put in*". A pool can grow because it appreciated (return) or because the household deployed new money
+(placement) — two different stories the report should keep apart. This adds a **placement** line below
+the performance tables: new money deployed into investments, as a share of the opening pool, so the
+reader sees `pool growth ≈ return% + placement%` for the month.
+
+**Definition — NET new money into the pool.** Placement is a **net monthly capital flow**:
+
+```
+placement = (Buys + fresh TD placements)  −  (Sells + cash_out maturity principal/interest)
+```
+
+all FX-converted. It **excludes**:
+- **TD rollover funding + rolled-to-new maturities** (`rolled_to_new`, issue #27). A rolled TD is funded
+  by its predecessor's maturity — the money **never touches the bank**, it recycles internally. It falls
+  out of *both* legs (the rollover cash_in is not a Buy; the rolled maturity's disposition isn't
+  `cash_out`), so an `auto_renew` TD nets to 0, not a recurring phantom placement.
+- **Cash `fee` inflows** — a cost, not deployment.
+- **Coupons / dividends / distributions** — income *yield*, not principal returning; they do **not** net
+  against placement.
+
+**Net, not gross — corrected from the first cut.** The first version was gross (Buys + placements only)
+and **double-counted recycled capital**: a matured bond that pays out to the bank (`cash_out`) and is
+reinvested the same month into a new bond read as a full fresh placement, even though it is the *same*
+capital cycling through — counted once when the old bond was bought and again on reinvestment. (Illustration:
+a bond of 100 matures paying out to the bank and 100 is reinvested into a new bond the same month,
+alongside a genuine 25 of fresh deployment — gross reads 125, the correct net is 25.) Netting principal
+returns fixes it and is the same rule that makes a **rebalance** (sell A → buy B) net
+to ~0. A **net-withdrawal month** (matured/sold more than deployed) legitimately goes **negative** —
+a real, labelled signal that the household drew down its investments; the rate then reads negative, not
+"—". Because the flow is *monthly net*, a maturity in one month and its reinvestment in the next show as
+a negative then a positive that wash out over the trailing window — the correct behaviour.
+
+**Rate base = the opening pool**, the same denominator as the return rate (chosen so the two compose:
+`return% + placement% ≈ this-month pool growth`, ex-withdrawals). Undefined → "—" on a zero/absent
+opening pool (INV-FINANCE-30's convention).
+
+**Trailing-12 is an arithmetic average, NOT the geometric compound used for return.** Placement is a
+*flow* you average to a "typical month" (`Σplacement / Σopening-pool` for the %, `Σplacement / n` for
+the amount) — it is not a compounding growth rate, so compounding it would be meaningless. This is a
+deliberate, documented asymmetry with the return trailing figure (INV-FINANCE-31): return *compounds*
+because it is growth; placement *averages* because it is a contribution. The code and this ADR say so,
+so nobody "fixes" them into agreement.
+
+- **Mechanism.** Migration `00014` adds one more column, `investment_placement numeric(20,4)` (nil on
+  the baseline). The engine nets two per-month accumulators — `placementByMonth` (Buy cash_in + the
+  synthetic fresh-TD placement cash_in) minus `returnedByMonth` (Sell proceeds + `cash_out`-disposition
+  maturity principal/interest); the rollover-funding loop and cash fees touch neither, coupons/dividends
+  are not netted. `buildInvestmentPerformance` computes the this-month and trailing figures at render;
+  `perfPlacementRow` renders the line (% in both columns, amount muted beneath each). `engine_version →
+  4` (the placement leg is part of v4; its net correction is pre-release, so no separate bump).
+
+### Invariants (placement)
+
+- **INV-FINANCE-32** (new) — `investment_placement` is the month's **net new money into investments**:
+  `(Buys + fresh TD placements) − (Sells + cash_out maturity principal/interest)`, FX-converted. It
+  **excludes** TD rollover funding and rolled-to-new maturities (recycled capital that never touches the
+  bank — off both legs, so an `auto_renew` TD nets to 0), cash `fee` inflows, and coupons/dividends/
+  distributions (income yield, not principal, so they do not net). Reinvesting a matured bond nets to
+  ~0; a net-withdrawal month is **negative** (not "—"). Rendered as a share of the **opening** invested
+  pool (undefined → "—" only on a zero/absent pool), whose trailing-12 figure is the **arithmetic
+  average** (`Σplacement / Σopening-pool`; amount `Σ / n`) — deliberately **not** the geometric compound
+  of the return rate (INV-FINANCE-31), because placement is a flow, not a compounding growth rate.

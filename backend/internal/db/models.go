@@ -285,6 +285,18 @@ type MonthlyReport struct {
 	EarnedIncomeInterestRoutine *decimal.Decimal   `json:"earned_income_interest_routine"`
 	EngineVersion               *int32             `json:"engine_version"`
 	PassiveCouponCash           *decimal.Decimal   `json:"passive_coupon_cash"`
+	InvestmentReturnLow         *decimal.Decimal   `json:"investment_return_low"`
+	InvestmentReturnMedium      *decimal.Decimal   `json:"investment_return_medium"`
+	InvestmentReturnHigh        *decimal.Decimal   `json:"investment_return_high"`
+	InvestmentValueStock        *decimal.Decimal   `json:"investment_value_stock"`
+	InvestmentValueMutualFund   *decimal.Decimal   `json:"investment_value_mutual_fund"`
+	InvestmentValueBond         *decimal.Decimal   `json:"investment_value_bond"`
+	InvestmentValueGold         *decimal.Decimal   `json:"investment_value_gold"`
+	InvestmentValueTimeDeposit  *decimal.Decimal   `json:"investment_value_time_deposit"`
+	InvestmentValueLow          *decimal.Decimal   `json:"investment_value_low"`
+	InvestmentValueMedium       *decimal.Decimal   `json:"investment_value_medium"`
+	InvestmentValueHigh         *decimal.Decimal   `json:"investment_value_high"`
+	InvestmentPlacement         *decimal.Decimal   `json:"investment_placement"`
 }
 
 type MutualFundDetail struct {

@@ -25,7 +25,10 @@ func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 // inputs — the data-driven watermark can't see those, so needsRegen also
 // regenerates when a row's stamp doesn't match. Rows from before the stamp
 // existed read as NULL and always regenerate.
-const reportEngineVersion int32 = 2
+// v4 (migration 00014): per-risk investment return + per-bucket closing
+// investment value + new-money investment_placement materialized for the
+// investment-performance breakdown (ADR-0048 amendment).
+const reportEngineVersion int32 = 4
 
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
@@ -319,6 +322,18 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		StalePositions:              stale,
 		FxRatesUsed:                 fxUsed,
 		MissingFx:                   missingFx,
+
+		// Closing invested value per bucket — set on every month (a stock; seeds
+		// next month's opening rate base). Total is NwInvestments (ADR-0048
+		// amendment / INV-FINANCE-29).
+		InvestmentValueStock:       ptr(rep.investmentValue.stock),
+		InvestmentValueMutualFund:  ptr(rep.investmentValue.mutualFund),
+		InvestmentValueBond:        ptr(rep.investmentValue.bond),
+		InvestmentValueGold:        ptr(rep.investmentValue.gold),
+		InvestmentValueTimeDeposit: ptr(rep.investmentValue.timeDeposit),
+		InvestmentValueLow:         ptr(rep.investmentValue.low),
+		InvestmentValueMedium:      ptr(rep.investmentValue.medium),
+		InvestmentValueHigh:        ptr(rep.investmentValue.high),
 	}
 	ev := reportEngineVersion
 	params.EngineVersion = &ev
@@ -329,8 +344,14 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		params.InvestmentReturnBond = ptr(rep.investmentReturn.bond)
 		params.InvestmentReturnGold = ptr(rep.investmentReturn.gold)
 		params.InvestmentReturnTimeDeposit = ptr(rep.investmentReturn.timeDeposit)
+		// Per-risk return mirrors per-subtype: nil on baseline, set on flow months
+		// (INV-FINANCE-29's risk partition).
+		params.InvestmentReturnLow = ptr(rep.investmentReturn.low)
+		params.InvestmentReturnMedium = ptr(rep.investmentReturn.medium)
+		params.InvestmentReturnHigh = ptr(rep.investmentReturn.high)
 	}
-	params.PassiveCouponCash = rep.passiveCouponCash // nil on baseline
+	params.PassiveCouponCash = rep.passiveCouponCash     // nil on baseline
+	params.InvestmentPlacement = rep.investmentPlacement // nil on baseline
 	return params, nil
 }
 
@@ -453,6 +474,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, i := range investments {
 		p := reportPosition{
 			id: i.ID, name: i.DisplayName, group: groupInvestment, subtype: i.Subtype, ownershipType: i.OwnershipType,
+			riskProfile: i.RiskProfile,
 			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt,
 			rolledFrom:        i.RolledFromInvestmentID,
 			couponDisposition: i.CouponDisposition,

@@ -54,10 +54,15 @@ func (g positionGroup) String() string {
 // subtype distinguishes property/vehicle from bank_account (asset value change)
 // and carries the investment subtype (per-subtype return).
 type reportPosition struct {
-	id            uuid.UUID
-	name          string // display_name, surfaced in the stale-position drill-down (#50)
-	group         positionGroup
-	subtype       string
+	id      uuid.UUID
+	name    string // display_name, surfaced in the stale-position drill-down (#50)
+	group   positionGroup
+	subtype string
+	// riskProfile is the Investment's household-chosen risk level ("low" |
+	// "medium" | "high", NOT NULL on every Investment). Empty for non-Investment
+	// groups. Drives the per-risk investment-return + value breakdown (ADR-0048
+	// amendment / INV-FINANCE-29).
+	riskProfile   string
 	ownershipType string // "sole" | "joint"
 	soleOwnerID   *uuid.UUID
 	terminatedAt  *time.Time
@@ -185,11 +190,16 @@ func (e *earnedIncomeAmounts) add(category, regularity string, v decimal.Decimal
 	}
 }
 
+// investmentReturnAmounts tallies the month's investment return two ways at once:
+// by subtype (stock…time_deposit) and by risk profile (low/medium/high). Both are
+// complete partitions of the same total (every Investment has exactly one subtype
+// and one risk_profile), so total == Σ subtypes == Σ risks (INV-FINANCE-29).
 type investmentReturnAmounts struct {
 	total, stock, mutualFund, bond, gold, timeDeposit decimal.Decimal
+	low, medium, high                                 decimal.Decimal
 }
 
-func (r *investmentReturnAmounts) add(subtype string, v decimal.Decimal) {
+func (r *investmentReturnAmounts) add(subtype, risk string, v decimal.Decimal) {
 	r.total = r.total.Add(v)
 	switch subtype {
 	case "stock":
@@ -202,6 +212,46 @@ func (r *investmentReturnAmounts) add(subtype string, v decimal.Decimal) {
 		r.gold = r.gold.Add(v)
 	case "time_deposit":
 		r.timeDeposit = r.timeDeposit.Add(v)
+	}
+	addRisk(&r.low, &r.medium, &r.high, risk, v)
+}
+
+// investmentValueAmounts tallies the month's *closing* invested value per bucket
+// — the same two partitions as investmentReturnAmounts. The render reads the
+// prior month's figures as the current month's opening rate base (ADR-0048
+// amendment). Total closing value is nwInvestments (not duplicated here); both
+// partitions here reconcile to it (INV-FINANCE-29).
+type investmentValueAmounts struct {
+	stock, mutualFund, bond, gold, timeDeposit decimal.Decimal
+	low, medium, high                          decimal.Decimal
+}
+
+func (r *investmentValueAmounts) add(subtype, risk string, v decimal.Decimal) {
+	switch subtype {
+	case "stock":
+		r.stock = r.stock.Add(v)
+	case "mutual_fund":
+		r.mutualFund = r.mutualFund.Add(v)
+	case "bond":
+		r.bond = r.bond.Add(v)
+	case "gold":
+		r.gold = r.gold.Add(v)
+	case "time_deposit":
+		r.timeDeposit = r.timeDeposit.Add(v)
+	}
+	addRisk(&r.low, &r.medium, &r.high, risk, v)
+}
+
+// addRisk routes v into the low/medium/high bucket for risk. Shared by the return
+// and value tallies (INV-FINANCE-29's risk partition).
+func addRisk(low, medium, high *decimal.Decimal, risk string, v decimal.Decimal) {
+	switch risk {
+	case "low":
+		*low = low.Add(v)
+	case "medium":
+		*medium = medium.Add(v)
+	case "high":
+		*high = high.Add(v)
 	}
 }
 
@@ -236,6 +286,11 @@ type monthlyReportData struct {
 	nwInvestments    decimal.Decimal
 	earnedIncome     earnedIncomeAmounts
 	investmentReturn *investmentReturnAmounts // nil on baseline
+	// investmentValue is the month's closing invested value per bucket — a stock,
+	// so it is set on *every* month (incl. the baseline, where it seeds month 2's
+	// opening rate base), unlike the flow-derived investmentReturn (ADR-0048
+	// amendment). Total closing value is nwInvestments.
+	investmentValue investmentValueAmounts
 	// passiveCouponCash is the month's paid-out bond coupon cash (pays_out
 	// disposition), materialised for the statistics passive-cash scope. It is a
 	// slice of investmentReturn.bond (the domain keeps coupon yield inside
@@ -243,13 +298,17 @@ type monthlyReportData struct {
 	// cash and remove it from own-return g (ADR-0048 amendment, INV-FINANCE-25).
 	// nil on the baseline, mirroring investmentReturn.
 	passiveCouponCash *decimal.Decimal
-	assetValueChange  *decimal.Decimal // nil on baseline
-	livingExpenses    *decimal.Decimal // nil on baseline
-	userBreakdowns    map[string]userBreakdown
-	stalePositions    []stalePosition
-	missingFx         []missingFxEntry
-	fxRatesUsed       map[string]decimal.Decimal
-	missingSeen       map[string]bool // dedup helper, not serialised
+	// investmentPlacement is new money placed into investments from the bank (Buys
+	// + fresh TD placements, excl. rollovers/fees). nil on the baseline, like the
+	// other flow figures (ADR-0048 amendment / INV-FINANCE-32).
+	investmentPlacement *decimal.Decimal
+	assetValueChange    *decimal.Decimal // nil on baseline
+	livingExpenses      *decimal.Decimal // nil on baseline
+	userBreakdowns      map[string]userBreakdown
+	stalePositions      []stalePosition
+	missingFx           []missingFxEntry
+	fxRatesUsed         map[string]decimal.Decimal
+	missingSeen         map[string]bool // dedup helper, not serialised
 }
 
 type monthAmount struct {
@@ -368,6 +427,18 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	// flagged per month so the report still generates.
 	cashByPos := make(map[uuid.UUID]map[int]cashFlow)
 	couponCashByMonth := make(map[int]decimal.Decimal)
+	// placementByMonth / returnedByMonth net to investment_placement: NEW money
+	// deployed into investments from the bank, net of principal that came back.
+	//   placement (in)  = Buy transactions + fresh TD placements.
+	//   returned (out)  = Sells + cash_out maturity principal/interest.
+	// The net excludes rollover funding and rolled-to-new maturities (recycled
+	// capital that never touches the bank — off both legs) and cash fees (a cost),
+	// and does NOT net coupons/dividends/distributions (income yield, not
+	// principal). Reinvesting a matured bond nets to ~0 (INV-FINANCE-32); a pure
+	// withdrawal month goes negative. FX-converted. Materialized for the render's
+	// "how much of the pool's growth was new money vs return" split.
+	placementByMonth := make(map[int]decimal.Decimal)
+	returnedByMonth := make(map[int]decimal.Decimal)
 	txnMissing := make(map[int]map[string]bool)
 	txnRates := make(map[int]map[string]decimal.Decimal)
 	for _, t := range in.transactions {
@@ -393,6 +464,31 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		}
 		if t.txnType == "coupon" && paysOutBond[t.investmentID] {
 			couponCashByMonth[mi] = couponCashByMonth[mi].Add(outC)
+		}
+		// Net-placement legs (INV-FINANCE-32). A Buy is new money in. Sells and
+		// cash_out maturity principal/interest are money that came back — they net
+		// against placement (reinvested matured principal / rebalancing is not new
+		// money). Coupons/dividends/distributions are income yield, not principal,
+		// so they don't net. Rolled-to-new maturity portions never touch the bank
+		// (their disposition isn't cash_out), so they fall out of both legs.
+		switch t.txnType {
+		case "buy":
+			placementByMonth[mi] = placementByMonth[mi].Add(inC)
+		case "sell":
+			returnedByMonth[mi] = returnedByMonth[mi].Add(outC)
+		case "maturity":
+			var raw decimal.Decimal
+			if t.principalDisposition != nil && *t.principalDisposition == "cash_out" {
+				raw = raw.Add(decOrZero(t.principalAmount))
+			}
+			if t.interestDisposition != nil && *t.interestDisposition == "cash_out" {
+				raw = raw.Add(decOrZero(t.interestAmount))
+			}
+			if raw.IsPositive() {
+				if c, _, ok := fx.convert(raw, t.currency, mi); ok {
+					returnedByMonth[mi] = returnedByMonth[mi].Add(c)
+				}
+			}
 		}
 		m := cashByPos[t.investmentID]
 		if m == nil {
@@ -437,6 +533,9 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		c := m[mi]
 		c.in = c.in.Add(inC)
 		m[mi] = c
+		// A fresh TD placement is new money into investments, like a Buy. (Rollover
+		// funding below is NOT — it never touches the bank; INV-FINANCE-32.)
+		placementByMonth[mi] = placementByMonth[mi].Add(inC)
 	}
 
 	// Rollover funding cash_in (issue #27 rollover). A rolled TD takes no
@@ -574,6 +673,10 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				m.nwReceivables = m.nwReceivables.Add(v)
 			case groupInvestment:
 				m.nwInvestments = m.nwInvestments.Add(v)
+				// Closing invested value per bucket (this month's snapshot value,
+				// carry-forward + FX applied) — the render's opening rate base for
+				// next month (ADR-0048 amendment / INV-FINANCE-29).
+				m.investmentValue.add(p.subtype, p.riskProfile, v)
 			}
 			signed := v
 			if p.group == groupLiability {
@@ -604,7 +707,7 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				}
 				cf := cashByPos[p.id][idx]
 				r := now.Sub(prev).Add(cf.out).Sub(cf.in)
-				ret.add(p.subtype, r)
+				ret.add(p.subtype, p.riskProfile, r)
 				key := ownerKey(p.ownershipType, p.soleOwnerID)
 				b := m.userBreakdowns[key]
 				b.InvestmentReturn = b.InvestmentReturn.Add(r)
@@ -618,6 +721,12 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			// non-nil-off-baseline shape so buildStats reads it via decOr.
 			coupon := couponCashByMonth[idx]
 			m.passiveCouponCash = &coupon
+
+			// Net new money into investments this month: (Buys + fresh TD placements)
+			// − (Sells + cash_out maturity principal/interest). Set on every flow
+			// month; negative in a net-withdrawal month (INV-FINANCE-32).
+			placement := placementByMonth[idx].Sub(returnedByMonth[idx])
+			m.investmentPlacement = &placement
 
 			avc := decimal.Zero
 			for _, p := range positions {

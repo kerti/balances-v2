@@ -64,6 +64,18 @@ type reportCopy struct {
 	statFormulaCash   string // Cash-Flow ratio formula, in words
 	statFormulaPass   string // Passive-Income ratio formula, in words
 
+	// investment-performance block (ADR-0048 amendment)
+	investmentPerf  string // section title
+	perfNote        string // intro: rate = return ÷ opening capital; trailing-12 compound
+	perfColMonth    string // "This month" column header
+	perfColTrailing string // "12-mo" column header
+	perfTotal       string // "All investments" total-row label
+	perfByRisk      string // sub-heading: by risk profile
+	perfByType      string // sub-heading: by instrument type
+	perfAmount      string // muted "%s this month" amount-context line
+	perfPlacement   string // placement row label (new money in, % of pool)
+	perfPlaceNote   string // muted note explaining placement + rollover exclusion
+
 	deltaVs    string // "vs %s" — month-over-month comparison suffix
 	footerPage string // "Page %d of %s" (%s = total-pages alias)
 
@@ -125,6 +137,16 @@ var reportCatalog = map[string]reportCopy{
 		statInputPassive:  "Avg total passive income",
 		statFormulaCash:   "Cash-Flow = (income − living expenses) ÷ income",
 		statFormulaPass:   "Passive-Income = total passive income ÷ living expenses",
+		investmentPerf:    "Investment Performance",
+		perfNote:          "Return as a rate — this month's investment return over the value you started the month holding. The 12-month figure compounds the last year's monthly returns, so it reads as the trend rather than one lumpy month. A bucket you held for the first month, or have fully exited, has no starting value to measure against and shows \"—\". The three breakdowns don't add up to the total: each rate is measured against its own base.",
+		perfColMonth:      "This month",
+		perfColTrailing:   "12-mo",
+		perfTotal:         "All investments",
+		perfByRisk:        "By risk profile",
+		perfByType:        "By instrument type",
+		perfAmount:        "%s this month",
+		perfPlacement:     "Net money placed",
+		perfPlaceNote:     "New money you put into investments, net of what came back out (sales and matured principal), as a share of the pool — this month beside its 12-month average. Reinvesting a matured bond or TD nets to about zero; a month you took out more than you put in shows negative. Coupons and dividends don't count here.",
 		chartAssets:       "Assets Composition",
 		chartInvestments:  "Investments Composition",
 		chartLiabilities:  "Liabilities Composition",
@@ -180,6 +202,16 @@ var reportCatalog = map[string]reportCopy{
 		statInputPassive:  "Rata-rata total pendapatan pasif",
 		statFormulaCash:   "Arus Kas = (pendapatan − pengeluaran) ÷ pendapatan",
 		statFormulaPass:   "Pendapatan Pasif = total pendapatan pasif ÷ pengeluaran",
+		investmentPerf:    "Kinerja Investasi",
+		perfNote:          "Imbal hasil sebagai tingkat — imbal hasil investasi bulan ini dibagi nilai yang Anda pegang di awal bulan. Angka 12 bulan menggabungkan imbal hasil bulanan setahun terakhir secara majemuk, sehingga terbaca sebagai tren, bukan satu bulan yang menonjol. Aset yang baru dipegang bulan pertama, atau sudah dilepas seluruhnya, tidak punya nilai awal sebagai pembanding dan ditampilkan \"—\". Ketiga rincian tidak menjumlah ke total: setiap tingkat diukur terhadap basisnya sendiri.",
+		perfColMonth:      "Bulan ini",
+		perfColTrailing:   "12-bln",
+		perfTotal:         "Seluruh investasi",
+		perfByRisk:        "Berdasarkan profil risiko",
+		perfByType:        "Berdasarkan jenis instrumen",
+		perfAmount:        "%s bulan ini",
+		perfPlacement:     "Dana bersih ditempatkan",
+		perfPlaceNote:     "Dana baru yang Anda tempatkan ke investasi, dikurangi yang kembali keluar (penjualan dan pokok jatuh tempo), sebagai bagian dari pool — bulan ini di samping rata-rata 12 bulannya. Menempatkan ulang obligasi atau deposito yang jatuh tempo bersih mendekati nol; bulan saat Anda menarik lebih banyak daripada menempatkan akan bernilai negatif. Kupon dan dividen tidak dihitung di sini.",
 		chartAssets:       "Komposisi Harta",
 		chartInvestments:  "Komposisi Investasi",
 		chartLiabilities:  "Komposisi Hutang",
@@ -215,6 +247,13 @@ var subtypeLabels = map[string]map[string]string{
 	},
 }
 
+// riskLabels maps an Investment risk_profile to its localized display name
+// (ADR-0048 amendment — investment-performance breakdown).
+var riskLabels = map[string]map[string]string{
+	"en-GB": {"low": "Low risk", "medium": "Medium risk", "high": "High risk"},
+	"id-ID": {"low": "Risiko rendah", "medium": "Risiko menengah", "high": "Risiko tinggi"},
+}
+
 const fallbackLocale = "en-GB"
 
 // JointLabel is the localized "Joint" owner label, exported so the input
@@ -238,6 +277,18 @@ func subtypeLabel(locale, subtype string) string {
 		return s
 	}
 	return subtype
+}
+
+func riskLabel(locale, risk string) string {
+	if m, ok := riskLabels[locale]; ok {
+		if s, ok := m[risk]; ok {
+			return s
+		}
+	}
+	if s, ok := riskLabels[fallbackLocale][risk]; ok {
+		return s
+	}
+	return risk
 }
 
 // total renders "Total Assets" / "Jumlah Harta".
