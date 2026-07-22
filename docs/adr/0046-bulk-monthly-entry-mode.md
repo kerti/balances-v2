@@ -142,11 +142,12 @@ renderer unchanged. No logic forks into a renderer.
 
 - **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
   (numbers right-aligned) and computed value in a cramped horizontal group right, the reset action
-  trailing. For a multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels the input
-  columns — the placeholders vanish the moment a value carries forward, so without it a desktop row
-  gives no clue which field is units and which is price. The header renders as the **right cluster of
-  the group title line** (one label per column, **once per investment type**), sharing that vertical
-  space rather than taking a row of its own. **Currency** shows once, in its own fixed column
+  trailing. For a multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels **every
+  column, the derived total included** (`Value` for qty×price, `Principal` for accrued) — the input
+  placeholders vanish the moment a value carries forward, so without it a desktop row gives no clue
+  which field is units and which is price, and the total was otherwise the one unlabelled column. The
+  header renders as the **right cluster of the group title line** (one label per column, **once per
+  investment type**), sharing that vertical space rather than taking a row of its own. **Currency** shows once, in its own fixed column
   **between the last input and the total** (`formatCurrencyParts` supplies the locale symbol), with
   the total number right-aligned in its own column beside it (`tabular-nums`, wide enough that
   household IDR figures don't clip) — reading `[qty] [price] IDR 15.000` with each of the symbol and

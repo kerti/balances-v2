@@ -42,6 +42,13 @@ export type EntryShape = {
   // shape with nothing to compute (amount-only). `valid` is false while the
   // inputs don't yet form a number, so the screen shows a placeholder.
   derived: ((v: EntryFieldValues) => { valid: boolean; amount: string }) | null;
+  // i18n key naming the derived column ("Value" for qty×price, "Principal" for
+  // accrued), or null for a shape with no derived column. Desktop positions the
+  // total under an (unlabelled) column slot; the mobile stack has no such slot,
+  // so EntryRowMobile renders this as the footer's header — the mobile twin of
+  // the field labels, so the computed figure reads as a named column not a stray
+  // number. Always set when `derived` is non-null.
+  derivedLabelKey: string | null;
 };
 
 // deriveProduct computes quantity × price with Number — household scale is fine
@@ -83,6 +90,7 @@ export const amountOnlyShape: EntryShape = {
   prefill: (row) => ({ amount: row.prefill_amount ?? "" }),
   complete: (v) => v.amount.trim() !== "",
   derived: null,
+  derivedLabelKey: null,
 };
 
 // qty×price (Stock/MutualFund/Gold, #423): two tab-stops with the value computed
@@ -108,6 +116,7 @@ export const qtyPriceShape: EntryShape = {
   }),
   complete: (v) => deriveProduct(v.quantity, v.price_per_unit).valid,
   derived: (v) => deriveProduct(v.quantity, v.price_per_unit),
+  derivedLabelKey: "bulkEntry.value",
 };
 
 // accrued (Bond/TimeDeposit, #424): two directly-entered tab-stops — the total
@@ -141,4 +150,5 @@ export const accruedShape: EntryShape = {
   }),
   complete: (v) => isNumeric(v.amount) && isNumeric(v.accrued_interest),
   derived: (v) => derivePrincipal(v.amount, v.accrued_interest),
+  derivedLabelKey: "bulkEntry.principal",
 };

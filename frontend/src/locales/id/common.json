@@ -259,6 +259,8 @@
     "undo": "Urungkan",
     "quantity": "Jumlah",
     "pricePerUnit": "Harga per unit",
+    "value": "Nilai",
+    "principal": "Pokok",
     "totalValue": "Nilai total",
     "accrued": "Bunga berjalan",
     "investments": {

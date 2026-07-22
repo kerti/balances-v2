@@ -407,6 +407,8 @@ test(
     const desktopRow = page.locator("li").filter({ hasText: name });
     await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-20/);
     await expect(desktopRow.getByLabel("Price per unit")).toHaveClass(/w-28/);
+    // The desktop group header names every column, the derived total included.
+    await expect(page.getByText("Value", { exact: true }).first()).toBeVisible();
 
     // --- Cleanup ---
     await page.goto("/investments/stocks");

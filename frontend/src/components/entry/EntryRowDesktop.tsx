@@ -43,7 +43,10 @@ export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
       {shape.derived && (
         <div className={MONEY_CLUSTER}>
           <span className={SYMBOL_COL} />
-          <span className={TOTAL_COL} />
+          {/* Name the derived-total column ("Value" / "Principal") over its
+              number, like the field columns to its left — otherwise the total
+              is the one unlabelled column in the row. */}
+          <span className={TOTAL_COL}>{shape.derivedLabelKey ? t(shape.derivedLabelKey) : ""}</span>
         </div>
       )}
       <span className="size-8 shrink-0" />
