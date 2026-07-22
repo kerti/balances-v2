@@ -336,10 +336,12 @@ test(
     const boundingBox = await mobileInput.boundingBox();
     expect(boundingBox!.height).toBeGreaterThanOrEqual(44);
 
-    // --- Desktop width: reload swaps to the cramped renderer (w-36 input). ---
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-36 input). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — reload would just re-mount it, and the
+    //     home's enter-month button isn't here. ---
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.reload();
-    await page.getByTestId("assets-enter-month").click();
+    await page.goto("/assets/enter");
     const desktopRow = page.locator("li").filter({ hasText: account });
     await expect(desktopRow.getByRole("textbox")).toHaveClass(/w-36/);
 
@@ -400,10 +402,12 @@ test(
     const qtyBox = await mobileQty.boundingBox();
     expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
 
-    // --- Desktop width: reload swaps to the cramped renderer (w-28 columns). ---
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-28 columns). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — the home's enter-prices button
+    //     isn't here to click. ---
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.reload();
-    await page.getByTestId("investments-enter-prices").click();
+    await page.goto("/investments/enter/prices");
     const desktopRow = page.locator("li").filter({ hasText: name });
     await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-28/);
     await expect(desktopRow.getByLabel("Price per unit")).toHaveClass(/w-28/);
