@@ -259,6 +259,8 @@
     "undo": "Undo",
     "quantity": "Quantity",
     "pricePerUnit": "Price per unit",
+    "value": "Value",
+    "principal": "Principal",
     "totalValue": "Total value",
     "accrued": "Accrued",
     "investments": {

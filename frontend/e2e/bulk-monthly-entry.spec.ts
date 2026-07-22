@@ -336,10 +336,12 @@ test(
     const boundingBox = await mobileInput.boundingBox();
     expect(boundingBox!.height).toBeGreaterThanOrEqual(44);
 
-    // --- Desktop width: reload swaps to the cramped renderer (w-36 input). ---
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-36 input). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — reload would just re-mount it, and the
+    //     home's enter-month button isn't here. ---
     await page.setViewportSize({ width: 1280, height: 900 });
-    await page.reload();
-    await page.getByTestId("assets-enter-month").click();
+    await page.goto("/assets/enter");
     const desktopRow = page.locator("li").filter({ hasText: account });
     await expect(desktopRow.getByRole("textbox")).toHaveClass(/w-36/);
 
@@ -353,5 +355,74 @@ test(
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText(account)).toHaveCount(0);
+  },
+);
+
+// ADR-0050 S2 (#505): the qty×price entry row — the worst case that triggered
+// #428 (#423), two tab-stops (quantity, price) plus a computed value that
+// overlaps the position name when crammed on mobile — diverges via the same
+// runtime pick-one renderer. This asserts BOTH tab-stops stack as full-width
+// ≥44px lines at <768px (EntryRowMobile) and cram into their w-28 columns
+// at ≥768px (EntryRowDesktop), one tree in the DOM, same testids. Deep qty×price
+// behaviour (dirty pair, computed value, overwrite) is the journey above.
+// covers: INV-JOURNEYS-05
+test(
+  "qty×price entry row diverges renderer at the 768px boundary",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E divergence stock ${Date.now()}`;
+
+    await page.goto("/investments/stocks");
+    await page.getByRole("button", { name: "New stock" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("New stock position")).toBeVisible();
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Ticker").fill("E2ED");
+    await dialog.getByLabel("Exchange").fill("IDX");
+    await dialog.getByLabel("Risk profile").selectOption("medium");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
+    //     computed value is reachable without horizontal scroll. ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/investments");
+    await page.getByTestId("investments-enter-prices").click();
+    await expect(page.getByText("Enter this month's prices")).toBeVisible();
+    const mobileRow = page.locator("li").filter({ hasText: name });
+    const mobileQty = mobileRow.getByLabel("Quantity");
+    const mobilePrice = mobileRow.getByLabel("Price per unit");
+    await expect(mobileQty).toHaveClass(/h-11/);
+    await expect(mobilePrice).toHaveClass(/h-11/);
+    await mobileQty.fill("100");
+    await mobilePrice.fill("8500");
+    // The computed value shows in the footer, marked "=", and is in the viewport.
+    const mobileValue = mobileRow.getByText(/^=/);
+    await expect(mobileValue).toBeInViewport();
+    const qtyBox = await mobileQty.boundingBox();
+    expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
+
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-28 columns). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — the home's enter-prices button
+    //     isn't here to click. ---
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/investments/enter/prices");
+    const desktopRow = page.locator("li").filter({ hasText: name });
+    await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-28/);
+    await expect(desktopRow.getByLabel("Price per unit")).toHaveClass(/w-28/);
+    // The desktop group header names every column, the derived total included.
+    await expect(page.getByText("Value", { exact: true }).first()).toBeVisible();
+
+    // --- Cleanup ---
+    await page.goto("/investments/stocks");
+    await page
+      .getByRole("row", { name: new RegExp(name) })
+      .getByText(name)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
   },
 );

@@ -96,6 +96,12 @@ it("renders eligible accrued positions grouped by subtype with prefill + disposi
   expect(within(bonds).getByTestId("investment-accrued-entry-row-b2")).toBeInTheDocument();
   const tds = screen.getByTestId("investment-accrued-entry-group-time_deposit");
   expect(within(tds).getByTestId("investment-accrued-entry-row-t1")).toBeInTheDocument();
+
+  // Every column is named once per group, including the derived one ("Principal"
+  // for accrued), so the computed figure isn't the row's one unlabelled column.
+  expect(within(bonds).getByText("Total value")).toBeInTheDocument();
+  expect(within(bonds).getByText("Accrued")).toBeInTheDocument();
+  expect(within(bonds).getByText("Principal")).toBeInTheDocument();
 });
 
 // covers: INV-SNAPSHOTS-06

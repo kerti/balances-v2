@@ -97,8 +97,9 @@ one-off:
 - **Cramped horizontal input row → stacked fields.** Each tab-stop on its own full-width line (its
   label shown when the shape names one); the computed/derived value and the row actions in a footer.
   (the three entry shapes.) **Proven** on the amount-only entry slice ([[adr-0046]] `## Presentation /
-  UX`, #502): laid out cleanly as written, so the transform is no longer provisional; the qty×price
-  and accrued shapes reuse the same `EntryRowMobile`/`EntryRowDesktop` split.
+  UX`, #502) and extended unchanged to **qty×price** (#505) — the worst case that triggered this epic
+  (#423): both tab-stops stack cleanly with the computed value marked `=` in the footer, no re-fork of
+  the container. The accrued shape reuses the same `EntryRowMobile`/`EntryRowDesktop` split next.
 - **Multi-column dashboard/hub grid → single-column stack**, charts full-width, secondary cards
   below the fold. (Dashboard + three hubs.)
 
