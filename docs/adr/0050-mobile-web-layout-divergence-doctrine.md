@@ -95,11 +95,15 @@ one-off:
 - **Wide table → stacked cards.** One card per row; label→value pairs stacked; the primary value
   promoted to the card headline. (details ×10, Income, Tags, Fx/Inflation.)
 - **Cramped horizontal input row → stacked fields.** Each tab-stop on its own full-width line (its
-  label shown when the shape names one); the computed/derived value and the row actions in a footer.
-  (the three entry shapes.) **Proven** on the amount-only entry slice ([[adr-0046]] `## Presentation /
-  UX`, #502) and extended unchanged to **qty×price** (#505) — the worst case that triggered this epic
-  (#423): both tab-stops stack cleanly with the computed value marked `=` in the footer, no re-fork of
-  the container. The accrued shape reuses the same `EntryRowMobile`/`EntryRowDesktop` split next.
+  label shown when the shape names one); the derived value **named by its column** and the row actions
+  in a footer. (the three entry shapes.) **Proven** on the amount-only entry slice ([[adr-0046]]
+  `## Presentation / UX`, #502), extended unchanged to **qty×price** (#505) — the worst case that
+  triggered this epic (#423) — and to the **accrued** shape (#506); all three tab-stops stack cleanly
+  with no re-fork of the container. **Refined on the accrued slice:** the footer's derived figure is
+  labelled with its column name (`Value` for qty×price, `Principal` for accrued) — the mobile twin of
+  the desktop group-header column — rather than the earlier bare `=` marker, which read as an
+  anonymous sum and left the accrued principal ambiguous for the phone audience; a bare `—` until the
+  inputs complete.
 - **Multi-column dashboard/hub grid → single-column stack**, charts full-width, secondary cards
   below the fold. (Dashboard + three hubs.)
 

@@ -3,8 +3,8 @@
 // flips window.innerWidth below the 768px boundary so useIsMobile() picks
 // EntryRowMobile, then asserts the divergence contract for the two-tab-stop
 // shape — quantity and price each stack on their own full-width ≥44px line (not
-// the cramped desktop w-28 columns), the computed value shows in the footer marked
-// "= …" (mobile has no desktop column header to label the total), and the
+// the cramped desktop w-28 columns), the computed value shows in the footer named
+// "Value …" (mobile has no desktop column header, so the footer carries it), and the
 // container-only "half a pair isn't saveable" dirty rule survives the renderer
 // swap untouched. The SAME data-testids resolve as on desktop, so the deep
 // per-shape assertions stay in the desktop twin (EntryScreen.investment.test.tsx).
@@ -92,13 +92,15 @@ it("mobile: stacks quantity + price as full-width ≥44px lines with the value m
   expect(within(stockRow).getByText("Price per unit")).toBeInTheDocument();
   expect(within(stockRow).getByLabelText("Quantity")).toBe(qty);
   expect(within(stockRow).getByLabelText("Price per unit")).toBe(price);
-  // The computed value (10 × 1500 = 15000) shows in the footer, marked "=" so a
-  // mobile user reads it as derived (no desktop column header here).
-  expect(screen.getByTestId("investment-entry-value-s1")).toHaveTextContent(/^=.*15/);
-  // The fresh gold's incomplete pair shows the bare placeholder — no "=".
+  // The computed value (10 × 1500 = 15000) shows in the footer named "Value" so a
+  // mobile user reads it as the derived column (no desktop column header here).
+  const stockValue = screen.getByTestId("investment-entry-value-s1");
+  expect(stockValue).toHaveTextContent("Value");
+  expect(stockValue).toHaveTextContent(/15/);
+  // The fresh gold's incomplete pair still names the column but shows "—".
   const freshValue = screen.getByTestId("investment-entry-value-g1");
+  expect(freshValue).toHaveTextContent("Value");
   expect(freshValue).toHaveTextContent("—");
-  expect(freshValue).not.toHaveTextContent("=");
 });
 
 // covers: INV-SNAPSHOTS-06
@@ -119,6 +121,6 @@ it("mobile: a half-filled qty×price pair stays not-dirty — the container rule
 
   expect(screen.getByTestId("investment-entry-dirty-count")).toHaveTextContent(/0/);
   expect(screen.getByTestId("investment-entry-save")).toBeDisabled();
-  // Still no "=" — the derived value stays a placeholder until the pair completes.
+  // Still "—" — the derived value stays a placeholder until the pair completes.
   expect(screen.getByTestId("investment-entry-value-g1")).toHaveTextContent("—");
 });

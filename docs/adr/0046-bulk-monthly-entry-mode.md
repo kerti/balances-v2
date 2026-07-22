@@ -159,10 +159,11 @@ renderer unchanged. No logic forks into a renderer.
   fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
   its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then
   a footer carrying the computed value and the row actions. Currency shows once, at the card's
-  top-right. On a shape with a derived column (qty×price, accrued) the footer number carries a
-  leading **"="** — the mobile equivalent of the desktop group's total-column header, so a reader
-  knows the figure is computed rather than another field to fill (`= 15.000`; a bare `—` until the
-  inputs form a complete pair). The value input and the reset control meet the a11y floor
+  top-right. On a shape with a derived column (qty×price, accrued) the footer number is **named by its
+  column** (`Value` for qty×price, `Principal` for accrued) — the mobile equivalent of the desktop
+  group's derived-column header, so a reader knows the figure is a named, computed column rather than
+  another field to fill (`Value 15.000`, `Principal 3.000.000`; a bare `—` until the inputs form a
+  complete pair). The value input and the reset control meet the a11y floor
   (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
   read or edit the primary value.
 
@@ -171,9 +172,15 @@ no computed line, #502) stood up the reusable `EntryRowDesktop`/`EntryRowMobile`
 `EntryRowView` projection. **qty×price** (Stock / MutualFund / Gold, #505) — the worst case that
 triggered #428 (#423): two tab-stops plus a computed value that overlaps the position name when
 crammed — reuses that split unchanged; both tab-stops stack as full-width `h-11` lines with the
-value marked `=` in the footer, the container's "half a pair isn't saveable" dirty rule untouched.
-One `@smoke` Playwright spec per shape asserts the correct renderer mounts at mobile vs desktop width
-and the value stays reachable; deep per-shape behaviour stays in the existing per-shape journeys.
+value named `Value` in the footer, the container's "half a pair isn't saveable" dirty rule untouched.
+**Accrued** (Bond / TimeDeposit, #506) reuses the same split for its two directly-entered tab-stops
+(total value, accrued interest) with the derived `Principal` named in the footer; the per-row accrued
+default (accrues → forced entry, pays-out / time deposit → 0) is container-owned and survives the
+renderer swap. It is also where the mobile footer vocab was **refined** from a bare `=` to naming the
+derived column ([[adr-0050]]), so the accrued principal reads as a named breakdown rather than an
+anonymous sum. One `@smoke` Playwright spec per shape asserts the correct renderer mounts at mobile vs
+desktop width and the value stays reachable; deep per-shape behaviour stays in the existing per-shape
+journeys.
 
 ## Considered alternatives
 

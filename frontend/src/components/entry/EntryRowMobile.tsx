@@ -55,14 +55,17 @@ export function EntryRowMobile({
       <div className="flex items-center justify-between gap-2">
         {view.derived !== null ? (
           // Desktop labels the derived-total column in its group header; mobile
-          // has no such header, so the footer marks the number as computed with a
-          // leading "=" — reads "= 15.000". Currency sits at the card's top-right;
-          // "—" (no "=") until the inputs form a complete pair.
+          // has no such header, so the footer carries the column's name inline —
+          // the mobile twin of that header — so the figure reads as a named,
+          // computed column ("Value 15.000" for qty×price, "Principal 3.000.000"
+          // for accrued) rather than a stray number. Currency sits at the card's
+          // top-right; a bare "—" after the label until the inputs complete.
           <span
-            className="text-sm tabular-nums text-muted-foreground"
+            className="text-sm text-muted-foreground"
             data-testid={`${tid}-entry-value-${positionId}`}
           >
-            {view.derived.value !== null ? `= ${view.derived.value}` : "—"}
+            {shape.derivedLabelKey && <span className="mr-1.5">{t(shape.derivedLabelKey)}</span>}
+            <span className="tabular-nums">{view.derived.value ?? "—"}</span>
           </span>
         ) : (
           <span />
