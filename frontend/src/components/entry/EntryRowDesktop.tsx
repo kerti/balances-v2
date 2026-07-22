@@ -10,12 +10,14 @@ import type { EntryShape } from "@/components/entry/shapes";
 // column — the currency already prints on their derived total (below), so a
 // second copy next to the quantity was redundant and misleading.
 const CURRENCY_COL = "w-10 shrink-0 text-right";
-// A multi-field shape's derived total is a two-column cluster set off from the
-// inputs (ml-3): the currency symbol in its own fixed column (so the symbols
-// line up by themselves), then the total number right-aligned in its own column
-// (tabular-nums, wide enough for household IDR figures). Reads "[qty] [price]
-// IDR 15.000" with the symbol between the last input and the number.
-const MONEY_CLUSTER = "ml-3 flex items-center gap-2";
+// A multi-field shape's derived total is a two-column cluster set just off the
+// inputs (a small ml-1 — the row's own gap-3 already sets it apart, so a wider
+// margin left the currency symbol floating too far from the price): the currency
+// symbol in its own fixed column (so the symbols line up by themselves), then the
+// total number right-aligned in its own column (tabular-nums, wide enough for
+// household IDR figures). Reads "[qty] [price] IDR 15.000" with the symbol
+// between the last input and the number.
+const MONEY_CLUSTER = "ml-1 flex items-center gap-2";
 const SYMBOL_COL = "w-9 shrink-0 text-right";
 const TOTAL_COL = "w-32 shrink-0 text-right tabular-nums";
 
