@@ -49,3 +49,27 @@ reconciles to the net-worth line:
 positive-magnitude choices are presentation-only and do not change this identity). Catalogued in the
 PRESENTATION zone (INV-PRESENTATION-07) per [[adr-0034]] — the client-render-mirrors-backend-truth
 zone, since this is a display faithfulness rule over the FINANCE number, not a new behaviour.
+
+### Mobile (#507, [[adr-0050]])
+
+The home tab is already the doctrine's target shape — a single-column `space-y-6` stack, not a
+multi-column grid — so the [[adr-0050]] **"multi-column dashboard/hub grid → single-column stack"**
+transform lands here as **pure CSS reflow, not a forked renderer**: no surface crosses the structural
+bar (different DOM / different interaction), so no `useIsMobile()` split is warranted and the shared
+`DashboardScreen` container is unchanged. The reflow closes the three squeeze failures a <768px audit
+found against the [[adr-0050]] a11y floor:
+
+- **Header toolbar** stacks below the title on phones (`flex-col` → `md:flex-row`), and its controls
+  wrap — otherwise the month-picker + second-currency + PDF actions overrun the viewport and collide.
+- **Group-breakdown rows** lift the label onto its own line above the bar+amount (`flex-col` →
+  `md:grid`), so the primary figure stays readable instead of the fixed label/amount columns crushing
+  the bar to nothing.
+- **Tap targets** meet ≥44px at mobile width — the second-currency `<select>`, the shared
+  `MonthPickerPopover` prev/trigger/next, the `ReportPdfButton`, and the rebuild footer links all size
+  up on phones (`h-11`/`size-11` → `md:` back to the dense desktop height, the `md` breakpoint being
+  the same 768px boundary the doctrine's `useIsMobile` uses). Sizing the shared
+  toolbar controls responsively pre-satisfies the same floor on the Reports surface that reuses them.
+
+The chart is already `w-full` and needs no change. This a11y floor (primary value reachable with no
+horizontal scroll; tap targets ≥44px on a reflowed or diverged mobile surface) is catalogued lazily
+as INV-PRESENTATION-08 and smoke-tested at 390px.

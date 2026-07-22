@@ -105,14 +105,7 @@ export function DashboardScreen() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader
-        reports={reports}
-        selected={selected}
-        onSelect={setSelectedMonth}
-        displayCurrencies={displayCurrencies}
-        secondary={secondary}
-        onSecondaryChange={setSecondaryCurrency}
-      />
+      <DashboardHeader reports={reports} selected={selected} onSelect={setSelectedMonth} />
 
       <HeadlineCard
         selected={selected}
@@ -121,6 +114,8 @@ export function DashboardScreen() {
         isProvisional={isProvisional}
         currency={currency}
         secondary={secondary}
+        displayCurrencies={displayCurrencies}
+        onSecondaryChange={setSecondaryCurrency}
         rates={rates ?? []}
       />
 
@@ -165,30 +160,36 @@ function RebuildFooter({ selected }: { selected: MonthlyReport }) {
   const { rebuildAll, rebuildMonth } = useRebuildReports();
   const busy = rebuildAll.isPending || rebuildMonth.isPending;
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t pt-4 text-xs text-muted-foreground">
+    <div className="flex flex-col gap-2 border-t pt-4 text-xs text-muted-foreground md:flex-row md:flex-wrap md:items-center">
       <span>{t("rebuild.prompt")}</span>
-      <button
-        type="button"
-        className="underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-        disabled={busy}
-        onClick={() => rebuildMonth.mutate(selected.year_month)}
-      >
-        {rebuildMonth.isPending
-          ? t("rebuild.rebuilding")
-          : t("rebuild.rebuildMonth", {
-              when: formatYearMonth(selected.year_month),
-            })}
-      </button>
-      {/* Typographic separator glyph; locale-neutral. */}
-      <span aria-hidden>{"·"}</span>
-      <button
-        type="button"
-        className="underline underline-offset-2 hover:text-foreground disabled:opacity-50"
-        disabled={busy}
-        onClick={() => rebuildAll.mutate()}
-      >
-        {rebuildAll.isPending ? t("rebuild.rebuilding") : t("rebuild.rebuildAll")}
-      </button>
+      {/* The two links keep the ≥44px tap floor on mobile, but stack flush
+          (no inter-link gap, separator hidden) so the footer doesn't sprawl;
+          on desktop they sit inline with the "·" between them. */}
+      <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-foreground disabled:opacity-50 md:min-h-0"
+          disabled={busy}
+          onClick={() => rebuildMonth.mutate(selected.year_month)}
+        >
+          {rebuildMonth.isPending
+            ? t("rebuild.rebuilding")
+            : t("rebuild.rebuildMonth", {
+                when: formatYearMonth(selected.year_month),
+              })}
+        </button>
+        <span aria-hidden className="hidden md:inline">
+          {"·"}
+        </span>
+        <button
+          type="button"
+          className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-foreground disabled:opacity-50 md:min-h-0"
+          disabled={busy}
+          onClick={() => rebuildAll.mutate()}
+        >
+          {rebuildAll.isPending ? t("rebuild.rebuilding") : t("rebuild.rebuildAll")}
+        </button>
+      </div>
       {(rebuildAll.isError || rebuildMonth.isError) && (
         <span className="text-destructive">{t("rebuild.failed")}</span>
       )}
@@ -200,40 +201,21 @@ function DashboardHeader({
   reports,
   selected,
   onSelect,
-  displayCurrencies,
-  secondary,
-  onSecondaryChange,
 }: {
   reports: MonthlyReport[];
   selected: MonthlyReport;
   onSelect: (yearMonth: string) => void;
-  displayCurrencies: string[];
-  secondary: string;
-  onSecondaryChange: (currency: string) => void;
 }) {
   const { t } = useTranslation("dashboard");
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
       <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-      <div className="flex items-center gap-2">
-        {displayCurrencies.length > 0 && (
-          <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            {t("secondary.label")}
-            <select
-              data-testid="dashboard-secondary-currency"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
-              value={secondary}
-              onChange={(e) => onSecondaryChange(e.target.value)}
-            >
-              <option value="">{t("secondary.none")}</option>
-              {displayCurrencies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+      {/* Navigation + export only. The second-currency toggle lives on the
+          headline card (below), next to the amount it controls — not here
+          among the month nav / PDF actions. The PDF button is a fixed-width
+          icon + "PDF", so month-nav + export stay on one inline row at phone
+          width in every locale (no label-length-dependent wrap). */}
+      <div className="flex flex-wrap items-center gap-2">
         <MonthPickerPopover
           months={reports.map((r) => r.year_month)}
           selected={selected.year_month}
@@ -252,6 +234,8 @@ function HeadlineCard({
   isProvisional,
   currency,
   secondary,
+  displayCurrencies,
+  onSecondaryChange,
   rates,
 }: {
   selected: MonthlyReport;
@@ -260,6 +244,8 @@ function HeadlineCard({
   isProvisional: boolean;
   currency: string;
   secondary: string;
+  displayCurrencies: string[];
+  onSecondaryChange: (currency: string) => void;
   rates: FxRate[];
 }) {
   const { t } = useTranslation("dashboard");
@@ -267,7 +253,7 @@ function HeadlineCard({
     <Card>
       <CardContent className="space-y-3 pt-6">
         <div className="flex items-end gap-3 flex-wrap">
-          <span className="text-4xl font-semibold tracking-tight">
+          <span data-testid="dashboard-headline" className="text-4xl font-semibold tracking-tight">
             {formatCurrency(selected.nw_total, currency)}
           </span>
           <Trend
@@ -283,7 +269,33 @@ function HeadlineCard({
             </span>
           )}
         </div>
-        {secondary && <SecondaryAmount selected={selected} currency={secondary} rates={rates} />}
+        {/* Second-currency display: the converted amount and the toggle that
+            controls it sit together, right under the headline they annotate
+            (moved off the top nav toolbar, #507). Multi-currency households
+            with ≥1 rate only. */}
+        {displayCurrencies.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {secondary && (
+              <SecondaryAmount selected={selected} currency={secondary} rates={rates} />
+            )}
+            <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>{t("secondary.label")}</span>
+              <select
+                data-testid="dashboard-secondary-currency"
+                className="h-11 rounded-md border border-input bg-background px-3 text-sm text-foreground md:h-9"
+                value={secondary}
+                onChange={(e) => onSecondaryChange(e.target.value)}
+              >
+                <option value="">{t("secondary.none")}</option>
+                {displayCurrencies.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        )}
         <StalePositions selected={selected} />
         <MissingFxWarning selected={selected} />
       </CardContent>
@@ -530,7 +542,10 @@ function GroupBreakdown({ selected, currency }: { selected: MonthlyReport; curre
       </CardHeader>
       <CardContent className="space-y-3">
         {rows.map((r) => (
-          <div key={r.labelKey} className="grid grid-cols-[8rem_1fr] items-center gap-3">
+          <div
+            key={r.labelKey}
+            className="flex flex-col gap-1 md:grid md:grid-cols-[8rem_1fr] md:items-center md:gap-3"
+          >
             <span className="text-sm text-muted-foreground">{t(r.labelKey)}</span>
             <div className="flex items-center gap-3">
               <div className="h-2 flex-1 rounded-full bg-muted">
