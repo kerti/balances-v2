@@ -154,6 +154,52 @@ have their own line, and receivable write-downs are genuine wealth losses left i
 statement / waterfall; the residual is relabeled a cash-spending estimate. Stored on the report row
 per ADR-0012.
 
+## Presentation / UX
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the Income screen **diverges its mobile
+layout** from the web layout: the wide history table (date · category · amount · description ·
+ownership · actions) horizontally scrolls on a phone, hiding the **amount** — the value the
+non-technical household member [[adr-0025]] centres came for. `IncomeScreen` stays the single source
+of truth — it owns the query, the month picker, the routine/incidental filter, the per-currency
+headline stats and the pagination — and delegates only the **row list** to one of two renderers,
+picked at runtime by `useIsMobile()` (the single 768px boolean); one tree is ever in the DOM. Both
+consume the same page of rows and the same per-row projection + handlers (`useIncomeRow` — the
+derived labels, the edit/duplicate/delete dialog state, the delete mutation), and expose the **same
+`income-*` data-testid`s** (`income-row`, `income-amount`, `regularity-{routine|incidental}`), so the
+income assertions run against either renderer unchanged. No logic forks into a renderer.
+
+- **`IncomeRowDesktop`** (≥768px) keeps the original wide table row, wrapped by `IncomeList` in the
+  `Table` + header + paginated `Card`, with the **amount column right-aligned** (`tabular-nums`) as a
+  numeric column.
+- **`IncomeCard`** (<768px) applies the doctrine's **"wide table → stacked cards"** transform: one
+  card per row with the **amount promoted to the card headline** (`tabular-nums`, the largest element,
+  readable with no horizontal scroll) on the top line, the category chip + regularity icon clustered
+  to its **right, next to the actions button**, and the remaining fields (date, description when
+  present, ownership) stacked below as label→value pairs across the **full card width** so their
+  **right-aligned values** sit against the same `p-4` edge as the actions button. The ⋮ actions
+  trigger is a pronounced **outline** button (not bare ghost dots) sized to the a11y floor
+  (`size-11`, ≥44px), so the action reads as a real menu button; focus order follows visual order.
+
+The `IncomeScreen` header and the per-currency **summary panel** stay single-layout and reflow by
+plain CSS / a runtime placement pick per the doctrine's cosmetic path (no renderer split):
+
+- The primary **create action** lives top-right on desktop; on mobile it moves onto the filter
+  toolbar as a compact **"New"** (`+` icon + primary fill, right-aligned), reclaiming the vertical
+  space under the page copy without reading as another filter pill.
+- The **summary panel** is styled **distinct from the row cards** with a **primary tint + primary
+  border** (`bg-primary/5 dark:bg-primary/10`, `border-primary/30`) — a muted-grey fill washed out
+  against the near-identical card/background token and vanished in dark mode, so the panel keys off the
+  brand colour to stay discernible in both themes — so it reads as a header, not another income entry.
+  Its **regularity / by-person / by-category** breakdowns are peer blocks listed **vertically** (label
+  → right-aligned amount) rather than as a dense wrapped one-liner, and sit **side-by-side on desktop**
+  (md+, up to three columns — by-person appears only when the household has more than one earner)
+  separated by a **muted vertical divider** (`md:divide-x`), stacking on phones.
+
+The `IncomeList` renderer is the split point and owns pagination placement in both variants. One
+`@smoke` Playwright spec (`income-mobile.spec.ts`) asserts the correct renderer mounts at mobile vs
+desktop width and the amount stays reachable; the desktop write-flow round-trip stays in
+`income.spec.ts`, and renderer conformance in `IncomeList.test.tsx`.
+
 ## Consequences
 
 - Schema gains one new table (`income`) — flow events with no FK to Positions.

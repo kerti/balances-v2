@@ -81,6 +81,10 @@ type Props = {
   seed?: DuplicateSeed;
   /** Suppress the default "+ New income" trigger button. */
   hideTrigger?: boolean;
+  /** Use the compact "New" trigger label (mobile toolbar) instead of the full
+   *  "New income". The `+` icon stays so it still reads as an action, not a
+   *  filter pill. */
+  compactTrigger?: boolean;
 };
 
 function initialForm(seed?: DuplicateSeed): FormState {
@@ -118,6 +122,7 @@ export function CreateIncomeDialog({
   onOpenChange,
   seed,
   hideTrigger = false,
+  compactTrigger = false,
 }: Props = {}) {
   const { t } = useTranslation(["income", "common"]);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
@@ -176,7 +181,7 @@ export function CreateIncomeDialog({
         <DialogTrigger asChild>
           <Button>
             <Plus className="mr-1 size-4" />
-            {t("income:createTrigger")}
+            {t(compactTrigger ? "income:createTriggerShort" : "income:createTrigger")}
           </Button>
         </DialogTrigger>
       )}

@@ -13,6 +13,7 @@
     "total": "Total",
     "byPerson": "Per orang",
     "byCategory": "Per kategori",
+    "byRegularity": "Per keteraturan",
     "routine": "Rutin",
     "incidental": "Insidental"
   },
@@ -68,6 +69,7 @@
     "ownership": "Kepemilikan"
   },
   "createTrigger": "Pemasukan baru",
+  "createTriggerShort": "Baru",
   "createTitle": "Pemasukan baru",
   "createDescription": "Catat uang yang masuk ke rumah tangga Anda — gaji, hadiah, pengembalian, klaim.",
   "duplicateTitle": "Duplikat pemasukan",
