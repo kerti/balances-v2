@@ -101,7 +101,7 @@ export const qtyPriceShape: EntryShape = {
       key: "quantity",
       testidSuffix: "quantity",
       labelKey: "bulkEntry.quantity",
-      widthClass: "w-20",
+      widthClass: "w-28",
     },
     {
       key: "price_per_unit",
@@ -140,7 +140,7 @@ export const accruedShape: EntryShape = {
       key: "accrued_interest",
       testidSuffix: "accrued",
       labelKey: "bulkEntry.accrued",
-      widthClass: "w-24",
+      widthClass: "w-28",
     },
   ],
   prefill: (row) => ({

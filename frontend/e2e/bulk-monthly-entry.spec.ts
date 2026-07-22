@@ -360,7 +360,7 @@ test(
 // #428 (#423), two tab-stops (quantity, price) plus a computed value that
 // overlaps the position name when crammed on mobile — diverges via the same
 // runtime pick-one renderer. This asserts BOTH tab-stops stack as full-width
-// ≥44px lines at <768px (EntryRowMobile) and cram into their w-20/w-28 columns
+// ≥44px lines at <768px (EntryRowMobile) and cram into their w-28 columns
 // at ≥768px (EntryRowDesktop), one tree in the DOM, same testids. Deep qty×price
 // behaviour (dirty pair, computed value, overwrite) is the journey above.
 // covers: INV-JOURNEYS-05
@@ -400,12 +400,12 @@ test(
     const qtyBox = await mobileQty.boundingBox();
     expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
 
-    // --- Desktop width: reload swaps to the cramped renderer (w-20 / w-28). ---
+    // --- Desktop width: reload swaps to the cramped renderer (w-28 columns). ---
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.reload();
     await page.getByTestId("investments-enter-prices").click();
     const desktopRow = page.locator("li").filter({ hasText: name });
-    await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-20/);
+    await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-28/);
     await expect(desktopRow.getByLabel("Price per unit")).toHaveClass(/w-28/);
     // The desktop group header names every column, the derived total included.
     await expect(page.getByText("Value", { exact: true }).first()).toBeVisible();

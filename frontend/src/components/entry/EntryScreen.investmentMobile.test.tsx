@@ -3,7 +3,7 @@
 // flips window.innerWidth below the 768px boundary so useIsMobile() picks
 // EntryRowMobile, then asserts the divergence contract for the two-tab-stop
 // shape — quantity and price each stack on their own full-width ≥44px line (not
-// the cramped desktop w-20/w-28), the computed value shows in the footer marked
+// the cramped desktop w-28 columns), the computed value shows in the footer marked
 // "= …" (mobile has no desktop column header to label the total), and the
 // container-only "half a pair isn't saveable" dirty rule survives the renderer
 // swap untouched. The SAME data-testids resolve as on desktop, so the deep
@@ -80,9 +80,9 @@ it("mobile: stacks quantity + price as full-width ≥44px lines with the value m
   expect(qty).toHaveValue("10");
   expect(price).toHaveValue("1500");
   // A11y floor: each tab-stop is a full-width ≥44px (h-11) target — the mobile
-  // renderer, not the cramped desktop w-20 / w-28 columns.
+  // renderer, not the cramped desktop w-28 columns.
   expect(qty).toHaveClass("h-11");
-  expect(qty).not.toHaveClass("w-20");
+  expect(qty).not.toHaveClass("w-28");
   expect(price).toHaveClass("h-11");
   expect(price).not.toHaveClass("w-28");
   // Mobile labels each field inline within its own row (desktop labels them once
