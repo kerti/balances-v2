@@ -158,15 +158,21 @@ renderer unchanged. No logic forks into a renderer.
   fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
   its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then
   a footer carrying the computed value and the row actions. Currency shows once, at the card's
-  top-right. The value input and the reset control meet the a11y floor
+  top-right. On a shape with a derived column (qty×price, accrued) the footer number carries a
+  leading **"="** — the mobile equivalent of the desktop group's total-column header, so a reader
+  knows the figure is computed rather than another field to fill (`= 15.000`; a bare `—` until the
+  inputs form a complete pair). The value input and the reset control meet the a11y floor
   (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
   read or edit the primary value.
 
-This slice is **amount-only** (Asset / Liability / Receivable — one value field, no computed line). It
-establishes the reusable `EntryRowDesktop`/`EntryRowMobile` split and the shared `EntryRowView`
-projection that the qty×price and accrued shapes extend without re-forking the container. A `@smoke`
-Playwright spec asserts the correct renderer mounts at mobile vs desktop width and the value stays
-reachable; deep per-shape behaviour stays in the existing amount-only journeys.
+The split landed shape by shape. **Amount-only** (Asset / Liability / Receivable — one value field,
+no computed line, #502) stood up the reusable `EntryRowDesktop`/`EntryRowMobile` split and the shared
+`EntryRowView` projection. **qty×price** (Stock / MutualFund / Gold, #505) — the worst case that
+triggered #428 (#423): two tab-stops plus a computed value that overlaps the position name when
+crammed — reuses that split unchanged; both tab-stops stack as full-width `h-11` lines with the
+value marked `=` in the footer, the container's "half a pair isn't saveable" dirty rule untouched.
+One `@smoke` Playwright spec per shape asserts the correct renderer mounts at mobile vs desktop width
+and the value stays reachable; deep per-shape behaviour stays in the existing per-shape journeys.
 
 ## Considered alternatives
 

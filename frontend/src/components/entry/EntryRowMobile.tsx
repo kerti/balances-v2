@@ -54,13 +54,15 @@ export function EntryRowMobile({
 
       <div className="flex items-center justify-between gap-2">
         {view.derived !== null ? (
-          // Currency already sits at the card's top-right, so the footer total
-          // shows the number alone ("—" until the inputs are complete).
+          // Desktop labels the derived-total column in its group header; mobile
+          // has no such header, so the footer marks the number as computed with a
+          // leading "=" — reads "= 15.000". Currency sits at the card's top-right;
+          // "—" (no "=") until the inputs form a complete pair.
           <span
             className="text-sm tabular-nums text-muted-foreground"
             data-testid={`${tid}-entry-value-${positionId}`}
           >
-            {view.derived.value ?? "—"}
+            {view.derived.value !== null ? `= ${view.derived.value}` : "—"}
           </span>
         ) : (
           <span />
