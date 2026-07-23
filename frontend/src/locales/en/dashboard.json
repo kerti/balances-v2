@@ -91,6 +91,7 @@
   },
   "downloadPdf": {
     "button": "Download PDF",
+    "short": "PDF",
     "preparing": "Preparing…",
     "exported": "PDF downloaded",
     "failed": "Couldn't generate the PDF — try again."

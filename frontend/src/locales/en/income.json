@@ -13,6 +13,7 @@
     "total": "Total",
     "byPerson": "By person",
     "byCategory": "By category",
+    "byRegularity": "By regularity",
     "routine": "Routine",
     "incidental": "Incidental"
   },
@@ -68,6 +69,7 @@
     "ownership": "Ownership"
   },
   "createTrigger": "New income",
+  "createTriggerShort": "New",
   "createTitle": "New income",
   "createDescription": "Record earned cash entering your household — salary, gifts, refunds, payouts.",
   "duplicateTitle": "Duplicate income",

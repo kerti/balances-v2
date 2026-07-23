@@ -1,33 +1,21 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { InvestmentPieChart, type PieSlice } from "@/components/charts/InvestmentPieChart";
-import { TagBadge } from "@/components/common/TagBadge";
 import { TagsCard } from "@/components/common/TagsCard";
+import { TagBreakdownSection } from "@/components/tags/TagBreakdownSection";
 import { useTags, useTagBreakdown } from "@/hooks/useTags";
-import { aggregateTagBreakdown, type TagCell } from "@/lib/tagBreakdown";
-import { formatCurrency } from "@/lib/format";
-
-function cellKey(c: TagCell) {
-  return c.tagId ?? "untagged";
-}
+import { aggregateTagBreakdown, cellKey, type TagCell } from "@/lib/tagBreakdown";
 
 // TagsScreen is the breakdown report (ADR-0028) plus tag maintenance — merged
-// onto one page rather than splitting management into a Settings subpage,
-// since a "manage" surface and its own report were needless duplication when
-// they lived in two places. Per currency: a pie of holdings proportion by Tag
-// plus a table of holdings / liabilities / net, with an Untagged bucket. No
-// FX — a multi-currency household sees one card per currency, matching the
-// list/home convention. The management card always renders (a user must be
-// able to create a tag before there's anything to break down).
+// onto one page rather than splitting management into a Settings subpage, since
+// a "manage" surface and its own report were needless duplication when they
+// lived in two places. The report leads (donut + holdings/liabilities/net per
+// currency, with an Untagged bucket, no FX), and tag management sits at the
+// bottom — the report is what a returning household member comes for; creating
+// a tag is the occasional setup task. Per ADR-0050 (#509) the report is the
+// container/single-source-of-truth: it owns the query and the per-currency
+// pie-inclusion state, and hands each currency to TagBreakdownSection, which
+// picks the wide table (desktop) vs stacked cards (phones) at 768px. Management
+// stays one responsive card (it reflows without breaking the a11y floor).
 export function TagsScreen() {
   const { t } = useTranslation(["tags", "common"]);
   const { data: tags } = useTags();
@@ -58,97 +46,22 @@ export function TagsScreen() {
         <p className="text-sm text-muted-foreground">{t("report.subtitle")}</p>
       </div>
 
-      <TagsCard />
-
       {!isLoading && breakdowns.length === 0 && (
         <p className="text-sm text-muted-foreground" data-testid="tags-empty">
           {t("report.empty")}
         </p>
       )}
 
-      {breakdowns.map((bd) => {
-        const slices: PieSlice[] = bd.cells
-          .filter((c) => c.holdings > 0 && isChecked(bd.currency, cellKey(c)))
-          .map((c) => ({
-            key: cellKey(c),
-            label: c.name,
-            value: c.holdings,
-            color: c.color,
-          }));
+      {breakdowns.map((bd) => (
+        <TagBreakdownSection
+          key={bd.currency}
+          bd={bd}
+          isChecked={(key) => isChecked(bd.currency, key)}
+          toggle={(key) => toggle(bd.currency, key, bd.cells)}
+        />
+      ))}
 
-        return (
-          <Card key={bd.currency} data-testid={`tag-breakdown-${bd.currency}`}>
-            <CardHeader>
-              <CardTitle className="text-base">
-                {t("report.currencyHeading", { currency: bd.currency })}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <InvestmentPieChart slices={slices} currency={bd.currency} legendPosition="right" />
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-8" />
-                    <TableHead>{t("report.col.tag")}</TableHead>
-                    <TableHead className="text-right">{t("report.col.holdings")}</TableHead>
-                    <TableHead className="text-right">{t("report.col.liabilities")}</TableHead>
-                    <TableHead className="text-right">{t("report.col.net")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bd.cells.map((c) => {
-                    const key = cellKey(c);
-                    const on = isChecked(bd.currency, key);
-                    return (
-                      <TableRow key={key}>
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={on}
-                            onChange={() => toggle(bd.currency, key, bd.cells)}
-                            className="h-4 w-4 cursor-pointer accent-primary"
-                            aria-label={c.name}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TagBadge name={c.name} color={c.color} />
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {c.holdings > 0 ? formatCurrency(String(c.holdings), bd.currency) : "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums text-destructive">
-                          {c.liabilities > 0
-                            ? `−${formatCurrency(String(c.liabilities), bd.currency)}`
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatCurrency(String(c.net), bd.currency)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  <TableRow className="font-medium">
-                    <TableCell />
-                    <TableCell>{t("report.total")}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(String(bd.totalHoldings), bd.currency)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums text-destructive">
-                      {bd.totalLiabilities > 0
-                        ? `−${formatCurrency(String(bd.totalLiabilities), bd.currency)}`
-                        : "—"}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatCurrency(String(bd.totalHoldings - bd.totalLiabilities), bd.currency)}
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        );
-      })}
+      <TagsCard />
     </div>
   );
 }

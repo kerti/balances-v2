@@ -80,3 +80,48 @@ and "rows that try to satisfy both," which is the main programming-error class.
 - Future per-group leak tests (mirroring `assets_tenancy_test.go`) follow the same pattern: every
   snapshot mutation verifies the parent position belongs to the requesting household via JOIN or
   CTE.
+
+## Presentation / UX
+
+The three **group landing pages** — `AssetsHome`, `InvestmentsHome`, `LiabilitiesHome` (epic #204,
+issue #14) — are the face of this per-group aggregation. Each reads its group's snapshot tables and
+renders one card-set **per currency** (no FX, mirroring the list-screen convention): a total-value
+headline, a value-over-time line, a 100%-stacked category-share area, and a category-mix pie
+(`InvestmentsHome` adds cost/unrealized-P/L to the headline and a second risk-profile pie). The
+charts are shared components (`SnapshotChart`, `CategoryStackChart` / `GroupCategoryStackChart`,
+`InvestmentPieChart`) so all three hubs render identically-styled series from the same snapshot
+shapes.
+
+### Mobile (#510, [[adr-0050]])
+
+The hubs are already the doctrine's target shape — a single-column `space-y-6` stack whose only
+multi-column node is `InvestmentsHome`'s pie pair (already `md:grid-cols-2`, i.e. stacked below
+768px). So the [[adr-0050]] **"multi-column dashboard/hub grid → single-column stack"** transform
+lands here as **pure CSS reflow, not a forked renderer** (mirroring the dashboard, [[adr-0001]]): no
+surface crosses the structural bar, so no `useIsMobile()` split is warranted and the shared chart
+components are unchanged. The reflow closes the two squeeze failures a <768px audit found against the
+[[adr-0050]] a11y floor:
+
+- **Header toolbar** stacks below the title on phones (`flex-col` → `md:flex-row`), so the
+  bulk-entry action(s) — two of them on `InvestmentsHome` — no longer crowd or overrun the title.
+- **Tap targets** meet ≥44px at mobile width: each `size="sm"` bulk-entry `Button` sizes up
+  (`h-11` → `md:h-8`, the `md` breakpoint being the same 768px boundary the doctrine's `useIsMobile`
+  uses). On `InvestmentsHome`, whose two bulk-entry buttons (enter-interest + enter-prices) would
+  otherwise cram against the right edge, the pair **splits the row evenly** on phones (`flex-1` →
+  `md:flex-none`, staying on one line at half-width each) and returns to content-width on the right on
+  desktop.
+- **Multi-currency headlines** stack one figure per line on phones. A mixed household renders
+  `Rp X · $ Y` inline on desktop; on mobile each currency drops onto its own line (`block md:inline`
+  on the per-currency span, the `·` separator `hidden md:inline`) instead of running off the primary
+  figure's right edge. This covers the total headline on all three hubs and the value / cost /
+  unrealized-P/L lines of the shared `InvestmentListHeadline`. **Single-currency is unchanged** — the
+  labelled cost/P/L rows keep label + figure on one line. The same fix rides the sibling
+  `ListHeadline` (the shared headline of every flat [[adr-0043]] list screen — receivables, bank
+  accounts, properties, vehicles, and each investment-subtype list), so those headlines stack
+  identically on mobile. **Receivables** has no chart hub — it is a flat descriptor list whose row
+  layout already diverges via [[adr-0043]]'s `PositionListCards` / `PositionListTable`
+  (`use-mobile.ts`) — so the shared-headline stacking is the whole of its share of this pass.
+
+Every chart is already `h-64 w-full`, so charts read within the viewport with no horizontal scroll.
+This a11y floor is catalogued as INV-PRESENTATION-08 ([[adr-0034]] / [[adr-0050]]) and smoke-tested at
+390px.

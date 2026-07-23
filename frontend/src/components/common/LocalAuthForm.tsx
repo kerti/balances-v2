@@ -168,7 +168,7 @@ export function LocalAuthForm() {
 
       <Button
         type="submit"
-        className="w-full"
+        className="w-full min-h-11 md:min-h-0"
         data-testid="local-submit"
         disabled={active.isPending}
       >

@@ -1,17 +1,18 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { CreateIncomeDialog } from "@/components/dialogs/CreateIncomeDialog";
-import { IncomeRow } from "@/components/common/IncomeRow";
+import { IncomeList } from "@/components/income/IncomeList";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
-import { PaginationControls } from "@/components/common/PaginationControls";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ownershipLabel } from "@/lib/ownership";
 import { formatCurrency } from "@/lib/format";
+import { headlineSurface } from "@/lib/headline";
+import { cn } from "@/lib/utils";
 import type { Income, IncomeCategory, Regularity } from "@/api/types";
 
 const PAGE_SIZE = 12;
@@ -38,6 +39,7 @@ export function IncomeScreen() {
   const { data, isPending, error } = useIncome();
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(1);
   const [regularityFilter, setRegularityFilter] = useState<RegularityFilter>("all");
   // undefined = not yet set by user → auto-picks most recent month once data loads
@@ -141,7 +143,10 @@ export function IncomeScreen() {
           <h1 className="text-2xl font-semibold tracking-tight">{t("income:listTitle")}</h1>
           <p className="text-sm text-muted-foreground">{t("income:listSubtitle")}</p>
         </div>
-        <CreateIncomeDialog />
+        {/* Desktop: the primary action lives top-right. On mobile it moves onto
+            the filter toolbar as a compact "New" (see below) to reclaim the
+            vertical space under the page copy. */}
+        {!isMobile && <CreateIncomeDialog />}
       </div>
 
       {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
@@ -194,13 +199,26 @@ export function IncomeScreen() {
                 </Button>
               ))}
             </div>
+
+            {/* Mobile: the create action rides the filter toolbar, pushed to
+                the right edge; the `+` icon + primary fill keep it reading as an
+                action rather than another filter pill. */}
+            {isMobile && (
+              <div className="ml-auto">
+                <CreateIncomeDialog compactTrigger />
+              </div>
+            )}
           </div>
 
           {headlineStats.length > 0 && (
             <div className="flex flex-wrap gap-4">
               {headlineStats.map((h) => (
-                <Card key={h.currency} className="flex-1 min-w-60">
-                  <CardContent className="pt-4 space-y-2">
+                <Card
+                  key={h.currency}
+                  className={cn("flex-1 min-w-60", headlineSurface)}
+                  data-testid="income-headline"
+                >
+                  <CardContent className="pt-4 space-y-3">
                     <div>
                       <div className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t("income:headline.total")}
@@ -209,55 +227,69 @@ export function IncomeScreen() {
                         {formatCurrency(String(h.total), h.currency)}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-x-4 text-sm">
-                      <span>
-                        <span className="text-muted-foreground">
-                          {t("income:headline.routine")}
-                        </span>{" "}
-                        <span className="tabular-nums">
-                          {formatCurrency(String(h.routine), h.currency)}
-                        </span>
-                      </span>
-                      <span>
-                        <span className="text-muted-foreground">
-                          {t("income:headline.incidental")}
-                        </span>{" "}
-                        <span className="tabular-nums">
-                          {formatCurrency(String(h.incidental), h.currency)}
-                        </span>
-                      </span>
-                    </div>
-                    {h.byUser.length > 1 && (
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">
-                          {t("income:headline.byPerson")}
-                          {": "}
-                        </span>
-                        {h.byUser.map((u, i) => (
-                          <span key={u.label}>
-                            {i > 0 && " · "}
-                            {u.label}{" "}
-                            <span className="tabular-nums">
-                              {formatCurrency(String(u.amount), h.currency)}
-                            </span>
-                          </span>
-                        ))}
+                    {/* Regularity / by-person / by-category are peer breakdown
+                        blocks: side-by-side columns on desktop (md+), stacked on
+                        phones. Regularity is always first, by-person (when a
+                        household has more than one earner) second, by-category
+                        last. */}
+                    <div
+                      className={cn(
+                        "grid gap-y-4 md:gap-y-0 md:divide-x md:divide-border",
+                        "md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0",
+                        h.byUser.length > 1 ? "md:grid-cols-3" : "md:grid-cols-2",
+                      )}
+                    >
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          {t("income:headline.byRegularity")}
+                        </div>
+                        <dl className="mt-1 space-y-0.5 text-sm">
+                          <div className="flex justify-between gap-3">
+                            <dt>{t("income:headline.routine")}</dt>
+                            <dd className="tabular-nums text-right">
+                              {formatCurrency(String(h.routine), h.currency)}
+                            </dd>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <dt>{t("income:headline.incidental")}</dt>
+                            <dd className="tabular-nums text-right">
+                              {formatCurrency(String(h.incidental), h.currency)}
+                            </dd>
+                          </div>
+                        </dl>
                       </div>
-                    )}
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">
-                        {t("income:headline.byCategory")}
-                        {": "}
-                      </span>
-                      {h.byCategory.map((c, i) => (
-                        <span key={c.category}>
-                          {i > 0 && " · "}
-                          {t(`income:categories.${c.category}`)}{" "}
-                          <span className="tabular-nums">
-                            {formatCurrency(String(c.amount), h.currency)}
-                          </span>
-                        </span>
-                      ))}
+                      {h.byUser.length > 1 && (
+                        <div>
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                            {t("income:headline.byPerson")}
+                          </div>
+                          <dl className="mt-1 space-y-0.5 text-sm">
+                            {h.byUser.map((u) => (
+                              <div key={u.label} className="flex justify-between gap-3">
+                                <dt>{u.label}</dt>
+                                <dd className="tabular-nums text-right">
+                                  {formatCurrency(String(u.amount), h.currency)}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </div>
+                      )}
+                      <div>
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          {t("income:headline.byCategory")}
+                        </div>
+                        <dl className="mt-1 space-y-0.5 text-sm">
+                          {h.byCategory.map((c) => (
+                            <div key={c.category} className="flex justify-between gap-3">
+                              <dt>{t(`income:categories.${c.category}`)}</dt>
+                              <dd className="tabular-nums text-right">
+                                {formatCurrency(String(c.amount), h.currency)}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -268,36 +300,12 @@ export function IncomeScreen() {
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t(emptyKey)}</p>
           ) : (
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t("income:tableHeaders.date")}</TableHead>
-                      <TableHead>{t("income:tableHeaders.category")}</TableHead>
-                      <TableHead>{t("income:tableHeaders.amount")}</TableHead>
-                      <TableHead>{t("income:tableHeaders.description")}</TableHead>
-                      <TableHead>{t("income:tableHeaders.ownership")}</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {pageRows.map((row) => (
-                      <IncomeRow key={row.id} income={row} />
-                    ))}
-                  </TableBody>
-                </Table>
-                {totalPages > 1 && (
-                  <div className="border-t px-6 py-3">
-                    <PaginationControls
-                      page={effectivePage}
-                      totalPages={totalPages}
-                      onPageChange={setPage}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <IncomeList
+              rows={pageRows}
+              page={effectivePage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           )}
         </div>
       )}

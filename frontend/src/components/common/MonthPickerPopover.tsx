@@ -106,7 +106,7 @@ export function MonthPickerPopover({
         disabled={!prevIso}
         onClick={() => prevIso && onSelect(prevIso)}
         aria-label={t("monthPicker.prevMonth")}
-        className="relative rounded-r-none border-border focus-visible:z-10 dark:border-input"
+        className="relative size-11 rounded-r-none border-border focus-visible:z-10 dark:border-input md:size-9"
       >
         <ChevronLeft className="size-4" />
       </Button>
@@ -116,7 +116,7 @@ export function MonthPickerPopover({
             variant="outline"
             size="lg"
             data-testid="month-picker-trigger"
-            className="relative min-w-40 justify-between gap-2 rounded-none focus-visible:z-10"
+            className="relative h-11 min-w-40 justify-between gap-2 rounded-none focus-visible:z-10 md:h-9"
           >
             {selectedLabel}
             <ChevronDown className="size-4 opacity-60" />
@@ -182,7 +182,7 @@ export function MonthPickerPopover({
         disabled={!nextIso}
         onClick={() => nextIso && onSelect(nextIso)}
         aria-label={t("monthPicker.nextMonth")}
-        className="relative rounded-l-none border-border focus-visible:z-10 dark:border-input"
+        className="relative size-11 rounded-l-none border-border focus-visible:z-10 dark:border-input md:size-9"
       >
         <ChevronRight className="size-4" />
       </Button>

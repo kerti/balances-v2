@@ -128,6 +128,60 @@ scoped to one type, it is one snapshot table and one transaction. The materializ
 ([[adr-0006]]) is regenerated **once after commit** for the affected month (and any later months whose
 carry-forward it changes, via the existing regen reach) — never once per row.
 
+## Presentation / UX
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the entry row **diverges its mobile layout**
+from the web layout: the cramped horizontal input row does not survive the squeeze for the
+non-technical phone audience [[adr-0025]] centres. `EntryScreen` stays the single source of truth —
+it owns all data, dirty-tracking, per-row field state, batch validation, and the atomic Save — and
+delegates only the **row** to one of two renderers, picked at runtime by `useIsMobile()` (the single
+768px boolean); one tree is ever in the DOM. Both consume the same presentation-neutral row
+projection (`EntryRowView`) and the same `onFieldChange`/`onReset` callbacks, and expose the **same
+`data-testid`s** for the same semantic elements, so the entry vitest/E2E assertions run against either
+renderer unchanged. No logic forks into a renderer.
+
+- **`EntryRowDesktop`** (≥768px) keeps the original layout: name block left, the shape's field inputs
+  (numbers right-aligned) and computed value in a cramped horizontal group right, the reset action
+  trailing. For a multi-field shape (qty×price, accrued) a `EntryRowDesktopHeader` labels **every
+  column, the derived total included** (`Value` for qty×price, `Principal` for accrued) — the input
+  placeholders vanish the moment a value carries forward, so without it a desktop row gives no clue
+  which field is units and which is price, and the total was otherwise the one unlabelled column. The
+  header renders as the **right cluster of the group title line** (one label per column, **once per
+  investment type**), sharing that vertical space rather than taking a row of its own. **Currency** shows once, in its own fixed column
+  **between the last input and the total** (`formatCurrencyParts` supplies the locale symbol), with
+  the total number right-aligned in its own column beside it (`tabular-nums`, wide enough that
+  household IDR figures don't clip) — reading `[qty] [price] IDR 15.000` with each of the symbol and
+  the number aligned in its own column. The old standalone currency column before the inputs was
+  redundant with the total and read as if it labelled the quantity, so it is dropped for multi-field
+  shapes. Amount-only (one unlabelled field, no total) keeps a small currency column before its input
+  and renders no header.
+- **`EntryRowMobile`** (<768px) applies the doctrine's **"cramped horizontal input row → stacked
+  fields"** transform: the name / ownership / carry-forward "when" block on top, then each tab-stop on
+  its own **full-width** line (its label shown when the shape names one; numbers right-aligned), then
+  a footer carrying the computed value and the row actions. Currency shows once, at the card's
+  top-right. On a shape with a derived column (qty×price, accrued) the footer number is **named by its
+  column** (`Value` for qty×price, `Principal` for accrued) — the mobile equivalent of the desktop
+  group's derived-column header, so a reader knows the figure is a named, computed column rather than
+  another field to fill (`Value 15.000`, `Principal 3.000.000`; a bare `—` until the inputs form a
+  complete pair). The value input and the reset control meet the a11y floor
+  (≥44px tap targets, `h-11`); focus order follows visual order; no horizontal scroll is needed to
+  read or edit the primary value.
+
+The split landed shape by shape. **Amount-only** (Asset / Liability / Receivable — one value field,
+no computed line, #502) stood up the reusable `EntryRowDesktop`/`EntryRowMobile` split and the shared
+`EntryRowView` projection. **qty×price** (Stock / MutualFund / Gold, #505) — the worst case that
+triggered #428 (#423): two tab-stops plus a computed value that overlaps the position name when
+crammed — reuses that split unchanged; both tab-stops stack as full-width `h-11` lines with the
+value named `Value` in the footer, the container's "half a pair isn't saveable" dirty rule untouched.
+**Accrued** (Bond / TimeDeposit, #506) reuses the same split for its two directly-entered tab-stops
+(total value, accrued interest) with the derived `Principal` named in the footer; the per-row accrued
+default (accrues → forced entry, pays-out / time deposit → 0) is container-owned and survives the
+renderer swap. It is also where the mobile footer vocab was **refined** from a bare `=` to naming the
+derived column ([[adr-0050]]), so the accrued principal reads as a named breakdown rather than an
+anonymous sum. One `@smoke` Playwright spec per shape asserts the correct renderer mounts at mobile vs
+desktop width and the value stays reachable; deep per-shape behaviour stays in the existing per-shape
+journeys.
+
 ## Considered alternatives
 
 - **One screen, every position, heterogeneous rows.** The literal reading of the finding. Fights the

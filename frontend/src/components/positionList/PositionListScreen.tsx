@@ -182,15 +182,25 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t(keys.listTitle, copyArgs)}</h1>
           <p className="text-sm text-muted-foreground">{t(keys.listSubtitle, copyArgs)}</p>
         </div>
-        <div className="flex items-center gap-2">
+        {/* On phones the stacked header promotes these to primary actions like
+            the hubs (ADR-0050). A bulk-entry action (`renderHeaderAction`, e.g.
+            receivables' Enter-this-month) takes its **own full-width row** on top
+            (stretched by the column), and the dialog triggers (Import + create)
+            share the row below, flexing to equal widths. `min-h-11` holds the
+            44px tap-target floor; the dialog bodies are portaled, so `[&>*]` only
+            ever hits the inline triggers. md+ collapses back to one dense,
+            content-width row on the right. */}
+        <div className="flex flex-col gap-2 max-md:w-full max-md:[&>*]:min-h-11 md:flex-row md:items-center md:gap-2">
           {descriptor.renderHeaderAction?.()}
-          {importMutation && <ImportPositionDialog noun={noun} mutation={importMutation} />}
-          {descriptor.renderCreateDialog()}
+          <div className="flex gap-2 max-md:[&>*]:min-h-11 max-md:[&>*]:flex-1">
+            {importMutation && <ImportPositionDialog noun={noun} mutation={importMutation} />}
+            {descriptor.renderCreateDialog()}
+          </div>
         </div>
       </div>
 

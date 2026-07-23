@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Download, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { triggerDownload } from "@/lib/backup";
@@ -35,14 +36,29 @@ export function ReportPdfButton({ selected }: Props) {
     }
   }
 
+  // Icon + the untranslated format name "PDF": a fixed-width button that reads
+  // the same in every locale (so it never wraps out of the toolbar the way a
+  // translated "Download PDF" / "Unduh PDF" did). The full, translated phrase
+  // stays the accessible name (aria-label) and hover title, so screen-reader
+  // and tooltip users still get the verb. Busy swaps the download glyph for a
+  // spinner — same footprint, no width shift.
+  const label = busy ? t("downloadPdf.preparing") : t("downloadPdf.button");
   return (
     <Button
       variant="outline"
       onClick={() => void handleClick()}
       disabled={busy}
       data-testid="download-pdf-button"
+      className="h-11 md:h-8"
+      aria-label={label}
+      title={label}
     >
-      {busy ? t("downloadPdf.preparing") : t("downloadPdf.button")}
+      {busy ? (
+        <Loader2 className="size-4 animate-spin" aria-hidden />
+      ) : (
+        <Download className="size-4" aria-hidden />
+      )}
+      {t("downloadPdf.short")}
     </Button>
   );
 }

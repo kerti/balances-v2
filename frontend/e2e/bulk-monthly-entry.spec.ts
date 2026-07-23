@@ -300,3 +300,204 @@ test(
     await expect(page.getByText(name)).toHaveCount(0);
   },
 );
+
+// ADR-0050 S1 (#502): the amount-only entry row diverges its mobile layout via
+// the runtime pick-one renderer — one tree in the DOM, same testids at both
+// widths. This asserts the CORRECT renderer mounts per viewport and the value
+// stays reachable: at <768px the stacked EntryRowMobile (full-width h-11 input,
+// the ≥44px tap floor), at ≥768px the cramped EntryRowDesktop (w-36). Deep
+// per-shape behaviour is already covered by the amount-only journeys above.
+// covers: INV-JOURNEYS-05
+test(
+  "asset entry row diverges renderer at the 768px boundary",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const account = `E2E divergence account ${Date.now()}`;
+
+    await page.goto("/assets/bank-accounts");
+    await page.getByRole("button", { name: "New bank account" }).first().click();
+    const acctDialog = page.getByRole("dialog");
+    await acctDialog.getByLabel("Display name").fill(account);
+    await acctDialog.getByLabel("Bank name").fill("E2E Bank");
+    await acctDialog.getByLabel("Account number").fill("1234567890");
+    await acctDialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
+
+    // --- Mobile width: the stacked renderer mounts, value input is a full-width
+    //     ≥44px target, and no horizontal scroll is needed to reach it. ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/assets");
+    await page.getByTestId("assets-enter-month").click();
+    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    const mobileRow = page.locator("li").filter({ hasText: account });
+    const mobileInput = mobileRow.getByRole("textbox");
+    await expect(mobileInput).toHaveClass(/h-11/);
+    await expect(mobileInput).toBeInViewport();
+    const boundingBox = await mobileInput.boundingBox();
+    expect(boundingBox!.height).toBeGreaterThanOrEqual(44);
+
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-36 input). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — reload would just re-mount it, and the
+    //     home's enter-month button isn't here. ---
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/assets/enter");
+    const desktopRow = page.locator("li").filter({ hasText: account });
+    await expect(desktopRow.getByRole("textbox")).toHaveClass(/w-36/);
+
+    // --- Cleanup ---
+    await page.goto("/assets/bank-accounts");
+    await page
+      .getByRole("row", { name: new RegExp(account) })
+      .getByText(account)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(account)).toHaveCount(0);
+  },
+);
+
+// ADR-0050 S2 (#505): the qty×price entry row — the worst case that triggered
+// #428 (#423), two tab-stops (quantity, price) plus a computed value that
+// overlaps the position name when crammed on mobile — diverges via the same
+// runtime pick-one renderer. This asserts BOTH tab-stops stack as full-width
+// ≥44px lines at <768px (EntryRowMobile) and cram into their w-28 columns
+// at ≥768px (EntryRowDesktop), one tree in the DOM, same testids. Deep qty×price
+// behaviour (dirty pair, computed value, overwrite) is the journey above.
+// covers: INV-JOURNEYS-05
+test(
+  "qty×price entry row diverges renderer at the 768px boundary",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E divergence stock ${Date.now()}`;
+
+    await page.goto("/investments/stocks");
+    await page.getByRole("button", { name: "New stock" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("New stock position")).toBeVisible();
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Ticker").fill("E2ED");
+    await dialog.getByLabel("Exchange").fill("IDX");
+    await dialog.getByLabel("Risk profile").selectOption("medium");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
+    //     computed value is reachable without horizontal scroll. ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/investments");
+    await page.getByTestId("investments-enter-prices").click();
+    await expect(page.getByText("Enter this month's prices")).toBeVisible();
+    const mobileRow = page.locator("li").filter({ hasText: name });
+    const mobileQty = mobileRow.getByLabel("Quantity");
+    const mobilePrice = mobileRow.getByLabel("Price per unit");
+    await expect(mobileQty).toHaveClass(/h-11/);
+    await expect(mobilePrice).toHaveClass(/h-11/);
+    await mobileQty.fill("100");
+    await mobilePrice.fill("8500");
+    // The computed value shows in the footer named "Value", and is in the viewport.
+    const mobileValue = mobileRow.getByTestId(/investment-entry-value-/);
+    await expect(mobileValue).toContainText("Value");
+    await expect(mobileValue).toBeInViewport();
+    const qtyBox = await mobileQty.boundingBox();
+    expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
+
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-28 columns). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — the home's enter-prices button
+    //     isn't here to click. ---
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/investments/enter/prices");
+    const desktopRow = page.locator("li").filter({ hasText: name });
+    await expect(desktopRow.getByLabel("Quantity")).toHaveClass(/w-28/);
+    await expect(desktopRow.getByLabel("Price per unit")).toHaveClass(/w-28/);
+    // The desktop group header names every column, the derived total included.
+    await expect(page.getByText("Value", { exact: true }).first()).toBeVisible();
+
+    // --- Cleanup ---
+    await page.goto("/investments/stocks");
+    await page
+      .getByRole("row", { name: new RegExp(name) })
+      .getByText(name)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);
+
+// ADR-0050 S3 (#506): the accrued entry row (Bond/TimeDeposit) — two directly
+// entered tab-stops (total value, accrued interest) plus a derived principal —
+// diverges via the same runtime pick-one renderer. This asserts BOTH tab-stops
+// stack as full-width ≥44px lines at <768px (EntryRowMobile) and cram into their
+// w-28 columns at ≥768px (EntryRowDesktop), one tree in the DOM, same testids,
+// and the derived principal is named in the footer (mobile) / group header
+// (desktop) so it never reads as a stray number. Deep accrued behaviour
+// (disposition default, overwrite) is the journey above.
+// covers: INV-JOURNEYS-05
+test(
+  "accrued entry row diverges renderer at the 768px boundary",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const name = `E2E divergence bond ${Date.now()}`;
+
+    await page.goto("/investments/bonds");
+    await page.getByRole("button", { name: "New bond" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByText("New bond position")).toBeVisible();
+    await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByLabel("Issuer").fill("E2E Treasury");
+    await dialog.getByLabel("Face value").fill("1000000");
+    await dialog.getByLabel("Coupon rate (% per year)").fill("6.5");
+    await dialog.getByLabel("Maturity date").fill("2030-01-01");
+    await dialog.getByLabel("Placement date").fill("2024-01-01");
+    await dialog.getByLabel("Risk profile").selectOption("medium");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
+
+    // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
+    //     derived principal, named "Principal", is reachable without h-scroll. ---
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/investments");
+    await page.getByTestId("investments-enter-accrued").click();
+    await expect(page.getByText("Enter this month's bond & deposit values")).toBeVisible();
+    const mobileRow = page.locator("li").filter({ hasText: name });
+    const mobileTotal = mobileRow.getByLabel("Total value");
+    const mobileAccrued = mobileRow.getByLabel("Accrued");
+    await expect(mobileTotal).toHaveClass(/h-11/);
+    await expect(mobileAccrued).toHaveClass(/h-11/);
+    // A govt-primary bond defaults to pays-out, so accrued seeds to 0; typing the
+    // total completes the pair and the principal (total − accrued) resolves.
+    await mobileTotal.fill("1010000");
+    const mobilePrincipal = mobileRow.getByTestId(/investment-accrued-entry-value-/);
+    await expect(mobilePrincipal).toContainText("Principal");
+    await expect(mobilePrincipal).toBeInViewport();
+    const totalBox = await mobileTotal.boundingBox();
+    expect(totalBox!.height).toBeGreaterThanOrEqual(44);
+
+    // --- Desktop width: a fresh load of the entry route mounts the cramped
+    //     renderer (w-28 columns). goto (not reload) because the mobile section
+    //     left us *on* the entry screen — the home's enter-accrued button
+    //     isn't here to click. ---
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/investments/enter/accrued");
+    const desktopRow = page.locator("li").filter({ hasText: name });
+    await expect(desktopRow.getByLabel("Total value")).toHaveClass(/w-28/);
+    await expect(desktopRow.getByLabel("Accrued")).toHaveClass(/w-28/);
+    // The desktop group header names every column, the derived principal included.
+    await expect(page.getByText("Principal", { exact: true }).first()).toBeVisible();
+
+    // --- Cleanup ---
+    await page.goto("/investments/bonds");
+    await page
+      .getByRole("row", { name: new RegExp(name) })
+      .getByText(name)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(name)).toHaveCount(0);
+  },
+);

@@ -145,7 +145,7 @@ export function OnboardingScreen() {
           {expired ? (
             <div className="space-y-3" data-testid="onboarding-expired">
               <p className="text-sm text-muted-foreground">{t("expired")}</p>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full min-h-11 md:min-h-0">
                 <a href="/">{t("signInAgain")}</a>
               </Button>
             </div>
@@ -195,7 +195,7 @@ export function OnboardingScreen() {
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-full"
+                      className="w-full min-h-11 md:min-h-0"
                       data-testid="onboarding-start-own"
                       disabled={join.isPending}
                       onClick={() => setConfirmFound(true)}
@@ -236,7 +236,7 @@ export function OnboardingScreen() {
                   )}
                   <Button
                     type="submit"
-                    className="w-full"
+                    className="w-full min-h-11 md:min-h-0"
                     data-testid="onboarding-found-submit"
                     disabled={options.isPending || found.isPending}
                   >

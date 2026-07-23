@@ -90,7 +90,7 @@ export function InviteAcceptScreen() {
           {invalidLink ? (
             <div className="space-y-3" data-testid="invite-invalid">
               <p className="text-sm text-muted-foreground">{t("invite.invalid")}</p>
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild variant="outline" className="w-full min-h-11 md:min-h-0">
                 <a href="/">{t("invite.goToSignIn")}</a>
               </Button>
             </div>
@@ -133,7 +133,7 @@ export function InviteAcceptScreen() {
 
                 <Button
                   type="submit"
-                  className="w-full"
+                  className="w-full min-h-11 md:min-h-0"
                   data-testid="invite-submit"
                   disabled={accept.isPending}
                 >
@@ -150,7 +150,7 @@ export function InviteAcceptScreen() {
                     </span>
                     <div className="h-px flex-1 bg-border" />
                   </div>
-                  <Button asChild variant="outline" className="w-full">
+                  <Button asChild variant="outline" className="w-full min-h-11 md:min-h-0">
                     <a
                       href={`/api/auth/google/start?invite=${encodeURIComponent(token)}&lng=${encodeURIComponent(locale)}`}
                       data-testid="invite-google"

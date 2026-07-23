@@ -91,6 +91,7 @@
   },
   "downloadPdf": {
     "button": "Unduh PDF",
+    "short": "PDF",
     "preparing": "Menyiapkan…",
     "exported": "PDF berhasil diunduh",
     "failed": "Gagal membuat PDF — coba lagi."

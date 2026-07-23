@@ -118,6 +118,24 @@ the runway estimate errs short/safe) drives the projection out of the box; store
 once present, override it via that trailing-12 average. Deflation months are allowed (the value may
 be negative — no positivity constraint, unlike the FX rate).
 
+#### Presentation / UX: monthly-rates page mobile layout
+
+The manual monthly series is edited on the **Settings ▸ Inflation Rates** subpage
+(`InflationRatesCard`); the `assumed_annual_inflation` fallback lives on the Settings home page
+(Household section) instead — it's a single preference, not a row-based lookup. A shared add form
+(month · annual %) sits above the list of entered figures.
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the **entered-rates list diverges its
+mobile layout** exactly as the structurally-identical FX table does ([[adr-0002]] → Presentation /
+UX): the wide month · rate · delete table horizontally scrolls on a phone, hiding the figure the
+user opened the page to check. The add form is single-layout; the list splits at the renderer, picked
+at runtime by `useIsMobile()` (the single 768px boolean) — one tree in the DOM, both leaves fed the
+same rows under the shared `inflation-rate-row` / `inflation-rate-value` testids. **<768px** applies
+the doctrine's **"wide table → stacked cards"** transform: one card per figure with the **rate
+promoted to the headline** (`tabular-nums`, a trailing "%" making the unit explicit without the
+column header, the month below) and a delete icon button at the a11y floor (`size-11`, ≥44px —
+INV-PRESENTATION-08); **≥768px** keeps the wide table.
+
 ### Presentation: numbers + plain-language explanation, no colour/targets yet
 
 Each ratio renders its value plus one short explanatory sentence (audience is non-technical). **No

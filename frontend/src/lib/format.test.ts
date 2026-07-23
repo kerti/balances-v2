@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   formatCurrency,
+  formatCurrencyParts,
   formatYearMonth,
   formatDate,
   formatDateTime,
@@ -53,6 +54,29 @@ describe("formatCurrency", () => {
 
   it("returns the raw input when the amount is not a number", () => {
     expect(formatCurrency("not-a-number", "USD", "en-GB")).toBe("not-a-number");
+  });
+});
+
+// covers: INV-PRESENTATION-01
+describe("formatCurrencyParts", () => {
+  it("splits symbol from number, applying the currency's decimals", () => {
+    const idr = formatCurrencyParts("1500000", "IDR", "en-GB");
+    expect(idr.symbol).toMatch(/IDR|Rp/);
+    expect(idr.value).toMatch(/\d/);
+    expect(idr.value).not.toMatch(/[.,]\d{2}\b/); // IDR: no fraction
+    expect(idr.value).not.toMatch(/IDR|Rp/); // symbol stripped out of the number
+
+    const usd = formatCurrencyParts("1234.5", "USD", "en-GB");
+    expect(usd.symbol).toMatch(/\$|USD/);
+    expect(usd.value).toMatch(/[.,]\d{2}\b/); // USD: two decimals
+  });
+
+  it("still resolves the symbol but yields a null value for a blank/NaN amount", () => {
+    for (const bad of ["", "   ", "not-a-number"]) {
+      const p = formatCurrencyParts(bad, "IDR", "en-GB");
+      expect(p.symbol).toMatch(/IDR|Rp/);
+      expect(p.value).toBeNull();
+    }
   });
 });
 
