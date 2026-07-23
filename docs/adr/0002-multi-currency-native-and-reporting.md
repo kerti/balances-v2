@@ -40,3 +40,23 @@ data.
   (no usable public API). When it lands: an on-demand "fetch this month's rates" button (not a cron)
   plus a `source` column (`manual`/`auto`) so manual corrections stay authoritative and are never
   overwritten by the fetcher. Column added with the fetcher, not speculatively now.
+
+## Presentation / UX
+
+The manual rate table lives on the **Settings ▸ Exchange Rates** subpage (`FxRatesCard`), gated by
+the multi-currency toggle — a single-currency household gets a pointer back to the Currency toggle
+rather than a dead-end CRUD form. A shared add form (month · currency · rate) sits above the list of
+entered rates.
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the **entered-rates list diverges its
+mobile layout**: the wide month · currency · rate · delete table horizontally scrolls on a phone,
+hiding the rate the user opened the page to check. The add form is single-layout (it already reflows
+via `flex-wrap`), but the list splits at the renderer, picked at runtime by `useIsMobile()` (the
+single 768px boolean) — one tree is ever in the DOM, both leaves fed the same rows under the shared
+`fx-rate-row` / `fx-rate-value` testids:
+
+- **≥768px** keeps the wide table.
+- **<768px** applies the doctrine's **"wide table → stacked cards"** transform: one card per rate
+  with the **rate promoted to the headline** (`tabular-nums`, the currency beside it, the month
+  below), readable with no horizontal scroll. The desktop's ghost text "Delete" becomes an icon
+  button sized to the a11y floor (`size-11`, ≥44px — INV-PRESENTATION-08).
