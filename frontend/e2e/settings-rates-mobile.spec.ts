@@ -83,6 +83,8 @@ test(
     await page.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("fx-rate-table")).toBeVisible();
     await expect(page.getByTestId("fx-rate-value")).toHaveText("16250");
+    // The currency column names the pair + direction, not just the foreign code.
+    await expect(page.getByText(/USD →/)).toBeVisible();
 
     // --- Phone width: the renderer flips from table to cards ---
     await page.setViewportSize({ width: 390, height: 844 });

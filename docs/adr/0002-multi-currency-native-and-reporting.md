@@ -48,6 +48,12 @@ the multi-currency toggle — a single-currency household gets a pointer back to
 rather than a dead-end CRUD form. A shared add form (month · currency · rate) sits above the list of
 entered rates.
 
+The rate column names the **whole pair, not just the foreign code**: `rate` is reporting-currency
+units per 1 unit of the foreign currency, so a bare "USD" hides both the base and the direction. Each
+row (and mobile card) reads **`<foreign> → <reporting>`** (e.g. `USD → IDR`) — "1 USD converts to
+`<rate>` IDR" — for the non-technical household audience; the reporting currency comes from the
+session, and the label falls back to the bare code until it loads.
+
 Per [[adr-0050]] (mobile–web layout divergence doctrine), the **entered-rates list diverges its
 mobile layout**: the wide month · currency · rate · delete table horizontally scrolls on a phone,
 hiding the rate the user opened the page to check. The add form is single-layout (it already reflows

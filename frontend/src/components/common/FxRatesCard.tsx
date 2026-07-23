@@ -15,9 +15,20 @@ import {
 } from "@/components/ui/table";
 import { errorMessage } from "@/lib/errorMessage";
 import { useFxRates, useCreateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
+import { useSession } from "@/hooks/useSession";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatYearMonth } from "@/lib/format";
 import type { FxRate } from "@/api/types";
+
+// The currency column names the whole pair — the foreign currency being priced
+// and the reporting currency it converts to (ADR-0002: `rate` is reporting-
+// currency units per 1 unit of the foreign currency). A bare "USD" hides both
+// the base and the direction; "USD → IDR" reads as "1 USD converts to <rate>
+// IDR" for the non-technical household audience. Falls back to the bare code
+// until the session (and so the reporting currency) has loaded.
+function fxPair(currency: string, base: string | undefined): string {
+  return base ? `${currency} → ${base}` : currency;
+}
 
 // FxRatesCard is the Settings ▸ Exchange Rates subpage's sole content: the
 // manual monthly FX table (ADR-0024). Only rendered when multi-currency is on
@@ -31,9 +42,12 @@ import type { FxRate } from "@/api/types";
 export function FxRatesCard() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: rates, isPending } = useFxRates();
+  const { data: me } = useSession();
   const createRate = useCreateFxRate();
   const deleteRate = useDeleteFxRate();
   const isMobile = useIsMobile();
+
+  const base = me?.reporting_currency?.toUpperCase();
 
   const [month, setMonth] = useState("");
   const [currency, setCurrency] = useState("");
@@ -115,6 +129,7 @@ export function FxRatesCard() {
                 <FxRateCard
                   key={r.id}
                   rate={r}
+                  pair={fxPair(r.currency, base)}
                   deleteLabel={t("common:delete")}
                   onDelete={() => deleteRate.mutate(r.id)}
                 />
@@ -134,7 +149,7 @@ export function FxRatesCard() {
                 {rates.map((r) => (
                   <TableRow key={r.id} data-testid="fx-rate-row">
                     <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                    <TableCell>{r.currency}</TableCell>
+                    <TableCell>{fxPair(r.currency, base)}</TableCell>
                     <TableCell className="tabular-nums" data-testid="fx-rate-value">
                       {r.rate}
                     </TableCell>
@@ -155,14 +170,17 @@ export function FxRatesCard() {
 
 // Mobile leaf (ADR-0050 "wide table → stacked cards"): one card per FX row. The
 // rate — the number the user came to check — is promoted to the headline with
-// the currency beside it; the month sits below. The delete control is an icon
-// button sized to the 44px tap floor (INV-PRESENTATION-08).
+// the currency pair beside it (foreign → reporting, so the direction reads); the
+// month sits below. The delete control is an icon button sized to the 44px tap
+// floor (INV-PRESENTATION-08).
 function FxRateCard({
   rate,
+  pair,
   deleteLabel,
   onDelete,
 }: {
   rate: FxRate;
+  pair: string;
   deleteLabel: string;
   onDelete: () => void;
 }) {
@@ -173,7 +191,7 @@ function FxRateCard({
           <span className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
             {rate.rate}
           </span>
-          <span className="text-sm text-muted-foreground">{rate.currency}</span>
+          <span className="text-sm text-muted-foreground">{pair}</span>
         </div>
         <div className="text-sm text-muted-foreground">{formatYearMonth(rate.year_month)}</div>
       </div>

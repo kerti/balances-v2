@@ -11,6 +11,25 @@ import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
 import type { FxRate } from "@/api/types";
+import type { Me } from "@/hooks/useSession";
+
+const me: Me = {
+  id: "u1",
+  household_id: "hh-1",
+  household_display_name: "Test Household",
+  display_name: "Pat Owner",
+  nickname: null,
+  email: "pat@example.test",
+  picture_url: null,
+  locale: "en-GB",
+  theme: "system",
+  carryover_date_mode: "month_end",
+  time_zone: "UTC",
+  reporting_currency: "IDR",
+  multi_currency_enabled: true,
+  assumed_annual_inflation: "3.5",
+  is_founder: true,
+};
 
 const rates: FxRate[] = [
   {
@@ -37,7 +56,10 @@ afterEach(() => {
 });
 
 function renderCard() {
-  server.use(http.get("/api/fx-rates", () => HttpResponse.json(rates)));
+  server.use(
+    http.get("/api/fx-rates", () => HttpResponse.json(rates)),
+    http.get("/api/me", () => HttpResponse.json(me)),
+  );
   return renderWithProviders(<FxRatesCard />);
 }
 
@@ -54,6 +76,9 @@ it("mobile: mounts the card renderer, promotes the rate, meets the 44px tap floo
   // Rate (primary figure) reads.
   expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
 
+  // The pair names the direction, not just the foreign code (USD → IDR).
+  expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
+
   // A11y floor: the delete control is a ≥44px (size-11) tap target.
   expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("size-11");
 });
@@ -66,4 +91,5 @@ it("desktop: mounts the table renderer under the same primary-figure testid", as
   expect(screen.getByRole("table")).toBeInTheDocument();
   expect(screen.queryByTestId("fx-rate-cards")).not.toBeInTheDocument();
   expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
+  expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
 });
