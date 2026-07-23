@@ -12,6 +12,7 @@ import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
 import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
+import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { netWorthComposition } from "@/lib/netWorthComposition";
 import { positionDetail } from "@/lib/routes";
@@ -250,7 +251,7 @@ function HeadlineCard({
 }) {
   const { t } = useTranslation("dashboard");
   return (
-    <Card>
+    <Card className={headlineSurface}>
       <CardContent className="space-y-3 pt-6">
         <div className="flex items-end gap-3 flex-wrap">
           <span data-testid="dashboard-headline" className="text-4xl font-semibold tracking-tight">

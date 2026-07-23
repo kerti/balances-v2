@@ -7,12 +7,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
 type Props = {
   // aria-label on the trigger — descriptor copy, so it names the row's noun.
   label: string;
   onEdit: () => void;
   onDelete: () => void;
+  /** Trigger button style. The desktop table row uses the bare "ghost" dots;
+   *  the mobile card uses "outline" + `size-11` so the action reads as a real
+   *  menu button at the tap-target floor — matching `IncomeRowMenu`. */
+  variant?: "ghost" | "outline";
+  triggerClassName?: string;
 };
 
 // The row's ⋮ → edit/delete menu, lifted out of the old per-type `*ListRow`
@@ -20,12 +26,24 @@ type Props = {
 // verbs are shared `common` copy; the actual dialogs are owned by the core, so
 // this only signals intent upward. `stopPropagation` keeps a menu click from
 // selecting the row underneath it.
-export function RowActionsMenu({ label, onEdit, onDelete }: Props) {
+export function RowActionsMenu({
+  label,
+  onEdit,
+  onDelete,
+  variant = "ghost",
+  triggerClassName,
+}: Props) {
   const { t } = useTranslation("common");
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant={variant}
+          size="icon"
+          className={cn(triggerClassName)}
+          aria-label={label}
+          onClick={(e) => e.stopPropagation()}
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>

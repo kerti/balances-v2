@@ -76,6 +76,37 @@ its default content is the shared surface, group extras are **opt-in via a singl
 "secondary"` hint** and otherwise hidden on mobile. The shared-surface boundary and mobile-minimalism
 reinforce each other. Runtime switch via the existing `useIsMobile` (768px).
 
+This table→cards split is the pattern [[adr-0050]] later generalised into the mobile-divergence
+doctrine — it names `PositionListScreen` → `PositionListCards`/`PositionListTable` as the split that
+"already emerged un-recorded" and pins the vocabulary the per-surface slices reuse.
+
+#### a11y floor (#510, [[adr-0050]])
+
+The renderer split predates the [[adr-0050]] a11y floor (INV-PRESENTATION-08: on a diverged mobile
+surface a household member reads the primary value with no horizontal scroll and every control is a
+≥44px tap target). Two shared fixes on `PositionListScreen` land it for all ten types at once:
+
+- The **screen header** stacks below the title on phones (`flex-col` → `md:flex-row`) — otherwise its
+  action buttons (a create dialog, plus `Import` on the importable types) overran the 390px viewport
+  and forced a horizontal page scroll. Stacked, the action group is **promoted to primary actions**
+  matching the hubs ([[adr-0050]] / #510) at the 44px floor height (`min-h-11`). A bulk-entry action
+  (`renderHeaderAction`, e.g. receivables' Enter-this-month link) takes its **own full-width row** on
+  top; the dialog triggers (Import + create) share the row below, flexing to equal widths (`flex-1` —
+  one full-width, or two half). This keeps a screen with all three (receivables) from cramming them
+  into equal thirds. The dialog bodies are portaled, so the width/height utilities only ever hit the
+  inline triggers. md+ collapses back to one dense, content-width row on the right.
+- The shared `RowActionsMenu` **⋮ trigger** is prop-driven per renderer (mirroring `IncomeRowMenu`):
+  the desktop `PositionListTable` keeps the bare `ghost` dots at the dense `size-8`, while the mobile
+  `PositionListCards` passes `variant="outline"` + `size-11` so the action reads as a real menu button
+  at the 44px tap-target floor — the same treatment the Income card uses, for a consistent row-action
+  surface across the app.
+
+The card body already clears the rest of the floor: the whole card is the select target and its
+essentials wrap (`flex-wrap`). The per-currency `ListHeadline` above the list stacks its figures
+one-per-line on mobile (`block md:inline`, the `·` separator `hidden md:inline`) rather than running a
+mixed-currency total off the right edge. Smoke-tested at 390px (`list-mobile.spec.ts`, bank accounts
+standing in for the shared renderer).
+
 ### Scope fence
 
 - **In:** the `*Screen` and `*ListRow` families.
