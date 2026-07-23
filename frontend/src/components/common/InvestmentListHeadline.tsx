@@ -13,6 +13,7 @@
 import { useTranslation } from "react-i18next";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { headlineSurface } from "@/lib/headline";
 import type { CurrencyAggregate } from "@/lib/listAggregates";
 
 type Props = {
@@ -26,12 +27,18 @@ type Props = {
 export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, testId }: Props) {
   const { t } = useTranslation(["common", "investments"]);
   if (aggregates.length === 0) return null;
+  // Multi-currency stacks one figure per line on mobile (ADR-0050) — value,
+  // cost, and P/L each drop their additional currencies below the primary
+  // instead of running off to its right. Single-currency renders inline
+  // unchanged (the labelled cost/PL rows stay label + figure on one line).
+  const multi = aggregates.length > 1;
+  const stack = multi ? "block md:inline" : undefined;
   return (
-    <div className="rounded-lg border p-4" data-testid={testId}>
+    <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid={testId}>
       <div className="text-sm text-muted-foreground">{t("investments:list.totalValue")}</div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
-          <span key={a.currency}>
+          <span key={a.currency} className={stack}>
             {i > 0 && <Sep />}
             {formatCurrency(String(a.value), a.currency)}
           </span>
@@ -40,7 +47,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
       <div className="mt-1 text-sm text-muted-foreground tabular-nums">
         <span>{t("investments:list.totalCost")}</span>{" "}
         {aggregates.map((a, i) => (
-          <span key={a.currency}>
+          <span key={a.currency} className={stack}>
             {i > 0 && <Sep />}
             {formatCurrency(String(a.cost), a.currency)}
           </span>
@@ -49,7 +56,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
       <div className="mt-0.5 text-sm">
         <span className="text-muted-foreground">{t("investments:list.unrealizedPL")}</span>{" "}
         {aggregates.map((a, i) => (
-          <span key={a.currency}>
+          <span key={a.currency} className={stack}>
             {i > 0 && <SepMuted />}
             <span className={cn("tabular-nums", plColor(a.pl))}>{formatPL(a)}</span>
           </span>
@@ -65,9 +72,11 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
   );
 }
 
+// Inline dot separator — hidden on mobile where the per-currency spans stack
+// onto their own lines (ADR-0050), shown on md+ where figures run inline.
 function Sep() {
   return (
-    <span aria-hidden className="text-muted-foreground">
+    <span aria-hidden className="hidden text-muted-foreground md:inline">
       {" · "}
     </span>
   );
@@ -75,7 +84,7 @@ function Sep() {
 
 function SepMuted() {
   return (
-    <span aria-hidden className="text-muted-foreground">
+    <span aria-hidden className="hidden text-muted-foreground md:inline">
       {" · "}
     </span>
   );

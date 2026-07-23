@@ -30,6 +30,8 @@ import { useLiabilities } from "@/hooks/useLiabilities";
 import { useLiabilityTimeSeries } from "@/hooks/useLiabilityTimeSeries";
 import { aggregateGroupHome, type GroupPosition } from "@/lib/groupHomeAggregates";
 import { formatCurrency } from "@/lib/format";
+import { headlineSurface } from "@/lib/headline";
+import { cn } from "@/lib/utils";
 
 type LiabilityCategory = "personal" | "institutional";
 
@@ -79,14 +81,14 @@ export function LiabilitiesHome() {
 
   return (
     <div className="space-y-6" data-testid="liabilities-home">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {t("common:home.liabilities.title")}
           </h1>
           <p className="text-sm text-muted-foreground">{t("liabilities:home.subtitle")}</p>
         </div>
-        <Button asChild size="sm" data-testid="liabilities-enter-month">
+        <Button asChild size="sm" className="h-11 md:h-8" data-testid="liabilities-enter-month">
           <Link to={routes.liabilitiesEnter}>
             <CalendarPlus className="mr-1 size-4" />
             {t("common:bulkEntry.trigger")}
@@ -152,13 +154,17 @@ function TotalOwedCard({
 }) {
   const { t } = useTranslation("liabilities");
   if (aggregates.length === 0) return null;
+  const multi = aggregates.length > 1;
   return (
-    <div className="rounded-lg border p-4" data-testid="home-total">
+    <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid="home-total">
       <div className="text-sm text-muted-foreground">{t("home.totalOwedTitle")}</div>
       <div className="mt-0.5 text-2xl font-semibold tabular-nums">
         {aggregates.map((a, i) => (
-          <span key={a.currency}>
-            {i > 0 && <span className="mx-2 text-muted-foreground">·</span>}
+          // Multi-currency stacks one figure per line on mobile (ADR-0050) —
+          // additional currencies drop below the primary instead of running off
+          // to its right; single-currency renders inline unchanged.
+          <span key={a.currency} className={multi ? "block md:inline" : undefined}>
+            {i > 0 && <span className="mx-2 hidden text-muted-foreground md:inline">·</span>}
             {formatCurrency(String(a.value), a.currency)}
           </span>
         ))}

@@ -11,6 +11,7 @@ import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ownershipLabel } from "@/lib/ownership";
 import { formatCurrency } from "@/lib/format";
+import { headlineSurface } from "@/lib/headline";
 import { cn } from "@/lib/utils";
 import type { Income, IncomeCategory, Regularity } from "@/api/types";
 
@@ -214,7 +215,7 @@ export function IncomeScreen() {
               {headlineStats.map((h) => (
                 <Card
                   key={h.currency}
-                  className="flex-1 min-w-60 border-primary/30 bg-primary/5 shadow-sm dark:bg-primary/10"
+                  className={cn("flex-1 min-w-60", headlineSurface)}
                   data-testid="income-headline"
                 >
                   <CardContent className="pt-4 space-y-3">

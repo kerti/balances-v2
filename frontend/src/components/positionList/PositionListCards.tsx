@@ -43,6 +43,8 @@ export function PositionListCards<T>({
                 label={actionsLabel}
                 onEdit={() => onEdit(row.item)}
                 onDelete={() => onDelete(row.item)}
+                variant="outline"
+                triggerClassName="size-11 shrink-0"
               />
             </div>
           </CardContent>
