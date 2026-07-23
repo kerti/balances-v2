@@ -79,7 +79,11 @@ test(
     await page.goto("/settings/fx-rates");
     await page.getByLabel("Month").fill("2026-05");
     await page.getByLabel("Currency").fill("USD");
+    // The add form's live hint spells the direction + counterpart as the code is
+    // typed, so the foreign-only field isn't a clueless single input.
+    await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = \? /);
     await page.getByLabel("Rate").fill("16250");
+    await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = 16250 /);
     await page.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("fx-rate-table")).toBeVisible();
     await expect(page.getByTestId("fx-rate-value")).toHaveText("16250");
@@ -92,9 +96,11 @@ test(
     await expect(page.getByTestId("fx-rate-cards")).toBeVisible();
     await expect(page.getByTestId("fx-rate-table")).toHaveCount(0);
 
-    // Primary value reachable: the rate reads on the card, within the viewport.
+    // Primary value reachable: the rate reads on the card as an equation (bound
+    // to the reporting currency, so it can't misread as "16250 USD"), in view.
     const value = page.getByTestId("fx-rate-value").first();
     await expect(value).toBeVisible();
+    await expect(value).toHaveText(/^1 USD = 16250 /);
     await expect(value).toBeInViewport();
 
     // No horizontal page scroll — the stacked card fits the phone width.

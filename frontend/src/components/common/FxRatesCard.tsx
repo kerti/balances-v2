@@ -20,14 +20,26 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { formatYearMonth } from "@/lib/format";
 import type { FxRate } from "@/api/types";
 
-// The currency column names the whole pair — the foreign currency being priced
-// and the reporting currency it converts to (ADR-0002: `rate` is reporting-
-// currency units per 1 unit of the foreign currency). A bare "USD" hides both
-// the base and the direction; "USD → IDR" reads as "1 USD converts to <rate>
-// IDR" for the non-technical household audience. Falls back to the bare code
-// until the session (and so the reporting currency) has loaded.
+// The desktop **Currency** column names the whole pair — the foreign currency
+// being priced and the reporting currency it converts to (ADR-0002: `rate` is
+// reporting-currency units per 1 unit of the foreign currency). A bare "USD"
+// hides both the base and the direction; "USD → IDR" reads as "USD converts to
+// IDR" under a labelled column, with the number safely in its own **Rate**
+// column. Falls back to the bare code until the session (so the reporting
+// currency) has loaded.
 function fxPair(currency: string, base: string | undefined): string {
   return base ? `${currency} → ${base}` : currency;
+}
+
+// The mobile card and the add-form hint spell the rate as a full **equation**
+// (`1 USD = 15600 IDR`) rather than a bare number beside the pair — on a stacked
+// card the promoted number would sit flush against "USD → IDR" and misread as
+// "15600 USD". The equation binds the number to the *reporting* currency, which
+// is what it actually is. `rate` may be "?" in the live add-form hint before a
+// value is typed. Built as an expression to stay clear of the ADR-0026
+// bare-JSX-text lint.
+function fxEquation(currency: string, rate: string, base: string | undefined): string {
+  return base ? `1 ${currency} = ${rate} ${base}` : `1 ${currency} = ${rate}`;
 }
 
 // FxRatesCard is the Settings ▸ Exchange Rates subpage's sole content: the
@@ -111,6 +123,15 @@ export function FxRatesCard() {
           </Button>
         </div>
 
+        {/* Live direction hint: once a currency code is entered, spell out which
+            way the rate converts and into which currency, so the form isn't a
+            bare foreign-code field with no counterpart. */}
+        {base && currency.length === 3 && (
+          <p className="text-sm text-muted-foreground" data-testid="fx-rate-hint">
+            {fxEquation(currency.toUpperCase(), rate.trim() || "?", base)}
+          </p>
+        )}
+
         {createRate.isError && (
           <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
         )}
@@ -129,7 +150,7 @@ export function FxRatesCard() {
                 <FxRateCard
                   key={r.id}
                   rate={r}
-                  pair={fxPair(r.currency, base)}
+                  base={base}
                   deleteLabel={t("common:delete")}
                   onDelete={() => deleteRate.mutate(r.id)}
                 />
@@ -169,29 +190,27 @@ export function FxRatesCard() {
 }
 
 // Mobile leaf (ADR-0050 "wide table → stacked cards"): one card per FX row. The
-// rate — the number the user came to check — is promoted to the headline with
-// the currency pair beside it (foreign → reporting, so the direction reads); the
-// month sits below. The delete control is an icon button sized to the 44px tap
-// floor (INV-PRESENTATION-08).
+// rate is promoted to the headline as a full **equation** (`1 USD = 15600 IDR`)
+// — a bare number beside "USD → IDR" would misread as "15600 USD"; the equation
+// binds the value to the reporting currency it actually is. The month sits
+// below. The delete control is an icon button sized to the 44px tap floor
+// (INV-PRESENTATION-08).
 function FxRateCard({
   rate,
-  pair,
+  base,
   deleteLabel,
   onDelete,
 }: {
   rate: FxRate;
-  pair: string;
+  base: string | undefined;
   deleteLabel: string;
   onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="fx-rate-row">
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
-            {rate.rate}
-          </span>
-          <span className="text-sm text-muted-foreground">{pair}</span>
+        <div className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
+          {fxEquation(rate.currency, rate.rate, base)}
         </div>
         <div className="text-sm text-muted-foreground">{formatYearMonth(rate.year_month)}</div>
       </div>

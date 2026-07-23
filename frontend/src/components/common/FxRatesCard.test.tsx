@@ -6,7 +6,7 @@
 // delete control clears the ≥44px tap floor.
 import { it, expect, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
-import { screen } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
@@ -73,11 +73,10 @@ it("mobile: mounts the card renderer, promotes the rate, meets the 44px tap floo
   expect(screen.queryByTestId("fx-rate-table")).not.toBeInTheDocument();
   expect(screen.queryByRole("table")).not.toBeInTheDocument();
 
-  // Rate (primary figure) reads.
+  // Rate (primary figure) reads — as an equation binding it to the reporting
+  // currency, so "16250" can't misread as "16250 USD".
+  expect(await screen.findByText("1 USD = 16250 IDR")).toBeInTheDocument();
   expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
-
-  // The pair names the direction, not just the foreign code (USD → IDR).
-  expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
 
   // A11y floor: the delete control is a ≥44px (size-11) tap target.
   expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("size-11");
@@ -92,4 +91,24 @@ it("desktop: mounts the table renderer under the same primary-figure testid", as
   expect(screen.queryByTestId("fx-rate-cards")).not.toBeInTheDocument();
   expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
   expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
+});
+
+it("add form: shows a live direction hint once a currency code is entered", async () => {
+  setViewport(1280);
+  renderCard();
+
+  // Wait for the session so the reporting currency (the counterpart) is known.
+  await screen.findByTestId("fx-rate-table");
+
+  // No code yet → no hint.
+  expect(screen.queryByTestId("fx-rate-hint")).not.toBeInTheDocument();
+
+  // Typing a 3-letter code spells out the direction + counterpart, with "?" for
+  // the not-yet-entered rate.
+  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
+  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR");
+
+  // Typing the rate fills it into the equation.
+  fireEvent.change(screen.getByLabelText("Rate"), { target: { value: "12000" } });
+  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12000 IDR");
 });
