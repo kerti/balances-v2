@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,9 @@ import {
   useCreateInflationRate,
   useDeleteInflationRate,
 } from "@/hooks/useInflationRates";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { formatYearMonth } from "@/lib/format";
+import type { InflationRate } from "@/api/types";
 
 // InflationRatesCard is the Settings ▸ Inflation Rates subpage's sole content:
 // the manual monthly table (ADR-0048's "FX-like store"). The assumed-annual
@@ -27,11 +30,17 @@ import { formatYearMonth } from "@/lib/format";
 // Rates are annualized (YoY) percentages and may be negative (deflation). No
 // card-level title/description — the page header (SettingsInflationRatesScreen)
 // owns that.
+//
+// Mobile–web layout divergence (ADR-0050 B3b, #511): the add form is shared, but
+// the entered rows split at the renderer — `useIsMobile` (768px) mounts stacked
+// cards on phones and the wide table on desktop, so only one tree is ever in the
+// DOM. Both leaves are fed the same rows and share the `inflation-rate-row` testid.
 export function InflationRatesCard() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: rates, isPending } = useInflationRates();
   const createRate = useCreateInflationRate();
   const deleteRate = useDeleteInflationRate();
+  const isMobile = useIsMobile();
 
   const [month, setMonth] = useState("");
   const [rate, setRate] = useState("");
@@ -92,31 +101,81 @@ export function InflationRatesCard() {
           <p className="text-sm text-muted-foreground">{t("inflation.empty")}</p>
         )}
 
-        {rates && rates.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("inflation.month")}</TableHead>
-                <TableHead>{t("inflation.rate")}</TableHead>
-                <TableHead className="w-16"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        {rates &&
+          rates.length > 0 &&
+          (isMobile ? (
+            <div className="space-y-2" data-testid="inflation-rate-cards">
               {rates.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                  <TableCell className="tabular-nums">{r.rate}</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
-                      {t("common:delete")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
+                <InflationRateCard
+                  key={r.id}
+                  rate={r}
+                  deleteLabel={t("common:delete")}
+                  onDelete={() => deleteRate.mutate(r.id)}
+                />
               ))}
-            </TableBody>
-          </Table>
-        )}
+            </div>
+          ) : (
+            <Table data-testid="inflation-rate-table">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("inflation.month")}</TableHead>
+                  <TableHead>{t("inflation.rate")}</TableHead>
+                  <TableHead className="w-16"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rates.map((r) => (
+                  <TableRow key={r.id} data-testid="inflation-rate-row">
+                    <TableCell>{formatYearMonth(r.year_month)}</TableCell>
+                    <TableCell className="tabular-nums" data-testid="inflation-rate-value">
+                      {r.rate}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
+                        {t("common:delete")}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ))}
       </CardContent>
     </Card>
+  );
+}
+
+// Mobile leaf (ADR-0050 "wide table → stacked cards"): one card per inflation
+// row. The rate — the annualized figure the user came to check — is promoted to
+// the headline (a trailing "%" makes the unit explicit at a glance) with the
+// month below. The delete control is an icon button sized to the 44px tap floor
+// (INV-PRESENTATION-08).
+function InflationRateCard({
+  rate,
+  deleteLabel,
+  onDelete,
+}: {
+  rate: InflationRate;
+  deleteLabel: string;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="inflation-rate-row">
+      <div className="min-w-0 flex-1">
+        <div className="text-lg font-semibold tabular-nums" data-testid="inflation-rate-value">
+          {`${rate.rate}%`}
+        </div>
+        <div className="text-sm text-muted-foreground">{formatYearMonth(rate.year_month)}</div>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="size-11 shrink-0"
+        aria-label={deleteLabel}
+        onClick={onDelete}
+      >
+        <Trash2 className="size-4" />
+      </Button>
+    </div>
   );
 }
