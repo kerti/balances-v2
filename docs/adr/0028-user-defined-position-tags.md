@@ -108,9 +108,51 @@ net worth uses, CONTEXT "Net Worth"). Conventions:
 
 UI: a dedicated `/tags` route (flat nav group, like Receivables / Income) renders a pie
 (proportion) + table (sums) per currency. Tag management (create / rename / recolor / delete) is a
-card in Settings, mirroring the locale + theme cards ([[adr-0026]]). A single-select Tag dropdown
-defaulting to "No tag" sits in every Position Create/Edit dialog; on save the dialog fires the
-position mutation and, if the selection changed, the assign call.
+card (`TagsCard`) merged onto the **same `/tags` page** rather than a separate Settings subpage — a
+"manage" surface and its own report were needless duplication split across two places — mirroring the
+locale + theme cards ([[adr-0026]]) in tone. The report leads and management sits at the bottom (see
+Presentation / UX). A single-select Tag dropdown defaulting to "No tag" sits in every Position
+Create/Edit dialog; on save the dialog fires the position mutation and, if the selection changed, the
+assign call.
+
+## Presentation / UX
+
+**Page order (both form factors).** The `/tags` page leads with the **report** (donut + breakdown
+per currency) and puts the **management card at the bottom**. The report is what a returning
+household member [[adr-0025]] comes back for; creating or recolouring a tag is the occasional setup
+task, so it sits below rather than pushing the report down the page. `TagsScreen` is the container:
+it owns the query and the per-currency **pie-inclusion state** (which slices are checked), and hands
+each currency's projection to `TagBreakdownSection`.
+
+Per [[adr-0050]] (mobile–web layout divergence doctrine), the breakdown **diverges its mobile layout**
+from the web layout: the wide holdings · liabilities · net table horizontally scrolls on a phone,
+hiding the very sums the report exists to show. `TagBreakdownSection` delegates only the breakdown
+body to one of two renderers, picked at runtime by `useIsMobile()` (the single 768px boolean); one
+tree is ever in the DOM. Both consume the same `CurrencyBreakdown` projection and the same
+`isChecked`/`toggle` handlers (keyed by `cellKey` — the tag id or `untagged`), so the pie-inclusion
+behaviour can't fork per renderer, and both sit under the same `tag-breakdown-<currency>` testid.
+
+- **`TagBreakdownTable`** (≥768px) keeps the wide table: a per-row pie-inclusion checkbox, the tag
+  badge, right-aligned `tabular-nums` holdings / liabilities (negative, destructive) / net columns,
+  and a **Total** footer row.
+- **`TagBreakdownCards`** (<768px) applies the doctrine's **"wide table → stacked cards"** transform:
+  one card per tag with the **net value promoted to the card headline** (`tabular-nums`, readable with
+  no horizontal scroll), the checkbox + tag badge on the top line, and holdings / liabilities stacked
+  below as label→value pairs. The top line is a `<label>` wrapping the checkbox at the a11y floor
+  (`min-h-11`, ≥44px) — the desktop's bare 16px checkbox would miss the floor on a phone. A distinct,
+  checkbox-less **Total** card (muted fill) closes the stack, since a total is a summary, not a
+  toggleable slice.
+
+The shared **pie** is not a renderer split — only its legend placement is a cosmetic prop: to the
+**right** of the donut on desktop, and **dropped entirely** on phones (`legendPosition="none"`), where
+the breakdown cards below already carry the tag badge + colour and so double as the legend. Its
+absence lets the donut's container tighten (no reserved legend row), keeping the mobile vertical
+rhythm compact. The management card stays **single-layout** — it already reflows (flex-wrap, no table)
+without breaking the a11y floor, so it earns no divergent renderer per the doctrine's bar.
+
+One `@smoke` Playwright spec (`tags-mobile.spec.ts`) asserts the correct renderer mounts at mobile vs
+desktop width and the net value stays reachable; the desktop assign/report round-trip stays in
+`tags.spec.ts`, and renderer conformance in `TagBreakdownSection.test.tsx`.
 
 ## Out of scope
 
