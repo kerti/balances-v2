@@ -22,7 +22,7 @@ export type PieSlice = {
 type Props = {
   slices: PieSlice[];
   currency: string;
-  legendPosition?: "bottom" | "right";
+  legendPosition?: "bottom" | "right" | "none";
 };
 
 const InvestmentPieChartImpl = lazyWithReload(() => import("./InvestmentPieChartImpl"));
@@ -30,8 +30,11 @@ const InvestmentPieChartImpl = lazyWithReload(() => import("./InvestmentPieChart
 export function InvestmentPieChart({ slices, currency, legendPosition = "bottom" }: Props) {
   const total = slices.reduce((s, sl) => s + sl.value, 0);
   if (total <= 0) return null;
+  // Fallback height tracks the rendered container so the lazy chunk swaps in
+  // without a layout jump: taller with a right-hand legend, tighter with none.
+  const fallbackHeight = legendPosition === "none" ? "h-52" : "h-64";
   return (
-    <Suspense fallback={<div className="h-64 w-full" />}>
+    <Suspense fallback={<div className={`${fallbackHeight} w-full`} />}>
       <InvestmentPieChartImpl slices={slices} currency={currency} legendPosition={legendPosition} />
     </Suspense>
   );

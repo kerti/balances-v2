@@ -13,7 +13,7 @@ import type { PieSlice } from "./InvestmentPieChart";
 type Props = {
   slices: PieSlice[];
   currency: string;
-  legendPosition?: "bottom" | "right";
+  legendPosition?: "bottom" | "right" | "none";
 };
 
 export default function InvestmentPieChartImpl({
@@ -39,13 +39,21 @@ export default function InvestmentPieChartImpl({
   }));
 
   const isRight = legendPosition === "right";
+  const isNone = legendPosition === "none";
+
+  // Container height is kept close to the donut so there's little dead vertical
+  // space: `h-64` around the 220px right-legend donut (the legend sits beside
+  // it, vertically centered) and the 176px bottom-legend donut; `h-52` when the
+  // legend is dropped entirely (Tags mobile — the cards below double as it).
+  const containerHeight = isRight
+    ? "h-64 w-full max-w-sm mx-auto"
+    : isNone
+      ? "h-52 w-full"
+      : "h-64 w-full";
 
   return (
-    <ChartContainer
-      config={chartConfig}
-      className={isRight ? "h-80 w-full max-w-sm mx-auto" : "h-64 w-full"}
-    >
-      <PieChart>
+    <ChartContainer config={chartConfig} className={containerHeight}>
+      <PieChart margin={isNone ? { top: 0, right: 0, bottom: 0, left: 0 } : undefined}>
         <ChartTooltip
           content={
             <ChartTooltipContent
@@ -73,7 +81,7 @@ export default function InvestmentPieChartImpl({
             <Cell key={d.key} fill={d.fill} stroke="var(--background)" />
           ))}
         </Pie>
-        {isRight ? (
+        {isNone ? null : isRight ? (
           <ChartLegend
             layout="vertical"
             verticalAlign="middle"
