@@ -59,11 +59,20 @@ test(
   "exchange rates mount the card renderer and hold the mobile a11y floor at 390px",
   { tag: "@smoke" },
   async ({ page }) => {
-    // FX rates only surface once multi-currency is on — enable it first.
+    // FX rates only surface once multi-currency is on — enable it first. The
+    // checkbox is controlled by server state (it flips only after the settings
+    // PATCH round-trips and the session query refetches), so click and await the
+    // write rather than Playwright's check() which asserts the flip synchronously.
     await page.goto("/settings");
     const multi = page.getByLabel("Enable multi-currency tracking");
     if (!(await multi.isChecked())) {
-      await multi.check();
+      const saved = page.waitForResponse(
+        (r) =>
+          r.url().includes("/api/household/settings") && r.request().method() === "PATCH" && r.ok(),
+      );
+      await multi.click();
+      await saved;
+      await expect(multi).toBeChecked();
     }
 
     // --- Seed one monthly FX rate (desktop width) ---
@@ -104,6 +113,13 @@ test(
     await expect(page.getByTestId("fx-rate-row")).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");
-    await page.getByLabel("Enable multi-currency tracking").uncheck();
+    const multiOff = page.getByLabel("Enable multi-currency tracking");
+    const restored = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/household/settings") && r.request().method() === "PATCH" && r.ok(),
+    );
+    await multiOff.click();
+    await restored;
+    await expect(multiOff).not.toBeChecked();
   },
 );
