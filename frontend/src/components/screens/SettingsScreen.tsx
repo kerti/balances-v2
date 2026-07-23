@@ -92,6 +92,7 @@ export function SettingsScreen() {
             </div>
             <Button
               variant="outline"
+              className="min-h-11 md:min-h-0"
               onClick={saveCurrency}
               disabled={updateSettings.isPending || reportingCurrency.length !== 3}
             >
@@ -178,7 +179,12 @@ function NicknameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
+          <Button
+            variant="outline"
+            className="min-h-11 md:min-h-0"
+            onClick={save}
+            disabled={updateMe.isPending || !dirty}
+          >
             {t("common:save")}
           </Button>
         </div>
@@ -237,7 +243,12 @@ function HouseholdNameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
+          <Button
+            variant="outline"
+            className="min-h-11 md:min-h-0"
+            onClick={save}
+            disabled={updateSettings.isPending || !dirty}
+          >
             {t("common:save")}
           </Button>
         </div>
@@ -483,6 +494,7 @@ function AssumedInflationCard() {
           </div>
           <Button
             variant="outline"
+            className="min-h-11 md:min-h-0"
             onClick={saveAssumed}
             disabled={updateSettings.isPending || !assumedDirty}
           >
