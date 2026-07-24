@@ -106,7 +106,8 @@ subtype quirk stays in the descriptor, the same line as core never touching `cou
   / export), the `SnapshotChart` card + its ≥2-snapshot guard, loading/error/not-found, the page
   scaffold, and the mobile header-stack a11y treatment (solved once, like 0043's screen header).
 - **Slots (core calls, never inspects):** `headerSecondary` (neutral node), `renderHeadline?`
-  (investment-only), `infoFields`, `historySections`, `renderEditDialog` (opaque).
+  (investment-only), `infoFields`, `renderBeforeDetails?` / `renderAfterDetails?` (neutral positional
+  nodes, TimeDeposit's rollover surfaces — added in A5), `historySections`, `renderEditDialog` (opaque).
 - **Wiring data:** `entityKey`, i18n namespace, load/delete hooks, `exportUrl`, `tourSteps` copy
   (the `data-testid` anchors stay core so a step can't point at a nonexistent region), `listKey` for
   terminate.
@@ -139,6 +140,36 @@ now inherit:
   and `tour-transactions`, both anchors a populated slot renders). `useDetailContext` now takes the
   `assetId` the investment families need to fetch their ledger. All remain slots the core calls but
   never reads — the boundary is unchanged, only widened.
+
+### Amendment (A5, #529) — the accrued shape + TimeDeposit's rollover outlier
+
+A5 migrated the two **accrued** investment types (Bond, TimeDeposit, snapshot shape S3) and is the
+tail of Phase A. The accrued renderer (`AccruedInterestSnapshotRow`, already built for entry #506)
+flows through `HistorySection.renderRow` with no mechanism change — the primitive stays column-blind,
+as designed. Bond added nothing new: it is the A3 investment mechanism over an accrued snapshot hook,
+its coupon/maturity events folding into the shared transaction section, `totalCost` a ledger replay
+like the qty×price types. **TimeDeposit — the lone 25-Card outlier — forced two small widenings, both
+kept strictly inside slots the core never inspects:**
+
+- **Two neutral positional slots: `renderBeforeDetails?` / `renderAfterDetails?`.** TimeDeposit is the
+  only type whose regions exceed the shared skeleton *in page position*: a post-maturity rollover
+  **callout** sits above the details card, and a **rollover-chain card** (from/into links) sits below
+  it, before the chart. Neither is a history table, so neither fits `historySections` (which renders
+  after the snapshot section). They fold in as two optional `ReactNode` slots the core drops at fixed
+  positions and renders verbatim — exactly the `renderHeadline` pattern, not a field the core reads.
+  Every other type omits both. `totalCost` is the flat `principal` (not a ledger replay), wired
+  straight into the shared `InvestmentHeadline` — the subtype quirk the ADR always meant to keep in the
+  descriptor.
+- **Rollover-chain navigation is descriptor-level app wiring.** The old page took an
+  `onSelectTimeDeposit` callback App.tsx bridged to the router. The descriptor now calls `useNavigate`
+  inside its `useDetailContext` and exposes a `selectTimeDeposit(id)` on the context the
+  `renderAfterDetails` slot uses. The **core** `PositionDetailScreen` stays router-unaware (it only
+  renders the neutral node); a descriptor calling a router hook is the same app-level wiring as its
+  react-query hooks. The wrapper's prop shape now matches every other detail page, and App.tsx's
+  TimeDeposit route collapses to the shared `onBack`-only shape.
+
+The slot inventory below gains `renderBeforeDetails?` / `renderAfterDetails?`; the boundary is
+unchanged, only widened — both remain nodes the core renders but never reads.
 
 ### Scope fence
 

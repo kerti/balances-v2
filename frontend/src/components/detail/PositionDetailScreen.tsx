@@ -98,6 +98,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   const headerSecondary = descriptor.headerSecondary(entity, ctx, t);
   const infoFields = descriptor.infoFields(entity, ctx, t);
   const headline = descriptor.renderHeadline?.(entity, ctx, snapshots);
+  const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);
+  const afterDetails = descriptor.renderAfterDetails?.(entity, ctx, t);
   const extraSections = descriptor.historySections?.(entity, ctx, snapshots, t) ?? [];
   const costSeries = descriptor.chartCostSeries?.(entity, ctx, snapshots);
 
@@ -182,6 +184,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
         </div>
       </div>
 
+      {beforeDetails}
+
       <Card data-testid="tour-details">
         <CardHeader>
           <CardTitle>{t(keys.detailsCardTitle)}</CardTitle>
@@ -200,6 +204,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
           </CardContent>
         )}
       </Card>
+
+      {afterDetails}
 
       {snapshots && snapshots.length >= 2 && (
         <Card data-testid="tour-chart">
