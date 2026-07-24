@@ -11,22 +11,18 @@ import { SnapshotChart } from "@/components/charts/SnapshotChart";
 import { HelpTourButton, type TourStep } from "@/components/shell/HelpTourButton";
 import { InfoGrid } from "@/components/detail/InfoGrid";
 import { HistorySection } from "@/components/detail/HistorySection";
-import {
-  useSnapshots,
-  useCreateSnapshot,
-  useUpdateSnapshot,
-  useDeleteSnapshot,
-  useImportSnapshots,
-} from "@/hooks/useAssetSnapshots";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
-import type { AssetSnapshot } from "@/api/types";
-import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
+import type {
+  DetailDescriptor,
+  HistorySectionSpec,
+  SnapshotShape,
+} from "@/components/detail/types";
 
-type Props<TEntity, TCtx> = {
-  descriptor: DetailDescriptor<TEntity, TCtx>;
+type Props<TEntity, TCtx, TSnap extends SnapshotShape> = {
+  descriptor: DetailDescriptor<TEntity, TCtx, TSnap>;
   assetId: string;
   onBack: () => void;
 };
@@ -35,7 +31,8 @@ const PAGE_SIZE = 12;
 
 // The five standard tour anchors. Each maps to a core-owned `tour-${step}`
 // data-testid and to `${tourKeyPrefix}.tour.${step}Title` / `${step}Body` copy,
-// so a step can never point at a region the core doesn't render (ADR-0051).
+// so a step can never point at a region the core doesn't render (ADR-0051). A
+// type with extra regions overrides the whole list via `descriptor.tourSteps`.
 const TOUR_STEPS = ["overview", "actions", "details", "chart", "snapshots"] as const;
 
 // The generic Position detail screen (ADR-0051). It owns every shared-surface
@@ -45,28 +42,28 @@ const TOUR_STEPS = ["overview", "actions", "details", "chart", "snapshots"] as c
 // only the Position shared surface (via `descriptor.getAsset`), never a
 // `details.*` field. The two variable regions arrive through
 // presentation-neutral primitives (`InfoGrid`, `HistorySection`); a descriptor
-// supplies only wiring + slots the core calls but never inspects.
-export function PositionDetailScreen<TEntity, TCtx>({
+// supplies only wiring + slots the core calls but never inspects. The snapshot
+// stream + its mutations are the descriptor's own (asset vs investment families
+// diverge), bound into `renderRow`/`renderCreateControls` closures so no mutation
+// type crosses the boundary.
+export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>({
   descriptor,
   assetId,
   onBack,
-}: Props<TEntity, TCtx>) {
+}: Props<TEntity, TCtx, TSnap>) {
   const { t } = useTranslation(descriptor.i18nNamespaces);
   const { data: entity, isPending, error } = descriptor.useEntity(assetId);
-  const { data: snapshots } = useSnapshots(assetId);
+  const snapshotRender = descriptor.snapshot.useSectionRender(assetId);
   const deleteMutation = descriptor.useDelete();
-  const createSnapshotMutation = useCreateSnapshot(assetId);
-  const updateSnapshotMutation = useUpdateSnapshot(assetId);
-  const deleteSnapshotMutation = useDeleteSnapshot(assetId);
-  const importSnapshotMutation = useImportSnapshots(assetId);
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
-  const ctx = (descriptor.useDetailContext?.() ?? undefined) as TCtx;
+  const ctx = (descriptor.useDetailContext?.(assetId) ?? undefined) as TCtx;
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const { keys } = descriptor;
+  const snapshots = snapshotRender.snapshots;
 
   function handleConfirmDelete() {
     deleteMutation.mutate(assetId, {
@@ -100,35 +97,36 @@ export function PositionDetailScreen<TEntity, TCtx>({
 
   const headerSecondary = descriptor.headerSecondary(entity, ctx, t);
   const infoFields = descriptor.infoFields(entity, ctx, t);
-  const headline = descriptor.renderHeadline?.(entity, ctx);
-  const extraSections = descriptor.historySections?.(entity, ctx) ?? [];
+  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots);
+  const extraSections = descriptor.historySections?.(entity, ctx, snapshots, t) ?? [];
+  const costSeries = descriptor.chartCostSeries?.(entity, ctx, snapshots);
 
-  const tourSteps: TourStep[] = TOUR_STEPS.map((step) => ({
-    element: `[data-testid="tour-${step}"]`,
-    title: t(`${descriptor.tourKeyPrefix}.tour.${step}Title`),
-    description: t(`${descriptor.tourKeyPrefix}.tour.${step}Body`),
-  }));
+  const tourSteps: TourStep[] =
+    descriptor.tourSteps?.(t) ??
+    TOUR_STEPS.map((step) => ({
+      element: `[data-testid="tour-${step}"]`,
+      title: t(`${descriptor.tourKeyPrefix}.tour.${step}Title`),
+      description: t(`${descriptor.tourKeyPrefix}.tour.${step}Body`),
+    }));
 
-  // The universal snapshot history section: core-owned data + mutations, the
-  // descriptor supplying only the per-shape header/row/create markup.
-  const snapshotSection: HistorySectionSpec<AssetSnapshot> = {
+  // The universal snapshot history section: the descriptor owns the data + row +
+  // create markup (mutations bound inside), the core owns the card frame, the
+  // title/description/empty copy, the export button and the active-gate.
+  const snapshotSection: HistorySectionSpec<TSnap> = {
     testId: "tour-snapshots",
     title: t(keys.snapshotsTitle),
     description: t(keys.snapshotsDescription),
     emptyText: t(keys.snapshotsEmpty),
-    header: descriptor.snapshot.renderHeader(t),
+    header: snapshotRender.header,
     rows: snapshots ?? [],
-    renderRow: (snapshot) =>
-      descriptor.snapshot.renderRow(snapshot, {
-        updateMutation: updateSnapshotMutation,
-        deleteMutation: deleteSnapshotMutation,
-      }),
+    renderRow: (snapshot) => snapshotRender.renderRow(snapshot),
     pageSize: PAGE_SIZE,
     headerActions: (
       <>
-        {/* Export the full position workbook (Detail + Snapshots). Plain anchor
-            download — session cookie rides along same-origin. Available
-            regardless of status so a terminated position can still be backed up. */}
+        {/* Export the full position workbook (Detail + Snapshots [+ Transactions
+            for investments]). Plain anchor download — session cookie rides along
+            same-origin. Available regardless of status so a terminated position
+            can still be backed up. */}
         <Button
           asChild
           size="sm"
@@ -140,14 +138,7 @@ export function PositionDetailScreen<TEntity, TCtx>({
             {t("common:export.trigger")}
           </a>
         </Button>
-        {active &&
-          descriptor.snapshot.renderCreate({
-            snapshots: snapshots ?? [],
-            currency: asset.native_currency,
-            assetId,
-            createMutation: createSnapshotMutation,
-            importMutation: importSnapshotMutation,
-          })}
+        {active && snapshotRender.renderCreateControls(asset.native_currency)}
       </>
     ),
   };
@@ -163,6 +154,7 @@ export function PositionDetailScreen<TEntity, TCtx>({
             {asset.display_name}
           </h1>
           {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
+          {headline}
           <DetailTagControl
             group={descriptor.tagGroup}
             positionId={asset.id}
@@ -189,8 +181,6 @@ export function PositionDetailScreen<TEntity, TCtx>({
           </Button>
         </div>
       </div>
-
-      {headline}
 
       <Card data-testid="tour-details">
         <CardHeader>
@@ -220,7 +210,12 @@ export function PositionDetailScreen<TEntity, TCtx>({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SnapshotChart snapshots={snapshots} currency={asset.native_currency} />
+            <SnapshotChart
+              snapshots={snapshots}
+              currency={asset.native_currency}
+              costSeries={costSeries}
+              status={asset.status}
+            />
           </CardContent>
         </Card>
       )}

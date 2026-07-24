@@ -11,11 +11,16 @@ import type { HistorySectionSpec } from "@/components/detail/types";
 // page state so sibling sections paginate independently; the clamp derives
 // during render so a delete that shrinks the range drops to the last existing
 // page without an effect-driven setState (the M3.7 "stay on page" rule).
+// `banner` (e.g. a reconcile warning) and `toolbar` (e.g. a transaction search
+// box) are optional neutral nodes rendered above the table but never inspected —
+// the descriptor owns their state, keeping this primitive presentation-neutral.
 export function HistorySection<TRow>({
   testId,
   title,
   description,
   headerActions,
+  toolbar,
+  banner,
   emptyText,
   header,
   rows,
@@ -39,6 +44,8 @@ export function HistorySection<TRow>({
         </div>
       </CardHeader>
       <CardContent className="p-0">
+        {banner}
+        {toolbar}
         {rows.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">{emptyText}</p>
         ) : (

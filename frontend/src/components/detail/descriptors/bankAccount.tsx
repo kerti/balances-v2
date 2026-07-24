@@ -1,10 +1,19 @@
+import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditBankAccountDialog } from "@/components/dialogs/EditBankAccountDialog";
 import { useBankAccount, useDeleteBankAccount } from "@/hooks/useBankAccounts";
-import { importTemplateUrl, bankAccountExportUrl } from "@/hooks/useAssetSnapshots";
+import {
+  useSnapshots,
+  useCreateSnapshot,
+  useUpdateSnapshot,
+  useDeleteSnapshot,
+  useImportSnapshots,
+  importTemplateUrl,
+  bankAccountExportUrl,
+} from "@/hooks/useAssetSnapshots";
 import type { BankAccount } from "@/api/types";
 import type { DetailDescriptor } from "@/components/detail/types";
 
@@ -47,40 +56,51 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
   infoFields: () => [],
 
   snapshot: {
-    renderHeader: (t) => (
-      <TableRow>
-        <TableHead>{t("common:tableHeaders.month")}</TableHead>
-        <TableHead>{t("common:tableHeaders.amount")}</TableHead>
-        <TableHead>{t("common:tableHeaders.notes")}</TableHead>
-        <TableHead className="w-12"></TableHead>
-      </TableRow>
-    ),
-    renderRow: (snapshot, { updateMutation, deleteMutation }) => (
-      <SnapshotRow
-        key={snapshot.id}
-        snapshot={snapshot}
-        updateMutation={updateMutation}
-        deleteMutation={deleteMutation}
-      />
-    ),
-    renderCreate: ({ snapshots, currency, assetId, createMutation, importMutation }) => (
-      <>
-        <CreateSnapshotDialog
-          currency={currency}
-          mutation={createMutation}
-          carryover={
-            snapshots[0]
-              ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-              : null
-          }
-        />
-        <ImportSnapshotsDialog
-          templateUrl={importTemplateUrl(assetId)}
-          mutation={importMutation}
-          currency={currency}
-        />
-      </>
-    ),
+    useSectionRender: (assetId) => {
+      const { t } = useTranslation(["common"]);
+      const { data: snapshots } = useSnapshots(assetId);
+      const createMutation = useCreateSnapshot(assetId);
+      const updateMutation = useUpdateSnapshot(assetId);
+      const deleteMutation = useDeleteSnapshot(assetId);
+      const importMutation = useImportSnapshots(assetId);
+      return {
+        snapshots,
+        header: (
+          <TableRow>
+            <TableHead>{t("common:tableHeaders.month")}</TableHead>
+            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead>{t("common:tableHeaders.notes")}</TableHead>
+            <TableHead className="w-12"></TableHead>
+          </TableRow>
+        ),
+        renderRow: (snapshot) => (
+          <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCreateControls: (currency) => (
+          <>
+            <CreateSnapshotDialog
+              currency={currency}
+              mutation={createMutation}
+              carryover={
+                snapshots?.[0]
+                  ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
+                  : null
+              }
+            />
+            <ImportSnapshotsDialog
+              templateUrl={importTemplateUrl(assetId)}
+              mutation={importMutation}
+              currency={currency}
+            />
+          </>
+        ),
+      };
+    },
   },
 
   renderEditDialog: (entity, props) => (

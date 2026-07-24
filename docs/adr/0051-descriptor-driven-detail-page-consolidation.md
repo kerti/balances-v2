@@ -111,6 +111,35 @@ subtype quirk stays in the descriptor, the same line as core never touching `cou
   (the `data-testid` anchors stay core so a step can't point at a nonexistent region), `listKey` for
   terminate.
 
+### Amendment (A3, #527) — the API shape the investment mechanism forced
+
+A1 (#525) landed the descriptor API against an amount-only type, where the entity *is* an `Asset` and
+the snapshots come from the `useAssetSnapshots` family. Stock (#527) exercised the two axes A1 didn't,
+and three parts of the contract had to widen — the shape the qty×price (#528) and accrued (#529) slices
+now inherit:
+
+- **`getAsset` returns a `Position`, not an `Asset`.** The core reads only the shared surface named in
+  "operates on the Position shared surface only," so that surface is now an explicit type
+  (`id`, `display_name`, `description`, `ownership_type`, `sole_owner_user_id`, `native_currency`,
+  `tag_id`, `status`, `terminated_at`, `termination_note`), with `status: string` because each group's
+  status union differs and every consumer already takes a string. An `Asset` (amount-only) and an
+  `Investment` (investment) both satisfy it; the core never sees `subtype` or a `details.*` field.
+- **Snapshots + their mutations are descriptor wiring, not core-owned.** The asset and investment
+  snapshot hook families diverge (`useAssetSnapshots` vs `useInvestmentSnapshots(id, listKey)`), so the
+  descriptor supplies a `snapshot.useSectionRender(assetId)` hook that fetches its own stream and
+  **binds its create/update/delete/import mutations into `renderRow` / `renderCreateControls`
+  closures**. No mutation type crosses the boundary, so the core stays free of the two families'
+  react-query variance; the core still owns the card frame, title/empty copy, export button and the
+  active-gate. The descriptor is now parameterised by its concrete snapshot type (`TSnap`), which the
+  investment slots (`renderHeadline` / `chartCostSeries` / `historySections`) receive typed.
+- **Neutral section extras + a tour override.** `HistorySection` gains optional `toolbar` (the
+  transaction search box) and `banner` (the quantity-reconcile warning) — nodes it renders above the
+  table but never inspects, the descriptor owning their state; and `tourSteps` may be **overridden**
+  wholesale by a type whose regions exceed the five standard anchors (Stock adds `investment-headline`
+  and `tour-transactions`, both anchors a populated slot renders). `useDetailContext` now takes the
+  `assetId` the investment families need to fetch their ledger. All remain slots the core calls but
+  never reads — the boundary is unchanged, only widened.
+
 ### Scope fence
 
 - **In:** the `*Detail` family and the shell/primitives above.
