@@ -176,6 +176,16 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // Slots the core calls but never inspects.
   headerSecondary: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   infoFields: (entity: TEntity, ctx: TCtx, t: TFunction) => InfoField[];
+  // Optional neutral surfaces the core drops at fixed page positions but never
+  // inspects (ADR-0051, A5 — the outlier tail). `renderBeforeDetails` sits
+  // between the header block and the details card; `renderAfterDetails` between
+  // the details card and the chart. TimeDeposit — the lone type whose regions
+  // exceed the shared skeleton — uses them for its maturity-rollover callout and
+  // its rollover-chain card; every other type omits both. Like `renderHeadline`
+  // they are `ReactNode` the core renders verbatim, never a field it reads, so the
+  // per-type rollover linkage stays in a slot rather than leaking into the core.
+  renderBeforeDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
+  renderAfterDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional investment headline (has-transactions axis); absent for amount-only.
   // Receives the snapshot stream (for latest value) alongside the ctx (for the
   // cost-basis inputs) — both computed as descriptor wiring, never in the core.
