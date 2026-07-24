@@ -92,6 +92,7 @@
     "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
     "acquiredLine": "Diakuisisi:",
     "acquiredForLine": "Diakuisisi: {{date}} seharga {{cost}}",
+    "acquiredForValue": "{{date}} seharga {{cost}}",
     "appreciationRateLabel": "Laju apresiasi:",
     "appreciationRateValue": "{{value}} /thn",
     "chartTitle": "Valuasi dari Waktu ke Waktu",
