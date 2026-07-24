@@ -92,6 +92,7 @@
     "detailsCardLine": "Ownership: {{ownership}} · Currency: {{currency}} · Status:",
     "acquiredLine": "Acquired:",
     "acquiredForLine": "Acquired: {{date}} for {{cost}}",
+    "acquiredForValue": "{{date}} for {{cost}}",
     "appreciationRateLabel": "Appreciation rate:",
     "appreciationRateValue": "{{value}} /yr",
     "chartTitle": "Valuation Over Time",
