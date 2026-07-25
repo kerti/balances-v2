@@ -210,6 +210,34 @@ The two phases are sequencing *within* the epic, not two epics:
   / header get their mobile reflow **once** in the core primitives, flipping all ten. Sliced by
   snapshot shape (amount-only / qty×price / accrued), mirroring S1/S2/S3, plus the shared a11y floor.
 
+  **B1 (#535, amount-only linchpin)** set the reflow contract the later shapes reuse: `HistorySectionSpec`
+  and `SnapshotSectionRender` gained an **optional `renderCard`**, and `HistorySection` picks a stacked
+  card list vs the wide table at 768px (`useIsMobile`) — column-neutral, so a shape without `renderCard`
+  stays on the table until its slice adds one. The shared `SnapshotCard` pairs with `SnapshotRow` through
+  `useSnapshotRow` + `SnapshotRowMenu` (same `snapshot-*` testids, ⋮ at `size-11`). B1 also folded three
+  presentation decisions into the shared shell, flipping all ten at once: the **details card became the
+  identity + spec headline** — tinted with `headlineSurface` (the category-home accent) and, for the
+  amount-only types, absorbing the identity that used to sit in the H1 subtitle, so `headerSecondary` is
+  now **optional** (dropped by the five amount-only descriptors, kept by the investment families until
+  their slices). On desktop the card is a **two-column
+  headline** (the Income headline idiom — `md:grid-cols-2` + `md:divide-x`): the descriptor's identity +
+  spec fields on the left, the shared-surface meta on the right; it collapses to one stacked column on
+  mobile. The shared-surface meta moved off the old joined description line: **currency + status** ride the
+  card **title** (right-aligned, `StatusBadge` as a chip) to save two rows, leaving **ownership** the sole
+  right-column meta row. The **Tag control moved into the card** as an inline labelled row (label beside
+  the select at every width, unlike the stacked text rows — a compact control reads better that way).
+  Per-type identity may consolidate where it reads cleaner: vehicle folds year/make/model into one
+  **"Make & model"** line. **`InfoGrid` stacks label-above-value on mobile** (each piece its own line, its
+  `mobileLayout="stacked"` default) while keeping the two-column grid on desktop via `md:contents`; the
+  ownership meta uses `mobileLayout="inline"` instead (label left, value right on one line — a compact row
+  reads better). Each non-investment type renders its identity as a **tight, label-less cluster** via the
+  optional `identityCluster` slot (shared `IdentityCluster` — first line primary, rest muted, nullish
+  lines dropped) rather than labelled `infoFields` rows, saving vertical space on mobile; investments keep
+  their header subtitle until their slices. And **numeric table cells right-align on desktop**
+  (the amount-only `SnapshotRow` amount column — the investment rows already did). The floor also promotes a
+  **single primary action** per page — "Record snapshot" (`CreateSnapshotDialog` trigger, `h-11 md:h-8`,
+  the category-home bulk-entry idiom) — leaving every other control secondary.
+
 The epic branches off `main` **after** the #428 landing (PR #523) merges — Phase A reuses the S1/S2/S3
 snapshot renderers, `headlineSurface`, and `lib/format` extensions that #523 brings to `main`. Only
 Phase A issues are created up front; Phase B slices derive from Phase A's shell landing.

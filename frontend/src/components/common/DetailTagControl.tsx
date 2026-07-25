@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 import { TagSelect } from "@/components/common/TagSelect";
 import { useAssignTag } from "@/hooks/useTags";
 import { errorMessage } from "@/lib/errorMessage";
@@ -42,14 +43,23 @@ export function DetailTagControl({ group, positionId, currentTagId }: Props) {
     );
   };
 
+  // Label and select share one line on every width (unlike the stacked
+  // label/value detail rows) — the compact dropdown reads better beside its
+  // label than beneath it (ADR-0051 Phase B).
   return (
-    <div className="mt-2 max-w-[16rem]">
-      <TagSelect
-        value={value}
-        onChange={onChange}
-        id={`tag-${positionId}`}
-        disabled={assign.isPending}
-      />
+    <div className="flex items-center gap-3 text-sm">
+      <Label htmlFor={`tag-${positionId}`} className="font-normal text-muted-foreground">
+        {t("field.label")}
+      </Label>
+      <div className="max-w-[16rem] flex-1">
+        <TagSelect
+          value={value}
+          onChange={onChange}
+          id={`tag-${positionId}`}
+          disabled={assign.isPending}
+          showLabel={false}
+        />
+      </div>
     </div>
   );
 }

@@ -110,10 +110,10 @@ describe("bankAccountDescriptor detail (conformance)", () => {
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
     );
 
-    // Title + header secondary line (the bank-detail slot) resolve once loaded.
+    // Title resolves once loaded; the bank identity moved from a header subtitle
+    // into the details card as its own rows (ADR-0051 Phase B).
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Everyday Checking");
-    expect(screen.getByText(/Test Bank · 1234567890 · Savings/)).toBeInTheDocument();
 
     // Details card: title, ownership/status line, and the shared-surface
     // description paragraph.
@@ -121,6 +121,10 @@ describe("bankAccountDescriptor detail (conformance)", () => {
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Primary current account")).toBeInTheDocument();
+    // Bank identity now lives here as its own label/value rows.
+    expect(within(detailsCard).getByText("Test Bank")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("1234567890")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Savings")).toBeInTheDocument();
 
     // Chart card mounts with ≥2 snapshots.
     expect(screen.getByTestId("tour-chart")).toBeInTheDocument();

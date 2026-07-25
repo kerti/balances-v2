@@ -112,7 +112,8 @@
     "month": "Month",
     "statementDate": "Statement date (optional)",
     "notes": "Notes",
-    "ownership": "Ownership"
+    "ownership": "Ownership",
+    "status": "Status"
   },
   "ownership": {
     "joint": "Joint",

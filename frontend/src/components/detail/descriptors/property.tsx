@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
+import { SnapshotCard } from "@/components/common/SnapshotCard";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditPropertyDialog } from "@/components/dialogs/EditPropertyDialog";
@@ -51,10 +53,14 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
   exportUrl: propertyExportUrl,
   getAsset: (entity) => entity.asset,
 
-  headerSecondary: (entity, _ctx, t) =>
-    [t(`assets:property.propertyTypes.${entity.details.property_type}`), entity.details.address]
-      .filter(Boolean)
-      .join(" · "),
+  identityCluster: (entity, _ctx, t) => (
+    <IdentityCluster
+      lines={[
+        t(`assets:property.propertyTypes.${entity.details.property_type}`),
+        entity.details.address,
+      ]}
+    />
+  ),
   infoFields: (entity, _ctx, t) => {
     const { asset, details } = entity;
     const fields: InfoField[] = [];
@@ -94,13 +100,21 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         ),
         renderRow: (snapshot) => (
           <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}
