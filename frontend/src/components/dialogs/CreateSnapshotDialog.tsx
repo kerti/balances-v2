@@ -109,12 +109,17 @@ export function CreateSnapshotDialog<TResult>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
+      {/* Copy carryover is the promoted primary of the create row (#542): the
+          common month-close is "same as last month", so it leads with the solid
+          variant and the large mobile tap target (`h-11 md:h-8`). New drops to a
+          secondary outline — except on the first-ever snapshot, when there's no
+          carryover and New stands alone as the primary. */}
       {carryover && (
         <Button
           type="button"
-          variant="outline"
           size="sm"
           onClick={startCarryover}
+          className="h-11 md:h-8"
           data-testid="snapshot-carryover"
         >
           <CopyPlus className="mr-1 size-4" />
@@ -122,11 +127,11 @@ export function CreateSnapshotDialog<TResult>({
         </Button>
       )}
       <DialogTrigger asChild>
-        {/* The primary recurring action on a detail page — recording this
-            month's value — so it wears the large tap target on mobile
-            (ADR-0050/0051 Phase B), matching the category-home bulk-entry
-            button. Every other detail control stays secondary. */}
-        <Button size="sm" className="h-11 md:h-8">
+        <Button
+          size="sm"
+          variant={carryover ? "outline" : "default"}
+          className={carryover ? "min-h-11 md:min-h-0" : "h-11 md:h-8"}
+        >
           <Plus className="mr-1 size-4" />
           {t("snapshot.trigger")}
         </Button>

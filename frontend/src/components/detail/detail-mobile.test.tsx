@@ -113,4 +113,49 @@ describe("detail mobile a11y floor (amount-only)", () => {
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });
     expect(action).toHaveClass("size-11");
   });
+
+  it("floors the header/action-row secondary controls at the 44px tap target (#542)", async () => {
+    stubEndpoints();
+    renderWithProviders(
+      <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+    );
+
+    // The secondary controls left at `size-sm` after B1 (which floored only the
+    // single promoted primary action) — the snapshot-section header Export /
+    // Import triggers and the actions-row Help / Edit / Terminate / Delete —
+    // now carry the `min-h-11 md:min-h-0` idiom: ≥44px on phones, natural size
+    // (32px) from 768px up. The row ⋮ (above) rides its own `size-11` floor.
+    const secondary = [
+      await screen.findByTestId("bank-account-export"),
+      screen.getByTestId("import-snapshots-trigger"),
+      screen.getByTestId("help-tour"),
+      screen.getByRole("button", { name: /edit/i }),
+      screen.getByTestId("terminate-position-trigger"),
+      screen.getByRole("button", { name: /^delete$/i }),
+    ];
+    for (const control of secondary) {
+      expect(control).toHaveClass("min-h-11");
+      expect(control).toHaveClass("md:min-h-0");
+    }
+  });
+
+  it("lays the snapshot header out as two rows, Copy carryover promoted primary (#542)", async () => {
+    stubEndpoints();
+    renderWithProviders(
+      <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+    );
+
+    // Row 1 — create: Copy carryover leads as the promoted primary (large tap
+    // target), New drops to the secondary outline floor.
+    const createRow = await screen.findByTestId("snapshot-create-row");
+    const carryover = within(createRow).getByTestId("snapshot-carryover");
+    expect(carryover).toHaveClass("h-11", "md:h-8");
+    const create = within(createRow).getByRole("button", { name: /new/i });
+    expect(create).toHaveClass("min-h-11", "md:min-h-0");
+
+    // Row 2 — I/O: Export + Import ride the second row.
+    const ioRow = screen.getByTestId("snapshot-io-row");
+    expect(within(ioRow).getByTestId("bank-account-export")).toBeInTheDocument();
+    expect(within(ioRow).getByTestId("import-snapshots-trigger")).toBeInTheDocument();
+  });
 });

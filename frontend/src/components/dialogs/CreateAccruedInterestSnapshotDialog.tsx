@@ -132,12 +132,16 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? openFresh() : close())}>
+      {/* Copy carryover leads the create row as the promoted primary (#542):
+          solid variant + large mobile tap target. New drops to a secondary
+          outline unless there's no prior snapshot to copy, when it stands alone
+          as the primary. Mirrors the amount-only `CreateSnapshotDialog`. */}
       {carryover && (
         <Button
           type="button"
-          variant="outline"
           size="sm"
           onClick={startCarryover}
+          className="h-11 md:h-8"
           data-testid="snapshot-carryover"
         >
           <CopyPlus className="mr-1 size-4" />
@@ -145,7 +149,11 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
         </Button>
       )}
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button
+          size="sm"
+          variant={carryover ? "outline" : "default"}
+          className={carryover ? "min-h-11 md:min-h-0" : "h-11 md:h-8"}
+        >
           <Plus className="mr-1 size-4" />
           {t("investments:accruedInterestSnapshot.trigger")}
         </Button>

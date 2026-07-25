@@ -381,26 +381,26 @@ export const timeDepositDescriptor: DetailDescriptor<
           />
         ),
         renderCreateControls: (currency) => (
-          <>
-            <CreateAccruedInterestSnapshotDialog
-              currency={currency}
-              mutation={createMutation}
-              carryover={
-                snapshots?.[0]
-                  ? {
-                      amount: snapshots[0].amount,
-                      accrued_interest: snapshots[0].accrued_interest,
-                      lastSnapshotMonth: snapshots[0].year_month,
-                    }
-                  : null
-              }
-            />
-            <ImportSnapshotsDialog
-              templateUrl={investmentImportTemplateUrl(assetId)}
-              mutation={importMutation}
-              currency={currency}
-            />
-          </>
+          <CreateAccruedInterestSnapshotDialog
+            currency={currency}
+            mutation={createMutation}
+            carryover={
+              snapshots?.[0]
+                ? {
+                    amount: snapshots[0].amount,
+                    accrued_interest: snapshots[0].accrued_interest,
+                    lastSnapshotMonth: snapshots[0].year_month,
+                  }
+                : null
+            }
+          />
+        ),
+        renderImportControl: (currency) => (
+          <ImportSnapshotsDialog
+            templateUrl={investmentImportTemplateUrl(assetId)}
+            mutation={importMutation}
+            currency={currency}
+          />
         ),
       };
     },
@@ -452,13 +452,20 @@ export const timeDepositDescriptor: DetailDescriptor<
       ),
       pageSize: PAGE_SIZE,
       headerActions: active ? (
-        <CreateMaturityTransactionDialog
-          currency={currency}
-          rolloverPolicy={entity.details.rollover_policy}
-          placementDate={entity.details.placement_date?.slice(0, 10)}
-          maturityDate={entity.details.maturity_date?.slice(0, 10)}
-          mutation={ctx.createTransactionMutation}
-        />
+        // Lone Maturity action (#542): fills the width on phones like the other
+        // subtypes' rows, natural width from 768px up.
+        <div
+          className="flex w-full gap-2 max-md:[&>*]:flex-1 md:w-auto"
+          data-testid="txn-trades-row"
+        >
+          <CreateMaturityTransactionDialog
+            currency={currency}
+            rolloverPolicy={entity.details.rollover_policy}
+            placementDate={entity.details.placement_date?.slice(0, 10)}
+            maturityDate={entity.details.maturity_date?.slice(0, 10)}
+            mutation={ctx.createTransactionMutation}
+          />
+        </div>
       ) : undefined,
       toolbar:
         allTxns.length > 0 ? (

@@ -114,33 +114,33 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
           />
         ),
         renderCreateControls: (currency) => (
-          <>
-            <CreateSnapshotDialog
-              currency={currency}
-              mutation={createMutation}
-              suggest={(yearMonth) =>
-                suggestRevalued({
-                  newYearMonth: yearMonth,
-                  // Vehicle stores positive depreciation %; the helper wants
-                  // signed (negative = decline), so negate at the callsite.
-                  annualRatePct: vehicle?.details.annual_depreciation_rate
-                    ? `-${vehicle.details.annual_depreciation_rate}`
-                    : null,
-                  snapshots,
-                })
-              }
-              carryover={
-                snapshots?.[0]
-                  ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-                  : null
-              }
-            />
-            <ImportSnapshotsDialog
-              templateUrl={importTemplateUrl(assetId)}
-              mutation={importMutation}
-              currency={currency}
-            />
-          </>
+          <CreateSnapshotDialog
+            currency={currency}
+            mutation={createMutation}
+            suggest={(yearMonth) =>
+              suggestRevalued({
+                newYearMonth: yearMonth,
+                // Vehicle stores positive depreciation %; the helper wants
+                // signed (negative = decline), so negate at the callsite.
+                annualRatePct: vehicle?.details.annual_depreciation_rate
+                  ? `-${vehicle.details.annual_depreciation_rate}`
+                  : null,
+                snapshots,
+              })
+            }
+            carryover={
+              snapshots?.[0]
+                ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
+                : null
+            }
+          />
+        ),
+        renderImportControl: (currency) => (
+          <ImportSnapshotsDialog
+            templateUrl={importTemplateUrl(assetId)}
+            mutation={importMutation}
+            currency={currency}
+          />
         ),
       };
     },

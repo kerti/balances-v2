@@ -108,22 +108,22 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
           />
         ),
         renderCreateControls: (currency) => (
-          <>
-            <CreateSnapshotDialog
-              currency={currency}
-              mutation={createMutation}
-              carryover={
-                snapshots?.[0]
-                  ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-                  : null
-              }
-            />
-            <ImportSnapshotsDialog
-              templateUrl={receivableImportTemplateUrl(assetId)}
-              mutation={importMutation}
-              currency={currency}
-            />
-          </>
+          <CreateSnapshotDialog
+            currency={currency}
+            mutation={createMutation}
+            carryover={
+              snapshots?.[0]
+                ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
+                : null
+            }
+          />
+        ),
+        renderImportControl: (currency) => (
+          <ImportSnapshotsDialog
+            templateUrl={receivableImportTemplateUrl(assetId)}
+            mutation={importMutation}
+            currency={currency}
+          />
         ),
       };
     },

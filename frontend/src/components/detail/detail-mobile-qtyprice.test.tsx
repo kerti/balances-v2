@@ -128,6 +128,27 @@ describe("detail mobile a11y floor (qty×price)", () => {
     // Tap-target floor: the row ⋮ action carries the 44px size class.
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });
     expect(action).toHaveClass("size-11");
+
+    // #542: with a prior snapshot to copy, Copy carryover is the promoted
+    // primary of the create row — the large tap target (`h-11 md:h-8`) — and
+    // New drops to the secondary outline floor (`min-h-11 md:min-h-0`). (B1 had
+    // left the qty×price triggers at the bare `size-sm` height entirely.)
+    const carryover = screen.getByTestId("snapshot-carryover");
+    expect(carryover).toHaveClass("h-11");
+    expect(carryover).toHaveClass("md:h-8");
+    const create = screen.getByRole("button", { name: /^new$/i });
+    expect(create).toHaveClass("min-h-11");
+    expect(create).toHaveClass("md:min-h-0");
+
+    // #542: the transactions header also splits into two rows — trades (Buy
+    // primary, Sell) and cash flows (Dividend, Fee).
+    const trades = screen.getByTestId("txn-trades-row");
+    const cashflow = screen.getByTestId("txn-cashflow-row");
+    const buy = within(trades).getByRole("button", { name: /buy/i });
+    expect(buy).toHaveClass("h-11", "md:h-8");
+    expect(within(trades).getByRole("button", { name: /sell/i })).toHaveClass("min-h-11");
+    expect(within(cashflow).getByRole("button", { name: /dividend/i })).toBeInTheDocument();
+    expect(within(cashflow).getByRole("button", { name: /fee/i })).toBeInTheDocument();
   });
 
   it("rides the same snapshot-row / snapshot-amount anchors on the desktop table", async () => {

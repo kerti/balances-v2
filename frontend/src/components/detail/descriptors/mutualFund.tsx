@@ -224,26 +224,26 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
             />
           ),
           renderCreateControls: (currency) => (
-            <>
-              <CreateQuantityPriceSnapshotDialog
-                currency={currency}
-                mutation={createMutation}
-                carryover={
-                  snapshots?.[0]
-                    ? {
-                        quantity: snapshots[0].quantity,
-                        price_per_unit: snapshots[0].price_per_unit,
-                        lastSnapshotMonth: snapshots[0].year_month,
-                      }
-                    : null
-                }
-              />
-              <ImportSnapshotsDialog
-                templateUrl={investmentImportTemplateUrl(assetId)}
-                mutation={importMutation}
-                currency={currency}
-              />
-            </>
+            <CreateQuantityPriceSnapshotDialog
+              currency={currency}
+              mutation={createMutation}
+              carryover={
+                snapshots?.[0]
+                  ? {
+                      quantity: snapshots[0].quantity,
+                      price_per_unit: snapshots[0].price_per_unit,
+                      lastSnapshotMonth: snapshots[0].year_month,
+                    }
+                  : null
+              }
+            />
+          ),
+          renderImportControl: (currency) => (
+            <ImportSnapshotsDialog
+              templateUrl={investmentImportTemplateUrl(assetId)}
+              mutation={importMutation}
+              currency={currency}
+            />
           ),
         };
       },
@@ -297,30 +297,36 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
         ),
         pageSize: PAGE_SIZE,
         headerActions: active ? (
-          <>
-            <CreateTradeTransactionDialog
-              currency={currency}
-              txnType="buy"
-              quantityUnit={ctx.quantityUnit}
-              mutation={ctx.createTransactionMutation}
-            />
-            <CreateTradeTransactionDialog
-              currency={currency}
-              txnType="sell"
-              quantityUnit={ctx.quantityUnit}
-              mutation={ctx.createTransactionMutation}
-            />
-            <CreateCashIncomeTransactionDialog
-              currency={currency}
-              txnType="distribution"
-              mutation={ctx.createTransactionMutation}
-            />
-            <CreateFeeTransactionDialog
-              currency={currency}
-              quantityUnit={ctx.quantityUnit}
-              mutation={ctx.createTransactionMutation}
-            />
-          </>
+          // Two rows (#542): row 1 = trades (Buy leads as primary), row 2 = cash
+          // flows (distribution income + fees). Stacked on phones, inline ≥768px.
+          <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center">
+            <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="txn-trades-row">
+              <CreateTradeTransactionDialog
+                currency={currency}
+                txnType="buy"
+                quantityUnit={ctx.quantityUnit}
+                mutation={ctx.createTransactionMutation}
+              />
+              <CreateTradeTransactionDialog
+                currency={currency}
+                txnType="sell"
+                quantityUnit={ctx.quantityUnit}
+                mutation={ctx.createTransactionMutation}
+              />
+            </div>
+            <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="txn-cashflow-row">
+              <CreateCashIncomeTransactionDialog
+                currency={currency}
+                txnType="distribution"
+                mutation={ctx.createTransactionMutation}
+              />
+              <CreateFeeTransactionDialog
+                currency={currency}
+                quantityUnit={ctx.quantityUnit}
+                mutation={ctx.createTransactionMutation}
+              />
+            </div>
+          </div>
         ) : undefined,
         toolbar:
           allTxns.length > 0 ? (

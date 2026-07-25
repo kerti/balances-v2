@@ -95,7 +95,14 @@ export function CreateTradeTransactionDialog<TResult>({
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button size="sm" variant={isBuy ? "default" : "outline"}>
+        {/* Buy is the promoted primary of the transactions create row (#542):
+            solid variant + large mobile tap target. Sell and the cash-flow
+            controls stay secondary (outline + `min-h-11` floor). */}
+        <Button
+          size="sm"
+          variant={isBuy ? "default" : "outline"}
+          className={isBuy ? "h-11 md:h-8" : "min-h-11 md:min-h-0"}
+        >
           <Plus className="mr-1 size-4" />
           {t(isBuy ? "investments:trade.buyTrigger" : "investments:trade.sellTrigger")}
         </Button>

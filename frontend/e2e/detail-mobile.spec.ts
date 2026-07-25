@@ -65,6 +65,14 @@ test(
     expect(box).not.toBeNull();
     expect(box!.height).toBeGreaterThanOrEqual(44);
 
+    // #542: the section's *secondary* controls clear 44px too, not only the
+    // promoted primary action. The Export trigger stands in for the header /
+    // actions-row secondary sweep (Import / carryover / Help / Edit / Terminate /
+    // Delete), all raised from `size-sm` to `min-h-11 md:min-h-0` on phones.
+    const exportBox = await page.getByTestId("bank-account-export").boundingBox();
+    expect(exportBox).not.toBeNull();
+    expect(exportBox!.height).toBeGreaterThanOrEqual(44);
+
     // --- Cleanup: back to desktop, delete the snapshot then the account ---
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.reload();
