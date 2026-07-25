@@ -1,32 +1,11 @@
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { SnapshotRowMenu } from "@/components/common/SnapshotRowMenu";
 import {
-  EditQuantityPriceSnapshotDialog,
-  type UpdateQuantityPriceSnapshotMutationVariables,
-} from "@/components/dialogs/EditQuantityPriceSnapshotDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
-import { formatCurrency, formatYearMonth, formatDate } from "@/lib/format";
-
-type QuantityPriceSnapshotLike = {
-  id: string;
-  year_month: string;
-  amount: string;
-  currency: string;
-  quantity: string | null;
-  price_per_unit: string | null;
-  as_of_date: string | null;
-  description: string | null;
-};
+  useQuantityPriceSnapshotRow,
+  type QuantityPriceSnapshotLike,
+} from "@/components/common/useQuantityPriceSnapshotRow";
+import type { UpdateQuantityPriceSnapshotMutationVariables } from "@/components/dialogs/EditQuantityPriceSnapshotDialog";
 
 type Props<TUpdate, TDelete> = {
   snapshot: QuantityPriceSnapshotLike;
@@ -37,86 +16,47 @@ type Props<TUpdate, TDelete> = {
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
 };
 
+// The desktop table row for a qty×price snapshot. Shares its state, dialogs and
+// ⋮ menu with the mobile `QuantityPriceSnapshotCard` via
+// `useQuantityPriceSnapshotRow`, and the same `snapshot-*` testids, so the two
+// renderers stay in lockstep (ADR-0051 Phase B).
 export function QuantityPriceSnapshotRow<TUpdate, TDelete>({
   snapshot,
   quantityUnit,
   updateMutation,
   deleteMutation,
 }: Props<TUpdate, TDelete>) {
-  const { t } = useTranslation(["investments", "common"]);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  function handleConfirmDelete() {
-    deleteMutation.mutate(snapshot.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
+  const {
+    monthText,
+    amountText,
+    quantityText,
+    priceText,
+    statementText,
+    description,
+    onEdit,
+    onDelete,
+    dialogs,
+  } = useQuantityPriceSnapshotRow(snapshot, quantityUnit, updateMutation, deleteMutation);
 
   return (
     <>
-      <TableRow>
+      <TableRow data-testid="snapshot-row">
         <TableCell>
-          <div className="font-medium">{formatYearMonth(snapshot.year_month)}</div>
-          {snapshot.as_of_date && (
-            <div className="text-xs text-muted-foreground">
-              {t("common:snapshot.statementPrefix", {
-                date: formatDate(snapshot.as_of_date),
-              })}
-            </div>
-          )}
+          <div className="font-medium">{monthText}</div>
+          {statementText && <div className="text-xs text-muted-foreground">{statementText}</div>}
         </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {snapshot.quantity ? `${snapshot.quantity} ${quantityUnit}` : "—"}
+        <TableCell className="text-right tabular-nums">{quantityText ?? "—"}</TableCell>
+        <TableCell className="text-right tabular-nums">{priceText ?? "—"}</TableCell>
+        <TableCell className="text-right tabular-nums" data-testid="snapshot-amount">
+          {amountText}
         </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {snapshot.price_per_unit
-            ? formatCurrency(snapshot.price_per_unit, snapshot.currency)
-            : "—"}
-        </TableCell>
-        <TableCell className="text-right tabular-nums">
-          {formatCurrency(snapshot.amount, snapshot.currency)}
-        </TableCell>
-        <TableCell className="text-muted-foreground">{snapshot.description ?? "—"}</TableCell>
+        <TableCell className="text-muted-foreground">{description ?? "—"}</TableCell>
         <TableCell className="text-right">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label={t("investments:snapshotRow.actions")}>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditOpen(true)}>
-                {t("common:actions.edit")}
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDeleteOpen(true)} variant="destructive">
-                {t("common:delete")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <SnapshotRowMenu onEdit={onEdit} onDelete={onDelete} />
         </TableCell>
       </TableRow>
 
-      <EditQuantityPriceSnapshotDialog
-        key={snapshot.id}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-        snapshot={snapshot}
-        mutation={updateMutation}
-      />
-
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("investments:snapshotRow.deleteTitle")}
-        description={t("investments:snapshotRow.deleteDescription", {
-          month: formatYearMonth(snapshot.year_month),
-        })}
-        confirmLabel={t("common:delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
+      {dialogs}
     </>
   );
 }

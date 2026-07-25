@@ -92,6 +92,7 @@
     "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
     "acquiredLine": "Diakuisisi:",
     "acquiredForLine": "Diakuisisi: {{date}} seharga {{cost}}",
+    "acquiredForValue": "{{date}} seharga {{cost}}",
     "appreciationRateLabel": "Laju apresiasi:",
     "appreciationRateValue": "{{value}} /thn",
     "chartTitle": "Valuasi dari Waktu ke Waktu",
@@ -108,7 +109,8 @@
       "acquisitionCost": "Biaya akuisisi (opsional)",
       "acquisitionCostEdit": "Biaya akuisisi",
       "appreciationRate": "Laju apresiasi tahunan (% /thn, opsional)",
-      "appreciationRateEdit": "Laju apresiasi tahunan (% /thn)"
+      "appreciationRateEdit": "Laju apresiasi tahunan (% /thn)",
+      "addressDisplay": "Alamat"
     },
     "propertyTypes": {
       "house": "Rumah",
@@ -173,7 +175,8 @@
       "plateNumber": "Nomor pelat (opsional)",
       "plateNumberEdit": "Nomor pelat",
       "depreciationRate": "Laju penyusutan tahunan (%, opsional)",
-      "depreciationRateEdit": "Laju penyusutan tahunan (%)"
+      "depreciationRateEdit": "Laju penyusutan tahunan (%)",
+      "makeModel": "Merek & model"
     },
     "vehicleTypes": {
       "car": "Mobil",

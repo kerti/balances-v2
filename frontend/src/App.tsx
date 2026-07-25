@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import {
   createBrowserRouter,
   Navigate,
@@ -336,11 +337,7 @@ const router = createBrowserRouter([
         element: (
           <DetailRoute
             render={(id, nav) => (
-              <TimeDepositDetail
-                investmentId={id}
-                onBack={() => nav(routes.timeDeposits)}
-                onSelectTimeDeposit={(tid) => nav(routes.timeDeposit(tid))}
-              />
+              <TimeDepositDetail investmentId={id} onBack={() => nav(routes.timeDeposits)} />
             )}
           />
         ),
@@ -398,6 +395,7 @@ const PRE_AUTH_PATHS: string[] = [
 ];
 
 function App() {
+  const { t } = useTranslation();
   const { data: user, isPending } = useSession();
 
   useEffect(() => {
@@ -410,7 +408,7 @@ function App() {
   if (isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center text-muted-foreground">
-        Loading…
+        {t("common:loading")}
       </div>
     );
   }

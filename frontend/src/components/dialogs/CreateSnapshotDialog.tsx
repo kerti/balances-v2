@@ -122,7 +122,11 @@ export function CreateSnapshotDialog<TResult>({
         </Button>
       )}
       <DialogTrigger asChild>
-        <Button size="sm">
+        {/* The primary recurring action on a detail page — recording this
+            month's value — so it wears the large tap target on mobile
+            (ADR-0050/0051 Phase B), matching the category-home bulk-entry
+            button. Every other detail control stays secondary. */}
+        <Button size="sm" className="h-11 md:h-8">
           <Plus className="mr-1 size-4" />
           {t("snapshot.trigger")}
         </Button>

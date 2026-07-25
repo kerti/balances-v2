@@ -13,15 +13,18 @@ type Props = {
   onChange: (tagId: string | null) => void;
   id?: string;
   disabled?: boolean;
+  // The dialogs stack the field's own "Tag" label above the select; the detail
+  // page renders its own inline label beside it, so it opts out of this one.
+  showLabel?: boolean;
 };
 
-export function TagSelect({ value, onChange, id = "tag", disabled }: Props) {
+export function TagSelect({ value, onChange, id = "tag", disabled, showLabel = true }: Props) {
   const { t } = useTranslation("tags");
   const { data: tags } = useTags();
 
   return (
     <div className="space-y-1">
-      <Label htmlFor={id}>{t("field.label")}</Label>
+      {showLabel && <Label htmlFor={id}>{t("field.label")}</Label>}
       <select
         id={id}
         data-testid="tag-select"

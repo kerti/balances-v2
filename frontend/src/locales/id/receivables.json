@@ -31,7 +31,8 @@
   "snapshotsEmpty": "Belum ada snapshot. Klik \"Baru\" untuk mencatat saldo terutang bulan ini.",
   "fields": {
     "counterparty": "Pihak lawan",
-    "dueDate": "Tanggal jatuh tempo (opsional)"
+    "dueDate": "Tanggal jatuh tempo (opsional)",
+    "dueDateDisplay": "Jatuh tempo"
   },
   "placeholders": {
     "displayName": "Pinjaman ke saudara",
