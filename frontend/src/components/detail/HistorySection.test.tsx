@@ -8,6 +8,7 @@ import { render, screen } from "@testing-library/react";
 import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { HistorySection } from "./HistorySection";
 import type { HistorySectionSpec } from "./types";
+import i18n from "@/i18n";
 
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: vi.fn() }));
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -27,7 +28,7 @@ function baseSpec(overrides: Partial<HistorySectionSpec<Row>> = {}): HistorySect
     emptyText: "No snapshots yet.",
     header: (
       <TableRow>
-        <TableHead>Month</TableHead>
+        <TableHead>{i18n.t("common:tableHeaders.month")}</TableHead>
       </TableRow>
     ),
     rows,
