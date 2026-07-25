@@ -109,7 +109,8 @@
       "acquisitionCost": "Acquisition cost (optional)",
       "acquisitionCostEdit": "Acquisition cost",
       "appreciationRate": "Annual appreciation rate (% /yr, optional)",
-      "appreciationRateEdit": "Annual appreciation rate (% /yr)"
+      "appreciationRateEdit": "Annual appreciation rate (% /yr)",
+      "addressDisplay": "Address"
     },
     "propertyTypes": {
       "house": "House",
@@ -174,7 +175,8 @@
       "plateNumber": "Plate number (optional)",
       "plateNumberEdit": "Plate number",
       "depreciationRate": "Annual depreciation rate (%, optional)",
-      "depreciationRateEdit": "Annual depreciation rate (%)"
+      "depreciationRateEdit": "Annual depreciation rate (%)",
+      "makeModel": "Make & model"
     },
     "vehicleTypes": {
       "car": "Car",

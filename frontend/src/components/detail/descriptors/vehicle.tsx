@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
+import { SnapshotCard } from "@/components/common/SnapshotCard";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditVehicleDialog } from "@/components/dialogs/EditVehicleDialog";
@@ -48,17 +50,20 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
   exportUrl: vehicleExportUrl,
   getAsset: (entity) => entity.asset,
 
-  headerSecondary: (entity, _ctx, t) => {
+  identityCluster: (entity, _ctx, t) => {
     const { details } = entity;
-    const makeModel = [details.make, details.model].filter(Boolean).join(" ");
-    return [
+    const makeModel = [details.year ? String(details.year) : null, details.make, details.model]
+      .filter(Boolean)
+      .join(" ");
+    // Type and plate share one line, `·`-joined — the delimiter only shows when
+    // there's a plate to follow it.
+    const typeAndPlate = [
       t(`assets:vehicle.vehicleTypes.${details.vehicle_type}`),
-      makeModel,
-      details.year ? String(details.year) : null,
       details.plate_number,
     ]
       .filter(Boolean)
       .join(" · ");
+    return <IdentityCluster lines={[makeModel || null, typeAndPlate]} />;
   },
   infoFields: (entity, _ctx, t) => {
     const fields: InfoField[] = [];
@@ -87,13 +92,21 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         ),
         renderRow: (snapshot) => (
           <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}

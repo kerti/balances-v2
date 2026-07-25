@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
+import { SnapshotCard } from "@/components/common/SnapshotCard";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditReceivableDialog } from "@/components/dialogs/EditReceivableDialog";
@@ -17,7 +19,7 @@ import {
 import type { TourStep } from "@/components/shell/HelpTourButton";
 import { formatDate } from "@/lib/format";
 import type { Receivable, ReceivableSnapshot } from "@/api/types";
-import type { DetailDescriptor } from "@/components/detail/types";
+import type { DetailDescriptor, InfoField } from "@/components/detail/types";
 
 // The five standard tour anchors, keyed off the `receivables` namespace root
 // (`tour.*`), supplied explicitly like the liability descriptor.
@@ -59,14 +61,17 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
   exportUrl: receivableExportUrl,
   getAsset: (entity) => entity,
 
-  headerSecondary: (entity, _ctx, t) =>
-    entity.due_date
-      ? t("receivables:detailSubtitleWithDue", {
-          counterparty: entity.counterparty_name,
-          date: formatDate(entity.due_date),
-        })
-      : entity.counterparty_name,
-  infoFields: () => [],
+  identityCluster: (entity) => <IdentityCluster lines={[entity.counterparty_name]} />,
+  infoFields: (entity, _ctx, t): InfoField[] => {
+    const fields: InfoField[] = [];
+    if (entity.due_date) {
+      fields.push({
+        label: t("receivables:fields.dueDateDisplay"),
+        value: formatDate(entity.due_date),
+      });
+    }
+    return fields;
+  },
 
   snapshot: {
     useSectionRender: (assetId) => {
@@ -81,13 +86,21 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         ),
         renderRow: (snapshot) => (
           <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}

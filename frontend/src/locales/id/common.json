@@ -112,7 +112,8 @@
     "month": "Bulan",
     "statementDate": "Tanggal laporan (opsional)",
     "notes": "Catatan",
-    "ownership": "Kepemilikan"
+    "ownership": "Kepemilikan",
+    "status": "Status"
   },
   "ownership": {
     "joint": "Bersama",

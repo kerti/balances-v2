@@ -15,9 +15,11 @@ import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
+import { headlineSurface } from "@/lib/headline";
 import type {
   DetailDescriptor,
   HistorySectionSpec,
+  InfoField,
   SnapshotShape,
 } from "@/components/detail/types";
 
@@ -95,8 +97,15 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
     currentUser,
   );
 
-  const headerSecondary = descriptor.headerSecondary(entity, ctx, t);
+  const headerSecondary = descriptor.headerSecondary?.(entity, ctx, t);
   const infoFields = descriptor.infoFields(entity, ctx, t);
+  const identity = descriptor.identityCluster?.(entity, ctx, t);
+  // The details card is a two-column headline on desktop (ADR-0051 Phase B, the
+  // Income headline idiom): the descriptor's own identity + spec fields fill the
+  // left column, the shared-surface meta the right; both collapse to one stacked
+  // column on mobile. Currency + status ride the card title instead, to save the
+  // vertical space extra rows would cost — leaving ownership the sole meta row.
+  const metaFields: InfoField[] = [{ label: t("common:fields.ownership"), value: ownerLabel }];
   const headline = descriptor.renderHeadline?.(entity, ctx, snapshots);
   const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);
   const afterDetails = descriptor.renderAfterDetails?.(entity, ctx, t);
@@ -122,6 +131,11 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
     header: snapshotRender.header,
     rows: snapshots ?? [],
     renderRow: (snapshot) => snapshotRender.renderRow(snapshot),
+    // Forward the shape's mobile card renderer only when it exists, so
+    // `HistorySection` stays on the table for shapes not yet carded (Phase B).
+    ...(snapshotRender.renderCard && {
+      renderCard: (snapshot: TSnap) => snapshotRender.renderCard!(snapshot),
+    }),
     pageSize: PAGE_SIZE,
     headerActions: (
       <>
@@ -147,7 +161,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
@@ -157,13 +171,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
           </h1>
           {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
           {headline}
-          <DetailTagControl
-            group={descriptor.tagGroup}
-            positionId={asset.id}
-            currentTagId={asset.tag_id}
-          />
         </div>
-        <div data-testid="tour-actions" className="flex gap-2">
+        <div data-testid="tour-actions" className="flex flex-wrap gap-2">
           <HelpTourButton steps={tourSteps} />
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="mr-1 size-4" />
@@ -186,23 +195,38 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
 
       {beforeDetails}
 
-      <Card data-testid="tour-details">
+      <Card data-testid="tour-details" className={headlineSurface}>
         <CardHeader>
-          <CardTitle>{t(keys.detailsCardTitle)}</CardTitle>
-          <CardDescription>
-            {t(keys.detailsCardLine, {
-              ownership: ownerLabel,
-              currency: asset.native_currency,
-            })}{" "}
-            <StatusBadge group={descriptor.group} status={asset.status} />
-          </CardDescription>
+          <div className="flex items-center justify-between gap-3">
+            <CardTitle>{t(keys.detailsCardTitle)}</CardTitle>
+            {/* Currency + status ride the title line, right-aligned, to save the
+                vertical space two more meta rows would cost (ADR-0051 Phase B). */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className="tabular-nums text-muted-foreground">{asset.native_currency}</span>
+              <StatusBadge group={descriptor.group} status={asset.status} />
+            </div>
+          </div>
         </CardHeader>
-        {(infoFields.length > 0 || asset.description) && (
-          <CardContent className={infoFields.length > 0 ? "space-y-3" : undefined}>
-            <InfoGrid fields={infoFields} />
-            {asset.description && <p className="text-sm">{asset.description}</p>}
-          </CardContent>
-        )}
+        <CardContent className="space-y-3">
+          {/* Two columns on desktop with a divider between (the Income headline
+              layout) — identity + spec + tag on the left, the shared meta on the
+              right; one stacked column on mobile. */}
+          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+            <div className="space-y-3">
+              {identity}
+              <InfoGrid fields={infoFields} />
+            </div>
+            <div className="space-y-3">
+              <InfoGrid fields={metaFields} mobileLayout="inline" />
+              <DetailTagControl
+                group={descriptor.tagGroup}
+                positionId={asset.id}
+                currentTagId={asset.tag_id}
+              />
+            </div>
+          </div>
+          {asset.description && <p className="text-sm">{asset.description}</p>}
+        </CardContent>
       </Card>
 
       {afterDetails}

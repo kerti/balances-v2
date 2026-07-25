@@ -31,7 +31,8 @@
   "snapshotsEmpty": "No snapshots yet. Click \"New\" to record this month's outstanding balance.",
   "fields": {
     "counterparty": "Counterparty",
-    "dueDate": "Due date (optional)"
+    "dueDate": "Due date (optional)",
+    "dueDateDisplay": "Due date"
   },
   "placeholders": {
     "displayName": "Loan to brother",

@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
+import { SnapshotCard } from "@/components/common/SnapshotCard";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditLiabilityDialog } from "@/components/dialogs/EditLiabilityDialog";
@@ -61,11 +63,11 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
   exportUrl: liabilityExportUrl,
   getAsset: (entity) => entity,
 
-  headerSecondary: (entity, _ctx, t) =>
-    t("liabilities:detailSubtitle", {
-      subtype: t(`liabilities:subtypes.${entity.subtype}`),
-      counterparty: entity.counterparty_name,
-    }),
+  identityCluster: (entity, _ctx, t) => (
+    <IdentityCluster
+      lines={[entity.counterparty_name, t(`liabilities:subtypes.${entity.subtype}`)]}
+    />
+  ),
   infoFields: (entity, _ctx, t) => {
     const fields: InfoField[] = [];
     if (entity.principal) {
@@ -114,13 +116,21 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         ),
         renderRow: (snapshot) => (
           <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}

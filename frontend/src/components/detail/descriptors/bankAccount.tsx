@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { SnapshotRow } from "@/components/common/SnapshotRow";
+import { SnapshotCard } from "@/components/common/SnapshotCard";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateSnapshotDialog } from "@/components/dialogs/CreateSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { EditBankAccountDialog } from "@/components/dialogs/EditBankAccountDialog";
@@ -47,12 +49,17 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
   exportUrl: bankAccountExportUrl,
   getAsset: (entity) => entity.asset,
 
-  headerSecondary: (entity, _ctx, t) =>
-    t("assets:bankAccount.detailHeaderLine", {
-      bankName: entity.details.bank_name,
-      accountNumber: entity.details.account_number,
-      accountType: t(`assets:bankAccount.accountTypes.${entity.details.account_type}`),
-    }),
+  // Bank identity as a tight, label-less cluster (ADR-0051 Phase B) — the name,
+  // number and type read fine unlabelled and save vertical space on mobile.
+  identityCluster: (entity, _ctx, t) => (
+    <IdentityCluster
+      lines={[
+        entity.details.bank_name,
+        entity.details.account_number,
+        t(`assets:bankAccount.accountTypes.${entity.details.account_type}`),
+      ]}
+    />
+  ),
   infoFields: () => [],
 
   snapshot: {
@@ -68,13 +75,21 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead>{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         ),
         renderRow: (snapshot) => (
           <SnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}

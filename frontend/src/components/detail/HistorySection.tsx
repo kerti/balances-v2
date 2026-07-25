@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableHeader } from "@/components/ui/table";
 import { PaginationControls } from "@/components/common/PaginationControls";
+import { useIsMobile } from "@/hooks/use-mobile";
 import type { HistorySectionSpec } from "@/components/detail/types";
 
 // One history table — snapshots, or (for investments) a transaction ledger
@@ -25,17 +26,31 @@ export function HistorySection<TRow>({
   header,
   rows,
   renderRow,
+  renderCard,
   pageSize,
 }: HistorySectionSpec<TRow>) {
+  const isMobile = useIsMobile();
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const effectivePage = Math.min(page, totalPages);
   const pageRows = rows.slice((effectivePage - 1) * pageSize, effectivePage * pageSize);
 
+  // Below 768px render a stacked card list once the shape supplies `renderCard`
+  // (Phase B); otherwise the wide table, which is always the desktop renderer. A
+  // shape not yet carded falls back to the table on mobile rather than rendering
+  // nothing.
+  const asCards = isMobile && !!renderCard;
+
+  const pagination = totalPages > 1 && (
+    <div className="border-t px-6 py-3">
+      <PaginationControls page={effectivePage} totalPages={totalPages} onPageChange={setPage} />
+    </div>
+  );
+
   return (
     <Card data-testid={testId}>
       <CardHeader>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
           <div>
             <CardTitle>{title}</CardTitle>
             {description && <CardDescription>{description}</CardDescription>}
@@ -48,21 +63,20 @@ export function HistorySection<TRow>({
         {toolbar}
         {rows.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">{emptyText}</p>
+        ) : asCards ? (
+          <>
+            <div className="space-y-3 p-4" data-testid={`${testId}-cards`}>
+              {pageRows.map((row, i) => renderCard!(row, i))}
+            </div>
+            {pagination}
+          </>
         ) : (
           <>
-            <Table>
+            <Table data-testid={`${testId}-table`}>
               <TableHeader>{header}</TableHeader>
               <TableBody>{pageRows.map((row, i) => renderRow(row, i))}</TableBody>
             </Table>
-            {totalPages > 1 && (
-              <div className="px-6 py-3 border-t">
-                <PaginationControls
-                  page={effectivePage}
-                  totalPages={totalPages}
-                  onPageChange={setPage}
-                />
-              </div>
-            )}
+            {pagination}
           </>
         )}
       </CardContent>

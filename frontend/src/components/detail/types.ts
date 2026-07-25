@@ -73,6 +73,10 @@ export type SnapshotSectionRender<TSnap extends SnapshotShape> = {
   header: ReactNode;
   // Neutral `<TableRow>`; mutations already bound inside.
   renderRow: (snapshot: TSnap) => ReactNode;
+  // The mobile card variant of `renderRow` (Phase B). `HistorySection` picks it
+  // below 768px; optional so a snapshot shape not yet carded falls back to the
+  // table on mobile instead of rendering nothing. Mutations already bound inside.
+  renderCard?: (snapshot: TSnap) => ReactNode;
   // The create + import controls, mutations bound. The core owns the active-gate
   // (a terminated position hides them) and injects `currency` at render time.
   renderCreateControls: (currency: string) => ReactNode;
@@ -104,6 +108,10 @@ export type HistorySectionSpec<TRow = unknown> = {
   header: ReactNode;
   rows: TRow[];
   renderRow: (row: TRow, index: number) => ReactNode;
+  // The mobile card variant (Phase B). When present the primitive renders a
+  // stacked card list below 768px instead of the wide table; when absent it
+  // stays on the table at every width (a row shape not yet carded).
+  renderCard?: (row: TRow, index: number) => ReactNode;
   pageSize: number;
 };
 
@@ -174,7 +182,16 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   getAsset: (entity: TEntity) => Position;
 
   // Slots the core calls but never inspects.
-  headerSecondary: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
+  // The grey subtitle under the H1. Optional (ADR-0051 Phase B): the amount-only
+  // types moved their identity fields into the details card, so they omit it;
+  // the investment families still carry a headline subtitle until their slices.
+  headerSecondary?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
+  // Optional tight, label-less identity block rendered at the top of the details
+  // card's left column (ADR-0051 Phase B) — for a type whose identity reads
+  // better as a compact cluster (bank name / number / type) than as labelled
+  // rows, saving vertical space on mobile. Types without it put their identity in
+  // `infoFields` as normal labelled rows; the core never inspects the node.
+  identityCluster?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   infoFields: (entity: TEntity, ctx: TCtx, t: TFunction) => InfoField[];
   // Optional neutral surfaces the core drops at fixed page positions but never
   // inspects (ADR-0051, A5 — the outlier tail). `renderBeforeDetails` sits

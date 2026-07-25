@@ -112,12 +112,14 @@ describe("vehicleDescriptor detail (conformance)", () => {
 
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Family Car");
-    // Header line joins type · make model · year · plate.
-    expect(screen.getByText(/Toyota Corolla/)).toBeInTheDocument();
 
+    // Vehicle identity moved into the details card (ADR-0051 Phase B), with
+    // year/make/model consolidated into one "Make & model" row and ownership /
+    // status now uniform rows rather than a joined header subtitle.
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("2019 Toyota Corolla")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Depreciation rate:")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Daily driver")).toBeInTheDocument();
 
