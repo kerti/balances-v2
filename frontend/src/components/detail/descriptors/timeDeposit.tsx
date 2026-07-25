@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
+import { AccruedInterestSnapshotCard } from "@/components/common/AccruedInterestSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
@@ -364,6 +365,14 @@ export const timeDepositDescriptor: DetailDescriptor<
         ),
         renderRow: (snapshot) => (
           <AccruedInterestSnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <AccruedInterestSnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             updateMutation={updateMutation}
