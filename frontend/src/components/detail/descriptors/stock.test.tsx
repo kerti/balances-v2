@@ -181,6 +181,10 @@ describe("stockDescriptor detail (conformance)", () => {
     expect(within(detailsCard).getByText("ACME")).toBeInTheDocument();
     expect(within(detailsCard).getByText("NYSE")).toBeInTheDocument();
 
+    // Risk profile rides the card header as a compact shield badge (medium),
+    // left of the currency — not a row in the headline column.
+    expect(within(detailsCard).getByTestId("risk-profile-medium")).toBeInTheDocument();
+
     // The headline slot now lives in the details card and carries all three
     // stats: total cost (5,000), P/L (+1,600), and total value (6,600).
     const headlineEl = within(detailsCard).getByTestId("investment-headline");

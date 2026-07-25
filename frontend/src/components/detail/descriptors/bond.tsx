@@ -5,6 +5,7 @@ import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateAccruedInterestSnapshotDialog } from "@/components/dialogs/CreateAccruedInterestSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
@@ -128,6 +129,10 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
   exportUrl: bondExportUrl,
   getAsset: (entity) => entity.investment,
 
+  renderHeaderBadge: (entity) => (
+    <RiskProfileBadge profile={entity.investment.risk_profile} compact />
+  ),
+
   useDetailContext: (assetId) => {
     const { t } = useTranslation(["investments"]);
     const { data: transactions } = useInvestmentTransactions(assetId);
@@ -189,7 +194,6 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     return (
       <InvestmentHeadline
         currency={entity.investment.native_currency}
-        riskProfile={entity.investment.risk_profile}
         extraFields={[
           {
             label: t("investments:bond.couponLabel"),

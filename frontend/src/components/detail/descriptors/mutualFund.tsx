@@ -6,6 +6,7 @@ import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnaps
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
@@ -125,6 +126,10 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
     exportUrl: mutualFundExportUrl,
     getAsset: (entity) => entity.investment,
 
+    renderHeaderBadge: (entity) => (
+      <RiskProfileBadge profile={entity.investment.risk_profile} compact />
+    ),
+
     useDetailContext: (assetId) => {
       const { t } = useTranslation(["investments"]);
       const { data: transactions } = useInvestmentTransactions(assetId);
@@ -163,7 +168,6 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
       return (
         <InvestmentHeadline
           currency={entity.investment.native_currency}
-          riskProfile={entity.investment.risk_profile}
           latestValue={latest ? Number(latest.amount) : null}
           totalCost={computeCostBasis(ctx.transactions ?? []).cost}
           status={entity.investment.status}

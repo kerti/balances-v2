@@ -186,6 +186,12 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // types moved their identity fields into the details card, so they omit it;
   // the investment families still carry a headline subtitle until their slices.
   headerSecondary?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
+  // Optional compact badge the core drops into the details-card header, left of
+  // the currency + status (ADR-0051 Phase B). Investment types return their
+  // risk-profile shield here (`investment.risk_profile` is not on the shared
+  // Position surface, so it reaches the header through this slot); the core
+  // renders the node verbatim and never inspects it. Amount-only types omit it.
+  renderHeaderBadge?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional tight, label-less identity block rendered at the top of the details
   // card's left column (ADR-0051 Phase B) — for a type whose identity reads
   // better as a compact cluster (bank name / number / type) than as labelled

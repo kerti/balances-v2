@@ -1,10 +1,12 @@
 // Shared stat column for the investment detail card's middle column (issue #14,
 // slice 14b; relocated + widened in ADR-0051 Phase B). Reads as inline
 // label/value rows via the shared InfoGrid `inline` idiom, so each stat's label
-// and figure sit on one line at every width. Top to bottom: the risk profile,
-// any type-specific descriptive rows the descriptor threads in (`extraFields` —
-// bond coupon/disposition, time-deposit placement/maturity), then the money
-// summary — total cost, P/L, total value. Only the money figures right-align.
+// and figure sit on one line at every width. Top to bottom: the money summary —
+// total cost, P/L, total value — then any type-specific descriptive rows the
+// descriptor threads in (`extraFields` — bond coupon/disposition, time-deposit
+// Period + at-maturity). InfoGrid right-aligns every value cell. Risk profile is
+// not here — it rides the details-card header as a compact badge (via the
+// descriptor's `renderHeaderBadge` slot).
 // The core places it as the middle column on desktop; on mobile the details
 // card's three columns stack in reading order, so this block follows the
 // identity + info fields. It no longer rides under the H1.
@@ -29,7 +31,6 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { InfoGrid } from "@/components/detail/InfoGrid";
 import type { InfoField } from "@/components/detail/types";
-import type { RiskProfile } from "@/api/types";
 
 type Props = {
   currency: string;
@@ -45,13 +46,9 @@ type Props = {
   // {date}". Pass `investment.status` + `investment.terminated_at`.
   status?: string | null;
   terminatedAt?: string | null;
-  // The position's risk profile — rendered as the first row of the middle
-  // column (`investment.risk_profile`, shared by all five investment types).
-  riskProfile?: RiskProfile;
   // Type-specific descriptive rows the descriptor threads into the middle
-  // column above the money stats (bond: coupon + disposition; time deposit:
-  // placement/maturity/at-maturity). Left-aligned — only the money figures
-  // right-align. Empty for the qty×price types.
+  // column below the money stats (bond: coupon + disposition; time deposit:
+  // the Period range + at-maturity policy). Empty for the qty×price types.
   extraFields?: InfoField[];
 };
 
@@ -61,7 +58,6 @@ export function InvestmentHeadline({
   totalCost,
   status,
   terminatedAt,
-  riskProfile,
   extraFields,
 }: Props) {
   const { t } = useTranslation("investments");
@@ -113,17 +109,6 @@ export function InvestmentHeadline({
           </span>
         ),
     },
-    ...(riskProfile
-      ? [
-          {
-            label: t("riskProfile.selectLabel"),
-            // e.g. `riskProfile.selectMedium` → "Medium".
-            value: t(
-              `riskProfile.select${riskProfile.charAt(0).toUpperCase()}${riskProfile.slice(1)}`,
-            ),
-          },
-        ]
-      : []),
     ...(extraFields ?? []),
   ];
 

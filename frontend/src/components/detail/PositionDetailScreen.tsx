@@ -98,6 +98,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   );
 
   const headerSecondary = descriptor.headerSecondary?.(entity, ctx, t);
+  const headerBadge = descriptor.renderHeaderBadge?.(entity, ctx, t);
   const infoFields = descriptor.infoFields(entity, ctx, t);
   const identity = descriptor.identityCluster?.(entity, ctx, t);
   // The details card is a two-column headline on desktop (ADR-0051 Phase B, the
@@ -198,9 +199,11 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <CardTitle>{t(keys.detailsCardTitle)}</CardTitle>
-            {/* Currency + status ride the title line, right-aligned, to save the
-                vertical space two more meta rows would cost (ADR-0051 Phase B). */}
+            {/* Header badge (investment risk shield) + currency + status ride the
+                title line, right-aligned, to save the vertical space more meta
+                rows would cost (ADR-0051 Phase B). */}
             <div className="flex items-center gap-2 text-sm">
+              {headerBadge}
               <span className="tabular-nums text-muted-foreground">{asset.native_currency}</span>
               <StatusBadge group={descriptor.group} status={asset.status} />
             </div>
