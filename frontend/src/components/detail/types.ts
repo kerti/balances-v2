@@ -186,6 +186,12 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // types moved their identity fields into the details card, so they omit it;
   // the investment families still carry a headline subtitle until their slices.
   headerSecondary?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
+  // Optional compact badge the core drops into the details-card header, left of
+  // the currency + status (ADR-0051 Phase B). Investment types return their
+  // risk-profile shield here (`investment.risk_profile` is not on the shared
+  // Position surface, so it reaches the header through this slot); the core
+  // renders the node verbatim and never inspects it. Amount-only types omit it.
+  renderHeaderBadge?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional tight, label-less identity block rendered at the top of the details
   // card's left column (ADR-0051 Phase B) — for a type whose identity reads
   // better as a compact cluster (bank name / number / type) than as labelled
@@ -205,8 +211,15 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   renderAfterDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional investment headline (has-transactions axis); absent for amount-only.
   // Receives the snapshot stream (for latest value) alongside the ctx (for the
-  // cost-basis inputs) — both computed as descriptor wiring, never in the core.
-  renderHeadline?: (entity: TEntity, ctx: TCtx, snapshots: TSnap[] | undefined) => ReactNode;
+  // cost-basis inputs) and `t` (for the type-specific `extraFields` copy it
+  // threads into the middle column) — all computed as descriptor wiring, never
+  // in the core.
+  renderHeadline?: (
+    entity: TEntity,
+    ctx: TCtx,
+    snapshots: TSnap[] | undefined,
+    t: TFunction,
+  ) => ReactNode;
   // The universal snapshot table's per-shape wiring (S1/S2/S3), fetching its own
   // stream and binding its own mutations.
   snapshot: SnapshotSection<TSnap>;

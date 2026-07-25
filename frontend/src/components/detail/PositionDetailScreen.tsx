@@ -98,6 +98,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   );
 
   const headerSecondary = descriptor.headerSecondary?.(entity, ctx, t);
+  const headerBadge = descriptor.renderHeaderBadge?.(entity, ctx, t);
   const infoFields = descriptor.infoFields(entity, ctx, t);
   const identity = descriptor.identityCluster?.(entity, ctx, t);
   // The details card is a two-column headline on desktop (ADR-0051 Phase B, the
@@ -106,7 +107,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   // column on mobile. Currency + status ride the card title instead, to save the
   // vertical space extra rows would cost — leaving ownership the sole meta row.
   const metaFields: InfoField[] = [{ label: t("common:fields.ownership"), value: ownerLabel }];
-  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots);
+  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots, t);
   const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);
   const afterDetails = descriptor.renderAfterDetails?.(entity, ctx, t);
   const extraSections = descriptor.historySections?.(entity, ctx, snapshots, t) ?? [];
@@ -170,7 +171,6 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
             {asset.display_name}
           </h1>
           {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
-          {headline}
         </div>
         <div data-testid="tour-actions" className="flex flex-wrap gap-2">
           <HelpTourButton steps={tourSteps} />
@@ -199,32 +199,61 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
         <CardHeader>
           <div className="flex items-center justify-between gap-3">
             <CardTitle>{t(keys.detailsCardTitle)}</CardTitle>
-            {/* Currency + status ride the title line, right-aligned, to save the
-                vertical space two more meta rows would cost (ADR-0051 Phase B). */}
+            {/* Header badge (investment risk shield) + currency + status ride the
+                title line, right-aligned, to save the vertical space more meta
+                rows would cost (ADR-0051 Phase B). */}
             <div className="flex items-center gap-2 text-sm">
+              {headerBadge}
               <span className="tabular-nums text-muted-foreground">{asset.native_currency}</span>
               <StatusBadge group={descriptor.group} status={asset.status} />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Two columns on desktop with a divider between (the Income headline
-              layout) — identity + spec + tag on the left, the shared meta on the
-              right; one stacked column on mobile. */}
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
-            <div className="space-y-3">
-              {identity}
-              <InfoGrid fields={infoFields} />
+          {headline ? (
+            /* Investment layout (ADR-0051 Phase B): three columns on desktop —
+               identity + info fields on the left, the risk/spec/money headline in
+               the middle (widened), ownership + tag on the right. On mobile the
+               three columns stack in reading order (left column fully, then the
+               middle, then the meta), so the details card reads top-to-bottom the
+               same way it reads left-to-right on desktop. */
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)] md:gap-x-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+              <div className="space-y-3">
+                {identity}
+                {/* Inline like the middle + meta columns, so an investment's
+                    left-column fields (bond face value/maturity, time-deposit
+                    rate/term) read as single label/value lines on mobile too. */}
+                <InfoGrid fields={infoFields} mobileLayout="inline" />
+              </div>
+              {headline}
+              <div className="space-y-3">
+                <InfoGrid fields={metaFields} mobileLayout="inline" />
+                <DetailTagControl
+                  group={descriptor.tagGroup}
+                  positionId={asset.id}
+                  currentTagId={asset.tag_id}
+                />
+              </div>
             </div>
-            <div className="space-y-3">
-              <InfoGrid fields={metaFields} mobileLayout="inline" />
-              <DetailTagControl
-                group={descriptor.tagGroup}
-                positionId={asset.id}
-                currentTagId={asset.tag_id}
-              />
+          ) : (
+            /* Amount-only layout: two columns on desktop with a divider between
+               (the Income headline idiom) — identity + spec on the left, the
+               shared meta on the right; one stacked column on mobile. */
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+              <div className="space-y-3">
+                {identity}
+                <InfoGrid fields={infoFields} />
+              </div>
+              <div className="space-y-3">
+                <InfoGrid fields={metaFields} mobileLayout="inline" />
+                <DetailTagControl
+                  group={descriptor.tagGroup}
+                  positionId={asset.id}
+                  currentTagId={asset.tag_id}
+                />
+              </div>
             </div>
-          </div>
+          )}
           {asset.description && <p className="text-sm">{asset.description}</p>}
         </CardContent>
       </Card>

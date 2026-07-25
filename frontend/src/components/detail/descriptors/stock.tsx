@@ -3,8 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnapshotRow";
+import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { CreateTradeTransactionDialog } from "@/components/dialogs/CreateTradeTransactionDialog";
@@ -125,6 +128,10 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
   exportUrl: stockExportUrl,
   getAsset: (entity) => entity.investment,
 
+  renderHeaderBadge: (entity) => (
+    <RiskProfileBadge profile={entity.investment.risk_profile} compact />
+  ),
+
   useDetailContext: (assetId) => {
     const { t } = useTranslation(["investments"]);
     const { data: transactions } = useInvestmentTransactions(assetId);
@@ -143,7 +150,13 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
     };
   },
 
-  headerSecondary: (entity) => `${entity.details.ticker} · ${entity.details.exchange}`,
+  // Ticker + exchange move into the details card as a tight, label-less cluster
+  // (ADR-0051 Phase B) — the ticker reads as the primary identifier, the exchange
+  // muted beneath it — so the card's left column carries the identity the other
+  // qty×price types now share, rather than floating it in the H1 subtitle.
+  identityCluster: (entity) => (
+    <IdentityCluster lines={[entity.details.ticker, entity.details.exchange]} />
+  ),
   infoFields: () => [],
 
   renderHeadline: (entity, ctx, snapshots) => {
@@ -187,6 +200,15 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
         ),
         renderRow: (snapshot) => (
           <QuantityPriceSnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            quantityUnit={quantityUnit}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <QuantityPriceSnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             quantityUnit={quantityUnit}

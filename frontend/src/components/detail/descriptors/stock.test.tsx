@@ -169,16 +169,28 @@ describe("stockDescriptor detail (conformance)", () => {
       <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
     );
 
-    // Title + header secondary line (the ticker/exchange slot).
+    // Title (H1). Ticker/exchange no longer ride a subtitle here — they moved
+    // into the details-card identity cluster (asserted below).
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Acme Corp Shares");
-    expect(screen.getByText(/ACME · NYSE/)).toBeInTheDocument();
 
-    // The investment headline slot (renderHeadline) mounts the shared component.
-    expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
-
-    // Details card: ownership/status line + the shared-surface description.
+    // Details card: identity cluster (ticker primary, exchange muted) + the
+    // cost/P/L/value headline column (relocated from under the H1) + the
+    // ownership/status line + the shared-surface description.
     const detailsCard = screen.getByTestId("tour-details");
+    expect(within(detailsCard).getByText("ACME")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("NYSE")).toBeInTheDocument();
+
+    // Risk profile rides the card header as a compact shield badge (medium),
+    // left of the currency — not a row in the headline column.
+    expect(within(detailsCard).getByTestId("risk-profile-medium")).toBeInTheDocument();
+
+    // The headline slot now lives in the details card and carries all three
+    // stats: total cost (5,000), P/L (+1,600), and total value (6,600).
+    const headlineEl = within(detailsCard).getByTestId("investment-headline");
+    expect(within(headlineEl).getByText(/5,?000/)).toBeInTheDocument();
+    expect(within(headlineEl).getByTestId("investment-headline-pl")).toHaveTextContent(/1,?600/);
+    expect(within(headlineEl).getByTestId("investment-headline-value")).toHaveTextContent(/6,?600/);
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Core equity holding")).toBeInTheDocument();

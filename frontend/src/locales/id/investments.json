@@ -214,12 +214,14 @@
     "searchEmpty": "Tidak ada transaksi yang cocok dengan pencarian."
   },
   "headline": {
-    "totalCost": "Total modal:",
-    "unrealizedPL": "Untung/rugi belum direalisasi:",
+    "totalCost": "Total modal",
+    "unrealizedPL": "Untung/rugi belum direalisasi",
     "unrealizedPLEmpty": "—",
+    "totalValue": "Total nilai",
+    "totalValueEmpty": "—",
     "closed": {
-      "sold": "Dijual pada:",
-      "matured": "Jatuh tempo pada:"
+      "sold": "Dijual pada",
+      "matured": "Jatuh tempo pada"
     }
   },
   "stock": {
@@ -372,10 +374,10 @@
     "editDescription": "Mata uang tetap saat dibuat. Kepemilikan bisa diubah.",
     "detailsCardTitle": "Detail Obligasi",
     "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
-    "faceValueLabel": "Nilai nominal:",
-    "couponLabel": "Kupon:",
+    "faceValueLabel": "Nilai nominal",
+    "couponLabel": "Kupon",
     "couponValue": "{{rate}}% /thn · {{frequency}}",
-    "maturityLabel": "Jatuh tempo:",
+    "maturityLabel": "Jatuh tempo",
     "snapshotsDescription": "Total nilai dan rincian bunga berjalan bulanan.",
     "snapshotsEmpty": "Belum ada snapshot. Klik \"Baru\" untuk mencatat bacaan bulan ini. Untuk obligasi hingga jatuh tempo (obligasi pemerintah primer Indonesia di mana kupon dibayar ke rekening bank), satu snapshot awal sebesar nilai nominal sudah cukup — carry-forward snapshot menangani setiap bulan berikutnya hingga jatuh tempo.",
     "transactionsDescription": "Beli / jual (pasar sekunder), kupon, biaya, dan peristiwa jatuh tempo terminal. Untuk obligasi ritel pemerintah Indonesia, catat setiap kupon saat diterima.",
@@ -464,6 +466,12 @@
     "placementLabel": "Penempatan:",
     "maturityLabel": "Jatuh tempo:",
     "atMaturityLabel": "Saat jatuh tempo:",
+    "interestRateLabel": "Suku bunga:",
+    "interestRateValue": "{{rate}}% /thn",
+    "termLabel": "Tenor:",
+    "termValue": "{{months}} bulan",
+    "periodLabel": "Periode:",
+    "periodValue": "{{start}} → {{end}}",
     "subtitle": "{{bank}} · {{rate}}% · {{months}}bln",
     "rowMeta": "{{rate}}% · {{months}}bln",
     "snapshotsDescription": "Total nilai dan rincian bunga berjalan bulanan.",

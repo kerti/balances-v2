@@ -8,6 +8,8 @@ import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateAccruedInterestSnapshotDialog } from "@/components/dialogs/CreateAccruedInterestSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { CreateMaturityTransactionDialog } from "@/components/dialogs/CreateMaturityTransactionDialog";
@@ -141,6 +143,10 @@ export const timeDepositDescriptor: DetailDescriptor<
   exportUrl: timeDepositExportUrl,
   getAsset: (entity) => entity.investment,
 
+  renderHeaderBadge: (entity) => (
+    <RiskProfileBadge profile={entity.investment.risk_profile} compact />
+  ),
+
   useDetailContext: (assetId) => {
     const navigate = useNavigate();
     const { data: transactions } = useInvestmentTransactions(assetId);
@@ -161,41 +167,65 @@ export const timeDepositDescriptor: DetailDescriptor<
     };
   },
 
-  headerSecondary: (entity, _ctx, t) =>
-    t("investments:timeDeposit.subtitle", {
-      bank: entity.details.bank_name,
-      rate: Number(entity.details.interest_rate).toFixed(2),
-      months: entity.details.term_months,
-    }),
+  // Bank name as the identity cluster at the top of the left column (ADR-0051
+  // Phase B) — moved off the H1 subtitle.
+  identityCluster: (entity) => <IdentityCluster lines={[entity.details.bank_name]} />,
+  // Left column: interest rate + term — short values that read fine in the narrow
+  // column. The date-range Period + at-maturity policy live in the wider middle
+  // column (see renderHeadline) so they don't wrap onto two lines here.
   infoFields: (entity, _ctx, t) => {
-    const { investment, details } = entity;
-    const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${details.rollover_policy}`);
+    const { details } = entity;
     const fields: InfoField[] = [
       {
-        label: t("investments:timeDeposit.principalLabel"),
-        value: formatCurrency(details.principal, investment.native_currency),
+        label: t("investments:timeDeposit.interestRateLabel"),
+        value: (
+          <span className="tabular-nums">
+            {t("investments:timeDeposit.interestRateValue", {
+              rate: Number(details.interest_rate).toFixed(2),
+            })}
+          </span>
+        ),
       },
       {
-        label: t("investments:timeDeposit.placementLabel"),
-        value: formatDate(details.placement_date),
-      },
-      {
-        label: t("investments:timeDeposit.maturityLabel"),
-        value: formatDate(details.maturity_date),
-      },
-      {
-        label: t("investments:timeDeposit.atMaturityLabel"),
-        value: rolloverLabel,
+        label: t("investments:timeDeposit.termLabel"),
+        value: (
+          <span className="tabular-nums">
+            {t("investments:timeDeposit.termValue", { months: details.term_months })}
+          </span>
+        ),
       },
     ];
     return fields;
   },
 
-  renderHeadline: (entity, _ctx, snapshots) => {
+  // Middle column: risk + the money summary (cost = principal), plus the
+  // date-range Period and at-maturity policy threaded in as extraFields — the
+  // wider column fits the "1 Jan → 1 Jul 2026" range on one line. Principal is
+  // not repeated; it is the headline's Total cost.
+  renderHeadline: (entity, _ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
+    const { details } = entity;
+    const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${details.rollover_policy}`);
     return (
       <InvestmentHeadline
         currency={entity.investment.native_currency}
+        extraFields={[
+          {
+            label: t("investments:timeDeposit.periodLabel"),
+            value: (
+              <span className="tabular-nums">
+                {t("investments:timeDeposit.periodValue", {
+                  start: formatDate(details.placement_date),
+                  end: formatDate(details.maturity_date),
+                })}
+              </span>
+            ),
+          },
+          {
+            label: t("investments:timeDeposit.atMaturityLabel"),
+            value: rolloverLabel,
+          },
+        ]}
         latestValue={latest ? Number(latest.amount) : null}
         totalCost={Number(entity.details.principal)}
         status={entity.investment.status}

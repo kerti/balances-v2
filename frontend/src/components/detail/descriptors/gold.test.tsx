@@ -166,16 +166,19 @@ describe("goldDescriptor detail (conformance)", () => {
       <PositionDetailScreen descriptor={goldDescriptor} assetId="i1" onBack={vi.fn()} />,
     );
 
-    // Title + header secondary line (form · purity slot).
+    // Title (H1). Form/purity no longer ride a subtitle here — they moved into
+    // the details-card identity cluster (asserted below).
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Bullion Holding");
-    expect(screen.getByText(/Bar · 24K/)).toBeInTheDocument();
 
     // The investment headline slot (renderHeadline) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
-    // Details card: ownership/status line + the shared-surface description.
+    // Details card: identity cluster (form primary, purity muted) + the
+    // ownership/status line + the shared-surface description.
     const detailsCard = screen.getByTestId("tour-details");
+    expect(within(detailsCard).getByText("Bar")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("24K (.999+)")).toBeInTheDocument();
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Physical gold reserve")).toBeInTheDocument();

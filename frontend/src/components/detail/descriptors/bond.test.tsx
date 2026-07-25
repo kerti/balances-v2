@@ -173,21 +173,28 @@ describe("bondDescriptor detail (conformance)", () => {
       <PositionDetailScreen descriptor={bondDescriptor} assetId="i1" onBack={vi.fn()} />,
     );
 
-    // Title + header secondary line (series · type · issuer slot).
+    // Title (H1). Series/type/issuer no longer ride a subtitle — they moved into
+    // the details-card identity cluster (asserted below).
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Govt Bond 2030");
-    expect(screen.getByText(/SR-015/)).toBeInTheDocument();
-    expect(screen.getByText(/Treasury Dept/)).toBeInTheDocument();
 
     // The investment headline slot (renderHeadline) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
-    // Details card: ownership/status line, the InfoGrid face-value field, and the
-    // shared-surface description.
+    // Details card: identity cluster (series/issuer/type) + face-value field on
+    // the left; coupon + disposition moved into the middle headline column; plus
+    // ownership/status + the shared-surface description. Face value is scoped to
+    // its own field row — the figure also appears as the headline's Total cost.
     const detailsCard = screen.getByTestId("tour-details");
+    expect(within(detailsCard).getByText(/SR-015/)).toBeInTheDocument();
+    expect(within(detailsCard).getByText(/Treasury Dept/)).toBeInTheDocument();
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    expect(within(detailsCard).getByText(/50,?000/)).toBeInTheDocument();
+    const faceValueField = within(detailsCard).getByText("Face value").closest("div")!;
+    expect(within(faceValueField).getByText(/50,?000/)).toBeInTheDocument();
+    // Coupon + disposition now live in the middle headline column.
+    const headlineEl = within(detailsCard).getByTestId("investment-headline");
+    expect(within(headlineEl).getByText("Coupon")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Ten-year government note")).toBeInTheDocument();
 
     // Chart card mounts with ≥2 snapshots.
