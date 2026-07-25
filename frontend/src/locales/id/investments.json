@@ -214,12 +214,14 @@
     "searchEmpty": "Tidak ada transaksi yang cocok dengan pencarian."
   },
   "headline": {
-    "totalCost": "Total modal:",
-    "unrealizedPL": "Untung/rugi belum direalisasi:",
+    "totalCost": "Total modal",
+    "unrealizedPL": "Untung/rugi belum direalisasi",
     "unrealizedPLEmpty": "—",
+    "totalValue": "Total nilai",
+    "totalValueEmpty": "—",
     "closed": {
-      "sold": "Dijual pada:",
-      "matured": "Jatuh tempo pada:"
+      "sold": "Dijual pada",
+      "matured": "Jatuh tempo pada"
     }
   },
   "stock": {

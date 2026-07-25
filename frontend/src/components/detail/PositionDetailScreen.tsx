@@ -170,7 +170,6 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
             {asset.display_name}
           </h1>
           {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
-          {headline}
         </div>
         <div data-testid="tour-actions" className="flex flex-wrap gap-2">
           <HelpTourButton steps={tourSteps} />
@@ -208,23 +207,52 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Two columns on desktop with a divider between (the Income headline
-              layout) — identity + spec + tag on the left, the shared meta on the
-              right; one stacked column on mobile. */}
-          <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
-            <div className="space-y-3">
-              {identity}
-              <InfoGrid fields={infoFields} />
+          {headline ? (
+            /* Investment layout (ADR-0051 Phase B): three columns on desktop —
+               identity + info fields on the left, the cost/P/L/value headline in
+               the middle, ownership + tag on the right. On mobile the four blocks
+               stack in DOM order, so the headline sits *between* the identity and
+               the info fields (the requested reading order); explicit grid
+               placement pulls the two left-column blocks back into one column on
+               desktop while the headline spans as the middle column. */
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)] md:gap-x-0">
+              <div className="md:col-start-1 md:row-start-1 md:pr-6">{identity}</div>
+              <div className="md:col-start-2 md:row-span-2 md:row-start-1 md:border-l md:border-border md:px-6">
+                {headline}
+              </div>
+              {infoFields.length > 0 && (
+                <div className="md:col-start-1 md:row-start-2 md:pr-6">
+                  <InfoGrid fields={infoFields} />
+                </div>
+              )}
+              <div className="space-y-3 md:col-start-3 md:row-span-2 md:row-start-1 md:border-l md:border-border md:pl-6">
+                <InfoGrid fields={metaFields} mobileLayout="inline" />
+                <DetailTagControl
+                  group={descriptor.tagGroup}
+                  positionId={asset.id}
+                  currentTagId={asset.tag_id}
+                />
+              </div>
             </div>
-            <div className="space-y-3">
-              <InfoGrid fields={metaFields} mobileLayout="inline" />
-              <DetailTagControl
-                group={descriptor.tagGroup}
-                positionId={asset.id}
-                currentTagId={asset.tag_id}
-              />
+          ) : (
+            /* Amount-only layout: two columns on desktop with a divider between
+               (the Income headline idiom) — identity + spec on the left, the
+               shared meta on the right; one stacked column on mobile. */
+            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+              <div className="space-y-3">
+                {identity}
+                <InfoGrid fields={infoFields} />
+              </div>
+              <div className="space-y-3">
+                <InfoGrid fields={metaFields} mobileLayout="inline" />
+                <DetailTagControl
+                  group={descriptor.tagGroup}
+                  positionId={asset.id}
+                  currentTagId={asset.tag_id}
+                />
+              </div>
             </div>
-          </div>
+          )}
           {asset.description && <p className="text-sm">{asset.description}</p>}
         </CardContent>
       </Card>

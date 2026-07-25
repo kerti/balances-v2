@@ -161,10 +161,13 @@ describe("timeDepositDescriptor detail (conformance)", () => {
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
     // Details card: ownership/status + the InfoGrid principal field + description.
+    // Principal is scoped to its own field row — the figure now also appears in
+    // the cost/value headline column (cost = flat principal for a time deposit).
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    expect(within(detailsCard).getByText(/20,?000/)).toBeInTheDocument();
+    const principalField = within(detailsCard).getByText("Principal:").closest("div")!;
+    expect(within(principalField).getByText(/20,?000/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Six-month term deposit")).toBeInTheDocument();
 
     // Chart + accrued snapshot section render.

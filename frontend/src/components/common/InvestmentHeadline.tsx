@@ -1,11 +1,14 @@
-// Shared cost / P/L stat row rendered just below the H1 subtitle on each
-// investment detail screen (issue #14, slice 14b). Sits as a single
-// horizontal flex row so the page header stays compact.
+// Shared cost / P/L / value stat column for the investment detail card's middle
+// column (issue #14, slice 14b; relocated + widened in ADR-0051 Phase B). Reads
+// as three inline label/value rows — total cost, P/L, total value — via the
+// shared InfoGrid `inline` idiom, so each stat's label and figure sit on one
+// line at every width. The core places it as the middle column on desktop and
+// between the identity + info fields on mobile; it no longer rides under the H1.
 //
-// "Latest value" is deliberately omitted — it's already prominent in the
-// snapshots card; repeating it here would clutter the headline. The
-// numbers shown are the two new-to-the-user signals: how much they put
-// in, and whether they're up or down.
+// Total value (the latest snapshot's amount) is shown here now that the block
+// lives in the card next to cost + P/L — the three read together as the
+// position's money summary. It was previously omitted from the under-H1 row to
+// keep that header compact.
 //
 // **Terminated-position short-circuit.** A terminated position holds a
 // truthful 0-value close snapshot at its termination month (#25): the
@@ -20,6 +23,8 @@
 import { useTranslation } from "react-i18next";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { InfoGrid } from "@/components/detail/InfoGrid";
+import type { InfoField } from "@/components/detail/types";
 
 type Props = {
   currency: string;
@@ -52,31 +57,63 @@ export function InvestmentHeadline({
   const pl = latestValue !== null ? latestValue - totalCost : null;
   const plPct = pl !== null && Math.abs(totalCost) > 0 ? (pl / totalCost) * 100 : null;
 
-  return (
-    <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm" data-testid="investment-headline">
-      <div>
-        <span className="text-muted-foreground">{t("headline.totalCost")}</span>{" "}
-        <span className="tabular-nums">{formatCurrency(totalCost.toString(), currency)}</span>
-      </div>
-      {isClosed ? (
-        <div data-testid="investment-headline-closed">
-          <span className="text-muted-foreground">
-            {t(status === "matured" ? "headline.closed.matured" : "headline.closed.sold")}
-          </span>{" "}
-          <span>{formatDate(terminatedAt)}</span>
-        </div>
-      ) : (
-        <div>
-          <span className="text-muted-foreground">{t("headline.unrealizedPL")}</span>{" "}
-          {pl === null ? (
-            <span className="text-muted-foreground">{t("headline.unrealizedPLEmpty")}</span>
-          ) : (
-            <span className={cn("tabular-nums", plColor(pl))} data-testid="investment-headline-pl">
-              {formatPL(pl, plPct, currency)}
+  // Each stat reads as an inline label/value row (label left, value right) at
+  // every width — the shared InfoGrid `inline` idiom, the same one the details
+  // card's ownership meta uses — so the middle column stays a compact money
+  // summary rather than a tall stacked list. `ml-auto` on each value node pushes
+  // the figures to the column's right edge (the ADR-0051 rule that alignment
+  // rides on the value node), so the numbers align right on desktop too — where
+  // InfoGrid otherwise left-aligns the value column.
+  const fields: InfoField[] = [
+    {
+      label: t("headline.totalCost"),
+      value: (
+        <span className="ml-auto tabular-nums">
+          {formatCurrency(totalCost.toString(), currency)}
+        </span>
+      ),
+    },
+    isClosed
+      ? {
+          label: t(status === "matured" ? "headline.closed.matured" : "headline.closed.sold"),
+          value: (
+            <span className="ml-auto" data-testid="investment-headline-closed">
+              {formatDate(terminatedAt)}
             </span>
-          )}
-        </div>
-      )}
+          ),
+        }
+      : {
+          label: t("headline.unrealizedPL"),
+          value:
+            pl === null ? (
+              <span className="ml-auto text-muted-foreground">
+                {t("headline.unrealizedPLEmpty")}
+              </span>
+            ) : (
+              <span
+                className={cn("ml-auto tabular-nums", plColor(pl))}
+                data-testid="investment-headline-pl"
+              >
+                {formatPL(pl, plPct, currency)}
+              </span>
+            ),
+        },
+    {
+      label: t("headline.totalValue"),
+      value:
+        latestValue === null ? (
+          <span className="ml-auto text-muted-foreground">{t("headline.totalValueEmpty")}</span>
+        ) : (
+          <span className="ml-auto tabular-nums" data-testid="investment-headline-value">
+            {formatCurrency(latestValue.toString(), currency)}
+          </span>
+        ),
+    },
+  ];
+
+  return (
+    <div data-testid="investment-headline">
+      <InfoGrid fields={fields} mobileLayout="inline" />
     </div>
   );
 }

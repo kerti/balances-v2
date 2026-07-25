@@ -3,8 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnapshotRow";
+import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { CreateTradeTransactionDialog } from "@/components/dialogs/CreateTradeTransactionDialog";
@@ -139,10 +141,17 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
     };
   },
 
-  headerSecondary: (entity, _ctx, t) =>
-    `${t(`investments:gold.goldForms.${entity.details.form}`)} · ${formatGoldPurity(
-      entity.details.purity,
-    )}`,
+  // Form + purity move into the details card as a tight, label-less cluster
+  // (ADR-0051 Phase B) — the form reads as the primary identifier, the purity
+  // muted beneath it — filling the card's left column instead of the H1 subtitle.
+  identityCluster: (entity, _ctx, t) => (
+    <IdentityCluster
+      lines={[
+        t(`investments:gold.goldForms.${entity.details.form}`),
+        formatGoldPurity(entity.details.purity),
+      ]}
+    />
+  ),
   infoFields: () => [],
 
   renderHeadline: (entity, ctx, snapshots) => {
@@ -186,6 +195,15 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
         ),
         renderRow: (snapshot) => (
           <QuantityPriceSnapshotRow
+            key={snapshot.id}
+            snapshot={snapshot}
+            quantityUnit={quantityUnit}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        ),
+        renderCard: (snapshot) => (
+          <QuantityPriceSnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
             quantityUnit={quantityUnit}

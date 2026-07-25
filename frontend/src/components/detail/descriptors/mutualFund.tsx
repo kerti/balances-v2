@@ -3,8 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnapshotRow";
+import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { CreateTradeTransactionDialog } from "@/components/dialogs/CreateTradeTransactionDialog";
@@ -141,10 +143,19 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
       };
     },
 
-    headerSecondary: (entity, _ctx, t) =>
-      `${entity.details.fund_code}${
-        entity.details.fund_manager ? ` · ${entity.details.fund_manager}` : ""
-      } · ${t(`investments:mutualFund.fundType.short.${entity.details.fund_type}`)}`,
+    // Fund code + manager + type move into the details card as a tight,
+    // label-less cluster (ADR-0051 Phase B) — the code reads as the primary
+    // identifier, the manager (optional, drops when absent) + type muted beneath
+    // it — filling the card's left column instead of the H1 subtitle.
+    identityCluster: (entity, _ctx, t) => (
+      <IdentityCluster
+        lines={[
+          entity.details.fund_code,
+          entity.details.fund_manager,
+          t(`investments:mutualFund.fundType.short.${entity.details.fund_type}`),
+        ]}
+      />
+    ),
     infoFields: () => [],
 
     renderHeadline: (entity, ctx, snapshots) => {
@@ -190,6 +201,15 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
           ),
           renderRow: (snapshot) => (
             <QuantityPriceSnapshotRow
+              key={snapshot.id}
+              snapshot={snapshot}
+              quantityUnit={quantityUnit}
+              updateMutation={updateMutation}
+              deleteMutation={deleteMutation}
+            />
+          ),
+          renderCard: (snapshot) => (
+            <QuantityPriceSnapshotCard
               key={snapshot.id}
               snapshot={snapshot}
               quantityUnit={quantityUnit}

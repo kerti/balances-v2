@@ -183,11 +183,13 @@ describe("bondDescriptor detail (conformance)", () => {
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
     // Details card: ownership/status line, the InfoGrid face-value field, and the
-    // shared-surface description.
+    // shared-surface description. Face value is scoped to its own field row — the
+    // figure now also appears in the cost/value headline column.
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    expect(within(detailsCard).getByText(/50,?000/)).toBeInTheDocument();
+    const faceValueField = within(detailsCard).getByText("Face value:").closest("div")!;
+    expect(within(faceValueField).getByText(/50,?000/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Ten-year government note")).toBeInTheDocument();
 
     // Chart card mounts with ≥2 snapshots.

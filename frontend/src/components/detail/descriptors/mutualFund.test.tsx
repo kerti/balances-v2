@@ -166,16 +166,20 @@ describe("mutualFundDescriptor detail (conformance)", () => {
       <PositionDetailScreen descriptor={mutualFundDescriptor} assetId="i1" onBack={vi.fn()} />,
     );
 
-    // Title + header secondary line (fund code · manager · type slot).
+    // Title (H1). Fund code/manager/type no longer ride a subtitle here — they
+    // moved into the details-card identity cluster (asserted below).
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Global Equity Fund");
-    expect(screen.getByText(/GEF001 · Acme Asset Mgmt · Equity/)).toBeInTheDocument();
 
     // The investment headline slot (renderHeadline) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
-    // Details card: ownership/status line + the shared-surface description.
+    // Details card: identity cluster (code primary, manager + type muted) + the
+    // ownership/status line + the shared-surface description.
     const detailsCard = screen.getByTestId("tour-details");
+    expect(within(detailsCard).getByText("GEF001")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Acme Asset Mgmt")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Equity")).toBeInTheDocument();
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Core mutual fund holding")).toBeInTheDocument();

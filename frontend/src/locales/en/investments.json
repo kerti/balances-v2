@@ -214,12 +214,14 @@
     "searchEmpty": "No transactions match your search."
   },
   "headline": {
-    "totalCost": "Total cost:",
-    "unrealizedPL": "Unrealized P/L:",
+    "totalCost": "Total cost",
+    "unrealizedPL": "Unrealized P/L",
     "unrealizedPLEmpty": "—",
+    "totalValue": "Total value",
+    "totalValueEmpty": "—",
     "closed": {
-      "sold": "Sold on:",
-      "matured": "Matured on:"
+      "sold": "Sold on",
+      "matured": "Matured on"
     }
   },
   "stock": {
