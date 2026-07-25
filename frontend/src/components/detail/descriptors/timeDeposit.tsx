@@ -8,6 +8,7 @@ import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
 import { AccruedInterestSnapshotCard } from "@/components/common/AccruedInterestSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
+import { TransactionCard } from "@/components/common/TransactionCard";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
@@ -433,6 +434,15 @@ export const timeDepositDescriptor: DetailDescriptor<
       rows: filtered,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
+          key={tx.id}
+          transaction={tx}
+          quantityUnit=""
+          updateMutation={ctx.updateTransactionMutation}
+          deleteMutation={ctx.deleteTransactionMutation}
+        />
+      ),
+      renderCard: (tx: InvestmentTransaction) => (
+        <TransactionCard
           key={tx.id}
           transaction={tx}
           quantityUnit=""

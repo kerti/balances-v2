@@ -5,6 +5,7 @@ import { TableHead, TableRow } from "@/components/ui/table";
 import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnapshotRow";
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
+import { TransactionCard } from "@/components/common/TransactionCard";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
@@ -273,6 +274,15 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
       rows: filtered,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
+          key={tx.id}
+          transaction={tx}
+          quantityUnit={ctx.quantityUnit}
+          updateMutation={ctx.updateTransactionMutation}
+          deleteMutation={ctx.deleteTransactionMutation}
+        />
+      ),
+      renderCard: (tx: InvestmentTransaction) => (
+        <TransactionCard
           key={tx.id}
           transaction={tx}
           quantityUnit={ctx.quantityUnit}
