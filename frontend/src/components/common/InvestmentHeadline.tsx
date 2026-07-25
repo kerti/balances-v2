@@ -1,9 +1,13 @@
-// Shared cost / P/L / value stat column for the investment detail card's middle
-// column (issue #14, slice 14b; relocated + widened in ADR-0051 Phase B). Reads
-// as three inline label/value rows — total cost, P/L, total value — via the
-// shared InfoGrid `inline` idiom, so each stat's label and figure sit on one
-// line at every width. The core places it as the middle column on desktop and
-// between the identity + info fields on mobile; it no longer rides under the H1.
+// Shared stat column for the investment detail card's middle column (issue #14,
+// slice 14b; relocated + widened in ADR-0051 Phase B). Reads as inline
+// label/value rows via the shared InfoGrid `inline` idiom, so each stat's label
+// and figure sit on one line at every width. Top to bottom: the risk profile,
+// any type-specific descriptive rows the descriptor threads in (`extraFields` —
+// bond coupon/disposition, time-deposit placement/maturity), then the money
+// summary — total cost, P/L, total value. Only the money figures right-align.
+// The core places it as the middle column on desktop; on mobile the details
+// card's three columns stack in reading order, so this block follows the
+// identity + info fields. It no longer rides under the H1.
 //
 // Total value (the latest snapshot's amount) is shown here now that the block
 // lives in the card next to cost + P/L — the three read together as the
@@ -25,6 +29,7 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { InfoGrid } from "@/components/detail/InfoGrid";
 import type { InfoField } from "@/components/detail/types";
+import type { RiskProfile } from "@/api/types";
 
 type Props = {
   currency: string;
@@ -40,6 +45,14 @@ type Props = {
   // {date}". Pass `investment.status` + `investment.terminated_at`.
   status?: string | null;
   terminatedAt?: string | null;
+  // The position's risk profile — rendered as the first row of the middle
+  // column (`investment.risk_profile`, shared by all five investment types).
+  riskProfile?: RiskProfile;
+  // Type-specific descriptive rows the descriptor threads into the middle
+  // column above the money stats (bond: coupon + disposition; time deposit:
+  // placement/maturity/at-maturity). Left-aligned — only the money figures
+  // right-align. Empty for the qty×price types.
+  extraFields?: InfoField[];
 };
 
 export function InvestmentHeadline({
@@ -48,6 +61,8 @@ export function InvestmentHeadline({
   totalCost,
   status,
   terminatedAt,
+  riskProfile,
+  extraFields,
 }: Props) {
   const { t } = useTranslation("investments");
 
@@ -60,38 +75,27 @@ export function InvestmentHeadline({
   // Each stat reads as an inline label/value row (label left, value right) at
   // every width — the shared InfoGrid `inline` idiom, the same one the details
   // card's ownership meta uses — so the middle column stays a compact money
-  // summary rather than a tall stacked list. `ml-auto` on each value node pushes
-  // the figures to the column's right edge (the ADR-0051 rule that alignment
-  // rides on the value node), so the numbers align right on desktop too — where
-  // InfoGrid otherwise left-aligns the value column.
+  // summary rather than a tall stacked list. InfoGrid right-aligns the value
+  // cell itself, so the value nodes carry only `tabular-nums` / colour, no
+  // per-node `ml-auto`.
   const fields: InfoField[] = [
     {
       label: t("headline.totalCost"),
-      value: (
-        <span className="ml-auto tabular-nums">
-          {formatCurrency(totalCost.toString(), currency)}
-        </span>
-      ),
+      value: <span className="tabular-nums">{formatCurrency(totalCost.toString(), currency)}</span>,
     },
     isClosed
       ? {
           label: t(status === "matured" ? "headline.closed.matured" : "headline.closed.sold"),
-          value: (
-            <span className="ml-auto" data-testid="investment-headline-closed">
-              {formatDate(terminatedAt)}
-            </span>
-          ),
+          value: <span data-testid="investment-headline-closed">{formatDate(terminatedAt)}</span>,
         }
       : {
           label: t("headline.unrealizedPL"),
           value:
             pl === null ? (
-              <span className="ml-auto text-muted-foreground">
-                {t("headline.unrealizedPLEmpty")}
-              </span>
+              <span className="text-muted-foreground">{t("headline.unrealizedPLEmpty")}</span>
             ) : (
               <span
-                className={cn("ml-auto tabular-nums", plColor(pl))}
+                className={cn("tabular-nums", plColor(pl))}
                 data-testid="investment-headline-pl"
               >
                 {formatPL(pl, plPct, currency)}
@@ -102,13 +106,25 @@ export function InvestmentHeadline({
       label: t("headline.totalValue"),
       value:
         latestValue === null ? (
-          <span className="ml-auto text-muted-foreground">{t("headline.totalValueEmpty")}</span>
+          <span className="text-muted-foreground">{t("headline.totalValueEmpty")}</span>
         ) : (
-          <span className="ml-auto tabular-nums" data-testid="investment-headline-value">
+          <span className="tabular-nums" data-testid="investment-headline-value">
             {formatCurrency(latestValue.toString(), currency)}
           </span>
         ),
     },
+    ...(riskProfile
+      ? [
+          {
+            label: t("riskProfile.selectLabel"),
+            // e.g. `riskProfile.selectMedium` → "Medium".
+            value: t(
+              `riskProfile.select${riskProfile.charAt(0).toUpperCase()}${riskProfile.slice(1)}`,
+            ),
+          },
+        ]
+      : []),
+    ...(extraFields ?? []),
   ];
 
   return (

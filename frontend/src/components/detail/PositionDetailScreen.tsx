@@ -106,7 +106,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   // column on mobile. Currency + status ride the card title instead, to save the
   // vertical space extra rows would cost — leaving ownership the sole meta row.
   const metaFields: InfoField[] = [{ label: t("common:fields.ownership"), value: ownerLabel }];
-  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots);
+  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots, t);
   const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);
   const afterDetails = descriptor.renderAfterDetails?.(entity, ctx, t);
   const extraSections = descriptor.historySections?.(entity, ctx, snapshots, t) ?? [];
@@ -209,23 +209,21 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
         <CardContent className="space-y-3">
           {headline ? (
             /* Investment layout (ADR-0051 Phase B): three columns on desktop —
-               identity + info fields on the left, the cost/P/L/value headline in
-               the middle, ownership + tag on the right. On mobile the four blocks
-               stack in DOM order, so the headline sits *between* the identity and
-               the info fields (the requested reading order); explicit grid
-               placement pulls the two left-column blocks back into one column on
-               desktop while the headline spans as the middle column. */
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)] md:gap-x-0">
-              <div className="md:col-start-1 md:row-start-1 md:pr-6">{identity}</div>
-              <div className="md:col-start-2 md:row-span-2 md:row-start-1 md:border-l md:border-border md:px-6">
-                {headline}
+               identity + info fields on the left, the risk/spec/money headline in
+               the middle (widened), ownership + tag on the right. On mobile the
+               three columns stack in reading order (left column fully, then the
+               middle, then the meta), so the details card reads top-to-bottom the
+               same way it reads left-to-right on desktop. */
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)] md:gap-x-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+              <div className="space-y-3">
+                {identity}
+                {/* Inline like the middle + meta columns, so an investment's
+                    left-column fields (bond face value/maturity, time-deposit
+                    rate/term) read as single label/value lines on mobile too. */}
+                <InfoGrid fields={infoFields} mobileLayout="inline" />
               </div>
-              {infoFields.length > 0 && (
-                <div className="md:col-start-1 md:row-start-2 md:pr-6">
-                  <InfoGrid fields={infoFields} />
-                </div>
-              )}
-              <div className="space-y-3 md:col-start-3 md:row-span-2 md:row-start-1 md:border-l md:border-border md:pl-6">
+              {headline}
+              <div className="space-y-3">
                 <InfoGrid fields={metaFields} mobileLayout="inline" />
                 <DetailTagControl
                   group={descriptor.tagGroup}

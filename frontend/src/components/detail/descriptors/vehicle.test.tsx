@@ -120,7 +120,7 @@ describe("vehicleDescriptor detail (conformance)", () => {
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("2019 Toyota Corolla")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Depreciation rate:")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Depreciation rate")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Daily driver")).toBeInTheDocument();
 
     expect(screen.getByTestId("tour-chart")).toBeInTheDocument();

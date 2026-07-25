@@ -116,10 +116,10 @@ describe("liabilityDescriptor detail (conformance)", () => {
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Principal:")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Interest rate:")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Term:")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Period:")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Principal")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Interest rate")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Term")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Period")).toBeInTheDocument();
     expect(within(detailsCard).getByText("30-year fixed")).toBeInTheDocument();
 
     expect(screen.getByTestId("tour-chart")).toBeInTheDocument();

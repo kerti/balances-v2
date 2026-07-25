@@ -11,10 +11,12 @@ import type { InfoField } from "@/components/detail/types";
 // `mobileLayout` (Phase B) picks how each pair reads below 768px:
 //   - `"stacked"` (default): label on its own line, value beneath — each piece
 //     on its own line, so a long value never crowds the label.
-//   - `"inline"`: label left, value right on one line — for short shared-surface
-//     meta (ownership / currency / status) where the compact row reads better.
+//   - `"inline"`: label left, value right on one line — the investment details
+//     card + the shared meta (ownership) idiom. The value stays right-aligned at
+//     every width, so callers don't sprinkle `ml-auto` per value node.
 // At/above 768px both dissolve their per-pair wrapper via `md:contents` so
-// `dt`/`dd` rejoin the shared two-column grid, identical on desktop.
+// `dt`/`dd` rejoin the shared two-column grid; inline keeps the value hard right
+// in its `1fr` cell, stacked leaves it left under the label.
 export function InfoGrid({
   fields,
   mobileLayout = "stacked",
@@ -39,12 +41,11 @@ export function InfoGrid({
             inline ? "flex items-baseline justify-between gap-3" : "flex flex-col gap-0.5",
           )}
         >
-          <dt className="text-muted-foreground">{field.label}</dt>
-          <dd
-            className={cn("flex", inline && "justify-end text-right md:justify-start md:text-left")}
-          >
-            {field.value}
-          </dd>
+          {/* Labels render without a trailing colon — some i18n values still
+              carry one from when they doubled as inline prose, but the label/value
+              grid reads cleaner without it. */}
+          <dt className="text-muted-foreground">{field.label.replace(/:\s*$/, "")}</dt>
+          <dd className={cn("flex", inline && "justify-end text-right")}>{field.value}</dd>
         </div>
       ))}
     </dl>

@@ -163,6 +163,7 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
       return (
         <InvestmentHeadline
           currency={entity.investment.native_currency}
+          riskProfile={entity.investment.risk_profile}
           latestValue={latest ? Number(latest.amount) : null}
           totalCost={computeCostBasis(ctx.transactions ?? []).cost}
           status={entity.investment.status}

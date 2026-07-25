@@ -205,8 +205,15 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   renderAfterDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional investment headline (has-transactions axis); absent for amount-only.
   // Receives the snapshot stream (for latest value) alongside the ctx (for the
-  // cost-basis inputs) — both computed as descriptor wiring, never in the core.
-  renderHeadline?: (entity: TEntity, ctx: TCtx, snapshots: TSnap[] | undefined) => ReactNode;
+  // cost-basis inputs) and `t` (for the type-specific `extraFields` copy it
+  // threads into the middle column) — all computed as descriptor wiring, never
+  // in the core.
+  renderHeadline?: (
+    entity: TEntity,
+    ctx: TCtx,
+    snapshots: TSnap[] | undefined,
+    t: TFunction,
+  ) => ReactNode;
   // The universal snapshot table's per-shape wiring (S1/S2/S3), fetching its own
   // stream and binding its own mutations.
   snapshot: SnapshotSection<TSnap>;

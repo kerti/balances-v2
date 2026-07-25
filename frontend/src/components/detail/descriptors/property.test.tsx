@@ -121,8 +121,8 @@ describe("propertyDescriptor detail (conformance)", () => {
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Acquired:")).toBeInTheDocument();
-    expect(within(detailsCard).getByText("Appreciation rate:")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Acquired")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Appreciation rate")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Primary residence")).toBeInTheDocument();
 
     // Chart card mounts with ≥2 snapshots.

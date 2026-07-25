@@ -5,6 +5,7 @@ import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateAccruedInterestSnapshotDialog } from "@/components/dialogs/CreateAccruedInterestSnapshotDialog";
 import { ImportSnapshotsDialog } from "@/components/dialogs/ImportSnapshotsDialog";
 import { CreateTradeTransactionDialog } from "@/components/dialogs/CreateTradeTransactionDialog";
@@ -147,49 +148,61 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     };
   },
 
-  headerSecondary: (entity, _ctx, t) => {
+  // Series code + type + issuer as a tight, label-less cluster at the top of the
+  // details card's left column (ADR-0051 Phase B) — the identity moved off the
+  // H1 subtitle. Face value + maturity stay as labelled left-column fields;
+  // coupon + disposition move to the middle column (see renderHeadline).
+  identityCluster: (entity, _ctx, t) => {
     const bondTypeLabel = t(
       entity.details.bond_type === "govt_primary"
         ? "investments:bond.bondType.govt_primary"
         : "investments:bond.bondType.secondary_market",
     );
-    return [entity.details.series_code, bondTypeLabel, entity.details.issuer]
-      .filter(Boolean)
-      .join(" · ");
+    return (
+      <IdentityCluster lines={[entity.details.series_code, entity.details.issuer, bondTypeLabel]} />
+    );
   },
   infoFields: (entity, _ctx, t) => {
     const { investment, details } = entity;
-    const couponPct = Number(details.coupon_rate).toFixed(2);
-    const frequencyLabel = t(`investments:bond.couponFrequency.${details.coupon_frequency}`);
     const fields: InfoField[] = [
       {
         label: t("investments:bond.faceValueLabel"),
-        value: formatCurrency(entity.outstanding_face, investment.native_currency),
-      },
-      {
-        label: t("investments:bond.couponLabel"),
-        value: t("investments:bond.couponValue", {
-          rate: couponPct,
-          frequency: frequencyLabel,
-        }),
+        value: (
+          <span className="tabular-nums">
+            {formatCurrency(entity.outstanding_face, investment.native_currency)}
+          </span>
+        ),
       },
       {
         label: t("investments:bond.maturityLabel"),
-        value: formatDate(details.maturity_date),
-      },
-      {
-        label: t("investments:bond.fields.couponDisposition"),
-        value: t(`investments:bond.couponDisposition.${details.coupon_disposition}`),
+        value: <span className="tabular-nums">{formatDate(details.maturity_date)}</span>,
       },
     ];
     return fields;
   },
 
-  renderHeadline: (entity, ctx, snapshots) => {
+  renderHeadline: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
+    const { details } = entity;
+    const couponPct = Number(details.coupon_rate).toFixed(2);
+    const frequencyLabel = t(`investments:bond.couponFrequency.${details.coupon_frequency}`);
     return (
       <InvestmentHeadline
         currency={entity.investment.native_currency}
+        riskProfile={entity.investment.risk_profile}
+        extraFields={[
+          {
+            label: t("investments:bond.couponLabel"),
+            value: t("investments:bond.couponValue", {
+              rate: couponPct,
+              frequency: frequencyLabel,
+            }),
+          },
+          {
+            label: t("investments:bond.fields.couponDisposition"),
+            value: t(`investments:bond.couponDisposition.${details.coupon_disposition}`),
+          },
+        ]}
         latestValue={latest ? Number(latest.amount) : null}
         totalCost={computeCostBasis(ctx.transactions ?? []).cost}
         status={entity.investment.status}

@@ -160,14 +160,25 @@ describe("timeDepositDescriptor detail (conformance)", () => {
     // Headline slot mounts (cost = flat principal, wired in the descriptor).
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
-    // Details card: ownership/status + the InfoGrid principal field + description.
-    // Principal is scoped to its own field row — the figure now also appears in
-    // the cost/value headline column (cost = flat principal for a time deposit).
+    // Details card: ownership/status + description; the left column carries the
+    // bank identity cluster + interest rate + term; the middle headline column
+    // carries risk + the money summary + the Period range and at-maturity policy
+    // (in the wider column so the date range fits one line), where principal now
+    // reads as Total cost (a time deposit has no separate principal field).
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
-    const principalField = within(detailsCard).getByText("Principal:").closest("div")!;
-    expect(within(principalField).getByText(/20,?000/)).toBeInTheDocument();
+    expect(within(detailsCard).getByText("First Bank")).toBeInTheDocument();
+    const rateField = within(detailsCard).getByText("Interest rate").closest("div")!;
+    expect(within(rateField).getByText(/4\.50/)).toBeInTheDocument();
+    const termField = within(detailsCard).getByText("Term").closest("div")!;
+    expect(within(termField).getByText(/6 months/)).toBeInTheDocument();
+    // Placement + maturity now read as one Period range row; at-maturity + all the
+    // spec fields are left-column, not the headline.
+    expect(within(detailsCard).getByText("Period")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("At maturity")).toBeInTheDocument();
+    const headlineEl = within(detailsCard).getByTestId("investment-headline");
+    expect(within(headlineEl).getByText(/20,?000/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Six-month term deposit")).toBeInTheDocument();
 
     // Chart + accrued snapshot section render.
