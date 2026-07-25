@@ -129,9 +129,11 @@ describe("detail mobile a11y floor (accrued)", () => {
     // Total value promoted to the card headline under the shared testid.
     expect(within(cards).getByTestId("snapshot-amount")).toHaveTextContent(/10,?500/);
 
-    // The principal · accrued split reads on the card (principal = 10500 − 500).
-    expect(within(cards).getByText(/Principal .*10,?000/)).toBeInTheDocument();
-    expect(within(cards).getByText(/Accrued .*500/)).toBeInTheDocument();
+    // Principal and accrued each read on their own labelled line; the principal
+    // value is the computed split (10500 − 500 = 10000), distinct from the total.
+    expect(within(cards).getByText("Principal")).toBeInTheDocument();
+    expect(within(cards).getByText("Accrued")).toBeInTheDocument();
+    expect(within(cards).getByText(/10,?000/)).toBeInTheDocument();
 
     // Tap-target floor: the row ⋮ action carries the 44px size class.
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });

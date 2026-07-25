@@ -45,13 +45,15 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
     dialogs,
   } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation);
 
-  // "Principal $9,500 · Accrued $500" when both legs are present; either leg
-  // alone still reads, and neither renders nothing.
+  // Principal and accrued each get their own line (label left, value right) —
+  // either leg alone still reads, and neither renders nothing.
   const legs = [
-    principalText && `${t("investments:snapshotsCard.principalHeader")} ${principalText}`,
-    accruedText && `${t("investments:snapshotsCard.accruedHeader")} ${accruedText}`,
-  ].filter(Boolean);
-  const splitText = legs.length > 0 ? legs.join(" · ") : null;
+    principalText && {
+      label: t("investments:snapshotsCard.principalHeader"),
+      value: principalText,
+    },
+    accruedText && { label: t("investments:snapshotsCard.accruedHeader"), value: accruedText },
+  ].filter((leg): leg is { label: string; value: string } => Boolean(leg));
 
   return (
     <>
@@ -62,9 +64,15 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
               <div className="text-lg font-semibold tabular-nums" data-testid="snapshot-amount">
                 {amountText}
               </div>
-              {splitText && (
-                <div className="text-sm tabular-nums text-muted-foreground">{splitText}</div>
-              )}
+              {legs.map((leg) => (
+                <div
+                  key={leg.label}
+                  className="flex justify-between gap-2 text-sm text-muted-foreground"
+                >
+                  <span>{leg.label}</span>
+                  <span className="tabular-nums">{leg.value}</span>
+                </div>
+              ))}
               <div className="text-sm text-muted-foreground">{monthText}</div>
               {statementText && (
                 <div className="text-xs text-muted-foreground">{statementText}</div>
