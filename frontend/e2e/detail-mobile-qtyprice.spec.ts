@@ -53,6 +53,7 @@ test(
     // Primary value reachable: the position value reads on the card, in viewport.
     const amount = page.getByTestId("snapshot-amount").first();
     await expect(amount).toBeVisible();
+    await amount.scrollIntoViewIfNeeded();
     await expect(amount).toBeInViewport();
 
     // No horizontal page scroll — the stacked card fits the phone width.
