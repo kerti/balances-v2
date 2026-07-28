@@ -10907,8 +10907,8 @@ SOFTWARE.
 
 The following npm packages may be included in this product:
 
- - react-dom@19.2.7
- - react@19.2.7
+ - react-dom@19.2.8
+ - react@19.2.8
  - scheduler@0.27.0
  - use-sync-external-store@1.6.0
 
