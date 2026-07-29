@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/errorMessage";
 import { useSession } from "@/hooks/useSession";
 import { useUpdateMe } from "@/hooks/useUpdateMe";
@@ -30,6 +31,36 @@ import { Select } from "@/components/ui/select";
 // handful of scalar fields or single actions each).
 function SectionHeading({ children }: { children: ReactNode }) {
   return <h2 className="text-lg font-medium tracking-tight">{children}</h2>;
+}
+
+// Every settings control takes one of these two semantic widths — never a
+// per-callsite pixel value (#562). The `w-28` / `w-56` / `w-72` this replaces
+// were each picked against a desktop card and none was container-aware: at
+// 390px a settings card is 326px wide (shell `p-4` + `CardContent px-4`), which
+// left up to 138px dead on a row and truncated the longest carry-over option.
+//
+// `full` is the default and is what almost everything wants: the control tracks
+// its container at both widths. `narrow` is for controls whose content is
+// inherently short — a three-letter currency code, a percentage — where a 326px
+// box would communicate the wrong expected input. Width follows content
+// semantics; when neither token fits, add a third token rather than a number.
+const CONTROL_WIDTH = {
+  full: "w-full",
+  narrow: "w-24",
+} as const;
+
+// SettingsControlRow is the one labelled-control row shape on this screen: the
+// label/control column grows to fill the card and an optional Save keeps its
+// natural width, which lands it flush against the card's right edge. The button
+// deliberately does not grow — a 250px "Save" on a phone is worse than the gap
+// it would close.
+function SettingsControlRow({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-end gap-2">
+      <div className="flex-1 space-y-1">{children}</div>
+      {action}
+    </div>
+  );
 }
 
 export function SettingsScreen() {
@@ -80,25 +111,26 @@ export function SettingsScreen() {
           <CardDescription>{t("currency.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
-              <Input
-                id="reporting-currency"
-                className="w-28 uppercase"
-                maxLength={3}
-                value={reportingCurrency}
-                onChange={(e) => setCurrency(e.target.value)}
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={saveCurrency}
-              disabled={updateSettings.isPending || reportingCurrency.length !== 3}
-            >
-              {t("common:save")}
-            </Button>
-          </div>
+          <SettingsControlRow
+            action={
+              <Button
+                variant="outline"
+                onClick={saveCurrency}
+                disabled={updateSettings.isPending || reportingCurrency.length !== 3}
+              >
+                {t("common:save")}
+              </Button>
+            }
+          >
+            <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
+            <Input
+              id="reporting-currency"
+              className={cn(CONTROL_WIDTH.narrow, "uppercase")}
+              maxLength={3}
+              value={reportingCurrency}
+              onChange={(e) => setCurrency(e.target.value)}
+            />
+          </SettingsControlRow>
 
           {/* The 16px box is the affordance, but the whole label is the hit
               area — `max-md:min-h-11` lifts the row to the tap floor on phones
@@ -174,22 +206,23 @@ function NicknameCard() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="nickname">{t("nickname.label")}</Label>
-            <Input
-              id="nickname"
-              className="w-56"
-              maxLength={32}
-              placeholder={me.display_name}
-              value={value}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
-            {t("common:save")}
-          </Button>
-        </div>
+        <SettingsControlRow
+          action={
+            <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
+              {t("common:save")}
+            </Button>
+          }
+        >
+          <Label htmlFor="nickname">{t("nickname.label")}</Label>
+          <Input
+            id="nickname"
+            className={CONTROL_WIDTH.full}
+            maxLength={32}
+            placeholder={me.display_name}
+            value={value}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        </SettingsControlRow>
 
         {updateMe.isError && (
           <p className="text-sm text-destructive">{errorMessage(updateMe.error)}</p>
@@ -234,21 +267,22 @@ function HouseholdNameCard() {
         <CardDescription>{t("householdName.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="household-name">{t("householdName.label")}</Label>
-            <Input
-              id="household-name"
-              className="w-56"
-              maxLength={60}
-              value={value}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </div>
-          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
-            {t("common:save")}
-          </Button>
-        </div>
+        <SettingsControlRow
+          action={
+            <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
+              {t("common:save")}
+            </Button>
+          }
+        >
+          <Label htmlFor="household-name">{t("householdName.label")}</Label>
+          <Input
+            id="household-name"
+            className={CONTROL_WIDTH.full}
+            maxLength={60}
+            value={value}
+            onChange={(e) => setDraft(e.target.value)}
+          />
+        </SettingsControlRow>
 
         {updateSettings.isError && (
           <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
@@ -302,25 +336,23 @@ function LanguageCard() {
         <CardDescription>{t("language.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="language">{t("language.label")}</Label>
-            <Select
-              id="language"
-              data-testid="settings-language-select"
-              className="w-56"
-              value={locale}
-              onChange={onChange}
-              disabled={updateMe.isPending}
-            >
-              {SUPPORTED_LOCALES.map((l) => (
-                <option key={l} value={l}>
-                  {LANGUAGE_LABELS[l]}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
+        <SettingsControlRow>
+          <Label htmlFor="language">{t("language.label")}</Label>
+          <Select
+            id="language"
+            data-testid="settings-language-select"
+            className={CONTROL_WIDTH.full}
+            value={locale}
+            onChange={onChange}
+            disabled={updateMe.isPending}
+          >
+            {SUPPORTED_LOCALES.map((l) => (
+              <option key={l} value={l}>
+                {LANGUAGE_LABELS[l]}
+              </option>
+            ))}
+          </Select>
+        </SettingsControlRow>
       </CardContent>
     </Card>
   );
@@ -364,25 +396,23 @@ function ThemeCard() {
         <CardDescription>{t("theme.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="theme">{t("theme.label")}</Label>
-            <Select
-              id="theme"
-              data-testid="settings-theme-select"
-              className="w-56"
-              value={theme}
-              onChange={onChange}
-              disabled={updateMe.isPending}
-            >
-              {SUPPORTED_THEMES.map((th) => (
-                <option key={th} value={th}>
-                  {t(`theme.${th}`)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
+        <SettingsControlRow>
+          <Label htmlFor="theme">{t("theme.label")}</Label>
+          <Select
+            id="theme"
+            data-testid="settings-theme-select"
+            className={CONTROL_WIDTH.full}
+            value={theme}
+            onChange={onChange}
+            disabled={updateMe.isPending}
+          >
+            {SUPPORTED_THEMES.map((th) => (
+              <option key={th} value={th}>
+                {t(`theme.${th}`)}
+              </option>
+            ))}
+          </Select>
+        </SettingsControlRow>
       </CardContent>
     </Card>
   );
@@ -420,25 +450,23 @@ function CarryoverDateCard() {
         <CardDescription>{t("carryoverDate.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="carryover-date-mode">{t("carryoverDate.label")}</Label>
-            <Select
-              id="carryover-date-mode"
-              data-testid="settings-carryover-date-select"
-              className="w-72"
-              value={me.carryover_date_mode}
-              onChange={onChange}
-              disabled={updateMe.isPending}
-            >
-              {SUPPORTED_CARRYOVER_DATE_MODES.map((m) => (
-                <option key={m} value={m}>
-                  {t(`carryoverDate.modes.${m}`)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        </div>
+        <SettingsControlRow>
+          <Label htmlFor="carryover-date-mode">{t("carryoverDate.label")}</Label>
+          <Select
+            id="carryover-date-mode"
+            data-testid="settings-carryover-date-select"
+            className={CONTROL_WIDTH.full}
+            value={me.carryover_date_mode}
+            onChange={onChange}
+            disabled={updateMe.isPending}
+          >
+            {SUPPORTED_CARRYOVER_DATE_MODES.map((m) => (
+              <option key={m} value={m}>
+                {t(`carryoverDate.modes.${m}`)}
+              </option>
+            ))}
+          </Select>
+        </SettingsControlRow>
       </CardContent>
     </Card>
   );
@@ -478,25 +506,26 @@ function AssumedInflationCard() {
         <CardDescription>{t("inflation.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-end gap-3">
-          <div className="space-y-1">
-            <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
-            <Input
-              id="assumed-inflation"
-              inputMode="decimal"
-              className="w-28"
-              value={assumedValue}
-              onChange={(e) => setAssumed(e.target.value)}
-            />
-          </div>
-          <Button
-            variant="outline"
-            onClick={saveAssumed}
-            disabled={updateSettings.isPending || !assumedDirty}
-          >
-            {t("common:save")}
-          </Button>
-        </div>
+        <SettingsControlRow
+          action={
+            <Button
+              variant="outline"
+              onClick={saveAssumed}
+              disabled={updateSettings.isPending || !assumedDirty}
+            >
+              {t("common:save")}
+            </Button>
+          }
+        >
+          <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
+          <Input
+            id="assumed-inflation"
+            inputMode="decimal"
+            className={CONTROL_WIDTH.narrow}
+            value={assumedValue}
+            onChange={(e) => setAssumed(e.target.value)}
+          />
+        </SettingsControlRow>
 
         {updateSettings.isError && (
           <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>

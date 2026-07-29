@@ -86,7 +86,8 @@ PDF five-group reorg + income drill-down, investment-performance block) shipped 
 Unreleased on `main`: #542 secondary-control tap floor + two-row detail headers (#546); mobile tap
 floor moved into the `Button`/`Input` primitives, closing the Settings gap (#559); mobile
 create/edit dialog bodies — `ui/select.tsx` primitive, shared `OwnershipField`, liability
-three-column row stacked (#541).
+three-column row stacked (#541); Settings controls sized by two semantic width tokens
+(`full` / `narrow`) instead of per-callsite pixel widths (#562).
 
 Next, in order:
 
