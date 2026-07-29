@@ -105,12 +105,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          className="min-h-11 md:min-h-0"
-          data-testid="import-snapshots-trigger"
-        >
+        <Button size="sm" variant="outline" data-testid="import-snapshots-trigger">
           <Upload className="mr-1 size-4" />
           {t("import.trigger")}
         </Button>

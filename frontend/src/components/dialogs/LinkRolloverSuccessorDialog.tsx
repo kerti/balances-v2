@@ -54,12 +54,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="min-h-11 md:min-h-0"
-          data-testid="rollover-link-trigger"
-        >
+        <Button variant="outline" size="sm" data-testid="rollover-link-trigger">
           <Link2 className="mr-1 size-4" />
           {t("investments:timeDeposit.rollover.calloutLinkAction")}
         </Button>

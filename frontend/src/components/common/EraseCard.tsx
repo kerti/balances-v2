@@ -85,7 +85,6 @@ export function EraseCard() {
                 type="button"
                 variant="outline"
                 size="sm"
-                className="min-h-11 md:min-h-0"
                 disabled={deleting}
                 onClick={() => void downloadBackup("full")}
                 data-testid="erase-export-now"

@@ -22,6 +22,6 @@ it("fills the width and floors each option at the 44px tap target on phones", ()
   // relaxes back to its natural size from 768px up.
   for (const value of ["all", "low", "medium", "high"]) {
     const chip = screen.getByTestId(`risk-filter-${value}`);
-    expect(chip).toHaveClass("min-h-11", "md:min-h-0");
+    expect(chip).toHaveClass("max-md:min-h-11");
   }
 });

@@ -92,7 +92,6 @@ export function SettingsScreen() {
             </div>
             <Button
               variant="outline"
-              className="min-h-11 md:min-h-0"
               onClick={saveCurrency}
               disabled={updateSettings.isPending || reportingCurrency.length !== 3}
             >
@@ -100,7 +99,11 @@ export function SettingsScreen() {
             </Button>
           </div>
 
-          <label className="flex items-center gap-2 text-sm">
+          {/* The 16px box is the affordance, but the whole label is the hit
+              area — `max-md:min-h-11` lifts the row to the tap floor on phones
+              without padding the desktop form out (same idiom as the Tags
+              pie-inclusion toggle, INV-PRESENTATION-08). */}
+          <label className="flex max-md:min-h-11 items-center gap-2 text-sm">
             <input
               type="checkbox"
               className="h-4 w-4"
@@ -116,7 +119,10 @@ export function SettingsScreen() {
           )}
 
           {me.multi_currency_enabled && (
-            <Link to={routes.settingsFxRates} className="block text-sm underline">
+            <Link
+              to={routes.settingsFxRates}
+              className="inline-flex max-md:min-h-11 items-center text-sm underline"
+            >
               {t("currency.manageFx")}
             </Link>
           )}
@@ -179,12 +185,7 @@ function NicknameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            className="min-h-11 md:min-h-0"
-            onClick={save}
-            disabled={updateMe.isPending || !dirty}
-          >
+          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
             {t("common:save")}
           </Button>
         </div>
@@ -243,12 +244,7 @@ function HouseholdNameCard() {
               onChange={(e) => setDraft(e.target.value)}
             />
           </div>
-          <Button
-            variant="outline"
-            className="min-h-11 md:min-h-0"
-            onClick={save}
-            disabled={updateSettings.isPending || !dirty}
-          >
+          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
             {t("common:save")}
           </Button>
         </div>
@@ -311,7 +307,7 @@ function LanguageCard() {
             <select
               id="language"
               data-testid="settings-language-select"
-              className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 max-md:h-11 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               value={locale}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -373,7 +369,7 @@ function ThemeCard() {
             <select
               id="theme"
               data-testid="settings-theme-select"
-              className="flex h-9 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 max-md:h-11 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               value={theme}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -429,7 +425,7 @@ function CarryoverDateCard() {
             <select
               id="carryover-date-mode"
               data-testid="settings-carryover-date-select"
-              className="flex h-9 w-72 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 max-md:h-11 w-72 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               value={me.carryover_date_mode}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -494,7 +490,6 @@ function AssumedInflationCard() {
           </div>
           <Button
             variant="outline"
-            className="min-h-11 md:min-h-0"
             onClick={saveAssumed}
             disabled={updateSettings.isPending || !assumedDirty}
           >
@@ -506,7 +501,10 @@ function AssumedInflationCard() {
           <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
         )}
 
-        <Link to={routes.settingsInflationRates} className="block text-sm underline">
+        <Link
+          to={routes.settingsInflationRates}
+          className="inline-flex max-md:min-h-11 items-center text-sm underline"
+        >
           {t("inflation.manageRates")}
         </Link>
       </CardContent>

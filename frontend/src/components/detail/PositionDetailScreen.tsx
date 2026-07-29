@@ -161,7 +161,6 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
             asChild
             size="sm"
             variant="outline"
-            className="min-h-11 md:min-h-0"
             data-testid={`${descriptor.testIdPrefix}-export`}
           >
             <a href={descriptor.exportUrl(assetId)}>
@@ -179,12 +178,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
     <div className="space-y-6">
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="-ml-2 mb-1 min-h-11 md:min-h-0"
-          >
+          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
             {t("common:actions.back")}
           </Button>
           <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
@@ -202,12 +196,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
         >
           <div className="flex gap-2 max-md:[&>*]:flex-1">
             <HelpTourButton steps={tourSteps} />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditOpen(true)}
-              className="min-h-11 md:min-h-0"
-            >
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="mr-1 size-4" />
               {t("common:actions.edit")}
             </Button>
@@ -221,12 +210,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
               currentTerminatedAt={asset.terminated_at}
               currentNote={asset.termination_note}
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteOpen(true)}
-              className="min-h-11 md:min-h-0"
-            >
+            <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="mr-1 size-4" />
               {t("common:delete")}
             </Button>

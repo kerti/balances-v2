@@ -72,7 +72,7 @@ export function ResetSetScreen() {
           {invalidLink ? (
             <div className="space-y-3" data-testid="reset-invalid">
               <p className="text-sm text-muted-foreground">{t("resetSet.invalid")}</p>
-              <Button asChild variant="outline" className="w-full min-h-11 md:min-h-0">
+              <Button asChild variant="outline" className="w-full">
                 <a href="/forgot-password">{t("resetSet.requestNew")}</a>
               </Button>
             </div>
@@ -114,7 +114,7 @@ export function ResetSetScreen() {
 
               <Button
                 type="submit"
-                className="w-full min-h-11 md:min-h-0"
+                className="w-full"
                 data-testid="reset-set-submit"
                 disabled={reset.isPending}
               >

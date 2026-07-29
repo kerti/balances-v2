@@ -144,7 +144,7 @@ export function RestoreCard() {
             </div>
 
             {stakesEmpty ? (
-              <label className="flex items-start gap-2 text-sm">
+              <label className="flex max-md:min-h-11 items-start gap-2 text-sm">
                 <input
                   type="checkbox"
                   className="mt-1 h-4 w-4"
