@@ -36,14 +36,21 @@ const SELECT_ARROW = 20;
 // en-GB option and this fails, which is the prompt to re-measure the id-ID
 // sibling alongside it.
 //
-// #562 assumed full width alone would clear the truncation and no copy change
-// was needed. Measured, it did not: the old "End of the month after the last
-// snapshot" renders 291.5px against 284px of text box, so the en-GB option was
-// shortened to fit with margin. The estimate was off by more than the arrow
-// allowance — hence this test measures rather than eyeballs.
+// #562 assumed full width alone would clear the truncation and that no copy
+// change was needed. Measured, it did not: the old en-GB "End of the month
+// after the last snapshot" renders 291.5px against 284px of text box, and the
+// old id-ID string 268.6px locally but 301px on the CI runner. Both were
+// shortened until they fit with margin — the margin matters, see below.
+//
+// These strings need *headroom*, not just a fit. Until #565 lands the control
+// paints in `system-ui`, not the bundled Geist (`body`'s own font-family beats
+// the `html { font-sans }` base layer), so the same string measures differently
+// per platform — the 268.6 / 301 spread above is one string on two machines,
+// ~12%. The copy is therefore held well under the limit rather than tuned to
+// it. Once #565 makes the font deterministic this can become an exact bound.
 const LONGEST_CARRYOVER_OPTION: Record<string, string> = {
   "en-GB": "End of month after last snapshot",
-  "id-ID": "Akhir bulan setelah snapshot terakhir",
+  "id-ID": "Akhir bln setelah snapshot terkini",
 };
 
 // Geometry of one control relative to the content box of the card it sits in.
@@ -71,37 +78,40 @@ async function controlMetrics(control: Locator) {
         parseFloat(style.borderLeftWidth) -
         parseFloat(style.borderRightWidth),
       font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
-      // First family in the stack, kept separate so the measurement below can
-      // assert the webfont actually loaded before trusting a text width.
-      primaryFont: `${style.fontSize} ${style.fontFamily.split(",")[0].trim()}`,
+      // Same size and weight, but forced onto the generic family — what the
+      // control paints with before the webfont arrives, or if it never does.
+      fallbackFont: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} sans-serif`,
     };
   });
 }
 
-// Width of `text` as the browser would paint it in `font`.
+// Widest that `text` could paint in this control: measured in the control's own
+// computed font and in the generic fallback, whichever is larger.
 //
-// Canvas `measureText` silently falls back to a system font when the requested
-// one has not finished loading, and reports that font's metrics without any
-// error — which is how this first went red on CI only: the app self-hosts Geist
-// (`@fontsource-variable/geist`), so a loaded measurement is identical on every
-// platform, but an unloaded one lands on whatever the OS offers (the Linux
-// runner's fallback is ~13% wider than Geist, enough to fail on its own). Await
-// `fonts.ready` and then refuse to measure a font that isn't there, so a bad
-// measurement is a loud failure rather than a wrong number.
-async function renderedTextWidth(page: Page, font: string, primaryFont: string, text: string) {
+// Both are measured because neither alone is the whole story. Today they are
+// nearly the same — the control's stack is `system-ui, ..., sans-serif` (#565),
+// so the "app font" already is a system font. After #565 they diverge, and the
+// max then holds the copy to the wider of Geist and whatever a reader sees
+// during FOUT or a failed font fetch; a clipped option is just as clipped then.
+//
+// Note `document.fonts.check()` is not a usable guard for "is the webfont
+// painting": it returns true both when the face is loaded and when no matching
+// `@font-face` exists at all, because an absent family resolves to a system font
+// that needs no loading. It reported `true` for Geist here while the element was
+// rendering in `system-ui` — which is precisely the #565 bug.
+async function renderedTextWidth(page: Page, font: string, fallbackFont: string, text: string) {
   return page.evaluate(
-    async ({ font, primaryFont, text }) => {
+    async ({ font, fallbackFont, text }) => {
       await document.fonts.ready;
-      if (!document.fonts.check(primaryFont)) {
-        throw new Error(
-          `refusing to measure: ${primaryFont} is not loaded, metrics would be wrong`,
-        );
-      }
       const ctx = document.createElement("canvas").getContext("2d")!;
-      ctx.font = font;
-      return ctx.measureText(text).width;
+      return Math.max(
+        ...[font, fallbackFont].map((f) => {
+          ctx.font = f;
+          return ctx.measureText(text).width;
+        }),
+      );
     },
-    { font, primaryFont, text },
+    { font, fallbackFont, text },
   );
 }
 
@@ -245,7 +255,7 @@ test(
       const rendered = await renderedTextWidth(
         page,
         carryoverMetrics.font,
-        carryoverMetrics.primaryFont,
+        carryoverMetrics.fallbackFont,
         longest,
       );
       expect(
