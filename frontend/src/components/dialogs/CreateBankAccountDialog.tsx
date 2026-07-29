@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateBankAccount } from "@/hooks/useBankAccounts";
 import { useSession } from "@/hooks/useSession";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 
 const empty = {
   display_name: "",
@@ -25,7 +25,6 @@ export function CreateBankAccountDialog() {
   const { t } = useTranslation(["assets", "common"]);
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
   const mutation = useCreateBankAccount();
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
@@ -99,12 +98,11 @@ export function CreateBankAccountDialog() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="account_type">{t("assets:bankAccount.fields.accountType")}</Label>
-          <select
+          <Select
             id="account_type"
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.account_type}
             onChange={(e) =>
               setForm({
@@ -116,7 +114,7 @@ export function CreateBankAccountDialog() {
             <option value="savings">{t("assets:bankAccount.accountTypes.savings")}</option>
             <option value="current">{t("assets:bankAccount.accountTypes.current")}</option>
             <option value="other">{t("assets:bankAccount.accountTypes.other")}</option>
-          </select>
+          </Select>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
@@ -136,46 +134,13 @@ export function CreateBankAccountDialog() {
         </div>
       </div>
 
-      <div className="grid gap-2">
-        <Label>{t("common:fields.ownership")}</Label>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="ownership_type"
-              value="joint"
-              checked={form.ownership_type === "joint"}
-              onChange={() => setForm({ ...form, ownership_type: "joint" })}
-            />
-            {t("common:ownership.joint")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="ownership_type"
-              value="sole"
-              checked={form.ownership_type === "sole"}
-              onChange={() => setForm({ ...form, ownership_type: "sole" })}
-            />
-            {t("common:ownership.soleOwner")}
-          </label>
-        </div>
-        {form.ownership_type === "sole" && (
-          <select
-            aria-label={t("common:ownership.soleOwner")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-          >
-            {(members ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {preferredName(m)}
-                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <OwnershipField
+        idPrefix="ba_create"
+        value={form.ownership_type}
+        onChange={(v) => setForm({ ...form, ownership_type: v })}
+        soleOwnerID={effectiveSoleOwnerID}
+        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
 
       <div className="grid gap-2">
         <Label htmlFor="description">{t("common:fields.description")}</Label>

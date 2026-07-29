@@ -199,11 +199,6 @@
     "maturityPrincipalDetail": "P {{amount}} ({{disp}})",
     "maturityInterestDetail": "B {{amount}} ({{disp}})"
   },
-  "ownership": {
-    "joint": "Bersama",
-    "soleOwner": "Pemilik tunggal",
-    "soleOwnerAria": "Pemilik tunggal"
-  },
   "transactions": {
     "cardTitle": "Transaksi",
     "dateHeader": "Tanggal",

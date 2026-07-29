@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { useTimeDeposits, useLinkRolloverSuccessor } from "@/hooks/useInvestments";
 import { errorMessage } from "@/lib/errorMessage";
 
@@ -76,10 +77,9 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
                 {t("investments:timeDeposit.rollover.linkEmpty")}
               </p>
             ) : (
-              <select
+              <Select
                 id="rollover_successor_select"
                 data-testid="rollover-successor-select"
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={selectedId}
                 onChange={(e) => setSelectedId(e.target.value)}
               >
@@ -91,7 +91,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
                     {d.investment.display_name}
                   </option>
                 ))}
-              </select>
+              </Select>
             )}
           </div>
 

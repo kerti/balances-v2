@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 
 type Props = {
   // When the dialog opens from inside an inner-tab (Personal / Institutional),
@@ -37,7 +37,6 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
   const { t } = useTranslation(["liabilities", "common"]);
   const [form, setForm] = useState(emptyForm(defaultSubtype));
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
   const mutation = useCreateLiability();
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
@@ -71,7 +70,6 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
           {t("liabilities:createTrigger")}
         </Button>
       }
-      contentClassName="max-h-[90vh] overflow-y-auto"
       title={t("liabilities:createTitle")}
       description={t("liabilities:createDescription")}
       submitLabel={t("common:actions.create")}
@@ -95,12 +93,11 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="subtype">{t("liabilities:fields.subtype")}</Label>
-          <select
+          <Select
             id="subtype"
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.subtype}
             onChange={(e) =>
               setForm({
@@ -111,7 +108,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
           >
             <option value="personal">{t("liabilities:subtypes.personal")}</option>
             <option value="institutional">{t("liabilities:subtypes.institutional")}</option>
-          </select>
+          </Select>
         </div>
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
@@ -142,7 +139,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="principal">{t("liabilities:fields.principal")}</Label>
           <Input
@@ -165,7 +162,15 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      {/*
+        Term / start date / end date. Three columns inside the dialog leaves
+        ~100px each at 390px, which truncates the year off both date fields
+        ("mm/dd/" with the yy cut) — a straight breach of the ADR-0050 bar, so
+        this row stacks on phones. The two-column rows elsewhere in these forms
+        deliberately do not: at ~157px they were verified to render the full
+        date and its picker icon, and merely-cramped stays single-layout.
+      */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="term_months">{t("liabilities:fields.term")}</Label>
           <Input
@@ -198,46 +203,13 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         </div>
       </div>
 
-      <div className="grid gap-2">
-        <Label>{t("common:fields.ownership")}</Label>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="ownership_type"
-              value="joint"
-              checked={form.ownership_type === "joint"}
-              onChange={() => setForm({ ...form, ownership_type: "joint" })}
-            />
-            {t("common:ownership.joint")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="ownership_type"
-              value="sole"
-              checked={form.ownership_type === "sole"}
-              onChange={() => setForm({ ...form, ownership_type: "sole" })}
-            />
-            {t("common:ownership.soleOwner")}
-          </label>
-        </div>
-        {form.ownership_type === "sole" && (
-          <select
-            aria-label={t("common:ownership.soleOwner")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-          >
-            {(members ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {preferredName(m)}
-                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <OwnershipField
+        idPrefix="liability_create"
+        value={form.ownership_type}
+        onChange={(v) => setForm({ ...form, ownership_type: v })}
+        soleOwnerID={effectiveSoleOwnerID}
+        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
 
       <div className="grid gap-2">
         <Label htmlFor="description">{t("common:fields.description")}</Label>

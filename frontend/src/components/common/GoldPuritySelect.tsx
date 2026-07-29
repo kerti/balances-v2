@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { GOLD_PURITY_PRESETS, goldPurityPresetKarat } from "@/lib/gold";
 
 // Gold purity picker: a karat dropdown (24K/22K/.../10K) plus Custom, instead
@@ -45,10 +46,9 @@ export function GoldPuritySelect({ idPrefix, value, onChange }: Props) {
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{t("gold.fields.purity")}</Label>
-      <select
+      <Select
         id={id}
         data-testid={`${idPrefix}-purity-select`}
-        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         value={mode === CUSTOM ? CUSTOM : String(mode)}
         onChange={(e) => handleSelect(e.target.value)}
       >
@@ -58,7 +58,7 @@ export function GoldPuritySelect({ idPrefix, value, onChange }: Props) {
           </option>
         ))}
         <option value={CUSTOM}>{t("gold.purity.customOption")}</option>
-      </select>
+      </Select>
       {mode === CUSTOM && (
         <Input
           required

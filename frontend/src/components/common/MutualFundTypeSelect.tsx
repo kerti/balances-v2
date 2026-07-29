@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import type { MutualFundType } from "@/api/types";
 
 // Fund Type select: required, no default (issue #20). The empty placeholder
@@ -35,10 +36,9 @@ export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{t("mutualFund.fundType.selectLabel")}</Label>
-      <select
+      <Select
         id={id}
         required
-        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         value={value}
         onChange={(e) => onChange(e.target.value as MutualFundType)}
       >
@@ -50,7 +50,7 @@ export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
             {t(`mutualFund.fundType.option.${ft}`)}
           </option>
         ))}
-      </select>
+      </Select>
     </div>
   );
 }

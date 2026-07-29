@@ -199,11 +199,6 @@
     "maturityPrincipalDetail": "P {{amount}} ({{disp}})",
     "maturityInterestDetail": "I {{amount}} ({{disp}})"
   },
-  "ownership": {
-    "joint": "Joint",
-    "soleOwner": "Sole owner",
-    "soleOwnerAria": "Sole owner"
-  },
   "transactions": {
     "cardTitle": "Transactions",
     "dateHeader": "Date",

@@ -9,6 +9,7 @@ import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card";
+import { Select } from "@/components/ui/select";
 
 // In-language display names, shown regardless of the active UI language so a
 // visitor reading the wrong language can still find their option. Mirrors the
@@ -72,10 +73,9 @@ export function SignInScreen() {
           )}
           <div className="space-y-1">
             <Label htmlFor="signin-language">{t("signIn.languageLabel")}</Label>
-            <select
+            <Select
               id="signin-language"
               data-testid="signin-language-select"
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
               value={locale}
               onChange={onChange}
             >
@@ -84,7 +84,7 @@ export function SignInScreen() {
                   {LANGUAGE_LABELS[l]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           {showGoogle && (
             <Button asChild className="w-full">

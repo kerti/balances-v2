@@ -84,7 +84,9 @@ PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics p
 `v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail (coupon passive-cash,
 PDF five-group reorg + income drill-down, investment-performance block) shipped in `v0.9.0-alpha.2`.
 Unreleased on `main`: #542 secondary-control tap floor + two-row detail headers (#546); mobile tap
-floor moved into the `Button`/`Input` primitives, closing the Settings gap (#559).
+floor moved into the `Button`/`Input` primitives, closing the Settings gap (#559); mobile
+create/edit dialog bodies — `ui/select.tsx` primitive, shared `OwnershipField`, liability
+three-column row stacked (#541).
 
 Next, in order:
 

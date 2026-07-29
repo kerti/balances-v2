@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateBond } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 import type { RiskProfile } from "@/api/types";
 import type { BondType, CouponFrequency, CouponDisposition } from "@/api/types";
 
@@ -37,7 +37,6 @@ export function CreateBondDialog() {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(emptyForm);
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
   const mutation = useCreateBond();
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
@@ -75,7 +74,6 @@ export function CreateBondDialog() {
           {t("investments:bond.createTrigger")}
         </Button>
       }
-      contentClassName="max-h-[90vh] overflow-y-auto"
       formClassName="space-y-4"
       title={t("investments:bond.createTitle")}
       description={t("investments:bond.createDescription")}
@@ -101,7 +99,7 @@ export function CreateBondDialog() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="bond_series_code">{t("investments:bond.fields.seriesCode")}</Label>
             <Input
@@ -134,12 +132,11 @@ export function CreateBondDialog() {
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="bond_type">{t("investments:bond.fields.bondType")}</Label>
-            <select
+            <Select
               id="bond_type"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={form.bond_type}
               onChange={(e) => setForm({ ...form, bond_type: e.target.value as BondType })}
             >
@@ -147,7 +144,7 @@ export function CreateBondDialog() {
               <option value="secondary_market">
                 {t("investments:bond.bondType.secondary_market")}
               </option>
-            </select>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="bond_currency">{t("common:fields.currency")}</Label>
@@ -168,7 +165,7 @@ export function CreateBondDialog() {
         </div>
 
         {form.bond_type === "govt_primary" ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="bond_face_value">{t("investments:bond.fields.faceValue")}</Label>
               <Input
@@ -200,7 +197,7 @@ export function CreateBondDialog() {
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
             <Input
@@ -216,9 +213,8 @@ export function CreateBondDialog() {
             <Label htmlFor="bond_coupon_frequency">
               {t("investments:bond.fields.couponFrequency")}
             </Label>
-            <select
+            <Select
               id="bond_coupon_frequency"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={form.coupon_frequency}
               onChange={(e) =>
                 setForm({
@@ -233,7 +229,7 @@ export function CreateBondDialog() {
                 {t("investments:bond.couponFrequency.semi_annual")}
               </option>
               <option value="annual">{t("investments:bond.couponFrequency.annual")}</option>
-            </select>
+            </Select>
           </div>
         </div>
 
@@ -241,9 +237,8 @@ export function CreateBondDialog() {
           <Label htmlFor="bond_coupon_disposition">
             {t("investments:bond.fields.couponDisposition")}
           </Label>
-          <select
+          <Select
             id="bond_coupon_disposition"
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.coupon_disposition}
             onChange={(e) =>
               setForm({
@@ -254,7 +249,7 @@ export function CreateBondDialog() {
           >
             <option value="pays_out">{t("investments:bond.couponDisposition.pays_out")}</option>
             <option value="accrues">{t("investments:bond.couponDisposition.accrues")}</option>
-          </select>
+          </Select>
           <p className="text-xs text-muted-foreground">
             {t("investments:bond.couponDisposition.hint")}
           </p>
@@ -274,46 +269,13 @@ export function CreateBondDialog() {
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid gap-2">
-          <Label>{t("common:fields.ownership")}</Label>
-          <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ownership_type"
-                value="joint"
-                checked={form.ownership_type === "joint"}
-                onChange={() => setForm({ ...form, ownership_type: "joint" })}
-              />
-              {t("investments:ownership.joint")}
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ownership_type"
-                value="sole"
-                checked={form.ownership_type === "sole"}
-                onChange={() => setForm({ ...form, ownership_type: "sole" })}
-              />
-              {t("investments:ownership.soleOwner")}
-            </label>
-          </div>
-          {form.ownership_type === "sole" && (
-            <select
-              aria-label={t("investments:ownership.soleOwnerAria")}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={effectiveSoleOwnerID ?? ""}
-              onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-            >
-              {(members ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {preferredName(m)}
-                  {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        <OwnershipField
+          idPrefix="bond_create"
+          value={form.ownership_type}
+          onChange={(v) => setForm({ ...form, ownership_type: v })}
+          soleOwnerID={effectiveSoleOwnerID}
+          onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+        />
       </div>
 
       <RiskProfileSelect

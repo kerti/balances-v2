@@ -53,7 +53,18 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // `max-h-[90vh] overflow-y-auto` is defensive, not a fix for an
+          // observed break (#541): the shell is `fixed` and centred by
+          // translate, so content taller than the viewport would bleed off both
+          // edges with nothing to scroll and no way to reach the footer. Twelve
+          // of the tall position dialogs already passed exactly these two
+          // classes through `contentClassName`; the other thirty-one did not,
+          // which held only because every form happens to fit at 390x844 today.
+          // Owning it here means a longer form, a shorter viewport, landscape,
+          // or a stacked validation error cannot reopen the hole one dialog at
+          // a time — the same "floor lives in the primitive" move #559 made for
+          // `Button`/`Input`.
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[90vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
           className,
         )}
         {...props}
