@@ -15,6 +15,12 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 // row, and a text link. If the primitive floor regresses, those assertions fail
 // together — that is the signal.
 //
+// Since #563 the scalar preferences are rows of two group tables and the Data
+// flows are panels of a third card, rather than thirteen separate cards. A
+// control's reference box is therefore its `[data-slot=settings-row]` or
+// `[data-slot=settings-panel]` — the padded box is now the row/panel, not the
+// CardContent that holds four of them.
+//
 // Read-only: it measures the rendered settings surface and writes nothing, so
 // there is no seed or cleanup.
 //
@@ -53,13 +59,14 @@ const LONGEST_CARRYOVER_OPTION: Record<string, string> = {
   "id-ID": "Akhir bln setelah snapshot terkini",
 };
 
-// Geometry of one control relative to the content box of the card it sits in.
-// Measured against the card rather than a pixel constant so these assertions
-// survive a change to the shell or card padding.
+// Geometry of one control relative to the content box of the settings row it
+// sits in. Measured against the row rather than a pixel constant so these
+// assertions survive a change to the shell, the card, or the row padding —
+// since #563 the row is the padded box (one card now holds four of them).
 async function controlMetrics(control: Locator) {
   return control.evaluate((el) => {
-    const content = el.closest("[data-slot=card-content]");
-    if (!content) throw new Error("control is not inside a CardContent");
+    const content = el.closest("[data-slot=settings-row]");
+    if (!content) throw new Error("control is not inside a settings row");
     const cardStyle = getComputedStyle(content);
     const cardBox = content.getBoundingClientRect();
     const style = getComputedStyle(el);
@@ -67,9 +74,9 @@ async function controlMetrics(control: Locator) {
     return {
       width: box.width,
       right: box.right,
-      cardInnerWidth:
+      rowInnerWidth:
         cardBox.width - parseFloat(cardStyle.paddingLeft) - parseFloat(cardStyle.paddingRight),
-      cardInnerRight: cardBox.right - parseFloat(cardStyle.paddingRight),
+      rowInnerRight: cardBox.right - parseFloat(cardStyle.paddingRight),
       // Room left for text once padding, borders and the arrow are removed.
       textWidth:
         box.width -
@@ -191,8 +198,8 @@ test(
       const control = page.getByTestId(testId);
       await control.scrollIntoViewIfNeeded();
       const m = await controlMetrics(control);
-      expect(m.width, `${name} should fill the card width`).toBeGreaterThanOrEqual(
-        m.cardInnerWidth - 1,
+      expect(m.width, `${name} should fill the row width`).toBeGreaterThanOrEqual(
+        m.rowInnerWidth - 1,
       );
     }
 
@@ -206,14 +213,14 @@ test(
       const control = page.locator(selector);
       await control.scrollIntoViewIfNeeded();
       const m = await controlMetrics(control);
-      expect(m.width, `${name} should take most of the row`).toBeGreaterThan(m.cardInnerWidth / 2);
+      expect(m.width, `${name} should take most of the row`).toBeGreaterThan(m.rowInnerWidth / 2);
       expect(m.width, `${name} should leave the Save at natural width`).toBeLessThan(
-        m.cardInnerWidth,
+        m.rowInnerWidth,
       );
-      const save = page.locator(`[data-slot=card-content]:has(${selector})`).getByRole("button");
+      const save = page.locator(`[data-slot=settings-row]:has(${selector})`).getByRole("button");
       const box = (await save.boundingBox())!;
       expect(box.x + box.width, `${name} Save should sit flush right`).toBeGreaterThanOrEqual(
-        m.cardInnerRight - 1,
+        m.rowInnerRight - 1,
       );
     }
 
@@ -227,11 +234,11 @@ test(
       const control = page.locator(selector);
       await control.scrollIntoViewIfNeeded();
       const m = await controlMetrics(control);
-      expect(m.width, `${name} should stay narrow`).toBeLessThan(m.cardInnerWidth / 2);
-      const save = page.locator(`[data-slot=card-content]:has(${selector})`).getByRole("button");
+      expect(m.width, `${name} should stay narrow`).toBeLessThan(m.rowInnerWidth / 2);
+      const save = page.locator(`[data-slot=settings-row]:has(${selector})`).getByRole("button");
       const box = (await save.boundingBox())!;
       expect(box.x + box.width, `${name} Save should sit flush right`).toBeGreaterThanOrEqual(
-        m.cardInnerRight - 1,
+        m.rowInnerRight - 1,
       );
     }
 
@@ -287,5 +294,119 @@ test(
     const inputBox = await input.boundingBox();
     expect(inputBox).not.toBeNull();
     expect(inputBox!.height).toBeLessThan(FLOOR);
+  },
+);
+
+// The settings-table shape (#563). The two tests above are about one control at
+// a time; this one is about the column. Grouping the scalar preferences into
+// two cards only pays off if the rows line up — the reason the control column
+// is fixed-width and left-aligned inside itself, rather than right-aligned, is
+// that right-aligning lines the Saves up but leaves the control left edges
+// ragged (a 96px currency box against a full-width select). That is invisible
+// in a unit test (jsdom has no layout) and is exactly what regresses when
+// someone reaches for a per-row width again.
+// covers: INV-PRESENTATION-08
+test(
+  "settings scalar preferences line up as two-column rows at 1280px",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await page.goto("/settings");
+
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    const rows = page.locator("[data-slot=settings-row]");
+    // Profile (name / language / theme / carry-over) + Household (name /
+    // currency / multi-currency / inflation).
+    await expect(rows).toHaveCount(8);
+
+    const geometry = await rows.evaluateAll((els) =>
+      els.map((el) => {
+        const [nameCell, controlCell] = Array.from(el.children) as HTMLElement[];
+        const save = el.querySelector("button");
+        return {
+          name: nameCell.textContent?.slice(0, 24) ?? "",
+          nameRight: nameCell.getBoundingClientRect().right,
+          controlLeft: controlCell.getBoundingClientRect().left,
+          controlWidth: controlCell.getBoundingClientRect().width,
+          saveRight: save ? save.getBoundingClientRect().right : null,
+        };
+      }),
+    );
+
+    // Two columns, not a stack: the control cell starts after the name cell ends.
+    for (const row of geometry) {
+      expect(row.controlLeft, `${row.name} row should be two columns`).toBeGreaterThanOrEqual(
+        row.nameRight,
+      );
+    }
+
+    // One shared control column: same left edge and same width on every row,
+    // whichever section it belongs to.
+    const lefts = new Set(geometry.map((r) => Math.round(r.controlLeft)));
+    const widths = new Set(geometry.map((r) => Math.round(r.controlWidth)));
+    expect(lefts, "every control shares a left edge").toHaveProperty("size", 1);
+    expect(widths, "the control column is one fixed width").toHaveProperty("size", 1);
+
+    // ...and the Saves, which sit at the far end of that column, share a right
+    // edge as a consequence.
+    const saveRights = new Set(
+      geometry.filter((r) => r.saveRight !== null).map((r) => Math.round(r.saveRight!)),
+    );
+    expect(saveRights.size, "some rows are button-driven").toBeGreaterThan(0);
+    expect(saveRights, "every Save shares a right edge").toHaveProperty("size", 1);
+  },
+);
+
+// The Data section's three primary actions (#563). Each panel is one flow whose
+// point is a single button, and at phone width those buttons read as small chips
+// parked in an otherwise empty row — so they fill the panel below 768px and
+// return to their natural width above it. Measured rather than class-pinned
+// because the failure mode is a wrapper that doesn't stretch, not a missing
+// utility.
+// covers: INV-PRESENTATION-08
+test(
+  "settings data actions fill the panel at 390px and stay natural width at 1280px",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const actions = ["backup-export-button", "restore-choose-button", "erase-open-button"] as const;
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/settings");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    for (const testId of actions) {
+      const button = page.getByTestId(testId);
+      await button.scrollIntoViewIfNeeded();
+      const m = await button.evaluate((el) => {
+        const panel = el.closest("[data-slot=settings-panel]");
+        if (!panel) throw new Error("action is not inside a settings panel");
+        const style = getComputedStyle(panel);
+        const box = panel.getBoundingClientRect();
+        return {
+          width: el.getBoundingClientRect().width,
+          panelInnerWidth:
+            box.width - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+        };
+      });
+      expect(m.width, `${testId} should fill its panel on a phone`).toBeGreaterThanOrEqual(
+        m.panelInnerWidth - 1,
+      );
+    }
+
+    await page.setViewportSize({ width: 1280, height: 1200 });
+    await expect(page.getByTestId("erase-open-button")).toBeVisible();
+
+    for (const testId of actions) {
+      const button = page.getByTestId(testId);
+      await button.scrollIntoViewIfNeeded();
+      const m = await button.evaluate((el) => ({
+        width: el.getBoundingClientRect().width,
+        panelWidth: el.closest("[data-slot=settings-panel]")!.getBoundingClientRect().width,
+      }));
+      expect(m.width, `${testId} should stay natural width on desktop`).toBeLessThan(
+        m.panelWidth / 2,
+      );
+    }
   },
 );

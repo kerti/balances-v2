@@ -44,7 +44,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   // click and let the "Manage exchange rates" link's appearance confirm the
   // flip stuck (the Exchange Rates subpage stays reachable from the sidebar
   // either way, but only shows the CRUD form once multi-currency is on).
-  await page.getByLabel("Enable multi-currency tracking").click();
+  await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
   await page.getByRole("link", { name: "Exchange Rates", exact: true }).click();
   const fxCard = page.getByTestId("fx-rates-card");
@@ -85,6 +85,6 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings" }).click();
-  await page.getByLabel("Enable multi-currency tracking").click();
+  await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toHaveCount(0);
 });

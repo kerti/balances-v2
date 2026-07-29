@@ -1,6 +1,6 @@
 {
   "title": "Pengaturan",
-  "subtitle": "Mata uang pelaporan, pelacakan multi-mata-uang, dan undangan rumah tangga.",
+  "subtitle": "Nama dan preferensi Anda, pengaturan rumah tangga, anggota, dan cadangan.",
   "sections": {
     "profile": "Profil",
     "household": "Rumah Tangga",
@@ -9,24 +9,20 @@
   },
   "nickname": {
     "title": "Nama Anda",
-    "description": "Nama panggilan singkat yang muncul di label kepemilikan dan pemilih pemilik. Kosongkan untuk memakai nama lengkap ({{displayName}}).",
-    "label": "Nama panggilan"
+    "description": "Nama panggilan singkat yang muncul di label kepemilikan dan pemilih pemilik. Kosongkan untuk memakai nama lengkap ({{displayName}})."
   },
   "householdName": {
     "title": "Nama rumah tangga",
-    "description": "Ditampilkan kepada siapa pun yang Anda undang dan dalam konfirmasi pemulihan. Semua anggota dapat mengubahnya.",
-    "label": "Nama rumah tangga"
+    "description": "Ditampilkan kepada siapa pun yang Anda undang dan dalam konfirmasi pemulihan. Semua anggota dapat mengubahnya."
   },
   "language": {
     "title": "Bahasa",
     "description": "Bahasa yang dipakai untuk menu, label, dan format tanggal / angka.",
-    "label": "Bahasa",
     "saved": "Bahasa diperbarui"
   },
   "theme": {
     "title": "Tampilan",
     "description": "Pilih skema warna terang atau gelap. Pilihan Anda mengikuti di semua perangkat.",
-    "label": "Tema",
     "light": "Terang",
     "dark": "Gelap",
     "saved": "Tampilan diperbarui"
@@ -34,7 +30,6 @@
   "carryoverDate": {
     "title": "Tanggal salin-lanjut",
     "description": "Saat Anda menyalin angka bulan lalu ke snapshot baru, ini menentukan tanggal laporan awalnya. Anda tetap dapat mengubah tanggal sebelum menyimpan.",
-    "label": "Tanggal bawaan",
     "saved": "Tanggal salin-lanjut diperbarui",
     "modes": {
       "today": "Hari ini",
@@ -44,9 +39,11 @@
   },
   "currency": {
     "title": "Mata Uang",
-    "description": "Kekayaan bersih dilaporkan dalam mata uang ini. Aktifkan multi-mata-uang untuk menyimpan posisi dalam mata uang lain dan memasukkan kurs bulanan.",
+    "description": "Kekayaan bersih dilaporkan dalam mata uang ini.",
     "reportingLabel": "Mata uang pelaporan",
-    "multiToggle": "Aktifkan pelacakan multi-mata-uang",
+    "multiTitle": "Multi-mata-uang",
+    "multiDescription": "Simpan posisi dalam mata uang lain dan masukkan kurs bulanan untuk masing-masing.",
+    "multiLabel": "Aktif",
     "manageFx": "Kelola kurs →"
   },
   "fx": {
@@ -118,7 +115,7 @@
       "title": "Pulihkan dari cadangan",
       "description": "Ganti seluruh isi rumah tangga ini dengan isi berkas cadangan. Begini cara memindahkan data Anda ke perangkat baru.",
       "choose": "Pilih berkas cadangan…",
-      "chooseHint": "Pilih berkas cadangan yang Anda unduh sebelumnya.",
+      "chooseHint": "Belum ada yang berubah — Anda akan melihat isi berkasnya dulu.",
       "checking": "Memeriksa berkas…",
       "previewError": "Berkas itu tidak dapat dibaca sebagai cadangan. Silakan coba berkas lain.",
       "summary": "Cadangan ini berisi {{count}} item dari “{{household}}”.",

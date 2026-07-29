@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SettingsControlRow } from "@/components/common/SettingsSurface";
 import { api } from "@/api/client";
 import { errorMessage } from "@/lib/errorMessage";
 import { formatDateTime } from "@/lib/format";
@@ -65,14 +66,22 @@ export function InviteForm() {
         <CardDescription>{t("invite.description")}</CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Send sits beside the field, not under it: the same
+            label-above-control-with-a-flush-right-action shape the settings
+            rows wear (#563), so Membership reads as part of the same screen. */}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             mutation.mutate(email);
           }}
-          className="flex flex-col gap-3"
         >
-          <div className="grid gap-2">
+          <SettingsControlRow
+            action={
+              <Button type="submit" disabled={mutation.isPending || !email}>
+                {mutation.isPending ? t("common:sending") : t("invite.submit")}
+              </Button>
+            }
+          >
             <Label htmlFor="email">{t("invite.emailLabel")}</Label>
             <Input
               id="email"
@@ -82,10 +91,7 @@ export function InviteForm() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder={t("invite.emailPlaceholder")}
             />
-          </div>
-          <Button type="submit" disabled={mutation.isPending || !email}>
-            {mutation.isPending ? t("common:sending") : t("invite.submit")}
-          </Button>
+          </SettingsControlRow>
         </form>
 
         {mutation.error && (

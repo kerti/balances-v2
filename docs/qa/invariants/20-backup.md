@@ -16,7 +16,7 @@ transform chain + its frozen golden fixtures live in `restore.go`
 "restore with no load" — it reuses `wipeHousehold` directly from `erase.go`,
 gated founder-only + server-enforced confirm-by-name. Code:
 `internal/backup/{format,export,restore,restore_commit,erase}.go`,
-`queries/backup.sql`; the frontend export lives in `components/BackupCard.tsx`
+`queries/backup.sql`; the frontend export lives in `components/common/BackupPanel.tsx`
 + `lib/backup.ts`.
 
 | ID | Invariant | Source | Severity |
