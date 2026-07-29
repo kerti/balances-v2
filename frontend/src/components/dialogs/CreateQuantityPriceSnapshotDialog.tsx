@@ -139,7 +139,7 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
         <Button
           size="sm"
           variant={carryover ? "outline" : "default"}
-          className={carryover ? "min-h-11 md:min-h-0" : "h-11 md:h-8"}
+          className={carryover ? undefined : "h-11 md:h-8"}
         >
           <Plus className="mr-1 size-4" />
           {t("investments:quantityPriceSnapshot.trigger")}

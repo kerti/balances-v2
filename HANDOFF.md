@@ -83,7 +83,8 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
 `v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail (coupon passive-cash,
 PDF five-group reorg + income drill-down, investment-performance block) shipped in `v0.9.0-alpha.2`.
-Nothing unreleased on `main`.
+Unreleased on `main`: #542 secondary-control tap floor + two-row detail headers (#546); mobile tap
+floor moved into the `Button`/`Input` primitives, closing the Settings gap (#559).
 
 Next, in order:
 

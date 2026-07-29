@@ -23,7 +23,7 @@ export function HouseholdErasedScreen() {
           <CardDescription>{t("erased.body")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button asChild className="w-full min-h-11 md:min-h-0">
+          <Button asChild className="w-full">
             <a href={routes.dashboard}>{t("erased.backToSignIn")}</a>
           </Button>
         </CardContent>

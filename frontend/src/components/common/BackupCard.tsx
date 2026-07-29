@@ -36,7 +36,7 @@ export function BackupCard() {
         <fieldset className="space-y-2" disabled={exporting}>
           <legend className="text-sm font-medium">{t("data.fidelity.label")}</legend>
           {(["full", "compacted"] as const).map((opt) => (
-            <label key={opt} className="flex items-start gap-2 text-sm">
+            <label key={opt} className="flex max-md:min-h-11 items-start gap-2 text-sm">
               <input
                 type="radio"
                 name="backup-fidelity"

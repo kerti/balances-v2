@@ -37,7 +37,6 @@ export function RiskProfileFilter({ value, onChange }: Props) {
           size="sm"
           variant={value === opt.value ? "default" : "outline"}
           onClick={() => onChange(opt.value)}
-          className="min-h-11 md:min-h-0"
           data-testid={`risk-filter-${opt.value}`}
         >
           {t(opt.labelKey)}

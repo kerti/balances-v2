@@ -101,7 +101,7 @@ export function CreateTradeTransactionDialog<TResult>({
         <Button
           size="sm"
           variant={isBuy ? "default" : "outline"}
-          className={isBuy ? "h-11 md:h-8" : "min-h-11 md:min-h-0"}
+          className={isBuy ? "h-11 md:h-8" : undefined}
         >
           <Plus className="mr-1 size-4" />
           {t(isBuy ? "investments:trade.buyTrigger" : "investments:trade.sellTrigger")}

@@ -108,7 +108,6 @@ export function InviteForm() {
               type="button"
               variant="outline"
               size="sm"
-              className="min-h-11 md:min-h-0"
               data-testid="copy-invite-link"
               onClick={() => copyAcceptUrl(result.accept_url)}
             >

@@ -123,7 +123,8 @@ describe("detail mobile a11y floor (amount-only)", () => {
     // The secondary controls left at `size-sm` after B1 (which floored only the
     // single promoted primary action) — the snapshot-section header Export /
     // Import triggers and the actions-row Help / Edit / Terminate / Delete —
-    // now carry the `min-h-11 md:min-h-0` idiom: ≥44px on phones, natural size
+    // now inherit the primitive floor (`max-md:min-h-11` on the Button text
+    // sizes, #559): ≥44px on phones, natural size
     // (32px) from 768px up. The row ⋮ (above) rides its own `size-11` floor.
     const secondary = [
       await screen.findByTestId("bank-account-export"),
@@ -134,8 +135,7 @@ describe("detail mobile a11y floor (amount-only)", () => {
       screen.getByRole("button", { name: /^delete$/i }),
     ];
     for (const control of secondary) {
-      expect(control).toHaveClass("min-h-11");
-      expect(control).toHaveClass("md:min-h-0");
+      expect(control).toHaveClass("max-md:min-h-11");
     }
   });
 
@@ -151,7 +151,7 @@ describe("detail mobile a11y floor (amount-only)", () => {
     const carryover = within(createRow).getByTestId("snapshot-carryover");
     expect(carryover).toHaveClass("h-11", "md:h-8");
     const create = within(createRow).getByRole("button", { name: /new/i });
-    expect(create).toHaveClass("min-h-11", "md:min-h-0");
+    expect(create).toHaveClass("max-md:min-h-11");
 
     // Row 2 — I/O: Export + Import ride the second row.
     const ioRow = screen.getByTestId("snapshot-io-row");

@@ -87,7 +87,7 @@ export function SignInScreen() {
             </select>
           </div>
           {showGoogle && (
-            <Button asChild className="w-full min-h-11 md:min-h-0">
+            <Button asChild className="w-full">
               <a
                 href={`/api/auth/google/start?lng=${encodeURIComponent(locale)}`}
                 data-testid="signin-google"

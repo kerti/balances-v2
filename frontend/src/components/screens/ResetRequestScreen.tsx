@@ -53,7 +53,7 @@ export function ResetRequestScreen() {
           {request.isSuccess ? (
             <div className="space-y-3" data-testid="reset-request-sent">
               <p className="text-sm text-muted-foreground">{t("resetRequest.sent")}</p>
-              <Button asChild variant="outline" className="w-full min-h-11 md:min-h-0">
+              <Button asChild variant="outline" className="w-full">
                 <a href="/" data-testid="reset-request-back">
                   {t("resetRequest.backToSignIn")}
                 </a>
@@ -82,14 +82,14 @@ export function ResetRequestScreen() {
 
               <Button
                 type="submit"
-                className="w-full min-h-11 md:min-h-0"
+                className="w-full"
                 data-testid="reset-request-submit"
                 disabled={request.isPending}
               >
                 {request.isPending ? t("working") : t("resetRequest.submit")}
               </Button>
 
-              <Button asChild variant="link" className="w-full min-h-11 md:min-h-0">
+              <Button asChild variant="link" className="w-full">
                 <a href="/">{t("resetRequest.backToSignIn")}</a>
               </Button>
             </form>

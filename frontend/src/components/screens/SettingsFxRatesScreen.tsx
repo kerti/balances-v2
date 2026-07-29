@@ -28,7 +28,7 @@ export function SettingsFxRatesScreen() {
       ) : (
         <p className="text-sm text-muted-foreground">
           {t("fx.disabledHint")}{" "}
-          <Link to={routes.settings} className="underline">
+          <Link to={routes.settings} className="inline-flex max-md:min-h-11 items-center underline">
             {t("fx.disabledLink")}
           </Link>
         </p>
