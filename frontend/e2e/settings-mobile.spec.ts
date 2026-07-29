@@ -1,4 +1,4 @@
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 // Settings-home mobile a11y floor (ADR-0050 / INV-PRESENTATION-08). Unlike the
 // rate subpages (#511) this surface has no renderer split — it is a stack of
@@ -71,8 +71,38 @@ async function controlMetrics(control: Locator) {
         parseFloat(style.borderLeftWidth) -
         parseFloat(style.borderRightWidth),
       font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
+      // First family in the stack, kept separate so the measurement below can
+      // assert the webfont actually loaded before trusting a text width.
+      primaryFont: `${style.fontSize} ${style.fontFamily.split(",")[0].trim()}`,
     };
   });
+}
+
+// Width of `text` as the browser would paint it in `font`.
+//
+// Canvas `measureText` silently falls back to a system font when the requested
+// one has not finished loading, and reports that font's metrics without any
+// error — which is how this first went red on CI only: the app self-hosts Geist
+// (`@fontsource-variable/geist`), so a loaded measurement is identical on every
+// platform, but an unloaded one lands on whatever the OS offers (the Linux
+// runner's fallback is ~13% wider than Geist, enough to fail on its own). Await
+// `fonts.ready` and then refuse to measure a font that isn't there, so a bad
+// measurement is a loud failure rather than a wrong number.
+async function renderedTextWidth(page: Page, font: string, primaryFont: string, text: string) {
+  return page.evaluate(
+    async ({ font, primaryFont, text }) => {
+      await document.fonts.ready;
+      if (!document.fonts.check(primaryFont)) {
+        throw new Error(
+          `refusing to measure: ${primaryFont} is not loaded, metrics would be wrong`,
+        );
+      }
+      const ctx = document.createElement("canvas").getContext("2d")!;
+      ctx.font = font;
+      return ctx.measureText(text).width;
+    },
+    { font, primaryFont, text },
+  );
 }
 
 // covers: INV-PRESENTATION-08
@@ -212,13 +242,11 @@ test(
 
     const available = carryoverMetrics.textWidth - SELECT_ARROW;
     for (const [locale, longest] of Object.entries(LONGEST_CARRYOVER_OPTION)) {
-      const rendered = await page.evaluate(
-        ({ font, text }) => {
-          const ctx = document.createElement("canvas").getContext("2d")!;
-          ctx.font = font;
-          return ctx.measureText(text).width;
-        },
-        { font: carryoverMetrics.font, text: longest },
+      const rendered = await renderedTextWidth(
+        page,
+        carryoverMetrics.font,
+        carryoverMetrics.primaryFont,
+        longest,
       );
       expect(
         rendered,
