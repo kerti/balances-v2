@@ -39,7 +39,7 @@
     "modes": {
       "today": "Today",
       "end_of_last_month": "End of last month",
-      "end_of_month_after_last_snapshot": "End of the month after the last snapshot"
+      "end_of_month_after_last_snapshot": "End of month after last snapshot"
     }
   },
   "currency": {
