@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 test("settings nickname round-trip: set, persist, clear", async ({ page }) => {
   await page.goto("/settings");
 
-  const input = page.getByLabel("Nickname");
+  const input = page.locator("#nickname");
   await expect(input).toBeVisible();
   await expect(input).toHaveValue("");
   await expect(input).toHaveAttribute("placeholder", "Alice");
@@ -24,13 +24,13 @@ test("settings nickname round-trip: set, persist, clear", async ({ page }) => {
   await expect(save).toBeDisabled();
 
   await page.reload();
-  await expect(page.getByLabel("Nickname")).toHaveValue("Ally");
+  await expect(page.locator("#nickname")).toHaveValue("Ally");
 
   // --- Clear ---
-  await page.getByLabel("Nickname").fill("");
+  await page.locator("#nickname").fill("");
   await page.getByRole("button", { name: "Save" }).first().click();
   await expect(page.getByRole("button", { name: "Save" }).first()).toBeDisabled();
 
   await page.reload();
-  await expect(page.getByLabel("Nickname")).toHaveValue("");
+  await expect(page.locator("#nickname")).toHaveValue("");
 });

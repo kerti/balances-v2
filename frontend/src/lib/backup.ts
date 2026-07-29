@@ -49,8 +49,8 @@ export function triggerDownload(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-// downloadBackup fetches and saves a household backup. Shared by BackupCard
-// (the export feature itself) and EraseCard (the "download a backup first"
+// downloadBackup fetches and saves a household backup. Shared by BackupPanel
+// (the export feature itself) and ErasePanel (the "download a backup first"
 // nudge on the erasure confirm step, ADR-0040) — both just want the file on
 // disk, not a preview of its contents.
 export async function downloadBackup(fidelity: Fidelity = "full"): Promise<void> {

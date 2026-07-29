@@ -64,7 +64,7 @@ test(
     // PATCH round-trips and the session query refetches), so click and await the
     // write rather than Playwright's check() which asserts the flip synchronously.
     await page.goto("/settings");
-    const multi = page.getByLabel("Enable multi-currency tracking");
+    const multi = page.getByTestId("multi-currency-toggle");
     if (!(await multi.isChecked())) {
       const saved = page.waitForResponse(
         (r) =>
@@ -121,7 +121,7 @@ test(
     await expect(page.getByTestId("fx-rate-row")).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");
-    const multiOff = page.getByLabel("Enable multi-currency tracking");
+    const multiOff = page.getByTestId("multi-currency-toggle");
     const restored = page.waitForResponse(
       (r) =>
         r.url().includes("/api/household/settings") && r.request().method() === "PATCH" && r.ok(),

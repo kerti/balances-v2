@@ -1,6 +1,6 @@
 {
   "title": "Settings",
-  "subtitle": "Reporting currency, multi-currency tracking, and household invitations.",
+  "subtitle": "Your name and preferences, household-wide settings, members, and backups.",
   "sections": {
     "profile": "Profile",
     "household": "Household",
@@ -9,24 +9,20 @@
   },
   "nickname": {
     "title": "Your name",
-    "description": "A short nickname shown in ownership labels and owner pickers. Leave it blank to use your full name ({{displayName}}).",
-    "label": "Nickname"
+    "description": "A short nickname shown in ownership labels and owner pickers. Leave it blank to use your full name ({{displayName}})."
   },
   "householdName": {
     "title": "Household name",
-    "description": "Shown to anyone you invite and in restore confirmations. Any member can change it.",
-    "label": "Household name"
+    "description": "Shown to anyone you invite and in restore confirmations. Any member can change it."
   },
   "language": {
     "title": "Language",
     "description": "The language used for menus, labels, and date / number formatting.",
-    "label": "Language",
     "saved": "Language updated"
   },
   "theme": {
     "title": "Appearance",
     "description": "Choose a light or dark colour scheme. Your choice follows you across devices.",
-    "label": "Theme",
     "light": "Light",
     "dark": "Dark",
     "saved": "Appearance updated"
@@ -34,7 +30,6 @@
   "carryoverDate": {
     "title": "Carry-over date",
     "description": "When you copy last month's figure into a new snapshot, this sets the statement date it starts with. You can still change the date before saving.",
-    "label": "Default date",
     "saved": "Carry-over date updated",
     "modes": {
       "today": "Today",
@@ -44,9 +39,11 @@
   },
   "currency": {
     "title": "Currency",
-    "description": "Net worth is reported in this currency. Turn on multi-currency to hold positions in other currencies and enter monthly exchange rates.",
+    "description": "Net worth is reported in this currency.",
     "reportingLabel": "Reporting currency",
-    "multiToggle": "Enable multi-currency tracking",
+    "multiTitle": "Multi-currency",
+    "multiDescription": "Hold positions in other currencies and enter a monthly exchange rate for each.",
+    "multiLabel": "Enabled",
     "manageFx": "Manage exchange rates →"
   },
   "fx": {
@@ -118,7 +115,7 @@
       "title": "Restore from backup",
       "description": "Replace everything in this household with the contents of a backup file. This is how you move your data onto a new device.",
       "choose": "Choose a backup file…",
-      "chooseHint": "Pick a backup file you downloaded earlier.",
+      "chooseHint": "Nothing changes yet — you'll see what the file holds first.",
       "checking": "Checking the file…",
       "previewError": "That file couldn't be read as a backup. Please try another.",
       "summary": "This backup holds {{count}} item from “{{household}}”.",

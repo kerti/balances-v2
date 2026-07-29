@@ -2,7 +2,6 @@ import { useState, type ChangeEvent, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Link } from "react-router";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,16 +18,22 @@ import { SUPPORTED_CARRYOVER_DATE_MODES, type CarryoverDateMode } from "@/lib/da
 import { routes } from "@/lib/routes";
 import { InviteForm } from "@/components/common/InviteForm";
 import { ReactivationCard } from "@/components/common/ReactivationCard";
-import { BackupCard } from "@/components/common/BackupCard";
-import { RestoreCard } from "@/components/common/RestoreCard";
-import { EraseCard } from "@/components/common/EraseCard";
+import { BackupPanel } from "@/components/common/BackupPanel";
+import { RestorePanel } from "@/components/common/RestorePanel";
+import { ErasePanel } from "@/components/common/ErasePanel";
+import {
+  SettingsControlRow,
+  SettingsPanelGroup,
+  SettingsRow,
+  SettingsTable,
+} from "@/components/common/SettingsSurface";
 import { Select } from "@/components/ui/select";
 
-// SectionHeading groups related cards on the Settings home page. Purely
-// visual — no route split, unlike the Assets/Liabilities/Investments sidebar
-// groups — because none of Profile/Household/Membership/Data hold a
-// browsable list of records the way those groups' children do (just a
-// handful of scalar fields or single actions each).
+// SectionHeading names each block of the Settings home page. Purely visual —
+// no route split, unlike the Assets/Liabilities/Investments sidebar groups —
+// because none of Profile/Household/Membership/Data hold a browsable list of
+// records the way those groups' children do (just a handful of scalar fields
+// or single actions each).
 function SectionHeading({ children }: { children: ReactNode }) {
   return <h2 className="text-lg font-medium tracking-tight">{children}</h2>;
 }
@@ -36,8 +41,8 @@ function SectionHeading({ children }: { children: ReactNode }) {
 // Every settings control takes one of these two semantic widths — never a
 // per-callsite pixel value (#562). The `w-28` / `w-56` / `w-72` this replaces
 // were each picked against a desktop card and none was container-aware: at
-// 390px a settings card is 326px wide (shell `p-4` + `CardContent px-4`), which
-// left up to 138px dead on a row and truncated the longest carry-over option.
+// 390px a settings card is 326px wide (shell `p-4` + card `px-4`), which left
+// up to 138px dead on a row and truncated the longest carry-over option.
 //
 // `full` is the default and is what almost everything wants: the control tracks
 // its container at both widths. `narrow` is for controls whose content is
@@ -49,45 +54,17 @@ const CONTROL_WIDTH = {
   narrow: "w-24",
 } as const;
 
-// SettingsControlRow is the one labelled-control row shape on this screen: the
-// label/control column grows to fill the card and an optional Save keeps its
-// natural width, which lands it flush against the card's right edge. The button
-// deliberately does not grow — a 250px "Save" on a phone is worse than the gap
-// it would close.
-function SettingsControlRow({ children, action }: { children: ReactNode; action?: ReactNode }) {
-  return (
-    <div className="flex items-end gap-2">
-      <div className="flex-1 space-y-1">{children}</div>
-      {action}
-    </div>
-  );
+// RowError renders a mutation failure inside the row that caused it. Household
+// name, reporting currency and assumed inflation all ride the same
+// `useUpdateHouseholdSettings()` PATCH; each row holds its own hook instance
+// (and so its own mutation state), which is what keeps one failed save from
+// printing under all three now that they share a card.
+function RowError({ error }: { error: unknown }) {
+  return <p className="text-sm text-destructive">{errorMessage(error)}</p>;
 }
 
 export function SettingsScreen() {
-  const { t } = useTranslation(["settings", "common"]);
-  const { data: me } = useSession();
-  const updateSettings = useUpdateHouseholdSettings();
-  const [currency, setCurrency] = useState<string | null>(null);
-
-  if (!me) return null;
-
-  const reportingCurrency = (currency ?? me.reporting_currency).toUpperCase();
-
-  const saveCurrency = () =>
-    updateSettings.mutate({
-      display_name: me.household_display_name,
-      reporting_currency: reportingCurrency,
-      multi_currency_enabled: me.multi_currency_enabled,
-      assumed_annual_inflation: me.assumed_annual_inflation,
-    });
-
-  const toggleMulti = (enabled: boolean) =>
-    updateSettings.mutate({
-      display_name: me.household_display_name,
-      reporting_currency: me.reporting_currency,
-      multi_currency_enabled: enabled,
-      assumed_annual_inflation: me.assumed_annual_inflation,
-    });
+  const { t } = useTranslation("settings");
 
   return (
     <div className="space-y-6">
@@ -97,86 +74,36 @@ export function SettingsScreen() {
       </div>
 
       <SectionHeading>{t("sections.profile")}</SectionHeading>
-      <NicknameCard />
-      <LanguageCard />
-      <ThemeCard />
-      <CarryoverDateCard />
+      <SettingsTable>
+        <NicknameRow />
+        <LanguageRow />
+        <ThemeRow />
+        <CarryoverDateRow />
+      </SettingsTable>
 
       <SectionHeading>{t("sections.household")}</SectionHeading>
-      <HouseholdNameCard />
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("currency.title")}</CardTitle>
-          <CardDescription>{t("currency.description")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <SettingsControlRow
-            action={
-              <Button
-                variant="outline"
-                onClick={saveCurrency}
-                disabled={updateSettings.isPending || reportingCurrency.length !== 3}
-              >
-                {t("common:save")}
-              </Button>
-            }
-          >
-            <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
-            <Input
-              id="reporting-currency"
-              className={cn(CONTROL_WIDTH.narrow, "uppercase")}
-              maxLength={3}
-              value={reportingCurrency}
-              onChange={(e) => setCurrency(e.target.value)}
-            />
-          </SettingsControlRow>
-
-          {/* The 16px box is the affordance, but the whole label is the hit
-              area — `max-md:min-h-11` lifts the row to the tap floor on phones
-              without padding the desktop form out (same idiom as the Tags
-              pie-inclusion toggle, INV-PRESENTATION-08). */}
-          <label className="flex max-md:min-h-11 items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="h-4 w-4"
-              checked={me.multi_currency_enabled}
-              disabled={updateSettings.isPending}
-              onChange={(e) => toggleMulti(e.target.checked)}
-            />
-            {t("currency.multiToggle")}
-          </label>
-
-          {updateSettings.isError && (
-            <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
-          )}
-
-          {me.multi_currency_enabled && (
-            <Link
-              to={routes.settingsFxRates}
-              className="inline-flex max-md:min-h-11 items-center text-sm underline"
-            >
-              {t("currency.manageFx")}
-            </Link>
-          )}
-        </CardContent>
-      </Card>
-
-      <AssumedInflationCard />
+      <SettingsTable>
+        <HouseholdNameRow />
+        <ReportingCurrencyRow />
+        <MultiCurrencyRow />
+        <AssumedInflationRow />
+      </SettingsTable>
 
       <SectionHeading>{t("sections.membership")}</SectionHeading>
       <InviteForm />
       <ReactivationCard />
 
       <SectionHeading>{t("sections.data")}</SectionHeading>
-      <BackupCard />
-      <RestoreCard />
-      <EraseCard />
+      <SettingsPanelGroup>
+        <BackupPanel />
+        <RestorePanel />
+        <ErasePanel />
+      </SettingsPanelGroup>
     </div>
   );
 }
 
-function NicknameCard() {
+function NicknameRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateMe = useUpdateMe();
@@ -198,97 +125,30 @@ function NicknameCard() {
     );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("nickname.title")}</CardTitle>
-        <CardDescription>
-          {t("nickname.description", { displayName: me.display_name })}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow
-          action={
-            <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
-              {t("common:save")}
-            </Button>
-          }
-        >
-          <Label htmlFor="nickname">{t("nickname.label")}</Label>
-          <Input
-            id="nickname"
-            className={CONTROL_WIDTH.full}
-            maxLength={32}
-            placeholder={me.display_name}
-            value={value}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-        </SettingsControlRow>
+    <SettingsRow
+      name={t("nickname.title")}
+      description={t("nickname.description", { displayName: me.display_name })}
+      htmlFor="nickname"
+    >
+      <SettingsControlRow
+        action={
+          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
+            {t("common:save")}
+          </Button>
+        }
+      >
+        <Input
+          id="nickname"
+          className={CONTROL_WIDTH.full}
+          maxLength={32}
+          placeholder={me.display_name}
+          value={value}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+      </SettingsControlRow>
 
-        {updateMe.isError && (
-          <p className="text-sm text-destructive">{errorMessage(updateMe.error)}</p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// HouseholdNameCard mirrors NicknameCard: a button-driven rename, editable by
-// any member (#265 — Founder is creation-lineage only, per CONTEXT, not a
-// permission tier). It rides the same full-replace PATCH as the currency card,
-// so the mutation carries the household's current currency settings through
-// unchanged.
-function HouseholdNameCard() {
-  const { t } = useTranslation(["settings", "common"]);
-  const { data: me } = useSession();
-  const updateSettings = useUpdateHouseholdSettings();
-  const [draft, setDraft] = useState<string | null>(null);
-
-  if (!me) return null;
-
-  const value = draft ?? me.household_display_name;
-  const trimmed = value.trim();
-  const dirty = trimmed !== me.household_display_name && trimmed !== "";
-
-  const save = () =>
-    updateSettings.mutate(
-      {
-        display_name: trimmed,
-        reporting_currency: me.reporting_currency,
-        multi_currency_enabled: me.multi_currency_enabled,
-        assumed_annual_inflation: me.assumed_annual_inflation,
-      },
-      { onSuccess: () => setDraft(null) },
-    );
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("householdName.title")}</CardTitle>
-        <CardDescription>{t("householdName.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow
-          action={
-            <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
-              {t("common:save")}
-            </Button>
-          }
-        >
-          <Label htmlFor="household-name">{t("householdName.label")}</Label>
-          <Input
-            id="household-name"
-            className={CONTROL_WIDTH.full}
-            maxLength={60}
-            value={value}
-            onChange={(e) => setDraft(e.target.value)}
-          />
-        </SettingsControlRow>
-
-        {updateSettings.isError && (
-          <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
-        )}
-      </CardContent>
-    </Card>
+      {updateMe.isError && <RowError error={updateMe.error} />}
+    </SettingsRow>
   );
 }
 
@@ -300,7 +160,7 @@ const LANGUAGE_LABELS: Record<Locale, string> = {
   "id-ID": "Bahasa Indonesia",
 };
 
-function LanguageCard() {
+function LanguageRow() {
   const { t } = useTranslation("settings");
   const { data: me } = useSession();
   const { locale, setLocale } = useLocale();
@@ -330,40 +190,35 @@ function LanguageCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("language.title")}</CardTitle>
-        <CardDescription>{t("language.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow>
-          <Label htmlFor="language">{t("language.label")}</Label>
-          <Select
-            id="language"
-            data-testid="settings-language-select"
-            className={CONTROL_WIDTH.full}
-            value={locale}
-            onChange={onChange}
-            disabled={updateMe.isPending}
-          >
-            {SUPPORTED_LOCALES.map((l) => (
-              <option key={l} value={l}>
-                {LANGUAGE_LABELS[l]}
-              </option>
-            ))}
-          </Select>
-        </SettingsControlRow>
-      </CardContent>
-    </Card>
+    <SettingsRow
+      name={t("language.title")}
+      description={t("language.description")}
+      htmlFor="language"
+    >
+      <Select
+        id="language"
+        data-testid="settings-language-select"
+        className={CONTROL_WIDTH.full}
+        value={locale}
+        onChange={onChange}
+        disabled={updateMe.isPending}
+      >
+        {SUPPORTED_LOCALES.map((l) => (
+          <option key={l} value={l}>
+            {LANGUAGE_LABELS[l]}
+          </option>
+        ))}
+      </Select>
+    </SettingsRow>
   );
 }
 
-// ThemeCard mirrors LanguageCard: a two-option select bound to the active
-// theme. Selecting optimistically applies the theme (useTheme persists to
-// localStorage + toggles the `dark` class on <html>); the PATCH persists the
-// choice server-side so it follows the user across devices. Labels come from
-// the catalog so they render in the current UI language.
-function ThemeCard() {
+// ThemeRow mirrors LanguageRow: a two-option select bound to the active theme.
+// Selecting optimistically applies the theme (useTheme persists to localStorage
+// + toggles the `dark` class on <html>); the PATCH persists the choice
+// server-side so it follows the user across devices. Labels come from the
+// catalog so they render in the current UI language.
+function ThemeRow() {
   const { t } = useTranslation("settings");
   const { data: me } = useSession();
   const { theme, setTheme } = useTheme();
@@ -390,42 +245,33 @@ function ThemeCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("theme.title")}</CardTitle>
-        <CardDescription>{t("theme.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow>
-          <Label htmlFor="theme">{t("theme.label")}</Label>
-          <Select
-            id="theme"
-            data-testid="settings-theme-select"
-            className={CONTROL_WIDTH.full}
-            value={theme}
-            onChange={onChange}
-            disabled={updateMe.isPending}
-          >
-            {SUPPORTED_THEMES.map((th) => (
-              <option key={th} value={th}>
-                {t(`theme.${th}`)}
-              </option>
-            ))}
-          </Select>
-        </SettingsControlRow>
-      </CardContent>
-    </Card>
+    <SettingsRow name={t("theme.title")} description={t("theme.description")} htmlFor="theme">
+      <Select
+        id="theme"
+        data-testid="settings-theme-select"
+        className={CONTROL_WIDTH.full}
+        value={theme}
+        onChange={onChange}
+        disabled={updateMe.isPending}
+      >
+        {SUPPORTED_THEMES.map((th) => (
+          <option key={th} value={th}>
+            {t(`theme.${th}`)}
+          </option>
+        ))}
+      </Select>
+    </SettingsRow>
   );
 }
 
-// CarryoverDateCard mirrors LanguageCard: a select bound to the user's
-// carryover date-mode preference (issue #105), governing the as-of date the
-// snapshot carryover dialogs pre-fill. Unlike theme/locale there is no local UI
-// effect to apply optimistically — the value only feeds those dialogs — so the
-// select reads straight from the session and the PATCH (autosave, toast
-// confirmation, ADR-0032) refreshes it. Labels come from the catalog so they
-// render in the current UI language.
-function CarryoverDateCard() {
+// CarryoverDateRow mirrors LanguageRow: a select bound to the user's carryover
+// date-mode preference (issue #105), governing the as-of date the snapshot
+// carryover dialogs pre-fill. Unlike theme/locale there is no local UI effect to
+// apply optimistically — the value only feeds those dialogs — so the select
+// reads straight from the session and the PATCH (autosave, toast confirmation,
+// ADR-0032) refreshes it. Labels come from the catalog so they render in the
+// current UI language.
+function CarryoverDateRow() {
   const { t } = useTranslation("settings");
   const { data: me } = useSession();
   const updateMe = useUpdateMe();
@@ -444,39 +290,194 @@ function CarryoverDateCard() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("carryoverDate.title")}</CardTitle>
-        <CardDescription>{t("carryoverDate.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow>
-          <Label htmlFor="carryover-date-mode">{t("carryoverDate.label")}</Label>
-          <Select
-            id="carryover-date-mode"
-            data-testid="settings-carryover-date-select"
-            className={CONTROL_WIDTH.full}
-            value={me.carryover_date_mode}
-            onChange={onChange}
-            disabled={updateMe.isPending}
-          >
-            {SUPPORTED_CARRYOVER_DATE_MODES.map((m) => (
-              <option key={m} value={m}>
-                {t(`carryoverDate.modes.${m}`)}
-              </option>
-            ))}
-          </Select>
-        </SettingsControlRow>
-      </CardContent>
-    </Card>
+    <SettingsRow
+      name={t("carryoverDate.title")}
+      description={t("carryoverDate.description")}
+      htmlFor="carryover-date-mode"
+    >
+      <Select
+        id="carryover-date-mode"
+        data-testid="settings-carryover-date-select"
+        className={CONTROL_WIDTH.full}
+        value={me.carryover_date_mode}
+        onChange={onChange}
+        disabled={updateMe.isPending}
+      >
+        {SUPPORTED_CARRYOVER_DATE_MODES.map((m) => (
+          <option key={m} value={m}>
+            {t(`carryoverDate.modes.${m}`)}
+          </option>
+        ))}
+      </Select>
+    </SettingsRow>
   );
 }
 
-// AssumedInflationCard holds only the assumed-annual-inflation setting (the
-// Fund Resilience fallback, ADR-0048) — a single household preference, so it
-// stays on the Settings home page. The monthly lookup table lives on its own
-// subpage (routes.settingsInflationRates), linked from here.
-function AssumedInflationCard() {
+// HouseholdNameRow mirrors NicknameRow: a button-driven rename, editable by
+// any member (#265 — Founder is creation-lineage only, per CONTEXT, not a
+// permission tier). It rides the same full-replace PATCH as the currency rows,
+// so the mutation carries the household's current currency settings through
+// unchanged.
+function HouseholdNameRow() {
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+  const [draft, setDraft] = useState<string | null>(null);
+
+  if (!me) return null;
+
+  const value = draft ?? me.household_display_name;
+  const trimmed = value.trim();
+  const dirty = trimmed !== me.household_display_name && trimmed !== "";
+
+  const save = () =>
+    updateSettings.mutate(
+      {
+        display_name: trimmed,
+        reporting_currency: me.reporting_currency,
+        multi_currency_enabled: me.multi_currency_enabled,
+        assumed_annual_inflation: me.assumed_annual_inflation,
+      },
+      { onSuccess: () => setDraft(null) },
+    );
+
+  return (
+    <SettingsRow
+      name={t("householdName.title")}
+      description={t("householdName.description")}
+      htmlFor="household-name"
+    >
+      <SettingsControlRow
+        action={
+          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
+            {t("common:save")}
+          </Button>
+        }
+      >
+        <Input
+          id="household-name"
+          className={CONTROL_WIDTH.full}
+          maxLength={60}
+          value={value}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+      </SettingsControlRow>
+
+      {updateSettings.isError && <RowError error={updateSettings.error} />}
+    </SettingsRow>
+  );
+}
+
+// ReportingCurrencyRow keeps a visible field label: "Reporting currency" says
+// which of a household's currencies this one is, which the row name "Currency"
+// on its own does not.
+function ReportingCurrencyRow() {
+  const { t } = useTranslation(["settings", "common"]);
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+  const [currency, setCurrency] = useState<string | null>(null);
+
+  if (!me) return null;
+
+  const reportingCurrency = (currency ?? me.reporting_currency).toUpperCase();
+  const dirty = reportingCurrency !== me.reporting_currency.toUpperCase();
+
+  const save = () =>
+    updateSettings.mutate(
+      {
+        display_name: me.household_display_name,
+        reporting_currency: reportingCurrency,
+        multi_currency_enabled: me.multi_currency_enabled,
+        assumed_annual_inflation: me.assumed_annual_inflation,
+      },
+      { onSuccess: () => setCurrency(null) },
+    );
+
+  return (
+    <SettingsRow name={t("currency.title")} description={t("currency.description")}>
+      <SettingsControlRow
+        action={
+          <Button
+            variant="outline"
+            onClick={save}
+            disabled={updateSettings.isPending || !dirty || reportingCurrency.length !== 3}
+          >
+            {t("common:save")}
+          </Button>
+        }
+      >
+        <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
+        <Input
+          id="reporting-currency"
+          className={cn(CONTROL_WIDTH.narrow, "uppercase")}
+          maxLength={3}
+          value={reportingCurrency}
+          onChange={(e) => setCurrency(e.target.value)}
+        />
+      </SettingsControlRow>
+
+      {updateSettings.isError && <RowError error={updateSettings.error} />}
+    </SettingsRow>
+  );
+}
+
+// MultiCurrencyRow promotes the multi-currency toggle out from under the
+// reporting-currency input, where it read as a footnote to that field rather
+// than the household-shaping switch it is (ADR-0002). It is buttonless — the
+// checkbox PATCHes on change — so the row name carries the setting and the
+// control keeps a short label of its own; the checkbox is the affordance but
+// the whole label is the hit area (`max-md:min-h-11` lifts it to the tap floor
+// on phones without padding the desktop form out, INV-PRESENTATION-08).
+function MultiCurrencyRow() {
+  const { t } = useTranslation("settings");
+  const { data: me } = useSession();
+  const updateSettings = useUpdateHouseholdSettings();
+
+  if (!me) return null;
+
+  const toggle = (enabled: boolean) =>
+    updateSettings.mutate({
+      display_name: me.household_display_name,
+      reporting_currency: me.reporting_currency,
+      multi_currency_enabled: enabled,
+      assumed_annual_inflation: me.assumed_annual_inflation,
+    });
+
+  return (
+    <SettingsRow name={t("currency.multiTitle")} description={t("currency.multiDescription")}>
+      <label className="flex max-md:min-h-11 items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          data-testid="multi-currency-toggle"
+          checked={me.multi_currency_enabled}
+          disabled={updateSettings.isPending}
+          onChange={(e) => toggle(e.target.checked)}
+        />
+        {t("currency.multiLabel")}
+      </label>
+
+      {updateSettings.isError && <RowError error={updateSettings.error} />}
+
+      {me.multi_currency_enabled && (
+        <Link
+          to={routes.settingsFxRates}
+          className="inline-flex max-md:min-h-11 items-center text-sm underline"
+        >
+          {t("currency.manageFx")}
+        </Link>
+      )}
+    </SettingsRow>
+  );
+}
+
+// AssumedInflationRow holds only the assumed-annual-inflation setting (the Fund
+// Resilience fallback, ADR-0048) — a single household preference, so it stays a
+// row on the Settings home page. The monthly lookup table lives on its own
+// subpage (routes.settingsInflationRates), linked from here. Like the currency
+// row it keeps a visible field label: "Assumed annual %" carries both a unit and
+// a qualifier that the row name "Inflation" does not.
+function AssumedInflationRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateSettings = useUpdateHouseholdSettings();
@@ -500,44 +501,36 @@ function AssumedInflationCard() {
     );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("inflation.title")}</CardTitle>
-        <CardDescription>{t("inflation.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <SettingsControlRow
-          action={
-            <Button
-              variant="outline"
-              onClick={saveAssumed}
-              disabled={updateSettings.isPending || !assumedDirty}
-            >
-              {t("common:save")}
-            </Button>
-          }
-        >
-          <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
-          <Input
-            id="assumed-inflation"
-            inputMode="decimal"
-            className={CONTROL_WIDTH.narrow}
-            value={assumedValue}
-            onChange={(e) => setAssumed(e.target.value)}
-          />
-        </SettingsControlRow>
+    <SettingsRow name={t("inflation.title")} description={t("inflation.description")}>
+      <SettingsControlRow
+        action={
+          <Button
+            variant="outline"
+            onClick={saveAssumed}
+            disabled={updateSettings.isPending || !assumedDirty}
+          >
+            {t("common:save")}
+          </Button>
+        }
+      >
+        <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
+        <Input
+          id="assumed-inflation"
+          inputMode="decimal"
+          className={CONTROL_WIDTH.narrow}
+          value={assumedValue}
+          onChange={(e) => setAssumed(e.target.value)}
+        />
+      </SettingsControlRow>
 
-        {updateSettings.isError && (
-          <p className="text-sm text-destructive">{errorMessage(updateSettings.error)}</p>
-        )}
+      {updateSettings.isError && <RowError error={updateSettings.error} />}
 
-        <Link
-          to={routes.settingsInflationRates}
-          className="inline-flex max-md:min-h-11 items-center text-sm underline"
-        >
-          {t("inflation.manageRates")}
-        </Link>
-      </CardContent>
-    </Card>
+      <Link
+        to={routes.settingsInflationRates}
+        className="inline-flex max-md:min-h-11 items-center text-sm underline"
+      >
+        {t("inflation.manageRates")}
+      </Link>
+    </SettingsRow>
   );
 }
