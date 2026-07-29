@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/charts/SnapshotChart";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
+import { Select } from "@/components/ui/select";
 import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
@@ -281,9 +282,11 @@ function HeadlineCard({
             )}
             <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <span>{t("secondary.label")}</span>
-              <select
+              {/* Sits inline in a toolbar label, so it keeps its intrinsic
+                  width rather than the primitive's `w-full`. */}
+              <Select
                 data-testid="dashboard-secondary-currency"
-                className="h-11 rounded-md border border-input bg-background px-3 text-sm text-foreground md:h-9"
+                className="w-auto text-foreground"
                 value={secondary}
                 onChange={(e) => onSecondaryChange(e.target.value)}
               >
@@ -293,7 +296,7 @@ function HeadlineCard({
                     {c}
                   </option>
                 ))}
-              </select>
+              </Select>
             </label>
           </div>
         )}

@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateTimeDeposit } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 import { addMonths, type TimeDepositForm } from "@/lib/rollover";
 import type { RolloverPolicy } from "@/api/types";
 
@@ -60,7 +60,6 @@ export function CreateTimeDepositDialog({
     ...prefill,
   }));
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
   const mutation = useCreateTimeDeposit();
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
@@ -122,7 +121,6 @@ export function CreateTimeDepositDialog({
           {triggerLabel ?? t("investments:timeDeposit.createTrigger")}
         </Button>
       }
-      contentClassName="max-h-[90vh] overflow-y-auto"
       formClassName="space-y-4"
       title={t("investments:timeDeposit.createTitle")}
       description={t("investments:timeDeposit.createDescription")}
@@ -159,7 +157,7 @@ export function CreateTimeDepositDialog({
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="td_bank_name">{t("investments:timeDeposit.fields.bankName")}</Label>
             <Input
@@ -201,7 +199,7 @@ export function CreateTimeDepositDialog({
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="td_interest_rate">
               {t("investments:timeDeposit.fields.interestRate")}
@@ -227,7 +225,7 @@ export function CreateTimeDepositDialog({
             />
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="td_placement_date">
               {t("investments:timeDeposit.fields.placementDate")}
@@ -268,9 +266,8 @@ export function CreateTimeDepositDialog({
           <Label htmlFor="td_rollover_policy">
             {t("investments:timeDeposit.fields.rolloverPolicy")}
           </Label>
-          <select
+          <Select
             id="td_rollover_policy"
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             value={form.rollover_policy}
             onChange={(e) =>
               setForm({
@@ -288,7 +285,7 @@ export function CreateTimeDepositDialog({
             <option value="no_rollover">
               {t("investments:timeDeposit.rolloverPolicy.no_rollover")}
             </option>
-          </select>
+          </Select>
           <p className="text-xs text-muted-foreground">
             {t("investments:timeDeposit.rolloverHint")}
           </p>
@@ -296,46 +293,13 @@ export function CreateTimeDepositDialog({
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid gap-2">
-          <Label>{t("common:fields.ownership")}</Label>
-          <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ownership_type"
-                value="joint"
-                checked={form.ownership_type === "joint"}
-                onChange={() => setForm({ ...form, ownership_type: "joint" })}
-              />
-              {t("investments:ownership.joint")}
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="ownership_type"
-                value="sole"
-                checked={form.ownership_type === "sole"}
-                onChange={() => setForm({ ...form, ownership_type: "sole" })}
-              />
-              {t("investments:ownership.soleOwner")}
-            </label>
-          </div>
-          {form.ownership_type === "sole" && (
-            <select
-              aria-label={t("investments:ownership.soleOwnerAria")}
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={effectiveSoleOwnerID ?? ""}
-              onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-            >
-              {(members ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {preferredName(m)}
-                  {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+        <OwnershipField
+          idPrefix="td_create"
+          value={form.ownership_type}
+          onChange={(v) => setForm({ ...form, ownership_type: v })}
+          soleOwnerID={effectiveSoleOwnerID}
+          onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+        />
       </div>
 
       <RiskProfileSelect

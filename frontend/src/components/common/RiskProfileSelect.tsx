@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import type { RiskProfile } from "@/api/types";
 
 // Risk Profile select: required, no default. The empty placeholder "— select
@@ -22,10 +23,9 @@ export function RiskProfileSelect({ idPrefix, value, onChange }: Props) {
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{t("riskProfile.selectLabel")}</Label>
-      <select
+      <Select
         id={id}
         required
-        className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         value={value}
         onChange={(e) => onChange(e.target.value as RiskProfile)}
       >
@@ -35,7 +35,7 @@ export function RiskProfileSelect({ idPrefix, value, onChange }: Props) {
         <option value="low">{t("riskProfile.selectLow")}</option>
         <option value="medium">{t("riskProfile.selectMedium")}</option>
         <option value="high">{t("riskProfile.selectHigh")}</option>
-      </select>
+      </Select>
     </div>
   );
 }

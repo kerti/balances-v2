@@ -37,8 +37,6 @@ type Props = {
   onSubmit: (close: () => void) => void;
   /** The hand-written form body (fields only — no shell, error, or footer). */
   children: React.ReactNode;
-  /** Optional DialogContent class override (e.g. tall investment forms). */
-  contentClassName?: string;
   /**
    * Optional `<form>` class override. Defaults to `space-y-3`; the sectioned
    * bond/time-deposit forms pass `space-y-4` to keep their group spacing.
@@ -72,7 +70,6 @@ export function PositionFormDialog({
   error,
   onSubmit,
   children,
-  contentClassName,
   formClassName = "space-y-3",
   trigger,
   onClosed,
@@ -107,7 +104,7 @@ export function PositionFormDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={contentClassName}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

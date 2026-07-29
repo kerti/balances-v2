@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Button } from "./button";
 import { Input } from "./input";
+import { Select } from "./select";
 
 // The mobile tap floor now lives in the shared primitives rather than at each
 // callsite (ADR-0050 / INV-PRESENTATION-08). Every sweep before this one
@@ -51,5 +52,43 @@ describe("Input", () => {
   it("lets a callsite opt out", () => {
     render(<Input aria-label="Field" className="max-md:min-h-0" />);
     expect(screen.getByRole("textbox")).not.toHaveClass("max-md:min-h-11");
+  });
+});
+
+// `<select>` was the one control kind with no primitive to floor (#541): all 34
+// callsites hand-rolled `h-9` = 36px, so every form re-opened the hole that
+// #559 closed for buttons and text fields. The primitive exists so these
+// assertions have somewhere to live.
+describe("Select", () => {
+  it("floors the control on phones", () => {
+    render(
+      <Select aria-label="Choice">
+        <option value="a">A</option>
+      </Select>,
+    );
+    expect(screen.getByRole("combobox")).toHaveClass("max-md:min-h-11");
+  });
+
+  it("lets a callsite opt out", () => {
+    render(
+      <Select aria-label="Choice" className="max-md:min-h-0">
+        <option value="a">A</option>
+      </Select>,
+    );
+    expect(screen.getByRole("combobox")).not.toHaveClass("max-md:min-h-11");
+  });
+
+  // iOS Safari zooms the viewport when a control under 16px takes focus, which
+  // every one of the old `text-sm` selects did on every tap. The floor is only
+  // half the fix; this pins the other half.
+  it("keeps the 16px mobile font that stops iOS zooming on focus", () => {
+    render(
+      <Select aria-label="Choice">
+        <option value="a">A</option>
+      </Select>,
+    );
+    const el = screen.getByRole("combobox");
+    expect(el).toHaveClass("text-base");
+    expect(el).toHaveClass("md:text-sm");
   });
 });

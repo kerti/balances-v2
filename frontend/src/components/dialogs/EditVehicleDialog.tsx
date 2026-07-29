@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUpdateVehicle } from "@/hooks/useVehicles";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 import type { Vehicle } from "@/api/types";
 
 type Props = {
@@ -19,7 +19,6 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const mutation = useUpdateVehicle(vehicle.asset.id);
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
 
   const [form, setForm] = useState({
     display_name: vehicle.asset.display_name,
@@ -78,9 +77,8 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="ev_type">{t("assets:vehicle.fields.type")}</Label>
-        <select
+        <Select
           id="ev_type"
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
           value={form.vehicle_type}
           onChange={(e) =>
             setForm({
@@ -92,10 +90,10 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
           <option value="car">{t("assets:vehicle.vehicleTypes.car")}</option>
           <option value="motorcycle">{t("assets:vehicle.vehicleTypes.motorcycle")}</option>
           <option value="other">{t("assets:vehicle.vehicleTypes.other")}</option>
-        </select>
+        </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="ev_make">{t("assets:vehicle.fields.makeEdit")}</Label>
           <Input
@@ -114,7 +112,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="ev_year">{t("assets:vehicle.fields.yearEdit")}</Label>
           <Input
@@ -149,46 +147,13 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label>{t("common:fields.ownership")}</Label>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="edit_v_ownership_type"
-              value="joint"
-              checked={form.ownership_type === "joint"}
-              onChange={() => setForm({ ...form, ownership_type: "joint" })}
-            />
-            {t("common:ownership.joint")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="edit_v_ownership_type"
-              value="sole"
-              checked={form.ownership_type === "sole"}
-              onChange={() => setForm({ ...form, ownership_type: "sole" })}
-            />
-            {t("common:ownership.soleOwner")}
-          </label>
-        </div>
-        {form.ownership_type === "sole" && (
-          <select
-            aria-label={t("common:ownership.soleOwner")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-          >
-            {(members ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {preferredName(m)}
-                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <OwnershipField
+        idPrefix="vehicle_edit"
+        value={form.ownership_type}
+        onChange={(v) => setForm({ ...form, ownership_type: v })}
+        soleOwnerID={effectiveSoleOwnerID}
+        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
 
       <div className="grid gap-2">
         <Label htmlFor="ev_description">{t("common:fields.description")}</Label>

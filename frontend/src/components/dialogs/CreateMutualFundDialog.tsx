@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCreateMutualFund } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { MutualFundTypeSelect } from "@/components/common/MutualFundTypeSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
 import type { RiskProfile, MutualFundType } from "@/api/types";
 
 function emptyForm() {
@@ -31,7 +30,6 @@ export function CreateMutualFundDialog() {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(emptyForm);
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
   const mutation = useCreateMutualFund();
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
@@ -64,7 +62,6 @@ export function CreateMutualFundDialog() {
           {t("investments:mutualFund.createTrigger")}
         </Button>
       }
-      contentClassName="max-h-[90vh] overflow-y-auto"
       title={t("investments:mutualFund.createTitle")}
       description={t("investments:mutualFund.createDescription")}
       submitLabel={t("common:actions.create")}
@@ -88,7 +85,7 @@ export function CreateMutualFundDialog() {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="mf_fund_code">{t("investments:mutualFund.fields.fundCode")}</Label>
           <Input
@@ -133,46 +130,13 @@ export function CreateMutualFundDialog() {
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label>{t("common:fields.ownership")}</Label>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="mf_ownership_type"
-              value="joint"
-              checked={form.ownership_type === "joint"}
-              onChange={() => setForm({ ...form, ownership_type: "joint" })}
-            />
-            {t("investments:ownership.joint")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="mf_ownership_type"
-              value="sole"
-              checked={form.ownership_type === "sole"}
-              onChange={() => setForm({ ...form, ownership_type: "sole" })}
-            />
-            {t("investments:ownership.soleOwner")}
-          </label>
-        </div>
-        {form.ownership_type === "sole" && (
-          <select
-            aria-label={t("investments:ownership.soleOwnerAria")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-          >
-            {(members ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {preferredName(m)}
-                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <OwnershipField
+        idPrefix="mf_create"
+        value={form.ownership_type}
+        onChange={(v) => setForm({ ...form, ownership_type: v })}
+        soleOwnerID={effectiveSoleOwnerID}
+        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
 
       <div className="grid gap-2">
         <Label htmlFor="mf_description">{t("common:fields.description")}</Label>

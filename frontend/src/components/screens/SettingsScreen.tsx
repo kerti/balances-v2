@@ -21,6 +21,7 @@ import { ReactivationCard } from "@/components/common/ReactivationCard";
 import { BackupCard } from "@/components/common/BackupCard";
 import { RestoreCard } from "@/components/common/RestoreCard";
 import { EraseCard } from "@/components/common/EraseCard";
+import { Select } from "@/components/ui/select";
 
 // SectionHeading groups related cards on the Settings home page. Purely
 // visual — no route split, unlike the Assets/Liabilities/Investments sidebar
@@ -304,10 +305,10 @@ function LanguageCard() {
         <div className="flex items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="language">{t("language.label")}</Label>
-            <select
+            <Select
               id="language"
               data-testid="settings-language-select"
-              className="flex h-9 max-md:h-11 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-56"
               value={locale}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -317,7 +318,7 @@ function LanguageCard() {
                   {LANGUAGE_LABELS[l]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       </CardContent>
@@ -366,10 +367,10 @@ function ThemeCard() {
         <div className="flex items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="theme">{t("theme.label")}</Label>
-            <select
+            <Select
               id="theme"
               data-testid="settings-theme-select"
-              className="flex h-9 max-md:h-11 w-56 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-56"
               value={theme}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -379,7 +380,7 @@ function ThemeCard() {
                   {t(`theme.${th}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       </CardContent>
@@ -422,10 +423,10 @@ function CarryoverDateCard() {
         <div className="flex items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="carryover-date-mode">{t("carryoverDate.label")}</Label>
-            <select
+            <Select
               id="carryover-date-mode"
               data-testid="settings-carryover-date-select"
-              className="flex h-9 max-md:h-11 w-72 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-72"
               value={me.carryover_date_mode}
               onChange={onChange}
               disabled={updateMe.isPending}
@@ -435,7 +436,7 @@ function CarryoverDateCard() {
                   {t(`carryoverDate.modes.${m}`)}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
       </CardContent>

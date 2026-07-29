@@ -8,12 +8,12 @@ import { test, expect } from "@playwright/test";
 // selects, four inputs, a checkbox row, two text links and every button in the
 // Data section sat between 20px and 36px on a phone.
 //
-// The floor now comes from the shared primitives (`Button` text sizes and
-// `Input` carry `max-md:min-h-11`), so this spec deliberately measures a
-// *representative sample across control kinds* rather than one control: a
-// primitive-sourced button, a primitive-sourced input, a hand-rolled <select>,
-// a checkbox row, and a text link. If the primitive floor regresses, the button
-// and input assertions fail together — that is the signal.
+// The floor now comes from the shared primitives (`Button` text sizes, `Input`
+// and — since #541 — `Select` carry `max-md:min-h-11`), so this spec
+// deliberately measures a *representative sample across control kinds* rather
+// than one control: a primitive-sourced button, input and select, a checkbox
+// row, and a text link. If the primitive floor regresses, those assertions fail
+// together — that is the signal.
 //
 // Read-only: it measures the rendered settings surface and writes nothing, so
 // there is no seed or cleanup.
@@ -50,7 +50,8 @@ test(
       // Primitive-sourced input.
       "reporting currency input": page.locator("#reporting-currency"),
       "nickname input": page.locator("#nickname"),
-      // Hand-rolled <select> — not primitive-sourced, floored at the callsite.
+      // Primitive-sourced select. These were hand-rolled and floored at the
+      // callsite until #541 added `ui/select.tsx`; they now inherit the floor.
       "language select": page.getByTestId("settings-language-select"),
       "carryover date select": page.getByTestId("settings-carryover-date-select"),
       // Checkbox row: the 16px box is the affordance, the label is the hit area.

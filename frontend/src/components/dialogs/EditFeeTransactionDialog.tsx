@@ -91,7 +91,7 @@ export function EditFeeTransactionDialog<TResult>({
           <DialogDescription>{t("investments:fee.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="edit_fee_date">{t("investments:fee.feeDateLabel")}</Label>
               <Input
@@ -119,7 +119,7 @@ export function EditFeeTransactionDialog<TResult>({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="edit_fee_price">
                 {t("investments:fee.conversionPriceLabel", {

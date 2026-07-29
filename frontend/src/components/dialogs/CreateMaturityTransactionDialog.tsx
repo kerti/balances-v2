@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { errorMessage } from "@/lib/errorMessage";
 import { formatCurrency } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
@@ -159,7 +160,7 @@ export function CreateMaturityTransactionDialog<TResult>({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="mat_principal">
                 {t("investments:maturityTxn.principalLabel", { currency })}
@@ -197,14 +198,13 @@ export function CreateMaturityTransactionDialog<TResult>({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="mat_principal_disp">
                 {t("investments:maturityTxn.principalDispositionLabel")}
               </Label>
-              <select
+              <Select
                 id="mat_principal_disp"
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={form.principal_disposition}
                 onChange={(e) =>
                   setForm({
@@ -215,15 +215,14 @@ export function CreateMaturityTransactionDialog<TResult>({
               >
                 <option value="cash_out">{t("investments:disposition.cashOut")}</option>
                 <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
-              </select>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="mat_interest_disp">
                 {t("investments:maturityTxn.interestDispositionLabel")}
               </Label>
-              <select
+              <Select
                 id="mat_interest_disp"
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={form.interest_disposition}
                 onChange={(e) =>
                   setForm({
@@ -234,7 +233,7 @@ export function CreateMaturityTransactionDialog<TResult>({
               >
                 <option value="cash_out">{t("investments:disposition.cashOut")}</option>
                 <option value="rolled_to_new">{t("investments:disposition.rolledToNew")}</option>
-              </select>
+              </Select>
             </div>
           </div>
 

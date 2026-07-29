@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useUpdateProperty } from "@/hooks/useProperties";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { preferredName } from "@/lib/names";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { OwnershipField } from "@/components/common/OwnershipField";
+import { Select } from "@/components/ui/select";
 import type { Property } from "@/api/types";
 
 type Props = {
@@ -19,7 +19,6 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const mutation = useUpdateProperty(property.asset.id);
   const { data: user } = useSession();
-  const { data: members } = useHouseholdMembers();
 
   const [form, setForm] = useState({
     display_name: property.asset.display_name,
@@ -78,9 +77,8 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="edit_p_type">{t("assets:property.fields.type")}</Label>
-        <select
+        <Select
           id="edit_p_type"
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
           value={form.property_type}
           onChange={(e) =>
             setForm({
@@ -93,7 +91,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
           <option value="apartment">{t("assets:property.propertyTypes.apartment")}</option>
           <option value="land">{t("assets:property.propertyTypes.land")}</option>
           <option value="commercial">{t("assets:property.propertyTypes.commercial")}</option>
-        </select>
+        </Select>
       </div>
 
       <div className="grid gap-2">
@@ -105,7 +103,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="edit_p_acq_date">{t("assets:property.fields.acquisitionDateEdit")}</Label>
           <Input
@@ -143,46 +141,13 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         />
       </div>
 
-      <div className="grid gap-2">
-        <Label>{t("common:fields.ownership")}</Label>
-        <div className="flex gap-4 text-sm">
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="edit_p_ownership_type"
-              value="joint"
-              checked={form.ownership_type === "joint"}
-              onChange={() => setForm({ ...form, ownership_type: "joint" })}
-            />
-            {t("common:ownership.joint")}
-          </label>
-          <label className="flex items-center gap-2">
-            <input
-              type="radio"
-              name="edit_p_ownership_type"
-              value="sole"
-              checked={form.ownership_type === "sole"}
-              onChange={() => setForm({ ...form, ownership_type: "sole" })}
-            />
-            {t("common:ownership.soleOwner")}
-          </label>
-        </div>
-        {form.ownership_type === "sole" && (
-          <select
-            aria-label={t("common:ownership.soleOwner")}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-            value={effectiveSoleOwnerID ?? ""}
-            onChange={(e) => setForm({ ...form, sole_owner_user_id: e.target.value })}
-          >
-            {(members ?? []).map((m) => (
-              <option key={m.id} value={m.id}>
-                {preferredName(m)}
-                {user && m.id === user.id ? t("common:ownership.youSuffix") : ""}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+      <OwnershipField
+        idPrefix="property_edit"
+        value={form.ownership_type}
+        onChange={(v) => setForm({ ...form, ownership_type: v })}
+        soleOwnerID={effectiveSoleOwnerID}
+        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
 
       <div className="grid gap-2">
         <Label htmlFor="edit_p_description">{t("common:fields.description")}</Label>

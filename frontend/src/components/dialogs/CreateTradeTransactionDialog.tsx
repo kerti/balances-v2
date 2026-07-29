@@ -131,7 +131,7 @@ export function CreateTradeTransactionDialog<TResult>({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="trade_quantity">
                 {t("investments:trade.quantityLabel", { unit: quantityUnit })}

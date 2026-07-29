@@ -93,7 +93,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="edit_ai_amount">
                 {t("investments:accruedInterestSnapshot.totalValueLabel", {

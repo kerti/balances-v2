@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { errorMessage } from "@/lib/errorMessage";
 import { useUpdateLifecycle } from "@/hooks/useLifecycle";
 import { statusOptions, type LifecycleGroup } from "@/lib/lifecycle";
@@ -115,9 +116,8 @@ export function TerminatePositionDialog({
         <form onSubmit={submit} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="lifecycle_status">{t("terminate.statusLabel")}</Label>
-            <select
+            <Select
               id="lifecycle_status"
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               value={status}
               onChange={(e) => onStatusChange(e.target.value)}
             >
@@ -126,7 +126,7 @@ export function TerminatePositionDialog({
                   {o.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {!isActive && (
