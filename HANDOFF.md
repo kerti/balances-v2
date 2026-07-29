@@ -20,7 +20,7 @@ Read these first, in order:
 ## Where we are now
 
 M1–M7 complete; **M8 (next domain features) is now the active line** — first M8 alpha cut
-2026-07-06. CI is green. **`v0.9.0-alpha.2` is the latest preview release** and, promoted manually
+2026-07-06. CI is green. **`v0.9.0-alpha.3` is the latest preview release** and, promoted manually
 (ADR-0049), **demo's current release too** — on the `preview`/`demo` environments
 (`https://preview.<personal-domain>` / `https://demo.<personal-domain>`) via the tag-driven pipeline
 (ADR-0029/0030/0031, routing revised by 0049). Single-origin: one
@@ -75,24 +75,22 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
     assets/liabilities/investments lines (#500); paid-out bond coupons counted as passive cash in the
     stats (#476/#493, INV-FINANCE-25); demo data reconciled as one household cash flow (#497/#498).
     Migration: additive (`00013` + `00014`, engine_version → 4).
+  - `v0.9.0-alpha.3` — mobile–web layout divergence landed (epic #428, ADR-0050: per-breakpoint list
+    and history layouts, card idioms, tap floor moved into the `Button`/`Input`/`Select` primitives,
+    dialog form bodies at phone width, `OwnershipField`); descriptor-driven detail-page consolidation
+    across all ten position types (epic #503, ADR-0051, incl. two-row headers + promoted primary
+    action, #542); Settings regrouped into one card per section with two semantic control-width
+    tokens (#562/#563, `common/SettingsSurface.tsx`); bundled Geist webfont actually paints (#565,
+    INV-PRESENTATION-09). No migration.
 
 ## What's next
 
 **M8 = next domain features (active line), first cut 2026-07-06 (`v0.8.0-alpha.1`); latest
-`v0.9.0-alpha.2` (2026-07-21).** Prioritized by real-user feedback from M7 (not pre-specified).
+`v0.9.0-alpha.3` (2026-07-29).** Prioritized by real-user feedback from M7 (not pre-specified).
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
-`v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail (coupon passive-cash,
-PDF five-group reorg + income drill-down, investment-performance block) shipped in `v0.9.0-alpha.2`.
-Unreleased on `main`: #542 secondary-control tap floor + two-row detail headers (#546); mobile tap
-floor moved into the `Button`/`Input` primitives, closing the Settings gap (#559); mobile
-create/edit dialog bodies — `ui/select.tsx` primitive, shared `OwnershipField`, liability
-three-column row stacked (#541); Settings controls sized by two semantic width tokens
-(`full` / `narrow`) instead of per-callsite pixel widths (#562); Settings regrouped into one card
-per section — scalar preferences as two-column table rows, flows as panels of a shared card, with
-Erase tinted destructive and the Data actions full-width on phones (#563); the bundled Geist
-webfont actually paints — `body`'s hardcoded `font-family` was beating the `html { font-sans }`
-base layer, so the app downloaded the woff2 and rendered in `system-ui` (#565,
-INV-PRESENTATION-09).
+`v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail shipped in
+`v0.9.0-alpha.2`; the mobile line (ADR-0050/0051 epics #428/#503 + Settings rework) closed out in
+`v0.9.0-alpha.3`. Nothing unreleased on `main`; no named next slice — ask the user.
 
 Next, in order:
 
