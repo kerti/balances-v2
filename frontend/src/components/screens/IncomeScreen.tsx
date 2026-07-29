@@ -188,6 +188,7 @@ export function IncomeScreen() {
                 <Button
                   key={value}
                   size="sm"
+                  className="min-h-11 md:min-h-0"
                   variant={regularityFilter === value ? "default" : "outline"}
                   onClick={() => {
                     setRegularityFilter(value);

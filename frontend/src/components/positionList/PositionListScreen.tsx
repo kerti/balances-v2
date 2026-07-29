@@ -227,8 +227,12 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
       {data && data.length > 0 && (
         <div className="space-y-3">
           {(terminatedCount > 0 || rowFilter) && (
-            <div className="flex items-center justify-between gap-4">
-              {rowFilter?.control ?? <span />}
+            // On phones the filter chips take their own full-width row and the
+            // "show closed" toggle drops below them (#542); from 768px up the two
+            // sit on one row, filter left and toggle right. The desktop spacer
+            // keeps the toggle right-aligned when there's no filter.
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-4">
+              {rowFilter?.control ?? <span className="hidden md:block" />}
               {terminatedCount > 0 && (
                 <ShowInactiveToggle
                   count={terminatedCount}

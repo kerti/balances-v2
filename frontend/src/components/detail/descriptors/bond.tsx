@@ -264,27 +264,27 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
           />
         ),
         renderCreateControls: (currency) => (
-          <>
-            <CreateAccruedInterestSnapshotDialog
-              currency={currency}
-              mutation={createMutation}
-              couponDisposition={bond?.details.coupon_disposition}
-              carryover={
-                snapshots?.[0]
-                  ? {
-                      amount: snapshots[0].amount,
-                      accrued_interest: snapshots[0].accrued_interest,
-                      lastSnapshotMonth: snapshots[0].year_month,
-                    }
-                  : null
-              }
-            />
-            <ImportSnapshotsDialog
-              templateUrl={investmentImportTemplateUrl(assetId)}
-              mutation={importMutation}
-              currency={currency}
-            />
-          </>
+          <CreateAccruedInterestSnapshotDialog
+            currency={currency}
+            mutation={createMutation}
+            couponDisposition={bond?.details.coupon_disposition}
+            carryover={
+              snapshots?.[0]
+                ? {
+                    amount: snapshots[0].amount,
+                    accrued_interest: snapshots[0].accrued_interest,
+                    lastSnapshotMonth: snapshots[0].year_month,
+                  }
+                : null
+            }
+          />
+        ),
+        renderImportControl: (currency) => (
+          <ImportSnapshotsDialog
+            templateUrl={investmentImportTemplateUrl(assetId)}
+            mutation={importMutation}
+            currency={currency}
+          />
         ),
       };
     },
@@ -345,35 +345,42 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
       ),
       pageSize: PAGE_SIZE,
       headerActions: active ? (
-        <>
-          <CreateTradeTransactionDialog
-            currency={currency}
-            txnType="buy"
-            quantityUnit={ctx.quantityUnit}
-            mutation={ctx.createTransactionMutation}
-          />
-          <CreateTradeTransactionDialog
-            currency={currency}
-            txnType="sell"
-            quantityUnit={ctx.quantityUnit}
-            mutation={ctx.createTransactionMutation}
-          />
-          <CreateCashIncomeTransactionDialog
-            currency={currency}
-            txnType="coupon"
-            mutation={ctx.createTransactionMutation}
-          />
-          <CreateFeeTransactionDialog
-            currency={currency}
-            quantityUnit={ctx.quantityUnit}
-            mutation={ctx.createTransactionMutation}
-          />
-          <CreateMaturityTransactionDialog
-            currency={currency}
-            maturityDate={entity.details.maturity_date?.slice(0, 10)}
-            mutation={ctx.createTransactionMutation}
-          />
-        </>
+        // Two rows (#542): row 1 = trades — Buy (primary), Sell, and Maturity
+        // (position-closing); row 2 = cash flows (coupon income + fees). Stacked
+        // on phones, inline from 768px up.
+        <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center">
+          <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="txn-trades-row">
+            <CreateTradeTransactionDialog
+              currency={currency}
+              txnType="buy"
+              quantityUnit={ctx.quantityUnit}
+              mutation={ctx.createTransactionMutation}
+            />
+            <CreateTradeTransactionDialog
+              currency={currency}
+              txnType="sell"
+              quantityUnit={ctx.quantityUnit}
+              mutation={ctx.createTransactionMutation}
+            />
+            <CreateMaturityTransactionDialog
+              currency={currency}
+              maturityDate={entity.details.maturity_date?.slice(0, 10)}
+              mutation={ctx.createTransactionMutation}
+            />
+          </div>
+          <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="txn-cashflow-row">
+            <CreateCashIncomeTransactionDialog
+              currency={currency}
+              txnType="coupon"
+              mutation={ctx.createTransactionMutation}
+            />
+            <CreateFeeTransactionDialog
+              currency={currency}
+              quantityUnit={ctx.quantityUnit}
+              mutation={ctx.createTransactionMutation}
+            />
+          </div>
+        </div>
       ) : undefined,
       // The coupon/fee running totals + the search box share one toolbar row,
       // exactly as the hand-written page laid them out; the primitive renders it

@@ -55,7 +55,13 @@ export function HistorySection<TRow>({
             <CardTitle>{title}</CardTitle>
             {description && <CardDescription>{description}</CardDescription>}
           </div>
-          {headerActions && <div className="flex flex-wrap gap-2">{headerActions}</div>}
+          {/* Full width on phones so the create/I-O (and transaction) rows can
+              stretch and split evenly (#542); the `items-start` column above
+              would otherwise shrink-wrap this to content width. Natural width
+              from 768px up. */}
+          {headerActions && (
+            <div className="flex flex-wrap gap-2 max-md:w-full">{headerActions}</div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">

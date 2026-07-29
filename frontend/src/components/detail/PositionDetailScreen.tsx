@@ -138,25 +138,40 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
       renderCard: (snapshot: TSnap) => snapshotRender.renderCard!(snapshot),
     }),
     pageSize: PAGE_SIZE,
+    // Two deliberate rows (#542), stacked on phones and inline from 768px up:
+    // row 1 = the snapshot *create* actions (Copy carryover + New), row 2 = the
+    // workbook *I/O* pair (Export + Import). Copy carryover leads row 1 as the
+    // promoted primary (see the snapshot dialogs). Export is always present so a
+    // terminated position can still be backed up; the create row and Import hide
+    // when the position is closed. On phones the header goes full width and each
+    // row's buttons split it evenly (`max-md:[&>*]:flex-1`); from 768px up they
+    // fall back to natural, inline widths.
     headerActions: (
-      <>
-        {/* Export the full position workbook (Detail + Snapshots [+ Transactions
-            for investments]). Plain anchor download — session cookie rides along
-            same-origin. Available regardless of status so a terminated position
-            can still be backed up. */}
-        <Button
-          asChild
-          size="sm"
-          variant="outline"
-          data-testid={`${descriptor.testIdPrefix}-export`}
-        >
-          <a href={descriptor.exportUrl(assetId)}>
-            <Download className="mr-1 size-4" />
-            {t("common:export.trigger")}
-          </a>
-        </Button>
-        {active && snapshotRender.renderCreateControls(asset.native_currency)}
-      </>
+      <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center">
+        {active && (
+          <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="snapshot-create-row">
+            {snapshotRender.renderCreateControls(asset.native_currency)}
+          </div>
+        )}
+        <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="snapshot-io-row">
+          {/* Export the full position workbook (Detail + Snapshots [+ Transactions
+              for investments]). Plain anchor download — session cookie rides along
+              same-origin. */}
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            className="min-h-11 md:min-h-0"
+            data-testid={`${descriptor.testIdPrefix}-export`}
+          >
+            <a href={descriptor.exportUrl(assetId)}>
+              <Download className="mr-1 size-4" />
+              {t("common:export.trigger")}
+            </a>
+          </Button>
+          {active && snapshotRender.renderImportControl(asset.native_currency)}
+        </div>
+      </div>
     ),
   };
 
@@ -164,7 +179,12 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
     <div className="space-y-6">
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="-ml-2 mb-1 min-h-11 md:min-h-0"
+          >
             {t("common:actions.back")}
           </Button>
           <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
@@ -172,24 +192,45 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
           </h1>
           {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
         </div>
-        <div data-testid="tour-actions" className="flex flex-wrap gap-2">
-          <HelpTourButton steps={tourSteps} />
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil className="mr-1 size-4" />
-            {t("common:actions.edit")}
-          </Button>
-          <TerminatePositionDialog
-            group={descriptor.group}
-            id={asset.id}
-            listKey={descriptor.listKey}
-            currentStatus={asset.status}
-            currentTerminatedAt={asset.terminated_at}
-            currentNote={asset.termination_note}
-          />
-          <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
-            <Trash2 className="mr-1 size-4" />
-            {t("common:delete")}
-          </Button>
+        {/* Two rows on phones (#542): Help + Edit above, Close/Status + Delete
+            below, each pair splitting the full width evenly
+            (`max-md:[&>*]:flex-1`). From 768px up they collapse back to natural,
+            inline widths. */}
+        <div
+          data-testid="tour-actions"
+          className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap"
+        >
+          <div className="flex gap-2 max-md:[&>*]:flex-1">
+            <HelpTourButton steps={tourSteps} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+              className="min-h-11 md:min-h-0"
+            >
+              <Pencil className="mr-1 size-4" />
+              {t("common:actions.edit")}
+            </Button>
+          </div>
+          <div className="flex gap-2 max-md:[&>*]:flex-1">
+            <TerminatePositionDialog
+              group={descriptor.group}
+              id={asset.id}
+              listKey={descriptor.listKey}
+              currentStatus={asset.status}
+              currentTerminatedAt={asset.terminated_at}
+              currentNote={asset.termination_note}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              className="min-h-11 md:min-h-0"
+            >
+              <Trash2 className="mr-1 size-4" />
+              {t("common:delete")}
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -122,29 +122,29 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
           />
         ),
         renderCreateControls: (currency) => (
-          <>
-            <CreateSnapshotDialog
-              currency={currency}
-              mutation={createMutation}
-              suggest={(yearMonth) =>
-                suggestRevalued({
-                  newYearMonth: yearMonth,
-                  annualRatePct: property?.details.annual_appreciation_rate ?? null,
-                  snapshots,
-                })
-              }
-              carryover={
-                snapshots?.[0]
-                  ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-                  : null
-              }
-            />
-            <ImportSnapshotsDialog
-              templateUrl={importTemplateUrl(assetId)}
-              mutation={importMutation}
-              currency={currency}
-            />
-          </>
+          <CreateSnapshotDialog
+            currency={currency}
+            mutation={createMutation}
+            suggest={(yearMonth) =>
+              suggestRevalued({
+                newYearMonth: yearMonth,
+                annualRatePct: property?.details.annual_appreciation_rate ?? null,
+                snapshots,
+              })
+            }
+            carryover={
+              snapshots?.[0]
+                ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
+                : null
+            }
+          />
+        ),
+        renderImportControl: (currency) => (
+          <ImportSnapshotsDialog
+            templateUrl={importTemplateUrl(assetId)}
+            mutation={importMutation}
+            currency={currency}
+          />
         ),
       };
     },
