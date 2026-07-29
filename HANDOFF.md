@@ -89,7 +89,10 @@ create/edit dialog bodies — `ui/select.tsx` primitive, shared `OwnershipField`
 three-column row stacked (#541); Settings controls sized by two semantic width tokens
 (`full` / `narrow`) instead of per-callsite pixel widths (#562); Settings regrouped into one card
 per section — scalar preferences as two-column table rows, flows as panels of a shared card, with
-Erase tinted destructive and the Data actions full-width on phones (#563).
+Erase tinted destructive and the Data actions full-width on phones (#563); the bundled Geist
+webfont actually paints — `body`'s hardcoded `font-family` was beating the `html { font-sans }`
+base layer, so the app downloaded the woff2 and rendered in `system-ui` (#565,
+INV-PRESENTATION-09).
 
 Next, in order:
 

@@ -48,12 +48,13 @@ const SELECT_ARROW = 20;
 // old id-ID string 268.6px locally but 301px on the CI runner. Both were
 // shortened until they fit with margin — the margin matters, see below.
 //
-// These strings need *headroom*, not just a fit. Until #565 lands the control
-// paints in `system-ui`, not the bundled Geist (`body`'s own font-family beats
-// the `html { font-sans }` base layer), so the same string measures differently
-// per platform — the 268.6 / 301 spread above is one string on two machines,
-// ~12%. The copy is therefore held well under the limit rather than tuned to
-// it. Once #565 makes the font deterministic this can become an exact bound.
+// These strings need *headroom*, not just a fit. The 268.6 / 301 spread above
+// is one string on two machines (~12%), from back when the control painted in
+// `system-ui` rather than the bundled Geist — #565 has since fixed that, so the
+// *app* font is now identical on every platform. The headroom stays anyway,
+// because the bound below is the wider of Geist and the generic fallback, and
+// that fallback is still whatever the reader's platform supplies (see
+// `renderedTextWidth`). Held well under the limit rather than tuned to it.
 const LONGEST_CARRYOVER_OPTION: Record<string, string> = {
   "en-GB": "End of month after last snapshot",
   "id-ID": "Akhir bln setelah snapshot terkini",
@@ -95,11 +96,11 @@ async function controlMetrics(control: Locator) {
 // Widest that `text` could paint in this control: measured in the control's own
 // computed font and in the generic fallback, whichever is larger.
 //
-// Both are measured because neither alone is the whole story. Today they are
-// nearly the same — the control's stack is `system-ui, ..., sans-serif` (#565),
-// so the "app font" already is a system font. After #565 they diverge, and the
-// max then holds the copy to the wider of Geist and whatever a reader sees
-// during FOUT or a failed font fetch; a clipped option is just as clipped then.
+// Both are measured because neither alone is the whole story. Since #565 the
+// control's stack starts with the bundled `"Geist Variable"`, so the two
+// diverge: the max holds the copy to the wider of Geist and whatever a reader
+// sees during FOUT or a failed font fetch. A clipped option is just as clipped
+// then, which is why this is not tightened to Geist alone.
 //
 // Note `document.fonts.check()` is not a usable guard for "is the webfont
 // painting": it returns true both when the face is loaded and when no matching
