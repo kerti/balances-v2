@@ -19,6 +19,7 @@ export default defineConfig({
   },
   server: {
     host: true,
+    allowedHosts: process.env.VITE_DEV_ALLOWED_HOSTS?.split(",") ?? [],
     proxy: {
       "/healthz": apiProxyTarget,
       "/api": apiProxyTarget,

@@ -34,6 +34,38 @@ binary is rebuilt, and the auto-migrate-on-`serve` masks this — migrations app
 keeps running. If a backend test passes locally but the dev server shows old behavior, restart first;
 don't go hunting for a code bug. `make restart` bounces both servers.
 
+## Exposing the dev server (tunnel / reverse proxy)
+
+Dev is split-origin — Vite serves the SPA and proxies `/api` + `/healthz` to the backend on `PORT` —
+but Vite is the *only* origin a browser touches, and the backend ships no CORS middleware. So point
+the tunnel at **Vite (5173)**, never the backend: that also mirrors the single-domain shape the
+Docker image serves (ADR-0037).
+
+Three settings in `.env` need the external hostname:
+
+```bash
+VITE_DEV_ALLOWED_HOSTS=dev.example.com   # else Vite answers "Blocked request. This host is not allowed."
+APP_URL=https://dev.example.com          # derives FRONTEND_URL, BACKEND_URL, OAUTH_REDIRECT_URL
+COOKIE_SECURE=true
+```
+
+**Comment out `OAUTH_REDIRECT_URL` / `FRONTEND_URL` / `BACKEND_URL` first.** `applyURLDefaults` only
+fills fields left *unset*, and `.env.dev.example` ships all three pinned to localhost — leave them and
+`APP_URL` is silently ignored. `make restart` is enough to pick everything up; the Makefile's bare
+`export` is what carries `VITE_DEV_ALLOWED_HOSTS` from `.env` into the vite child process.
+
+`COOKIE_SECURE=true` stops the session cookie riding plain `http://localhost:5173`, so while exposed,
+use the external URL only. Reverting is the same edit backwards.
+
+Add `<APP_URL>/api/auth/google/callback` to the OAuth client's authorized redirect URIs in Google
+Cloud Console, keeping the localhost entry so you can switch back. Leave `TRUST_PROXY_HEADERS=false`
+— Vite's proxy doesn't set `X-Forwarded-For`, so the backend sees `127.0.0.1` regardless.
+
+Put an identity layer in front of anything that outlives the session. The dev database holds real
+data and sign-in is real Google OAuth, so absent one, any Google account can reach the instance and
+found a household on it; `FOUNDING_DISABLED=true` closes that specific hole, an authenticating proxy
+in front of the hostname closes the rest.
+
 ## Codegen
 
 ```bash
