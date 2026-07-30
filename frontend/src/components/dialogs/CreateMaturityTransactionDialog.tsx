@@ -198,7 +198,13 @@ export function CreateMaturityTransactionDialog<TResult>({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+          {/* Single column: both children are disposition selects whose longest
+              option already overruns a ~170px half-row, and the dialog is
+              `sm:max-w-sm` at every width so there is no wider layout to fall
+              back to (#572). Full width rather than a tighter split so a
+              locale with longer wording than EN/ID can land without
+              re-truncating — see the note in CreateIncomeDialog. */}
+          <div className="grid gap-3">
             <div className="grid gap-2">
               <Label htmlFor="mat_principal_disp">
                 {t("investments:maturityTxn.principalDispositionLabel")}

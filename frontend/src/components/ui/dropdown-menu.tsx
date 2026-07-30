@@ -8,6 +8,46 @@ function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrim
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
 
+// Opens a menu on `click` as well as Radix's own `pointerdown` (#572).
+//
+// Radix's menu trigger has exactly three ways in — `pointerdown`, and the
+// Enter/Space/ArrowDown keys — and no `click` path whatsoever (verified in
+// `@radix-ui/react-dropdown-menu`). On iOS Safari the ⋮ on every card was
+// therefore completely dead: not mispositioned, not opening-then-closing, but
+// never mounting the content at all, because mobile WebKit was not delivering
+// `pointerdown` to that button. The same phone opens every Create/Edit dialog
+// fine, and Radix's *dialog* trigger opens on `click` — so `click` arrives and
+// `pointerdown` does not, and the menus were the only thing in the app
+// depending on the event iOS withholds.
+//
+// The fallback is deliberately additive and self-cancelling: where `pointerdown`
+// already worked, Radix has set `open` before the `click` lands, so the handler
+// sees `open === true` and does nothing. No `preventDefault`, so Radix's own
+// path and the keyboard affordances are untouched. Closing keeps working
+// through outside-tap dismissal on either platform.
+//
+// `modal: false` rides along because none of these menus has a claim to
+// modality — a row action menu doesn't trap focus and doesn't need the page
+// frozen behind it — and Radix's default `modal` engages react-remove-scroll's
+// body scroll lock plus `pointer-events: none` on <body>, both of which are
+// free on desktop WebKit and treacherous in mobile WebKit, which ignores
+// `overflow: hidden` on body for touch scrolling.
+//
+// `stopPropagation` is the caller's old behaviour kept: these triggers sit
+// inside cards that navigate on click.
+function useMenuOpenOnClick() {
+  const [open, setOpen] = React.useState(false);
+  return {
+    rootProps: { open, onOpenChange: setOpen, modal: false },
+    triggerProps: {
+      onClick: (event: React.MouseEvent) => {
+        event.stopPropagation();
+        if (!open) setOpen(true);
+      },
+    },
+  } as const;
+}
+
 function DropdownMenuPortal({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Portal>) {
@@ -46,6 +86,13 @@ function DropdownMenuGroup({ ...props }: React.ComponentProps<typeof DropdownMen
   return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
+// `max-md:min-h-11` on every interactive item kind — this one, CheckboxItem,
+// RadioItem, SubTrigger (#572). The floor sweeps reached the ⋮ *trigger* long
+// ago (`size-11` per #510/#511/#535) but never what the trigger opens: `py-1`
+// plus `text-sm` is a ~28px row, so the menu that the tap floor exists to make
+// reachable handed you two 28px targets once it was open. Non-interactive parts
+// (Label, Separator, Shortcut) are deliberately left dense — they are not
+// targets, and padding them would only make the menu taller.
 function DropdownMenuItem({
   className,
   inset,
@@ -61,7 +108,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "group/dropdown-menu-item relative flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
+        "group/dropdown-menu-item relative flex cursor-default items-center max-md:min-h-11 gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive",
         className,
       )}
       {...props}
@@ -83,7 +130,7 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center max-md:min-h-11 gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       checked={checked}
@@ -121,7 +168,7 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center max-md:min-h-11 gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -202,7 +249,7 @@ function DropdownMenuSubTrigger({
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex cursor-default items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "flex cursor-default items-center max-md:min-h-11 gap-1.5 rounded-md px-1.5 py-1 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7 data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
@@ -245,4 +292,5 @@ export {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
+  useMenuOpenOnClick,
 };

@@ -66,6 +66,28 @@ export function CreateBondDialog() {
     );
   }
 
+  // Currency is required for either bond type, but only the government-primary
+  // branch has a monetary field to sit beside — so the field is defined once
+  // here and placed in both branches rather than duplicated (#572).
+  const currencyField = (
+    <div className="grid gap-2">
+      <Label htmlFor="bond_currency">{t("common:fields.currency")}</Label>
+      <Input
+        id="bond_currency"
+        required
+        value={form.native_currency}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            native_currency: e.target.value.toUpperCase(),
+          })
+        }
+        placeholder={t("investments:bond.placeholders.currency")}
+        maxLength={3}
+      />
+    </div>
+  );
+
   return (
     <PositionFormDialog
       trigger={
@@ -132,50 +154,43 @@ export function CreateBondDialog() {
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-          <div className="grid gap-2">
-            <Label htmlFor="bond_type">{t("investments:bond.fields.bondType")}</Label>
-            <Select
-              id="bond_type"
-              value={form.bond_type}
-              onChange={(e) => setForm({ ...form, bond_type: e.target.value as BondType })}
-            >
-              <option value="govt_primary">{t("investments:bond.bondType.govt_primary")}</option>
-              <option value="secondary_market">
-                {t("investments:bond.bondType.secondary_market")}
-              </option>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="bond_currency">{t("common:fields.currency")}</Label>
-            <Input
-              id="bond_currency"
-              required
-              value={form.native_currency}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  native_currency: e.target.value.toUpperCase(),
-                })
-              }
-              placeholder={t("investments:bond.placeholders.currency")}
-              maxLength={3}
-            />
-          </div>
+        {/* Bond type takes a full-width row of its own: its longest option
+            overran the ~170px half-row it used to share, and the dialog is
+            `sm:max-w-sm` at every width, so there is no wider layout to fall
+            back to (#572). */}
+        <div className="grid gap-2">
+          <Label htmlFor="bond_type">{t("investments:bond.fields.bondType")}</Label>
+          <Select
+            id="bond_type"
+            value={form.bond_type}
+            onChange={(e) => setForm({ ...form, bond_type: e.target.value as BondType })}
+          >
+            <option value="govt_primary">{t("investments:bond.bondType.govt_primary")}</option>
+            <option value="secondary_market">
+              {t("investments:bond.bondType.secondary_market")}
+            </option>
+          </Select>
         </div>
 
         {form.bond_type === "govt_primary" ? (
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="bond_face_value">{t("investments:bond.fields.faceValue")}</Label>
-              <Input
-                id="bond_face_value"
-                required
-                inputMode="decimal"
-                value={form.face_value}
-                onChange={(e) => setForm({ ...form, face_value: e.target.value })}
-                placeholder={t("investments:bond.placeholders.faceValue")}
-              />
+          <>
+            {/* Currency sits beside the amount it denominates, at the same
+                `1fr_120px` split the income dialog uses for amount+currency —
+                three characters don't earn a full row. The placement date drops
+                below the pair rather than sharing with the face value. */}
+            <div className="grid grid-cols-[1fr_120px] gap-3 [&>*]:content-end">
+              <div className="grid gap-2">
+                <Label htmlFor="bond_face_value">{t("investments:bond.fields.faceValue")}</Label>
+                <Input
+                  id="bond_face_value"
+                  required
+                  inputMode="decimal"
+                  value={form.face_value}
+                  onChange={(e) => setForm({ ...form, face_value: e.target.value })}
+                  placeholder={t("investments:bond.placeholders.faceValue")}
+                />
+              </div>
+              {currencyField}
             </div>
             <div className="grid gap-2">
               <Label htmlFor="bond_placement_date">
@@ -190,9 +205,17 @@ export function CreateBondDialog() {
                 onChange={(e) => setForm({ ...form, placement_date: e.target.value })}
               />
             </div>
-          </div>
+          </>
         ) : (
-          <p className="text-sm text-muted-foreground">{t("investments:bond.secondaryBuyHint")}</p>
+          <>
+            <p className="text-sm text-muted-foreground">
+              {t("investments:bond.secondaryBuyHint")}
+            </p>
+            {/* Secondary-market bonds have no monetary field here to pair with
+                (the position is opened by a Buy transaction later), so currency
+                keeps a row to itself in this branch. */}
+            {currencyField}
+          </>
         )}
       </div>
 

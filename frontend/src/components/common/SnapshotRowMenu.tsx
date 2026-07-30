@@ -6,6 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  useMenuOpenOnClick,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -24,14 +25,17 @@ type Props = {
 // accessible name in both, which the snapshot e2e keys off.
 export function SnapshotRowMenu({ onEdit, onDelete, variant = "ghost", triggerClassName }: Props) {
   const { t } = useTranslation("common");
+  // The ⋮ is dead on iOS without this — see `useMenuOpenOnClick` (#572).
+  const menu = useMenuOpenOnClick();
   return (
-    <DropdownMenu>
+    <DropdownMenu {...menu.rootProps}>
       <DropdownMenuTrigger asChild>
         <Button
           variant={variant}
           size="icon"
           aria-label={t("snapshot.rowActions")}
           className={cn(triggerClassName)}
+          {...menu.triggerProps}
         >
           <MoreHorizontal className="size-4" />
         </Button>
