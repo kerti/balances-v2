@@ -6,6 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  useMenuOpenOnClick,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -30,14 +31,17 @@ export function TransactionRowMenu({
   triggerClassName,
 }: Props) {
   const { t } = useTranslation(["investments", "common"]);
+  // The ⋮ is dead on iOS without this — see `useMenuOpenOnClick` (#572).
+  const menu = useMenuOpenOnClick();
   return (
-    <DropdownMenu>
+    <DropdownMenu {...menu.rootProps}>
       <DropdownMenuTrigger asChild>
         <Button
           variant={variant}
           size="icon"
           aria-label={t("investments:transactionRow.actions")}
           className={cn(triggerClassName)}
+          {...menu.triggerProps}
         >
           <MoreHorizontal className="size-4" />
         </Button>

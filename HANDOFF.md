@@ -90,7 +90,16 @@ mail, Google + optional local OAuth. Custom domain on Cloudflare DNS-only with F
 PDF export (#187/#413, ADR-0044/0045) shipped in alpha.2; financial statistics panel shipped in
 `v0.9.0-alpha.1` (#412 closed, ADR-0048); the ADR-0048 PDF/stats amendment tail shipped in
 `v0.9.0-alpha.2`; the mobile line (ADR-0050/0051 epics #428/#503 + Settings rework) closed out in
-`v0.9.0-alpha.3`. Nothing unreleased on `main`; no named next slice — ask the user.
+`v0.9.0-alpha.3`. Unreleased on `main`: the mobile line's first **real-device** pass (#572,
+INV-PRESENTATION-08) — date/month fields and `<select>` no longer keep iOS Safari's native control
+metrics (`appearance-none` in both primitives; reverses #541's "keep the native arrow", so selects
+draw `--select-chevron`), pagination renders a constant-width window (`lib/pageWindow.ts`) at the tap
+floor instead of one link per page running off the screen, the income category select gets its own
+full-width row, and the card ⋮ menus **open at all** on iOS — Radix's menu trigger is
+`pointerdown`-only, which mobile WebKit wasn't delivering, so `useMenuOpenOnClick` adds a
+self-cancelling click path (+ `modal: false`), and the floor finally reaches the menu *items*.
+Standing warning behind all of it: Chrome DevTools device mode emulates the viewport, not the engine
+— five defects, none visible in it. No named next slice — ask the user.
 
 Next, in order:
 

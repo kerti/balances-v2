@@ -73,46 +73,48 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
           <DialogDescription>{t("income:editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="edit_income_date">{t("income:fields.date")}</Label>
-              <Input
-                id="edit_income_date"
-                type="date"
-                required
-                max="9999-12-31"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_income_category">{t("income:fields.category")}</Label>
-              <Select
-                id="edit_income_category"
-                required
-                value={form.category}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    category: e.target.value as IncomeCategory,
-                  })
-                }
-              >
-                <option value="salary">{t("income:categoryOptions.salary")}</option>
-                <option value="business_income">
-                  {t("income:categoryOptions.business_income")}
-                </option>
-                <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
-                <option value="pension">{t("income:categoryOptions.pension")}</option>
-                <option value="interest">{t("income:categoryOptions.interest")}</option>
-                <option value="gift">{t("income:categoryOptions.gift")}</option>
-                <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
-                <option value="insurance_payout">
-                  {t("income:categoryOptions.insurance_payout")}
-                </option>
-                <option value="other">{t("income:categoryOptions.other")}</option>
-              </Select>
-            </div>
+          {/* Full-width rows, not a two-column pair — see the note in
+              CreateIncomeDialog: the dialog is `sm:max-w-sm` at every width, so
+              a shared row truncated the longer category labels everywhere, not
+              just on a phone (#572). The two dialogs must agree, since a member
+              who picks a category on create then re-reads it on edit. */}
+          <div className="grid gap-2">
+            <Label htmlFor="edit_income_date">{t("income:fields.date")}</Label>
+            <Input
+              id="edit_income_date"
+              type="date"
+              required
+              max="9999-12-31"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="edit_income_category">{t("income:fields.category")}</Label>
+            <Select
+              id="edit_income_category"
+              required
+              value={form.category}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  category: e.target.value as IncomeCategory,
+                })
+              }
+            >
+              <option value="salary">{t("income:categoryOptions.salary")}</option>
+              <option value="business_income">{t("income:categoryOptions.business_income")}</option>
+              <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
+              <option value="pension">{t("income:categoryOptions.pension")}</option>
+              <option value="interest">{t("income:categoryOptions.interest")}</option>
+              <option value="gift">{t("income:categoryOptions.gift")}</option>
+              <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
+              <option value="insurance_payout">
+                {t("income:categoryOptions.insurance_payout")}
+              </option>
+              <option value="other">{t("income:categoryOptions.other")}</option>
+            </Select>
           </div>
 
           <div className="grid grid-cols-[1fr_120px] gap-3">

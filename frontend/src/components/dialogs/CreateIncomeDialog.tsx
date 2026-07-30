@@ -192,55 +192,60 @@ export function CreateIncomeDialog({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="income_date">{t("income:fields.date")}</Label>
-              <Input
-                id="income_date"
-                type="date"
-                required
-                max="9999-12-31"
-                value={form.date}
-                onChange={(e) => setForm({ ...form, date: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="income_category">{t("income:fields.category")}</Label>
-              <Select
-                id="income_category"
-                required
-                value={form.category}
-                onChange={(e) => {
-                  const category = e.target.value as IncomeCategory;
-                  setForm({
-                    ...form,
-                    category,
-                    // Smart default: pre-select regularity from the category
-                    // unless the user has already hand-picked one.
-                    regularity: form.regularityTouched
-                      ? form.regularity
-                      : categoryDefaultRegularity[category],
-                  });
-                }}
-              >
-                <option value="" disabled>
-                  {t("income:categoryOptions.placeholder")}
-                </option>
-                <option value="salary">{t("income:categoryOptions.salary")}</option>
-                <option value="business_income">
-                  {t("income:categoryOptions.business_income")}
-                </option>
-                <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
-                <option value="pension">{t("income:categoryOptions.pension")}</option>
-                <option value="interest">{t("income:categoryOptions.interest")}</option>
-                <option value="gift">{t("income:categoryOptions.gift")}</option>
-                <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
-                <option value="insurance_payout">
-                  {t("income:categoryOptions.insurance_payout")}
-                </option>
-                <option value="other">{t("income:categoryOptions.other")}</option>
-              </Select>
-            </div>
+          {/* Date and category used to share a two-column row, which truncated
+              every longer category label (#572). Not a phone-only squeeze, so
+              not a `md:` divergence: `DialogContent` is `sm:max-w-sm`, so the
+              column is ~170px at *every* width, and the longest options don't
+              fit it in either locale ("Insurance payout", "Pendapatan pensiun")
+              — a household member picking income they can't read the name of is
+              exactly the bar INV-PRESENTATION-08 sets. The chevron's `pr-8`
+              made it worse than it looked on the native control it replaced. */}
+          <div className="grid gap-2">
+            <Label htmlFor="income_date">{t("income:fields.date")}</Label>
+            <Input
+              id="income_date"
+              type="date"
+              required
+              max="9999-12-31"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="income_category">{t("income:fields.category")}</Label>
+            <Select
+              id="income_category"
+              required
+              value={form.category}
+              onChange={(e) => {
+                const category = e.target.value as IncomeCategory;
+                setForm({
+                  ...form,
+                  category,
+                  // Smart default: pre-select regularity from the category
+                  // unless the user has already hand-picked one.
+                  regularity: form.regularityTouched
+                    ? form.regularity
+                    : categoryDefaultRegularity[category],
+                });
+              }}
+            >
+              <option value="" disabled>
+                {t("income:categoryOptions.placeholder")}
+              </option>
+              <option value="salary">{t("income:categoryOptions.salary")}</option>
+              <option value="business_income">{t("income:categoryOptions.business_income")}</option>
+              <option value="rental_income">{t("income:categoryOptions.rental_income")}</option>
+              <option value="pension">{t("income:categoryOptions.pension")}</option>
+              <option value="interest">{t("income:categoryOptions.interest")}</option>
+              <option value="gift">{t("income:categoryOptions.gift")}</option>
+              <option value="tax_refund">{t("income:categoryOptions.tax_refund")}</option>
+              <option value="insurance_payout">
+                {t("income:categoryOptions.insurance_payout")}
+              </option>
+              <option value="other">{t("income:categoryOptions.other")}</option>
+            </Select>
           </div>
 
           <div className="grid grid-cols-[1fr_120px] gap-3">
