@@ -13,6 +13,36 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeSoftDeleteLiabilitySnapshots = `-- name: CascadeSoftDeleteLiabilitySnapshots :execrows
+UPDATE liability_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM liabilities l
+WHERE s.liability_id = $1
+  AND s.liability_id = l.id
+  AND l.household_id = $2
+  AND l.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type CascadeSoftDeleteLiabilitySnapshotsParams struct {
+	LiabilityID uuid.UUID  `json:"liability_id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeSoftDeleteLiabilitySnapshots tombstones every live snapshot of one
+// liability — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+// and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+func (q *Queries) CascadeSoftDeleteLiabilitySnapshots(ctx context.Context, arg CascadeSoftDeleteLiabilitySnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeSoftDeleteLiabilitySnapshots, arg.LiabilityID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createLiabilitySnapshot = `-- name: CreateLiabilitySnapshot :one
 
 WITH owned_liability AS (

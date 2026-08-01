@@ -137,12 +137,31 @@ func (r *ReceivableRepo) UpdateReceivable(ctx context.Context, id uuid.UUID, p U
 	return &row, nil
 }
 
+// DeleteReceivable soft-deletes a receivable and cascades the tombstone to its
+// snapshots in one transaction (INV-SOFT-DELETE-05) — see softDeleteAsset for
+// why the children go first.
 func (r *ReceivableRepo) DeleteReceivable(ctx context.Context, id uuid.UUID) error {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.SoftDeleteReceivable(ctx, db.SoftDeleteReceivableParams{
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	if _, err := qtx.CascadeSoftDeleteReceivableSnapshots(ctx, db.CascadeSoftDeleteReceivableSnapshotsParams{
+		ReceivableID: id,
+		HouseholdID:  hid,
+		UpdatedBy:    &user,
+	}); err != nil {
+		return fmt.Errorf("cascade soft delete receivable snapshots: %w", err)
+	}
+
+	rows, err := qtx.SoftDeleteReceivable(ctx, db.SoftDeleteReceivableParams{
 		ID:          id,
 		HouseholdID: hid,
 		UpdatedBy:   &user,
@@ -152,6 +171,10 @@ func (r *ReceivableRepo) DeleteReceivable(ctx context.Context, id uuid.UUID) err
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit soft delete receivable: %w", err)
 	}
 	return nil
 }

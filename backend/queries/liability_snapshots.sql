@@ -80,6 +80,21 @@ WHERE s.id = $1
   AND l.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
+-- CascadeSoftDeleteLiabilitySnapshots tombstones every live snapshot of one
+-- liability — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+-- and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+-- name: CascadeSoftDeleteLiabilitySnapshots :execrows
+UPDATE liability_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM liabilities l
+WHERE s.liability_id = $1
+  AND s.liability_id = l.id
+  AND l.household_id = $2
+  AND l.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
 -- GetLiabilityForImport returns the display name + native currency of an owned
 -- liability. Doubles as the ownership/existence check for the snapshot
 -- importer: ErrNoRows means the liability doesn't exist in this household (or

@@ -13,6 +13,36 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeSoftDeleteReceivableSnapshots = `-- name: CascadeSoftDeleteReceivableSnapshots :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM receivables r
+WHERE s.receivable_id = $1
+  AND s.receivable_id = r.id
+  AND r.household_id = $2
+  AND r.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type CascadeSoftDeleteReceivableSnapshotsParams struct {
+	ReceivableID uuid.UUID  `json:"receivable_id"`
+	HouseholdID  uuid.UUID  `json:"household_id"`
+	UpdatedBy    *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeSoftDeleteReceivableSnapshots tombstones every live snapshot of one
+// receivable — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+// and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+func (q *Queries) CascadeSoftDeleteReceivableSnapshots(ctx context.Context, arg CascadeSoftDeleteReceivableSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeSoftDeleteReceivableSnapshots, arg.ReceivableID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createReceivableSnapshot = `-- name: CreateReceivableSnapshot :one
 
 WITH owned_receivable AS (

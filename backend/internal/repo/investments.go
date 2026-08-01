@@ -204,12 +204,40 @@ func (r *InvestmentRepo) DeleteInvestmentSnapshot(ctx context.Context, snapshotI
 // softDeleteInvestment is the shared delete path for any Investment subtype.
 // Each subtype's repo file exposes a thin wrapper (DeleteStock, etc.) that
 // adds a subtype guard before calling this.
+//
+// The delete cascades to both of an investment's child tables — snapshots and
+// transactions — in one transaction (INV-SOFT-DELETE-05); see softDeleteAsset
+// for why the children go first. Transactions are the table the confirmed
+// #575 orphan lived in.
 func (r *InvestmentRepo) softDeleteInvestment(ctx context.Context, id uuid.UUID) error {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.SoftDeleteInvestment(ctx, db.SoftDeleteInvestmentParams{
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	if _, err := qtx.CascadeSoftDeleteInvestmentSnapshots(ctx, db.CascadeSoftDeleteInvestmentSnapshotsParams{
+		InvestmentID: id,
+		HouseholdID:  hid,
+		UpdatedBy:    &user,
+	}); err != nil {
+		return fmt.Errorf("cascade soft delete investment snapshots: %w", err)
+	}
+	if _, err := qtx.CascadeSoftDeleteInvestmentTransactions(ctx, db.CascadeSoftDeleteInvestmentTransactionsParams{
+		InvestmentID: id,
+		HouseholdID:  hid,
+		UpdatedBy:    &user,
+	}); err != nil {
+		return fmt.Errorf("cascade soft delete investment transactions: %w", err)
+	}
+
+	rows, err := qtx.SoftDeleteInvestment(ctx, db.SoftDeleteInvestmentParams{
 		ID:          id,
 		HouseholdID: hid,
 		UpdatedBy:   &user,
@@ -219,6 +247,10 @@ func (r *InvestmentRepo) softDeleteInvestment(ctx context.Context, id uuid.UUID)
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit soft delete investment: %w", err)
 	}
 	return nil
 }

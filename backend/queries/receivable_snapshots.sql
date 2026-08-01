@@ -81,6 +81,21 @@ WHERE s.id = $1
   AND r.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
+-- CascadeSoftDeleteReceivableSnapshots tombstones every live snapshot of one
+-- receivable — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+-- and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+-- name: CascadeSoftDeleteReceivableSnapshots :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM receivables r
+WHERE s.receivable_id = $1
+  AND s.receivable_id = r.id
+  AND r.household_id = $2
+  AND r.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
 -- GetReceivableForImport returns the display name + native currency of an
 -- owned receivable. Doubles as the ownership/existence check for the snapshot
 -- importer: ErrNoRows means the receivable doesn't exist in this household (or

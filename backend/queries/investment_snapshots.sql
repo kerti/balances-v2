@@ -89,6 +89,23 @@ WHERE s.id = $1
   AND i.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
+-- CascadeSoftDeleteInvestmentSnapshots tombstones every live snapshot of one
+-- investment — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+-- and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+-- Investment is the one group with a second child table; the cascade is only
+-- complete alongside CascadeSoftDeleteInvestmentTransactions.
+-- name: CascadeSoftDeleteInvestmentSnapshots :execrows
+UPDATE investment_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE s.investment_id = $1
+  AND s.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
 -- UpsertInvestmentSnapshot inserts a snapshot or, when one already exists for
 -- the (investment_id, year_month) pair, overwrites it (last-write-wins) — the
 -- importer needs idempotent re-runs of a multi-year backfill. ON CONFLICT

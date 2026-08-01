@@ -13,6 +13,42 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeSoftDeleteAssetSnapshots = `-- name: CascadeSoftDeleteAssetSnapshots :execrows
+UPDATE asset_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM assets a
+WHERE s.asset_id = $1
+  AND s.asset_id = a.id
+  AND a.household_id = $2
+  AND a.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type CascadeSoftDeleteAssetSnapshotsParams struct {
+	AssetID     uuid.UUID  `json:"asset_id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeSoftDeleteAssetSnapshots tombstones every live snapshot of one asset,
+// the child half of the position delete (INV-SOFT-DELETE-05). It runs inside
+// softDeleteAsset's transaction and *before* the parent UPDATE, so the parent
+// is still live here and this keeps the same `a.deleted_at IS NULL` +
+// household guard as the single-snapshot delete above. `AND s.deleted_at IS
+// NULL` means a snapshot the user already deleted keeps its original timestamp
+// rather than being re-stamped (INV-SOFT-DELETE-01). If an undelete path is
+// ever added it must un-cascade using the parent's `deleted_at` as the
+// discriminator, or it will resurrect children the user deleted by hand.
+func (q *Queries) CascadeSoftDeleteAssetSnapshots(ctx context.Context, arg CascadeSoftDeleteAssetSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeSoftDeleteAssetSnapshots, arg.AssetID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createAssetSnapshot = `-- name: CreateAssetSnapshot :one
 
 WITH owned_asset AS (

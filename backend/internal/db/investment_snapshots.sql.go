@@ -13,6 +13,38 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeSoftDeleteInvestmentSnapshots = `-- name: CascadeSoftDeleteInvestmentSnapshots :execrows
+UPDATE investment_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE s.investment_id = $1
+  AND s.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type CascadeSoftDeleteInvestmentSnapshotsParams struct {
+	InvestmentID uuid.UUID  `json:"investment_id"`
+	HouseholdID  uuid.UUID  `json:"household_id"`
+	UpdatedBy    *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeSoftDeleteInvestmentSnapshots tombstones every live snapshot of one
+// investment — see CascadeSoftDeleteAssetSnapshots for the ordering contract
+// and why the already-deleted child is left alone (INV-SOFT-DELETE-05).
+// Investment is the one group with a second child table; the cascade is only
+// complete alongside CascadeSoftDeleteInvestmentTransactions.
+func (q *Queries) CascadeSoftDeleteInvestmentSnapshots(ctx context.Context, arg CascadeSoftDeleteInvestmentSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeSoftDeleteInvestmentSnapshots, arg.InvestmentID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createInvestmentSnapshot = `-- name: CreateInvestmentSnapshot :one
 
 WITH owned_investment AS (
