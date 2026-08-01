@@ -105,10 +105,14 @@ Also unreleased on `main`: **#575** — deleting a Position now cascades the tom
 (INV-SOFT-DELETE-05). `SoftDelete<Group>` was a bare parent-row UPDATE, so live children hung off
 tombstoned parents — invisible only because every named read path re-joins the parent, while five
 `…ByIDs` child queries carry no parent join at all. Child visibility is now a write-path guarantee;
-the read filters stay as defence in depth. Migration `00015` (additive, data-only) backfills
-pre-existing orphans from the parent's `deleted_at`, deliberately leaving `updated_at` alone so the
-report staleness watermark doesn't move. Active line is lifecycle/integrity: **#576** (terminating a
-position with no offsetting cash flow) is next and needs an ADR first.
+the read filters stay as defence in depth. **No migration** — the orphan backfill was built, verified
+against a reproduced orphan, then dropped deliberately: it is pure cleanup of already-invisible rows
+and there is no live production data to clean (dev is orphan-free; preview/demo may still carry a
+few, dormant). If a repair is ever wanted, it must inherit each child's `deleted_at` from its parent
+and leave `updated_at` alone — that column feeds `MaxReportInputUpdatedAt`, whose snapshot subqueries
+do not filter `deleted_at`, so bumping it would mark every report in every household stale to fix
+rows that change no number. Active line is lifecycle/integrity: **#576** (terminating a position with
+no offsetting cash flow) is next and needs an ADR first.
 
 Next, in order:
 
