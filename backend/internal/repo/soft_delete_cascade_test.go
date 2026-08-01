@@ -33,16 +33,177 @@ func countLiveChildren(t *testing.T, pool *pgxpool.Pool, table, fkCol string, pa
 	return n
 }
 
-// childDeletedAt returns one child row's deleted_at by raw SQL, for asserting
-// an already-tombstoned child was not re-stamped by the cascade.
-func childDeletedAt(t *testing.T, pool *pgxpool.Pool, table string, childID uuid.UUID) *time.Time {
+// deletedAtOf returns one row's deleted_at by raw SQL — used both to assert an
+// already-tombstoned child was not re-stamped, and to assert a parent was not
+// tombstoned by a delete that failed partway.
+func deletedAtOf(t *testing.T, pool *pgxpool.Pool, table string, id uuid.UUID) *time.Time {
 	t.Helper()
 	var ts *time.Time
 	sql := "SELECT deleted_at FROM " + table + " WHERE id = $1"
-	if err := pool.QueryRow(context.Background(), sql, childID).Scan(&ts); err != nil {
+	if err := pool.QueryRow(context.Background(), sql, id).Scan(&ts); err != nil {
 		t.Fatalf("read deleted_at from %s: %v", table, err)
 	}
 	return ts
+}
+
+// anyRowID returns some row id from a child table for one parent, so a test can
+// lock it and make the cascade that touches it block.
+func anyRowID(t *testing.T, pool *pgxpool.Pool, table, fkCol string, parentID uuid.UUID) uuid.UUID {
+	t.Helper()
+	var id uuid.UUID
+	sql := "SELECT id FROM " + table + " WHERE " + fkCol + " = $1 LIMIT 1"
+	if err := pool.QueryRow(context.Background(), sql, parentID).Scan(&id); err != nil {
+		t.Fatalf("pick a row from %s: %v", table, err)
+	}
+	return id
+}
+
+// lockRow holds a row lock on one row from a separate session until the
+// returned release is called, so the statement in the delete's transaction that
+// touches that row blocks until the caller's context deadline aborts it. This
+// is how both failure-injection tests below reach an error branch that is
+// otherwise unreachable from outside the package: nothing about a well-formed
+// delete can be made to fail on demand, but anything can be made to *wait*.
+func lockRow(t *testing.T, pool *pgxpool.Pool, table string, id uuid.UUID) (release func()) {
+	t.Helper()
+	tx, err := pool.Begin(context.Background())
+	if err != nil {
+		t.Fatalf("begin blocker tx: %v", err)
+	}
+	var locked uuid.UUID
+	sql := "SELECT id FROM " + table + " WHERE id = $1 FOR UPDATE"
+	if err := tx.QueryRow(context.Background(), sql, id).Scan(&locked); err != nil {
+		_ = tx.Rollback(context.Background())
+		t.Fatalf("lock %s row: %v", table, err)
+	}
+	return func() {
+		if err := tx.Rollback(context.Background()); err != nil {
+			t.Errorf("rollback blocker tx: %v", err)
+		}
+	}
+}
+
+// childRef names a child table and the column holding its parent's id.
+type childRef struct{ table, fkCol string }
+
+// cascadeGroup is one position group's fixture + the repo delete under test, so
+// the failure-injection tests below can run identically across all four rather
+// than pinning the transaction only where it happened to be written first.
+type cascadeGroup struct {
+	name     string
+	parent   string
+	children []childRef
+	// build creates a position carrying one row in each of its child tables and
+	// returns its id plus the delete call under test.
+	build func(ctx context.Context, t *testing.T, pool *pgxpool.Pool, name string) (uuid.UUID, func(context.Context) error)
+}
+
+func cascadeGroups() []cascadeGroup {
+	return []cascadeGroup{
+		{
+			name:     "asset",
+			parent:   "assets",
+			children: []childRef{{"asset_snapshots", "asset_id"}},
+			build: func(ctx context.Context, t *testing.T, pool *pgxpool.Pool, name string) (uuid.UUID, func(context.Context) error) {
+				r := repo.NewAssetRepo(pool)
+				acct := newBankAccount(ctx, t, r, name)
+				if _, err := r.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
+					AssetID:   acct.Asset.ID,
+					YearMonth: ymUTC(2026, time.January),
+					Amount:    decimal.NewFromInt(100),
+					Currency:  "IDR",
+				}); err != nil {
+					t.Fatalf("CreateAssetSnapshot: %v", err)
+				}
+				return acct.Asset.ID, func(c context.Context) error { return r.DeleteBankAccount(c, acct.Asset.ID) }
+			},
+		},
+		{
+			name:     "liability",
+			parent:   "liabilities",
+			children: []childRef{{"liability_snapshots", "liability_id"}},
+			build: func(ctx context.Context, t *testing.T, pool *pgxpool.Pool, name string) (uuid.UUID, func(context.Context) error) {
+				r := repo.NewLiabilityRepo(pool)
+				liab, err := r.CreateLiability(ctx, repo.CreateLiabilityParams{
+					DisplayName:      name,
+					Subtype:          "personal",
+					OwnershipType:    "joint",
+					NativeCurrency:   "IDR",
+					CounterpartyName: "Lender",
+				})
+				if err != nil {
+					t.Fatalf("CreateLiability: %v", err)
+				}
+				if _, err := r.CreateLiabilitySnapshot(ctx, repo.CreateLiabilitySnapshotParams{
+					LiabilityID: liab.ID,
+					YearMonth:   ymUTC(2026, time.January),
+					Amount:      decimal.NewFromInt(500),
+					Currency:    "IDR",
+				}); err != nil {
+					t.Fatalf("CreateLiabilitySnapshot: %v", err)
+				}
+				return liab.ID, func(c context.Context) error { return r.DeleteLiability(c, liab.ID) }
+			},
+		},
+		{
+			name:     "receivable",
+			parent:   "receivables",
+			children: []childRef{{"receivable_snapshots", "receivable_id"}},
+			build: func(ctx context.Context, t *testing.T, pool *pgxpool.Pool, name string) (uuid.UUID, func(context.Context) error) {
+				r := repo.NewReceivableRepo(pool)
+				recv, err := r.CreateReceivable(ctx, repo.CreateReceivableParams{
+					DisplayName:      name,
+					OwnershipType:    "joint",
+					NativeCurrency:   "IDR",
+					CounterpartyName: "Borrower",
+				})
+				if err != nil {
+					t.Fatalf("CreateReceivable: %v", err)
+				}
+				if _, err := r.CreateReceivableSnapshot(ctx, repo.CreateReceivableSnapshotParams{
+					ReceivableID: recv.ID,
+					YearMonth:    ymUTC(2026, time.January),
+					Amount:       decimal.NewFromInt(750),
+					Currency:     "IDR",
+				}); err != nil {
+					t.Fatalf("CreateReceivableSnapshot: %v", err)
+				}
+				return recv.ID, func(c context.Context) error { return r.DeleteReceivable(c, recv.ID) }
+			},
+		},
+		{
+			name:   "investment",
+			parent: "investments",
+			// Ordered as the cascade runs them, so locking the second child
+			// exercises a failure *after* the first cascade already succeeded
+			// inside the transaction.
+			children: []childRef{
+				{"investment_snapshots", "investment_id"},
+				{"investment_transactions", "investment_id"},
+			},
+			build: func(ctx context.Context, t *testing.T, pool *pgxpool.Pool, name string) (uuid.UUID, func(context.Context) error) {
+				r := repo.NewInvestmentRepo(pool)
+				stock := newCascadeStock(ctx, t, r, name)
+				return stock.Investment.ID, func(c context.Context) error { return r.DeleteStock(c, stock.Investment.ID) }
+			},
+		},
+	}
+}
+
+// assertNothingDeleted is the shared postcondition of both failure-injection
+// tests: an aborted delete leaves the position exactly as it was — parent live,
+// every child live. A half-applied delete is the failure mode, in either
+// direction (children tombstoned under a live parent, or the reverse).
+func assertNothingDeleted(t *testing.T, pool *pgxpool.Pool, g cascadeGroup, parentID uuid.UUID) {
+	t.Helper()
+	if ts := deletedAtOf(t, pool, g.parent, parentID); ts != nil {
+		t.Errorf("%s: parent tombstoned despite the aborted delete: %v", g.name, ts)
+	}
+	for _, c := range g.children {
+		if got := countLiveChildren(t, pool, c.table, c.fkCol, parentID); got != 1 {
+			t.Errorf("%s: live rows in %s after aborted delete = %d, want 1 — the cascade was not rolled back", g.name, c.table, got)
+		}
+	}
 }
 
 // newCascadeStock creates a stock carrying one snapshot and one buy
@@ -285,7 +446,7 @@ func TestSoftDeletePosition_CascadeKeepsExistingChildTombstone(t *testing.T) {
 	if err := r.DeleteAssetSnapshot(ctx, early.ID); err != nil {
 		t.Fatalf("DeleteAssetSnapshot: %v", err)
 	}
-	stampBefore := childDeletedAt(t, tdb.Pool, "asset_snapshots", early.ID)
+	stampBefore := deletedAtOf(t, tdb.Pool, "asset_snapshots", early.ID)
 	if stampBefore == nil {
 		t.Fatalf("early snapshot has no deleted_at after its own delete")
 	}
@@ -294,21 +455,27 @@ func TestSoftDeletePosition_CascadeKeepsExistingChildTombstone(t *testing.T) {
 		t.Fatalf("DeleteBankAccount: %v", err)
 	}
 
-	stampAfter := childDeletedAt(t, tdb.Pool, "asset_snapshots", early.ID)
+	stampAfter := deletedAtOf(t, tdb.Pool, "asset_snapshots", early.ID)
 	if stampAfter == nil || !stampAfter.Equal(*stampBefore) {
 		t.Errorf("already-deleted snapshot re-stamped: %v -> %v", stampBefore, stampAfter)
 	}
-	if ts := childDeletedAt(t, tdb.Pool, "asset_snapshots", late.ID); ts == nil {
+	if ts := deletedAtOf(t, tdb.Pool, "asset_snapshots", late.ID); ts == nil {
 		t.Errorf("live snapshot was not tombstoned by the cascade")
 	}
 }
 
+// blockedDeleteTimeout bounds how long a delete is allowed to sit on a lock
+// before the test gives up on it. The lock is held for the whole call, so the
+// blocked statement can never succeed no matter how slow the runner is — this
+// only decides how long the test waits to find that out.
+const blockedDeleteTimeout = time.Second
+
 // TestSoftDeletePosition_CascadeIsAtomic proves the cascade and the parent
-// tombstone share one transaction: with the parent row locked by another
-// session, the parent UPDATE blocks and the caller's context deadline aborts
-// the delete — and the children, already updated earlier in the same
-// transaction, must come back live. A non-transactional cascade would leave
-// the position half-deleted: children gone, parent still on the books.
+// tombstone share one transaction, for every group. With the parent row locked
+// by another session, the parent UPDATE blocks and the caller's context
+// deadline aborts the delete — and the children, already updated earlier in the
+// same transaction, must come back live. A non-transactional cascade would
+// leave the position half-deleted: children gone, parent still on the books.
 //
 // covers: INV-SOFT-DELETE-05
 func TestSoftDeletePosition_CascadeIsAtomic(t *testing.T) {
@@ -317,48 +484,107 @@ func TestSoftDeletePosition_CascadeIsAtomic(t *testing.T) {
 
 	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
 	ctx := identity.WithUser(context.Background(), user)
-	r := repo.NewAssetRepo(tdb.Pool)
 
-	acct := newBankAccount(ctx, t, r, "Atomic cascade")
-	if _, err := r.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
-		AssetID:   acct.Asset.ID,
-		YearMonth: ymUTC(2026, time.January),
-		Amount:    decimal.NewFromInt(100),
-		Currency:  "IDR",
-	}); err != nil {
-		t.Fatalf("CreateAssetSnapshot: %v", err)
-	}
+	for _, g := range cascadeGroups() {
+		t.Run(g.name, func(t *testing.T) {
+			parentID, del := g.build(ctx, t, tdb.Pool, "Atomic "+g.name)
 
-	// Hold a row lock on the parent from a separate session, so the delete's
-	// parent UPDATE blocks after its cascade has already run.
-	blocker, err := tdb.Pool.Begin(context.Background())
-	if err != nil {
-		t.Fatalf("begin blocker tx: %v", err)
-	}
-	var lockedID uuid.UUID
-	if err := blocker.QueryRow(context.Background(),
-		"SELECT id FROM assets WHERE id = $1 FOR UPDATE", acct.Asset.ID).Scan(&lockedID); err != nil {
-		_ = blocker.Rollback(context.Background())
-		t.Fatalf("lock asset row: %v", err)
-	}
+			release := lockRow(t, tdb.Pool, g.parent, parentID)
+			deadlineCtx, cancel := context.WithTimeout(ctx, blockedDeleteTimeout)
+			err := del(deadlineCtx)
+			cancel()
+			release()
 
-	deadlineCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
-	err = r.DeleteBankAccount(deadlineCtx, acct.Asset.ID)
-	cancel()
-
-	if rbErr := blocker.Rollback(context.Background()); rbErr != nil {
-		t.Fatalf("rollback blocker tx: %v", rbErr)
+			if err == nil {
+				t.Fatalf("%s: delete succeeded while the parent row was locked; the lock/timeout setup no longer blocks", g.name)
+			}
+			assertNothingDeleted(t, tdb.Pool, g, parentID)
+		})
 	}
+}
 
-	if err == nil {
-		t.Fatalf("DeleteBankAccount succeeded while the parent row was locked; the lock/timeout setup no longer blocks")
-	}
+// TestSoftDeletePosition_CascadeFailureLeavesPositionIntact is the acceptance
+// criterion stated the way it actually reads — "failure mid-cascade rolls back
+// the parent tombstone too". CascadeIsAtomic above injects the failure at the
+// parent, which is the mirror image; here the failure lands inside the cascade
+// itself, one subtest per child table.
+//
+// For Investment that matters twice over: locking a transaction row makes the
+// *second* cascade block after the snapshot cascade has already succeeded
+// inside the transaction, so this is the only test that proves an in-flight
+// cascade is undone rather than merely never started.
+//
+// covers: INV-SOFT-DELETE-05
+func TestSoftDeletePosition_CascadeFailureLeavesPositionIntact(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
 
-	if got := countLiveChildren(t, tdb.Pool, "asset_snapshots", "asset_id", acct.Asset.ID); got != 1 {
-		t.Errorf("live snapshots after aborted delete = %d, want 1 — the cascade was not rolled back with the parent", got)
+	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	ctx := identity.WithUser(context.Background(), user)
+
+	for _, g := range cascadeGroups() {
+		for _, c := range g.children {
+			t.Run(g.name+"/"+c.table, func(t *testing.T) {
+				parentID, del := g.build(ctx, t, tdb.Pool, "Blocked "+c.table)
+
+				release := lockRow(t, tdb.Pool, c.table, anyRowID(t, tdb.Pool, c.table, c.fkCol, parentID))
+				deadlineCtx, cancel := context.WithTimeout(ctx, blockedDeleteTimeout)
+				err := del(deadlineCtx)
+				cancel()
+				release()
+
+				if err == nil {
+					t.Fatalf("%s: delete succeeded while a %s row was locked; the cascade is not touching that table", g.name, c.table)
+				}
+				assertNothingDeleted(t, tdb.Pool, g, parentID)
+			})
+		}
 	}
-	if ts := childDeletedAt(t, tdb.Pool, "assets", acct.Asset.ID); ts != nil {
-		t.Errorf("parent tombstoned despite the aborted delete: %v", ts)
+}
+
+// TestSoftDeletePosition_DeleteRejectsUnusableCaller pins the two guards a
+// delete hits before it can open its transaction: no identity on the context,
+// and a context already cancelled by the time the request reaches the repo
+// (a client that hung up mid-request). Neither may report success, and neither
+// may leave a tombstone behind.
+//
+// Scoped to Liability and Receivable on purpose: their Delete is the entry
+// point, whereas DeleteBankAccount/DeleteStock run a Get guard first that
+// returns on the same two conditions, so the identical branches inside
+// softDeleteAsset/softDeleteInvestment are unreachable from outside the
+// package rather than untested.
+//
+// covers: INV-SOFT-DELETE-05
+func TestSoftDeletePosition_DeleteRejectsUnusableCaller(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+
+	user := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	ctx := identity.WithUser(context.Background(), user)
+
+	for _, g := range cascadeGroups() {
+		if g.name != "liability" && g.name != "receivable" {
+			continue
+		}
+		t.Run(g.name, func(t *testing.T) {
+			t.Run("no identity on the context", func(t *testing.T) {
+				parentID, del := g.build(ctx, t, tdb.Pool, "Anon "+g.name)
+				if err := del(context.Background()); !errors.Is(err, repo.ErrUnauthenticated) {
+					t.Errorf("want ErrUnauthenticated, got %v", err)
+				}
+				assertNothingDeleted(t, tdb.Pool, g, parentID)
+			})
+
+			t.Run("context already cancelled", func(t *testing.T) {
+				parentID, del := g.build(ctx, t, tdb.Pool, "Cancelled "+g.name)
+				deadCtx, cancel := context.WithCancel(ctx)
+				cancel()
+				if err := del(deadCtx); !errors.Is(err, context.Canceled) {
+					t.Errorf("want context.Canceled, got %v", err)
+				}
+				assertNothingDeleted(t, tdb.Pool, g, parentID)
+			})
+		})
 	}
 }
 
