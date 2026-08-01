@@ -99,7 +99,16 @@ full-width row, and the card ⋮ menus **open at all** on iOS — Radix's menu t
 `pointerdown`-only, which mobile WebKit wasn't delivering, so `useMenuOpenOnClick` adds a
 self-cancelling click path (+ `modal: false`), and the floor finally reaches the menu *items*.
 Standing warning behind all of it: Chrome DevTools device mode emulates the viewport, not the engine
-— five defects, none visible in it. No named next slice — ask the user.
+— five defects, none visible in it.
+Also unreleased on `main`: **#575** — deleting a Position now cascades the tombstone to its children
+(snapshots for all four groups, plus transactions for Investment) inside one transaction
+(INV-SOFT-DELETE-05). `SoftDelete<Group>` was a bare parent-row UPDATE, so live children hung off
+tombstoned parents — invisible only because every named read path re-joins the parent, while five
+`…ByIDs` child queries carry no parent join at all. Child visibility is now a write-path guarantee;
+the read filters stay as defence in depth. Migration `00015` (additive, data-only) backfills
+pre-existing orphans from the parent's `deleted_at`, deliberately leaving `updated_at` alone so the
+report staleness watermark doesn't move. Active line is lifecycle/integrity: **#576** (terminating a
+position with no offsetting cash flow) is next and needs an ADR first.
 
 Next, in order:
 

@@ -141,12 +141,35 @@ func (r *AssetRepo) DeleteAssetSnapshot(ctx context.Context, snapshotID uuid.UUI
 // SoftDeleteAsset is the shared delete path for any Asset subtype. Each
 // subtype's repo file exposes a thin wrapper (DeleteBankAccount, etc.) that
 // adds a subtype guard before calling this.
+//
+// The delete cascades to the asset's snapshots in one transaction
+// (INV-SOFT-DELETE-05) so no child row outlives its parent as a live row.
+// Children go first, while the parent is still live, so the cascade query
+// keeps the same household + `deleted_at IS NULL` guard the single-snapshot
+// delete uses; the parent UPDATE then decides the outcome, and a miss
+// (wrong household, already deleted) rolls the cascade back with it.
 func (r *AssetRepo) softDeleteAsset(ctx context.Context, id uuid.UUID) error {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.SoftDeleteAsset(ctx, db.SoftDeleteAssetParams{
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	if _, err := qtx.CascadeSoftDeleteAssetSnapshots(ctx, db.CascadeSoftDeleteAssetSnapshotsParams{
+		AssetID:     id,
+		HouseholdID: hid,
+		UpdatedBy:   &user,
+	}); err != nil {
+		return fmt.Errorf("cascade soft delete asset snapshots: %w", err)
+	}
+
+	rows, err := qtx.SoftDeleteAsset(ctx, db.SoftDeleteAssetParams{
 		ID:          id,
 		HouseholdID: hid,
 		UpdatedBy:   &user,
@@ -156,6 +179,10 @@ func (r *AssetRepo) softDeleteAsset(ctx context.Context, id uuid.UUID) error {
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit soft delete asset: %w", err)
 	}
 	return nil
 }

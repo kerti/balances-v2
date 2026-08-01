@@ -82,6 +82,27 @@ WHERE s.id = $1
   AND a.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
+-- CascadeSoftDeleteAssetSnapshots tombstones every live snapshot of one asset,
+-- the child half of the position delete (INV-SOFT-DELETE-05). It runs inside
+-- softDeleteAsset's transaction and *before* the parent UPDATE, so the parent
+-- is still live here and this keeps the same `a.deleted_at IS NULL` +
+-- household guard as the single-snapshot delete above. `AND s.deleted_at IS
+-- NULL` means a snapshot the user already deleted keeps its original timestamp
+-- rather than being re-stamped (INV-SOFT-DELETE-01). If an undelete path is
+-- ever added it must un-cascade using the parent's `deleted_at` as the
+-- discriminator, or it will resurrect children the user deleted by hand.
+-- name: CascadeSoftDeleteAssetSnapshots :execrows
+UPDATE asset_snapshots s
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM assets a
+WHERE s.asset_id = $1
+  AND s.asset_id = a.id
+  AND a.household_id = $2
+  AND a.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
 -- GetAssetForImport returns the display name + native currency of an owned
 -- asset. Doubles as the ownership/existence check for the snapshot importer:
 -- ErrNoRows means the asset doesn't exist in this household (or is deleted),

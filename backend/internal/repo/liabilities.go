@@ -156,12 +156,31 @@ func (r *LiabilityRepo) UpdateLiability(ctx context.Context, id uuid.UUID, p Upd
 	return &row, nil
 }
 
+// DeleteLiability soft-deletes a liability and cascades the tombstone to its
+// snapshots in one transaction (INV-SOFT-DELETE-05) — see softDeleteAsset for
+// why the children go first.
 func (r *LiabilityRepo) DeleteLiability(ctx context.Context, id uuid.UUID) error {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.SoftDeleteLiability(ctx, db.SoftDeleteLiabilityParams{
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	if _, err := qtx.CascadeSoftDeleteLiabilitySnapshots(ctx, db.CascadeSoftDeleteLiabilitySnapshotsParams{
+		LiabilityID: id,
+		HouseholdID: hid,
+		UpdatedBy:   &user,
+	}); err != nil {
+		return fmt.Errorf("cascade soft delete liability snapshots: %w", err)
+	}
+
+	rows, err := qtx.SoftDeleteLiability(ctx, db.SoftDeleteLiabilityParams{
 		ID:          id,
 		HouseholdID: hid,
 		UpdatedBy:   &user,
@@ -171,6 +190,10 @@ func (r *LiabilityRepo) DeleteLiability(ctx context.Context, id uuid.UUID) error
 	}
 	if rows == 0 {
 		return ErrNotFound
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit soft delete liability: %w", err)
 	}
 	return nil
 }

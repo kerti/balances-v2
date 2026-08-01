@@ -86,3 +86,20 @@ WHERE t.id = $1
   AND i.household_id = $2
   AND i.deleted_at IS NULL
   AND t.deleted_at IS NULL;
+
+-- CascadeSoftDeleteInvestmentTransactions tombstones every live transaction of
+-- one investment — see CascadeSoftDeleteAssetSnapshots for the ordering
+-- contract and why the already-deleted child is left alone
+-- (INV-SOFT-DELETE-05). This is the table the confirmed #575 orphan lived in:
+-- a duplicate investment deleted 17s after creation kept its live `buy`.
+-- name: CascadeSoftDeleteInvestmentTransactions :execrows
+UPDATE investment_transactions t
+SET deleted_at = now(),
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE t.investment_id = $1
+  AND t.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NULL
+  AND t.deleted_at IS NULL;
