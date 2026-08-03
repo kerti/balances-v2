@@ -3271,9 +3271,9 @@ The following npm packages may be included in this product:
  - @types/d3-shape@3.1.8
  - @types/d3-time@3.0.4
  - @types/d3-timer@3.0.2
- - @types/node@26.1.1
- - @types/react-dom@19.2.3
- - @types/react@19.2.17
+ - @types/node@26.1.2
+ - @types/react-dom@19.2.4
+ - @types/react@19.2.18
  - @types/use-sync-external-store@0.0.6
  - @types/validate-npm-package-name@4.0.2
 
@@ -3303,11 +3303,12 @@ MIT License
 
 -----------
 
-The following npm package may be included in this product:
+The following npm packages may be included in this product:
 
  - lightningcss@1.32.0
+ - lightningcss@1.33.0
 
-This package contains the following license:
+These packages each contain the following license:
 
 Mozilla Public License Version 2.0
 ==================================
@@ -4875,7 +4876,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - vite@8.1.5
+ - vite@8.2.0
 
 This package contains the following license:
 
@@ -6100,6 +6101,13 @@ Repository: https://github.com/micromatch/is-glob
 
 ---------------------------------------
 
+## is-reference
+License: MIT
+By: Rich Harris
+Repository: https://github.com/Rich-Harris/is-reference
+
+---------------------------------------
+
 ## isexe, which
 License: ISC
 By: Isaac Z. Schlueter
@@ -7166,6 +7174,34 @@ Repository: https://github.com/websockets/ws
 > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---------------------------------------
+
+## zimmerframe
+License: MIT
+Repository: https://github.com/sveltejs/zimmerframe
+
+> MIT License
+> 
+> Copyright (c) 2023 [these people](https://github.com/Rich-Harris/zimmerframe/graphs/contributors)
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
 
 -----------
 
@@ -10573,7 +10609,7 @@ SOFTWARE.
 
 The following npm package may be included in this product:
 
- - rolldown@1.1.5
+ - rolldown@1.2.2
 
 This package contains the following license:
 
@@ -10607,7 +10643,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 The following npm package may be included in this product:
 
- - @oxc-project/types@0.139.0
+ - @oxc-project/types@0.142.0
 
 This package contains the following license:
 
@@ -12561,7 +12597,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - postcss@8.5.20
+ - postcss@8.5.25
 
 This package contains the following license:
 
