@@ -47,7 +47,8 @@ INSERT INTO monthly_reports (
     investment_value_stock, investment_value_mutual_fund, investment_value_bond,
     investment_value_gold, investment_value_time_deposit,
     investment_value_low, investment_value_medium, investment_value_high,
-    investment_placement
+    investment_placement,
+    write_offs, write_off_positions, unsettled_terminations
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -63,7 +64,8 @@ INSERT INTO monthly_reports (
     $39, $40, $41,
     $42, $43,
     $44, $45, $46,
-    $47
+    $47,
+    $48, $49, $50
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -111,7 +113,10 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     investment_value_low           = EXCLUDED.investment_value_low,
     investment_value_medium        = EXCLUDED.investment_value_medium,
     investment_value_high          = EXCLUDED.investment_value_high,
-    investment_placement           = EXCLUDED.investment_placement
+    investment_placement           = EXCLUDED.investment_placement,
+    write_offs                     = EXCLUDED.write_offs,
+    write_off_positions            = EXCLUDED.write_off_positions,
+    unsettled_terminations         = EXCLUDED.unsettled_terminations
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds
@@ -151,24 +156,25 @@ SELECT COALESCE(GREATEST(
 
 -- ----- engine inputs: positions (lifecycle + ownership) -------------------
 -- terminated_at NULL => active (biconditional CHECK, migration 00012); the
--- engine needs only terminated_at for month-granular lifecycle suppression
--- plus ownership for the per-user / Joint breakdown.
+-- engine needs terminated_at for month-granular lifecycle suppression, status
+-- to tell a cash-settled termination from a non-cash one (the Write-Off term,
+-- ADR-0052), plus ownership for the per-user / Joint breakdown.
 
 -- display_name + subtype let the report name unrecorded positions in the
 -- dashboard drill-down (issue #50): the stale-position list carries enough to
 -- render a label and deep-link to the position's detail page.
 -- name: ListAssetsForReport :many
-SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, ownership_type, sole_owner_user_id, terminated_at
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListLiabilitiesForReport :many
-SELECT id, display_name, subtype, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, ownership_type, sole_owner_user_id, terminated_at
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListReceivablesForReport :many
-SELECT id, display_name, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, status, ownership_type, sole_owner_user_id, terminated_at
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL;
 

@@ -17,7 +17,9 @@
     "vs": "vs {{when}}",
     "vsYoY": "vs {{when}} · YoY",
     "stalePositions_one": "⚠ {{count}} position carried forward — record {{when}} snapshot to keep this up to date.",
-    "stalePositions_other": "⚠ {{count}} positions carried forward — record {{when}} snapshots to keep this up to date."
+    "stalePositions_other": "⚠ {{count}} positions carried forward — record {{when}} snapshots to keep this up to date.",
+    "unsettledTerminations_one": "⚠ {{count}} investment was closed without a sale or maturity recorded — its final value is showing as a loss.",
+    "unsettledTerminations_other": "⚠ {{count}} investments were closed without a sale or maturity recorded — their final value is showing as a loss."
   },
   "stale": {
     "lastRecorded": "last recorded {{when}}",
@@ -70,6 +72,8 @@
     "investmentReturn": "Investment return",
     "assetValueChange": "Property & vehicle value change",
     "assetValueChangeHint": "Non-cash — depreciation or revaluation of property and vehicles. No money changed hands.",
+    "writeOffs": "Write-offs",
+    "writeOffsHint": "Value that left your books without any money changing hands — something disposed of, a debt forgiven, or money owed to you that won't be repaid. A forgiven debt counts in your favour.",
     "livingExpenses": "Living expenses (estimated)",
     "livingExpensesHint": "Estimated from the change in your net worth minus tracked income and investment return. This app doesn't track individual purchases.",
     "unexplainedIncrease": "Unexplained increase",

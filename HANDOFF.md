@@ -137,6 +137,22 @@ leaves theirs alone. Cash-settled terminals (`closed`/`sold`/`paid_off`/`collect
 reconcile: both legs land in `M` and the residual is untouched. The non-cash terminals still land in
 the plug — moved from `M+1` to `M`, same magnitude, no new error — until #586 adds the Write-Off term.
 No migration, no engine-version bump.
+Also unreleased on `main`: **#586** — ADR-0052 slice 2, the missing-term half. `write_offs` joins the
+comprehensive-income identity, fired off the terminal **status** (`disposed` / `forgiven` /
+`written_off`; Investment never), signed by the effect on net worth so a forgiven debt reads positive,
+and computed through the same carry-forward + FX calls the net-worth pass uses so it cancels ΔNW
+structurally. `asset_value_change` now excludes the termination month for *every* terminated position
+— without that, the 0-value close snapshot #585 introduced would have let a cash-settled property sale
+read as depreciation and understate the residual by the whole sale value. `unsettled_terminations`
+advises on Investments terminated with no `sell`/`maturity` recorded (the restore-from-backup path);
+the transaction *amount* is never inspected, so a deliberate 0-proceeds Sell settles it rather than
+tripping it forever. Surfaced on the PDF (own section, constituents beneath the line) and the
+dashboard statement. Migration `00015` (additive: `write_offs`, `write_off_positions`,
+`unsettled_terminations`), `reportEngineVersion` 4 → 5 so every materialized report regenerates —
+historical months change for any household holding a terminated Position, which is the point. New
+invariants INV-FINANCE-33/34/35; -05/-06/-10 reconciled. **Still owed at release:** the by-hand 0-value
+close snapshots for already-terminated A/L/R positions on the two live households, plus the
+release-notes line saying historical months were regenerated (ADR-0052 §8).
 
 Next, in order:
 

@@ -17,7 +17,9 @@
     "vs": "vs {{when}}",
     "vsYoY": "vs {{when}} · YoY",
     "stalePositions_one": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
-    "stalePositions_other": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini."
+    "stalePositions_other": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
+    "unsettledTerminations_one": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian.",
+    "unsettledTerminations_other": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian."
   },
   "stale": {
     "lastRecorded": "terakhir dicatat {{when}}",
@@ -70,6 +72,8 @@
     "investmentReturn": "Hasil investasi",
     "assetValueChange": "Perubahan nilai properti & kendaraan",
     "assetValueChangeHint": "Non-tunai — penyusutan atau revaluasi properti dan kendaraan. Tidak ada uang yang berpindah tangan.",
+    "writeOffs": "Penghapusan nilai",
+    "writeOffsHint": "Nilai yang hilang dari pembukuan tanpa ada uang yang berpindah — harta yang dilepas, utang yang dibebaskan, atau piutang yang tidak akan tertagih. Utang yang dibebaskan menguntungkan Anda.",
     "livingExpenses": "Pengeluaran (perkiraan)",
     "livingExpensesHint": "Diperkirakan dari perubahan kekayaan bersih dikurangi pemasukan dan hasil investasi yang tercatat. Aplikasi ini tidak melacak pembelian individual.",
     "unexplainedIncrease": "Kenaikan tak terjelaskan",

@@ -297,6 +297,9 @@ type MonthlyReport struct {
 	InvestmentValueMedium       *decimal.Decimal   `json:"investment_value_medium"`
 	InvestmentValueHigh         *decimal.Decimal   `json:"investment_value_high"`
 	InvestmentPlacement         *decimal.Decimal   `json:"investment_placement"`
+	WriteOffs                   *decimal.Decimal   `json:"write_offs"`
+	WriteOffPositions           []byte             `json:"write_off_positions"`
+	UnsettledTerminations       []byte             `json:"unsettled_terminations"`
 }
 
 type MutualFundDetail struct {

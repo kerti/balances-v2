@@ -124,6 +124,45 @@ func TestRenderSparsePageGroups(t *testing.T) {
 	}
 }
 
+// The Write-Off section and the unsettled-termination footnote render only on
+// the months that have them, so both need explicit exercise: the section body
+// with a mixed-sign constituent list (the netting case the itemisation exists
+// for), the advisory footnote, and both of their absent branches.
+// covers: INV-FINANCE-33, INV-FINANCE-35
+func TestRenderWriteOffsAndUnsettled(t *testing.T) {
+	in := richInput()
+	in.WriteOffs = &WriteOffs{
+		Total: "-25000000",
+		Items: []WriteOffItem{
+			{Label: "Family loan", Amount: "50000000"},     // forgiven → positive
+			{Label: "Owed by cousin", Amount: "-75000000"}, // uncollectible → negative
+		},
+	}
+	in.Unsettled = []UnsettledTermination{{Label: "Index Fund"}}
+	withSections, err := Render(in)
+	if err != nil {
+		t.Fatalf("write-offs Render: %v", err)
+	}
+
+	// Both branches of the section gate: nil, and non-nil-but-empty (a materialized
+	// zero with nothing behind it must not print an empty section).
+	in.WriteOffs = &WriteOffs{Total: "0"}
+	in.Unsettled = nil
+	without, err := Render(in)
+	if err != nil {
+		t.Fatalf("empty write-offs Render: %v", err)
+	}
+	if len(without) >= len(withSections) {
+		t.Errorf("empty write-offs PDF (%d bytes) is not smaller than the itemized one (%d) — the section did not collapse",
+			len(without), len(withSections))
+	}
+
+	in.WriteOffs = nil
+	if _, err := Render(in); err != nil {
+		t.Fatalf("nil write-offs Render: %v", err)
+	}
+}
+
 func TestRenderRichReportEN(t *testing.T) {
 	in := richInput()
 	in.Locale = "en-GB"

@@ -58,6 +58,13 @@ type reportPosition struct {
 	name    string // display_name, surfaced in the stale-position drill-down (#50)
 	group   positionGroup
 	subtype string
+	// status is the lifecycle status ("active" plus the group's terminal values).
+	// It is what separates a cash-settled termination from a non-cash one, which
+	// is the Write-Off term's trigger — ADR-0009 split `sold` from `disposed`
+	// precisely to encode "did cash come back", and three of the four groups have
+	// no transaction concept in which an absent flow could be detected instead
+	// (ADR-0052 §4).
+	status string
 	// riskProfile is the Investment's household-chosen risk level ("low" |
 	// "medium" | "high", NOT NULL on every Investment). Empty for non-Investment
 	// groups. Drives the per-risk investment-return + value breakdown (ADR-0048
@@ -275,6 +282,42 @@ type stalePosition struct {
 	LastMonth time.Time `json:"last_month"`
 }
 
+// writeOffPosition is one constituent behind the month's Write-Off figure, with
+// its signed contribution to net worth — so a forgiven Liability reads positive
+// and a disposed Asset negative. Write-Offs is deliberately ONE signed term
+// rather than a gains/losses pair (ADR-0052 §4), which means a month holding
+// both a forgiven debt and a written-off receivable can net toward zero on the
+// line; this list is what keeps that from reading as "nothing happened".
+// Same id/name/group/subtype shape as stalePosition so the frontend resolves the
+// detail-page route the same way.
+type writeOffPosition struct {
+	ID      uuid.UUID       `json:"position_id"`
+	Name    string          `json:"name"`
+	Group   string          `json:"group"`
+	Subtype string          `json:"subtype"`
+	Amount  decimal.Decimal `json:"amount"`
+}
+
+// unsettledTermination is one Investment terminated in this month with no
+// proceeds recorded — a report-side advisory, part of no figure (ADR-0052 §7).
+// Its own payload rather than an extension of stalePosition with a reason:
+// "stale" means one precise thing (no recent snapshot) and is worth keeping
+// precise. reason is a stable code the frontend maps to copy; "no_proceeds" is
+// the only one today.
+type unsettledTermination struct {
+	ID      uuid.UUID `json:"position_id"`
+	Name    string    `json:"name"`
+	Group   string    `json:"group"`
+	Subtype string    `json:"subtype"`
+	Reason  string    `json:"reason"`
+}
+
+// reasonNoProceeds marks an Investment terminated without a sell/maturity
+// Transaction in its termination month. After the terminate dialog captures
+// proceeds (#587) this is only reachable through a path that bypasses it —
+// restore-from-backup (ADR-0036 writes rows directly), import, or the raw API.
+const reasonNoProceeds = "no_proceeds"
+
 // monthlyReportData is one generated month, pre-serialisation. Income-statement
 // pointers are nil on the first-month baseline (ADR-0006).
 type monthlyReportData struct {
@@ -303,12 +346,21 @@ type monthlyReportData struct {
 	// other flow figures (ADR-0048 amendment / INV-FINANCE-32).
 	investmentPlacement *decimal.Decimal
 	assetValueChange    *decimal.Decimal // nil on baseline
-	livingExpenses      *decimal.Decimal // nil on baseline
-	userBreakdowns      map[string]userBreakdown
-	stalePositions      []stalePosition
-	missingFx           []missingFxEntry
-	fxRatesUsed         map[string]decimal.Decimal
-	missingSeen         map[string]bool // dedup helper, not serialised
+	// writeOffs is the signed value of Positions that left the book this month
+	// with no cash settling them (ADR-0052 §4). nil on the baseline, like the
+	// other derived lines. writeOffPositions itemises it and is set on every
+	// month (empty when there were none), like stalePositions.
+	writeOffs         *decimal.Decimal
+	writeOffPositions []writeOffPosition
+	// unsettledTerminations is the data-quality advisory (ADR-0052 §7), not a
+	// derived line — set on every month including the baseline.
+	unsettledTerminations []unsettledTermination
+	livingExpenses        *decimal.Decimal // nil on baseline
+	userBreakdowns        map[string]userBreakdown
+	stalePositions        []stalePosition
+	missingFx             []missingFxEntry
+	fxRatesUsed           map[string]decimal.Decimal
+	missingSeen           map[string]bool // dedup helper, not serialised
 }
 
 type monthAmount struct {
@@ -594,6 +646,24 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		m[mi] = c
 	}
 
+	// Investments with proceeds recorded, by month: a sell or maturity
+	// Transaction. The AMOUNT is deliberately not inspected — a 0-proceeds Sell
+	// *is* how an Investment write-off is modelled (ADR-0052 §5), so it settles
+	// the advisory rather than tripping it forever. Built in its own pass because
+	// the cash-flow loop above skips zero-value transactions before they reach
+	// cashByPos, which is exactly the case this has to see.
+	settledByMonth := make(map[uuid.UUID]map[int]bool)
+	for _, t := range in.transactions {
+		if t.txnType != "sell" && t.txnType != "maturity" {
+			continue
+		}
+		mi := monthIndex(t.yearMonth)
+		if settledByMonth[t.investmentID] == nil {
+			settledByMonth[t.investmentID] = make(map[int]bool)
+		}
+		settledByMonth[t.investmentID][mi] = true
+	}
+
 	lastIdx := maxIdx
 	if ci := monthIndex(in.currentMonth); ci > lastIdx {
 		lastIdx = ci
@@ -605,12 +675,14 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	for idx := minIdx; idx <= lastIdx; idx++ {
 		baseline := idx == minIdx
 		m := monthlyReportData{
-			yearMonth:      monthFromIndex(idx),
-			userBreakdowns: make(map[string]userBreakdown, len(in.members)+1),
-			stalePositions: []stalePosition{},
-			missingFx:      []missingFxEntry{},
-			fxRatesUsed:    make(map[string]decimal.Decimal),
-			missingSeen:    make(map[string]bool),
+			yearMonth:             monthFromIndex(idx),
+			userBreakdowns:        make(map[string]userBreakdown, len(in.members)+1),
+			stalePositions:        []stalePosition{},
+			writeOffPositions:     []writeOffPosition{},
+			unsettledTerminations: []unsettledTermination{},
+			missingFx:             []missingFxEntry{},
+			fxRatesUsed:           make(map[string]decimal.Decimal),
+			missingSeen:           make(map[string]bool),
 		}
 		for _, u := range in.members {
 			m.userBreakdowns[u.String()] = userBreakdown{}
@@ -689,6 +761,22 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		}
 		m.nwTotal = m.nwAssets.Add(m.nwReceivables).Add(m.nwInvestments).Sub(m.nwLiabilities)
 
+		// ----- unsettled-termination advisory (always) -------------------
+		// An Investment that left the portfolio this month with no sell/maturity
+		// Transaction to say where its value went. Advisory only — it feeds no
+		// figure; the report still books the drop as a (possibly wrong) negative
+		// Investment Return, which is the truthful reading for a genuine total
+		// loss and the wrong one for an unrecorded Sell (ADR-0052 §5/§7).
+		for _, p := range positions {
+			if p.group != groupInvestment || !terminatesAt(p, idx) || settledByMonth[p.id][idx] {
+				continue
+			}
+			m.unsettledTerminations = append(m.unsettledTerminations, unsettledTermination{
+				ID: p.id, Name: p.name, Group: p.group.String(), Subtype: p.subtype,
+				Reason: reasonNoProceeds,
+			})
+		}
+
 		// ----- income statement (suppressed on baseline) -----------------
 		if !baseline {
 			ret := &investmentReturnAmounts{}
@@ -730,7 +818,14 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 
 			avc := decimal.Zero
 			for _, p := range positions {
-				if p.group != groupAsset || terminatedBefore(p, idx) {
+				// A termination-month value change is never a mark change (ADR-0052 §3).
+				// terminatedBefore alone would let the drop to the 0-value close snapshot
+				// read as depreciation — correct by accident for a scrapped vehicle, and
+				// wrong for a sold one, where the proceeds land in the bank and the
+				// residual would be understated by the whole sale value. Excluding the
+				// termination month routes that movement to either a cash leg or the
+				// write-off term below.
+				if p.group != groupAsset || terminatedByEndOf(p, idx) {
 					continue
 				}
 				if p.subtype != "property" && p.subtype != "vehicle" {
@@ -745,8 +840,42 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			}
 			m.assetValueChange = &avc
 
+			// The value a Position took into its termination month when no cash
+			// settled it (ADR-0052 §4). Computed as now−prev through the same
+			// fx.carried calls the net-worth pass uses, so it cancels ΔNW
+			// structurally rather than coincidentally, and an unconvertible currency
+			// is skipped consistently in both. Sign follows the effect on net worth,
+			// so a forgiven Liability contributes positively — the same negation the
+			// net-worth pass applies to a liability's balance.
+			writeOffs := decimal.Zero
+			for _, p := range positions {
+				if !terminatesAt(p, idx) || !nonCashTerminal(p) {
+					continue
+				}
+				now, okNow := fx.carried(byPos[p.id], idx)
+				prev, okPrev := fx.carried(byPos[p.id], idx-1)
+				if !okNow || !okPrev {
+					continue
+				}
+				d := now.Sub(prev)
+				if p.group == groupLiability {
+					d = d.Neg()
+				}
+				if d.IsZero() {
+					// Nothing vanished: the Position already carried 0 into its
+					// termination month (or a household corrected it by hand). Keep it
+					// off the constituent list so the line itemises only real movement.
+					continue
+				}
+				writeOffs = writeOffs.Add(d)
+				m.writeOffPositions = append(m.writeOffPositions, writeOffPosition{
+					ID: p.id, Name: p.name, Group: p.group.String(), Subtype: p.subtype, Amount: d,
+				})
+			}
+			m.writeOffs = &writeOffs
+
 			deltaNW := m.nwTotal.Sub(prevNwTotal)
-			exp := m.earnedIncome.total.Add(ret.total).Add(avc).Sub(deltaNW)
+			exp := m.earnedIncome.total.Add(ret.total).Add(avc).Add(writeOffs).Sub(deltaNW)
 			m.livingExpenses = &exp
 		}
 
@@ -895,6 +1024,37 @@ func transactionCashFlows(t reportTransaction) cashFlow {
 
 func terminatedBefore(p reportPosition, idx int) bool {
 	return p.terminatedAt != nil && idx > monthIndex(*p.terminatedAt)
+}
+
+// terminatesAt reports whether idx IS the position's termination month — the one
+// month it both contributes to net worth (INV-FINANCE-05) and settles in.
+func terminatesAt(p reportPosition, idx int) bool {
+	return p.terminatedAt != nil && idx == monthIndex(*p.terminatedAt)
+}
+
+// terminatedByEndOf reports whether the position had left the book by the end of
+// idx, i.e. terminatedBefore OR terminating in it. The asset-value-change loop's
+// exclusion rule (ADR-0052 §3): a termination-month change is a settlement, never
+// a mark.
+func terminatedByEndOf(p reportPosition, idx int) bool {
+	return p.terminatedAt != nil && idx >= monthIndex(*p.terminatedAt)
+}
+
+// nonCashTerminal reports whether the position's terminal status is one where no
+// cash came back — the Write-Off trigger (ADR-0052 §4). Investment is absent on
+// purpose: a total loss there is a truthful negative Investment Return, and an
+// investment write-off is modelled as `sold` with a 0-proceeds Sell (§5), so the
+// group needs no write-off status at all.
+func nonCashTerminal(p reportPosition) bool {
+	switch p.group {
+	case groupAsset:
+		return p.status == "disposed"
+	case groupLiability:
+		return p.status == "forgiven" || p.status == "written_off"
+	case groupReceivable:
+		return p.status == "written_off"
+	}
+	return false
 }
 
 func sortedPositions(ps []reportPosition) []reportPosition {

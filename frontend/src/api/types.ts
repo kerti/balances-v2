@@ -395,11 +395,41 @@ export type MonthlyReport = {
   earned_income_total: string | null;
   investment_return_total: string | null;
   asset_value_change: string | null; // property + vehicle non-cash mark change
+  // Value that left the book with no cash settling it — a disposed asset, a
+  // forgiven debt, an uncollectible receivable (ADR-0052). A term of the
+  // identity, so the statement lines only sum to ΔNW with it included; signed,
+  // so a forgiven debt reads positive.
+  write_offs: string | null;
   derived_living_expenses: string | null; // signed cash-spending residual
   user_breakdowns: Record<string, UserBreakdown>; // keyed by user_id and "joint"
   stale_positions: StalePosition[]; // positions carried forward this month (#50)
+  write_off_positions: WriteOffPosition[]; // the positions behind write_offs
+  unsettled_terminations: UnsettledTermination[]; // data-quality advisory
   fx_rates_used: Record<string, string>; // currency -> rate applied this month
   missing_fx: MissingFx[]; // positions/flows excluded for want of a rate
+};
+
+// WriteOffPosition is one position behind the month's write-off figure, with its
+// signed contribution to net worth. Write-offs is one signed term, so a month
+// holding both a forgiven debt and a written-off receivable can net toward zero
+// — these constituents are what keep that from reading as "nothing happened".
+export type WriteOffPosition = {
+  position_id: string;
+  name: string;
+  group: "asset" | "liability" | "receivable" | "investment";
+  subtype: string;
+  amount: string; // signed decimal string
+};
+
+// UnsettledTermination is one investment terminated with no proceeds recorded —
+// an advisory, part of no figure (ADR-0052). Reachable only via a path that
+// bypasses the terminate dialog: restore-from-backup, import, or the raw API.
+export type UnsettledTermination = {
+  position_id: string;
+  name: string;
+  group: "asset" | "liability" | "receivable" | "investment";
+  subtype: string;
+  reason: "no_proceeds";
 };
 
 // StalePosition is one position whose value this month was carried forward from

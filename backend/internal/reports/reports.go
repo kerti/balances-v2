@@ -133,13 +133,24 @@ type reportResponse struct {
 	InvestmentReturnGold        *decimal.Decimal `json:"investment_return_gold"`
 	InvestmentReturnTimeDeposit *decimal.Decimal `json:"investment_return_time_deposit"`
 
-	AssetValueChange      *decimal.Decimal `json:"asset_value_change"`
+	AssetValueChange *decimal.Decimal `json:"asset_value_change"`
+	// WriteOffs is the signed value of Positions that left the book with no cash
+	// settling them (ADR-0052) — a term of the comprehensive-income identity, so
+	// the dashboard's statement lines only sum to ΔNW with it included.
+	// WriteOffPositions itemises it: one signed term nets a forgiven debt against
+	// a written-off receivable, and the constituents are what keep such a month
+	// from reading as "nothing happened".
+	WriteOffs             *decimal.Decimal `json:"write_offs"`
 	DerivedLivingExpenses *decimal.Decimal `json:"derived_living_expenses"`
 
-	UserBreakdowns json.RawMessage `json:"user_breakdowns"`
-	StalePositions json.RawMessage `json:"stale_positions"`
-	FxRatesUsed    json.RawMessage `json:"fx_rates_used"`
-	MissingFx      json.RawMessage `json:"missing_fx"`
+	UserBreakdowns    json.RawMessage `json:"user_breakdowns"`
+	StalePositions    json.RawMessage `json:"stale_positions"`
+	WriteOffPositions json.RawMessage `json:"write_off_positions"`
+	// UnsettledTerminations is a data-quality advisory, part of no figure:
+	// Investments terminated with no recorded proceeds (ADR-0052 §7).
+	UnsettledTerminations json.RawMessage `json:"unsettled_terminations"`
+	FxRatesUsed           json.RawMessage `json:"fx_rates_used"`
+	MissingFx             json.RawMessage `json:"missing_fx"`
 }
 
 func toResponse(r db.MonthlyReport, currency string) reportResponse {
@@ -170,12 +181,15 @@ func toResponse(r db.MonthlyReport, currency string) reportResponse {
 		InvestmentReturnTimeDeposit: r.InvestmentReturnTimeDeposit,
 
 		AssetValueChange:      r.AssetValueChange,
+		WriteOffs:             r.WriteOffs,
 		DerivedLivingExpenses: r.DerivedLivingExpenses,
 
-		UserBreakdowns: rawJSON(r.UserBreakdowns, "{}"),
-		StalePositions: rawJSON(r.StalePositions, "[]"),
-		FxRatesUsed:    rawJSON(r.FxRatesUsed, "{}"),
-		MissingFx:      rawJSON(r.MissingFx, "[]"),
+		UserBreakdowns:        rawJSON(r.UserBreakdowns, "{}"),
+		StalePositions:        rawJSON(r.StalePositions, "[]"),
+		WriteOffPositions:     rawJSON(r.WriteOffPositions, "[]"),
+		UnsettledTerminations: rawJSON(r.UnsettledTerminations, "[]"),
+		FxRatesUsed:           rawJSON(r.FxRatesUsed, "{}"),
+		MissingFx:             rawJSON(r.MissingFx, "[]"),
 	}
 	if r.GeneratedAt.Valid {
 		t := r.GeneratedAt.Time
