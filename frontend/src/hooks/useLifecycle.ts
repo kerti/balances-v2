@@ -12,23 +12,29 @@ export type LifecyclePayload = {
   termination_note: string | null;
 };
 
-// Query keys to invalidate after a lifecycle change. Always the list + the
-// single-row cache; for investments also the snapshot list, because an
-// investment terminal flip (Sell / manual terminate) upserts a truthful 0-value
-// close snapshot server-side (repo/lifecycle.go, INV-LIFECYCLE-03) — the same
-// close the Maturity path writes. Without this refresh the new close snapshot
-// only shows after a manual reload (issue #56). The other three groups carry no
-// close snapshot, so they don't touch the snapshot list.
+// Snapshot-list query key per group. The keys are not uniformly named — assets
+// claimed the bare "snapshots" first — so they are spelled out rather than
+// derived from the group.
+const SNAPSHOT_QUERY_KEY: Record<LifecycleGroup, string> = {
+  assets: "snapshots",
+  liabilities: "liability-snapshots",
+  receivables: "receivable-snapshots",
+  investments: "investment-snapshots",
+};
+
+// Query keys to invalidate after a lifecycle change: the list, the single-row
+// cache, and the snapshot list. Every terminal flip writes a truthful 0-value
+// close snapshot at the termination month server-side (repo/lifecycle.go,
+// INV-LIFECYCLE-03), and un-terminating puts back the snapshot that close
+// displaced — so the snapshot list changes underneath the detail page on every
+// group. Without this refresh the change only shows after a manual reload (issue
+// #56, originally investment-only; ADR-0052 generalised the write to all four).
 export function lifecycleInvalidationKeys(
   group: LifecycleGroup,
   id: string,
   listKey: string,
 ): unknown[][] {
-  const keys: unknown[][] = [[listKey], [listKey, id]];
-  if (group === "investments") {
-    keys.push(["investment-snapshots", id]);
-  }
-  return keys;
+  return [[listKey], [listKey, id], [SNAPSHOT_QUERY_KEY[group], id]];
 }
 
 export function useUpdateLifecycle(group: LifecycleGroup, id: string, listKey: string) {

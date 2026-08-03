@@ -181,3 +181,65 @@ DO UPDATE SET
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
 RETURNING *;
+
+-- ---------------------------------------------------------------------------
+-- Close-snapshot displacement (ADR-0052 §2). Terminating a Position writes a
+-- truthful 0-value snapshot at the termination month, but the month may already
+-- hold one the user recorded. Rather than overwrite it (the #25 mechanism, which
+-- destroyed it unrecoverably), the live row is soft-deleted and the 0 row
+-- inserted alongside: the partial unique index on this table is
+-- `(asset_id, year_month) WHERE deleted_at IS NULL`, so the archived row and the
+-- close row coexist. Un-terminate reverses it. The same trio exists verbatim on
+-- the other three snapshot tables.
+
+-- GetAssetSnapshotAtMonth returns the single live snapshot at a month, if any.
+-- Read before a terminal flip (to archive it) and before an un-terminate (to
+-- tell our 0-value close row apart from a value the user re-recorded while the
+-- Position was terminated).
+-- name: GetAssetSnapshotAtMonth :one
+SELECT s.*
+FROM asset_snapshots s
+JOIN assets a ON a.id = s.asset_id
+WHERE s.asset_id = sqlc.arg('asset_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND a.household_id = sqlc.arg('household_id')::uuid
+  AND a.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
+-- GetArchivedAssetSnapshotAtMonth returns the row that was archived to make room
+-- for a close snapshot, so un-terminate can restore it. `deleted_at` is the
+-- discriminator: the archive UPDATE and the close-row INSERT run in one
+-- transaction, and `now()` is transaction-scoped, so the archived row's
+-- deleted_at equals the close row's created_at exactly. Without that guard the
+-- restore would resurrect a snapshot the user had deleted by hand months
+-- earlier. Zero-amount candidates are excluded: such a row is a close snapshot
+-- from an earlier terminate/un-terminate cycle, and restoring it would leave a
+-- reactivated Position reading 0 — the exact thing INV-LIFECYCLE-04 forbids.
+-- name: GetArchivedAssetSnapshotAtMonth :one
+SELECT s.*
+FROM asset_snapshots s
+JOIN assets a ON a.id = s.asset_id
+WHERE s.asset_id = sqlc.arg('asset_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND a.household_id = sqlc.arg('household_id')::uuid
+  AND a.deleted_at IS NULL
+  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1;
+
+-- RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Only ever
+-- called on the row GetArchivedAssetSnapshotAtMonth identified, in the same
+-- transaction that soft-deleted the close row that displaced it — so the partial
+-- unique index cannot be violated.
+-- name: RestoreAssetSnapshot :execrows
+UPDATE asset_snapshots s
+SET deleted_at = NULL,
+    updated_by = sqlc.arg('updated_by'),
+    updated_at = now()
+FROM assets a
+WHERE s.id = sqlc.arg('id')
+  AND s.asset_id = a.id
+  AND a.household_id = sqlc.arg('household_id')::uuid
+  AND a.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL;

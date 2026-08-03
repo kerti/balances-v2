@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -98,6 +99,100 @@ func (q *Queries) CreateInvestmentSnapshot(ctx context.Context, arg CreateInvest
 		arg.CreatedBy,
 		arg.HouseholdID,
 	)
+	var i InvestmentSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.InvestmentID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.Quantity,
+		&i.PricePerUnit,
+		&i.AccruedInterest,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getArchivedInvestmentSnapshotAtMonth = `-- name: GetArchivedInvestmentSnapshotAtMonth :one
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM investment_snapshots s
+JOIN investments i ON i.id = s.investment_id
+WHERE s.investment_id = $1
+  AND s.year_month = $2::date
+  AND i.household_id = $3::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at = $4::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1
+`
+
+type GetArchivedInvestmentSnapshotAtMonthParams struct {
+	InvestmentID uuid.UUID          `json:"investment_id"`
+	YearMonth    time.Time          `json:"year_month"`
+	HouseholdID  uuid.UUID          `json:"household_id"`
+	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
+}
+
+func (q *Queries) GetArchivedInvestmentSnapshotAtMonth(ctx context.Context, arg GetArchivedInvestmentSnapshotAtMonthParams) (InvestmentSnapshot, error) {
+	row := q.db.QueryRow(ctx, getArchivedInvestmentSnapshotAtMonth,
+		arg.InvestmentID,
+		arg.YearMonth,
+		arg.HouseholdID,
+		arg.ArchivedAt,
+	)
+	var i InvestmentSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.InvestmentID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.Quantity,
+		&i.PricePerUnit,
+		&i.AccruedInterest,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
+const getInvestmentSnapshotAtMonth = `-- name: GetInvestmentSnapshotAtMonth :one
+
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM investment_snapshots s
+JOIN investments i ON i.id = s.investment_id
+WHERE s.investment_id = $1
+  AND s.year_month = $2::date
+  AND i.household_id = $3::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type GetInvestmentSnapshotAtMonthParams struct {
+	InvestmentID uuid.UUID `json:"investment_id"`
+	YearMonth    time.Time `json:"year_month"`
+	HouseholdID  uuid.UUID `json:"household_id"`
+}
+
+// Close-snapshot displacement (ADR-0052 §2) — see asset_snapshots.sql for the
+// mechanism and the reasoning behind each guard. Investment is retrofitted onto
+// it: #25 wrote its close via UpsertInvestmentSnapshot, which overwrote the
+// user's termination-month row in place.
+func (q *Queries) GetInvestmentSnapshotAtMonth(ctx context.Context, arg GetInvestmentSnapshotAtMonthParams) (InvestmentSnapshot, error) {
+	row := q.db.QueryRow(ctx, getInvestmentSnapshotAtMonth, arg.InvestmentID, arg.YearMonth, arg.HouseholdID)
 	var i InvestmentSnapshot
 	err := row.Scan(
 		&i.ID,
@@ -626,6 +721,33 @@ func (q *Queries) ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth(ctx contex
 		return nil, err
 	}
 	return items, nil
+}
+
+const restoreInvestmentSnapshot = `-- name: RestoreInvestmentSnapshot :execrows
+UPDATE investment_snapshots s
+SET deleted_at = NULL,
+    updated_by = $1,
+    updated_at = now()
+FROM investments i
+WHERE s.id = $2
+  AND s.investment_id = i.id
+  AND i.household_id = $3::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL
+`
+
+type RestoreInvestmentSnapshotParams struct {
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+}
+
+func (q *Queries) RestoreInvestmentSnapshot(ctx context.Context, arg RestoreInvestmentSnapshotParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreInvestmentSnapshot, arg.UpdatedBy, arg.ID, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const softDeleteInvestmentSnapshot = `-- name: SoftDeleteInvestmentSnapshot :execrows

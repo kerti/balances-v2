@@ -157,24 +157,17 @@ func (r *InvestmentRepo) CreateInvestmentTransaction(ctx context.Context, p Crea
 		//
 		// Bond + TimeDeposit are the only subtypes that accept Maturity (per
 		// validateInvestmentTransactionType) and both use the accrued shape,
-		// so the 0 close is amount=0 / accrued_interest=0. Upserts to win
-		// over any pre-maturity snap the user took in the same month — the
-		// month-end truth is a liquidated position. (The detail screen reads
-		// "Matured on {date}" from the status, not a fictional P/L — #25.)
-		zero := decimal.Zero
-		ym := time.Date(p.TransactionDate.Year(), p.TransactionDate.Month(), 1, 0, 0, 0, 0, time.UTC)
-		asOf := p.TransactionDate
-		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
-			ID:              p.InvestmentID,
-			YearMonth:       ym,
-			Amount:          zero,
-			Currency:        p.Currency,
-			AccruedInterest: &zero,
-			AsOfDate:        &asOf,
-			CreatedBy:       &user,
-			HouseholdID:     hid,
-		}); err != nil {
-			return nil, fmt.Errorf("close snapshot on maturity: %w", err)
+		// so the 0 close is amount=0 / accrued_interest=0. It displaces any
+		// pre-maturity snap the user took in the same month — the month-end
+		// truth is a liquidated position — by archiving it rather than
+		// overwriting it (ADR-0052 §2), so un-terminating hands it back. (The
+		// detail screen reads "Matured on {date}" from the status, not a
+		// fictional P/L — #25.)
+		if err := writeCloseSnapshot(ctx,
+			investmentCloseSnapshotOps(qtx, p.InvestmentID, inv.Subtype, p.Currency, user, hid),
+			p.TransactionDate,
+		); err != nil {
+			return nil, err
 		}
 	}
 
@@ -306,18 +299,19 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 		return nil, fmt.Errorf("re-flip investment to matured: %w", err)
 	}
 
-	// Relocate the 0-value close snapshot when the maturity month moved: drop the
-	// old month's close (deleteCloseSnapshot only removes the zero-amount row, so
-	// a real snapshot the user kept that month survives), then re-assert it at the
-	// new month. Same month: the upsert just refreshes as_of_date. These are the
-	// same helpers the lifecycle terminate/un-terminate path uses.
+	// Relocate the 0-value close snapshot when the maturity month moved: revert
+	// the old month's close (which hands back whatever snapshot it displaced, and
+	// leaves alone a value the user recorded there since), then assert it at the
+	// new month. These are the same group-agnostic helpers the lifecycle
+	// terminate/un-terminate path uses (ADR-0052 §2).
+	ops := investmentCloseSnapshotOps(qtx, existing.InvestmentID, inv.Subtype, inv.NativeCurrency, user, hid)
 	oldDate := existing.TransactionDate
 	if oldDate.Year() != newDate.Year() || oldDate.Month() != newDate.Month() {
-		if err := deleteCloseSnapshot(ctx, qtx, existing.InvestmentID, oldDate, user, hid); err != nil {
+		if err := revertCloseSnapshot(ctx, ops, oldDate); err != nil {
 			return nil, err
 		}
 	}
-	if err := upsertCloseSnapshot(ctx, qtx, existing.InvestmentID, inv.Subtype, inv.NativeCurrency, newDate, user, hid); err != nil {
+	if err := writeCloseSnapshot(ctx, ops, newDate); err != nil {
 		return nil, err
 	}
 

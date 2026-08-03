@@ -28,6 +28,23 @@ func (h *handlerHarness) rawSnapshotCount(t *testing.T, receivableID uuid.UUID) 
 	return n
 }
 
+// rawSnapshotCountForMonth scopes the count to one month. Needed wherever the
+// position under test has been terminated: a terminal flip legitimately writes
+// its own 0-value close snapshot at the termination month (ADR-0052), so a
+// whole-position count can no longer distinguish "the bulk save wrote nothing".
+func (h *handlerHarness) rawSnapshotCountForMonth(t *testing.T, receivableID uuid.UUID, yearMonth string) int {
+	t.Helper()
+	var n int
+	err := h.pool.QueryRow(context.Background(),
+		`SELECT count(*) FROM receivable_snapshots
+		 WHERE receivable_id = $1 AND year_month = $2::date AND deleted_at IS NULL`,
+		receivableID, yearMonth+"-01").Scan(&n)
+	if err != nil {
+		t.Fatalf("raw snapshot count for month: %v", err)
+	}
+	return n
+}
+
 func (h *handlerHarness) rawSnapshotAmount(t *testing.T, receivableID uuid.UUID, yearMonth string) decimal.Decimal {
 	t.Helper()
 	var amt decimal.Decimal
@@ -129,7 +146,7 @@ func TestReceivableSnapshotHandlers_Bulk(t *testing.T) {
 			{"receivable_id": closed.ID.String(), "amount": "1000000", "currency": "IDR"},
 		})
 		requireStatus(t, rec, http.StatusUnprocessableEntity)
-		if got := h.rawSnapshotCount(t, closed.ID); got != 0 {
+		if got := h.rawSnapshotCountForMonth(t, closed.ID, "2026-05"); got != 0 {
 			t.Errorf("terminated-before-month receivable must not be written; wrote %d", got)
 		}
 	})
