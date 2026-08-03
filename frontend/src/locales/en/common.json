@@ -194,7 +194,15 @@
     "statusLabel": "Status",
     "terminatedOnLabel": "Terminated on",
     "noteLabel": "Note (optional)",
-    "notePlaceholder": "Sold to a private buyer"
+    "notePlaceholder": "Sold to a private buyer",
+    "settlementTitle": "Where did the money go?",
+    "settlementQuantityLabel": "Quantity sold",
+    "settlementPriceLabel": "Price per unit ({{currency}})",
+    "settlementPrincipalLabel": "Principal returned ({{currency}})",
+    "settlementInterestLabel": "Interest received ({{currency}})",
+    "settlementCashIn": "Received",
+    "settlementWriteOff": "No money came back — write this off",
+    "settlementAlreadyRecorded": "A sale is already recorded in this month, so no new one will be added."
   },
   "import": {
     "trigger": "Import",

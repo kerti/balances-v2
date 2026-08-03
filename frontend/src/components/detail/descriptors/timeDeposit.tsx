@@ -87,6 +87,7 @@ export const timeDepositDescriptor: DetailDescriptor<
   group: "investments",
   tagGroup: "investment",
   listKey: "time-deposits",
+  investmentSubtype: "time_deposit",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {
     detailsCardTitle: "investments:timeDeposit.detailsCardTitle",

@@ -25,6 +25,9 @@ const (
 	// or TimeDeposit to (ADR-0009). Named because the flip is automatic in
 	// CreateInvestmentTransaction, not user-supplied.
 	StatusMatured = "matured"
+	// StatusSold is the Investment terminal status settled by a Sell rather than
+	// a Maturity — the other half of settlementTypeFor's matrix (ADR-0052 §6).
+	StatusSold = "sold"
 )
 
 var (
@@ -233,7 +236,13 @@ func (r *ReceivableRepo) UpdateReceivableLifecycle(ctx context.Context, id uuid.
 // at month-end whatever group it belongs to — so the branching below now lives
 // in applyCloseSnapshot and the only investment-specific part left is the
 // subtype-shaped 0 row.
-func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.UUID, p LifecycleParams) (*db.Investment, error) {
+//
+// settle is the ADR-0052 §6 capture-at-source payload and is Investment-only:
+// when non-nil it writes the terminal Sell/Maturity Transaction in this same
+// database transaction, so the flip and the record of where the value went can
+// never half-apply. nil leaves the ledger untouched — the raw-API and
+// restore/import shape, which is exactly what the §7 advisory exists to surface.
+func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.UUID, p LifecycleParams, settle *InvestmentSettlement) (*db.Investment, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return nil, err
@@ -252,6 +261,21 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 		return nil, fmt.Errorf("get investment for lifecycle: %w", err)
 	}
 	priorTerminatedAt := inv.TerminatedAt
+
+	// A terminal status must be one this subtype's transaction matrix can settle
+	// (ADR-0052 §6) — no matured Stock, no sold TimeDeposit. The group-level enum
+	// above cannot see the subtype, so the check lands here, after the pre-read.
+	//
+	// Only a *transition into* an unsupported pair is refused. A position already
+	// sitting on one — introduced by a restore, an import, or a raw call predating
+	// this rule — stays fully editable, so its date and note can still be
+	// corrected; the way out is to reactivate it and terminate it again properly,
+	// which this never blocks because `active` is not a terminal status.
+	if p.Status != StatusActive && p.Status != inv.Status {
+		if _, err := settlementTypeFor(inv.Subtype, p.Status); err != nil {
+			return nil, err
+		}
+	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -273,6 +297,14 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("update investment lifecycle: %w", err)
+	}
+
+	// The settlement lands before the close snapshot so a failure in either half
+	// rolls the other back together with the flip (ADR-0052 §6).
+	if settle != nil {
+		if err := writeSettlement(ctx, qtx, inv, p, *settle, user, hid); err != nil {
+			return nil, err
+		}
 	}
 
 	ops := investmentCloseSnapshotOps(qtx, id, inv.Subtype, inv.NativeCurrency, user, hid)

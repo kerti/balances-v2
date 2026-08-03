@@ -67,6 +67,7 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
   group: "investments",
   tagGroup: "investment",
   listKey: "golds",
+  investmentSubtype: "gold",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {
     detailsCardTitle: "investments:gold.detailsCardTitle",

@@ -23,7 +23,21 @@ describe("lifecycleInvalidationKeys", () => {
     "refreshes the %s snapshot list on a terminal flip (issue #56)",
     (group, listKey, snapshotKey) => {
       const keys = lifecycleInvalidationKeys(group, ID, listKey);
-      expect(keys).toEqual([[listKey], [listKey, ID], [snapshotKey, ID]]);
+      expect(keys.slice(0, 3)).toEqual([[listKey], [listKey, ID], [snapshotKey, ID]]);
     },
   );
+
+  // covers: INV-LIFECYCLE-08
+  it("also refreshes the ledger for investments, which alone can settle on the flip", () => {
+    // Terminating an Investment can write its settling Sell/Maturity in the same
+    // request (ADR-0052 §6), so the transaction table the detail page renders is
+    // stale the moment the flip lands. The other three groups have no ledger.
+    expect(lifecycleInvalidationKeys("investments", ID, "stocks")).toContainEqual([
+      "investment-transactions",
+      ID,
+    ]);
+    for (const group of ["assets", "liabilities", "receivables"] as const) {
+      expect(lifecycleInvalidationKeys(group, ID, group)).toHaveLength(3);
+    }
+  });
 });

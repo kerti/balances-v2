@@ -209,6 +209,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
               currentStatus={asset.status}
               currentTerminatedAt={asset.terminated_at}
               currentNote={asset.termination_note}
+              investmentSubtype={descriptor.investmentSubtype}
+              currency={asset.native_currency}
             />
             <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="mr-1 size-4" />

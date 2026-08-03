@@ -3,7 +3,7 @@ import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AssetSnapshot } from "@/api/types";
 import type { TagGroup } from "@/api/types";
-import type { LifecycleGroup } from "@/lib/lifecycle";
+import type { InvestmentSubtype, LifecycleGroup } from "@/lib/lifecycle";
 import type { TourStep } from "@/components/shell/HelpTourButton";
 
 // The **Position shared surface** the core operates on (ADR-0051, restated from
@@ -147,6 +147,12 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   tagGroup: TagGroup;
   // The parent list cache key TerminatePositionDialog invalidates.
   listKey: string;
+  // Set by the five investment descriptors only (ADR-0052 §6). It narrows the
+  // terminate dialog's status dropdown to the terminal statuses this subtype's
+  // transaction matrix can settle, and turns on the settlement capture. The core
+  // forwards it verbatim — it never branches on the value, so this stays wiring
+  // rather than the `{ kind }` flag ADR-0051 bans.
+  investmentSubtype?: InvestmentSubtype;
   i18nNamespaces: string[];
 
   // Copy the core resolves with its own `t`. Fully-qualified keys, mirroring the

@@ -6,10 +6,25 @@ import type { LifecycleGroup } from "@/lib/lifecycle";
 // (4 groups, not the 10 subtypes), so every subtype detail page funnels through
 // the same endpoint — the caller passes its own list query-key so we can
 // invalidate both the list and the single-row cache after a status change.
+// `settlement` is Investment-only (ADR-0052 §6): the terminal Sell/Maturity the
+// dialog books in the SAME database transaction as the flip, so the position can
+// never be left holding nothing with no record of where its value went. Its
+// shape follows the subtype — quantity × price_per_unit for a Sell, principal +
+// interest for a Maturity — and the unused pair stays null. Omitted entirely by
+// the other three groups, by an un-terminate, and when the termination month
+// already carries a sale the user recorded by hand.
+export type LifecycleSettlement = {
+  quantity: string | null;
+  price_per_unit: string | null;
+  principal_amount: string | null;
+  interest_amount: string | null;
+};
+
 export type LifecyclePayload = {
   status: string;
   terminated_at: string | null;
   termination_note: string | null;
+  settlement?: LifecycleSettlement;
 };
 
 // Snapshot-list query key per group. The keys are not uniformly named — assets
@@ -34,7 +49,14 @@ export function lifecycleInvalidationKeys(
   id: string,
   listKey: string,
 ): unknown[][] {
-  return [[listKey], [listKey, id], [SNAPSHOT_QUERY_KEY[group], id]];
+  const keys: unknown[][] = [[listKey], [listKey, id], [SNAPSHOT_QUERY_KEY[group], id]];
+  // Terminating an Investment can now write its settling Sell/Maturity in the
+  // same request (ADR-0052 §6), so the ledger the detail page renders is stale
+  // the moment the flip lands. Only investments have one.
+  if (group === "investments") {
+    keys.push(["investment-transactions", id]);
+  }
+  return keys;
 }
 
 export function useUpdateLifecycle(group: LifecycleGroup, id: string, listKey: string) {

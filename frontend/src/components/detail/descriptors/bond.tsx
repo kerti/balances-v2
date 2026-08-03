@@ -73,6 +73,7 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
   group: "investments",
   tagGroup: "investment",
   listKey: "bonds",
+  investmentSubtype: "bond",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {
     detailsCardTitle: "investments:bond.detailsCardTitle",

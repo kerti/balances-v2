@@ -3,7 +3,9 @@ import {
   STATUS_VALUES,
   statusLabel,
   statusOptions,
+  settlementKind,
   isActiveStatus,
+  type InvestmentSubtype,
   type LifecycleGroup,
 } from "@/lib/lifecycle";
 
@@ -31,6 +33,63 @@ describe("statusOptions", () => {
         expect(o.label.length).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe("statusOptions for an investment subtype", () => {
+  // covers: INV-LIFECYCLE-08
+  it("offers only the terminal statuses the subtype's transaction matrix can settle", () => {
+    const values = (subtype: InvestmentSubtype) =>
+      statusOptions("investments", subtype).map((o) => o.value);
+
+    // Sell-only subtypes: a Stock cannot mature.
+    expect(values("stock")).toEqual(["active", "sold"]);
+    expect(values("mutual_fund")).toEqual(["active", "sold"]);
+    expect(values("gold")).toEqual(["active", "sold"]);
+    // A Bond takes either.
+    expect(values("bond")).toEqual(["active", "sold", "matured"]);
+    // A TimeDeposit accepts only Maturity, so it cannot be "sold".
+    expect(values("time_deposit")).toEqual(["active", "matured"]);
+  });
+
+  // covers: INV-LIFECYCLE-08
+  it("keeps a current status the narrowing would otherwise drop", () => {
+    // A deposit already recorded as 'sold' — by import, restore, or before the
+    // narrowing existed. Dropping it would blank the dropdown's own value.
+    expect(statusOptions("investments", "time_deposit", "sold").map((o) => o.value)).toEqual([
+      "active",
+      "matured",
+      "sold",
+    ]);
+    // A status already on the list is never duplicated.
+    expect(statusOptions("investments", "stock", "sold").map((o) => o.value)).toEqual([
+      "active",
+      "sold",
+    ]);
+  });
+
+  it("leaves the other three groups unnarrowed", () => {
+    for (const group of ["assets", "liabilities", "receivables"] as LifecycleGroup[]) {
+      expect(statusOptions(group).map((o) => o.value)).toEqual(STATUS_VALUES[group]);
+    }
+  });
+});
+
+describe("settlementKind", () => {
+  // covers: INV-LIFECYCLE-08
+  it("maps each settleable pair to the transaction that expresses it", () => {
+    expect(settlementKind("stock", "sold")).toBe("sell");
+    expect(settlementKind("gold", "sold")).toBe("sell");
+    expect(settlementKind("bond", "sold")).toBe("sell");
+    expect(settlementKind("bond", "matured")).toBe("maturity");
+    expect(settlementKind("time_deposit", "matured")).toBe("maturity");
+  });
+
+  // covers: INV-LIFECYCLE-08
+  it("is null for a pair no transaction can express", () => {
+    expect(settlementKind("stock", "matured")).toBeNull();
+    expect(settlementKind("time_deposit", "sold")).toBeNull();
+    expect(settlementKind("stock", "active")).toBeNull();
   });
 });
 
