@@ -112,7 +112,20 @@ few, dormant). If a repair is ever wanted, it must inherit each child's `deleted
 and leave `updated_at` alone — that column feeds `MaxReportInputUpdatedAt`, whose snapshot subqueries
 do not filter `deleted_at`, so bumping it would mark every report in every household stale to fix
 rows that change no number. Active line is lifecycle/integrity: **#576** (terminating a position with
-no offsetting cash flow) is next and needs an ADR first.
+no offsetting cash flow).
+Also unreleased on `main`: **ADR-0052** — #576's ADR, docs only, no code yet. Settles what a terminal
+status means across all four groups. The 0-value close snapshot generalises from Investment-only to
+every group (fixes the cash-settled timing split, where the cash leg lands in `M` and the position
+drop in `M+1`); a new signed **Write-Off** term enters the identity for the non-cash terminals
+(`disposed` / `forgiven` / `written_off`), which had no income-statement counterpart at all and were
+landing whole in the Living-Expenses plug. Two findings worth keeping: Investment needs **no**
+write-off status — a total loss is a truthful negative Investment Return (`sold` + 0-proceeds Sell) —
+and a 0 close snapshot on a *cash-settled* property sale would have let `asset_value_change` eat it as
+depreciation, so the termination month is now excluded from that loop entirely. Close snapshots
+displace by soft-delete + insert (the partial unique index already allows both rows), making
+un-terminate restore the user's own value and bulk correction reversible; Investment gets retrofitted.
+**No backfill migration** — same call as #575, existing data corrected by hand on the two live
+households and recorded in the release notes. Sliced as three sub-issues under #576.
 
 Next, in order:
 
