@@ -128,17 +128,67 @@ user had simply not recorded the Sell.
 So an investment write-off is modelled as **`sold` with a 0-proceeds Sell transaction**. No enum
 change, no migration, and it satisfies the advisory in (7) rather than tripping it forever.
 
-### 6. Terminating an Investment captures its proceeds
+### 6. Terminating an Investment captures its settlement
 
-`TerminatePositionDialog` — one generic dialog serving all four groups — gains a proceeds amount for
-Investment, defaulted to the last snapshot value, and writes the `sell`/`maturity` transaction in the
-**same transaction** as the lifecycle flip. An explicit "no proceeds — write this off" escape writes
-the 0-proceeds Sell of (5).
+`TerminatePositionDialog` — one generic dialog serving all four groups — gains a **settlement block**
+for Investment, and writes the `sell`/`maturity` transaction in the **same transaction** as the
+lifecycle flip. An explicit "no money came back — write this off" escape writes the 0-proceeds Sell of
+(5) — the quantity still leaves the position, only the price is zero, so the cost basis closes out the
+way a real sale would.
+
+The block is **subtype-shaped**, not one "proceeds" scalar: it captures exactly what that subtype's
+own transaction dialog would, because that is the only shape its transaction matrix accepts.
+
+| Subtype | Terminal status | Settlement |
+|---|---|---|
+| Stock, MutualFund, Gold | `sold` | Sell — quantity × price_per_unit |
+| Bond | `sold` / `matured` | Sell / Maturity |
+| TimeDeposit | `matured` | Maturity — principal + interest, both `cash_out` |
+
+A single scalar was the first shape considered and is rejected: a Sell is quantity-denominated (the
+cost-basis replay reduces proportionally, so a Sell with no quantity leaves the basis stranded) and a
+Maturity is a principal/interest pair. Deriving either from one number means fabricating the split.
+
+Because the dialog's status dropdown is group-level, it also **narrows to the settleable pairs above**
+for Investment — otherwise it offers a matured Stock and a sold TimeDeposit, combinations no
+transaction can express.
+
+The same matrix is enforced at the API: `UpdateInvestmentLifecycle` refuses a **transition into** an
+unsupported pair, so the combination cannot be created by a raw call either. Refusing only the
+transition — never a re-assertion — is what keeps a position that arrived on one via restore or import
+fully editable, so its date and note can still be corrected; the way out is to reactivate and
+terminate again properly, which is never blocked because `active` is not terminal. The dialog keeps a
+current status the narrowing would otherwise drop, so it never blanks its own value.
+
+**Defaults, and the one place a blank is deliberate.** The Sell's quantity comes from the *ledger*
+(Σ buy − Σ sell), not the last snapshot, because the ledger is what the cost-basis replay reads — so
+sizing the closing Sell from it is what drives the basis to zero. The price defaults to the last
+marked price. Where there is none, it defaults to 0 **only if the position holds nothing** (0 × 0 is
+the truthful settlement of an empty position, and the form must stay submittable — a required-blank
+price would otherwise make such a position impossible to close at all). A position that *does* hold
+something but has never been marked is left blank and required: what it sold for is exactly the
+judgement this capture exists to take, and defaulting it to 0 would book a real sale as a total loss.
 
 Rejected: a hard 400 unless a matching `sell`/`maturity` already exists in the termination month. It
 blocks legitimate corrections, constrains the ordering of import and restore, and hands a
 non-technical user an error with no obvious remedy. Capture-at-source closes the same hole without
 any of that.
+
+Also rejected: **dropping the terminate action for Investment entirely** and forcing termination
+through a subtype-specific terminal transaction. It is the right instinct — it is already how
+Bond/TimeDeposit maturity works (a Maturity flips the status itself, INV-LIFECYCLE-02) — but it breaks
+on three counts. A Sell is not terminal (sells are partial by construction, so a closing Sell needs an
+explicit "this closes the position" marker, which is the same capture problem relocated). The dialog
+is the only surface for **un-terminate**, [[adr-0009]]'s correction affordance, and deleting a
+Maturity does not reverse the flip. And restore/import can still land terminated-with-no-proceeds
+positions (7), which would leave an affected household with no remedy at all.
+
+The settlement is captured only on the **active → terminal** edge. Re-asserting a terminal status —
+correcting a date or a note — books no second sale, and the repo rejects one. Deliberately *not*
+deduplicated by "a sale already exists this month": several partial Sells in one month are legitimate,
+so the position's own status is the only honest signal. The dialog does skip the capture when the
+termination month already carries a sale the user recorded by hand, so it never offers to duplicate
+one that is already there.
 
 ### 7. `unsettled_terminations` — a report-side advisory
 

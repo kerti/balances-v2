@@ -69,6 +69,7 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
     group: "investments",
     tagGroup: "investment",
     listKey: "mutual-funds",
+    investmentSubtype: "mutual_fund",
     i18nNamespaces: ["investments", "common", "errors"],
     keys: {
       detailsCardTitle: "investments:mutualFund.detailsCardTitle",

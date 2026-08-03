@@ -70,6 +70,7 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
   group: "investments",
   tagGroup: "investment",
   listKey: "stocks",
+  investmentSubtype: "stock",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {
     detailsCardTitle: "investments:stock.detailsCardTitle",

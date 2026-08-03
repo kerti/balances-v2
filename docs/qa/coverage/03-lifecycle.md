@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/03-lifecycle.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**7 / 7** invariants in this zone have at least one covering test (**7** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**8 / 8** invariants in this zone have at least one covering test (**8** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -15,3 +15,4 @@
 | INV-LIFECYCLE-05 | Editing a Maturity transaction's date re-syncs terminated_at and relocates the close snapshot, leaving exactly one | `backend/internal/repo/investment_maturity_edit_test.go` |
 | INV-LIFECYCLE-06 | No further transaction is accepted on a terminal (matured) position — rejected with 409 | `backend/internal/investments/lifecycle_test.go` |
 | INV-LIFECYCLE-07 | Rollover successor linkage: linking sets `rolled_from_investment_id` / the source resolves `rolled_to`; self-link and unknown source are rejected (the INV-FINANCE-12 read-side assumption) | `backend/internal/investments/time_deposits_test.go` |
+| INV-LIFECYCLE-08 | Terminating an Investment with a settlement writes its terminal Sell/Maturity in the **same** transaction as the flip (neither half survives alone); the Transaction's shape is resolved from the subtype, an unsupported subtype/status pair is rejected, and re-asserting an already-terminal status books no second sale | `backend/internal/repo/investment_settlement_test.go`<br>`frontend/src/components/dialogs/TerminatePositionDialog.test.tsx`<br>`frontend/src/lib/lifecycle.test.ts` |

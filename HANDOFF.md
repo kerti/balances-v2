@@ -154,6 +154,30 @@ invariants INV-FINANCE-33/34/35; -05/-06/-10 reconciled. **Still owed at release
 close snapshots for already-terminated A/L/R positions on the two live households, plus the
 release-notes line saying historical months were regenerated (ADR-0052 §8).
 
+Also unreleased on `main`: **#587** — ADR-0052 slice 3, closing #576. Terminating an Investment now
+captures its settling `sell`/`maturity` in the **same** database transaction as the status flip, so
+neither half can survive alone. The dialog's settlement block is **subtype-shaped** (quantity × price
+for a Sell, principal + interest for a Maturity) rather than one "proceeds" scalar — a Sell is
+quantity-denominated and a Maturity is a pair, so a single number could only be split by fabricating
+it — and the Investment status dropdown narrows to the pairs a transaction can express, which is what
+makes the capture total. The write-off escape sends a **0-priced** Sell, not nothing: the quantity
+still leaves the position, so the cost basis closes out and #586's `unsettled_terminations` advisory is
+settled rather than tripped forever. Captured only on the active → terminal edge; re-asserting a
+terminal status books no second sale. The matrix is also enforced at the API — a *transition into* an
+unsupported pair (matured Stock, sold TimeDeposit) is refused, while a position that arrived on one
+via restore stays editable, so it is never stranded. No migration, no engine-version bump. ADR-0052 §6
+amended to record the shape, the API rule, and the default policy (a never-marked position that holds
+something leaves the price blank and required — defaulting it to 0 would book a real sale as a total
+loss; only a position holding nothing defaults to 0 so it stays closeable). Also recorded there:
+dropping the terminate action for Investment was considered and rejected — a Sell is not inherently
+terminal, and the dialog is the only surface for un-terminate. New invariant INV-LIFECYCLE-08.
+
+The ADR-0052 §8 manual correction is **done on the dev DB** (7 positions: 5 Assets, 2 Liabilities;
+the demo household had none, and no Investment sat on an unsettleable status). Archived row and
+0-value close row share one transaction timestamp, so every one stays restorable. Still owed at
+release: the same pass on the demo household if it ever gains terminated A/L/R, plus the release-notes
+line saying historical months were regenerated.
+
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's

@@ -117,7 +117,7 @@ func TestPositionLifecycle_UpdateAndValidation(t *testing.T) {
 	t.Run("alice terminates stock (sold)", func(t *testing.T) {
 		row, err := invRepo.UpdateInvestmentLifecycle(aliceCtx, stock.Investment.ID, repo.LifecycleParams{
 			Status: "sold", TerminatedAt: &termDate,
-		})
+		}, nil)
 		if err != nil {
 			t.Fatalf("UpdateInvestmentLifecycle: %v", err)
 		}
@@ -217,7 +217,7 @@ func TestPositionLifecycle_UpdateAndValidation(t *testing.T) {
 	t.Run("investment rejects cross-group status", func(t *testing.T) {
 		_, err := invRepo.UpdateInvestmentLifecycle(aliceCtx, stock.Investment.ID, repo.LifecycleParams{
 			Status: "paid_off", TerminatedAt: &termDate, // paid_off is a liability status
-		})
+		}, nil)
 		if !errors.Is(err, repo.ErrInvalidLifecycle) {
 			t.Fatalf("want ErrInvalidLifecycle, got %v", err)
 		}
@@ -226,7 +226,7 @@ func TestPositionLifecycle_UpdateAndValidation(t *testing.T) {
 	t.Run("bob cannot terminate alice's stock", func(t *testing.T) {
 		_, err := invRepo.UpdateInvestmentLifecycle(bobCtx, stock.Investment.ID, repo.LifecycleParams{
 			Status: "sold", TerminatedAt: &termDate,
-		})
+		}, nil)
 		if !errors.Is(err, repo.ErrNotFound) {
 			t.Fatalf("want ErrNotFound, got %v", err)
 		}
@@ -345,7 +345,7 @@ func TestInvestmentLifecycle_CloseSnapshot(t *testing.T) {
 	t.Run("termination writes 0-value close snapshot in subtype shape", func(t *testing.T) {
 		if _, err := r.UpdateInvestmentLifecycle(aliceCtx, stock.Investment.ID, repo.LifecycleParams{
 			Status: "sold", TerminatedAt: &termDate,
-		}); err != nil {
+		}, nil); err != nil {
 			t.Fatalf("UpdateInvestmentLifecycle sold: %v", err)
 		}
 		snaps, err := r.ListInvestmentSnapshots(aliceCtx, stock.Investment.ID)
@@ -376,7 +376,7 @@ func TestInvestmentLifecycle_CloseSnapshot(t *testing.T) {
 	t.Run("un-terminate removes the close snapshot", func(t *testing.T) {
 		if _, err := r.UpdateInvestmentLifecycle(aliceCtx, stock.Investment.ID, repo.LifecycleParams{
 			Status: "active", TerminatedAt: nil,
-		}); err != nil {
+		}, nil); err != nil {
 			t.Fatalf("UpdateInvestmentLifecycle un-terminate: %v", err)
 		}
 		snaps, err := r.ListInvestmentSnapshots(aliceCtx, stock.Investment.ID)

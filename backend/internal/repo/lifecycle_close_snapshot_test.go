@@ -51,7 +51,7 @@ func TestUpdateInvestmentLifecycle_CloseSnapshotRoundTrip(t *testing.T) {
 		Status:          "sold",
 		TerminatedAt:    &termDate,
 		TerminationNote: &note,
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatalf("terminate: %v", err)
 	}
 
@@ -80,7 +80,7 @@ func TestUpdateInvestmentLifecycle_CloseSnapshotRoundTrip(t *testing.T) {
 	if _, err := r.UpdateInvestmentLifecycle(ctx, id, repo.LifecycleParams{
 		Status:       "active",
 		TerminatedAt: nil,
-	}); err != nil {
+	}, nil); err != nil {
 		t.Fatalf("un-terminate: %v", err)
 	}
 

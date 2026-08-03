@@ -228,7 +228,7 @@ func TestPositionLifecycle_CloseSnapshotAllGroups(t *testing.T) {
 				return out
 			},
 			lifecycle: func(posID uuid.UUID, p repo.LifecycleParams) error {
-				_, err := ir.UpdateInvestmentLifecycle(ctx, posID, p)
+				_, err := ir.UpdateInvestmentLifecycle(ctx, posID, p, nil)
 				return err
 			},
 		},

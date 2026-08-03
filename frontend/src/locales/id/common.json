@@ -194,7 +194,15 @@
     "statusLabel": "Status",
     "terminatedOnLabel": "Dihentikan pada",
     "noteLabel": "Catatan (opsional)",
-    "notePlaceholder": "Dijual ke pembeli pribadi"
+    "notePlaceholder": "Dijual ke pembeli pribadi",
+    "settlementTitle": "Ke mana uangnya?",
+    "settlementQuantityLabel": "Jumlah terjual",
+    "settlementPriceLabel": "Harga per unit ({{currency}})",
+    "settlementPrincipalLabel": "Pokok kembali ({{currency}})",
+    "settlementInterestLabel": "Bunga diterima ({{currency}})",
+    "settlementCashIn": "Diterima",
+    "settlementWriteOff": "Tidak ada uang kembali — hapus buku",
+    "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi."
   },
   "import": {
     "trigger": "Impor",
