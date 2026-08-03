@@ -45,6 +45,12 @@ type reportCopy struct {
 
 	staleNote string // footnote for carried-forward values
 
+	// write-offs (ADR-0052): value that left the book with no cash settling it
+	writeOffsTitle string
+	writeOffsNote  string // one-sentence explanation for a non-technical reader
+	writeOffsTotal string
+	unsettledNote  string // footnote: investments terminated with no proceeds recorded
+
 	// financial-health panel (#412, ADR-0048)
 	statNote       string   // section intro: trailing-12 smoothing + expenses-are-estimated
 	statRows       []string // the four ratio labels, in render order
@@ -115,6 +121,10 @@ var reportCatalog = map[string]reportCopy{
 		fxTitle:          "Exchange Rates Used",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* carried forward from an earlier month's statement",
+		writeOffsTitle:   "Write-Offs",
+		writeOffsNote:    "Value that left your books this month without any money changing hands — property or belongings disposed of, a debt someone forgave, money owed to you that won't be repaid. A forgiven debt counts in your favour, so the total can be positive.",
+		writeOffsTotal:   "Total Write-Offs",
+		unsettledNote:    "* terminated with no sale or maturity recorded, so its final value shows as an investment loss. If money did come back, record the sale for that month.",
 		deltaVs:          "vs %s",
 		footerPage:       "Page %d of %s",
 		statNote:         "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month. Living expenses are never recorded directly: they're derived as what came in (income and investment returns) minus the change in your net worth, so every expense figure is an estimate.",
@@ -180,6 +190,10 @@ var reportCatalog = map[string]reportCopy{
 		fxTitle:          "Kurs yang Digunakan",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
+		writeOffsTitle:   "Penghapusan Nilai",
+		writeOffsNote:    "Nilai yang hilang dari pembukuan bulan ini tanpa ada uang yang berpindah — harta yang dilepas atau dibuang, utang yang dibebaskan pemberi pinjaman, atau piutang yang tidak akan tertagih. Utang yang dibebaskan menguntungkan Anda, jadi totalnya bisa bernilai positif.",
+		writeOffsTotal:   "Jumlah Penghapusan Nilai",
+		unsettledNote:    "* diakhiri tanpa pencatatan penjualan atau jatuh tempo, sehingga nilai akhirnya tampak sebagai kerugian investasi. Jika dananya kembali, catat penjualannya pada bulan tersebut.",
 		deltaVs:          "vs %s",
 		footerPage:       "Halaman %d dari %s",
 		statNote:         "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pendapatan dan imbal hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",

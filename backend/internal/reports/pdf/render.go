@@ -89,6 +89,7 @@ func Render(in Input) ([]byte, error) {
 	d.pdf.AddPage() // group 2 — statistics + cash flow always render
 	d.statistics()
 	d.cashFlow()
+	d.writeOffs() // no-op unless something left the book without cash (ADR-0052)
 
 	if d.hasAssets() {
 		d.pdf.AddPage() // group 3 — assets
@@ -106,6 +107,7 @@ func Render(in Input) ([]byte, error) {
 	}
 	d.fxRates()
 	d.staleFootnote()
+	d.unsettledFootnote()
 
 	var buf bytes.Buffer
 	if err := pdf.Output(&buf); err != nil {
@@ -662,6 +664,31 @@ func (d *doc) cashFlow() {
 		lineOpt{bold: true, accent: true, negative: decAmt(cf.Net).IsNegative(), size: 10.5, topBorder: true})
 }
 
+// writeOffs draws the month's Write-Off line and the Positions behind it
+// (ADR-0052). It sits after the cash-flow section rather than inside it: the
+// whole point of the term is that no cash moved, so folding it into Cash Out
+// would misstate the household's spending. Absent months collapse the section
+// entirely — most months write nothing off.
+func (d *doc) writeOffs() {
+	w := d.in.WriteOffs
+	if w == nil || len(w.Items) == 0 {
+		return
+	}
+	d.sectionTitle(d.c.writeOffsTitle)
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, d.c.writeOffsNote, "", "L", false)
+	d.pdf.Ln(2)
+	// The constituents carry the meaning: one signed term can net toward zero, so
+	// a month is only legible through the Positions beneath the line.
+	for _, it := range w.Items {
+		d.line(it.Label, d.money(it.Amount), 5, lineOpt{negative: decAmt(it.Amount).IsNegative()})
+	}
+	d.line(d.c.writeOffsTotal, d.money(w.Total), 0,
+		lineOpt{bold: true, accent: true, negative: decAmt(w.Total).IsNegative(), size: 10.5, topBorder: true})
+}
+
 func (d *doc) fxRates() {
 	if len(d.in.FxRates) == 0 {
 		return
@@ -756,6 +783,26 @@ func (d *doc) staleFootnote() {
 			return
 		}
 	}
+}
+
+// unsettledFootnote names any Investment terminated this month with no proceeds
+// recorded (ADR-0052 §7). It is an advisory, not a figure: the report already
+// booked the position's whole final value as an investment loss, which is
+// truthful for a real total loss and wrong for an unrecorded Sell — and only the
+// household can tell the two apart.
+func (d *doc) unsettledFootnote() {
+	if len(d.in.Unsettled) == 0 {
+		return
+	}
+	d.pdf.Ln(3)
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	for _, u := range d.in.Unsettled {
+		d.pdf.SetX(d.x0)
+		d.pdf.CellFormat(d.w, 4, u.Label+" *", "", 1, "L", false, 0, "")
+	}
+	d.pdf.SetX(d.x0)
+	d.pdf.MultiCell(d.w, 3.6, d.c.unsettledNote, "", "L", false)
 }
 
 // ---- helpers ----------------------------------------------------------------

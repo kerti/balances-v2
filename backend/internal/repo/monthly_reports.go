@@ -28,7 +28,11 @@ func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 // v4 (migration 00014): per-risk investment return + per-bucket closing
 // investment value + new-money investment_placement materialized for the
 // investment-performance breakdown (ADR-0048 amendment).
-const reportEngineVersion int32 = 4
+// v5 (migration 00015): the Write-Off term joins the comprehensive-income
+// identity and asset_value_change stops absorbing the termination month, so
+// derived_living_expenses changes for any household holding a terminated
+// Position (ADR-0052).
+const reportEngineVersion int32 = 5
 
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
@@ -293,6 +297,14 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 	if err != nil {
 		return db.UpsertMonthlyReportParams{}, fmt.Errorf("marshal missing fx: %w", err)
 	}
+	writeOffPos, err := json.Marshal(rep.writeOffPositions)
+	if err != nil {
+		return db.UpsertMonthlyReportParams{}, fmt.Errorf("marshal write-off positions: %w", err)
+	}
+	unsettled, err := json.Marshal(rep.unsettledTerminations)
+	if err != nil {
+		return db.UpsertMonthlyReportParams{}, fmt.Errorf("marshal unsettled terminations: %w", err)
+	}
 	params := db.UpsertMonthlyReportParams{
 		HouseholdID:           hid,
 		YearMonth:             rep.yearMonth,
@@ -317,11 +329,16 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		EarnedIncomePensionRoutine:  ptr(rep.earnedIncome.pensionRoutine),
 		EarnedIncomeInterestRoutine: ptr(rep.earnedIncome.interestRoutine),
 		AssetValueChange:            rep.assetValueChange, // nil on baseline
+		WriteOffs:                   rep.writeOffs,        // nil on baseline
 		DerivedLivingExpenses:       rep.livingExpenses,   // nil on baseline
 		UserBreakdowns:              ub,
 		StalePositions:              stale,
-		FxRatesUsed:                 fxUsed,
-		MissingFx:                   missingFx,
+		// Both lists are NOT NULL DEFAULT '[]' columns: written on every month,
+		// empty when there is nothing to report (ADR-0052 §4/§7).
+		WriteOffPositions:     writeOffPos,
+		UnsettledTerminations: unsettled,
+		FxRatesUsed:           fxUsed,
+		MissingFx:             missingFx,
 
 		// Closing invested value per bucket — set on every month (a stock; seeds
 		// next month's opening rate base). Total is NwInvestments (ADR-0048
@@ -443,8 +460,9 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, a := range assets {
 		in.positions = append(in.positions, reportPosition{
-			id: a.ID, name: a.DisplayName, group: groupAsset, subtype: a.Subtype, ownershipType: a.OwnershipType,
-			soleOwnerID: a.SoleOwnerUserID, terminatedAt: a.TerminatedAt,
+			id: a.ID, name: a.DisplayName, group: groupAsset, subtype: a.Subtype, status: a.Status,
+			ownershipType: a.OwnershipType,
+			soleOwnerID:   a.SoleOwnerUserID, terminatedAt: a.TerminatedAt,
 		})
 	}
 	liabilities, err := r.q.ListLiabilitiesForReport(ctx, hid)
@@ -453,8 +471,9 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, l := range liabilities {
 		in.positions = append(in.positions, reportPosition{
-			id: l.ID, name: l.DisplayName, group: groupLiability, subtype: l.Subtype, ownershipType: l.OwnershipType,
-			soleOwnerID: l.SoleOwnerUserID, terminatedAt: l.TerminatedAt,
+			id: l.ID, name: l.DisplayName, group: groupLiability, subtype: l.Subtype, status: l.Status,
+			ownershipType: l.OwnershipType,
+			soleOwnerID:   l.SoleOwnerUserID, terminatedAt: l.TerminatedAt,
 		})
 	}
 	receivables, err := r.q.ListReceivablesForReport(ctx, hid)
@@ -463,8 +482,9 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	}
 	for _, rc := range receivables {
 		in.positions = append(in.positions, reportPosition{
-			id: rc.ID, name: rc.DisplayName, group: groupReceivable, ownershipType: rc.OwnershipType,
-			soleOwnerID: rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt,
+			id: rc.ID, name: rc.DisplayName, group: groupReceivable, status: rc.Status,
+			ownershipType: rc.OwnershipType,
+			soleOwnerID:   rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt,
 		})
 	}
 	investments, err := r.q.ListInvestmentsForReport(ctx, hid)

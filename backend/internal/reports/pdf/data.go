@@ -44,6 +44,35 @@ type CashFlow struct {
 	Net      string // Income − Expenses, decimal string
 }
 
+// WriteOffItem is one Position behind the month's Write-Off line, with its
+// signed contribution to net worth: a forgiven Liability reads positive, a
+// disposed Asset or written-off Receivable negative.
+type WriteOffItem struct {
+	Label  string
+	Amount string // signed decimal string
+}
+
+// WriteOffs is the month's Write-Off line: value that left the book with no cash
+// settling it (ADR-0052). Nil when the month had none, which is the usual case —
+// the section renders only when something was actually written off.
+//
+// Items exists because Write-Offs is ONE signed term, not a gains/losses pair: a
+// month holding both a forgiven debt and a written-off receivable can net toward
+// zero on Total, and the itemisation is what keeps that from reading as "nothing
+// happened".
+type WriteOffs struct {
+	Total string // signed decimal string
+	Items []WriteOffItem
+}
+
+// UnsettledTermination is one Investment terminated with no recorded proceeds —
+// a data-quality advisory, part of no figure (ADR-0052 §7). Reachable only
+// through a path that bypasses the terminate dialog: restore-from-backup,
+// import, or the raw API.
+type UnsettledTermination struct {
+	Label string
+}
+
 // FxRate is one currency's exchange rate into the reporting currency, as used
 // by the engine for this month.
 type FxRate struct {
@@ -160,9 +189,13 @@ type Input struct {
 	Delta             *Delta // month-over-month; nil when no prior month
 	YoY               *Delta // year-over-year; nil when no month a year earlier
 	Positions         []Position
-	CashFlow          *CashFlow // nil on the baseline month
-	FxRates           []FxRate
-	Trend             []TrendPoint
-	Stats             Stats          // financial-health panel (ADR-0048); zero value = reserved em-dash panel
-	InvestmentPerf    InvestmentPerf // investment-performance rates (ADR-0048 amendment); Defined=false suppresses
+	CashFlow          *CashFlow  // nil on the baseline month
+	WriteOffs         *WriteOffs // nil when the month wrote nothing off (ADR-0052)
+	// Unsettled is the proceeds-less-termination advisory; empty in the normal
+	// case, rendered as a footnote beside the stale-position one.
+	Unsettled      []UnsettledTermination
+	FxRates        []FxRate
+	Trend          []TrendPoint
+	Stats          Stats          // financial-health panel (ADR-0048); zero value = reserved em-dash panel
+	InvestmentPerf InvestmentPerf // investment-performance rates (ADR-0048 amendment); Defined=false suppresses
 }

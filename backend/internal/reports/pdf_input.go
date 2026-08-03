@@ -80,6 +80,8 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		YoY:               buildYoY(row, series),
 		Positions:         pos,
 		CashFlow:          buildCashFlow(row, nameByID, joint),
+		WriteOffs:         buildWriteOffs(row),
+		Unsettled:         buildUnsettled(row.UnsettledTerminations),
 		FxRates:           buildFxRates(row.FxRatesUsed),
 		Trend:             buildTrend(series, row.YearMonth),
 		Stats:             buildStats(row, positions, series, inflation, assumedAnnualInflation),
@@ -537,6 +539,55 @@ func buildCashFlow(row *db.MonthlyReport, nameByID map[uuid.UUID]string, joint s
 		Expenses: expenses.String(),
 		Net:      income.Sub(expenses).String(),
 	}
+}
+
+// writeOffPositionJSON / unsettledTerminationJSON mirror the engine's two
+// termination payloads (ADR-0052). Same tolerance as userBreakdownJSON: the
+// decimal unmarshals whether the amount was written quoted or bare.
+type writeOffPositionJSON struct {
+	Name   string          `json:"name"`
+	Amount decimal.Decimal `json:"amount"`
+}
+
+type unsettledTerminationJSON struct {
+	Name string `json:"name"`
+}
+
+// buildWriteOffs renders the month's Write-Off line only when something was
+// actually written off. Nil on the baseline (no derived lines) and nil when the
+// constituents are empty — a 0 total with no Positions behind it is noise, and
+// the section is meant to explain net-worth movement that nothing else does.
+// The total comes from the materialized column rather than re-summing the items,
+// so what prints is the figure the identity balanced against.
+func buildWriteOffs(row *db.MonthlyReport) *pdf.WriteOffs {
+	if row.WriteOffs == nil {
+		return nil
+	}
+	var items []writeOffPositionJSON
+	_ = json.Unmarshal(row.WriteOffPositions, &items)
+	if len(items) == 0 {
+		return nil
+	}
+	// Largest absolute movement first: the line a household should read is the one
+	// that moved their net worth most, regardless of direction.
+	sort.SliceStable(items, func(i, j int) bool {
+		return items[i].Amount.Abs().GreaterThan(items[j].Amount.Abs())
+	})
+	out := make([]pdf.WriteOffItem, 0, len(items))
+	for _, it := range items {
+		out = append(out, pdf.WriteOffItem{Label: it.Name, Amount: it.Amount.String()})
+	}
+	return &pdf.WriteOffs{Total: row.WriteOffs.String(), Items: out}
+}
+
+func buildUnsettled(raw []byte) []pdf.UnsettledTermination {
+	var rows []unsettledTerminationJSON
+	_ = json.Unmarshal(raw, &rows)
+	out := make([]pdf.UnsettledTermination, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, pdf.UnsettledTermination{Label: r.Name})
+	}
+	return out
 }
 
 func buildFxRates(raw []byte) []pdf.FxRate {

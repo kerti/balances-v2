@@ -301,6 +301,7 @@ function HeadlineCard({
           </div>
         )}
         <StalePositions selected={selected} />
+        <UnsettledTerminations selected={selected} />
         <MissingFxWarning selected={selected} />
       </CardContent>
     </Card>
@@ -390,6 +391,47 @@ function StalePositions({ selected }: { selected: MonthlyReport }) {
           })}
         </ul>
       )}
+    </div>
+  );
+}
+
+// UnsettledTerminations warns about investments closed with no sale or maturity
+// recorded (ADR-0052): the report has booked their whole final value as an
+// investment loss, which is truthful for a real total loss and wrong for a sale
+// nobody wrote down — only the household can tell the two apart. Reachable only
+// via a path that bypasses the terminate dialog (restore-from-backup, import,
+// raw API), so it is normally absent. Each row deep-links to the position so the
+// missing transaction can be added.
+function UnsettledTerminations({ selected }: { selected: MonthlyReport }) {
+  const { t } = useTranslation("dashboard");
+  const navigate = useNavigate();
+  // Reports materialized before ADR-0052 carry no column; the staleness
+  // watermark is data-driven, so an old row survives until something changes.
+  const unsettled = selected.unsettled_terminations ?? [];
+  if (unsettled.length === 0) return null;
+  return (
+    <div data-testid="dashboard-unsettled" className="text-sm text-amber-600">
+      <p>{t("headline.unsettledTerminations", { count: unsettled.length })}</p>
+      <ul className="mt-1 space-y-1 pl-5">
+        {unsettled.map((p) => {
+          const href = positionDetail(p.group, p.subtype, p.position_id);
+          return (
+            <li key={p.position_id} data-testid="dashboard-unsettled-item">
+              {href ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(href)}
+                  className="text-left font-medium hover:underline"
+                >
+                  {p.name}
+                </button>
+              ) : (
+                <span className="font-medium">{p.name}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -668,9 +710,15 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
   const earned = Number(selected.earned_income_total ?? "0");
   const ret = Number(selected.investment_return_total ?? "0");
   const avc = Number(selected.asset_value_change ?? "0");
+  const writeOffs = Number(selected.write_offs ?? "0");
   const exp = Number(selected.derived_living_expenses ?? "0");
-  const nwChange = earned + ret + avc - exp;
+  const nwChange = earned + ret + avc + writeOffs - exp;
   const expensePositive = exp >= 0;
+  // Write-offs is one signed term, so a month with both a forgiven debt and a
+  // written-off receivable can net to zero on the line while two real things
+  // happened. Show the constituents whenever there are any — keyed off the list,
+  // not the total (ADR-0052).
+  const writeOffPositions = selected.write_off_positions ?? [];
 
   return (
     <div className="space-y-2 text-sm">
@@ -684,6 +732,27 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           muted
           hint={t("statement.assetValueChangeHint")}
         />
+      )}
+      {writeOffPositions.length > 0 && (
+        <>
+          <StatementRow
+            label={t("statement.writeOffs")}
+            value={writeOffs}
+            currency={currency}
+            muted
+            hint={t("statement.writeOffsHint")}
+          />
+          <ul className="space-y-1 pl-4" data-testid="dashboard-write-offs">
+            {writeOffPositions.map((p) => (
+              <li key={p.position_id} className="flex items-center justify-between gap-4">
+                <span className="text-xs text-muted-foreground">{p.name}</span>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {formatCurrency(p.amount, currency)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
       <StatementRow
         // The residual: positive → spending (an outflow); negative → net worth
