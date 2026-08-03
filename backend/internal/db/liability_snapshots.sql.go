@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -103,6 +104,52 @@ func (q *Queries) CreateLiabilitySnapshot(ctx context.Context, arg CreateLiabili
 	return i, err
 }
 
+const getArchivedLiabilitySnapshotAtMonth = `-- name: GetArchivedLiabilitySnapshotAtMonth :one
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM liability_snapshots s
+JOIN liabilities l ON l.id = s.liability_id
+WHERE s.liability_id = $1
+  AND s.year_month = $2::date
+  AND l.household_id = $3::uuid
+  AND l.deleted_at IS NULL
+  AND s.deleted_at = $4::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1
+`
+
+type GetArchivedLiabilitySnapshotAtMonthParams struct {
+	LiabilityID uuid.UUID          `json:"liability_id"`
+	YearMonth   time.Time          `json:"year_month"`
+	HouseholdID uuid.UUID          `json:"household_id"`
+	ArchivedAt  pgtype.Timestamptz `json:"archived_at"`
+}
+
+func (q *Queries) GetArchivedLiabilitySnapshotAtMonth(ctx context.Context, arg GetArchivedLiabilitySnapshotAtMonthParams) (LiabilitySnapshot, error) {
+	row := q.db.QueryRow(ctx, getArchivedLiabilitySnapshotAtMonth,
+		arg.LiabilityID,
+		arg.YearMonth,
+		arg.HouseholdID,
+		arg.ArchivedAt,
+	)
+	var i LiabilitySnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.LiabilityID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getLiabilityForImport = `-- name: GetLiabilityForImport :one
 SELECT l.display_name, l.native_currency
 FROM liabilities l
@@ -127,6 +174,46 @@ func (q *Queries) GetLiabilityForImport(ctx context.Context, arg GetLiabilityFor
 	row := q.db.QueryRow(ctx, getLiabilityForImport, arg.ID, arg.HouseholdID)
 	var i GetLiabilityForImportRow
 	err := row.Scan(&i.DisplayName, &i.NativeCurrency)
+	return i, err
+}
+
+const getLiabilitySnapshotAtMonth = `-- name: GetLiabilitySnapshotAtMonth :one
+
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM liability_snapshots s
+JOIN liabilities l ON l.id = s.liability_id
+WHERE s.liability_id = $1
+  AND s.year_month = $2::date
+  AND l.household_id = $3::uuid
+  AND l.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type GetLiabilitySnapshotAtMonthParams struct {
+	LiabilityID uuid.UUID `json:"liability_id"`
+	YearMonth   time.Time `json:"year_month"`
+	HouseholdID uuid.UUID `json:"household_id"`
+}
+
+// Close-snapshot displacement (ADR-0052 §2) — see asset_snapshots.sql for the
+// mechanism and the reasoning behind each guard.
+func (q *Queries) GetLiabilitySnapshotAtMonth(ctx context.Context, arg GetLiabilitySnapshotAtMonthParams) (LiabilitySnapshot, error) {
+	row := q.db.QueryRow(ctx, getLiabilitySnapshotAtMonth, arg.LiabilityID, arg.YearMonth, arg.HouseholdID)
+	var i LiabilitySnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.LiabilityID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
@@ -436,6 +523,33 @@ func (q *Queries) ListLiabilitySnapshotsForLiability(ctx context.Context, arg Li
 		return nil, err
 	}
 	return items, nil
+}
+
+const restoreLiabilitySnapshot = `-- name: RestoreLiabilitySnapshot :execrows
+UPDATE liability_snapshots s
+SET deleted_at = NULL,
+    updated_by = $1,
+    updated_at = now()
+FROM liabilities l
+WHERE s.id = $2
+  AND s.liability_id = l.id
+  AND l.household_id = $3::uuid
+  AND l.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL
+`
+
+type RestoreLiabilitySnapshotParams struct {
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+}
+
+func (q *Queries) RestoreLiabilitySnapshot(ctx context.Context, arg RestoreLiabilitySnapshotParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreLiabilitySnapshot, arg.UpdatedBy, arg.ID, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const softDeleteLiabilitySnapshot = `-- name: SoftDeleteLiabilitySnapshot :execrows

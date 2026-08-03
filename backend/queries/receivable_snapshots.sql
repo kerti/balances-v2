@@ -170,3 +170,41 @@ WHERE receivable_id = ANY(sqlc.arg('receivable_ids')::uuid[])
   AND deleted_at IS NULL
   AND year_month <= sqlc.arg('year_month')::date
 ORDER BY receivable_id, year_month DESC;
+
+-- Close-snapshot displacement (ADR-0052 §2) — see asset_snapshots.sql for the
+-- mechanism and the reasoning behind each guard.
+
+-- name: GetReceivableSnapshotAtMonth :one
+SELECT s.*
+FROM receivable_snapshots s
+JOIN receivables rc ON rc.id = s.receivable_id
+WHERE s.receivable_id = sqlc.arg('receivable_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND rc.household_id = sqlc.arg('household_id')::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
+-- name: GetArchivedReceivableSnapshotAtMonth :one
+SELECT s.*
+FROM receivable_snapshots s
+JOIN receivables rc ON rc.id = s.receivable_id
+WHERE s.receivable_id = sqlc.arg('receivable_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND rc.household_id = sqlc.arg('household_id')::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1;
+
+-- name: RestoreReceivableSnapshot :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = NULL,
+    updated_by = sqlc.arg('updated_by'),
+    updated_at = now()
+FROM receivables rc
+WHERE s.id = sqlc.arg('id')
+  AND s.receivable_id = rc.id
+  AND rc.household_id = sqlc.arg('household_id')::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL;

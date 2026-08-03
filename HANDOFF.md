@@ -126,6 +126,17 @@ displace by soft-delete + insert (the partial unique index already allows both r
 un-terminate restore the user's own value and bulk correction reversible; Investment gets retrofitted.
 **No backfill migration** — same call as #575, existing data corrected by hand on the two live
 households and recorded in the release notes. Sliced as three sub-issues under #576.
+Also unreleased on `main`: **#585** — ADR-0052 slice 1, the timing half. Asset, Liability and
+Receivable now write the 0-value close snapshot their terminal flip always implied, inside the same
+transaction as the lifecycle UPDATE, and all four groups share one codepath. Displacement is
+soft-delete + insert: the archived row is paired to the close row by transaction timestamp
+(`archived.deleted_at == close.created_at`), which is what lets un-terminate restore the user's own
+value instead of leaving the month empty — and a re-asserted flip refreshes the close row in place so
+that pairing survives. Re-terminating after the user recorded a fresh value at the termination month
+leaves theirs alone. Cash-settled terminals (`closed`/`sold`/`paid_off`/`collected`/`matured`) now
+reconcile: both legs land in `M` and the residual is untouched. The non-cash terminals still land in
+the plug — moved from `M+1` to `M`, same magnitude, no new error — until #586 adds the Write-Off term.
+No migration, no engine-version bump.
 
 Next, in order:
 

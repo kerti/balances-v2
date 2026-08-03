@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -74,7 +75,27 @@ func (r *AssetRepo) UpdateAssetLifecycle(ctx context.Context, id uuid.UUID, p Li
 	if err := validatePositionLifecycle(assetStatuses, p); err != nil {
 		return nil, err
 	}
-	row, err := r.q.UpdateAssetLifecycle(ctx, db.UpdateAssetLifecycleParams{
+
+	// Pre-read for the native currency the close snapshot is denominated in and
+	// the prior terminated_at (the month whose close snapshot an un-terminate
+	// reverses).
+	asset, err := r.q.GetAssetByID(ctx, db.GetAssetByIDParams{ID: id, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get asset for lifecycle: %w", err)
+	}
+	priorTerminatedAt := asset.TerminatedAt
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	row, err := qtx.UpdateAssetLifecycle(ctx, db.UpdateAssetLifecycleParams{
 		ID:              id,
 		HouseholdID:     hid,
 		Status:          p.Status,
@@ -88,6 +109,15 @@ func (r *AssetRepo) UpdateAssetLifecycle(ctx context.Context, id uuid.UUID, p Li
 		}
 		return nil, fmt.Errorf("update asset lifecycle: %w", err)
 	}
+
+	ops := assetCloseSnapshotOps(qtx, id, asset.NativeCurrency, user, hid)
+	if err := applyCloseSnapshot(ctx, ops, p, priorTerminatedAt); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
 	return &row, nil
 }
 
@@ -99,7 +129,24 @@ func (r *LiabilityRepo) UpdateLiabilityLifecycle(ctx context.Context, id uuid.UU
 	if err := validatePositionLifecycle(liabilityStatuses, p); err != nil {
 		return nil, err
 	}
-	row, err := r.q.UpdateLiabilityLifecycle(ctx, db.UpdateLiabilityLifecycleParams{
+
+	liability, err := r.q.GetLiabilityByID(ctx, db.GetLiabilityByIDParams{ID: id, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get liability for lifecycle: %w", err)
+	}
+	priorTerminatedAt := liability.TerminatedAt
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	row, err := qtx.UpdateLiabilityLifecycle(ctx, db.UpdateLiabilityLifecycleParams{
 		ID:              id,
 		HouseholdID:     hid,
 		Status:          p.Status,
@@ -113,6 +160,15 @@ func (r *LiabilityRepo) UpdateLiabilityLifecycle(ctx context.Context, id uuid.UU
 		}
 		return nil, fmt.Errorf("update liability lifecycle: %w", err)
 	}
+
+	ops := liabilityCloseSnapshotOps(qtx, id, liability.NativeCurrency, user, hid)
+	if err := applyCloseSnapshot(ctx, ops, p, priorTerminatedAt); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
 	return &row, nil
 }
 
@@ -124,7 +180,24 @@ func (r *ReceivableRepo) UpdateReceivableLifecycle(ctx context.Context, id uuid.
 	if err := validatePositionLifecycle(receivableStatuses, p); err != nil {
 		return nil, err
 	}
-	row, err := r.q.UpdateReceivableLifecycle(ctx, db.UpdateReceivableLifecycleParams{
+
+	receivable, err := r.q.GetReceivableByID(ctx, db.GetReceivableByIDParams{ID: id, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get receivable for lifecycle: %w", err)
+	}
+	priorTerminatedAt := receivable.TerminatedAt
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	row, err := qtx.UpdateReceivableLifecycle(ctx, db.UpdateReceivableLifecycleParams{
 		ID:              id,
 		HouseholdID:     hid,
 		Status:          p.Status,
@@ -138,19 +211,28 @@ func (r *ReceivableRepo) UpdateReceivableLifecycle(ctx context.Context, id uuid.
 		}
 		return nil, fmt.Errorf("update receivable lifecycle: %w", err)
 	}
+
+	ops := receivableCloseSnapshotOps(qtx, id, receivable.NativeCurrency, user, hid)
+	if err := applyCloseSnapshot(ctx, ops, p, priorTerminatedAt); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit tx: %w", err)
+	}
 	return &row, nil
 }
 
-// UpdateInvestmentLifecycle is the only group whose lifecycle flip also writes
-// snapshot data, because investments are the only group with cash-flow
-// transactions feeding the derived return (ADR-0008). Terminating a position
-// means it holds 0 at month-end — the proceeds left for the bank as Sell /
-// Maturity cash_out. Without a truthful 0 close snapshot the return formula
-// (Δvalue + cash_out − cash_in) double-counts the payout, the same bug #17
-// introduced for Maturity and #25 removes at its source. One coherent rule:
-// terminate ⇒ 0-value close snapshot; proceeds are transactions. The
-// correction-affordance inverse (un-terminate back to active, ADR-0009) drops
-// the close snapshot so the reactivated position doesn't read 0 forever.
+// UpdateInvestmentLifecycle terminates or reactivates an investment. Investment
+// was the first group to write close-snapshot data on a lifecycle flip, because
+// it is the only group with cash-flow transactions feeding the derived return
+// (ADR-0008): without a truthful 0 close snapshot the return formula (Δvalue +
+// cash_out − cash_in) double-counts the payout, the bug #17 introduced for
+// Maturity and #25 removed at its source. ADR-0052 generalised the rule to all
+// four groups — a position that left the portfolio during month M holds nothing
+// at month-end whatever group it belongs to — so the branching below now lives
+// in applyCloseSnapshot and the only investment-specific part left is the
+// subtype-shaped 0 row.
 func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.UUID, p LifecycleParams) (*db.Investment, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
@@ -193,23 +275,9 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 		return nil, fmt.Errorf("update investment lifecycle: %w", err)
 	}
 
-	switch {
-	case p.Status != StatusActive && p.TerminatedAt != nil:
-		// Terminal flip: upsert the truthful 0 close snapshot at the
-		// termination month, winning over any value the user recorded that
-		// month (month-end truth is a liquidated position). A Maturity
-		// transaction takes its own path (it writes the close inside the same
-		// tx as the txn insert), so this covers Sell + manual terminate.
-		if err := upsertCloseSnapshot(ctx, qtx, id, inv.Subtype, inv.NativeCurrency, *p.TerminatedAt, user, hid); err != nil {
-			return nil, err
-		}
-	case p.Status == StatusActive && priorTerminatedAt != nil:
-		// Un-terminate correction: drop the close snapshot we wrote at the
-		// prior termination month so the now-active position carries forward
-		// its last real value, not 0.
-		if err := deleteCloseSnapshot(ctx, qtx, id, *priorTerminatedAt, user, hid); err != nil {
-			return nil, err
-		}
+	ops := investmentCloseSnapshotOps(qtx, id, inv.Subtype, inv.NativeCurrency, user, hid)
+	if err := applyCloseSnapshot(ctx, ops, p, priorTerminatedAt); err != nil {
+		return nil, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -218,58 +286,393 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 	return &row, nil
 }
 
-// upsertCloseSnapshot writes a 0-value snapshot for the termination month in the
-// shape the subtype's CHECK constraint demands (quantity/price for
-// stock/mutual_fund/gold; accrued_interest for bond/time_deposit — both 0).
-func upsertCloseSnapshot(ctx context.Context, qtx *db.Queries, id uuid.UUID, subtype, currency string, terminatedAt time.Time, user, hid uuid.UUID) error {
-	zero := decimal.Zero
-	params := db.UpsertInvestmentSnapshotParams{
-		ID:          id,
-		YearMonth:   time.Date(terminatedAt.Year(), terminatedAt.Month(), 1, 0, 0, 0, 0, time.UTC),
-		Amount:      zero,
-		Currency:    currency,
-		AsOfDate:    &terminatedAt,
-		CreatedBy:   &user,
-		HouseholdID: hid,
-	}
-	switch subtype {
-	case "bond", "time_deposit":
-		params.AccruedInterest = &zero
-	default: // stock, mutual_fund, gold
-		params.Quantity = &zero
-		params.PricePerUnit = &zero
-	}
-	if _, err := qtx.UpsertInvestmentSnapshot(ctx, params); err != nil {
-		return fmt.Errorf("close snapshot on termination: %w", err)
+// closeSnapshotRow is the group-agnostic slice of a snapshot row the
+// close-snapshot machinery reads. createdAt doubles as the discriminator that
+// pairs a close row with the row it displaced — see closeSnapshotOps.archivedAt.
+type closeSnapshotRow struct {
+	id        uuid.UUID
+	amount    decimal.Decimal
+	createdAt pgtype.Timestamptz
+}
+
+// closeSnapshotOps binds one group's six snapshot statements so the
+// terminate/un-terminate logic below can be written once for all four
+// (ADR-0052 §1). liveAt and archivedAt return pgx.ErrNoRows when nothing
+// matches; every other method treats "no row touched" as an error, because each
+// is only ever called on a row just read inside the same transaction.
+type closeSnapshotOps struct {
+	liveAt      func(ctx context.Context, month time.Time) (closeSnapshotRow, error)
+	archivedAt  func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error)
+	archive     func(ctx context.Context, id uuid.UUID) error
+	restore     func(ctx context.Context, id uuid.UUID) error
+	insertZero  func(ctx context.Context, month time.Time, asOf time.Time) error
+	refreshZero func(ctx context.Context, id uuid.UUID, asOf time.Time) error
+}
+
+// applyCloseSnapshot is the whole of ADR-0052 §1–2: a terminal flip writes a
+// truthful 0-value close snapshot at the termination month, and the
+// un-terminate correction (ADR-0009's correction affordance) puts back what was
+// there. Neither branch fires when the flip changes nothing about termination —
+// an active→active edit, or a status change between two terminal values that
+// keeps the same month, still re-asserts the close row, which is idempotent in
+// effect if not in rows.
+func applyCloseSnapshot(ctx context.Context, ops closeSnapshotOps, p LifecycleParams, priorTerminatedAt *time.Time) error {
+	switch {
+	case p.Status != StatusActive && p.TerminatedAt != nil:
+		return writeCloseSnapshot(ctx, ops, *p.TerminatedAt)
+	case p.Status == StatusActive && priorTerminatedAt != nil:
+		return revertCloseSnapshot(ctx, ops, *priorTerminatedAt)
 	}
 	return nil
 }
 
-// deleteCloseSnapshot soft-deletes the 0-value close snapshot at the given
-// month (the inverse of upsertCloseSnapshot, for the un-terminate correction).
-// It targets only a zero-amount row so a real snapshot the user later re-added
-// at that month is left intact.
-func deleteCloseSnapshot(ctx context.Context, qtx *db.Queries, id uuid.UUID, terminatedAt time.Time, user, hid uuid.UUID) error {
-	snaps, err := qtx.ListInvestmentSnapshotsForInvestment(ctx, db.ListInvestmentSnapshotsForInvestmentParams{
-		InvestmentID: id,
-		HouseholdID:  hid,
-	})
-	if err != nil {
-		return fmt.Errorf("list snapshots for un-terminate: %w", err)
+// writeCloseSnapshot displaces whatever the user recorded at the termination
+// month and inserts the 0-value close row in its place. Displacement is
+// soft-delete + insert rather than #25's in-place overwrite (ADR-0052 §2): the
+// partial unique index is `(position_id, year_month) WHERE deleted_at IS NULL`,
+// so the archived row survives alongside the close row and un-terminate can
+// hand it back. The archive UPDATE and the INSERT share one transaction, so the
+// archived row's deleted_at and the close row's created_at are the same
+// transaction timestamp — that pairing is what revertCloseSnapshot matches on.
+func writeCloseSnapshot(ctx context.Context, ops closeSnapshotOps, terminatedAt time.Time) error {
+	month := monthStart(terminatedAt)
+	live, err := ops.liveAt(ctx, month)
+	switch {
+	case err == nil:
+		if live.amount.IsZero() {
+			// The month already holds a close row — a re-asserted terminal flip,
+			// or a maturity-date edit that stayed inside the month. Refresh it in
+			// place rather than displacing it: that keeps its created_at, which
+			// is the only handle on the row it originally displaced, and stops
+			// repeated flips piling up tombstones.
+			return ops.refreshZero(ctx, live.id, terminatedAt)
+		}
+		if err := ops.archive(ctx, live.id); err != nil {
+			return err
+		}
+	case errors.Is(err, pgx.ErrNoRows):
+		// No snapshot recorded that month — nothing to displace.
+	default:
+		return err
 	}
-	ty, tm, _ := terminatedAt.Date()
-	for _, s := range snaps {
-		sy, sm, _ := s.YearMonth.Date()
-		if sy == ty && sm == tm && s.Amount.IsZero() {
-			if _, err := qtx.SoftDeleteInvestmentSnapshot(ctx, db.SoftDeleteInvestmentSnapshotParams{
-				ID:          s.ID,
+	return ops.insertZero(ctx, month, terminatedAt)
+}
+
+// revertCloseSnapshot is writeCloseSnapshot's inverse. It only ever removes a
+// zero-amount row: a non-zero live snapshot at the termination month is one the
+// user recorded while the position was terminated (snapshots, unlike
+// transactions, are not blocked on a terminated position), and theirs wins over
+// anything we archived. With the close row gone the month is free, so the row it
+// displaced is restored — leaving the reactivated position carrying its own
+// recorded value, not 0 and not a hole (INV-LIFECYCLE-04).
+func revertCloseSnapshot(ctx context.Context, ops closeSnapshotOps, priorTerminatedAt time.Time) error {
+	month := monthStart(priorTerminatedAt)
+	live, err := ops.liveAt(ctx, month)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil
+		}
+		return err
+	}
+	if !live.amount.IsZero() {
+		return nil
+	}
+	if err := ops.archive(ctx, live.id); err != nil {
+		return err
+	}
+	displaced, err := ops.archivedAt(ctx, month, live.createdAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// The close row displaced nothing, or what it displaced was itself
+			// a close row from an earlier terminate cycle (the archivedAt query
+			// filters those out). Either way the month is correctly left empty
+			// and the carry-forward rule takes over.
+			return nil
+		}
+		return err
+	}
+	return ops.restore(ctx, displaced)
+}
+
+func assetCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user, hid uuid.UUID) closeSnapshotOps {
+	return closeSnapshotOps{
+		liveAt: func(ctx context.Context, month time.Time) (closeSnapshotRow, error) {
+			s, err := qtx.GetAssetSnapshotAtMonth(ctx, db.GetAssetSnapshotAtMonthParams{
+				AssetID: id, YearMonth: month, HouseholdID: hid,
+			})
+			if err != nil {
+				return closeSnapshotRow{}, err
+			}
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
+		},
+		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
+			s, err := qtx.GetArchivedAssetSnapshotAtMonth(ctx, db.GetArchivedAssetSnapshotAtMonthParams{
+				AssetID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
+			})
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return s.ID, nil
+		},
+		archive: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.SoftDeleteAssetSnapshot(ctx, db.SoftDeleteAssetSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("archive asset snapshot", n, err)
+		},
+		restore: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.RestoreAssetSnapshot(ctx, db.RestoreAssetSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("restore asset snapshot", n, err)
+		},
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+			if _, err := qtx.CreateAssetSnapshot(ctx, db.CreateAssetSnapshotParams{
+				ID:          id,
+				YearMonth:   month,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				CreatedBy:   &user,
 				HouseholdID: hid,
+			}); err != nil {
+				return fmt.Errorf("close snapshot on termination: %w", err)
+			}
+			return nil
+		},
+		refreshZero: func(ctx context.Context, snapID uuid.UUID, asOf time.Time) error {
+			if _, err := qtx.UpdateAssetSnapshot(ctx, db.UpdateAssetSnapshotParams{
+				ID:          snapID,
+				HouseholdID: hid,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
 				UpdatedBy:   &user,
 			}); err != nil {
-				return fmt.Errorf("drop close snapshot on un-terminate: %w", err)
+				return fmt.Errorf("refresh close snapshot: %w", err)
 			}
-			break
-		}
+			return nil
+		},
+	}
+}
+
+func liabilityCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user, hid uuid.UUID) closeSnapshotOps {
+	return closeSnapshotOps{
+		liveAt: func(ctx context.Context, month time.Time) (closeSnapshotRow, error) {
+			s, err := qtx.GetLiabilitySnapshotAtMonth(ctx, db.GetLiabilitySnapshotAtMonthParams{
+				LiabilityID: id, YearMonth: month, HouseholdID: hid,
+			})
+			if err != nil {
+				return closeSnapshotRow{}, err
+			}
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
+		},
+		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
+			s, err := qtx.GetArchivedLiabilitySnapshotAtMonth(ctx, db.GetArchivedLiabilitySnapshotAtMonthParams{
+				LiabilityID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
+			})
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return s.ID, nil
+		},
+		archive: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.SoftDeleteLiabilitySnapshot(ctx, db.SoftDeleteLiabilitySnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("archive liability snapshot", n, err)
+		},
+		restore: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.RestoreLiabilitySnapshot(ctx, db.RestoreLiabilitySnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("restore liability snapshot", n, err)
+		},
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+			if _, err := qtx.CreateLiabilitySnapshot(ctx, db.CreateLiabilitySnapshotParams{
+				ID:          id,
+				YearMonth:   month,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				CreatedBy:   &user,
+				HouseholdID: hid,
+			}); err != nil {
+				return fmt.Errorf("close snapshot on termination: %w", err)
+			}
+			return nil
+		},
+		refreshZero: func(ctx context.Context, snapID uuid.UUID, asOf time.Time) error {
+			if _, err := qtx.UpdateLiabilitySnapshot(ctx, db.UpdateLiabilitySnapshotParams{
+				ID:          snapID,
+				HouseholdID: hid,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				UpdatedBy:   &user,
+			}); err != nil {
+				return fmt.Errorf("refresh close snapshot: %w", err)
+			}
+			return nil
+		},
+	}
+}
+
+func receivableCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user, hid uuid.UUID) closeSnapshotOps {
+	return closeSnapshotOps{
+		liveAt: func(ctx context.Context, month time.Time) (closeSnapshotRow, error) {
+			s, err := qtx.GetReceivableSnapshotAtMonth(ctx, db.GetReceivableSnapshotAtMonthParams{
+				ReceivableID: id, YearMonth: month, HouseholdID: hid,
+			})
+			if err != nil {
+				return closeSnapshotRow{}, err
+			}
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
+		},
+		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
+			s, err := qtx.GetArchivedReceivableSnapshotAtMonth(ctx, db.GetArchivedReceivableSnapshotAtMonthParams{
+				ReceivableID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
+			})
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return s.ID, nil
+		},
+		archive: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.SoftDeleteReceivableSnapshot(ctx, db.SoftDeleteReceivableSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("archive receivable snapshot", n, err)
+		},
+		restore: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.RestoreReceivableSnapshot(ctx, db.RestoreReceivableSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("restore receivable snapshot", n, err)
+		},
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+			if _, err := qtx.CreateReceivableSnapshot(ctx, db.CreateReceivableSnapshotParams{
+				ID:          id,
+				YearMonth:   month,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				CreatedBy:   &user,
+				HouseholdID: hid,
+			}); err != nil {
+				return fmt.Errorf("close snapshot on termination: %w", err)
+			}
+			return nil
+		},
+		refreshZero: func(ctx context.Context, snapID uuid.UUID, asOf time.Time) error {
+			if _, err := qtx.UpdateReceivableSnapshot(ctx, db.UpdateReceivableSnapshotParams{
+				ID:          snapID,
+				HouseholdID: hid,
+				Amount:      decimal.Zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				UpdatedBy:   &user,
+			}); err != nil {
+				return fmt.Errorf("refresh close snapshot: %w", err)
+			}
+			return nil
+		},
+	}
+}
+
+// investmentCloseSnapshotOps differs from the other three only in insertZero:
+// the investment_snapshot_shape CHECK demands quantity/price_per_unit for
+// stock/mutual_fund/gold and accrued_interest for bond/time_deposit, all 0 here.
+func investmentCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, subtype, currency string, user, hid uuid.UUID) closeSnapshotOps {
+	return closeSnapshotOps{
+		liveAt: func(ctx context.Context, month time.Time) (closeSnapshotRow, error) {
+			s, err := qtx.GetInvestmentSnapshotAtMonth(ctx, db.GetInvestmentSnapshotAtMonthParams{
+				InvestmentID: id, YearMonth: month, HouseholdID: hid,
+			})
+			if err != nil {
+				return closeSnapshotRow{}, err
+			}
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
+		},
+		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
+			s, err := qtx.GetArchivedInvestmentSnapshotAtMonth(ctx, db.GetArchivedInvestmentSnapshotAtMonthParams{
+				InvestmentID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
+			})
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return s.ID, nil
+		},
+		archive: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.SoftDeleteInvestmentSnapshot(ctx, db.SoftDeleteInvestmentSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("archive investment snapshot", n, err)
+		},
+		restore: func(ctx context.Context, snapID uuid.UUID) error {
+			n, err := qtx.RestoreInvestmentSnapshot(ctx, db.RestoreInvestmentSnapshotParams{
+				ID: snapID, HouseholdID: hid, UpdatedBy: &user,
+			})
+			return closeSnapshotWriteErr("restore investment snapshot", n, err)
+		},
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+			zero := decimal.Zero
+			params := db.CreateInvestmentSnapshotParams{
+				ID:          id,
+				YearMonth:   month,
+				Amount:      zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				CreatedBy:   &user,
+				HouseholdID: hid,
+			}
+			switch subtype {
+			case "bond", "time_deposit":
+				params.AccruedInterest = &zero
+			default: // stock, mutual_fund, gold
+				params.Quantity = &zero
+				params.PricePerUnit = &zero
+			}
+			if _, err := qtx.CreateInvestmentSnapshot(ctx, params); err != nil {
+				return fmt.Errorf("close snapshot on termination: %w", err)
+			}
+			return nil
+		},
+		refreshZero: func(ctx context.Context, snapID uuid.UUID, asOf time.Time) error {
+			zero := decimal.Zero
+			params := db.UpdateInvestmentSnapshotParams{
+				ID:          snapID,
+				HouseholdID: hid,
+				Amount:      zero,
+				Currency:    currency,
+				AsOfDate:    &asOf,
+				UpdatedBy:   &user,
+			}
+			switch subtype {
+			case "bond", "time_deposit":
+				params.AccruedInterest = &zero
+			default: // stock, mutual_fund, gold
+				params.Quantity = &zero
+				params.PricePerUnit = &zero
+			}
+			if _, err := qtx.UpdateInvestmentSnapshot(ctx, params); err != nil {
+				return fmt.Errorf("refresh close snapshot: %w", err)
+			}
+			return nil
+		},
+	}
+}
+
+// closeSnapshotWriteErr folds the :execrows contract of the archive/restore
+// statements into one check. Both are called only on a row read in the same
+// transaction, so RowsAffected == 0 means the row moved underneath us — an
+// anomaly worth rolling the whole flip back for, not something to swallow.
+func closeSnapshotWriteErr(what string, rows int64, err error) error {
+	if err != nil {
+		return fmt.Errorf("%s: %w", what, err)
+	}
+	if rows == 0 {
+		return fmt.Errorf("%s: no row affected", what)
 	}
 	return nil
 }

@@ -253,3 +253,43 @@ WHERE investment_id = ANY(sqlc.arg('investment_ids')::uuid[])
   AND deleted_at IS NULL
   AND year_month <= sqlc.arg('year_month')::date
 ORDER BY investment_id, year_month DESC;
+
+-- Close-snapshot displacement (ADR-0052 §2) — see asset_snapshots.sql for the
+-- mechanism and the reasoning behind each guard. Investment is retrofitted onto
+-- it: #25 wrote its close via UpsertInvestmentSnapshot, which overwrote the
+-- user's termination-month row in place.
+
+-- name: GetInvestmentSnapshotAtMonth :one
+SELECT s.*
+FROM investment_snapshots s
+JOIN investments i ON i.id = s.investment_id
+WHERE s.investment_id = sqlc.arg('investment_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NULL;
+
+-- name: GetArchivedInvestmentSnapshotAtMonth :one
+SELECT s.*
+FROM investment_snapshots s
+JOIN investments i ON i.id = s.investment_id
+WHERE s.investment_id = sqlc.arg('investment_id')
+  AND s.year_month = sqlc.arg('year_month')::date
+  AND i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1;
+
+-- name: RestoreInvestmentSnapshot :execrows
+UPDATE investment_snapshots s
+SET deleted_at = NULL,
+    updated_by = sqlc.arg('updated_by'),
+    updated_at = now()
+FROM investments i
+WHERE s.id = sqlc.arg('id')
+  AND s.investment_id = i.id
+  AND i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL;

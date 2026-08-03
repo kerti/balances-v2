@@ -2,8 +2,9 @@ import { test, expect } from "@playwright/test";
 
 // Terminal-flip close snapshot surfaces without a reload (issue #56, the UI face
 // of INV-LIFECYCLE-03). A manual Sell on an investment routes through
-// PATCH /investments/{id}/lifecycle, which upserts a truthful 0-value close
-// snapshot at the termination month server-side (repo/lifecycle.go). The bug:
+// PATCH /investments/{id}/lifecycle, which writes a truthful 0-value close
+// snapshot at the termination month server-side (repo/lifecycle.go, and since
+// ADR-0052 in all four groups, not just investments). The bug:
 // the lifecycle mutation refreshed only the list + single-row caches, so the new
 // close snapshot stayed invisible in the detail's snapshot list until a manual
 // page reload. This drives the real UI — create a stock with an empty snapshot

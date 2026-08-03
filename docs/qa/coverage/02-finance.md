@@ -12,8 +12,8 @@
 | INV-FINANCE-02 | Per-user/Joint net-worth attribution reconciles with the total | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-03 | A month with no fresh snapshot carries the latest snapshot ≤ M and is flagged stale | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-04 | A position contributes nothing before its first snapshot; the series starts at the first month with data | `backend/internal/repo/monthly_reports_engine_test.go` |
-| INV-FINANCE-05 | A terminated position contributes through its termination month, then drops out | `backend/internal/repo/monthly_reports_engine_test.go` |
-| INV-FINANCE-06 | Comprehensive-income identity closes: ΔNW = EarnedIncome + InvestmentReturn + AssetValueChange − LivingExpenses | `backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-05 | A terminated position contributes through its termination month, then drops out | `backend/internal/repo/lifecycle_termination_residual_test.go`<br>`backend/internal/repo/monthly_reports_engine_test.go` |
+| INV-FINANCE-06 | Comprehensive-income identity closes: ΔNW = EarnedIncome + InvestmentReturn + AssetValueChange − LivingExpenses | `backend/internal/repo/lifecycle_termination_residual_test.go`<br>`backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-07 | The first reportable month suppresses the derived income-statement lines (return, asset-value-change, living-expenses NULL) | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-08 | Investment return per instrument per month = ΔSnapshot + cash_out − cash_in | `backend/internal/repo/monthly_reports_engine_test.go` |
 | INV-FINANCE-09 | Transaction→cash-flow mapping: buy=in; sell/coupon/dividend/distribution=out; cash fee=in; unit-deducting fee=none; maturity=full terminal value out | `backend/internal/repo/monthly_reports_engine_test.go` |

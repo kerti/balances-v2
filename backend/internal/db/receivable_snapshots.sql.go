@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -103,6 +104,52 @@ func (q *Queries) CreateReceivableSnapshot(ctx context.Context, arg CreateReceiv
 	return i, err
 }
 
+const getArchivedReceivableSnapshotAtMonth = `-- name: GetArchivedReceivableSnapshotAtMonth :one
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM receivable_snapshots s
+JOIN receivables rc ON rc.id = s.receivable_id
+WHERE s.receivable_id = $1
+  AND s.year_month = $2::date
+  AND rc.household_id = $3::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at = $4::timestamptz
+  AND s.amount <> 0
+ORDER BY s.created_at DESC
+LIMIT 1
+`
+
+type GetArchivedReceivableSnapshotAtMonthParams struct {
+	ReceivableID uuid.UUID          `json:"receivable_id"`
+	YearMonth    time.Time          `json:"year_month"`
+	HouseholdID  uuid.UUID          `json:"household_id"`
+	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
+}
+
+func (q *Queries) GetArchivedReceivableSnapshotAtMonth(ctx context.Context, arg GetArchivedReceivableSnapshotAtMonthParams) (ReceivableSnapshot, error) {
+	row := q.db.QueryRow(ctx, getArchivedReceivableSnapshotAtMonth,
+		arg.ReceivableID,
+		arg.YearMonth,
+		arg.HouseholdID,
+		arg.ArchivedAt,
+	)
+	var i ReceivableSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.ReceivableID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getReceivableForImport = `-- name: GetReceivableForImport :one
 SELECT r.display_name, r.native_currency
 FROM receivables r
@@ -127,6 +174,46 @@ func (q *Queries) GetReceivableForImport(ctx context.Context, arg GetReceivableF
 	row := q.db.QueryRow(ctx, getReceivableForImport, arg.ID, arg.HouseholdID)
 	var i GetReceivableForImportRow
 	err := row.Scan(&i.DisplayName, &i.NativeCurrency)
+	return i, err
+}
+
+const getReceivableSnapshotAtMonth = `-- name: GetReceivableSnapshotAtMonth :one
+
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+FROM receivable_snapshots s
+JOIN receivables rc ON rc.id = s.receivable_id
+WHERE s.receivable_id = $1
+  AND s.year_month = $2::date
+  AND rc.household_id = $3::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at IS NULL
+`
+
+type GetReceivableSnapshotAtMonthParams struct {
+	ReceivableID uuid.UUID `json:"receivable_id"`
+	YearMonth    time.Time `json:"year_month"`
+	HouseholdID  uuid.UUID `json:"household_id"`
+}
+
+// Close-snapshot displacement (ADR-0052 §2) — see asset_snapshots.sql for the
+// mechanism and the reasoning behind each guard.
+func (q *Queries) GetReceivableSnapshotAtMonth(ctx context.Context, arg GetReceivableSnapshotAtMonthParams) (ReceivableSnapshot, error) {
+	row := q.db.QueryRow(ctx, getReceivableSnapshotAtMonth, arg.ReceivableID, arg.YearMonth, arg.HouseholdID)
+	var i ReceivableSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.ReceivableID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
 	return i, err
 }
 
@@ -434,6 +521,33 @@ func (q *Queries) ListReceivableSnapshotsForReceivable(ctx context.Context, arg 
 		return nil, err
 	}
 	return items, nil
+}
+
+const restoreReceivableSnapshot = `-- name: RestoreReceivableSnapshot :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = NULL,
+    updated_by = $1,
+    updated_at = now()
+FROM receivables rc
+WHERE s.id = $2
+  AND s.receivable_id = rc.id
+  AND rc.household_id = $3::uuid
+  AND rc.deleted_at IS NULL
+  AND s.deleted_at IS NOT NULL
+`
+
+type RestoreReceivableSnapshotParams struct {
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+}
+
+func (q *Queries) RestoreReceivableSnapshot(ctx context.Context, arg RestoreReceivableSnapshotParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreReceivableSnapshot, arg.UpdatedBy, arg.ID, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const softDeleteReceivableSnapshot = `-- name: SoftDeleteReceivableSnapshot :execrows
