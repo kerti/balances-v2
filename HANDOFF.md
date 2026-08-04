@@ -212,6 +212,21 @@ is missing input data (an income gap, a one-month recording lag), which is what 
 owed at release:** the release-notes line saying historical months were regenerated, shared with
 ADR-0052 §8's.
 
+Also unreleased on `main`: **#602** — a compacted backup used to drop the snapshot a termination
+displaced (it carries a `deleted_at`, but the user never deleted it), so a household restored from
+such a file silently lost its undo. Migration `00017` adds `supersedes` to all four snapshot tables:
+the close row now *declares* the row it displaced instead of the pairing being inferred from a shared
+transaction timestamp, which kills the `amount <> 0` heuristic and the four `GetArchived*` queries,
+and lets compaction carry exactly that one class of soft-deleted row (INV-BACKUP-16, ADR-0052 §2
+amended). Backfilled in the migration, so displacements predating it keep their undo. Backup
+`format_version` 4→5: the column is nullable, so a v4 file *loads* without it, but every termination
+in it would restore unlinked and undo silently wrong — `transforms[4]` rebuilds the link from the
+timestamp rule it replaced. A v4 *compacted* file can't be repaired; its rows were never written.
+**Golden-fixture debt:** only the v1 fixture exists — v2/v3/v4 bumps each skipped the mint that
+INV-BACKUP-11 commits to, and this one does too (a minted v4 would carry no terminated position, so
+it would not exercise `transforms[4]` anyway). Worth a slice that mints fixtures from a seed that
+includes one.
+
 Next, in order:
 
 1. **Production Resend domain** — the one M7 bullet that didn't literally close — moves with prod's

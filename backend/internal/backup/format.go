@@ -44,7 +44,17 @@ import (
 // 'acquired' (the column DEFAULT, reproducing pre-ADR-0053 behaviour). The new
 // monthly_reports columns are not a format change — a restore rematerialises
 // reports from inputs and never carries report rows.
-const FormatVersion = 4
+// v4 → v5 (#602, ADR-0052 §2): the four snapshot sections gained a `supersedes`
+// column naming the snapshot a 0-value close row displaced. The column is
+// nullable, so a v4 file loads without it — but "loads" is not "is correct":
+// every termination in a v4 file would restore with no link, and its undo would
+// silently hand back an earlier month's value. transforms[4] reconstructs the
+// link from the rule it replaced (the displaced row's deleted_at equals the
+// close row's created_at, both being the same transaction timestamp), which a
+// v4 *full* file has everything needed for. A v4 **compacted** file is
+// unrepairable — it never carried the displaced rows in the first place, which
+// is the defect #602 fixes going forward.
+const FormatVersion = 5
 
 // Fidelity selects what a backup carries (ADR-0036).
 type Fidelity string

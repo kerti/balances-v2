@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -51,17 +50,17 @@ const createInvestmentSnapshot = `-- name: CreateInvestmentSnapshot :one
 WITH owned_investment AS (
     SELECT i.id AS iid
     FROM investments i
-    WHERE i.id = $1 AND i.household_id = $11::uuid AND i.deleted_at IS NULL
+    WHERE i.id = $1 AND i.household_id = $12::uuid AND i.deleted_at IS NULL
 )
 INSERT INTO investment_snapshots (
     investment_id, year_month, amount, currency,
     quantity, price_per_unit, accrued_interest,
     as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_investment.iid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10
+SELECT owned_investment.iid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $11
 FROM owned_investment
-RETURNING id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type CreateInvestmentSnapshotParams struct {
@@ -75,6 +74,7 @@ type CreateInvestmentSnapshotParams struct {
 	AsOfDate        *time.Time       `json:"as_of_date"`
 	Description     *string          `json:"description"`
 	CreatedBy       *uuid.UUID       `json:"created_by"`
+	Supersedes      *uuid.UUID       `json:"supersedes"`
 	HouseholdID     uuid.UUID        `json:"household_id"`
 }
 
@@ -97,6 +97,7 @@ func (q *Queries) CreateInvestmentSnapshot(ctx context.Context, arg CreateInvest
 		arg.AsOfDate,
 		arg.Description,
 		arg.CreatedBy,
+		arg.Supersedes,
 		arg.HouseholdID,
 	)
 	var i InvestmentSnapshot
@@ -116,62 +117,14 @@ func (q *Queries) CreateInvestmentSnapshot(ctx context.Context, arg CreateInvest
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getArchivedInvestmentSnapshotAtMonth = `-- name: GetArchivedInvestmentSnapshotAtMonth :one
-SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
-FROM investment_snapshots s
-JOIN investments i ON i.id = s.investment_id
-WHERE s.investment_id = $1
-  AND s.year_month = $2::date
-  AND i.household_id = $3::uuid
-  AND i.deleted_at IS NULL
-  AND s.deleted_at = $4::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1
-`
-
-type GetArchivedInvestmentSnapshotAtMonthParams struct {
-	InvestmentID uuid.UUID          `json:"investment_id"`
-	YearMonth    time.Time          `json:"year_month"`
-	HouseholdID  uuid.UUID          `json:"household_id"`
-	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
-}
-
-func (q *Queries) GetArchivedInvestmentSnapshotAtMonth(ctx context.Context, arg GetArchivedInvestmentSnapshotAtMonthParams) (InvestmentSnapshot, error) {
-	row := q.db.QueryRow(ctx, getArchivedInvestmentSnapshotAtMonth,
-		arg.InvestmentID,
-		arg.YearMonth,
-		arg.HouseholdID,
-		arg.ArchivedAt,
-	)
-	var i InvestmentSnapshot
-	err := row.Scan(
-		&i.ID,
-		&i.InvestmentID,
-		&i.YearMonth,
-		&i.Amount,
-		&i.Currency,
-		&i.Quantity,
-		&i.PricePerUnit,
-		&i.AccruedInterest,
-		&i.AsOfDate,
-		&i.Description,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const getInvestmentSnapshotAtMonth = `-- name: GetInvestmentSnapshotAtMonth :one
 
-SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM investment_snapshots s
 JOIN investments i ON i.id = s.investment_id
 WHERE s.investment_id = $1
@@ -210,12 +163,13 @@ func (q *Queries) GetInvestmentSnapshotAtMonth(ctx context.Context, arg GetInves
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const getInvestmentSnapshotByID = `-- name: GetInvestmentSnapshotByID :one
-SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM investment_snapshots s
 JOIN investments i ON i.id = s.investment_id
 WHERE s.id = $1
@@ -248,6 +202,7 @@ func (q *Queries) GetInvestmentSnapshotByID(ctx context.Context, arg GetInvestme
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -479,7 +434,7 @@ func (q *Queries) ListEligibleQtyPriceInvestmentsForMonth(ctx context.Context, a
 }
 
 const listInvestmentSnapshotsByInvestmentIDs = `-- name: ListInvestmentSnapshotsByInvestmentIDs :many
-SELECT id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM investment_snapshots
 WHERE investment_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY investment_id, year_month
@@ -514,6 +469,7 @@ func (q *Queries) ListInvestmentSnapshotsByInvestmentIDs(ctx context.Context, do
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -526,7 +482,7 @@ func (q *Queries) ListInvestmentSnapshotsByInvestmentIDs(ctx context.Context, do
 }
 
 const listInvestmentSnapshotsForInvestment = `-- name: ListInvestmentSnapshotsForInvestment :many
-SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM investment_snapshots s
 JOIN investments i ON i.id = s.investment_id
 WHERE s.investment_id = $1
@@ -566,6 +522,7 @@ func (q *Queries) ListInvestmentSnapshotsForInvestment(ctx context.Context, arg 
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -629,7 +586,7 @@ func (q *Queries) ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth(ctx context
 }
 
 const listLatestInvestmentSnapshotsByInvestmentIDs = `-- name: ListLatestInvestmentSnapshotsByInvestmentIDs :many
-SELECT DISTINCT ON (investment_id) id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT DISTINCT ON (investment_id) id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM investment_snapshots
 WHERE investment_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY investment_id, year_month DESC
@@ -661,6 +618,7 @@ func (q *Queries) ListLatestInvestmentSnapshotsByInvestmentIDs(ctx context.Conte
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -794,7 +752,7 @@ WHERE s.id = $1
   AND i.household_id = $2
   AND i.deleted_at IS NULL
   AND s.deleted_at IS NULL
-RETURNING s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+RETURNING s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 `
 
 type UpdateInvestmentSnapshotParams struct {
@@ -840,6 +798,7 @@ func (q *Queries) UpdateInvestmentSnapshot(ctx context.Context, arg UpdateInvest
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -869,7 +828,7 @@ DO UPDATE SET
     description      = EXCLUDED.description,
     updated_by       = EXCLUDED.updated_by,
     updated_at       = now()
-RETURNING id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, investment_id, year_month, amount, currency, quantity, price_per_unit, accrued_interest, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type UpsertInvestmentSnapshotParams struct {
@@ -924,6 +883,7 @@ func (q *Queries) UpsertInvestmentSnapshot(ctx context.Context, arg UpsertInvest
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }

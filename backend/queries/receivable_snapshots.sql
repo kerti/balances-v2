@@ -11,9 +11,9 @@ WITH owned_receivable AS (
 )
 INSERT INTO receivable_snapshots (
     receivable_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_receivable.rid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_receivable.rid, $2, $3, $4, $5, $6, $7, $7, sqlc.narg('supersedes')
 FROM owned_receivable
 RETURNING *;
 
@@ -183,19 +183,6 @@ WHERE s.receivable_id = sqlc.arg('receivable_id')
   AND rc.household_id = sqlc.arg('household_id')::uuid
   AND rc.deleted_at IS NULL
   AND s.deleted_at IS NULL;
-
--- name: GetArchivedReceivableSnapshotAtMonth :one
-SELECT s.*
-FROM receivable_snapshots s
-JOIN receivables rc ON rc.id = s.receivable_id
-WHERE s.receivable_id = sqlc.arg('receivable_id')
-  AND s.year_month = sqlc.arg('year_month')::date
-  AND rc.household_id = sqlc.arg('household_id')::uuid
-  AND rc.deleted_at IS NULL
-  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1;
 
 -- name: RestoreReceivableSnapshot :execrows
 UPDATE receivable_snapshots s

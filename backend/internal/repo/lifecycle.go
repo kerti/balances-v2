@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -330,25 +329,26 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 }
 
 // closeSnapshotRow is the group-agnostic slice of a snapshot row the
-// close-snapshot machinery reads. createdAt doubles as the discriminator that
-// pairs a close row with the row it displaced — see closeSnapshotOps.archivedAt.
+// close-snapshot machinery reads. On a close row, supersedes names the snapshot
+// that close row displaced — the declared link un-terminate follows back
+// (ADR-0052 §2, issue #602). It is nil on every row a user wrote, and on a close
+// row that displaced nothing.
 type closeSnapshotRow struct {
-	id        uuid.UUID
-	amount    decimal.Decimal
-	createdAt pgtype.Timestamptz
+	id         uuid.UUID
+	amount     decimal.Decimal
+	supersedes *uuid.UUID
 }
 
-// closeSnapshotOps binds one group's six snapshot statements so the
+// closeSnapshotOps binds one group's five snapshot statements so the
 // terminate/un-terminate logic below can be written once for all four
-// (ADR-0052 §1). liveAt and archivedAt return pgx.ErrNoRows when nothing
-// matches; every other method treats "no row touched" as an error, because each
+// (ADR-0052 §1). liveAt returns pgx.ErrNoRows when the month holds no live
+// snapshot; every other method treats "no row touched" as an error, because each
 // is only ever called on a row just read inside the same transaction.
 type closeSnapshotOps struct {
 	liveAt      func(ctx context.Context, month time.Time) (closeSnapshotRow, error)
-	archivedAt  func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error)
 	archive     func(ctx context.Context, id uuid.UUID) error
 	restore     func(ctx context.Context, id uuid.UUID) error
-	insertZero  func(ctx context.Context, month time.Time, asOf time.Time) error
+	insertZero  func(ctx context.Context, month time.Time, asOf time.Time, supersedes *uuid.UUID) error
 	refreshZero func(ctx context.Context, id uuid.UUID, asOf time.Time) error
 }
 
@@ -374,31 +374,33 @@ func applyCloseSnapshot(ctx context.Context, ops closeSnapshotOps, p LifecyclePa
 // soft-delete + insert rather than #25's in-place overwrite (ADR-0052 §2): the
 // partial unique index is `(position_id, year_month) WHERE deleted_at IS NULL`,
 // so the archived row survives alongside the close row and un-terminate can
-// hand it back. The archive UPDATE and the INSERT share one transaction, so the
-// archived row's deleted_at and the close row's created_at are the same
-// transaction timestamp — that pairing is what revertCloseSnapshot matches on.
+// hand it back. The close row records which row that was in `supersedes`; the
+// index is also why the link runs in that direction, since the archive has to
+// happen before the insert.
 func writeCloseSnapshot(ctx context.Context, ops closeSnapshotOps, terminatedAt time.Time) error {
 	month := monthStart(terminatedAt)
+	var displaced *uuid.UUID
 	live, err := ops.liveAt(ctx, month)
 	switch {
 	case err == nil:
 		if live.amount.IsZero() {
 			// The month already holds a close row — a re-asserted terminal flip,
 			// or a maturity-date edit that stayed inside the month. Refresh it in
-			// place rather than displacing it: that keeps its created_at, which
-			// is the only handle on the row it originally displaced, and stops
-			// repeated flips piling up tombstones.
+			// place rather than displacing it: that keeps its `supersedes`, the
+			// handle on the row it originally displaced, and stops repeated flips
+			// piling up tombstones.
 			return ops.refreshZero(ctx, live.id, terminatedAt)
 		}
 		if err := ops.archive(ctx, live.id); err != nil {
 			return err
 		}
+		displaced = &live.id
 	case errors.Is(err, pgx.ErrNoRows):
 		// No snapshot recorded that month — nothing to displace.
 	default:
 		return err
 	}
-	return ops.insertZero(ctx, month, terminatedAt)
+	return ops.insertZero(ctx, month, terminatedAt, displaced)
 }
 
 // revertCloseSnapshot is writeCloseSnapshot's inverse. It only ever removes a
@@ -408,6 +410,10 @@ func writeCloseSnapshot(ctx context.Context, ops closeSnapshotOps, terminatedAt 
 // anything we archived. With the close row gone the month is free, so the row it
 // displaced is restored — leaving the reactivated position carrying its own
 // recorded value, not 0 and not a hole (INV-LIFECYCLE-04).
+//
+// The row to restore is whatever the close row's `supersedes` names. A nil one
+// means the close row displaced nothing, so the month is correctly left empty
+// and the carry-forward rule takes over.
 func revertCloseSnapshot(ctx context.Context, ops closeSnapshotOps, priorTerminatedAt time.Time) error {
 	month := monthStart(priorTerminatedAt)
 	live, err := ops.liveAt(ctx, month)
@@ -423,18 +429,10 @@ func revertCloseSnapshot(ctx context.Context, ops closeSnapshotOps, priorTermina
 	if err := ops.archive(ctx, live.id); err != nil {
 		return err
 	}
-	displaced, err := ops.archivedAt(ctx, month, live.createdAt)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			// The close row displaced nothing, or what it displaced was itself
-			// a close row from an earlier terminate cycle (the archivedAt query
-			// filters those out). Either way the month is correctly left empty
-			// and the carry-forward rule takes over.
-			return nil
-		}
-		return err
+	if live.supersedes == nil {
+		return nil
 	}
-	return ops.restore(ctx, displaced)
+	return ops.restore(ctx, *live.supersedes)
 }
 
 func assetCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user, hid uuid.UUID) closeSnapshotOps {
@@ -446,16 +444,7 @@ func assetCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user,
 			if err != nil {
 				return closeSnapshotRow{}, err
 			}
-			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
-		},
-		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
-			s, err := qtx.GetArchivedAssetSnapshotAtMonth(ctx, db.GetArchivedAssetSnapshotAtMonthParams{
-				AssetID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
-			})
-			if err != nil {
-				return uuid.Nil, err
-			}
-			return s.ID, nil
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, supersedes: s.Supersedes}, nil
 		},
 		archive: func(ctx context.Context, snapID uuid.UUID) error {
 			n, err := qtx.SoftDeleteAssetSnapshot(ctx, db.SoftDeleteAssetSnapshotParams{
@@ -469,7 +458,7 @@ func assetCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user,
 			})
 			return closeSnapshotWriteErr("restore asset snapshot", n, err)
 		},
-		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time, supersedes *uuid.UUID) error {
 			if _, err := qtx.CreateAssetSnapshot(ctx, db.CreateAssetSnapshotParams{
 				ID:          id,
 				YearMonth:   month,
@@ -478,6 +467,7 @@ func assetCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, user,
 				AsOfDate:    &asOf,
 				CreatedBy:   &user,
 				HouseholdID: hid,
+				Supersedes:  supersedes,
 			}); err != nil {
 				return fmt.Errorf("close snapshot on termination: %w", err)
 			}
@@ -508,16 +498,7 @@ func liabilityCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, u
 			if err != nil {
 				return closeSnapshotRow{}, err
 			}
-			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
-		},
-		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
-			s, err := qtx.GetArchivedLiabilitySnapshotAtMonth(ctx, db.GetArchivedLiabilitySnapshotAtMonthParams{
-				LiabilityID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
-			})
-			if err != nil {
-				return uuid.Nil, err
-			}
-			return s.ID, nil
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, supersedes: s.Supersedes}, nil
 		},
 		archive: func(ctx context.Context, snapID uuid.UUID) error {
 			n, err := qtx.SoftDeleteLiabilitySnapshot(ctx, db.SoftDeleteLiabilitySnapshotParams{
@@ -531,7 +512,7 @@ func liabilityCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, u
 			})
 			return closeSnapshotWriteErr("restore liability snapshot", n, err)
 		},
-		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time, supersedes *uuid.UUID) error {
 			if _, err := qtx.CreateLiabilitySnapshot(ctx, db.CreateLiabilitySnapshotParams{
 				ID:          id,
 				YearMonth:   month,
@@ -540,6 +521,7 @@ func liabilityCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, u
 				AsOfDate:    &asOf,
 				CreatedBy:   &user,
 				HouseholdID: hid,
+				Supersedes:  supersedes,
 			}); err != nil {
 				return fmt.Errorf("close snapshot on termination: %w", err)
 			}
@@ -570,16 +552,7 @@ func receivableCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, 
 			if err != nil {
 				return closeSnapshotRow{}, err
 			}
-			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
-		},
-		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
-			s, err := qtx.GetArchivedReceivableSnapshotAtMonth(ctx, db.GetArchivedReceivableSnapshotAtMonthParams{
-				ReceivableID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
-			})
-			if err != nil {
-				return uuid.Nil, err
-			}
-			return s.ID, nil
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, supersedes: s.Supersedes}, nil
 		},
 		archive: func(ctx context.Context, snapID uuid.UUID) error {
 			n, err := qtx.SoftDeleteReceivableSnapshot(ctx, db.SoftDeleteReceivableSnapshotParams{
@@ -593,7 +566,7 @@ func receivableCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, 
 			})
 			return closeSnapshotWriteErr("restore receivable snapshot", n, err)
 		},
-		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time, supersedes *uuid.UUID) error {
 			if _, err := qtx.CreateReceivableSnapshot(ctx, db.CreateReceivableSnapshotParams{
 				ID:          id,
 				YearMonth:   month,
@@ -602,6 +575,7 @@ func receivableCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, currency string, 
 				AsOfDate:    &asOf,
 				CreatedBy:   &user,
 				HouseholdID: hid,
+				Supersedes:  supersedes,
 			}); err != nil {
 				return fmt.Errorf("close snapshot on termination: %w", err)
 			}
@@ -635,16 +609,7 @@ func investmentCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, subtype, currency
 			if err != nil {
 				return closeSnapshotRow{}, err
 			}
-			return closeSnapshotRow{id: s.ID, amount: s.Amount, createdAt: s.CreatedAt}, nil
-		},
-		archivedAt: func(ctx context.Context, month time.Time, displacedAt pgtype.Timestamptz) (uuid.UUID, error) {
-			s, err := qtx.GetArchivedInvestmentSnapshotAtMonth(ctx, db.GetArchivedInvestmentSnapshotAtMonthParams{
-				InvestmentID: id, YearMonth: month, HouseholdID: hid, ArchivedAt: displacedAt,
-			})
-			if err != nil {
-				return uuid.Nil, err
-			}
-			return s.ID, nil
+			return closeSnapshotRow{id: s.ID, amount: s.Amount, supersedes: s.Supersedes}, nil
 		},
 		archive: func(ctx context.Context, snapID uuid.UUID) error {
 			n, err := qtx.SoftDeleteInvestmentSnapshot(ctx, db.SoftDeleteInvestmentSnapshotParams{
@@ -658,7 +623,7 @@ func investmentCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, subtype, currency
 			})
 			return closeSnapshotWriteErr("restore investment snapshot", n, err)
 		},
-		insertZero: func(ctx context.Context, month time.Time, asOf time.Time) error {
+		insertZero: func(ctx context.Context, month time.Time, asOf time.Time, supersedes *uuid.UUID) error {
 			zero := decimal.Zero
 			params := db.CreateInvestmentSnapshotParams{
 				ID:          id,
@@ -668,6 +633,7 @@ func investmentCloseSnapshotOps(qtx *db.Queries, id uuid.UUID, subtype, currency
 				AsOfDate:    &asOf,
 				CreatedBy:   &user,
 				HouseholdID: hid,
+				Supersedes:  supersedes,
 			}
 			switch subtype {
 			case "bond", "time_deposit":

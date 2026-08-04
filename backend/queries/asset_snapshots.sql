@@ -3,6 +3,9 @@
 -- tenancy middleware: even if a handler forgets to filter, SQL will not
 -- expose or mutate snapshots from another Household.
 
+-- `supersedes` is written only by the close-snapshot machinery (ADR-0052 §2):
+-- on a 0-value close row it names the snapshot that row displaced. Every
+-- user-facing create leaves it NULL.
 -- name: CreateAssetSnapshot :one
 WITH owned_asset AS (
     SELECT a.id AS aid
@@ -11,9 +14,9 @@ WITH owned_asset AS (
 )
 INSERT INTO asset_snapshots (
     asset_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_asset.aid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_asset.aid, $2, $3, $4, $5, $6, $7, $7, sqlc.narg('supersedes')
 FROM owned_asset
 RETURNING *;
 
@@ -189,13 +192,23 @@ RETURNING *;
 -- destroyed it unrecoverably), the live row is soft-deleted and the 0 row
 -- inserted alongside: the partial unique index on this table is
 -- `(asset_id, year_month) WHERE deleted_at IS NULL`, so the archived row and the
--- close row coexist. Un-terminate reverses it. The same trio exists verbatim on
+-- close row coexist. Un-terminate reverses it. The same pair exists verbatim on
 -- the other three snapshot tables.
+--
+-- The close row names what it displaced in its `supersedes` column (#602). That
+-- link used to be inferred — the archive UPDATE and the close INSERT share one
+-- transaction, so the archived row's deleted_at equalled the close row's
+-- created_at — which meant nothing in the row itself distinguished a displaced
+-- snapshot from one the user threw away, and a compacted backup dropped it. The
+-- link runs close → displaced rather than the other way round because the
+-- unique index forces the archive to happen first, so only the second write can
+-- carry the other's id.
 
 -- GetAssetSnapshotAtMonth returns the single live snapshot at a month, if any.
--- Read before a terminal flip (to archive it) and before an un-terminate (to
--- tell our 0-value close row apart from a value the user re-recorded while the
--- Position was terminated).
+-- Read before a terminal flip (to archive it) and before an un-terminate — where
+-- it both tells our 0-value close row apart from a value the user re-recorded
+-- while the Position was terminated, and yields, in `supersedes`, the row to put
+-- back.
 -- name: GetAssetSnapshotAtMonth :one
 SELECT s.*
 FROM asset_snapshots s
@@ -206,32 +219,10 @@ WHERE s.asset_id = sqlc.arg('asset_id')
   AND a.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
--- GetArchivedAssetSnapshotAtMonth returns the row that was archived to make room
--- for a close snapshot, so un-terminate can restore it. `deleted_at` is the
--- discriminator: the archive UPDATE and the close-row INSERT run in one
--- transaction, and `now()` is transaction-scoped, so the archived row's
--- deleted_at equals the close row's created_at exactly. Without that guard the
--- restore would resurrect a snapshot the user had deleted by hand months
--- earlier. Zero-amount candidates are excluded: such a row is a close snapshot
--- from an earlier terminate/un-terminate cycle, and restoring it would leave a
--- reactivated Position reading 0 — the exact thing INV-LIFECYCLE-04 forbids.
--- name: GetArchivedAssetSnapshotAtMonth :one
-SELECT s.*
-FROM asset_snapshots s
-JOIN assets a ON a.id = s.asset_id
-WHERE s.asset_id = sqlc.arg('asset_id')
-  AND s.year_month = sqlc.arg('year_month')::date
-  AND a.household_id = sqlc.arg('household_id')::uuid
-  AND a.deleted_at IS NULL
-  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1;
-
 -- RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Only ever
--- called on the row GetArchivedAssetSnapshotAtMonth identified, in the same
--- transaction that soft-deleted the close row that displaced it — so the partial
--- unique index cannot be violated.
+-- called on the row a close row's `supersedes` names, in the same transaction
+-- that soft-deleted that close row — so the partial unique index cannot be
+-- violated.
 -- name: RestoreAssetSnapshot :execrows
 UPDATE asset_snapshots s
 SET deleted_at = NULL,
