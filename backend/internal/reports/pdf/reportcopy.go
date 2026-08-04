@@ -51,6 +51,11 @@ type reportCopy struct {
 	writeOffsTotal string
 	unsettledNote  string // footnote: investments terminated with no proceeds recorded
 
+	// tracking changes (ADR-0053): value that crossed the edge of the book
+	trackingChangesTitle string
+	trackingChangesNote  string // one-sentence explanation for a non-technical reader
+	trackingChangesTotal string
+
 	// financial-health panel (#412, ADR-0048)
 	statNote       string   // section intro: trailing-12 smoothing + expenses-are-estimated
 	statRows       []string // the four ratio labels, in render order
@@ -125,10 +130,14 @@ var reportCatalog = map[string]reportCopy{
 		writeOffsNote:    "Value that left your books this month without any money changing hands — property or belongings disposed of, a debt someone forgave, money owed to you that won't be repaid. A forgiven debt counts in your favour, so the total can be positive.",
 		writeOffsTotal:   "Total Write-Offs",
 		unsettledNote:    "* terminated with no sale or maturity recorded, so its final value shows as an investment loss. If money did come back, record the sale for that month.",
-		deltaVs:          "vs %s",
-		footerPage:       "Page %d of %s",
-		statNote:         "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month. Living expenses are never recorded directly: they're derived as what came in (income and investment returns) minus the change in your net worth, so every expense figure is an estimate.",
-		statRows:         []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
+
+		trackingChangesTitle: "Tracking Changes",
+		trackingChangesNote:  "Value that came into or went out of what you track here this month without being earned, spent or invested — something you already owned but only started tracking now, or an account that joined or left the household. It is neither income nor spending, so it is kept out of both.",
+		trackingChangesTotal: "Total Tracking Changes",
+		deltaVs:              "vs %s",
+		footerPage:           "Page %d of %s",
+		statNote:             "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month. Living expenses are never recorded directly: they're derived as what came in (income and investment returns) minus the change in your net worth, so every expense figure is an estimate.",
+		statRows:             []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
 		statDescs: []string{
 			"Share of earned income kept after living expenses, averaged over the past year. Counts income you marked as regular — one-offs like bonuses or severance are left out.",
 			"Passive income — rent, pension, interest and investment returns — as a share of living expenses; 100% means it fully covers them. Only regular passive income counts. Living expenses are estimated, and this figure moves with the market.",
@@ -194,10 +203,14 @@ var reportCatalog = map[string]reportCopy{
 		writeOffsNote:    "Nilai yang hilang dari pembukuan bulan ini tanpa ada uang yang berpindah — harta yang dilepas atau dibuang, utang yang dibebaskan pemberi pinjaman, atau piutang yang tidak akan tertagih. Utang yang dibebaskan menguntungkan Anda, jadi totalnya bisa bernilai positif.",
 		writeOffsTotal:   "Jumlah Penghapusan Nilai",
 		unsettledNote:    "* diakhiri tanpa pencatatan penjualan atau jatuh tempo, sehingga nilai akhirnya tampak sebagai kerugian investasi. Jika dananya kembali, catat penjualannya pada bulan tersebut.",
-		deltaVs:          "vs %s",
-		footerPage:       "Halaman %d dari %s",
-		statNote:         "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pendapatan dan imbal hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",
-		statRows:         []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
+
+		trackingChangesTitle: "Perubahan Cakupan Pencatatan",
+		trackingChangesNote:  "Nilai yang masuk atau keluar dari yang Anda catat di sini pada bulan ini tanpa diperoleh, dibelanjakan, atau diinvestasikan — sesuatu yang sudah Anda miliki tetapi baru mulai dicatat sekarang, atau rekening yang bergabung atau keluar dari rumah tangga. Ini bukan penghasilan maupun pengeluaran, jadi tidak dihitung sebagai keduanya.",
+		trackingChangesTotal: "Jumlah Perubahan Cakupan Pencatatan",
+		deltaVs:              "vs %s",
+		footerPage:           "Halaman %d dari %s",
+		statNote:             "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pendapatan dan imbal hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",
+		statRows:             []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
 		statDescs: []string{
 			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti bonus atau pesangon tidak disertakan.",
 			"Pendapatan pasif — sewa, pensiun, bunga dan imbal hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Hanya pendapatan pasif rutin yang dihitung. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",

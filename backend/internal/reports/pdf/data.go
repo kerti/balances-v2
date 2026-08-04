@@ -65,6 +65,29 @@ type WriteOffs struct {
 	Items []WriteOffItem
 }
 
+// TrackingChangeItem is one Position behind the month's Tracking Changes line,
+// with its signed contribution to net worth: a Position onboarded as already
+// owned reads positive, one that left the books untracked negative — and the
+// signs invert for a Liability, whose arrival lowers net worth.
+type TrackingChangeItem struct {
+	Label  string
+	Amount string // signed decimal string
+}
+
+// TrackingChanges is the month's Tracking Changes line: value that crossed the
+// edge of the book without being earned, spent or invested (ADR-0053). Nil when
+// nothing crossed, which is the usual case — the section renders only when a
+// Household actually declared one.
+//
+// Items exists for the same reason WriteOffs has them: this is ONE signed term
+// covering both directions, so a month where one Position arrived and another
+// left can net toward zero on Total, and only the itemisation shows that two
+// real things happened (ADR-0052 §4, inherited by ADR-0053 §1).
+type TrackingChanges struct {
+	Total string // signed decimal string
+	Items []TrackingChangeItem
+}
+
 // UnsettledTermination is one Investment terminated with no recorded proceeds —
 // a data-quality advisory, part of no figure (ADR-0052 §7). Reachable only
 // through a path that bypasses the terminate dialog: restore-from-backup,
@@ -191,6 +214,9 @@ type Input struct {
 	Positions         []Position
 	CashFlow          *CashFlow  // nil on the baseline month
 	WriteOffs         *WriteOffs // nil when the month wrote nothing off (ADR-0052)
+	// TrackingChanges is the value that entered or left the books by declaration
+	// rather than by a flow; nil when nothing crossed the edge (ADR-0053).
+	TrackingChanges *TrackingChanges
 	// Unsettled is the proceeds-less-termination advisory; empty in the normal
 	// case, rendered as a footnote beside the stale-position one.
 	Unsettled      []UnsettledTermination

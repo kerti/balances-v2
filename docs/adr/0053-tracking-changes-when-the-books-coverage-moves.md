@@ -190,6 +190,28 @@ live Households, because there is no production deployment and no third-party us
 means existing rows keep today's behaviour until a Household says otherwise, so no month changes without
 a deliberate act.
 
+## Presentation / UX
+
+Per [[adr-0034]], the surfaces that draw this term belong to this ADR rather than a new one. There are
+two, and they render the term identically: **one signed row, with the constituent Positions listed
+beneath it** — the §1 netting argument is only honoured if the itemisation ships with the line.
+
+- **On screen**: the dashboard income statement (what [[adr-0008]] calls the statement/waterfall) — a
+  muted row with a plain-language hint and a `<ul>` of constituents, beside Write-Offs.
+- **In print**: the monthly report PDF, in the statistics + cash-flow page group, immediately after the
+  Write-Offs section. It sits *outside* the cash-flow block for the reason that block is named: nothing
+  was earned or spent, so folding it into Cash In or Cash Out would misstate both.
+
+**Both surfaces suppress themselves entirely when the month has no constituents** — including the case
+of a materialised `0` with nothing behind it. Almost every month is that case, and a household reads
+this report monthly; a permanent zero row would train them to ignore the section that exists to explain
+the one month it isn't zero. The total printed is the materialised column, not a re-sum of the items, so
+what a household reads is the figure the identity actually balanced against.
+
+Copy is written for the non-technical reader ([[adr-0025]]) in both locales: the term is described by
+what happened — value that came into or went out of what you track here without being earned, spent or
+invested — never by its mechanism.
+
 ## Consequences
 
 - **`engine_version` 5 → 6.** Every materialised report regenerates — the standing mechanism
