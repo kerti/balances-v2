@@ -111,7 +111,8 @@ Sentinel codes (10) are 1:1 with `internal/repo/errors.go`:
 | `ErrUnauthenticated`           | *(unreachable — fall to 500)* | —      |
 | *(default)*                    | `INTERNAL`                    | 500    |
 
-`ErrUnauthenticated` keeps the existing treatment from the HANDOFF convention: not mapped,
+`ErrUnauthenticated` keeps the existing treatment from the tactical conventions
+(`docs/agents/conventions.md`): not mapped,
 falls through to 500 because `RequireAuth` gates every route — a misconfigured route is a
 server bug, not a client error.
 
@@ -297,7 +298,7 @@ Each slice ships independently, CI-green.
   `Import*` / snapshot dialogs delete.** Each call site uses `errorMessage(err, t)` directly.
 - **`errors.json` carries a `code.<CODE>` block per locale.** Catalog extension follows
   [`docs/glossary-id.md`](../glossary-id.md) the same way every other namespace does.
-- **HANDOFF gains an "error envelope" convention** under the existing FE-lint / BE-lint
+- **The tactical conventions gain an "error envelope" entry** under the existing FE-lint / BE-lint
   bullets: `code` is the wire contract; FE catalogs are the source of human copy; no `message`
   field; OAuth-callback redirects are exempt.
 - **Pre-alpha changelog (M6 section)** records the envelope landing alongside the i18n stream's #1–#12.

@@ -85,3 +85,4 @@ recomputed per request.
 - Contribute: [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 - How work flows idea→release: [`docs/agents/sdlc.md`](agents/sdlc.md).
 - Current state / roadmap: [`HANDOFF.md`](../HANDOFF.md), [`docs/ROADMAP.md`](ROADMAP.md).
+- Codebase conventions: [`docs/agents/conventions.md`](agents/conventions.md).

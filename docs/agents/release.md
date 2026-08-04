@@ -87,9 +87,10 @@ Run from a clean, up-to-date `main`.
 5. **CI is green on `main`.** `gh run list --branch main --limit 5`. The tag deploys whatever `main`
    points at — never tag a red `main`.
 
-6. **Prune HANDOFF.md.** A tag is HANDOFF's pruning checkpoint: shipped bullets move out (their detail
-   now lives in closed issues + release notes), leaving only in-progress / next-up state. Fold this
-   into the same commit as any release-doc change (HANDOFF-atomic rule).
+6. **Update HANDOFF.md's cursor** — one line, not a prune. Since the ADR-0029 amendment (2026-08-04)
+   `HANDOFF.md` carries no per-tag ledger and no shipped detail, so there is nothing to prune at a
+   tag. Move the "Latest release" line to the new tag, and update "What's next" only if the active
+   line actually changed. Fold it into the same commit as any other release-doc change.
 
 ## Back up the database (migration-bearing cuts only)
 
@@ -212,7 +213,7 @@ Two layers, in order of convenience:
 ## Post-release
 
 - **Close any issues** the release finishes that weren't auto-closed by their PR `closes #n`.
-- Confirm HANDOFF reflects post-tag state (pruned, next-up only).
+- Confirm HANDOFF's "Latest release" line names the new tag.
 - **Bump the self-host operator default tag.** If this cut is the new recommended self-hostable
   version, update `BALANCES_TAG` in `.env.example` and the three mirrors in `SELF-HOSTING.md`
   (image-tag example, quickstart snippet, config-reference table) to the new tag — it drifts

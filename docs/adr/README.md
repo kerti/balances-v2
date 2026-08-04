@@ -33,7 +33,7 @@ touching the area it governs.
 | [0026](0026-internationalization-with-react-i18next-and-a-persisted-user-locale.md) | i18n via react-i18next + persisted per-user locale | i18n |
 | [0027](0027-backend-error-code-envelope.md) | 4xx/5xx ship `{code, args}` envelope via `internal/httperr` | errors, API |
 | [0028](0028-user-defined-position-tags.md) | User-defined Tags: at most one per Position, no built-in financial meaning | tags |
-| [0029](0029-branching-and-release-strategy-for-alpha.md) | GitHub Flow; tag-driven batched SemVer pre-releases | release, branching |
+| [0029](0029-branching-and-release-strategy-for-alpha.md) | GitHub Flow; tag-driven batched SemVer pre-releases; issues + PRs + Release notes are the system of record (amended 2026-08-04: HANDOFF's per-tag ledger retired, conventions split to `docs/agents/conventions.md`) | release, branching, docs |
 | [0030](0030-hosting-and-deployment-for-alpha.md) | Single-origin Fly app + Neon + Cloudflare DNS; tag→deploy pipeline | hosting, deploy |
 | [0031](0031-baseline-migration-squash-at-alpha.md) | Squash pre-alpha migrations into one baseline at alpha | migrations |
 | [0032](0032-toast-feedback-for-buttonless-autosaves.md) | Toast feedback for buttonless autosaves | frontend UX |

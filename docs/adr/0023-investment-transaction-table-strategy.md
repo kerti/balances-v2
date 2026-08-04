@@ -156,5 +156,5 @@ history per ADR-0007.
 - Per ADR-0003, no transaction type auto-propagates to bank-account snapshots. The user reads cash
   off their bank statement at the next month-end.
 - Per-shape frontend dialog forks (`Trade` / `CashIncome` / `Fee` / `Maturity`) mirror the snapshot
-  dialog convention from ADR-0022 + HANDOFF. One shared `TransactionRow` switches Edit dialogs by
+  dialog convention from ADR-0022 + `docs/agents/conventions.md`. One shared `TransactionRow` switches Edit dialogs by
   `transaction_type` because the backend update endpoint is unified.

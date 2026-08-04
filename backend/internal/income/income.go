@@ -1,7 +1,7 @@
 // Package income exposes HTTP handlers for the Income flow-event entity.
 // Income has no subtype, no extension table, no snapshots — each row is a
 // one-shot event. Mounted under /api/income (singular collection endpoint;
-// "income" is a mass noun in English — see HANDOFF M4.5 design notes).
+// "income" is a mass noun in English — see docs/agents/conventions.md).
 package income
 
 import (
