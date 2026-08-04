@@ -26,7 +26,7 @@ services:
   # compose equivalent of Fly's release_command). DATABASE_URL is injected here
   # (host = the `postgres` service) so the operator never hand-writes it.
   migrate:
-    image: ghcr.io/kerti/balances:${BALANCES_TAG:-latest}
+    image: ghcr.io/kerti/balances:${BALANCES_TAG:?set BALANCES_TAG in .env to a released tag — no `latest` image is published, see https://github.com/kerti/balances-v2/releases}
     command: ["migrate", "up"]
     env_file: .env
     environment:
@@ -37,7 +37,7 @@ services:
     restart: "no"
 
   app:
-    image: ghcr.io/kerti/balances:${BALANCES_TAG:-latest}
+    image: ghcr.io/kerti/balances:${BALANCES_TAG:?set BALANCES_TAG in .env to a released tag — no `latest` image is published, see https://github.com/kerti/balances-v2/releases}
     command: ["serve"]
     env_file: .env
     environment:
