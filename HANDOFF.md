@@ -111,8 +111,9 @@ and there is no live production data to clean (dev is orphan-free; preview/demo 
 few, dormant). If a repair is ever wanted, it must inherit each child's `deleted_at` from its parent
 and leave `updated_at` alone — that column feeds `MaxReportInputUpdatedAt`, whose snapshot subqueries
 do not filter `deleted_at`, so bumping it would mark every report in every household stale to fix
-rows that change no number. Active line is lifecycle/integrity: **#576** (terminating a position with
-no offsetting cash flow).
+rows that change no number. Lifecycle/integrity shipped as **#576** (terminating a position with
+no offsetting cash flow); the active line is now its sibling, **#591** (a position being *born* with
+no offsetting flow).
 Also unreleased on `main`: **ADR-0052** — #576's ADR, docs only, no code yet. Settles what a terminal
 status means across all four groups. The 0-value close snapshot generalises from Investment-only to
 every group (fixes the cash-settled timing split, where the cash leg lands in `M` and the position
@@ -177,6 +178,27 @@ the demo household had none, and no Investment sat on an unsettleable status). A
 0-value close row share one transaction timestamp, so every one stays restorable. Still owed at
 release: the same pass on the demo household if it ever gains terminated A/L/R, plus the release-notes
 line saying historical months were regenerated.
+
+Also unreleased on `main`: **ADR-0053** — #591's ADR (slice #593), docs only, no code yet. Adds a third
+correction term, **Tracking Change**: value that crossed the *edge of the books* without being earned,
+spent or invested — a spouse's accounts joining at marriage, a dormant passbook finally entered, a
+departing member's positions leaving. One signed term covering **both** directions, per ADR-0052 §4's
+reasoning. Two claims in #591 as filed are falsified in the ADR and matter more than the fix:
+`INV-FINANCE-23` suppresses the investment **return line only**, never the NW contribution — what
+protects a normal acquisition is that it is *funded from tracked wealth*, so the other leg moves — which
+means **all four groups** are affected on the way in, and a blanket birth-month suppression would fix
+onboarding while breaking **every acquisition** by its full value (both are the same `!okPrev` branch).
+So it is **declared, never inferred**: `entry_type` (`acquired` default / `newly_tracked`) on all four
+position tables, plus `untracked`, the one terminal status available to **every** group including
+Investment — **amending ADR-0052 §5**, since a departing portfolio is not a total loss, and exempt from
+§6's settlement capture. Fires at the **first snapshot month** in / termination month out (forced — that
+is where the position enters `nwTotal`), so the entry side needs a new `now − 0` shape, not the
+`!okPrev`-bailing loops. No `entry_date` boundary: the household already chooses what history to enter.
+Feeds no ADR-0048 statistic, never Earned Income, no per-owner breakdown, and **no advisory** — a
+one-sided birth is not a fact the engine can see, so the editable control is the only remedy. Epic
+#591 → #593 (ADR) → #594 (DDL + both engine terms + entry-side UI, one migration, engine_version 5→6)
+→ #595 (terminate dialog) ‖ #596 (PDF + waterfall). ADR stays mutable on the epic branch (ADR-0051
+precedent). Existing data corrected by hand on the two live households, no backfill migration.
 
 Next, in order:
 

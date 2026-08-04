@@ -98,10 +98,21 @@ Every Position carries a **status** (default `active`) and an optional `terminat
 when it left the Household's portfolio, plus an optional free-text `termination_note`. Status values
 vary per group:
 
-- **Asset**: `active`, `closed` (bank account), `sold` (vehicle, property), `disposed`
-- **Liability**: `active`, `paid_off`, `forgiven`, `written_off`
-- **Receivable**: `active`, `collected`, `written_off`
-- **Investment**: `active`, `sold` (fully exited), `matured` (Bond, TimeDeposit)
+- **Asset**: `active`, `closed` (bank account), `sold` (vehicle, property), `disposed`, `untracked`
+- **Liability**: `active`, `paid_off`, `forgiven`, `written_off`, `untracked`
+- **Receivable**: `active`, `collected`, `written_off`, `untracked`
+- **Investment**: `active`, `sold` (fully exited), `matured` (Bond, TimeDeposit), `untracked`
+
+`untracked` is the one terminal status that asserts nothing about where the value went — the Position
+left the Household's books because the books' coverage changed, not because it was settled, disposed
+or lost ([[adr-0053]]). It is the only terminal status available to every group, including Investment,
+which takes no write-off status ([[adr-0052]] §5) because a genuine total loss is truthfully a negative
+Investment Return — a departing member's portfolio is not.
+
+Every Position also carries an **entry type** (default `acquired`) recording how it entered the books:
+`acquired` — funded from wealth the Household was already tracking — or `newly_tracked`, the entry-side
+mirror of `untracked`. The Household declares it when creating the Position and can correct it
+afterwards; the report regenerates.
 
 A non-active Position contributes to net worth only for months ending on or before `terminated_at`.
 Its historical Snapshots and Transactions remain intact and queryable; only its forward contribution
@@ -113,7 +124,7 @@ Snapshot the Household had already recorded for that month is archived (soft-del
 overwritten, so un-terminating restores it. This is what keeps both legs of a settlement in the same
 month: the cash moves in `M` and the Position empties in `M`, so net worth nets out and the Living
 Expenses residual is untouched. The **termination-month change is never a mark change** — it is
-either settled by cash or it is a Write-Off.
+either settled by cash, or it is a Write-Off, or it is a Tracking Change.
 
 Reactivation (a closed bank account reopened, a sold property bought back) creates a new Position
 row rather than flipping `terminated_at` back to NULL — keeping termination periods unambiguous.
@@ -250,7 +261,7 @@ The cash arrives via the next bank statement; the Income event supports the inco
 cashflow approximation, not net worth (which the snapshot tables already capture).
 
 **Comprehensive income identity**: `ΔNet Worth = Earned Income + Investment Return + Asset Value
-Change + Write-Offs − Living Expenses`. Earned Income is tracked explicitly. Investment Return is
+Change + Write-Offs + Tracking Changes − Living Expenses`. Earned Income is tracked explicitly. Investment Return is
 derived per-instrument per-month as `ΔSnapshot_value + cash_paid_out_to_bank − cash_paid_in_from_bank`
 (covering unrealised price movement, realised gains from Sells, and yield from Coupons / Dividends /
 Distributions / Maturities; net of Fees). **Asset Value Change** is the non-cash mark change of
@@ -260,11 +271,21 @@ changing hands. **Write-Off** is the value a Position carried into its terminati
 settled it ([[adr-0052]]) — a `disposed` Asset, a `forgiven` or `written_off` Liability, a
 `written_off` Receivable. One signed figure, so a forgiven debt reads positive; the Positions behind
 it are listed beneath the line. An Investment needs no write-off status: a position that lost its
-value is a genuine negative Investment Return, recorded as a `sold` with a 0-proceeds Sell. Living
-Expenses are the residual — itemised expense tracking is a non-feature (ADR-0001). Because Investment
-Return already absorbs investment mark changes (they cancel in the residual), Asset Value Change pulls
-out property/vehicle marks, and Write-Offs pulls out value that vanished without cash, the residual is
-a genuine **cash-spending** proxy, not a catch-all conflating non-cash depreciation with spending.
+value is a genuine negative Investment Return, recorded as a `sold` with a 0-proceeds Sell.
+
+**Tracking Change** is the value a Position brought into, or took out of, the Household's books when
+what changed was the books' **coverage** rather than earning, spending or investing ([[adr-0053]]) — a
+spouse's accounts joining at marriage, a dormant passbook finally entered years into tracking, a
+departing member's Positions leaving. One signed figure like Write-Offs, positive when value enters;
+the Positions behind it are listed beneath the line. It fires at the Position's **first Snapshot month**
+on the way in and at its termination month on the way out, so it cancels ΔNet Worth structurally. It is
+declared, never inferred: a first Snapshot alone cannot distinguish onboarding a passbook from buying a
+car with tracked cash — both are a Position appearing with no prior value, and only the Household knows
+which happened. Living Expenses are the residual — itemised expense tracking is a non-feature
+(ADR-0001). Because Investment Return already absorbs investment mark changes (they cancel in the
+residual), Asset Value Change pulls out property/vehicle marks, Write-Offs pulls out value that vanished
+without cash, and Tracking Changes pull out value that crossed the books' edge, the residual is a
+genuine **cash-spending** proxy, not a catch-all conflating non-cash depreciation with spending.
 
 ### Financial statistics
 
