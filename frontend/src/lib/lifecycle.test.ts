@@ -17,6 +17,14 @@ describe("STATUS_VALUES", () => {
       expect(STATUS_VALUES[group][0]).toBe("active");
     }
   });
+
+  // covers: INV-LIFECYCLE-09
+  it("closes every group with untracked — the one terminal status all four share", () => {
+    for (const group of groups) {
+      const values = STATUS_VALUES[group];
+      expect(values[values.length - 1]).toBe("untracked");
+    }
+  });
 });
 
 describe("statusOptions", () => {
@@ -42,14 +50,16 @@ describe("statusOptions for an investment subtype", () => {
     const values = (subtype: InvestmentSubtype) =>
       statusOptions("investments", subtype).map((o) => o.value);
 
-    // Sell-only subtypes: a Stock cannot mature.
-    expect(values("stock")).toEqual(["active", "sold"]);
-    expect(values("mutual_fund")).toEqual(["active", "sold"]);
-    expect(values("gold")).toEqual(["active", "sold"]);
+    // Sell-only subtypes: a Stock cannot mature. `untracked` survives the
+    // narrowing for every subtype — it settles nothing, so the matrix has no
+    // say over it (ADR-0053 §5).
+    expect(values("stock")).toEqual(["active", "sold", "untracked"]);
+    expect(values("mutual_fund")).toEqual(["active", "sold", "untracked"]);
+    expect(values("gold")).toEqual(["active", "sold", "untracked"]);
     // A Bond takes either.
-    expect(values("bond")).toEqual(["active", "sold", "matured"]);
+    expect(values("bond")).toEqual(["active", "sold", "matured", "untracked"]);
     // A TimeDeposit accepts only Maturity, so it cannot be "sold".
-    expect(values("time_deposit")).toEqual(["active", "matured"]);
+    expect(values("time_deposit")).toEqual(["active", "matured", "untracked"]);
   });
 
   // covers: INV-LIFECYCLE-08
@@ -59,12 +69,22 @@ describe("statusOptions for an investment subtype", () => {
     expect(statusOptions("investments", "time_deposit", "sold").map((o) => o.value)).toEqual([
       "active",
       "matured",
+      "untracked",
       "sold",
     ]);
     // A status already on the list is never duplicated.
     expect(statusOptions("investments", "stock", "sold").map((o) => o.value)).toEqual([
       "active",
       "sold",
+      "untracked",
+    ]);
+    // covers: INV-LIFECYCLE-09
+    // ...including untracked itself: re-opening the dialog on a position that
+    // already left the books must not blank its own value.
+    expect(statusOptions("investments", "time_deposit", "untracked").map((o) => o.value)).toEqual([
+      "active",
+      "matured",
+      "untracked",
     ]);
   });
 
@@ -90,6 +110,14 @@ describe("settlementKind", () => {
     expect(settlementKind("stock", "matured")).toBeNull();
     expect(settlementKind("time_deposit", "sold")).toBeNull();
     expect(settlementKind("stock", "active")).toBeNull();
+  });
+
+  // covers: INV-LIFECYCLE-09
+  it("is null for untracked on every subtype — nothing was sold", () => {
+    const subtypes: InvestmentSubtype[] = ["stock", "mutual_fund", "gold", "bond", "time_deposit"];
+    for (const subtype of subtypes) {
+      expect(settlementKind(subtype, "untracked")).toBeNull();
+    }
   });
 });
 

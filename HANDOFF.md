@@ -198,7 +198,9 @@ is where the position enters `nwTotal`), so the entry side needs a new `now − 
 Feeds no ADR-0048 statistic, never Earned Income, no per-owner breakdown, and **no advisory** — a
 one-sided birth is not a fact the engine can see, so the editable control is the only remedy. Epic
 #591 → #593 (ADR, shipped) → #594 (DDL + both engine terms + entry-side UI, shipped)
-→ #595 (terminate dialog) ‖ #596 (PDF + waterfall). ADR stays mutable on the epic branch (ADR-0051
+→ #595 (terminate dialog, shipped: `untracked` on every group's dropdown, exempt from the Investment
+subtype narrowing and the §6 settlement capture, owned/owed hint copy) ‖ #596 (PDF + waterfall). ADR
+stays mutable on the epic branch (ADR-0051
 precedent). Existing data corrected by hand on the two live households, no backfill migration. The PDF
 income statement still omits the line (#596), so it and the dashboard disagree until that lands.
 

@@ -13,12 +13,24 @@ export type StatusOption = { value: string; label: string };
 
 // Per-group ordered status values. Source of truth for the dropdown order
 // in TerminatePositionDialog and the value-set for statusLabel lookup.
+//
+// `untracked` closes every list (ADR-0053 §5): the exit side of a Tracking
+// Change, and the only terminal status all four groups share — a position that
+// left the household's books through a change in what they cover, rather than
+// through a settlement, a disposal or a loss. It goes last on purpose: it is the
+// "none of the above" answer, and putting it above the cash-settled statuses
+// would invite it as a shrug.
 export const STATUS_VALUES: Record<LifecycleGroup, string[]> = {
-  assets: ["active", "closed", "sold", "disposed"],
-  liabilities: ["active", "paid_off", "forgiven", "written_off"],
-  receivables: ["active", "collected", "written_off"],
-  investments: ["active", "sold", "matured"],
+  assets: ["active", "closed", "sold", "disposed", "untracked"],
+  liabilities: ["active", "paid_off", "forgiven", "written_off", "untracked"],
+  receivables: ["active", "collected", "written_off", "untracked"],
+  investments: ["active", "sold", "matured", "untracked"],
 };
+
+// The terminal status that settles nothing. Kept as a named export so the
+// dialog and the narrowing below agree on the one value that sits outside the
+// ADR-0052 §6 settlement matrix.
+export const STATUS_UNTRACKED = "untracked";
 
 export function statusLabel(group: LifecycleGroup, status: string): string {
   return i18n.t(`common:lifecycle.${group}.${status}`, {
@@ -48,6 +60,11 @@ const INVESTMENT_TERMINAL_STATUSES: Record<InvestmentSubtype, string[]> = {
 
 // The transaction shape that settles a termination, or null when the pair has
 // none. Drives which fields the terminate dialog's settlement block renders.
+//
+// `untracked` is absent from the table above and so returns null for every
+// subtype — that absence IS the ADR-0053 §5 exemption, mirroring the backend's
+// own carve-out in UpdateInvestmentLifecycle. Nothing was sold, so there are no
+// proceeds to capture and no write-off to offer.
 export function settlementKind(
   subtype: InvestmentSubtype,
   status: string,
@@ -69,7 +86,12 @@ export function statusOptions(
   let values = STATUS_VALUES[group];
   if (group === "investments" && subtype) {
     const settleable = INVESTMENT_TERMINAL_STATUSES[subtype];
-    values = values.filter((v) => v === "active" || settleable.includes(v));
+    // `untracked` is exempt from the narrowing rather than listed in the matrix:
+    // the matrix answers "which Transaction settles this?", and this status's
+    // whole point is that none does (ADR-0053 §5).
+    values = values.filter(
+      (v) => v === "active" || v === STATUS_UNTRACKED || settleable.includes(v),
+    );
   }
   if (currentStatus && !values.includes(currentStatus)) {
     values = [...values, currentStatus];

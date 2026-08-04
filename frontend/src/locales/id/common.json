@@ -207,7 +207,11 @@
     "settlementInterestLabel": "Bunga diterima ({{currency}})",
     "settlementCashIn": "Diterima",
     "settlementWriteOff": "Tidak ada uang kembali — hapus buku",
-    "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi."
+    "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi.",
+    "untracked": {
+      "owned": "Pilih ini jika posisi keluar dari catatan Anda tanpa dijual, dipakai, atau hilang — Anda hanya berhenti mencatatnya, misalnya karena pemiliknya keluar dari rumah tangga. Nilainya dicatat sebagai keluar dari pembukuan, bukan sebagai kerugian.",
+      "owed": "Pilih ini jika utang keluar dari catatan Anda tanpa dilunasi atau dibebaskan — Anda hanya berhenti mencatatnya, misalnya karena penanggung utangnya keluar dari rumah tangga. Ini dicatat sebagai keluar dari pembukuan, bukan sebagai uang yang Anda bayarkan."
+    }
   },
   "import": {
     "trigger": "Impor",

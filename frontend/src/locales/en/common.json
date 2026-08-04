@@ -207,7 +207,11 @@
     "settlementInterestLabel": "Interest received ({{currency}})",
     "settlementCashIn": "Received",
     "settlementWriteOff": "No money came back — write this off",
-    "settlementAlreadyRecorded": "A sale is already recorded in this month, so no new one will be added."
+    "settlementAlreadyRecorded": "A sale is already recorded in this month, so no new one will be added.",
+    "untracked": {
+      "owned": "Pick this when it left your books without being sold, spent or lost — you simply stopped tracking it, for example because the person who owns it left the household. Its value is recorded as leaving your records, not as a loss.",
+      "owed": "Pick this when the debt left your books without being paid off or forgiven — you simply stopped tracking it, for example because the person who owes it left the household. It is recorded as leaving your records, not as money you paid."
+    }
   },
   "import": {
     "trigger": "Import",
