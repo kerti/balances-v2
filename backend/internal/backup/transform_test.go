@@ -7,7 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -291,4 +294,78 @@ func TestMintGoldenFixture(t *testing.T) {
 		t.Fatalf("write golden: %v", err)
 	}
 	t.Logf("minted golden v1 fixture: %s (%d bytes) — commit this file", path, len(gzipped))
+}
+
+// covers: INV-BACKUP-06, INV-BACKUP-16
+//
+// A v4 file predates `supersedes` (#602): its close rows and the rows they
+// displaced are all there, but nothing says which pairs with which. The
+// transform rebuilds that from the rule the column replaced — the displaced
+// row's deleted_at equals the close row's created_at, both being the same
+// transaction timestamp — so a backup taken before the fix still restores with
+// its terminations undoable.
+//
+// The negative cases carry the weight: a row the *user* deleted (timestamps
+// unrelated) must not be adopted as a fallback, and a zero-amount archived row
+// is an earlier cycle's close row, which would restore a reactivated Position
+// to 0 — the thing INV-LIFECYCLE-04 forbids.
+func TestV4ToV5LinksDisplacedSnapshots(t *testing.T) {
+	ts := func(s string) pgtype.Timestamptz {
+		v, err := time.Parse(time.RFC3339Nano, s)
+		if err != nil {
+			t.Fatalf("parse %q: %v", s, err)
+		}
+		return pgtype.Timestamptz{Time: v, Valid: true}
+	}
+	var (
+		asset     = uuid.New()
+		feb       = time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC)
+		mar       = time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+		flip      = "2026-02-20T10:00:00.123456Z"
+		displace  = uuid.New()
+		closeRow  = uuid.New()
+		handGone  = uuid.New()
+		marClose  = uuid.New()
+		staleZero = uuid.New()
+	)
+	env := &Envelope{
+		Household: HouseholdData{
+			AssetSnapshots: []db.AssetSnapshot{
+				// The pair: a 25 archived at the flip, and the 0 that replaced it.
+				{ID: displace, AssetID: asset, YearMonth: feb, Amount: decimal.RequireFromString("25"),
+					CreatedAt: ts("2026-02-01T00:00:00Z"), DeletedAt: ts(flip)},
+				{ID: closeRow, AssetID: asset, YearMonth: feb, Amount: decimal.Zero, CreatedAt: ts(flip)},
+				// A snapshot the user deleted by hand, months from any flip.
+				{ID: handGone, AssetID: asset, YearMonth: mar, Amount: decimal.RequireFromString("30"),
+					CreatedAt: ts("2026-03-01T00:00:00Z"), DeletedAt: ts("2026-06-09T08:00:00Z")},
+				// A close row at that month whose created_at matches nothing.
+				{ID: marClose, AssetID: asset, YearMonth: mar, Amount: decimal.Zero,
+					CreatedAt: ts("2026-07-01T00:00:00Z")},
+				// An earlier cycle's close row, archived at the same instant as
+				// marClose was written: a timestamp match, but a 0 to restore.
+				{ID: staleZero, AssetID: asset, YearMonth: mar, Amount: decimal.Zero,
+					CreatedAt: ts("2026-05-01T00:00:00Z"), DeletedAt: ts("2026-07-01T00:00:00Z")},
+			},
+		},
+	}
+	if err := transforms[4](env); err != nil {
+		t.Fatalf("transforms[4]: %v", err)
+	}
+
+	byID := map[uuid.UUID]db.AssetSnapshot{}
+	for _, s := range env.Household.AssetSnapshots {
+		byID[s.ID] = s
+	}
+	if got := byID[closeRow].Supersedes; got == nil || *got != displace {
+		t.Errorf("close row supersedes = %v, want %s", got, displace)
+	}
+	if got := byID[marClose].Supersedes; got != nil {
+		t.Errorf("a close row that displaced nothing linked to %s", *got)
+	}
+	if got := byID[displace].Supersedes; got != nil {
+		t.Errorf("the displaced row itself gained a link to %s", *got)
+	}
+	if got := byID[handGone].Supersedes; got != nil {
+		t.Errorf("a hand-deleted snapshot gained a link to %s", *got)
+	}
 }

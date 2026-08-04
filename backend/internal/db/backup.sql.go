@@ -21,8 +21,13 @@ SELECT id, display_name, reporting_currency, created_by, created_at, updated_by,
 // Every query is scoped to one Household and takes an include_deleted flag:
 //
 //	full fidelity  -> include_deleted = true  (carry soft-deleted rows verbatim)
-//	compacted      -> include_deleted = false (live rows only)
+//	compacted      -> include_deleted = false (rows the user deleted are dropped)
 //
+// "Compacted" means *the user's* Recycle Bin is left behind. A snapshot a live
+// close row supersedes was never thrown away by anyone — the termination
+// displaced it, and un-terminate hands it back (ADR-0052 §2, INV-LIFECYCLE-04) —
+// so the four snapshot queries carry it even when compacting, or a household
+// restored from the file would silently lose its undo (#602).
 // Detail tables (1:1 with their position, no own deleted_at/household_id) and
 // snapshot/transaction tables are scoped by joining their parent on
 // household_id; their liveness follows the parent's deleted_at too, so a
@@ -48,10 +53,13 @@ func (q *Queries) GetHouseholdForExport(ctx context.Context, householdID uuid.UU
 
 const listAssetSnapshotsForExport = `-- name: ListAssetSnapshotsForExport :many
 
-SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at FROM asset_snapshots s
+SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes FROM asset_snapshots s
 JOIN assets a ON a.id = s.asset_id
 WHERE a.household_id = $1
-  AND ($2::bool OR (s.deleted_at IS NULL AND a.deleted_at IS NULL))
+  AND ($2::bool OR (a.deleted_at IS NULL AND (
+        s.deleted_at IS NULL
+     OR EXISTS (SELECT 1 FROM asset_snapshots c
+                 WHERE c.supersedes = s.id AND c.deleted_at IS NULL))))
 ORDER BY s.asset_id, s.year_month, s.id
 `
 
@@ -61,6 +69,12 @@ type ListAssetSnapshotsForExportParams struct {
 }
 
 // ----- Snapshots + ledger (scoped via parent; liveness follows parent) -----
+//
+// The snapshot queries carry one class of soft-deleted row when compacting: one
+// a *live* close row supersedes. The referrer must be live — once un-terminate
+// archives a close row, the row it displaced is live again and needs no
+// exception. This also keeps the file's foreign keys closed: every carried close
+// row's `supersedes` target is carried with it.
 func (q *Queries) ListAssetSnapshotsForExport(ctx context.Context, arg ListAssetSnapshotsForExportParams) ([]AssetSnapshot, error) {
 	rows, err := q.db.Query(ctx, listAssetSnapshotsForExport, arg.HouseholdID, arg.IncludeDeleted)
 	if err != nil {
@@ -83,6 +97,7 @@ func (q *Queries) ListAssetSnapshotsForExport(ctx context.Context, arg ListAsset
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -352,10 +367,13 @@ func (q *Queries) ListIncomeForExport(ctx context.Context, arg ListIncomeForExpo
 }
 
 const listInvestmentSnapshotsForExport = `-- name: ListInvestmentSnapshotsForExport :many
-SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at FROM investment_snapshots s
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes FROM investment_snapshots s
 JOIN investments i ON i.id = s.investment_id
 WHERE i.household_id = $1
-  AND ($2::bool OR (s.deleted_at IS NULL AND i.deleted_at IS NULL))
+  AND ($2::bool OR (i.deleted_at IS NULL AND (
+        s.deleted_at IS NULL
+     OR EXISTS (SELECT 1 FROM investment_snapshots c
+                 WHERE c.supersedes = s.id AND c.deleted_at IS NULL))))
 ORDER BY s.investment_id, s.year_month, s.id
 `
 
@@ -389,6 +407,7 @@ func (q *Queries) ListInvestmentSnapshotsForExport(ctx context.Context, arg List
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -563,10 +582,13 @@ func (q *Queries) ListLiabilitiesForExport(ctx context.Context, arg ListLiabilit
 }
 
 const listLiabilitySnapshotsForExport = `-- name: ListLiabilitySnapshotsForExport :many
-SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at FROM liability_snapshots s
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes FROM liability_snapshots s
 JOIN liabilities l ON l.id = s.liability_id
 WHERE l.household_id = $1
-  AND ($2::bool OR (s.deleted_at IS NULL AND l.deleted_at IS NULL))
+  AND ($2::bool OR (l.deleted_at IS NULL AND (
+        s.deleted_at IS NULL
+     OR EXISTS (SELECT 1 FROM liability_snapshots c
+                 WHERE c.supersedes = s.id AND c.deleted_at IS NULL))))
 ORDER BY s.liability_id, s.year_month, s.id
 `
 
@@ -597,6 +619,7 @@ func (q *Queries) ListLiabilitySnapshotsForExport(ctx context.Context, arg ListL
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -687,10 +710,13 @@ func (q *Queries) ListPropertiesForExport(ctx context.Context, arg ListPropertie
 }
 
 const listReceivableSnapshotsForExport = `-- name: ListReceivableSnapshotsForExport :many
-SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at FROM receivable_snapshots s
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes FROM receivable_snapshots s
 JOIN receivables r ON r.id = s.receivable_id
 WHERE r.household_id = $1
-  AND ($2::bool OR (s.deleted_at IS NULL AND r.deleted_at IS NULL))
+  AND ($2::bool OR (r.deleted_at IS NULL AND (
+        s.deleted_at IS NULL
+     OR EXISTS (SELECT 1 FROM receivable_snapshots c
+                 WHERE c.supersedes = s.id AND c.deleted_at IS NULL))))
 ORDER BY s.receivable_id, s.year_month, s.id
 `
 
@@ -721,6 +747,7 @@ func (q *Queries) ListReceivableSnapshotsForExport(ctx context.Context, arg List
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}

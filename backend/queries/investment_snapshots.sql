@@ -16,9 +16,9 @@ INSERT INTO investment_snapshots (
     investment_id, year_month, amount, currency,
     quantity, price_per_unit, accrued_interest,
     as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_investment.iid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10
+SELECT owned_investment.iid, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, sqlc.narg('supersedes')
 FROM owned_investment
 RETURNING *;
 
@@ -268,19 +268,6 @@ WHERE s.investment_id = sqlc.arg('investment_id')
   AND i.household_id = sqlc.arg('household_id')::uuid
   AND i.deleted_at IS NULL
   AND s.deleted_at IS NULL;
-
--- name: GetArchivedInvestmentSnapshotAtMonth :one
-SELECT s.*
-FROM investment_snapshots s
-JOIN investments i ON i.id = s.investment_id
-WHERE s.investment_id = sqlc.arg('investment_id')
-  AND s.year_month = sqlc.arg('year_month')::date
-  AND i.household_id = sqlc.arg('household_id')::uuid
-  AND i.deleted_at IS NULL
-  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1;
 
 -- name: RestoreInvestmentSnapshot :execrows
 UPDATE investment_snapshots s

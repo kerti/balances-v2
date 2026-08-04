@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -49,15 +48,15 @@ const createLiabilitySnapshot = `-- name: CreateLiabilitySnapshot :one
 WITH owned_liability AS (
     SELECT l.id AS lid
     FROM liabilities l
-    WHERE l.id = $1 AND l.household_id = $8::uuid AND l.deleted_at IS NULL
+    WHERE l.id = $1 AND l.household_id = $9::uuid AND l.deleted_at IS NULL
 )
 INSERT INTO liability_snapshots (
     liability_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_liability.lid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_liability.lid, $2, $3, $4, $5, $6, $7, $7, $8
 FROM owned_liability
-RETURNING id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type CreateLiabilitySnapshotParams struct {
@@ -68,6 +67,7 @@ type CreateLiabilitySnapshotParams struct {
 	AsOfDate    *time.Time      `json:"as_of_date"`
 	Description *string         `json:"description"`
 	CreatedBy   *uuid.UUID      `json:"created_by"`
+	Supersedes  *uuid.UUID      `json:"supersedes"`
 	HouseholdID uuid.UUID       `json:"household_id"`
 }
 
@@ -84,6 +84,7 @@ func (q *Queries) CreateLiabilitySnapshot(ctx context.Context, arg CreateLiabili
 		arg.AsOfDate,
 		arg.Description,
 		arg.CreatedBy,
+		arg.Supersedes,
 		arg.HouseholdID,
 	)
 	var i LiabilitySnapshot
@@ -100,52 +101,7 @@ func (q *Queries) CreateLiabilitySnapshot(ctx context.Context, arg CreateLiabili
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getArchivedLiabilitySnapshotAtMonth = `-- name: GetArchivedLiabilitySnapshotAtMonth :one
-SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
-FROM liability_snapshots s
-JOIN liabilities l ON l.id = s.liability_id
-WHERE s.liability_id = $1
-  AND s.year_month = $2::date
-  AND l.household_id = $3::uuid
-  AND l.deleted_at IS NULL
-  AND s.deleted_at = $4::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1
-`
-
-type GetArchivedLiabilitySnapshotAtMonthParams struct {
-	LiabilityID uuid.UUID          `json:"liability_id"`
-	YearMonth   time.Time          `json:"year_month"`
-	HouseholdID uuid.UUID          `json:"household_id"`
-	ArchivedAt  pgtype.Timestamptz `json:"archived_at"`
-}
-
-func (q *Queries) GetArchivedLiabilitySnapshotAtMonth(ctx context.Context, arg GetArchivedLiabilitySnapshotAtMonthParams) (LiabilitySnapshot, error) {
-	row := q.db.QueryRow(ctx, getArchivedLiabilitySnapshotAtMonth,
-		arg.LiabilityID,
-		arg.YearMonth,
-		arg.HouseholdID,
-		arg.ArchivedAt,
-	)
-	var i LiabilitySnapshot
-	err := row.Scan(
-		&i.ID,
-		&i.LiabilityID,
-		&i.YearMonth,
-		&i.Amount,
-		&i.Currency,
-		&i.AsOfDate,
-		&i.Description,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -179,7 +135,7 @@ func (q *Queries) GetLiabilityForImport(ctx context.Context, arg GetLiabilityFor
 
 const getLiabilitySnapshotAtMonth = `-- name: GetLiabilitySnapshotAtMonth :one
 
-SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM liability_snapshots s
 JOIN liabilities l ON l.id = s.liability_id
 WHERE s.liability_id = $1
@@ -213,12 +169,13 @@ func (q *Queries) GetLiabilitySnapshotAtMonth(ctx context.Context, arg GetLiabil
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const getLiabilitySnapshotByID = `-- name: GetLiabilitySnapshotByID :one
-SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM liability_snapshots s
 JOIN liabilities l ON l.id = s.liability_id
 WHERE s.id = $1
@@ -248,6 +205,7 @@ func (q *Queries) GetLiabilitySnapshotByID(ctx context.Context, arg GetLiability
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -349,7 +307,7 @@ func (q *Queries) ListEligibleLiabilityIDsForMonth(ctx context.Context, arg List
 }
 
 const listLatestLiabilitySnapshotsByLiabilityIDs = `-- name: ListLatestLiabilitySnapshotsByLiabilityIDs :many
-SELECT DISTINCT ON (liability_id) id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT DISTINCT ON (liability_id) id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM liability_snapshots
 WHERE liability_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY liability_id, year_month DESC
@@ -378,6 +336,7 @@ func (q *Queries) ListLatestLiabilitySnapshotsByLiabilityIDs(ctx context.Context
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -434,7 +393,7 @@ func (q *Queries) ListLatestSnapshotsByLiabilityIDsAsOfMonth(ctx context.Context
 }
 
 const listLiabilitySnapshotsByLiabilityIDs = `-- name: ListLiabilitySnapshotsByLiabilityIDs :many
-SELECT id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM liability_snapshots
 WHERE liability_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY liability_id, year_month
@@ -465,6 +424,7 @@ func (q *Queries) ListLiabilitySnapshotsByLiabilityIDs(ctx context.Context, doll
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -477,7 +437,7 @@ func (q *Queries) ListLiabilitySnapshotsByLiabilityIDs(ctx context.Context, doll
 }
 
 const listLiabilitySnapshotsForLiability = `-- name: ListLiabilitySnapshotsForLiability :many
-SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM liability_snapshots s
 JOIN liabilities l ON l.id = s.liability_id
 WHERE s.liability_id = $1
@@ -514,6 +474,7 @@ func (q *Queries) ListLiabilitySnapshotsForLiability(ctx context.Context, arg Li
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -593,7 +554,7 @@ WHERE s.id = $1
   AND l.household_id = $2
   AND l.deleted_at IS NULL
   AND s.deleted_at IS NULL
-RETURNING s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+RETURNING s.id, s.liability_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 `
 
 type UpdateLiabilitySnapshotParams struct {
@@ -630,6 +591,7 @@ func (q *Queries) UpdateLiabilitySnapshot(ctx context.Context, arg UpdateLiabili
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -654,7 +616,7 @@ DO UPDATE SET
     description = EXCLUDED.description,
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
-RETURNING id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, liability_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type UpsertLiabilitySnapshotParams struct {
@@ -698,6 +660,7 @@ func (q *Queries) UpsertLiabilitySnapshot(ctx context.Context, arg UpsertLiabili
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }

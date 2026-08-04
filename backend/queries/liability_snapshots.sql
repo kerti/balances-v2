@@ -11,9 +11,9 @@ WITH owned_liability AS (
 )
 INSERT INTO liability_snapshots (
     liability_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_liability.lid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_liability.lid, $2, $3, $4, $5, $6, $7, $7, sqlc.narg('supersedes')
 FROM owned_liability
 RETURNING *;
 
@@ -183,19 +183,6 @@ WHERE s.liability_id = sqlc.arg('liability_id')
   AND l.household_id = sqlc.arg('household_id')::uuid
   AND l.deleted_at IS NULL
   AND s.deleted_at IS NULL;
-
--- name: GetArchivedLiabilitySnapshotAtMonth :one
-SELECT s.*
-FROM liability_snapshots s
-JOIN liabilities l ON l.id = s.liability_id
-WHERE s.liability_id = sqlc.arg('liability_id')
-  AND s.year_month = sqlc.arg('year_month')::date
-  AND l.household_id = sqlc.arg('household_id')::uuid
-  AND l.deleted_at IS NULL
-  AND s.deleted_at = sqlc.arg('archived_at')::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1;
 
 -- name: RestoreLiabilitySnapshot :execrows
 UPDATE liability_snapshots s

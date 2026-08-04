@@ -374,7 +374,9 @@ recovery** (a self-hosted device bricks or burns) and **portability** between in
 either direction). It is *not* a partial-import or merge tool — bringing some data into a *live*
 Household is the per-position spreadsheet import, a separate thing. A Backup is taken at one of two
 fidelities the user chooses: **full fidelity** (carries soft-deleted "Recycle Bin" rows for an exact
-round-trip) or **compacted** (live rows only — a clean snapshot of current truth). _Avoid_: Export
+round-trip) or **compacted** (a clean snapshot of current truth — what the user deleted is left
+behind, but a snapshot a termination displaced is not "deleted" and rides along, so an undo still
+works after a restore). _Avoid_: Export
 (reserved for the per-position spreadsheet download), Dump.
 
 **Restore**: Loading a Backup into a **fresh or wiped-clean** Household — never merged into a populated

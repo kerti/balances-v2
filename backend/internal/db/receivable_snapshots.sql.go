@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -49,15 +48,15 @@ const createReceivableSnapshot = `-- name: CreateReceivableSnapshot :one
 WITH owned_receivable AS (
     SELECT r.id AS rid
     FROM receivables r
-    WHERE r.id = $1 AND r.household_id = $8::uuid AND r.deleted_at IS NULL
+    WHERE r.id = $1 AND r.household_id = $9::uuid AND r.deleted_at IS NULL
 )
 INSERT INTO receivable_snapshots (
     receivable_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_receivable.rid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_receivable.rid, $2, $3, $4, $5, $6, $7, $7, $8
 FROM owned_receivable
-RETURNING id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type CreateReceivableSnapshotParams struct {
@@ -68,6 +67,7 @@ type CreateReceivableSnapshotParams struct {
 	AsOfDate    *time.Time      `json:"as_of_date"`
 	Description *string         `json:"description"`
 	CreatedBy   *uuid.UUID      `json:"created_by"`
+	Supersedes  *uuid.UUID      `json:"supersedes"`
 	HouseholdID uuid.UUID       `json:"household_id"`
 }
 
@@ -84,6 +84,7 @@ func (q *Queries) CreateReceivableSnapshot(ctx context.Context, arg CreateReceiv
 		arg.AsOfDate,
 		arg.Description,
 		arg.CreatedBy,
+		arg.Supersedes,
 		arg.HouseholdID,
 	)
 	var i ReceivableSnapshot
@@ -100,52 +101,7 @@ func (q *Queries) CreateReceivableSnapshot(ctx context.Context, arg CreateReceiv
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getArchivedReceivableSnapshotAtMonth = `-- name: GetArchivedReceivableSnapshotAtMonth :one
-SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
-FROM receivable_snapshots s
-JOIN receivables rc ON rc.id = s.receivable_id
-WHERE s.receivable_id = $1
-  AND s.year_month = $2::date
-  AND rc.household_id = $3::uuid
-  AND rc.deleted_at IS NULL
-  AND s.deleted_at = $4::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1
-`
-
-type GetArchivedReceivableSnapshotAtMonthParams struct {
-	ReceivableID uuid.UUID          `json:"receivable_id"`
-	YearMonth    time.Time          `json:"year_month"`
-	HouseholdID  uuid.UUID          `json:"household_id"`
-	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
-}
-
-func (q *Queries) GetArchivedReceivableSnapshotAtMonth(ctx context.Context, arg GetArchivedReceivableSnapshotAtMonthParams) (ReceivableSnapshot, error) {
-	row := q.db.QueryRow(ctx, getArchivedReceivableSnapshotAtMonth,
-		arg.ReceivableID,
-		arg.YearMonth,
-		arg.HouseholdID,
-		arg.ArchivedAt,
-	)
-	var i ReceivableSnapshot
-	err := row.Scan(
-		&i.ID,
-		&i.ReceivableID,
-		&i.YearMonth,
-		&i.Amount,
-		&i.Currency,
-		&i.AsOfDate,
-		&i.Description,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -179,7 +135,7 @@ func (q *Queries) GetReceivableForImport(ctx context.Context, arg GetReceivableF
 
 const getReceivableSnapshotAtMonth = `-- name: GetReceivableSnapshotAtMonth :one
 
-SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM receivable_snapshots s
 JOIN receivables rc ON rc.id = s.receivable_id
 WHERE s.receivable_id = $1
@@ -213,12 +169,13 @@ func (q *Queries) GetReceivableSnapshotAtMonth(ctx context.Context, arg GetRecei
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const getReceivableSnapshotByID = `-- name: GetReceivableSnapshotByID :one
-SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM receivable_snapshots s
 JOIN receivables r ON r.id = s.receivable_id
 WHERE s.id = $1
@@ -248,6 +205,7 @@ func (q *Queries) GetReceivableSnapshotByID(ctx context.Context, arg GetReceivab
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -346,7 +304,7 @@ func (q *Queries) ListEligibleReceivablesForMonth(ctx context.Context, arg ListE
 }
 
 const listLatestReceivableSnapshotsByReceivableIDs = `-- name: ListLatestReceivableSnapshotsByReceivableIDs :many
-SELECT DISTINCT ON (receivable_id) id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT DISTINCT ON (receivable_id) id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM receivable_snapshots
 WHERE receivable_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY receivable_id, year_month DESC
@@ -375,6 +333,7 @@ func (q *Queries) ListLatestReceivableSnapshotsByReceivableIDs(ctx context.Conte
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -431,7 +390,7 @@ func (q *Queries) ListLatestSnapshotsByReceivableIDsAsOfMonth(ctx context.Contex
 }
 
 const listReceivableSnapshotsByReceivableIDs = `-- name: ListReceivableSnapshotsByReceivableIDs :many
-SELECT id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM receivable_snapshots
 WHERE receivable_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY receivable_id, year_month
@@ -463,6 +422,7 @@ func (q *Queries) ListReceivableSnapshotsByReceivableIDs(ctx context.Context, do
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -475,7 +435,7 @@ func (q *Queries) ListReceivableSnapshotsByReceivableIDs(ctx context.Context, do
 }
 
 const listReceivableSnapshotsForReceivable = `-- name: ListReceivableSnapshotsForReceivable :many
-SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM receivable_snapshots s
 JOIN receivables r ON r.id = s.receivable_id
 WHERE s.receivable_id = $1
@@ -512,6 +472,7 @@ func (q *Queries) ListReceivableSnapshotsForReceivable(ctx context.Context, arg 
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -591,7 +552,7 @@ WHERE s.id = $1
   AND r.household_id = $2
   AND r.deleted_at IS NULL
   AND s.deleted_at IS NULL
-RETURNING s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+RETURNING s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 `
 
 type UpdateReceivableSnapshotParams struct {
@@ -628,6 +589,7 @@ func (q *Queries) UpdateReceivableSnapshot(ctx context.Context, arg UpdateReceiv
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -652,7 +614,7 @@ DO UPDATE SET
     description = EXCLUDED.description,
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
-RETURNING id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, receivable_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type UpsertReceivableSnapshotParams struct {
@@ -696,6 +658,7 @@ func (q *Queries) UpsertReceivableSnapshot(ctx context.Context, arg UpsertReceiv
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }

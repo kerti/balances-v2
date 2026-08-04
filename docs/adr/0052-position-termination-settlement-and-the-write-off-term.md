@@ -63,6 +63,29 @@ reactivated Position carries its *own recorded* value back, not merely "not 0".
 This is what makes bulk-correcting historical data a reversible operation rather than a destructive
 one.
 
+**Amendment (#602): the pairing is declared, not inferred.** As first shipped, un-terminate found the
+archived original by *coincidence* — the archive `UPDATE` and the close `INSERT` share one
+transaction, and `now()` is transaction-scoped, so the archived row's `deleted_at` equalled the close
+row's `created_at` — plus an `amount <> 0` filter to skip a close row left archived by an earlier
+terminate/un-terminate cycle. That worked, but it meant nothing *in the row* distinguished a snapshot
+the termination displaced from one the user threw away. Anything entitled to discard the Recycle Bin
+would take the fallback with it: a **compacted** backup did exactly that ([[adr-0036]]), keeping the
+live close row while dropping the row it pointed at, so a household restored from such a file read a
+carried-forward value from an earlier month on its next undo — silently.
+
+The close row now names what it displaced in a `supersedes` column. The link runs close → displaced
+rather than the reverse because the partial unique index forces the archive to happen first, so only
+the second write can carry the other's id; it also collapses the lookup, since the close row is
+already read to tell it apart from a value the user re-recorded while the Position was terminated.
+The `amount <> 0` heuristic goes away with it — excluding an earlier cycle's close row is now
+structural.
+
+A displaced snapshot is therefore **not user-deleted data**, and compaction carries it. The rejected
+alternative was to stop using `deleted_at` for displacement altogether (mark the row `superseded_by`
+and widen the unique indexes to match), which would need no backup exception at all — but it puts a
+second predicate on ~100 existing `deleted_at IS NULL` reads across the snapshot queries and the
+report engine, where a single miss leaks a displaced row into the statements as a silent wrong number.
+
 ### 3. A termination-month value change is never a mark change
 
 Asset Value Change is the signed sum of `ΔSnapshot` over `property` and `vehicle` Positions, and its

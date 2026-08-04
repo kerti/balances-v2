@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -55,15 +54,15 @@ const createAssetSnapshot = `-- name: CreateAssetSnapshot :one
 WITH owned_asset AS (
     SELECT a.id AS aid
     FROM assets a
-    WHERE a.id = $1 AND a.household_id = $8::uuid AND a.deleted_at IS NULL
+    WHERE a.id = $1 AND a.household_id = $9::uuid AND a.deleted_at IS NULL
 )
 INSERT INTO asset_snapshots (
     asset_id, year_month, amount, currency, as_of_date, description,
-    created_by, updated_by
+    created_by, updated_by, supersedes
 )
-SELECT owned_asset.aid, $2, $3, $4, $5, $6, $7, $7
+SELECT owned_asset.aid, $2, $3, $4, $5, $6, $7, $7, $8
 FROM owned_asset
-RETURNING id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type CreateAssetSnapshotParams struct {
@@ -74,6 +73,7 @@ type CreateAssetSnapshotParams struct {
 	AsOfDate    *time.Time      `json:"as_of_date"`
 	Description *string         `json:"description"`
 	CreatedBy   *uuid.UUID      `json:"created_by"`
+	Supersedes  *uuid.UUID      `json:"supersedes"`
 	HouseholdID uuid.UUID       `json:"household_id"`
 }
 
@@ -81,6 +81,9 @@ type CreateAssetSnapshotParams struct {
 // Household. This is belt + suspenders on top of the application-layer
 // tenancy middleware: even if a handler forgets to filter, SQL will not
 // expose or mutate snapshots from another Household.
+// `supersedes` is written only by the close-snapshot machinery (ADR-0052 §2):
+// on a 0-value close row it names the snapshot that row displaced. Every
+// user-facing create leaves it NULL.
 func (q *Queries) CreateAssetSnapshot(ctx context.Context, arg CreateAssetSnapshotParams) (AssetSnapshot, error) {
 	row := q.db.QueryRow(ctx, createAssetSnapshot,
 		arg.ID,
@@ -90,6 +93,7 @@ func (q *Queries) CreateAssetSnapshot(ctx context.Context, arg CreateAssetSnapsh
 		arg.AsOfDate,
 		arg.Description,
 		arg.CreatedBy,
+		arg.Supersedes,
 		arg.HouseholdID,
 	)
 	var i AssetSnapshot
@@ -106,61 +110,7 @@ func (q *Queries) CreateAssetSnapshot(ctx context.Context, arg CreateAssetSnapsh
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-	)
-	return i, err
-}
-
-const getArchivedAssetSnapshotAtMonth = `-- name: GetArchivedAssetSnapshotAtMonth :one
-SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
-FROM asset_snapshots s
-JOIN assets a ON a.id = s.asset_id
-WHERE s.asset_id = $1
-  AND s.year_month = $2::date
-  AND a.household_id = $3::uuid
-  AND a.deleted_at IS NULL
-  AND s.deleted_at = $4::timestamptz
-  AND s.amount <> 0
-ORDER BY s.created_at DESC
-LIMIT 1
-`
-
-type GetArchivedAssetSnapshotAtMonthParams struct {
-	AssetID     uuid.UUID          `json:"asset_id"`
-	YearMonth   time.Time          `json:"year_month"`
-	HouseholdID uuid.UUID          `json:"household_id"`
-	ArchivedAt  pgtype.Timestamptz `json:"archived_at"`
-}
-
-// GetArchivedAssetSnapshotAtMonth returns the row that was archived to make room
-// for a close snapshot, so un-terminate can restore it. `deleted_at` is the
-// discriminator: the archive UPDATE and the close-row INSERT run in one
-// transaction, and `now()` is transaction-scoped, so the archived row's
-// deleted_at equals the close row's created_at exactly. Without that guard the
-// restore would resurrect a snapshot the user had deleted by hand months
-// earlier. Zero-amount candidates are excluded: such a row is a close snapshot
-// from an earlier terminate/un-terminate cycle, and restoring it would leave a
-// reactivated Position reading 0 — the exact thing INV-LIFECYCLE-04 forbids.
-func (q *Queries) GetArchivedAssetSnapshotAtMonth(ctx context.Context, arg GetArchivedAssetSnapshotAtMonthParams) (AssetSnapshot, error) {
-	row := q.db.QueryRow(ctx, getArchivedAssetSnapshotAtMonth,
-		arg.AssetID,
-		arg.YearMonth,
-		arg.HouseholdID,
-		arg.ArchivedAt,
-	)
-	var i AssetSnapshot
-	err := row.Scan(
-		&i.ID,
-		&i.AssetID,
-		&i.YearMonth,
-		&i.Amount,
-		&i.Currency,
-		&i.AsOfDate,
-		&i.Description,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -194,7 +144,7 @@ func (q *Queries) GetAssetForImport(ctx context.Context, arg GetAssetForImportPa
 
 const getAssetSnapshotAtMonth = `-- name: GetAssetSnapshotAtMonth :one
 
-SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM asset_snapshots s
 JOIN assets a ON a.id = s.asset_id
 WHERE s.asset_id = $1
@@ -217,12 +167,22 @@ type GetAssetSnapshotAtMonthParams struct {
 // destroyed it unrecoverably), the live row is soft-deleted and the 0 row
 // inserted alongside: the partial unique index on this table is
 // `(asset_id, year_month) WHERE deleted_at IS NULL`, so the archived row and the
-// close row coexist. Un-terminate reverses it. The same trio exists verbatim on
+// close row coexist. Un-terminate reverses it. The same pair exists verbatim on
 // the other three snapshot tables.
+//
+// The close row names what it displaced in its `supersedes` column (#602). That
+// link used to be inferred — the archive UPDATE and the close INSERT share one
+// transaction, so the archived row's deleted_at equalled the close row's
+// created_at — which meant nothing in the row itself distinguished a displaced
+// snapshot from one the user threw away, and a compacted backup dropped it. The
+// link runs close → displaced rather than the other way round because the
+// unique index forces the archive to happen first, so only the second write can
+// carry the other's id.
 // GetAssetSnapshotAtMonth returns the single live snapshot at a month, if any.
-// Read before a terminal flip (to archive it) and before an un-terminate (to
-// tell our 0-value close row apart from a value the user re-recorded while the
-// Position was terminated).
+// Read before a terminal flip (to archive it) and before an un-terminate — where
+// it both tells our 0-value close row apart from a value the user re-recorded
+// while the Position was terminated, and yields, in `supersedes`, the row to put
+// back.
 func (q *Queries) GetAssetSnapshotAtMonth(ctx context.Context, arg GetAssetSnapshotAtMonthParams) (AssetSnapshot, error) {
 	row := q.db.QueryRow(ctx, getAssetSnapshotAtMonth, arg.AssetID, arg.YearMonth, arg.HouseholdID)
 	var i AssetSnapshot
@@ -239,12 +199,13 @@ func (q *Queries) GetAssetSnapshotAtMonth(ctx context.Context, arg GetAssetSnaps
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const getAssetSnapshotByID = `-- name: GetAssetSnapshotByID :one
-SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM asset_snapshots s
 JOIN assets a ON a.id = s.asset_id
 WHERE s.id = $1
@@ -274,12 +235,13 @@ func (q *Queries) GetAssetSnapshotByID(ctx context.Context, arg GetAssetSnapshot
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
 
 const listAssetSnapshotsByAssetIDs = `-- name: ListAssetSnapshotsByAssetIDs :many
-SELECT id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM asset_snapshots
 WHERE asset_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY asset_id, year_month
@@ -310,6 +272,7 @@ func (q *Queries) ListAssetSnapshotsByAssetIDs(ctx context.Context, dollar_1 []u
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -322,7 +285,7 @@ func (q *Queries) ListAssetSnapshotsByAssetIDs(ctx context.Context, dollar_1 []u
 }
 
 const listAssetSnapshotsForAsset = `-- name: ListAssetSnapshotsForAsset :many
-SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 FROM asset_snapshots s
 JOIN assets a ON a.id = s.asset_id
 WHERE s.asset_id = $1
@@ -359,6 +322,7 @@ func (q *Queries) ListAssetSnapshotsForAsset(ctx context.Context, arg ListAssetS
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -470,7 +434,7 @@ func (q *Queries) ListEligibleAssetsForMonth(ctx context.Context, arg ListEligib
 }
 
 const listLatestSnapshotsByAssetIDs = `-- name: ListLatestSnapshotsByAssetIDs :many
-SELECT DISTINCT ON (asset_id) id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+SELECT DISTINCT ON (asset_id) id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 FROM asset_snapshots
 WHERE asset_id = ANY($1::uuid[]) AND deleted_at IS NULL
 ORDER BY asset_id, year_month DESC
@@ -501,6 +465,7 @@ func (q *Queries) ListLatestSnapshotsByAssetIDs(ctx context.Context, dollar_1 []
 			&i.UpdatedBy,
 			&i.UpdatedAt,
 			&i.DeletedAt,
+			&i.Supersedes,
 		); err != nil {
 			return nil, err
 		}
@@ -576,9 +541,9 @@ type RestoreAssetSnapshotParams struct {
 }
 
 // RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Only ever
-// called on the row GetArchivedAssetSnapshotAtMonth identified, in the same
-// transaction that soft-deleted the close row that displaced it — so the partial
-// unique index cannot be violated.
+// called on the row a close row's `supersedes` names, in the same transaction
+// that soft-deleted that close row — so the partial unique index cannot be
+// violated.
 func (q *Queries) RestoreAssetSnapshot(ctx context.Context, arg RestoreAssetSnapshotParams) (int64, error) {
 	result, err := q.db.Exec(ctx, restoreAssetSnapshot, arg.UpdatedBy, arg.ID, arg.HouseholdID)
 	if err != nil {
@@ -628,7 +593,7 @@ WHERE s.id = $1
   AND a.household_id = $2
   AND a.deleted_at IS NULL
   AND s.deleted_at IS NULL
-RETURNING s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at
+RETURNING s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
 `
 
 type UpdateAssetSnapshotParams struct {
@@ -665,6 +630,7 @@ func (q *Queries) UpdateAssetSnapshot(ctx context.Context, arg UpdateAssetSnapsh
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }
@@ -689,7 +655,7 @@ DO UPDATE SET
     description = EXCLUDED.description,
     updated_by  = EXCLUDED.updated_by,
     updated_at  = now()
-RETURNING id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at
+RETURNING id, asset_id, year_month, amount, currency, as_of_date, description, created_by, created_at, updated_by, updated_at, deleted_at, supersedes
 `
 
 type UpsertAssetSnapshotParams struct {
@@ -733,6 +699,7 @@ func (q *Queries) UpsertAssetSnapshot(ctx context.Context, arg UpsertAssetSnapsh
 		&i.UpdatedBy,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Supersedes,
 	)
 	return i, err
 }

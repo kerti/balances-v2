@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -58,6 +60,16 @@ type transformFunc func(*Envelope) error
 // trip the constraint. Defaulting to 3.5 reproduces the column DEFAULT. A v2 file
 // never carries a real value here, so "is zero" unambiguously means "absent".
 // The new inflation_rates section needs no transform — a v2 file simply has none.
+//
+// transforms[3] (v3→v4, #594) backfills every position's entry_type — see
+// entryTypeOrAcquired.
+//
+// transforms[4] (v4→v5, #602) rebuilds the close→displaced link on the four
+// snapshot sections. A v4 file predates the `supersedes` column, so the key is
+// absent and decodes to nil — which loads fine (the column is nullable) but
+// would leave every termination in the file with no fallback, so its undo would
+// silently hand back an earlier month's value. The link is reconstructed from
+// the rule the column replaced; see linkDisplacedSnapshots.
 var transforms = map[int]transformFunc{
 	1: func(e *Envelope) error {
 		for i := range e.Household.Bonds {
@@ -88,6 +100,78 @@ var transforms = map[int]transformFunc{
 		}
 		return nil
 	},
+	4: func(e *Envelope) error {
+		linkDisplacedSnapshots(e.Household.AssetSnapshots,
+			func(s *db.AssetSnapshot) closeLinkView {
+				return closeLinkView{s.ID, s.AssetID, s.YearMonth, s.Amount, s.CreatedAt, s.DeletedAt, s.Supersedes != nil}
+			},
+			func(s *db.AssetSnapshot, id uuid.UUID) { s.Supersedes = &id })
+		linkDisplacedSnapshots(e.Household.LiabilitySnapshots,
+			func(s *db.LiabilitySnapshot) closeLinkView {
+				return closeLinkView{s.ID, s.LiabilityID, s.YearMonth, s.Amount, s.CreatedAt, s.DeletedAt, s.Supersedes != nil}
+			},
+			func(s *db.LiabilitySnapshot, id uuid.UUID) { s.Supersedes = &id })
+		linkDisplacedSnapshots(e.Household.ReceivableSnapshots,
+			func(s *db.ReceivableSnapshot) closeLinkView {
+				return closeLinkView{s.ID, s.ReceivableID, s.YearMonth, s.Amount, s.CreatedAt, s.DeletedAt, s.Supersedes != nil}
+			},
+			func(s *db.ReceivableSnapshot, id uuid.UUID) { s.Supersedes = &id })
+		linkDisplacedSnapshots(e.Household.InvestmentSnapshots,
+			func(s *db.InvestmentSnapshot) closeLinkView {
+				return closeLinkView{s.ID, s.InvestmentID, s.YearMonth, s.Amount, s.CreatedAt, s.DeletedAt, s.Supersedes != nil}
+			},
+			func(s *db.InvestmentSnapshot, id uuid.UUID) { s.Supersedes = &id })
+		return nil
+	},
+}
+
+// closeLinkView is the group-agnostic slice of a snapshot row transforms[4]
+// needs to rebuild the close→displaced link on a pre-#602 file.
+type closeLinkView struct {
+	id      uuid.UUID
+	parent  uuid.UUID
+	month   time.Time
+	amount  decimal.Decimal
+	created pgtype.Timestamptz
+	deleted pgtype.Timestamptz
+	hasLink bool
+}
+
+// linkDisplacedSnapshots reconstructs `supersedes` on one snapshot section using
+// the rule that predates the column: a terminal flip archived the live row and
+// inserted the 0-value close row in the *same transaction*, so the archived
+// row's deleted_at equals the close row's created_at exactly. Zero-amount
+// candidates are excluded on the archived side — such a row is a close row from
+// an earlier terminate/un-terminate cycle, and pointing at it would resurrect a
+// 0 (the thing INV-LIFECYCLE-04 forbids). A row that already declares a link is
+// left alone, so this is safe to run over a file that has some.
+//
+// Only one archived row can match a given (parent, month, timestamp): a
+// transaction timestamp is unique per flip and only one live snapshot can exist
+// per position-month.
+func linkDisplacedSnapshots[T any](rows []T, view func(*T) closeLinkView, link func(*T, uuid.UUID)) {
+	type key struct {
+		parent uuid.UUID
+		month  int64
+		at     int64
+	}
+	archived := make(map[key]uuid.UUID, len(rows))
+	for i := range rows {
+		v := view(&rows[i])
+		if !v.deleted.Valid || v.amount.IsZero() {
+			continue
+		}
+		archived[key{v.parent, v.month.Unix(), v.deleted.Time.UnixNano()}] = v.id
+	}
+	for i := range rows {
+		v := view(&rows[i])
+		if v.deleted.Valid || v.hasLink || !v.amount.IsZero() || !v.created.Valid {
+			continue
+		}
+		if id, ok := archived[key{v.parent, v.month.Unix(), v.created.Time.UnixNano()}]; ok {
+			link(&rows[i], id)
+		}
+	}
 }
 
 // entryTypeOrAcquired backfills transforms[3]'s absent entry_type. A v3 file

@@ -46,6 +46,7 @@ type AssetSnapshot struct {
 	UpdatedBy   *uuid.UUID         `json:"updated_by"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+	Supersedes  *uuid.UUID         `json:"supersedes"`
 }
 
 type BankAccountDetail struct {
@@ -178,6 +179,7 @@ type InvestmentSnapshot struct {
 	UpdatedBy       *uuid.UUID         `json:"updated_by"`
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
+	Supersedes      *uuid.UUID         `json:"supersedes"`
 }
 
 type InvestmentTransaction struct {
@@ -241,6 +243,7 @@ type LiabilitySnapshot struct {
 	UpdatedBy   *uuid.UUID         `json:"updated_by"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt   pgtype.Timestamptz `json:"deleted_at"`
+	Supersedes  *uuid.UUID         `json:"supersedes"`
 }
 
 type LocalCredential struct {
@@ -379,6 +382,7 @@ type ReceivableSnapshot struct {
 	UpdatedBy    *uuid.UUID         `json:"updated_by"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	Supersedes   *uuid.UUID         `json:"supersedes"`
 }
 
 type Session struct {

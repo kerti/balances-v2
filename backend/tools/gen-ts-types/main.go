@@ -53,11 +53,23 @@ type target struct {
 	nullableFields map[string]bool
 }
 
-// deleted_at is dropped by default: every wire-facing struct except Tag
-// omits its soft-delete column entirely (a deleted row is never returned in
-// the first place, so callers have no use for the column). Tag is the one
-// exception — list nullableFields["deleted_at"]=true to keep it.
-const defaultSkippedField = "deleted_at"
+// Bookkeeping columns are dropped by default:
+//
+//   - deleted_at — every wire-facing struct except Tag omits its soft-delete
+//     column entirely (a deleted row is never returned in the first place, so
+//     callers have no use for the column). Tag is the one exception — list
+//     nullableFields["deleted_at"]=true to keep it.
+//   - supersedes — the close-snapshot displacement link (ADR-0052 §2, #602).
+//     It names a soft-deleted row, which by the same rule never reaches a
+//     caller, so the only value the frontend could ever read is null.
+//
+// Both remain in the JSON the API emits (and, load-bearingly, in a backup);
+// this list is only about what the frontend is given a type for. Listing a
+// field in nullableFields keeps it.
+var defaultSkippedFields = map[string]bool{
+	"deleted_at": true,
+	"supersedes": true,
+}
 
 var targets = []target{
 	{file: "internal/db/models.go", structName: "Asset", tsName: "Asset"},
@@ -172,7 +184,7 @@ func renderStruct(file *ast.File, tgt target) (string, error) {
 		if jsonName == "" || jsonName == "-" {
 			continue
 		}
-		if jsonName == defaultSkippedField && !tgt.nullableFields[jsonName] {
+		if defaultSkippedFields[jsonName] && !tgt.nullableFields[jsonName] {
 			continue
 		}
 
