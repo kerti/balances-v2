@@ -53,6 +53,7 @@ const investment: Investment = {
   description: "Physical gold reserve",
   subtype: "gold",
   ownership_type: "sole",
+  entry_type: "acquired" as const,
   sole_owner_user_id: "u1",
   native_currency: "USD",
   status: "active",

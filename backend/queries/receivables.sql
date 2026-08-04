@@ -3,9 +3,9 @@ INSERT INTO receivables (
     household_id, display_name, description,
     ownership_type, sole_owner_user_id, native_currency,
     counterparty_name, due_date,
-    created_by, updated_by
+    created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10
 )
 RETURNING *;
 
@@ -30,6 +30,9 @@ SET display_name       = $3,
     counterparty_name  = $7,
     due_date           = $8,
     updated_by         = $9,
+    -- Editable after the fact — the only remedy for a mis-declared birth
+    -- (ADR-0053 §3); see the note on UpdateAsset for why COALESCE.
+    entry_type         = COALESCE(sqlc.narg('entry_type')::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING *;

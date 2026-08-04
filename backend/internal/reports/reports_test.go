@@ -42,6 +42,7 @@ func newHarness(t *testing.T) (*chi.Mux, db.User) {
 	asset, err := q.CreateAsset(ctx, db.CreateAssetParams{
 		HouseholdID: user.HouseholdID, DisplayName: "Acct", Subtype: "bank_account",
 		OwnershipType: "joint", NativeCurrency: "IDR", CreatedBy: &user.ID,
+		EntryType: repo.EntryTypeAcquired,
 	})
 	if err != nil {
 		t.Fatalf("CreateAsset: %v", err)

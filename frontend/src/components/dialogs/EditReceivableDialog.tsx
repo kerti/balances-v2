@@ -6,6 +6,7 @@ import { useUpdateReceivable } from "@/hooks/useReceivables";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { Receivable } from "@/api/types";
 
 type Props = {
@@ -19,6 +20,7 @@ function toForm(r: Receivable) {
     display_name: r.display_name,
     description: r.description ?? "",
     ownership_type: r.ownership_type,
+    entry_type: r.entry_type,
     sole_owner_user_id: r.sole_owner_user_id,
     counterparty_name: r.counterparty_name,
     due_date: r.due_date ? r.due_date.slice(0, 10) : "",
@@ -39,6 +41,7 @@ export function EditReceivableDialog({ open, onOpenChange, receivable }: Props) 
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         counterparty_name: form.counterparty_name,
         due_date: form.due_date || null,
@@ -96,6 +99,13 @@ export function EditReceivableDialog({ open, onOpenChange, receivable }: Props) 
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="receivable_edit"
+        group="receivable"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

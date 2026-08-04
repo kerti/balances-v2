@@ -19,11 +19,11 @@ INSERT INTO liabilities (
     ownership_type, sole_owner_user_id, native_currency,
     counterparty_name, principal, interest_rate,
     term_months, start_date, maturity_date,
-    created_by, updated_by
+    created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14, $15
 )
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type CreateLiabilityParams struct {
@@ -41,6 +41,7 @@ type CreateLiabilityParams struct {
 	StartDate        *time.Time       `json:"start_date"`
 	MaturityDate     *time.Time       `json:"maturity_date"`
 	CreatedBy        *uuid.UUID       `json:"created_by"`
+	EntryType        string           `json:"entry_type"`
 }
 
 func (q *Queries) CreateLiability(ctx context.Context, arg CreateLiabilityParams) (Liability, error) {
@@ -59,6 +60,7 @@ func (q *Queries) CreateLiability(ctx context.Context, arg CreateLiabilityParams
 		arg.StartDate,
 		arg.MaturityDate,
 		arg.CreatedBy,
+		arg.EntryType,
 	)
 	var i Liability
 	err := row.Scan(
@@ -85,12 +87,13 @@ func (q *Queries) CreateLiability(ctx context.Context, arg CreateLiabilityParams
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const getLiabilityByID = `-- name: GetLiabilityByID :one
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM liabilities
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
@@ -127,12 +130,13 @@ func (q *Queries) GetLiabilityByID(ctx context.Context, arg GetLiabilityByIDPara
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const listLiabilitiesByHousehold = `-- name: ListLiabilitiesByHousehold :many
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM liabilities
 WHERE household_id = $1
   AND ($2::text IS NULL OR subtype = $2::text)
@@ -178,6 +182,7 @@ func (q *Queries) ListLiabilitiesByHousehold(ctx context.Context, arg ListLiabil
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -224,9 +229,12 @@ SET display_name       = $3,
     start_date         = $11,
     maturity_date      = $12,
     updated_by         = $13,
+    -- Editable after the fact — the only remedy for a mis-declared birth
+    -- (ADR-0053 §3); see the note on UpdateAsset for why COALESCE.
+    entry_type         = COALESCE($14::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateLiabilityParams struct {
@@ -243,6 +251,7 @@ type UpdateLiabilityParams struct {
 	StartDate        *time.Time       `json:"start_date"`
 	MaturityDate     *time.Time       `json:"maturity_date"`
 	UpdatedBy        *uuid.UUID       `json:"updated_by"`
+	EntryType        *string          `json:"entry_type"`
 }
 
 func (q *Queries) UpdateLiability(ctx context.Context, arg UpdateLiabilityParams) (Liability, error) {
@@ -260,6 +269,7 @@ func (q *Queries) UpdateLiability(ctx context.Context, arg UpdateLiabilityParams
 		arg.StartDate,
 		arg.MaturityDate,
 		arg.UpdatedBy,
+		arg.EntryType,
 	)
 	var i Liability
 	err := row.Scan(
@@ -286,6 +296,7 @@ func (q *Queries) UpdateLiability(ctx context.Context, arg UpdateLiabilityParams
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
@@ -298,7 +309,7 @@ SET status           = $3,
     updated_by       = $6,
     updated_at       = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateLiabilityLifecycleParams struct {
@@ -344,6 +355,7 @@ func (q *Queries) UpdateLiabilityLifecycle(ctx context.Context, arg UpdateLiabil
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }

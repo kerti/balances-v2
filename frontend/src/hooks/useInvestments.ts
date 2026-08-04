@@ -18,6 +18,7 @@ import type {
   StockListItem,
   TimeDeposit,
   TimeDepositListItem,
+  EntryType,
 } from "@/api/types";
 
 // ----- stock -----------------------------------------------------------
@@ -31,6 +32,7 @@ export type CreateStockPayload = {
   native_currency: string;
   ticker: string;
   exchange: string;
+  entry_type: EntryType;
 };
 
 export type UpdateStockPayload = {
@@ -41,6 +43,7 @@ export type UpdateStockPayload = {
   risk_profile: RiskProfile;
   ticker: string;
   exchange: string;
+  entry_type: EntryType;
 };
 
 export function useStocks() {
@@ -110,6 +113,7 @@ export type CreateMutualFundPayload = {
   fund_code: string;
   fund_manager: string | null;
   fund_type: MutualFundType;
+  entry_type: EntryType;
 };
 
 export type UpdateMutualFundPayload = {
@@ -121,6 +125,7 @@ export type UpdateMutualFundPayload = {
   fund_code: string;
   fund_manager: string | null;
   fund_type: MutualFundType;
+  entry_type: EntryType;
 };
 
 export function useMutualFunds() {
@@ -191,6 +196,7 @@ export type CreateGoldPayload = {
   native_currency: string;
   form: GoldForm;
   purity: string;
+  entry_type: EntryType;
 };
 
 export type UpdateGoldPayload = {
@@ -201,6 +207,7 @@ export type UpdateGoldPayload = {
   risk_profile: RiskProfile;
   form: GoldForm;
   purity: string;
+  entry_type: EntryType;
 };
 
 export function useGolds() {
@@ -279,6 +286,7 @@ export type CreateBondPayload = {
   coupon_frequency: CouponFrequency;
   coupon_disposition: CouponDisposition;
   maturity_date: string;
+  entry_type: EntryType;
 };
 
 export type UpdateBondPayload = {
@@ -294,6 +302,7 @@ export type UpdateBondPayload = {
   coupon_frequency: CouponFrequency;
   coupon_disposition: CouponDisposition;
   maturity_date: string;
+  entry_type: EntryType;
 };
 
 export function useBonds() {
@@ -370,6 +379,7 @@ export type CreateTimeDepositPayload = {
   // Links a rollover successor back to its matured source (issue #29). Omitted
   // for a fresh deposit.
   rolled_from_investment_id?: string;
+  entry_type: EntryType;
 };
 
 export type UpdateTimeDepositPayload = {
@@ -385,6 +395,7 @@ export type UpdateTimeDepositPayload = {
   placement_date: string;
   maturity_date: string;
   rollover_policy: RolloverPolicy;
+  entry_type: EntryType;
 };
 
 export function useTimeDeposits() {

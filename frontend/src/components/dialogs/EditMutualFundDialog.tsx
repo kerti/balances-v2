@@ -8,6 +8,7 @@ import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { MutualFundTypeSelect } from "@/components/common/MutualFundTypeSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { MutualFund, MutualFundListItem } from "@/api/types";
 
 type Props = {
@@ -21,6 +22,7 @@ function toForm(m: MutualFund | MutualFundListItem) {
     display_name: m.investment.display_name,
     description: m.investment.description ?? "",
     ownership_type: m.investment.ownership_type,
+    entry_type: m.investment.entry_type,
     sole_owner_user_id: m.investment.sole_owner_user_id,
     risk_profile: m.investment.risk_profile,
     fund_code: m.details.fund_code,
@@ -43,6 +45,7 @@ export function EditMutualFundDialog({ open, onOpenChange, mutualFund }: Props) 
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         fund_code: form.fund_code,
@@ -109,6 +112,13 @@ export function EditMutualFundDialog({ open, onOpenChange, mutualFund }: Props) 
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="mf_edit"
+        group="investment"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

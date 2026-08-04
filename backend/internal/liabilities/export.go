@@ -60,6 +60,7 @@ func liabilityDetailFields(data *repo.LiabilityExport) []snapshotimport.DetailFi
 		{Key: "description", Value: derefStr(l.Description)},
 		{Key: "subtype", Value: l.Subtype, Note: "personal | institutional"},
 		{Key: "ownership_type", Value: l.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: l.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: l.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},

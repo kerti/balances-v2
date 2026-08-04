@@ -8,6 +8,8 @@ import { useCreateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
+import type { EntryType } from "@/api/types";
 import { Select } from "@/components/ui/select";
 
 type Props = {
@@ -22,6 +24,7 @@ function emptyForm(defaultSubtype: "personal" | "institutional") {
     description: "",
     subtype: defaultSubtype,
     ownership_type: "joint" as "sole" | "joint",
+    entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     native_currency: "IDR",
     counterparty_name: "",
@@ -49,6 +52,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         description: form.description || null,
         subtype: form.subtype,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         counterparty_name: form.counterparty_name,
@@ -209,6 +213,13 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="liability_create"
+        group="liability"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

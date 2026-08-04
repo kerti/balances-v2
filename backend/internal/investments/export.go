@@ -170,6 +170,7 @@ func commonDetailFields(inv db.Investment, ownerEmail, tagName string) []snapsho
 		{Key: "display_name", Value: inv.DisplayName},
 		{Key: "description", Value: derefStr(inv.Description)},
 		{Key: "ownership_type", Value: inv.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: inv.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: ownerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: inv.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: tagName, Note: "tag name; blank when untagged"},

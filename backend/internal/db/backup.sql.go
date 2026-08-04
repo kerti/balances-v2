@@ -95,7 +95,7 @@ func (q *Queries) ListAssetSnapshotsForExport(ctx context.Context, arg ListAsset
 }
 
 const listAssetsForExport = `-- name: ListAssetsForExport :many
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id FROM assets
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type FROM assets
 WHERE household_id = $1
   AND (deleted_at IS NULL OR $2::bool)
 ORDER BY created_at, id
@@ -133,6 +133,7 @@ func (q *Queries) ListAssetsForExport(ctx context.Context, arg ListAssetsForExpo
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -452,7 +453,7 @@ func (q *Queries) ListInvestmentTransactionsForExport(ctx context.Context, arg L
 }
 
 const listInvestmentsForExport = `-- name: ListInvestmentsForExport :many
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, risk_profile, rolled_from_investment_id, tag_id FROM investments
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, risk_profile, rolled_from_investment_id, tag_id, entry_type FROM investments
 WHERE household_id = $1
   AND (deleted_at IS NULL OR $2::bool)
 ORDER BY created_at, id
@@ -492,6 +493,7 @@ func (q *Queries) ListInvestmentsForExport(ctx context.Context, arg ListInvestme
 			&i.RiskProfile,
 			&i.RolledFromInvestmentID,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -504,7 +506,7 @@ func (q *Queries) ListInvestmentsForExport(ctx context.Context, arg ListInvestme
 }
 
 const listLiabilitiesForExport = `-- name: ListLiabilitiesForExport :many
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id FROM liabilities
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, principal, interest_rate, term_months, start_date, maturity_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type FROM liabilities
 WHERE household_id = $1
   AND (deleted_at IS NULL OR $2::bool)
 ORDER BY created_at, id
@@ -548,6 +550,7 @@ func (q *Queries) ListLiabilitiesForExport(ctx context.Context, arg ListLiabilit
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -730,7 +733,7 @@ func (q *Queries) ListReceivableSnapshotsForExport(ctx context.Context, arg List
 }
 
 const listReceivablesForExport = `-- name: ListReceivablesForExport :many
-SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id FROM receivables
+SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type FROM receivables
 WHERE household_id = $1
   AND (deleted_at IS NULL OR $2::bool)
 ORDER BY created_at, id
@@ -769,6 +772,7 @@ func (q *Queries) ListReceivablesForExport(ctx context.Context, arg ListReceivab
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}

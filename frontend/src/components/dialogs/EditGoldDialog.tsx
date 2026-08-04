@@ -8,6 +8,7 @@ import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { GoldPuritySelect } from "@/components/common/GoldPuritySelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { Select } from "@/components/ui/select";
 import type { Gold, GoldListItem } from "@/api/types";
 
@@ -22,6 +23,7 @@ function toForm(g: Gold | GoldListItem) {
     display_name: g.investment.display_name,
     description: g.investment.description ?? "",
     ownership_type: g.investment.ownership_type,
+    entry_type: g.investment.entry_type,
     sole_owner_user_id: g.investment.sole_owner_user_id,
     risk_profile: g.investment.risk_profile,
     form: g.details.form as GoldForm,
@@ -43,6 +45,7 @@ export function EditGoldDialog({ open, onOpenChange, gold }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         form: form.form,
@@ -101,6 +104,13 @@ export function EditGoldDialog({ open, onOpenChange, gold }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="gold_edit"
+        group="investment"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

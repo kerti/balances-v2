@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
-import type { BankAccount, BankAccountListItem } from "@/api/types";
+import type { BankAccount, BankAccountListItem, EntryType } from "@/api/types";
 
 export type CreateBankAccountPayload = {
   display_name: string;
@@ -12,6 +12,7 @@ export type CreateBankAccountPayload = {
   bank_name: string;
   account_number: string;
   account_type: "savings" | "current" | "other";
+  entry_type: EntryType;
 };
 
 export type UpdateBankAccountPayload = {
@@ -22,6 +23,7 @@ export type UpdateBankAccountPayload = {
   bank_name: string;
   account_number: string;
   account_type: "savings" | "current" | "other";
+  entry_type: EntryType;
 };
 
 export function useBankAccounts() {

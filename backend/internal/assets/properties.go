@@ -27,6 +27,11 @@ type createPropertyReq struct {
 	AcquisitionDate        *string          `json:"acquisition_date"`
 	AcquisitionCost        *decimal.Decimal `json:"acquisition_cost"`
 	AnnualAppreciationRate *decimal.Decimal `json:"annual_appreciation_rate"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updatePropertyReq struct {
@@ -39,6 +44,10 @@ type updatePropertyReq struct {
 	AcquisitionDate        *string          `json:"acquisition_date"`
 	AcquisitionCost        *decimal.Decimal `json:"acquisition_cost"`
 	AnnualAppreciationRate *decimal.Decimal `json:"annual_appreciation_rate"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 // ----- handlers -----------------------------------------------------------
@@ -71,6 +80,7 @@ func (h *Handlers) handleCreateProperty(w http.ResponseWriter, r *http.Request) 
 		AcquisitionDate:        acquisitionDate,
 		AcquisitionCost:        req.AcquisitionCost,
 		AnnualAppreciationRate: req.AnnualAppreciationRate,
+		EntryType:              req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create property", err)
@@ -133,6 +143,7 @@ func (h *Handlers) handleUpdateProperty(w http.ResponseWriter, r *http.Request) 
 		AcquisitionDate:        acquisitionDate,
 		AcquisitionCost:        req.AcquisitionCost,
 		AnnualAppreciationRate: req.AnnualAppreciationRate,
+		EntryType:              req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update property", err)
@@ -186,6 +197,7 @@ func propertyDetailFields(data *repo.PropertyExport) []snapshotimport.DetailFiel
 		{Key: "display_name", Value: asset.DisplayName},
 		{Key: "description", Value: derefStr(asset.Description)},
 		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: asset.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},

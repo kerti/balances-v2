@@ -41,6 +41,10 @@ type CreateReceivableParams struct {
 	NativeCurrency   string
 	CounterpartyName string
 	DueDate          *time.Time
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateReceivableParams struct {
@@ -50,6 +54,11 @@ type UpdateReceivableParams struct {
 	SoleOwnerUserID  *uuid.UUID
 	CounterpartyName string
 	DueDate          *time.Time
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 // CreateReceivable is the no-tag, no-history degenerate of
@@ -127,6 +136,7 @@ func (r *ReceivableRepo) UpdateReceivable(ctx context.Context, id uuid.UUID, p U
 		CounterpartyName: p.CounterpartyName,
 		DueDate:          p.DueDate,
 		UpdatedBy:        &user,
+		EntryType:        p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -311,6 +321,7 @@ func (r *ReceivableRepo) CreateReceivableWithSnapshots(ctx context.Context, p Cr
 		CounterpartyName: p.CounterpartyName,
 		DueDate:          p.DueDate,
 		CreatedBy:        &user,
+		EntryType:        entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create receivable: %w", err)

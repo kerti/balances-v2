@@ -77,6 +77,10 @@ type CreateBondParams struct {
 	// (with the real price) themselves. nil for secondary_market.
 	FaceValue     *decimal.Decimal
 	PlacementDate *time.Time
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateBondParams struct {
@@ -92,6 +96,11 @@ type UpdateBondParams struct {
 	CouponFrequency   string
 	CouponDisposition string
 	MaturityDate      time.Time
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*Bond, error) {
@@ -118,6 +127,7 @@ func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*B
 		NativeCurrency:  p.NativeCurrency,
 		RiskProfile:     p.RiskProfile,
 		CreatedBy:       &user,
+		EntryType:       entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create investment: %w", err)
@@ -293,6 +303,7 @@ func (r *InvestmentRepo) UpdateBond(ctx context.Context, id uuid.UUID, p UpdateB
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		RiskProfile:     p.RiskProfile,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

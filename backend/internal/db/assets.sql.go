@@ -16,11 +16,11 @@ const createAsset = `-- name: CreateAsset :one
 INSERT INTO assets (
     household_id, display_name, description, subtype,
     ownership_type, sole_owner_user_id, native_currency,
-    created_by, updated_by
+    created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $8
+    $1, $2, $3, $4, $5, $6, $7, $8, $8, $9
 )
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type CreateAssetParams struct {
@@ -32,6 +32,7 @@ type CreateAssetParams struct {
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	NativeCurrency  string     `json:"native_currency"`
 	CreatedBy       *uuid.UUID `json:"created_by"`
+	EntryType       string     `json:"entry_type"`
 }
 
 func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error) {
@@ -44,6 +45,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		arg.SoleOwnerUserID,
 		arg.NativeCurrency,
 		arg.CreatedBy,
+		arg.EntryType,
 	)
 	var i Asset
 	err := row.Scan(
@@ -64,12 +66,13 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const getAssetByID = `-- name: GetAssetByID :one
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM assets
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
@@ -100,12 +103,13 @@ func (q *Queries) GetAssetByID(ctx context.Context, arg GetAssetByIDParams) (Ass
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const listAssetsByHousehold = `-- name: ListAssetsByHousehold :many
-SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM assets
 WHERE household_id = $1
   AND ($2::text IS NULL OR subtype = $2::text)
@@ -145,6 +149,7 @@ func (q *Queries) ListAssetsByHousehold(ctx context.Context, arg ListAssetsByHou
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -185,9 +190,17 @@ SET display_name       = $3,
     ownership_type     = $5,
     sole_owner_user_id = $6,
     updated_by         = $7,
+    -- entry_type is editable after the fact on purpose (ADR-0053 §3): with no
+    -- engine-side advisory for a mis-declared birth, flipping it here is the
+    -- only remedy — including for one inherited from a restore or an import.
+    -- COALESCE rather than a plain assignment because omitting it must mean
+    -- "leave the declaration alone", never "reset it to acquired" — silently
+    -- undoing a newly_tracked declaration is the exact residual ADR-0053 warns
+    -- restore and import against.
+    entry_type         = COALESCE($8::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateAssetParams struct {
@@ -198,6 +211,7 @@ type UpdateAssetParams struct {
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	UpdatedBy       *uuid.UUID `json:"updated_by"`
+	EntryType       *string    `json:"entry_type"`
 }
 
 func (q *Queries) UpdateAsset(ctx context.Context, arg UpdateAssetParams) (Asset, error) {
@@ -209,6 +223,7 @@ func (q *Queries) UpdateAsset(ctx context.Context, arg UpdateAssetParams) (Asset
 		arg.OwnershipType,
 		arg.SoleOwnerUserID,
 		arg.UpdatedBy,
+		arg.EntryType,
 	)
 	var i Asset
 	err := row.Scan(
@@ -229,6 +244,7 @@ func (q *Queries) UpdateAsset(ctx context.Context, arg UpdateAssetParams) (Asset
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
@@ -241,7 +257,7 @@ SET status           = $3,
     updated_by       = $6,
     updated_at       = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, subtype, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateAssetLifecycleParams struct {
@@ -281,6 +297,7 @@ func (q *Queries) UpdateAssetLifecycle(ctx context.Context, arg UpdateAssetLifec
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }

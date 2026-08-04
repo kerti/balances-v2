@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
-import type { Receivable, ReceivableListItem } from "@/api/types";
+import type { Receivable, ReceivableListItem, EntryType } from "@/api/types";
 
 export type CreateReceivablePayload = {
   display_name: string;
@@ -11,6 +11,7 @@ export type CreateReceivablePayload = {
   native_currency: string;
   counterparty_name: string;
   due_date: string | null;
+  entry_type: EntryType;
 };
 
 export type UpdateReceivablePayload = {
@@ -20,6 +21,7 @@ export type UpdateReceivablePayload = {
   sole_owner_user_id: string | null;
   counterparty_name: string;
   due_date: string | null;
+  entry_type: EntryType;
 };
 
 export function useReceivables() {

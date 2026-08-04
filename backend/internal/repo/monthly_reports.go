@@ -32,7 +32,13 @@ func ptr(d decimal.Decimal) *decimal.Decimal { return &d }
 // identity and asset_value_change stops absorbing the termination month, so
 // derived_living_expenses changes for any household holding a terminated
 // Position (ADR-0052).
-const reportEngineVersion int32 = 5
+// v6 (migration 00016): the Tracking Change term joins the identity, so
+// derived_living_expenses changes for any household holding a Position declared
+// `newly_tracked` or terminated `untracked` (ADR-0053). Both declarations are
+// opt-in and default to today's behaviour, so a household that makes neither
+// sees identical figures — but the stamp still has to move, because the column
+// set did and every row must be rewritten to carry it.
+const reportEngineVersion int32 = 6
 
 // MonthlyReportRepo serves the materialized monthly net-worth report (ADR-0006).
 // Reads are lazy: ListReports / GetReport regenerate the household's rows when
@@ -305,6 +311,10 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 	if err != nil {
 		return db.UpsertMonthlyReportParams{}, fmt.Errorf("marshal unsettled terminations: %w", err)
 	}
+	trackingChangePos, err := json.Marshal(rep.trackingChangePositions)
+	if err != nil {
+		return db.UpsertMonthlyReportParams{}, fmt.Errorf("marshal tracking-change positions: %w", err)
+	}
 	params := db.UpsertMonthlyReportParams{
 		HouseholdID:           hid,
 		YearMonth:             rep.yearMonth,
@@ -330,15 +340,18 @@ func buildUpsertParams(hid uuid.UUID, rep monthlyReportData) (db.UpsertMonthlyRe
 		EarnedIncomeInterestRoutine: ptr(rep.earnedIncome.interestRoutine),
 		AssetValueChange:            rep.assetValueChange, // nil on baseline
 		WriteOffs:                   rep.writeOffs,        // nil on baseline
+		TrackingChanges:             rep.trackingChanges,  // nil on baseline
 		DerivedLivingExpenses:       rep.livingExpenses,   // nil on baseline
 		UserBreakdowns:              ub,
 		StalePositions:              stale,
-		// Both lists are NOT NULL DEFAULT '[]' columns: written on every month,
-		// empty when there is nothing to report (ADR-0052 §4/§7).
-		WriteOffPositions:     writeOffPos,
-		UnsettledTerminations: unsettled,
-		FxRatesUsed:           fxUsed,
-		MissingFx:             missingFx,
+		// All three lists are NOT NULL DEFAULT '[]' columns: written on every
+		// month, empty when there is nothing to report (ADR-0052 §4/§7,
+		// ADR-0053 §1).
+		WriteOffPositions:       writeOffPos,
+		TrackingChangePositions: trackingChangePos,
+		UnsettledTerminations:   unsettled,
+		FxRatesUsed:             fxUsed,
+		MissingFx:               missingFx,
 
 		// Closing invested value per bucket — set on every month (a stock; seeds
 		// next month's opening rate base). Total is NwInvestments (ADR-0048
@@ -461,6 +474,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, a := range assets {
 		in.positions = append(in.positions, reportPosition{
 			id: a.ID, name: a.DisplayName, group: groupAsset, subtype: a.Subtype, status: a.Status,
+			entryType:     a.EntryType,
 			ownershipType: a.OwnershipType,
 			soleOwnerID:   a.SoleOwnerUserID, terminatedAt: a.TerminatedAt,
 		})
@@ -472,6 +486,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, l := range liabilities {
 		in.positions = append(in.positions, reportPosition{
 			id: l.ID, name: l.DisplayName, group: groupLiability, subtype: l.Subtype, status: l.Status,
+			entryType:     l.EntryType,
 			ownershipType: l.OwnershipType,
 			soleOwnerID:   l.SoleOwnerUserID, terminatedAt: l.TerminatedAt,
 		})
@@ -483,6 +498,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, rc := range receivables {
 		in.positions = append(in.positions, reportPosition{
 			id: rc.ID, name: rc.DisplayName, group: groupReceivable, status: rc.Status,
+			entryType:     rc.EntryType,
 			ownershipType: rc.OwnershipType,
 			soleOwnerID:   rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt,
 		})
@@ -494,6 +510,11 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 	for _, i := range investments {
 		p := reportPosition{
 			id: i.ID, name: i.DisplayName, group: groupInvestment, subtype: i.Subtype, ownershipType: i.OwnershipType,
+			// status was not read here before ADR-0053: Investment took no write-off
+			// status, so nonCashTerminal never consulted it. `untracked` is available
+			// to every group, so the exit-side Tracking Change needs it.
+			status:      i.Status,
+			entryType:   i.EntryType,
 			riskProfile: i.RiskProfile,
 			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt,
 			rolledFrom:        i.RolledFromInvestmentID,

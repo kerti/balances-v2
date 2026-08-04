@@ -160,6 +160,44 @@ func TestV2ToV3BackfillsAssumedInflation(t *testing.T) {
 	}
 }
 
+// covers: INV-FINANCE-36, INV-BACKUP-06
+//
+// The third real format transform (v3→v4, #594): a v3 backup predates the
+// entry_type column on all four position tables, so every position decodes with
+// an empty entry type. transforms[3] must backfill the column DEFAULT
+// ('acquired') — otherwise it would restore as NULL into a NOT NULL column, and
+// silently defaulting the other way would reintroduce the wrong month for every
+// restored Position (ADR-0053). A declaration the household actually made must
+// survive the restore untouched, which is the half that makes backup/restore a
+// round-trip rather than a reset.
+func TestV3ToV4BackfillsEntryType(t *testing.T) {
+	env := &Envelope{
+		Household: HouseholdData{
+			Assets:      []db.Asset{{EntryType: ""}, {EntryType: "newly_tracked"}},
+			Liabilities: []db.Liability{{EntryType: ""}, {EntryType: "newly_tracked"}},
+			Receivables: []db.Receivable{{EntryType: ""}, {EntryType: "newly_tracked"}},
+			Investments: []db.Investment{{EntryType: ""}, {EntryType: "newly_tracked"}},
+		},
+	}
+	if err := transforms[3](env); err != nil {
+		t.Fatalf("transforms[3]: %v", err)
+	}
+	got := [][2]string{
+		{env.Household.Assets[0].EntryType, env.Household.Assets[1].EntryType},
+		{env.Household.Liabilities[0].EntryType, env.Household.Liabilities[1].EntryType},
+		{env.Household.Receivables[0].EntryType, env.Household.Receivables[1].EntryType},
+		{env.Household.Investments[0].EntryType, env.Household.Investments[1].EntryType},
+	}
+	for i, pair := range got {
+		if pair[0] != "acquired" {
+			t.Errorf("group %d: absent entry_type backfilled to %q, want acquired", i, pair[0])
+		}
+		if pair[1] != "newly_tracked" {
+			t.Errorf("group %d: declared entry_type mutated to %q, want newly_tracked", i, pair[1])
+		}
+	}
+}
+
 // covers: INV-BACKUP-06
 //
 // The restore preview must report the file's *on-disk* format version alongside

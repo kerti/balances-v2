@@ -35,6 +35,10 @@ type CreateVehicleParams struct {
 	Year                   *int32
 	PlateNumber            *string
 	AnnualDepreciationRate *decimal.Decimal
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateVehicleParams struct {
@@ -48,6 +52,11 @@ type UpdateVehicleParams struct {
 	Year                   *int32
 	PlateNumber            *string
 	AnnualDepreciationRate *decimal.Decimal
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 // CreateVehicle is the no-tag, no-history degenerate of
@@ -155,6 +164,7 @@ func (r *AssetRepo) UpdateVehicle(ctx context.Context, id uuid.UUID, p UpdateVeh
 		OwnershipType:   p.OwnershipType,
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -269,6 +279,7 @@ func (r *AssetRepo) CreateVehicleWithSnapshots(ctx context.Context, p CreateVehi
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		NativeCurrency:  p.NativeCurrency,
 		CreatedBy:       &user,
+		EntryType:       entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create asset: %w", err)

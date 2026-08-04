@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
-import type { Vehicle, VehicleListItem } from "@/api/types";
+import type { Vehicle, VehicleListItem, EntryType } from "@/api/types";
 
 export type CreateVehiclePayload = {
   display_name: string;
@@ -15,6 +15,7 @@ export type CreateVehiclePayload = {
   year: number | null;
   plate_number: string | null;
   annual_depreciation_rate: string | null;
+  entry_type: EntryType;
 };
 
 export type UpdateVehiclePayload = {
@@ -28,6 +29,7 @@ export type UpdateVehiclePayload = {
   year: number | null;
   plate_number: string | null;
   annual_depreciation_rate: string | null;
+  entry_type: EntryType;
 };
 
 export function useVehicles() {

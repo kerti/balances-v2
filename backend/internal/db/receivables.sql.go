@@ -17,11 +17,11 @@ INSERT INTO receivables (
     household_id, display_name, description,
     ownership_type, sole_owner_user_id, native_currency,
     counterparty_name, due_date,
-    created_by, updated_by
+    created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $9, $10
 )
-RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type CreateReceivableParams struct {
@@ -34,6 +34,7 @@ type CreateReceivableParams struct {
 	CounterpartyName string     `json:"counterparty_name"`
 	DueDate          *time.Time `json:"due_date"`
 	CreatedBy        *uuid.UUID `json:"created_by"`
+	EntryType        string     `json:"entry_type"`
 }
 
 func (q *Queries) CreateReceivable(ctx context.Context, arg CreateReceivableParams) (Receivable, error) {
@@ -47,6 +48,7 @@ func (q *Queries) CreateReceivable(ctx context.Context, arg CreateReceivablePara
 		arg.CounterpartyName,
 		arg.DueDate,
 		arg.CreatedBy,
+		arg.EntryType,
 	)
 	var i Receivable
 	err := row.Scan(
@@ -68,12 +70,13 @@ func (q *Queries) CreateReceivable(ctx context.Context, arg CreateReceivablePara
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const getReceivableByID = `-- name: GetReceivableByID :one
-SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM receivables
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 `
@@ -105,12 +108,13 @@ func (q *Queries) GetReceivableByID(ctx context.Context, arg GetReceivableByIDPa
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
 
 const listReceivablesByHousehold = `-- name: ListReceivablesByHousehold :many
-SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+SELECT id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 FROM receivables
 WHERE household_id = $1
   AND deleted_at IS NULL
@@ -145,6 +149,7 @@ func (q *Queries) ListReceivablesByHousehold(ctx context.Context, householdID uu
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.TagID,
+			&i.EntryType,
 		); err != nil {
 			return nil, err
 		}
@@ -187,9 +192,12 @@ SET display_name       = $3,
     counterparty_name  = $7,
     due_date           = $8,
     updated_by         = $9,
+    -- Editable after the fact — the only remedy for a mis-declared birth
+    -- (ADR-0053 §3); see the note on UpdateAsset for why COALESCE.
+    entry_type         = COALESCE($10::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateReceivableParams struct {
@@ -202,6 +210,7 @@ type UpdateReceivableParams struct {
 	CounterpartyName string     `json:"counterparty_name"`
 	DueDate          *time.Time `json:"due_date"`
 	UpdatedBy        *uuid.UUID `json:"updated_by"`
+	EntryType        *string    `json:"entry_type"`
 }
 
 func (q *Queries) UpdateReceivable(ctx context.Context, arg UpdateReceivableParams) (Receivable, error) {
@@ -215,6 +224,7 @@ func (q *Queries) UpdateReceivable(ctx context.Context, arg UpdateReceivablePara
 		arg.CounterpartyName,
 		arg.DueDate,
 		arg.UpdatedBy,
+		arg.EntryType,
 	)
 	var i Receivable
 	err := row.Scan(
@@ -236,6 +246,7 @@ func (q *Queries) UpdateReceivable(ctx context.Context, arg UpdateReceivablePara
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
@@ -248,7 +259,7 @@ SET status           = $3,
     updated_by       = $6,
     updated_at       = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id
+RETURNING id, household_id, display_name, description, ownership_type, sole_owner_user_id, native_currency, status, terminated_at, termination_note, counterparty_name, due_date, created_by, created_at, updated_by, updated_at, deleted_at, tag_id, entry_type
 `
 
 type UpdateReceivableLifecycleParams struct {
@@ -289,6 +300,7 @@ func (q *Queries) UpdateReceivableLifecycle(ctx context.Context, arg UpdateRecei
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.TagID,
+		&i.EntryType,
 	)
 	return i, err
 }
