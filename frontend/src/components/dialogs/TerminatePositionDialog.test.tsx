@@ -157,9 +157,14 @@ describe("TerminatePositionDialog settlement capture", () => {
 
     await openDialog(user);
     // A TimeDeposit offers no `sold` — its only settleable terminal status is
-    // `matured`, because Maturity is the only Transaction it accepts.
+    // `matured`, because Maturity is the only Transaction it accepts. It still
+    // offers `untracked`, which settles nothing and so sits outside the matrix.
     const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
-    expect([...statusSelect.options].map((o) => o.value)).toEqual(["active", "matured"]);
+    expect([...statusSelect.options].map((o) => o.value)).toEqual([
+      "active",
+      "matured",
+      "untracked",
+    ]);
 
     await user.selectOptions(statusSelect, "matured");
     await screen.findByTestId("terminate-settlement");
@@ -275,6 +280,7 @@ describe("TerminatePositionDialog settlement capture", () => {
       "closed",
       "sold",
       "disposed",
+      "untracked",
     ]);
 
     await user.selectOptions(statusSelect, "sold");
@@ -283,5 +289,81 @@ describe("TerminatePositionDialog settlement capture", () => {
     await user.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() => expect(captured.body).toBeDefined());
     expect(captured.body).not.toHaveProperty("settlement");
+  });
+});
+
+// The exit side of a Tracking Change (#595, ADR-0053 §5). `untracked` is the
+// one terminal status every group offers, and the one exempt from the
+// settlement capture above — a departing member's holdings were not sold, so
+// there are no proceeds to record and nothing to write off.
+describe("TerminatePositionDialog untracked termination", () => {
+  // covers: INV-LIFECYCLE-09
+  it("offers untracked to an Investment and captures no settlement for it", async () => {
+    const user = userEvent.setup();
+    const captured: Captured = { body: undefined };
+    // A TimeDeposit: the narrowest matrix there is (Maturity only), so if
+    // untracked survives here it survives everywhere.
+    stubInvestment(accruedSnapshots, [], captured);
+    renderDialog("time_deposit");
+
+    await openDialog(user);
+    const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
+    expect([...statusSelect.options].map((o) => o.value)).toEqual([
+      "active",
+      "matured",
+      "untracked",
+    ]);
+
+    await user.selectOptions(statusSelect, "untracked");
+    // No settlement block, and no write-off escape either — both assert a cash
+    // leg that did not happen.
+    expect(screen.queryByTestId("terminate-settlement")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("settlement-write-off")).not.toBeInTheDocument();
+    // The distinguishing copy is what stops it being read as "sold".
+    expect(screen.getByTestId("terminate-untracked-hint")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(captured.body).toBeDefined());
+    expect(captured.body).toMatchObject({ status: "untracked" });
+    expect(captured.body).not.toHaveProperty("settlement");
+    // The biconditional still holds: a terminal status carries a date.
+    expect((captured.body as { terminated_at: string }).terminated_at).toMatch(
+      /^\d{4}-\d{2}-\d{2}$/,
+    );
+  });
+
+  // covers: INV-LIFECYCLE-09
+  it("offers untracked to the other three groups too", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined);
+
+    await openDialog(user);
+    const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
+    expect([...statusSelect.options].map((o) => o.value)).toContain("untracked");
+
+    await user.selectOptions(statusSelect, "untracked");
+    expect(screen.getByTestId("terminate-untracked-hint")).toBeInTheDocument();
+  });
+
+  // covers: INV-LIFECYCLE-09
+  it("drops the hint again when the status moves off untracked", async () => {
+    const user = userEvent.setup();
+    const captured: Captured = { body: undefined };
+    stubInvestment(qtyPriceSnapshots, buyLedger, captured);
+    renderDialog("stock");
+
+    await openDialog(user);
+    const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
+    await user.selectOptions(statusSelect, "untracked");
+    expect(screen.getByTestId("terminate-untracked-hint")).toBeInTheDocument();
+
+    // Switching to a settled status brings the capture back with its defaults
+    // intact — the untracked detour must not have poisoned them.
+    await user.selectOptions(statusSelect, "sold");
+    expect(screen.queryByTestId("terminate-untracked-hint")).not.toBeInTheDocument();
+    await screen.findByTestId("terminate-settlement");
+    await waitFor(() => expect(screen.getByTestId("settlement-quantity")).toHaveValue("100"));
+    expect(screen.getByTestId("settlement-price")).toHaveValue("9500");
   });
 });
