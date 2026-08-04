@@ -201,8 +201,16 @@ one-sided birth is not a fact the engine can see, so the editable control is the
 → #595 (terminate dialog, shipped: `untracked` on every group's dropdown, exempt from the Investment
 subtype narrowing and the §6 settlement capture, owned/owed hint copy) → #596 (PDF section after
 Write-Offs, ADR-0053 gains a Presentation/UX section; the "waterfall" half was the dashboard income
-statement, already delivered by #594). ADR stays mutable on the epic branch (ADR-0051
-precedent). Existing data corrected by hand on the two live households, no backfill migration.
+statement, already delivered by #594).
+
+The ADR-0053 §7 manual correction is **done**: three bank-account Assets on the maintainer's household
+now declare `newly_tracked`; the demo household needed nothing, since every one of its positions is born
+in its baseline month and the baseline is already suppressed. One month gains a Tracking Change and no
+other month in the whole history moves; the identity closes in every flow month. A full-history sweep of
+`derived_living_expenses` afterwards leaves no residual the engine can explain — every remaining outlier
+is missing input data (an income gap, a one-month recording lag), which is what the plug is for. **Still
+owed at release:** the release-notes line saying historical months were regenerated, shared with
+ADR-0052 §8's.
 
 Next, in order:
 
