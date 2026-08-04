@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
-import type { Property, PropertyListItem } from "@/api/types";
+import type { Property, PropertyListItem, EntryType } from "@/api/types";
 
 export type CreatePropertyPayload = {
   display_name: string;
@@ -14,6 +14,7 @@ export type CreatePropertyPayload = {
   acquisition_date: string | null;
   acquisition_cost: string | null;
   annual_appreciation_rate: string | null;
+  entry_type: EntryType;
 };
 
 export type UpdatePropertyPayload = {
@@ -26,6 +27,7 @@ export type UpdatePropertyPayload = {
   acquisition_date: string | null;
   acquisition_cost: string | null;
   annual_appreciation_rate: string | null;
+  entry_type: EntryType;
 };
 
 export function useProperties() {

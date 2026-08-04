@@ -114,13 +114,8 @@ func TestEngine_WriteOffAbsorbsNonCashTerminations(t *testing.T) {
 	for i := 1; i < len(reports); i++ {
 		prev, cur := reports[i-1], reports[i]
 		deltaNW := cur.nwTotal.Sub(prev.nwTotal)
-		rhs := cur.earnedIncome.total.
-			Add(cur.investmentReturn.total).
-			Add(*cur.assetValueChange).
-			Add(*cur.writeOffs).
-			Sub(*cur.livingExpenses)
-		if !deltaNW.Equal(rhs) {
-			t.Errorf("%s identity broken: ΔNW=%s != earned+return+assetΔ+writeOffs−expenses=%s",
+		if rhs := identityRHS(cur); !deltaNW.Equal(rhs) {
+			t.Errorf("%s identity broken: ΔNW=%s != earned+return+assetΔ+writeOffs+tracking−expenses=%s",
 				cur.yearMonth.Format("2006-01"), deltaNW, rhs)
 		}
 	}

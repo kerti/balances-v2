@@ -23,6 +23,7 @@ import { useInvestmentSnapshots } from "@/hooks/useInvestmentSnapshots";
 import {
   settlementKind,
   statusOptions,
+  STATUS_UNTRACKED,
   type InvestmentSubtype,
   type LifecycleGroup,
 } from "@/lib/lifecycle";
@@ -115,6 +116,15 @@ export function TerminatePositionDialog({
 
   const wasActive = currentStatus === "active";
   const isActive = status === "active";
+
+  // The exit side of a Tracking Change (ADR-0053 §5). It settles nothing, so it
+  // never reaches `kind` below — but a household member choosing between it and
+  // `sold` / `paid_off` / `closed` is making a real distinction, and the
+  // dropdown label alone does not carry it. The copy splits owned/owed on the
+  // EntryTypeField precedent: what "no money changed hands" means for a debt is
+  // not what it means for a holding.
+  const untracked = status === STATUS_UNTRACKED;
+  const untrackedCopy = group === "liabilities" ? "owed" : "owned";
 
   // The settlement is captured only on the active → terminal edge: re-asserting
   // a terminal status (correcting a date or note) must not book a second sale,
@@ -285,6 +295,11 @@ export function TerminatePositionDialog({
                 </option>
               ))}
             </Select>
+            {untracked && (
+              <p className="text-xs text-muted-foreground" data-testid="terminate-untracked-hint">
+                {t(`terminate.untracked.${untrackedCopy}`)}
+              </p>
+            )}
           </div>
 
           {!isActive && (

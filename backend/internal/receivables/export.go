@@ -56,6 +56,7 @@ func receivableDetailFields(data *repo.ReceivableExport) []snapshotimport.Detail
 		{Key: "display_name", Value: rv.DisplayName},
 		{Key: "description", Value: derefStr(rv.Description)},
 		{Key: "ownership_type", Value: rv.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: rv.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: rv.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},

@@ -10,13 +10,15 @@ import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { MutualFundTypeSelect } from "@/components/common/MutualFundTypeSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
-import type { RiskProfile, MutualFundType } from "@/api/types";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
+import type { RiskProfile, MutualFundType, EntryType } from "@/api/types";
 
 function emptyForm() {
   return {
     display_name: "",
     description: "",
     ownership_type: "joint" as "sole" | "joint",
+    entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     risk_profile: "" as RiskProfile | "",
     native_currency: "IDR",
@@ -43,6 +45,7 @@ export function CreateMutualFundDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
@@ -136,6 +139,13 @@ export function CreateMutualFundDialog() {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="mf_create"
+        group="investment"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

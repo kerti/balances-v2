@@ -20,6 +20,11 @@ type createGoldReq struct {
 	RiskProfile     string           `json:"risk_profile"       validate:"required,oneof=low medium high"`
 	Form            string           `json:"form"               validate:"required,oneof=bar coin digital jewelry"`
 	Purity          *decimal.Decimal `json:"purity"             validate:"required"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateGoldReq struct {
@@ -30,6 +35,10 @@ type updateGoldReq struct {
 	RiskProfile     string           `json:"risk_profile"       validate:"required,oneof=low medium high"`
 	Form            string           `json:"form"               validate:"required,oneof=bar coin digital jewelry"`
 	Purity          *decimal.Decimal `json:"purity"             validate:"required"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 func (h *Handlers) handleCreateGold(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +61,7 @@ func (h *Handlers) handleCreateGold(w http.ResponseWriter, r *http.Request) {
 		RiskProfile:     req.RiskProfile,
 		Form:            req.Form,
 		Purity:          *req.Purity,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create gold", err)
@@ -107,6 +117,7 @@ func (h *Handlers) handleUpdateGold(w http.ResponseWriter, r *http.Request) {
 		RiskProfile:     req.RiskProfile,
 		Form:            req.Form,
 		Purity:          *req.Purity,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update gold", err)

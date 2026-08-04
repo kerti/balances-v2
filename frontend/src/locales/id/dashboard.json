@@ -74,6 +74,8 @@
     "assetValueChangeHint": "Non-tunai — penyusutan atau revaluasi properti dan kendaraan. Tidak ada uang yang berpindah tangan.",
     "writeOffs": "Penghapusan nilai",
     "writeOffsHint": "Nilai yang hilang dari pembukuan tanpa ada uang yang berpindah — harta yang dilepas, utang yang dibebaskan, atau piutang yang tidak akan tertagih. Utang yang dibebaskan menguntungkan Anda.",
+    "trackingChanges": "Perubahan cakupan pencatatan",
+    "trackingChangesHint": "Nilai yang masuk atau keluar dari yang Anda catat di sini tanpa diperoleh, dibelanjakan, atau diinvestasikan — sesuatu yang sudah Anda miliki tetapi baru mulai dicatat sekarang, atau rekening yang bergabung atau keluar dari rumah tangga. Ini bukan penghasilan maupun pengeluaran, jadi tidak dihitung sebagai keduanya.",
     "livingExpenses": "Pengeluaran (perkiraan)",
     "livingExpensesHint": "Diperkirakan dari perubahan kekayaan bersih dikurangi pemasukan dan hasil investasi yang tercatat. Aplikasi ini tidak melacak pembelian individual.",
     "unexplainedIncrease": "Kenaikan tak terjelaskan",

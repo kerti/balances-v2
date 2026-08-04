@@ -45,6 +45,10 @@ type CreateStockParams struct {
 	RiskProfile     string // "low" | "medium" | "high" — migration 00018 CHECK
 	Ticker          string
 	Exchange        string
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateStockParams struct {
@@ -55,6 +59,11 @@ type UpdateStockParams struct {
 	RiskProfile     string
 	Ticker          string
 	Exchange        string
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 func (r *InvestmentRepo) CreateStock(ctx context.Context, p CreateStockParams) (*Stock, error) {
@@ -80,6 +89,7 @@ func (r *InvestmentRepo) CreateStock(ctx context.Context, p CreateStockParams) (
 		NativeCurrency:  p.NativeCurrency,
 		RiskProfile:     p.RiskProfile,
 		CreatedBy:       &user,
+		EntryType:       entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create investment: %w", err)
@@ -215,6 +225,7 @@ func (r *InvestmentRepo) UpdateStock(ctx context.Context, id uuid.UUID, p Update
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		RiskProfile:     p.RiskProfile,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

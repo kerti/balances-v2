@@ -113,7 +113,8 @@
     "statementDate": "Tanggal laporan (opsional)",
     "notes": "Catatan",
     "ownership": "Kepemilikan",
-    "status": "Status"
+    "status": "Status",
+    "entryType": "Asal posisi"
   },
   "ownership": {
     "joint": "Bersama",
@@ -126,23 +127,27 @@
       "active": "Aktif",
       "closed": "Ditutup",
       "sold": "Terjual",
-      "disposed": "Dilepas"
+      "disposed": "Dilepas",
+      "untracked": "Tidak lagi dicatat"
     },
     "liabilities": {
       "active": "Aktif",
       "paid_off": "Lunas",
       "forgiven": "Dibebaskan",
-      "written_off": "Dihapusbukukan"
+      "written_off": "Dihapusbukukan",
+      "untracked": "Tidak lagi dicatat"
     },
     "receivables": {
       "active": "Aktif",
       "collected": "Tertagih",
-      "written_off": "Dihapusbukukan"
+      "written_off": "Dihapusbukukan",
+      "untracked": "Tidak lagi dicatat"
     },
     "investments": {
       "active": "Aktif",
       "sold": "Terjual",
-      "matured": "Jatuh Tempo"
+      "matured": "Jatuh Tempo",
+      "untracked": "Tidak lagi dicatat"
     }
   },
   "tableHeaders": {
@@ -202,7 +207,11 @@
     "settlementInterestLabel": "Bunga diterima ({{currency}})",
     "settlementCashIn": "Diterima",
     "settlementWriteOff": "Tidak ada uang kembali — hapus buku",
-    "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi."
+    "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi.",
+    "untracked": {
+      "owned": "Pilih ini jika posisi keluar dari catatan Anda tanpa dijual, dipakai, atau hilang — Anda hanya berhenti mencatatnya, misalnya karena pemiliknya keluar dari rumah tangga. Nilainya dicatat sebagai keluar dari pembukuan, bukan sebagai kerugian.",
+      "owed": "Pilih ini jika utang keluar dari catatan Anda tanpa dilunasi atau dibebaskan — Anda hanya berhenti mencatatnya, misalnya karena penanggung utangnya keluar dari rumah tangga. Ini dicatat sebagai keluar dari pembukuan, bukan sebagai uang yang Anda bayarkan."
+    }
   },
   "import": {
     "trigger": "Impor",
@@ -285,6 +294,19 @@
       "description": "Perbarui nilai total dan bunga berjalan setiap obligasi dan deposito untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada obligasi atau deposito yang memenuhi syarat untuk bulan ini.",
       "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
+    }
+  },
+  "entry": {
+    "question": "Dari mana asalnya?",
+    "owned": {
+      "acquired": "Kami membelinya dengan uang yang sudah dicatat di sini",
+      "newlyTracked": "Kami sudah memilikinya, atau ini masuk ke rumah tangga",
+      "hint": "Ini memberi tahu laporan apakah pencatatan pertama posisi ini berupa pembelian (jadi uangnya berasal dari tempat lain yang Anda catat) atau kekayaan yang memang sudah milik Anda. Hanya memengaruhi cara bulan pertama dibaca."
+    },
+    "owed": {
+      "acquired": "Kami mengambilnya saat sudah mencatat di sini — apa yang dibiayainya juga tercatat",
+      "newlyTracked": "Kami sudah menanggungnya, atau ini masuk ke rumah tangga",
+      "hint": "Ini memberi tahu laporan apakah utang ini diambil saat Anda sudah mencatat di sini (jadi uang yang cair, atau barang yang dibeli, ikut tercatat) atau memang sudah ditanggung sebelumnya. Hanya memengaruhi cara bulan pertama dibaca."
     }
   }
 }

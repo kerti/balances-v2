@@ -43,6 +43,7 @@ const asset: Asset = {
   description: "Daily driver",
   subtype: "vehicle",
   ownership_type: "sole",
+  entry_type: "acquired" as const,
   sole_owner_user_id: "u1",
   native_currency: "USD",
   tag_id: null,

@@ -108,6 +108,11 @@ type createReq struct {
 	TermMonths       *int32           `json:"term_months"`
 	StartDate        *string          `json:"start_date"`
 	MaturityDate     *string          `json:"maturity_date"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateReq struct {
@@ -121,6 +126,10 @@ type updateReq struct {
 	TermMonths       *int32           `json:"term_months"`
 	StartDate        *string          `json:"start_date"`
 	MaturityDate     *string          `json:"maturity_date"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 // ----- core CRUD ----------------------------------------------------------
@@ -160,6 +169,7 @@ func (h *Handlers) handleCreate(w http.ResponseWriter, r *http.Request) {
 		TermMonths:       req.TermMonths,
 		StartDate:        startDate,
 		MaturityDate:     maturityDate,
+		EntryType:        req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create liability", err)
@@ -244,6 +254,7 @@ func (h *Handlers) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		TermMonths:       req.TermMonths,
 		StartDate:        startDate,
 		MaturityDate:     maturityDate,
+		EntryType:        req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update liability", err)

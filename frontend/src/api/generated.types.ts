@@ -23,6 +23,7 @@ export type Asset = {
   updated_by: string | null;
   updated_at: string;
   tag_id: string | null;
+  entry_type: string;
 };
 
 export type AssetSnapshot = {
@@ -110,6 +111,7 @@ export type Investment = {
   risk_profile: string;
   rolled_from_investment_id: string | null;
   tag_id: string | null;
+  entry_type: string;
 };
 
 export type InvestmentSnapshot = {
@@ -172,6 +174,7 @@ export type Liability = {
   updated_by: string | null;
   updated_at: string;
   tag_id: string | null;
+  entry_type: string;
 };
 
 export type LiabilitySnapshot = {
@@ -206,6 +209,7 @@ export type Receivable = {
   updated_by: string | null;
   updated_at: string;
   tag_id: string | null;
+  entry_type: string;
 };
 
 export type ReceivableSnapshot = {

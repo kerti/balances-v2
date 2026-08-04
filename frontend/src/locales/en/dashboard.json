@@ -74,6 +74,8 @@
     "assetValueChangeHint": "Non-cash — depreciation or revaluation of property and vehicles. No money changed hands.",
     "writeOffs": "Write-offs",
     "writeOffsHint": "Value that left your books without any money changing hands — something disposed of, a debt forgiven, or money owed to you that won't be repaid. A forgiven debt counts in your favour.",
+    "trackingChanges": "Tracking changes",
+    "trackingChangesHint": "Value that came into or went out of what you track here without being earned, spent or invested — something you already owned but only started tracking now, or accounts that joined or left the household. It isn't income or spending, so it's kept out of both.",
     "livingExpenses": "Living expenses (estimated)",
     "livingExpensesHint": "Estimated from the change in your net worth minus tracked income and investment return. This app doesn't track individual purchases.",
     "unexplainedIncrease": "Unexplained increase",

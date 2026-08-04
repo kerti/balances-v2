@@ -32,10 +32,14 @@ export type TagBreakdownRow = {
   total: string;
 };
 
-export type Asset = Omit<Generated.Asset, "subtype" | "ownership_type" | "status"> & {
+export type Asset = Omit<
+  Generated.Asset,
+  "subtype" | "ownership_type" | "status" | "entry_type"
+> & {
   subtype: "bank_account" | "property" | "vehicle";
   ownership_type: "sole" | "joint";
-  status: "active" | "closed" | "sold" | "disposed";
+  status: "active" | "closed" | "sold" | "disposed" | "untracked";
+  entry_type: EntryType;
 };
 
 // ----- shared snapshot --------------------------------------------------
@@ -95,10 +99,14 @@ export type VehicleListItem = {
 
 // ----- liability --------------------------------------------------------
 
-export type Liability = Omit<Generated.Liability, "subtype" | "ownership_type" | "status"> & {
+export type Liability = Omit<
+  Generated.Liability,
+  "subtype" | "ownership_type" | "status" | "entry_type"
+> & {
   subtype: "personal" | "institutional";
   ownership_type: "sole" | "joint";
-  status: "active" | "paid_off" | "forgiven" | "written_off";
+  status: "active" | "paid_off" | "forgiven" | "written_off" | "untracked";
+  entry_type: EntryType;
 };
 
 export type LiabilitySnapshot = Generated.LiabilitySnapshot;
@@ -110,9 +118,10 @@ export type LiabilityListItem = {
 
 // ----- receivable -------------------------------------------------------
 
-export type Receivable = Omit<Generated.Receivable, "ownership_type" | "status"> & {
+export type Receivable = Omit<Generated.Receivable, "ownership_type" | "status" | "entry_type"> & {
   ownership_type: "sole" | "joint";
-  status: "active" | "collected" | "written_off";
+  status: "active" | "collected" | "written_off" | "untracked";
+  entry_type: EntryType;
 };
 
 export type ReceivableSnapshot = Generated.ReceivableSnapshot;
@@ -136,12 +145,13 @@ export type RiskProfile = "low" | "medium" | "high";
 // fresh position.
 export type Investment = Omit<
   Generated.Investment,
-  "subtype" | "ownership_type" | "risk_profile" | "status"
+  "subtype" | "ownership_type" | "risk_profile" | "status" | "entry_type"
 > & {
   subtype: InvestmentSubtype;
   ownership_type: "sole" | "joint";
   risk_profile: RiskProfile;
-  status: "active" | "sold" | "matured";
+  status: "active" | "sold" | "matured" | "untracked";
+  entry_type: EntryType;
 };
 
 // One snapshot table per ADR-0022. quantity + price_per_unit are populated
@@ -400,10 +410,16 @@ export type MonthlyReport = {
   // identity, so the statement lines only sum to ΔNW with it included; signed,
   // so a forgiven debt reads positive.
   write_offs: string | null;
+  // Value that crossed the edge of the book — a position declared
+  // `newly_tracked` arriving at its first snapshot, or one terminated
+  // `untracked` departing (ADR-0053). Another term of the identity, signed by
+  // the effect on net worth, so an arriving mortgage reads negative.
+  tracking_changes: string | null;
   derived_living_expenses: string | null; // signed cash-spending residual
   user_breakdowns: Record<string, UserBreakdown>; // keyed by user_id and "joint"
   stale_positions: StalePosition[]; // positions carried forward this month (#50)
   write_off_positions: WriteOffPosition[]; // the positions behind write_offs
+  tracking_change_positions: TrackingChangePosition[]; // the positions behind tracking_changes
   unsettled_terminations: UnsettledTermination[]; // data-quality advisory
   fx_rates_used: Record<string, string>; // currency -> rate applied this month
   missing_fx: MissingFx[]; // positions/flows excluded for want of a rate
@@ -420,6 +436,24 @@ export type WriteOffPosition = {
   subtype: string;
   amount: string; // signed decimal string
 };
+
+// TrackingChangePosition is one position behind the month's tracking-change
+// figure, with its signed contribution to net worth. One signed term covers both
+// directions, so a month holding an arrival and a departure can net toward zero
+// — these constituents are what keep that from reading as "nothing happened".
+export type TrackingChangePosition = {
+  position_id: string;
+  name: string;
+  group: "asset" | "liability" | "receivable" | "investment";
+  subtype: string;
+  amount: string; // signed decimal string
+};
+
+// EntryType declares where a position came from (ADR-0053): `acquired` means it
+// was funded from wealth already tracked here, `newly_tracked` that the
+// household already had it or it arrived with them. Only the household can say
+// which — the two are indistinguishable to the report engine.
+export type EntryType = "acquired" | "newly_tracked";
 
 // UnsettledTermination is one investment terminated with no proceeds recorded —
 // an advisory, part of no figure (ADR-0052). Reachable only via a path that

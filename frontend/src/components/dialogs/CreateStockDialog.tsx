@@ -9,13 +9,15 @@ import { useSession } from "@/hooks/useSession";
 import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
-import type { RiskProfile } from "@/api/types";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
+import type { RiskProfile, EntryType } from "@/api/types";
 
 function emptyForm() {
   return {
     display_name: "",
     description: "",
     ownership_type: "joint" as "sole" | "joint",
+    entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     native_currency: "IDR",
     risk_profile: "" as RiskProfile | "",
@@ -40,6 +42,7 @@ export function CreateStockDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         risk_profile: form.risk_profile,
@@ -127,6 +130,13 @@ export function CreateStockDialog() {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="stock_create"
+        group="investment"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <RiskProfileSelect

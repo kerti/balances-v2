@@ -226,6 +226,7 @@ func createAsset(t *testing.T, q *db.Queries, hid uuid.UUID, createdBy, soleOwne
 	a, err := q.CreateAsset(context.Background(), db.CreateAssetParams{
 		HouseholdID: hid, DisplayName: "Acct", Subtype: "bank_account",
 		OwnershipType: ownership, SoleOwnerUserID: soleOwner, NativeCurrency: "IDR", CreatedBy: createdBy,
+		EntryType: repo.EntryTypeAcquired,
 	})
 	if err != nil {
 		t.Fatalf("CreateAsset: %v", err)

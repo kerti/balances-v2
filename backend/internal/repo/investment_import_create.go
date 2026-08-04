@@ -113,6 +113,7 @@ func (r *InvestmentRepo) CreateStockWithSnapshotsAndLedger(ctx context.Context, 
 			NativeCurrency:  p.NativeCurrency,
 			RiskProfile:     p.RiskProfile,
 			CreatedBy:       &user,
+			EntryType:       entryTypeOrDefault(p.EntryType),
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)
@@ -149,6 +150,7 @@ func (r *InvestmentRepo) CreateMutualFundWithSnapshotsAndLedger(ctx context.Cont
 			NativeCurrency:  p.NativeCurrency,
 			RiskProfile:     p.RiskProfile,
 			CreatedBy:       &user,
+			EntryType:       entryTypeOrDefault(p.EntryType),
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)
@@ -186,6 +188,7 @@ func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p
 			NativeCurrency:  p.NativeCurrency,
 			RiskProfile:     p.RiskProfile,
 			CreatedBy:       &user,
+			EntryType:       entryTypeOrDefault(p.EntryType),
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)
@@ -226,6 +229,7 @@ func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p
 			NativeCurrency:  p.NativeCurrency,
 			RiskProfile:     p.RiskProfile,
 			CreatedBy:       &user,
+			EntryType:       entryTypeOrDefault(p.EntryType),
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)
@@ -273,6 +277,7 @@ func (r *InvestmentRepo) CreateTimeDepositWithSnapshotsAndLedger(ctx context.Con
 			NativeCurrency:  p.NativeCurrency,
 			RiskProfile:     p.RiskProfile,
 			CreatedBy:       &user,
+			EntryType:       entryTypeOrDefault(p.EntryType),
 		})
 		if err != nil {
 			return db.Investment{}, fmt.Errorf("create investment: %w", err)

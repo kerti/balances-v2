@@ -42,6 +42,10 @@ type CreateMutualFundParams struct {
 	FundCode        string
 	FundManager     *string
 	FundType        string
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateMutualFundParams struct {
@@ -53,6 +57,11 @@ type UpdateMutualFundParams struct {
 	FundCode        string
 	FundManager     *string
 	FundType        string
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 func (r *InvestmentRepo) CreateMutualFund(ctx context.Context, p CreateMutualFundParams) (*MutualFund, error) {
@@ -78,6 +87,7 @@ func (r *InvestmentRepo) CreateMutualFund(ctx context.Context, p CreateMutualFun
 		NativeCurrency:  p.NativeCurrency,
 		RiskProfile:     p.RiskProfile,
 		CreatedBy:       &user,
+		EntryType:       entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create investment: %w", err)
@@ -214,6 +224,7 @@ func (r *InvestmentRepo) UpdateMutualFund(ctx context.Context, id uuid.UUID, p U
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		RiskProfile:     p.RiskProfile,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -23,6 +23,11 @@ type createBankAccountReq struct {
 	BankName        string     `json:"bank_name"         validate:"required"`
 	AccountNumber   string     `json:"account_number"    validate:"required"`
 	AccountType     string     `json:"account_type"      validate:"required,oneof=savings current other"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateBankAccountReq struct {
@@ -33,6 +38,10 @@ type updateBankAccountReq struct {
 	BankName        string     `json:"bank_name"          validate:"required"`
 	AccountNumber   string     `json:"account_number"     validate:"required"`
 	AccountType     string     `json:"account_type"       validate:"required,oneof=savings current other"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 // ----- handlers -----------------------------------------------------------
@@ -57,6 +66,7 @@ func (h *Handlers) handleCreateBankAccount(w http.ResponseWriter, r *http.Reques
 		BankName:        req.BankName,
 		AccountNumber:   req.AccountNumber,
 		AccountType:     req.AccountType,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create bank account", err)
@@ -112,6 +122,7 @@ func (h *Handlers) handleUpdateBankAccount(w http.ResponseWriter, r *http.Reques
 		BankName:        req.BankName,
 		AccountNumber:   req.AccountNumber,
 		AccountType:     req.AccountType,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update bank account", err)
@@ -169,6 +180,7 @@ func bankAccountDetailFields(data *repo.BankAccountExport) []snapshotimport.Deta
 		{Key: "display_name", Value: asset.DisplayName},
 		{Key: "description", Value: desc},
 		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: asset.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},

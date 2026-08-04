@@ -35,6 +35,10 @@ type CreatePropertyParams struct {
 	AcquisitionDate        *time.Time
 	AcquisitionCost        *decimal.Decimal
 	AnnualAppreciationRate *decimal.Decimal
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdatePropertyParams struct {
@@ -47,6 +51,11 @@ type UpdatePropertyParams struct {
 	AcquisitionDate        *time.Time
 	AcquisitionCost        *decimal.Decimal
 	AnnualAppreciationRate *decimal.Decimal
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 // CreateProperty is CreatePropertyWithSnapshots with no tag and no seeded
@@ -155,6 +164,7 @@ func (r *AssetRepo) UpdateProperty(ctx context.Context, id uuid.UUID, p UpdatePr
 		OwnershipType:   p.OwnershipType,
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -268,6 +278,7 @@ func (r *AssetRepo) CreatePropertyWithSnapshots(ctx context.Context, p CreatePro
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		NativeCurrency:  p.NativeCurrency,
 		CreatedBy:       &user,
+		EntryType:       entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create asset: %w", err)

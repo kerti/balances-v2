@@ -20,6 +20,11 @@ type createMutualFundReq struct {
 	FundCode        string     `json:"fund_code"          validate:"required"`
 	FundManager     *string    `json:"fund_manager"`
 	FundType        string     `json:"fund_type"          validate:"required,oneof=money_market fixed_income equity mixed index etf target_date commodity other"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateMutualFundReq struct {
@@ -31,6 +36,10 @@ type updateMutualFundReq struct {
 	FundCode        string     `json:"fund_code"          validate:"required"`
 	FundManager     *string    `json:"fund_manager"`
 	FundType        string     `json:"fund_type"          validate:"required,oneof=money_market fixed_income equity mixed index etf target_date commodity other"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 func (h *Handlers) handleCreateMutualFund(w http.ResponseWriter, r *http.Request) {
@@ -54,6 +63,7 @@ func (h *Handlers) handleCreateMutualFund(w http.ResponseWriter, r *http.Request
 		FundCode:        req.FundCode,
 		FundManager:     req.FundManager,
 		FundType:        req.FundType,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create mutual fund", err)
@@ -110,6 +120,7 @@ func (h *Handlers) handleUpdateMutualFund(w http.ResponseWriter, r *http.Request
 		FundCode:        req.FundCode,
 		FundManager:     req.FundManager,
 		FundType:        req.FundType,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update mutual fund", err)
