@@ -9,7 +9,7 @@ import { defineConfig } from "vitest/config";
 // jsdom — so a helper test never pays for a DOM and a component test always
 // gets one. The E2E suite (Playwright) stays out of this runner and out of the
 // coverage metric.
-const alias = { "@": path.resolve(__dirname, "./src") };
+const alias = { "@": path.resolve(import.meta.dirname, "./src") };
 
 export default defineConfig({
   resolve: { alias },
