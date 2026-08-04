@@ -49,6 +49,10 @@ type CreateLiabilityParams struct {
 	TermMonths       *int32
 	StartDate        *time.Time
 	MaturityDate     *time.Time
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateLiabilityParams struct {
@@ -62,6 +66,11 @@ type UpdateLiabilityParams struct {
 	TermMonths       *int32
 	StartDate        *time.Time
 	MaturityDate     *time.Time
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 // CreateLiability is the no-tag, no-history degenerate of
@@ -146,6 +155,7 @@ func (r *LiabilityRepo) UpdateLiability(ctx context.Context, id uuid.UUID, p Upd
 		StartDate:        p.StartDate,
 		MaturityDate:     p.MaturityDate,
 		UpdatedBy:        &user,
+		EntryType:        p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -335,6 +345,7 @@ func (r *LiabilityRepo) CreateLiabilityWithSnapshots(ctx context.Context, p Crea
 		StartDate:        p.StartDate,
 		MaturityDate:     p.MaturityDate,
 		CreatedBy:        &user,
+		EntryType:        entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create liability: %w", err)

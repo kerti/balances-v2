@@ -73,6 +73,34 @@ var transforms = map[int]transformFunc{
 		}
 		return nil
 	},
+	3: func(e *Envelope) error {
+		for i := range e.Household.Assets {
+			e.Household.Assets[i].EntryType = entryTypeOrAcquired(e.Household.Assets[i].EntryType)
+		}
+		for i := range e.Household.Liabilities {
+			e.Household.Liabilities[i].EntryType = entryTypeOrAcquired(e.Household.Liabilities[i].EntryType)
+		}
+		for i := range e.Household.Receivables {
+			e.Household.Receivables[i].EntryType = entryTypeOrAcquired(e.Household.Receivables[i].EntryType)
+		}
+		for i := range e.Household.Investments {
+			e.Household.Investments[i].EntryType = entryTypeOrAcquired(e.Household.Investments[i].EntryType)
+		}
+		return nil
+	},
+}
+
+// entryTypeOrAcquired backfills transforms[3]'s absent entry_type. A v3 file
+// predates the column, so the key is missing on every position and decodes to
+// "", which json_populate_recordset would turn into a NULL against a NOT NULL
+// column. 'acquired' is the column DEFAULT and reproduces pre-ADR-0053
+// behaviour, so a restored Household's months are unchanged; declaring a
+// Position `newly_tracked` stays a deliberate act (ADR-0053 §7).
+func entryTypeOrAcquired(s string) string {
+	if s == "" {
+		return "acquired"
+	}
+	return s
 }
 
 // maxDecompressedBackup caps the decompressed size of a gzipped backup. The

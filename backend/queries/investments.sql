@@ -2,9 +2,9 @@
 INSERT INTO investments (
     household_id, display_name, description, subtype,
     ownership_type, sole_owner_user_id, native_currency, risk_profile,
-    rolled_from_investment_id, created_by, updated_by
+    rolled_from_investment_id, created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10, $11
 )
 RETURNING *;
 
@@ -54,6 +54,9 @@ SET display_name       = $3,
     sole_owner_user_id = $6,
     risk_profile       = $7,
     updated_by         = $8,
+    -- Editable after the fact — the only remedy for a mis-declared birth
+    -- (ADR-0053 §3); see the note on UpdateAsset for why COALESCE.
+    entry_type         = COALESCE(sqlc.narg('entry_type')::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING *;

@@ -6,6 +6,7 @@ import { useUpdateProperty } from "@/hooks/useProperties";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { Select } from "@/components/ui/select";
 import type { Property } from "@/api/types";
 
@@ -24,6 +25,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
     display_name: property.asset.display_name,
     description: property.asset.description ?? "",
     ownership_type: property.asset.ownership_type,
+    entry_type: property.asset.entry_type,
     sole_owner_user_id: property.asset.sole_owner_user_id,
     property_type: property.details.property_type,
     address: property.details.address ?? "",
@@ -42,6 +44,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         property_type: form.property_type,
         address: form.address || null,
@@ -147,6 +150,13 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="property_edit"
+        group="asset"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

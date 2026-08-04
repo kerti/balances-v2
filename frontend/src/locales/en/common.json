@@ -113,7 +113,8 @@
     "statementDate": "Statement date (optional)",
     "notes": "Notes",
     "ownership": "Ownership",
-    "status": "Status"
+    "status": "Status",
+    "entryType": "Where it came from"
   },
   "ownership": {
     "joint": "Joint",
@@ -126,23 +127,27 @@
       "active": "Active",
       "closed": "Closed",
       "sold": "Sold",
-      "disposed": "Disposed"
+      "disposed": "Disposed",
+      "untracked": "No longer tracked"
     },
     "liabilities": {
       "active": "Active",
       "paid_off": "Paid off",
       "forgiven": "Forgiven",
-      "written_off": "Written off"
+      "written_off": "Written off",
+      "untracked": "No longer tracked"
     },
     "receivables": {
       "active": "Active",
       "collected": "Collected",
-      "written_off": "Written off"
+      "written_off": "Written off",
+      "untracked": "No longer tracked"
     },
     "investments": {
       "active": "Active",
       "sold": "Sold",
-      "matured": "Matured"
+      "matured": "Matured",
+      "untracked": "No longer tracked"
     }
   },
   "tableHeaders": {
@@ -285,6 +290,19 @@
       "description": "Update the total value and accrued interest for each bond and time deposit for the chosen month. Only the ones you change are saved.",
       "empty": "No bonds or time deposits are eligible for this month yet.",
       "rowError": "This holding can't take a value for this month."
+    }
+  },
+  "entry": {
+    "question": "Where did this come from?",
+    "owned": {
+      "acquired": "We funded it with money already tracked here",
+      "newlyTracked": "We already had it, or it came into the household",
+      "hint": "This tells the report whether the position's first entry was a purchase (so the money came from somewhere else you track) or wealth that was already yours. It only affects how the first month reads."
+    },
+    "owed": {
+      "acquired": "We took it on while tracking here — what it paid for is recorded too",
+      "newlyTracked": "We already owed it, or it came into the household",
+      "hint": "This tells the report whether the debt was taken on while you were tracking here (so the money it released, or the thing it bought, is recorded too) or was already owed before. It only affects how the first month reads."
     }
   }
 }

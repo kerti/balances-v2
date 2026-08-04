@@ -6,6 +6,7 @@ import { useUpdateVehicle } from "@/hooks/useVehicles";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { Select } from "@/components/ui/select";
 import type { Vehicle } from "@/api/types";
 
@@ -24,6 +25,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
     display_name: vehicle.asset.display_name,
     description: vehicle.asset.description ?? "",
     ownership_type: vehicle.asset.ownership_type,
+    entry_type: vehicle.asset.entry_type,
     sole_owner_user_id: vehicle.asset.sole_owner_user_id,
     vehicle_type: vehicle.details.vehicle_type,
     make: vehicle.details.make ?? "",
@@ -41,6 +43,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         vehicle_type: form.vehicle_type,
         make: form.make || null,
@@ -153,6 +156,13 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="vehicle_edit"
+        group="asset"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

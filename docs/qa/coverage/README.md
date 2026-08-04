@@ -4,13 +4,13 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**192 / 192** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
+**196 / 196** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
 | Zone | Per-PR | Coverage |
 |----|----|----|
 | TENANCY | 13 / 13 | [TENANCY](01-tenancy.md) |
-| FINANCE | 35 / 35 | [FINANCE](02-finance.md) |
-| LIFECYCLE | 8 / 8 | [LIFECYCLE](03-lifecycle.md) |
+| FINANCE | 38 / 38 | [FINANCE](02-finance.md) |
+| LIFECYCLE | 9 / 9 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 30 / 30 | [AUTH](04-auth.md) |
 | SNAPSHOTS | 9 / 9 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |

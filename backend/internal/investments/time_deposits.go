@@ -29,6 +29,11 @@ type createTimeDepositReq struct {
 	// RolledFromInvestmentID links a rollover successor to its matured source
 	// (issue #29). Set by the frontend rollover helper; absent on fresh deposits.
 	RolledFromInvestmentID *uuid.UUID `json:"rolled_from_investment_id"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateTimeDepositReq struct {
@@ -44,6 +49,10 @@ type updateTimeDepositReq struct {
 	PlacementDate   string           `json:"placement_date"     validate:"required"`
 	MaturityDate    string           `json:"maturity_date"      validate:"required"`
 	RolloverPolicy  string           `json:"rollover_policy"    validate:"required,oneof=auto_renew_principal auto_renew_with_interest no_rollover"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 func (h *Handlers) handleCreateTimeDeposit(w http.ResponseWriter, r *http.Request) {
@@ -82,6 +91,7 @@ func (h *Handlers) handleCreateTimeDeposit(w http.ResponseWriter, r *http.Reques
 		MaturityDate:           maturity,
 		RolloverPolicy:         req.RolloverPolicy,
 		RolledFromInvestmentID: req.RolledFromInvestmentID,
+		EntryType:              req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create time deposit", err)
@@ -152,6 +162,7 @@ func (h *Handlers) handleUpdateTimeDeposit(w http.ResponseWriter, r *http.Reques
 		PlacementDate:   placement,
 		MaturityDate:    maturity,
 		RolloverPolicy:  req.RolloverPolicy,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update time deposit", err)

@@ -4,9 +4,9 @@ INSERT INTO liabilities (
     ownership_type, sole_owner_user_id, native_currency,
     counterparty_name, principal, interest_rate,
     term_months, start_date, maturity_date,
-    created_by, updated_by
+    created_by, updated_by, entry_type
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14, $15
 )
 RETURNING *;
 
@@ -36,6 +36,9 @@ SET display_name       = $3,
     start_date         = $11,
     maturity_date      = $12,
     updated_by         = $13,
+    -- Editable after the fact — the only remedy for a mis-declared birth
+    -- (ADR-0053 §3); see the note on UpdateAsset for why COALESCE.
+    entry_type         = COALESCE(sqlc.narg('entry_type')::text, entry_type),
     updated_at         = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL
 RETURNING *;

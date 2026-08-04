@@ -63,8 +63,17 @@ type reportPosition struct {
 	// is the Write-Off term's trigger — ADR-0009 split `sold` from `disposed`
 	// precisely to encode "did cash come back", and three of the four groups have
 	// no transaction concept in which an absent flow could be detected instead
-	// (ADR-0052 §4).
+	// (ADR-0052 §4) — and either of those from a departure over the books' edge,
+	// `untracked`, which triggers the exit side of the Tracking Change term
+	// (ADR-0053 §3).
 	status string
+	// entryType is `acquired` (funded from wealth already tracked here) or
+	// `newly_tracked` (already owned, or arrived with the household). It triggers
+	// the entry side of the Tracking Change term and is DECLARED, never inferred:
+	// both cases present to the engine as the same first-snapshot-with-no-prior-
+	// value branch, so a blanket birth-month term would fix the second and break
+	// every instance of the first by its full value (ADR-0053).
+	entryType string
 	// riskProfile is the Investment's household-chosen risk level ("low" |
 	// "medium" | "high", NOT NULL on every Investment). Empty for non-Investment
 	// groups. Drives the per-risk investment-return + value breakdown (ADR-0048
@@ -298,6 +307,22 @@ type writeOffPosition struct {
 	Amount  decimal.Decimal `json:"amount"`
 }
 
+// trackingChangePosition is one constituent behind the month's Tracking Changes
+// figure, with its signed contribution to net worth — so an arriving Asset reads
+// positive and an arriving Liability negative, and a departure the other way
+// round. Tracking Changes is ONE signed term covering both directions
+// (ADR-0053 §1, taking ADR-0052 §4's reasoning verbatim), which means a month
+// holding both an arrival and a departure can net toward zero on the line; this
+// list is what keeps that from reading as "nothing happened". Same shape as
+// writeOffPosition so the frontend resolves the detail-page route identically.
+type trackingChangePosition struct {
+	ID      uuid.UUID       `json:"position_id"`
+	Name    string          `json:"name"`
+	Group   string          `json:"group"`
+	Subtype string          `json:"subtype"`
+	Amount  decimal.Decimal `json:"amount"`
+}
+
 // unsettledTermination is one Investment terminated in this month with no
 // proceeds recorded — a report-side advisory, part of no figure (ADR-0052 §7).
 // Its own payload rather than an extension of stalePosition with a reason:
@@ -352,6 +377,13 @@ type monthlyReportData struct {
 	// month (empty when there were none), like stalePositions.
 	writeOffs         *decimal.Decimal
 	writeOffPositions []writeOffPosition
+	// trackingChanges is the signed value that crossed the edge of the book this
+	// month — a Position declared `newly_tracked` arriving at its first Snapshot,
+	// or one terminated `untracked` departing (ADR-0053 §1/§4). nil on the
+	// baseline, like the other derived lines. trackingChangePositions itemises it
+	// and is set on every month (empty when there were none), like stalePositions.
+	trackingChanges         *decimal.Decimal
+	trackingChangePositions []trackingChangePosition
 	// unsettledTerminations is the data-quality advisory (ADR-0052 §7), not a
 	// derived line — set on every month including the baseline.
 	unsettledTerminations []unsettledTermination
@@ -675,14 +707,15 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 	for idx := minIdx; idx <= lastIdx; idx++ {
 		baseline := idx == minIdx
 		m := monthlyReportData{
-			yearMonth:             monthFromIndex(idx),
-			userBreakdowns:        make(map[string]userBreakdown, len(in.members)+1),
-			stalePositions:        []stalePosition{},
-			writeOffPositions:     []writeOffPosition{},
-			unsettledTerminations: []unsettledTermination{},
-			missingFx:             []missingFxEntry{},
-			fxRatesUsed:           make(map[string]decimal.Decimal),
-			missingSeen:           make(map[string]bool),
+			yearMonth:               monthFromIndex(idx),
+			userBreakdowns:          make(map[string]userBreakdown, len(in.members)+1),
+			stalePositions:          []stalePosition{},
+			writeOffPositions:       []writeOffPosition{},
+			trackingChangePositions: []trackingChangePosition{},
+			unsettledTerminations:   []unsettledTermination{},
+			missingFx:               []missingFxEntry{},
+			fxRatesUsed:             make(map[string]decimal.Decimal),
+			missingSeen:             make(map[string]bool),
 		}
 		for _, u := range in.members {
 			m.userBreakdowns[u.String()] = userBreakdown{}
@@ -767,8 +800,16 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 		// figure; the report still books the drop as a (possibly wrong) negative
 		// Investment Return, which is the truthful reading for a genuine total
 		// loss and the wrong one for an unrecorded Sell (ADR-0052 §5/§7).
+		//
+		// An `untracked` Investment is exempt: it left the books rather than the
+		// portfolio, so there are no proceeds to look for and the Tracking Change
+		// term already accounts for its value (ADR-0053 §5). Without the exemption
+		// every departing Investment would trip an advisory nothing could clear.
 		for _, p := range positions {
 			if p.group != groupInvestment || !terminatesAt(p, idx) || settledByMonth[p.id][idx] {
+				continue
+			}
+			if trackingExit(p) {
 				continue
 			}
 			m.unsettledTerminations = append(m.unsettledTerminations, unsettledTermination{
@@ -782,6 +823,16 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			ret := &investmentReturnAmounts{}
 			for _, p := range positions {
 				if p.group != groupInvestment || terminatedBefore(p, idx) {
+					continue
+				}
+				// An `untracked` Investment's drop to its 0-value close snapshot is a
+				// departure over the books' edge, not a loss — the Tracking Change term
+				// below carries it (ADR-0053 §5). This is the return-side twin of the
+				// asset-value-change loop's terminatedByEndOf exclusion: without it the
+				// same movement would be counted twice, once as a large negative return
+				// and once as a Tracking Change. The cash-settled terminal statuses stay
+				// in, because their Sell/Maturity cash leg is what cancels the drop.
+				if trackingExit(p) && terminatesAt(p, idx) {
 					continue
 				}
 				now, okNow := fx.carried(byPos[p.id], idx)
@@ -857,10 +908,7 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 				if !okNow || !okPrev {
 					continue
 				}
-				d := now.Sub(prev)
-				if p.group == groupLiability {
-					d = d.Neg()
-				}
+				d := signedForNW(p.group, now.Sub(prev))
 				if d.IsZero() {
 					// Nothing vanished: the Position already carried 0 into its
 					// termination month (or a household corrected it by hand). Keep it
@@ -874,8 +922,41 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			}
 			m.writeOffs = &writeOffs
 
+			// The value that crossed the edge of the book this month (ADR-0053 §1).
+			// Like the write-off term it runs through the same fx.carried calls the
+			// net-worth pass uses, so it cancels ΔNW structurally rather than
+			// coincidentally and an unconvertible currency is skipped consistently in
+			// both; and like it, the sign follows the effect on net worth, so an
+			// arriving Liability contributes negatively and a departing one
+			// positively.
+			//
+			// The two directions need different shapes. A departure is now−prev at the
+			// termination month, exactly like a write-off. An arrival is not: it fires
+			// at the Position's FIRST Snapshot month, where there is no prior value to
+			// difference — the term is `now − 0`, taken from that Snapshot directly
+			// (ADR-0053 §4). That is forced, not chosen: the Position enters nwTotal at
+			// its first carried value, so the term must fire there or the identity
+			// stays open.
+			trackingChanges := decimal.Zero
+			for _, p := range positions {
+				d, ok := trackingChangeFor(fx, byPos[p.id], p, idx)
+				if !ok || d.IsZero() {
+					// Either nothing crossed the edge for this Position this month, or
+					// it crossed carrying 0 (an arrival first snapshotted at 0, a
+					// departure that already held nothing). Keep a 0 off the constituent
+					// list so the line itemises only real movement — the write-off
+					// term's rule.
+					continue
+				}
+				trackingChanges = trackingChanges.Add(d)
+				m.trackingChangePositions = append(m.trackingChangePositions, trackingChangePosition{
+					ID: p.id, Name: p.name, Group: p.group.String(), Subtype: p.subtype, Amount: d,
+				})
+			}
+			m.trackingChanges = &trackingChanges
+
 			deltaNW := m.nwTotal.Sub(prevNwTotal)
-			exp := m.earnedIncome.total.Add(ret.total).Add(avc).Add(writeOffs).Sub(deltaNW)
+			exp := m.earnedIncome.total.Add(ret.total).Add(avc).Add(writeOffs).Add(trackingChanges).Sub(deltaNW)
 			m.livingExpenses = &exp
 		}
 
@@ -1055,6 +1136,58 @@ func nonCashTerminal(p reportPosition) bool {
 		return p.status == "written_off"
 	}
 	return false
+}
+
+// trackingExit reports whether the position's terminal status says it left the
+// books rather than the portfolio — the exit-side Tracking Change trigger.
+// Unlike nonCashTerminal this is group-independent: StatusUntracked is the only
+// terminal status all four groups share (ADR-0053 §3/§5).
+func trackingExit(p reportPosition) bool {
+	return p.status == StatusUntracked
+}
+
+// trackingChangeFor returns this Position's signed contribution to the month's
+// Tracking Changes figure, and whether it has one at all (ADR-0053 §1/§4).
+//
+// The entry side deliberately keys off the snapshot index rather than a failed
+// fx.carried at idx-1. Both would identify the first Snapshot month, but
+// fx.carried also returns false when a rate is missing, so a foreign-currency
+// Position whose first rate lands mid-history would read as arriving twice. The
+// index answers the question actually being asked — "is idx the month this
+// Position enters nwTotal?" — and the fx conversion is then applied to the value
+// exactly as the net-worth pass applies it.
+func trackingChangeFor(fx fxConverter, ss []monthAmount, p reportPosition, idx int) (decimal.Decimal, bool) {
+	switch {
+	case trackingExit(p) && terminatesAt(p, idx):
+		// A departure: now−prev at the termination month, where `now` is the
+		// 0-value close snapshot ADR-0052 §1 writes.
+		now, okNow := fx.carried(ss, idx)
+		prev, okPrev := fx.carried(ss, idx-1)
+		if !okNow || !okPrev {
+			return decimal.Zero, false
+		}
+		return signedForNW(p.group, now.Sub(prev)), true
+
+	case p.entryType == EntryTypeNewlyTracked && len(ss) > 0 && ss[0].idx == idx && !terminatedBefore(p, idx):
+		// An arrival: `now − 0` at the first Snapshot month. There is no prior
+		// value here by construction — this is the `!okPrev` branch the two
+		// existing income-statement loops bail on, which is exactly this case.
+		now, ok := fx.carried(ss, idx)
+		if !ok {
+			return decimal.Zero, false
+		}
+		return signedForNW(p.group, now), true
+	}
+	return decimal.Zero, false
+}
+
+// signedForNW gives a raw value the sign of its effect on net worth — the same
+// negation the net-worth pass applies to a liability's balance.
+func signedForNW(group positionGroup, v decimal.Decimal) decimal.Decimal {
+	if group == groupLiability {
+		return v.Neg()
+	}
+	return v
 }
 
 func sortedPositions(ps []reportPosition) []reportPosition {

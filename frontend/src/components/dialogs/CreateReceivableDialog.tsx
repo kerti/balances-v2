@@ -8,11 +8,14 @@ import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
+import type { EntryType } from "@/api/types";
 
 const empty = {
   display_name: "",
   description: "",
   ownership_type: "joint" as "sole" | "joint",
+  entry_type: "acquired" as EntryType,
   sole_owner_user_id: null as string | null,
   native_currency: "IDR",
   counterparty_name: "",
@@ -34,6 +37,7 @@ export function CreateReceivableDialog() {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         counterparty_name: form.counterparty_name,
@@ -120,6 +124,13 @@ export function CreateReceivableDialog() {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="receivable_create"
+        group="receivable"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

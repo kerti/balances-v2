@@ -102,6 +102,11 @@ type createReq struct {
 	NativeCurrency   string     `json:"native_currency"         validate:"required,iso4217"`
 	CounterpartyName string     `json:"counterparty_name"       validate:"required"`
 	DueDate          *string    `json:"due_date"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateReq struct {
@@ -111,6 +116,10 @@ type updateReq struct {
 	SoleOwnerUserID  *uuid.UUID `json:"sole_owner_user_id"      validate:"required_if=OwnershipType sole"`
 	CounterpartyName string     `json:"counterparty_name"       validate:"required"`
 	DueDate          *string    `json:"due_date"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 // ----- core CRUD ----------------------------------------------------------
@@ -139,6 +148,7 @@ func (h *Handlers) handleCreate(w http.ResponseWriter, r *http.Request) {
 		NativeCurrency:   req.NativeCurrency,
 		CounterpartyName: req.CounterpartyName,
 		DueDate:          dueDate,
+		EntryType:        req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create receivable", err)
@@ -210,6 +220,7 @@ func (h *Handlers) handleUpdate(w http.ResponseWriter, r *http.Request) {
 		SoleOwnerUserID:  req.SoleOwnerUserID,
 		CounterpartyName: req.CounterpartyName,
 		DueDate:          dueDate,
+		EntryType:        req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update receivable", err)

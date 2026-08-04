@@ -31,6 +31,11 @@ type createBondReq struct {
 	CouponFrequency   string           `json:"coupon_frequency"    validate:"required,oneof=monthly quarterly semi_annual annual"`
 	CouponDisposition string           `json:"coupon_disposition"  validate:"omitempty,oneof=pays_out accrues"`
 	MaturityDate      string           `json:"maturity_date"       validate:"required"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateBondReq struct {
@@ -46,6 +51,10 @@ type updateBondReq struct {
 	CouponFrequency   string           `json:"coupon_frequency"    validate:"required,oneof=monthly quarterly semi_annual annual"`
 	CouponDisposition string           `json:"coupon_disposition"  validate:"omitempty,oneof=pays_out accrues"`
 	MaturityDate      string           `json:"maturity_date"       validate:"required"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 func (h *Handlers) handleCreateBond(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +100,7 @@ func (h *Handlers) handleCreateBond(w http.ResponseWriter, r *http.Request) {
 		CouponFrequency:   req.CouponFrequency,
 		CouponDisposition: req.CouponDisposition,
 		MaturityDate:      maturity,
+		EntryType:         req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create bond", err)
@@ -156,6 +166,7 @@ func (h *Handlers) handleUpdateBond(w http.ResponseWriter, r *http.Request) {
 		CouponFrequency:   req.CouponFrequency,
 		CouponDisposition: req.CouponDisposition,
 		MaturityDate:      maturity,
+		EntryType:         req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update bond", err)

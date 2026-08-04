@@ -1,4 +1,10 @@
-import type { InvestmentTransaction, RiskProfile, RolloverPolicy, TimeDeposit } from "@/api/types";
+import type {
+  InvestmentTransaction,
+  RiskProfile,
+  RolloverPolicy,
+  TimeDeposit,
+  EntryType,
+} from "@/api/types";
 
 // Shape of the CreateTimeDepositDialog form. Lives here (not in the dialog) so
 // the rollover helper can describe a prefill without the dialog depending on
@@ -7,6 +13,7 @@ export type TimeDepositForm = {
   display_name: string;
   description: string;
   ownership_type: "sole" | "joint";
+  entry_type: EntryType;
   sole_owner_user_id: string | null;
   risk_profile: RiskProfile | "";
   native_currency: string;

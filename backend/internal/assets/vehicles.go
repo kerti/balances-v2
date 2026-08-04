@@ -27,6 +27,11 @@ type createVehicleReq struct {
 	Year                   *int32           `json:"year"`
 	PlateNumber            *string          `json:"plate_number"`
 	AnnualDepreciationRate *decimal.Decimal `json:"annual_depreciation_rate"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateVehicleReq struct {
@@ -40,6 +45,10 @@ type updateVehicleReq struct {
 	Year                   *int32           `json:"year"`
 	PlateNumber            *string          `json:"plate_number"`
 	AnnualDepreciationRate *decimal.Decimal `json:"annual_depreciation_rate"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 // ----- handlers -----------------------------------------------------------
@@ -66,6 +75,7 @@ func (h *Handlers) handleCreateVehicle(w http.ResponseWriter, r *http.Request) {
 		Year:                   req.Year,
 		PlateNumber:            req.PlateNumber,
 		AnnualDepreciationRate: req.AnnualDepreciationRate,
+		EntryType:              req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create vehicle", err)
@@ -124,6 +134,7 @@ func (h *Handlers) handleUpdateVehicle(w http.ResponseWriter, r *http.Request) {
 		Year:                   req.Year,
 		PlateNumber:            req.PlateNumber,
 		AnnualDepreciationRate: req.AnnualDepreciationRate,
+		EntryType:              req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update vehicle", err)
@@ -177,6 +188,7 @@ func vehicleDetailFields(data *repo.VehicleExport) []snapshotimport.DetailField 
 		{Key: "display_name", Value: asset.DisplayName},
 		{Key: "description", Value: derefStr(asset.Description)},
 		{Key: "ownership_type", Value: asset.OwnershipType, Note: "sole | joint"},
+		{Key: "entry_type", Value: asset.EntryType, Note: "acquired | newly_tracked; newly_tracked = already owned, or arrived with the household"},
 		{Key: "sole_owner", Value: data.OwnerEmail, Note: "owner's email; blank when joint"},
 		{Key: "native_currency", Value: asset.NativeCurrency, Note: "3-letter ISO code (e.g. IDR)"},
 		{Key: "tag", Value: data.TagName, Note: "tag name; blank when untagged"},

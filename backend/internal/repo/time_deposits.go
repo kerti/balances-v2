@@ -65,6 +65,10 @@ type CreateTimeDepositParams struct {
 	// RolledFromInvestmentID links this deposit back to the matured position
 	// whose funds it redeploys (issue #29). Nil for a fresh deposit.
 	RolledFromInvestmentID *uuid.UUID
+	// EntryType declares what this Position's birth was — `acquired` (funded from
+	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
+	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
+	EntryType string
 }
 
 type UpdateTimeDepositParams struct {
@@ -80,6 +84,11 @@ type UpdateTimeDepositParams struct {
 	PlacementDate   time.Time
 	MaturityDate    time.Time
 	RolloverPolicy  string
+	// EntryType re-declares the Position's birth; nil leaves the existing
+	// declaration alone. This control is the ONLY remedy for a mis-declared entry
+	// — the engine cannot detect one — so it is deliberately editable after the
+	// fact (ADR-0053 §3).
+	EntryType *string
 }
 
 // termBounds is a time deposit's [placement_date, maturity_date] window — the
@@ -192,6 +201,7 @@ func (r *InvestmentRepo) CreateTimeDeposit(ctx context.Context, p CreateTimeDepo
 		RiskProfile:            p.RiskProfile,
 		RolledFromInvestmentID: p.RolledFromInvestmentID,
 		CreatedBy:              &user,
+		EntryType:              entryTypeOrDefault(p.EntryType),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create investment: %w", err)
@@ -368,6 +378,7 @@ func (r *InvestmentRepo) UpdateTimeDeposit(ctx context.Context, id uuid.UUID, p 
 		SoleOwnerUserID: p.SoleOwnerUserID,
 		RiskProfile:     p.RiskProfile,
 		UpdatedBy:       &user,
+		EntryType:       p.EntryType,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

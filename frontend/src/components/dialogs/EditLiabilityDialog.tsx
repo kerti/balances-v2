@@ -6,6 +6,7 @@ import { useUpdateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { Liability } from "@/api/types";
 
 type Props = {
@@ -19,6 +20,7 @@ function toForm(l: Liability) {
     display_name: l.display_name,
     description: l.description ?? "",
     ownership_type: l.ownership_type,
+    entry_type: l.entry_type,
     sole_owner_user_id: l.sole_owner_user_id,
     counterparty_name: l.counterparty_name,
     principal: l.principal ?? "",
@@ -43,6 +45,7 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         counterparty_name: form.counterparty_name,
         principal: form.principal || null,
@@ -147,6 +150,13 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="liability_edit"
+        group="liability"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

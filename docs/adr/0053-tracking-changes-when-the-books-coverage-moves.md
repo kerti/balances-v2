@@ -115,6 +115,20 @@ affirmative answer:
 > ◉ We funded it with money already tracked here
 > ○ We already had it, or it came into the household
 
+**Liability asks the same question in different words.** The wording above is written for something the
+Household *owns*, where the other leg of a two-sided birth is the money that paid for it. Nothing funds
+a debt: it is taken on, and what makes its birth two-sided is that the money it released — or the thing
+it bought — landed in the books as well. Asking a Household where a mortgage was "funded from" reads as
+nonsense, so the Liability group gets its own pair:
+
+> **Where did this come from?**
+> ◉ We took it on while tracking here — what it paid for is recorded too
+> ○ We already owed it, or it came into the household
+
+The split is owned-vs-owed, not one wording per group — Asset, Receivable and Investment are all "we
+paid for it" — and it is presentation only: both pairs write the same `acquired` / `newly_tracked`
+values, and the engine never sees the difference.
+
 **Editable afterwards on the detail page.** This is load-bearing, not a convenience: it means a
 Household that gets it wrong sees a wrong Living Expenses figure, flips one control, and the report
 regenerates. Same correction affordance as [[adr-0009]]'s un-terminate, and it is what makes a bad

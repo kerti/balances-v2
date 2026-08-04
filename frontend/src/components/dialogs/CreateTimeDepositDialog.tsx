@@ -9,6 +9,7 @@ import { useSession } from "@/hooks/useSession";
 import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { Select } from "@/components/ui/select";
 import { addMonths, type TimeDepositForm } from "@/lib/rollover";
 import type { RolloverPolicy } from "@/api/types";
@@ -18,6 +19,7 @@ function emptyForm(): TimeDepositForm {
     display_name: "",
     description: "",
     ownership_type: "joint",
+    entry_type: "acquired",
     sole_owner_user_id: null,
     risk_profile: "",
     native_currency: "IDR",
@@ -97,6 +99,7 @@ export function CreateTimeDepositDialog({
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
@@ -299,6 +302,13 @@ export function CreateTimeDepositDialog({
           onChange={(v) => setForm({ ...form, ownership_type: v })}
           soleOwnerID={effectiveSoleOwnerID}
           onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+        />
+
+        <EntryTypeField
+          idPrefix="td_create"
+          group="investment"
+          value={form.entry_type}
+          onChange={(v) => setForm({ ...form, entry_type: v })}
         />
       </div>
 

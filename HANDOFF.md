@@ -179,7 +179,8 @@ the demo household had none, and no Investment sat on an unsettleable status). A
 release: the same pass on the demo household if it ever gains terminated A/L/R, plus the release-notes
 line saying historical months were regenerated.
 
-Also unreleased on `main`: **ADR-0053** — #591's ADR (slice #593), docs only, no code yet. Adds a third
+Also unreleased on `main`: **ADR-0053** — #591's ADR (slice #593), now with #594's code behind it
+(migration `00016`, `engine_version` 5→6, backup `format_version` 3→4). Adds a third
 correction term, **Tracking Change**: value that crossed the *edge of the books* without being earned,
 spent or invested — a spouse's accounts joining at marriage, a dormant passbook finally entered, a
 departing member's positions leaving. One signed term covering **both** directions, per ADR-0052 §4's
@@ -196,9 +197,10 @@ is where the position enters `nwTotal`), so the entry side needs a new `now − 
 `!okPrev`-bailing loops. No `entry_date` boundary: the household already chooses what history to enter.
 Feeds no ADR-0048 statistic, never Earned Income, no per-owner breakdown, and **no advisory** — a
 one-sided birth is not a fact the engine can see, so the editable control is the only remedy. Epic
-#591 → #593 (ADR) → #594 (DDL + both engine terms + entry-side UI, one migration, engine_version 5→6)
+#591 → #593 (ADR, shipped) → #594 (DDL + both engine terms + entry-side UI, shipped)
 → #595 (terminate dialog) ‖ #596 (PDF + waterfall). ADR stays mutable on the epic branch (ADR-0051
-precedent). Existing data corrected by hand on the two live households, no backfill migration.
+precedent). Existing data corrected by hand on the two live households, no backfill migration. The PDF
+income statement still omits the line (#596), so it and the dashboard disagree until that lands.
 
 Next, in order:
 

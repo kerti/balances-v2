@@ -28,13 +28,20 @@ const (
 	// StatusSold is the Investment terminal status settled by a Sell rather than
 	// a Maturity — the other half of settlementTypeFor's matrix (ADR-0052 §6).
 	StatusSold = "sold"
+	// StatusUntracked says the Position left the Household's books rather than
+	// being sold, paid off, collected or lost — the exit side of a Tracking
+	// Change (ADR-0053 §3). It is the one terminal status every group defines,
+	// Investment included: ADR-0053 §5 amends ADR-0052 §5 here, because a
+	// departing member's portfolio did not lose its value, and booking it as a
+	// large negative Investment Return is the falsehood #576 complained about.
+	StatusUntracked = "untracked"
 )
 
 var (
-	assetStatuses      = []string{StatusActive, "closed", "sold", "disposed"}
-	liabilityStatuses  = []string{StatusActive, "paid_off", "forgiven", "written_off"}
-	receivableStatuses = []string{StatusActive, "collected", "written_off"}
-	investmentStatuses = []string{StatusActive, "sold", "matured"}
+	assetStatuses      = []string{StatusActive, "closed", "sold", "disposed", StatusUntracked}
+	liabilityStatuses  = []string{StatusActive, "paid_off", "forgiven", "written_off", StatusUntracked}
+	receivableStatuses = []string{StatusActive, "collected", "written_off", StatusUntracked}
+	investmentStatuses = []string{StatusActive, "sold", "matured", StatusUntracked}
 )
 
 // LifecycleParams is the group-agnostic input for a lifecycle mutation. The
@@ -271,7 +278,11 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 	// this rule — stays fully editable, so its date and note can still be
 	// corrected; the way out is to reactivate it and terminate it again properly,
 	// which this never blocks because `active` is not a terminal status.
-	if p.Status != StatusActive && p.Status != inv.Status {
+	//
+	// `untracked` is exempt (ADR-0053 §5): the Investment left the books, nothing
+	// was sold, and there is no Transaction that could settle it — demanding one
+	// would make the status unreachable for every subtype.
+	if p.Status != StatusActive && p.Status != StatusUntracked && p.Status != inv.Status {
 		if _, err := settlementTypeFor(inv.Subtype, p.Status); err != nil {
 			return nil, err
 		}

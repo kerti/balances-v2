@@ -72,6 +72,7 @@ func TestHandleUpdateHouseholdSettings(t *testing.T) {
 		if _, err := h.q.CreateAsset(context.Background(), db.CreateAssetParams{
 			HouseholdID: h.user.HouseholdID, DisplayName: "USD acct", Subtype: "bank_account",
 			OwnershipType: "joint", NativeCurrency: "USD", CreatedBy: &h.user.ID,
+			EntryType: "acquired",
 		}); err != nil {
 			t.Fatalf("seed USD asset: %v", err)
 		}

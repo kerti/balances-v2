@@ -37,7 +37,14 @@ import (
 // has none — restores as empty) and a NOT NULL households.assumed_annual_inflation
 // column (a v2 file has no such key, which would restore as NULL and trip the
 // constraint, so transforms[2] backfills the column DEFAULT of 3.5).
-const FormatVersion = 3
+//
+// v3 → v4 (#594, ADR-0053): all four position tables gained a NOT NULL
+// entry_type column. A v3 file has no such key on its position entries, which
+// would restore as NULL and trip the constraint, so transforms[3] backfills
+// 'acquired' (the column DEFAULT, reproducing pre-ADR-0053 behaviour). The new
+// monthly_reports columns are not a format change — a restore rematerialises
+// reports from inputs and never carries report rows.
+const FormatVersion = 4
 
 // Fidelity selects what a backup carries (ADR-0036).
 type Fidelity string

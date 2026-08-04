@@ -6,6 +6,7 @@ import { useUpdateBankAccount } from "@/hooks/useBankAccounts";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { OwnershipField } from "@/components/common/OwnershipField";
+import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { Select } from "@/components/ui/select";
 import type { BankAccount } from "@/api/types";
 
@@ -26,6 +27,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
     display_name: account.asset.display_name,
     description: account.asset.description ?? "",
     ownership_type: account.asset.ownership_type,
+    entry_type: account.asset.entry_type,
     sole_owner_user_id: account.asset.sole_owner_user_id,
     bank_name: account.details.bank_name,
     account_number: account.details.account_number,
@@ -40,6 +42,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
         display_name: form.display_name,
         description: form.description || null,
         ownership_type: form.ownership_type,
+        entry_type: form.entry_type,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         bank_name: form.bank_name,
         account_number: form.account_number,
@@ -115,6 +118,13 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
         onChange={(v) => setForm({ ...form, ownership_type: v })}
         soleOwnerID={effectiveSoleOwnerID}
         onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
+      />
+
+      <EntryTypeField
+        idPrefix="ba_edit"
+        group="asset"
+        value={form.entry_type}
+        onChange={(v) => setForm({ ...form, entry_type: v })}
       />
 
       <div className="grid gap-2">

@@ -48,7 +48,8 @@ INSERT INTO monthly_reports (
     investment_value_gold, investment_value_time_deposit,
     investment_value_low, investment_value_medium, investment_value_high,
     investment_placement,
-    write_offs, write_off_positions, unsettled_terminations
+    write_offs, write_off_positions, unsettled_terminations,
+    tracking_changes, tracking_change_positions
 ) VALUES (
     $1, $2, now(),
     $3, $4, $5, $6, $7,
@@ -65,7 +66,8 @@ INSERT INTO monthly_reports (
     $42, $43,
     $44, $45, $46,
     $47,
-    $48, $49, $50
+    $48, $49, $50,
+    $51, $52
 )
 ON CONFLICT (household_id, year_month) DO UPDATE SET
     generated_at                   = now(),
@@ -116,7 +118,9 @@ ON CONFLICT (household_id, year_month) DO UPDATE SET
     investment_placement           = EXCLUDED.investment_placement,
     write_offs                     = EXCLUDED.write_offs,
     write_off_positions            = EXCLUDED.write_off_positions,
-    unsettled_terminations         = EXCLUDED.unsettled_terminations
+    unsettled_terminations         = EXCLUDED.unsettled_terminations,
+    tracking_changes               = EXCLUDED.tracking_changes,
+    tracking_change_positions      = EXCLUDED.tracking_change_positions
 RETURNING *;
 
 -- Staleness watermark: the newest updated_at across every input that feeds
@@ -158,23 +162,26 @@ SELECT COALESCE(GREATEST(
 -- terminated_at NULL => active (biconditional CHECK, migration 00012); the
 -- engine needs terminated_at for month-granular lifecycle suppression, status
 -- to tell a cash-settled termination from a non-cash one (the Write-Off term,
--- ADR-0052), plus ownership for the per-user / Joint breakdown.
+-- ADR-0052) and either from a departure over the books' edge (the exit side of
+-- the Tracking Change term, ADR-0053), entry_type for that term's entry side —
+-- which cannot be inferred from the snapshots (ADR-0053) — plus ownership for
+-- the per-user / Joint breakdown.
 
 -- display_name + subtype let the report name unrecorded positions in the
 -- dashboard drill-down (issue #50): the stale-position list carries enough to
 -- render a label and deep-link to the position's detail page.
 -- name: ListAssetsForReport :many
-SELECT id, display_name, subtype, status, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListLiabilitiesForReport :many
-SELECT id, display_name, subtype, status, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListReceivablesForReport :many
-SELECT id, display_name, status, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL;
 
@@ -183,7 +190,8 @@ WHERE household_id = $1 AND deleted_at IS NULL;
 -- the placement-month snapshot 0→principal reads as pure return. td.principal /
 -- td.placement_date are NULL for non-TD subtypes.
 -- name: ListInvestmentsForReport :many
-SELECT i.id, i.display_name, i.subtype, i.risk_profile, i.ownership_type, i.sole_owner_user_id, i.terminated_at,
+SELECT i.id, i.display_name, i.subtype, i.risk_profile, i.status, i.entry_type,
+       i.ownership_type, i.sole_owner_user_id, i.terminated_at,
        i.native_currency, i.rolled_from_investment_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date,
        bd.coupon_disposition AS coupon_disposition

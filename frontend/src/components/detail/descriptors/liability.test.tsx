@@ -45,6 +45,7 @@ const liability: Liability = {
   description: "30-year fixed",
   subtype: "institutional",
   ownership_type: "sole",
+  entry_type: "acquired" as const,
   sole_owner_user_id: "u1",
   native_currency: "USD",
   status: "active",

@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
-import type { Liability, LiabilityListItem } from "@/api/types";
+import type { Liability, LiabilityListItem, EntryType } from "@/api/types";
 
 export type CreateLiabilityPayload = {
   display_name: string;
@@ -16,6 +16,7 @@ export type CreateLiabilityPayload = {
   term_months: number | null;
   start_date: string | null;
   maturity_date: string | null;
+  entry_type: EntryType;
 };
 
 export type UpdateLiabilityPayload = {
@@ -29,6 +30,7 @@ export type UpdateLiabilityPayload = {
   term_months: number | null;
   start_date: string | null;
   maturity_date: string | null;
+  entry_type: EntryType;
 };
 
 export function useLiabilities(subtype?: "personal" | "institutional") {

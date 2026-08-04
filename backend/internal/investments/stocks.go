@@ -19,6 +19,11 @@ type createStockReq struct {
 	RiskProfile     string     `json:"risk_profile"       validate:"required,oneof=low medium high"`
 	Ticker          string     `json:"ticker"             validate:"required"`
 	Exchange        string     `json:"exchange"           validate:"required"`
+	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
+	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
+	// behaviour, so a client that never learned the field still creates genuine
+	// acquisitions.
+	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 type updateStockReq struct {
@@ -29,6 +34,10 @@ type updateStockReq struct {
 	RiskProfile     string     `json:"risk_profile"       validate:"required,oneof=low medium high"`
 	Ticker          string     `json:"ticker"             validate:"required"`
 	Exchange        string     `json:"exchange"           validate:"required"`
+	// EntryType re-declares where the Position came from. Absent (null) leaves the
+	// existing declaration alone rather than resetting it to `acquired` — silently
+	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
+	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
 }
 
 func (h *Handlers) handleCreateStock(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +60,7 @@ func (h *Handlers) handleCreateStock(w http.ResponseWriter, r *http.Request) {
 		RiskProfile:     req.RiskProfile,
 		Ticker:          req.Ticker,
 		Exchange:        req.Exchange,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create stock", err)
@@ -106,6 +116,7 @@ func (h *Handlers) handleUpdateStock(w http.ResponseWriter, r *http.Request) {
 		RiskProfile:     req.RiskProfile,
 		Ticker:          req.Ticker,
 		Exchange:        req.Exchange,
+		EntryType:       req.EntryType,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update stock", err)

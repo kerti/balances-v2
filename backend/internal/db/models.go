@@ -30,6 +30,7 @@ type Asset struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt       pgtype.Timestamptz `json:"deleted_at"`
 	TagID           *uuid.UUID         `json:"tag_id"`
+	EntryType       string             `json:"entry_type"`
 }
 
 type AssetSnapshot struct {
@@ -158,6 +159,7 @@ type Investment struct {
 	RiskProfile            string             `json:"risk_profile"`
 	RolledFromInvestmentID *uuid.UUID         `json:"rolled_from_investment_id"`
 	TagID                  *uuid.UUID         `json:"tag_id"`
+	EntryType              string             `json:"entry_type"`
 }
 
 type InvestmentSnapshot struct {
@@ -223,6 +225,7 @@ type Liability struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
 	TagID            *uuid.UUID         `json:"tag_id"`
+	EntryType        string             `json:"entry_type"`
 }
 
 type LiabilitySnapshot struct {
@@ -300,6 +303,8 @@ type MonthlyReport struct {
 	WriteOffs                   *decimal.Decimal   `json:"write_offs"`
 	WriteOffPositions           []byte             `json:"write_off_positions"`
 	UnsettledTerminations       []byte             `json:"unsettled_terminations"`
+	TrackingChanges             *decimal.Decimal   `json:"tracking_changes"`
+	TrackingChangePositions     []byte             `json:"tracking_change_positions"`
 }
 
 type MutualFundDetail struct {
@@ -358,6 +363,7 @@ type Receivable struct {
 	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt        pgtype.Timestamptz `json:"deleted_at"`
 	TagID            *uuid.UUID         `json:"tag_id"`
+	EntryType        string             `json:"entry_type"`
 }
 
 type ReceivableSnapshot struct {
