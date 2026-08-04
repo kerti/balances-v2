@@ -8,6 +8,7 @@ back-and-forth.
 - **What it is / how the pieces fit:** [`docs/architecture.md`](docs/architecture.md) (one page).
 - **The domain language:** [`CONTEXT.md`](CONTEXT.md) — use these exact words in code and copy.
 - **Why things are the way they are:** [`docs/adr/`](docs/adr/) — decisions, each numbered.
+- **Conventions to keep, not to break:** [`docs/agents/conventions.md`](docs/agents/conventions.md) — read the entries covering the area you're touching.
 - **Where the project is right now:** [`HANDOFF.md`](HANDOFF.md) and [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Local setup

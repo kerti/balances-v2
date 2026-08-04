@@ -164,7 +164,7 @@ inline-translation-then-sweep is avoided.
   PATCH handler additionally validates so clients get a 400 rather than a 500 on a CHECK
   violation. Adding a language: extend the CHECK + the FE `SUPPORTED_LOCALES` + the handler's
   `supportedLocales` map.
-- **HANDOFF gains a "Don't reintroduce bare JSX text" convention** under the existing FE-lint
+- **The tactical conventions gain a "Don't reintroduce bare JSX text" entry** under the existing FE-lint
   bullet, and an i18n entry in the M6-shipped list when the work completes.
 - **[[adr-0027]] introduces the backend error-code envelope** that closes the Shape-C transition;
   tracking issue #13 links it.

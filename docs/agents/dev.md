@@ -1,7 +1,8 @@
 # Local dev, lint, and tests
 
 Operational recipes for running balances-v2 locally and checking work before pushing. The domain and
-conventions live in `CONTEXT.md` and `HANDOFF.md`; this file is just the how-to-run reference.
+conventions live in `CONTEXT.md` and `docs/agents/conventions.md`; this file is just the
+how-to-run reference.
 
 `make help` lists every target. The common loop uses the **background dev-server** targets so the
 servers keep running across edits.

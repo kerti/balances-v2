@@ -98,7 +98,7 @@ build-once/promote-many pipeline ([[adr-0033]]) all carry over verbatim. Only th
 - `deploy.yml`'s `route` job changes to map every pre-release suffix to `preview`; a new
   `workflow_dispatch`-triggered path deploys a chosen tag's GHCR image to `demo`. Implementation is a
   grabbable slice, tracked in #489.
-- The release runbook (`docs/agents/release.md`) routing table and HANDOFF's deploy description are
+- The release runbook (`docs/agents/release.md`) routing table and HANDOFF's deployment-shape line are
   updated to match. `rc` reverts to meaning only "frozen candidate," decoupled from any environment.
 - `demo` can now run any minor, ahead of or behind `preview`, entirely at the maintainer's choice —
   which is the intended behaviour for a public, disposable showcase.

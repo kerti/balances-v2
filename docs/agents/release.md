@@ -87,9 +87,24 @@ Run from a clean, up-to-date `main`.
 5. **CI is green on `main`.** `gh run list --branch main --limit 5`. The tag deploys whatever `main`
    points at — never tag a red `main`.
 
-6. **Prune HANDOFF.md.** A tag is HANDOFF's pruning checkpoint: shipped bullets move out (their detail
-   now lives in closed issues + release notes), leaving only in-progress / next-up state. Fold this
-   into the same commit as any release-doc change (HANDOFF-atomic rule).
+6. **Bump the self-host operator default tag — BEFORE the tag, not after.** If this cut is the new
+   recommended self-hostable version, point `BALANCES_TAG` at it in **four** places:
+   `.env.example`, and the three mirrors in `SELF-HOSTING.md` (image-tag example ~L55, quickstart
+   snippet ~L68, config-reference table ~L459). Leave the generic `v1.0.0`/`v1.1.0` illustrations in
+   the upgrade-contract section alone — they're examples, not the pinned default.
+
+   **Why pre-tag:** the tag is a checkout an operator can land on, and `README.md` tells them to
+   `cp .env.example .env`. Bumping after the tag guarantees the tagged tree recommends the *previous*
+   release. This drifted for four releases — `v0.9.0-alpha.3` shipped `.env.example` pinned at
+   `v0.7.0-rc.2` — which is the regression #353 was closed on. You know the tag's name before you
+   push it, so there is no ordering excuse. Verify with
+   `git show <tag>:.env.example | grep BALANCES_TAG` after cutting.
+
+7. **Update HANDOFF.md's cursor** — one line, not a prune. Since the ADR-0029 amendment (2026-08-04)
+   `HANDOFF.md` carries no per-tag ledger and no shipped detail, so there is nothing to prune at a
+   tag. Move the "Latest release" line to the new tag, and update "What's next" only if the active
+   line actually changed. Fold it into the same commit as steps 6's bump — that commit is the one the
+   tag points at.
 
 ## Back up the database (migration-bearing cuts only)
 
@@ -212,8 +227,7 @@ Two layers, in order of convenience:
 ## Post-release
 
 - **Close any issues** the release finishes that weren't auto-closed by their PR `closes #n`.
-- Confirm HANDOFF reflects post-tag state (pruned, next-up only).
-- **Bump the self-host operator default tag.** If this cut is the new recommended self-hostable
-  version, update `BALANCES_TAG` in `.env.example` and the three mirrors in `SELF-HOSTING.md`
-  (image-tag example, quickstart snippet, config-reference table) to the new tag — it drifts
-  silently otherwise (#353).
+- Confirm HANDOFF's "Latest release" line names the new tag.
+- **Verify the self-host default landed inside the tag** (bumped in pre-flight step 6, not here):
+  `git show <tag>:.env.example | grep BALANCES_TAG` must name the tag you just cut. If it names the
+  previous release, the bump missed the pre-tag commit — move it and re-tag.

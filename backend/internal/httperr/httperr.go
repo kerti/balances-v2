@@ -43,8 +43,8 @@ func Write(w http.ResponseWriter, status int, code Code, args map[string]any) {
 // WriteRepo maps a repo sentinel to its envelope + status, logging unknown
 // errors with op before falling through to INTERNAL. ErrUnauthenticated is
 // deliberately unmapped: every route is gated by RequireAuth, so the repo
-// seeing no user is a server bug, not a client error (see ADR-0027 and the
-// HANDOFF convention).
+// seeing no user is a server bug, not a client error (see ADR-0027 and
+// docs/agents/conventions.md).
 func WriteRepo(w http.ResponseWriter, op string, err error) {
 	switch {
 	case errors.Is(err, errs.ErrNotFound):

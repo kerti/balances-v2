@@ -6,6 +6,32 @@ issue maps to one commit on `main`. Releases are cut as **batched, tag-driven** 
 pre-releases starting at `v0.6.0-alpha.1`. This supersedes the pre-alpha working rule of committing
 straight to `main`.
 
+## Amended (2026-08-04)
+
+The "HANDOFF at release time" rule below is **retired**. This ADR made issues + PRs + Release notes
+the system of record for what changed, then kept `HANDOFF.md` as a parallel narrative of the same
+material with a per-tag pruning ritual to stop it diverging. It diverged anyway: by
+`v0.9.0-alpha.4` the file had reached 488 lines, of which ~200 restated merged PR bodies and the
+per-tag Release notes, while its own rule asked for "one-line bullet per shipped item."
+
+The fix splits the file by *what kind of thing each part is*, rather than pruning harder:
+
+- **Codebase conventions** (155 lines) → `docs/agents/conventions.md`, indexed from `CLAUDE.md`.
+  These duplicated nothing, but they are project **instruction**, not working state — they were
+  filed in the one document `CLAUDE.md` does not index, while `docs/agents/{domain,dev,release}.md`
+  (the same category of thing) are indexed there.
+- **Behavioural rules** ("Things explicitly NOT to do") → `CLAUDE.md` directly. Always-on rules have
+  to be loaded, not one hop away.
+- **The per-tag ledger and the "unreleased on `main`" narrative** → **deleted**. That is exactly
+  what this ADR already designated the Release notes and closed issues to hold.
+- **What survives in `HANDOFF.md`** is the pointer this ADR intended: cold-start orientation, where
+  the cursor is, and the standing decisions that no issue or ADR owns.
+
+Consequences: the release runbook loses its "prune HANDOFF" step, and a feature PR no longer owes a
+HANDOFF narrative bullet (the HANDOFF-atomic rule now fires only when the *cursor* moves — a
+milestone opening or closing, a release cut, the active line changing, a standing decision made or
+reversed). Nothing about branching, tagging, or release-notes generation changes.
+
 ## Why now
 
 Until now the rule was "commit straight to `main`, no branches or protection until alpha" — correct
@@ -69,6 +95,9 @@ models.
   riding on the conventional-commit discipline already in place.
 
 ### HANDOFF at release time
+
+> **Retired by the 2026-08-04 amendment above.** Kept for the record. A tag is no longer a pruning
+> checkpoint, because shipped detail no longer enters `HANDOFF.md` in the first place.
 
 `HANDOFF.md` stays the live working-state pointer; a release does not replace it. But a tag is its
 **pruning checkpoint** — shipped items are now captured in the release notes and closed issues, so

@@ -12,8 +12,9 @@ squash), and resolves the versioning questions those left open for production.
 ## Amended (2026-07-02)
 
 Production may now launch on a `0.x` minor, not necessarily `v1.0.0`. Prod was deferred indefinitely
-(2026-07-02, see HANDOFF) and self-hosting (#116, the one blocker this ADR named below) has since
-shipped and closed — nothing structural is left pinning first-production to a specific number. Every
+(2026-07-02, recorded in HANDOFF's standing decisions) and self-hosting (#116, the one blocker this
+ADR named below) has since shipped and closed — nothing structural is left pinning first-production
+to a specific number. Every
 rule below that reads "at `1.0.0`" now reads **"at the first tag that deploys to `production`,
 whatever that version turns out to be"**:
 
