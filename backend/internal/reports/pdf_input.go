@@ -81,6 +81,7 @@ func buildPDFInput(row *db.MonthlyReport, positions []repo.PositionDetail, serie
 		Positions:         pos,
 		CashFlow:          buildCashFlow(row, nameByID, joint),
 		WriteOffs:         buildWriteOffs(row),
+		TrackingChanges:   buildTrackingChanges(row),
 		Unsettled:         buildUnsettled(row.UnsettledTerminations),
 		FxRates:           buildFxRates(row.FxRatesUsed),
 		Trend:             buildTrend(series, row.YearMonth),
@@ -541,10 +542,12 @@ func buildCashFlow(row *db.MonthlyReport, nameByID map[uuid.UUID]string, joint s
 	}
 }
 
-// writeOffPositionJSON / unsettledTerminationJSON mirror the engine's two
-// termination payloads (ADR-0052). Same tolerance as userBreakdownJSON: the
-// decimal unmarshals whether the amount was written quoted or bare.
-type writeOffPositionJSON struct {
+// constituentJSON is the shared shape of the engine's signed-line constituent
+// payloads — write-off positions (ADR-0052) and tracking-change positions
+// (ADR-0053), which the engine writes identically on purpose. Same tolerance as
+// userBreakdownJSON: the decimal unmarshals whether the amount was written
+// quoted or bare. unsettledTerminationJSON mirrors the advisory payload.
+type constituentJSON struct {
 	Name   string          `json:"name"`
 	Amount decimal.Decimal `json:"amount"`
 }
@@ -560,24 +563,54 @@ type unsettledTerminationJSON struct {
 // The total comes from the materialized column rather than re-summing the items,
 // so what prints is the figure the identity balanced against.
 func buildWriteOffs(row *db.MonthlyReport) *pdf.WriteOffs {
-	if row.WriteOffs == nil {
+	items, ok := constituents(row.WriteOffs, row.WriteOffPositions)
+	if !ok {
 		return nil
 	}
-	var items []writeOffPositionJSON
-	_ = json.Unmarshal(row.WriteOffPositions, &items)
-	if len(items) == 0 {
+	out := make([]pdf.WriteOffItem, 0, len(items))
+	for _, it := range items {
+		out = append(out, pdf.WriteOffItem{Label: it.Name, Amount: it.Amount.String()})
+	}
+	return &pdf.WriteOffs{Total: row.WriteOffs.String(), Items: out}
+}
+
+// buildTrackingChanges renders the month's Tracking Changes line only when a
+// Position actually crossed the edge of the book (ADR-0053). Same suppression
+// rule as write-offs, for the same reason: most months declare none, and a zero
+// line with nothing behind it is noise on a report a household reads monthly.
+func buildTrackingChanges(row *db.MonthlyReport) *pdf.TrackingChanges {
+	items, ok := constituents(row.TrackingChanges, row.TrackingChangePositions)
+	if !ok {
 		return nil
+	}
+	out := make([]pdf.TrackingChangeItem, 0, len(items))
+	for _, it := range items {
+		out = append(out, pdf.TrackingChangeItem{Label: it.Name, Amount: it.Amount.String()})
+	}
+	return &pdf.TrackingChanges{Total: row.TrackingChanges.String(), Items: out}
+}
+
+// constituents decodes one signed line's constituent Positions, ordered for
+// print. ok is false when the line is absent (the baseline month carries no
+// derived lines) or when nothing is behind it — the caller then renders nothing
+// at all rather than a 0 total. Callers read the total off the materialized
+// column rather than re-summing these, so what prints is the figure the identity
+// balanced against.
+func constituents(total *decimal.Decimal, raw []byte) ([]constituentJSON, bool) {
+	if total == nil {
+		return nil, false
+	}
+	var items []constituentJSON
+	_ = json.Unmarshal(raw, &items)
+	if len(items) == 0 {
+		return nil, false
 	}
 	// Largest absolute movement first: the line a household should read is the one
 	// that moved their net worth most, regardless of direction.
 	sort.SliceStable(items, func(i, j int) bool {
 		return items[i].Amount.Abs().GreaterThan(items[j].Amount.Abs())
 	})
-	out := make([]pdf.WriteOffItem, 0, len(items))
-	for _, it := range items {
-		out = append(out, pdf.WriteOffItem{Label: it.Name, Amount: it.Amount.String()})
-	}
-	return &pdf.WriteOffs{Total: row.WriteOffs.String(), Items: out}
+	return items, true
 }
 
 func buildUnsettled(raw []byte) []pdf.UnsettledTermination {

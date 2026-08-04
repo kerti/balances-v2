@@ -89,7 +89,8 @@ func Render(in Input) ([]byte, error) {
 	d.pdf.AddPage() // group 2 — statistics + cash flow always render
 	d.statistics()
 	d.cashFlow()
-	d.writeOffs() // no-op unless something left the book without cash (ADR-0052)
+	d.writeOffs()       // no-op unless something left the book without cash (ADR-0052)
+	d.trackingChanges() // no-op unless something crossed the book's edge (ADR-0053)
 
 	if d.hasAssets() {
 		d.pdf.AddPage() // group 3 — assets
@@ -687,6 +688,32 @@ func (d *doc) writeOffs() {
 	}
 	d.line(d.c.writeOffsTotal, d.money(w.Total), 0,
 		lineOpt{bold: true, accent: true, negative: decAmt(w.Total).IsNegative(), size: 10.5, topBorder: true})
+}
+
+// trackingChanges draws the month's Tracking Changes line and the Positions
+// behind it (ADR-0053). It sits after the write-offs section for the same
+// reason write-offs sits outside cash flow: nothing was earned or spent, so
+// folding it into either would misstate the household's income and spending.
+// Absent months collapse the section entirely — most months declare none.
+func (d *doc) trackingChanges() {
+	tc := d.in.TrackingChanges
+	if tc == nil || len(tc.Items) == 0 {
+		return
+	}
+	d.sectionTitle(d.c.trackingChangesTitle)
+	d.pdf.SetFont("Geist", "", 7.5)
+	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
+	d.pdf.SetX(d.x0 + 2)
+	d.pdf.MultiCell(d.w-2, 3.6, d.c.trackingChangesNote, "", "L", false)
+	d.pdf.Ln(2)
+	// One signed term covers both directions, so a month where one Position
+	// arrived and another left nets toward zero on the total — the constituents
+	// are the only place the two movements stay visible.
+	for _, it := range tc.Items {
+		d.line(it.Label, d.money(it.Amount), 5, lineOpt{negative: decAmt(it.Amount).IsNegative()})
+	}
+	d.line(d.c.trackingChangesTotal, d.money(tc.Total), 0,
+		lineOpt{bold: true, accent: true, negative: decAmt(tc.Total).IsNegative(), size: 10.5, topBorder: true})
 }
 
 func (d *doc) fxRates() {

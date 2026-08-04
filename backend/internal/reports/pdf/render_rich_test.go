@@ -158,8 +158,59 @@ func TestRenderWriteOffsAndUnsettled(t *testing.T) {
 	}
 
 	in.WriteOffs = nil
-	if _, err := Render(in); err != nil {
+	absent, err := Render(in)
+	if err != nil {
 		t.Fatalf("nil write-offs Render: %v", err)
+	}
+	// Smaller-than-itemized alone would also pass for a section that printed its
+	// title, note and a bare 0 total, so pin the collapse to the no-line render.
+	if len(without) != len(absent) {
+		t.Errorf("materialized-zero PDF is %d bytes vs %d for no line at all — an empty section still printed",
+			len(without), len(absent))
+	}
+}
+
+// Tracking Changes renders on the same terms as Write-Offs and sits beside it in
+// the same page group, so it needs the same three-way exercise: the itemised
+// body on a month that nets toward zero in both directions, and both absent
+// branches (nil, and a materialized zero with nothing behind it).
+// covers: INV-FINANCE-38
+func TestRenderTrackingChanges(t *testing.T) {
+	in := richInput()
+	in.TrackingChanges = &TrackingChanges{
+		Total: "0",
+		Items: []TrackingChangeItem{
+			{Label: "Brokerage left the household", Amount: "-40000000"}, // untracked → negative
+			{Label: "Old savings account", Amount: "40000000"},           // newly tracked → positive
+		},
+	}
+	withSection, err := Render(in)
+	if err != nil {
+		t.Fatalf("tracking-changes Render: %v", err)
+	}
+
+	in.TrackingChanges = &TrackingChanges{Total: "0"}
+	without, err := Render(in)
+	if err != nil {
+		t.Fatalf("empty tracking-changes Render: %v", err)
+	}
+	if len(without) >= len(withSection) {
+		t.Errorf("empty tracking-changes PDF (%d bytes) is not smaller than the itemized one (%d) — the section did not collapse",
+			len(without), len(withSection))
+	}
+
+	in.TrackingChanges = nil
+	absent, err := Render(in)
+	if err != nil {
+		t.Fatalf("nil tracking-changes Render: %v", err)
+	}
+	// Smaller-than-itemized is too weak to prove the collapse: a section printing
+	// its title, note and a bare 0 total also measures smaller. The month that
+	// declared nothing has to render byte-for-byte like the month that has no line
+	// at all — that is what "adds no visual noise to the common case" means.
+	if len(without) != len(absent) {
+		t.Errorf("materialized-zero PDF is %d bytes vs %d for no line at all — an empty section still printed",
+			len(without), len(absent))
 	}
 }
 
