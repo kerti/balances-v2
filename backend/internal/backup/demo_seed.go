@@ -1224,10 +1224,12 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 		ledger.addIncome(i, 2_500_000)
 	}
 
-	// A routine monthly bank Interest for the household (ADR-0048 slice 5) — the
-	// other half of the passive *cash* scope, external to the investment pool, so
-	// the Passive-Income Ratio and Fund Resilience have interest as well as
-	// rent/pension feeding the draw-offset.
+	// A monthly bank Interest for the household (ADR-0048 slice 5), incidental:
+	// real-world current/savings rates are negligible, and the interest is
+	// credited back into the account that earned it rather than paid out, so it
+	// is not income the household relies on. Rent and pension carry the passive
+	// scope in the demo; interest is here for the category breakdown and as the
+	// bookkeeping counterpart to the balance it accrues into.
 	interestDesc := "Savings account interest"
 	for i, ym := range months {
 		if _, err := income.CreateIncome(ctx, repo.CreateIncomeParams{
@@ -1237,7 +1239,7 @@ func seedDemoIncome(ctx context.Context, pool *pgxpool.Pool, ownerID, member2ID 
 			Category:      "interest",
 			Description:   &interestDesc,
 			OwnershipType: "joint",
-			Regularity:    "routine",
+			Regularity:    "incidental",
 		}); err != nil {
 			return fmt.Errorf("demo reset: seed interest income: %w", err)
 		}

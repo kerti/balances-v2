@@ -35,9 +35,12 @@ The app's must-hold invariants are catalogued with stable IDs in the per-zone fi
 ## Things explicitly NOT to do
 
 - **Don't autoflush commits.** When work seems ready, stage + show the diff + ask. Push only on
-  explicit green light. After every push, watch CI to completion (`gh run list --branch <branch>` /
-  `gh run watch <id>`); if a workflow fails, surface the failure with logs and ask whether to fix now
-  or defer. Don't declare a commit done while runs are queued or in_progress.
+  explicit green light.
+- **Don't watch PR CI.** After pushing, open the PR and stop — no `gh run list` / `gh run watch`
+  polling (that policy was retired 2026-06-10; idling on a re-triggerable pipeline burns tokens). The
+  user watches it and cold-starts an agent if a check fails; then `gh run view <id> --log-failed`,
+  summarise the cause, and ask "fix now or defer?" before touching anything. Watching the **deploy**
+  after a release tag is separate and still wanted — see `docs/agents/release.md`.
 - **Don't dive into UI alone.** User has near-zero frontend skill and relies heavily on you for UI —
   but expects to be consulted on UX choices (form density, navigation, button labels). Always surface
   tradeoffs.

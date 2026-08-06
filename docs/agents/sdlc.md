@@ -42,8 +42,9 @@ docs tweak is just Phase 6.
    - **Pre-commit:** scrub PII (real names / figures / laptop paths) from the
      staged diff, and run `-coverprofile` on changed packages to cover new
      branches — don't wait for CI.
-   - **`make check`** — the local mirror of CI (golangci-lint · eslint · tsc ·
-     go test · vitest).
+   - **`make check`** — the local mirror of CI (golangci-lint · eslint · prettier ·
+     tsc · go test · vitest · qa-matrix · gen-ts-types · api-routes · licenses).
+     Full detail in `docs/agents/dev.md`.
    - **Coverage matrix** — if the change touches a catalogued invariant, add the
      `// covers: INV-...` annotation to the verifying test; if it establishes a
      *new* invariant worth guarding, add a catalog row under
