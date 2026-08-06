@@ -81,14 +81,19 @@ CI (`backend-gen-ts-types-check`) fails if the generated file is stale relative 
 ## Auth and smoke-testing the API
 
 The backend command is `serve`, not `server`. There is **no dev-login backdoor** — auth is real
-Google OAuth. For backend smoke tests against authenticated endpoints, pull a current session token
-from the `sessions` table and pass it as a cookie:
+Google OAuth. For backend smoke tests against authenticated endpoints, mint a session token and pass
+it as a cookie:
 
 ```bash
-docker exec balances-v2-postgres-1 psql -U balances -d balances \
-  -c "SELECT s.id as token FROM sessions s WHERE s.expires_at > now() LIMIT 1;"
+make session-token EMAIL=you@example.com
 # then: curl -H "Cookie: session=<token>" http://localhost:8080/api/...
 ```
+
+**Don't try to read a token out of the `sessions` table.** Session ids are hashed at rest (#361), so
+`SELECT id FROM sessions` returns the hash, not a usable token — the `session-token` subcommand mints
+one and prints the plaintext once. It also goes through the Go CLI (`DATABASE_URL` from `.env`)
+rather than `docker exec` on the postgres container, which fails with a confusing "no such container"
+when `COMPOSE_PROJECT_NAME` doesn't match the container name (#369).
 
 ## Lint (clean before pushing)
 
@@ -102,8 +107,11 @@ CI runs all three on every push. `revive`'s `exported` / `package-comments` are 
 application code; `react-refresh/only-export-components` is off for `components/ui/**` (shadcn);
 `react-hooks/set-state-in-effect` is enforced everywhere else.
 
-`make check` runs both lints + Go tests + vitest as a pre-push gate, printing one pass/fail line per
-step (full output in `/tmp/balances-check-*.log`, read only on a ✗); e2e is excluded.
+`make check` is the pre-push gate, printing one pass/fail line per step (full output in
+`/tmp/balances-check-*.log`, read only on a ✗); e2e is excluded. Ten steps, not just the lints:
+golangci-lint · eslint · prettier · tsc · go test · vitest · qa-matrix (advisory) · gen-ts-types ·
+api-routes · licenses. The generated-artifact steps are the ones that bite — a stale
+`docs/api-routes.md` or `generated.types.ts` blocks the push even when every lint and test passes.
 
 ## Tests (run the suite for the area you touched)
 

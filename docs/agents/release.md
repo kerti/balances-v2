@@ -38,8 +38,10 @@ Run from a clean, up-to-date `main`.
    Squash-merge means one commit ≈ one PR. Note dependabot PRs that merged *before* the prev tag —
    they belong to the earlier batch, not this one.
 
-2. **Label every PR in the batch** (THE recurring trap — unlabeled PRs land under "Other Changes").
-   Auto-notes group by the label map in `.github/release.yml`:
+2. **Verify every PR in the batch is labelled** — this step is a safety net, not where labelling
+   happens. The type label goes on **at merge time** (SDLC phase 7), so a well-run batch needs no
+   edits here; backfilling at release is THE recurring trap, because unlabeled PRs land under "Other
+   Changes". Auto-notes group by the label map in `.github/release.yml`:
 
    | Label         | Section            |
    |---------------|--------------------|
