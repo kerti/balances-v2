@@ -54,7 +54,9 @@ const categoryDefaultRegularity: Record<IncomeCategory, Regularity> = {
   business_income: "routine",
   rental_income: "routine",
   pension: "routine",
-  interest: "routine",
+  // Bank interest is credited back into the account that earned it, so it is
+  // never income the household draws on to live — see ADR-0048's amendment.
+  interest: "incidental",
   gift: "incidental",
   tax_refund: "incidental",
   insurance_payout: "incidental",

@@ -98,16 +98,17 @@ func TestDemoExpenseSeries(t *testing.T) {
 	if len(e) != demoMonthCount {
 		t.Fatalf("len = %d, want demoMonthCount %d", len(e), demoMonthCount)
 	}
-	// Routine monthly income floor is salary(5M) + pension(2.5M) + interest(0.3M).
+	// Monthly income floor is salary(5M) + pension(2.5M) + interest(0.3M). This is
+	// a *cash* floor, so it counts the interest regardless of its regularity.
 	// Every expense must sit under it so the checking plug trends upward, and
 	// stay comfortably positive so no month reads as negative spending.
-	const routineIncomeFloor = 5_000_000 + 2_500_000 + 300_000
+	const monthlyIncomeFloor = 5_000_000 + 2_500_000 + 300_000
 	for i, v := range e {
 		if v <= 0 {
 			t.Errorf("month %d expense %v is not positive", i, v)
 		}
-		if v >= routineIncomeFloor {
-			t.Errorf("month %d expense %v >= routine income floor %v — checking would not trend up", i, v, routineIncomeFloor)
+		if v >= monthlyIncomeFloor {
+			t.Errorf("month %d expense %v >= monthly income floor %v — checking would not trend up", i, v, monthlyIncomeFloor)
 		}
 	}
 }

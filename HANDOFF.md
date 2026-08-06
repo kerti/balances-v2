@@ -31,8 +31,8 @@ Read these first, in order:
 
 **M1–M7 closed; M8 (next domain features) is the active milestone**, opened 2026-07-06. CI is green.
 
-- **Latest release:** `v0.9.0-alpha.4` — on `preview`. `demo` still runs `v0.9.0-alpha.3` until
-  someone promotes the newer tag by hand (ADR-0049; promotion is a deliberate act, not a follow-on).
+- **Latest release:** `v0.9.0-alpha.4` — on `preview`, and promoted to `demo` by hand on 2026-08-05
+  (ADR-0049; promotion is a deliberate act, not a follow-on).
 - **Unreleased on `main`:** `git log v0.9.0-alpha.4..main` — the merged PRs and their closed issues
   are the record. Highlights carry into the next tag's release notes, not into this file.
 - **Deployment shape:** single-origin — one Fly app per environment (region `sin`) serves the SPA +
