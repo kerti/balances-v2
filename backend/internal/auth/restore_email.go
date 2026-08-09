@@ -66,9 +66,9 @@ func (h *Handlers) restoreConfirmMessage(user db.User, itemCount int) email.Mess
 	greetingText := fmt.Sprintf(c.greeting, user.DisplayName)
 	intro := fmt.Sprintf(c.intro, itemCount)
 
-	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1C2128;">%s</p>
 <p style="margin:0 0 20px;">%s</p>
-<p style="margin:0;"><a href="%s" style="display:inline-block;background:#6366F1;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>`,
+<p style="margin:0;"><a href="%s" style="display:inline-block;background:#8A6A30;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>`,
 		greetingHTML, intro, openURL, c.cta))
 
 	text := fmt.Sprintf("%s\n\n%s\n\n%s:\n%s\n\n%s\n",
@@ -90,10 +90,10 @@ func (h *Handlers) restoreNoticeMessage(user db.User, restorerName string, when 
 	bodyHTML := fmt.Sprintf(c.body, htmlEscape(restorerName), date)
 	bodyText := fmt.Sprintf(c.body, restorerName, date)
 
-	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#0f172a;">%s</p>
+	html := email.Layout(h.frontendURL, fmt.Sprintf(`<p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#1C2128;">%s</p>
 <p style="margin:0 0 16px;">%s</p>
 <p style="margin:0 0 20px;">%s</p>
-<p style="margin:0 0 20px;"><a href="%s" style="display:inline-block;background:#6366F1;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>
+<p style="margin:0 0 20px;"><a href="%s" style="display:inline-block;background:#8A6A30;color:#ffffff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600;">%s</a></p>
 <p style="margin:0;color:#64748b;font-size:14px;">%s</p>`,
 		greetingHTML, bodyHTML, c.action, signInURL, c.cta, c.security))
 

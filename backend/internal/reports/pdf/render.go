@@ -30,18 +30,26 @@ var geistRegular []byte
 //go:embed fonts/Geist-Bold.ttf
 var geistBold []byte
 
-// Palette: ink/muted match the app's primary + muted text; accent is the brand
-// indigo (docs/brand/logo.md — the documented brand colour, same as the
-// wordmark, so the report's headings/totals match its own mark rather than the
-// app's teal UI primary); gain/loss are the up/down colours for the net-worth
-// delta and negative amounts; rule is the hairline colour for table borders.
+// Palette: Graphite & Brass (ADR-0054, docs/brand/logo.md), mirroring the app's
+// light theme so an exported report and the screen it came from read as one
+// system — the same two-sided contract the embedded Geist already holds for
+// typography. ink/muted match the app's foreground + muted text; gain/loss are
+// the up/down colours for the net-worth delta and negative amounts (directional,
+// not the assets-vs-liabilities coding the brand forbids); rule is the hairline
+// for table borders.
+//
+// accent is the *deep* brass #8A6A30, the app's --primary, not the lighter
+// #B08947 the brand table names as the accent and the mark uses: here the accent
+// sets section headings and totals — type on white, where the lighter brass is
+// 3.2:1 and misses AA. The mark keeps the lighter brass (logo.go) because a
+// filled shape only owes 3:1.
 var (
-	ink    = [3]int{0x0F, 0x17, 0x2A}
-	muted  = [3]int{0x64, 0x74, 0x8B}
-	accent = brandIndigo // #6366F1 — kept identical to the wordmark's accent
+	ink    = [3]int{0x1C, 0x21, 0x28}
+	muted  = [3]int{0x6E, 0x67, 0x5C}
+	accent = [3]int{0x8A, 0x6A, 0x30}
 	gain   = [3]int{0x05, 0x96, 0x69}
 	loss   = [3]int{0xDC, 0x26, 0x26}
-	rule   = [3]int{0xCB, 0xD5, 0xE1}
+	rule   = [3]int{0xD8, 0xD0, 0xC4}
 )
 
 const (
@@ -142,19 +150,25 @@ func (d *doc) footer() {
 	yLine := d.pdf.GetY()
 	d.pdf.Line(d.x0, yLine, d.x0+d.w, yLine)
 
-	// Full-colour brand lockup on the left, then the version suffix trailing it;
-	// page number vertically centred on the same band on the right.
-	const glyphH = 4.0
-	logoY := yLine + 2.5
-	lockupW := drawLogo(d.pdf, d.x0, logoY, glyphH, 9, ink)
+	// Wordmark on the left, then the version suffix trailing it; page number
+	// vertically centred on the same band on the right.
+	//
+	// The wordmark is positioned by its *baseline* rather than its box, because
+	// the box carries the tapered post's headroom: aligning boxes would sit the
+	// word visibly high against the version suffix beside it.
+	const bandH = 4.0
+	const markH = 5.0
+	bandY := yLine + 2.5
+	markY := bandY + bandH*0.72 - wordmarkBaseline(markH)
+	markW := drawWordmark(d.pdf, d.x0, markY, markH)
 	d.pdf.SetFont("Geist", "", 7.5)
 	d.pdf.SetTextColor(muted[0], muted[1], muted[2])
 	if suffix := versionSuffix(d.in.Version); suffix != "" {
-		d.pdf.SetXY(d.x0+lockupW, logoY)
-		d.pdf.CellFormat(d.pdf.GetStringWidth(suffix)+2, glyphH, suffix, "", 0, "LM", false, 0, "")
+		d.pdf.SetXY(d.x0+markW, bandY)
+		d.pdf.CellFormat(d.pdf.GetStringWidth(suffix)+2, bandH, suffix, "", 0, "LM", false, 0, "")
 	}
-	d.pdf.SetXY(d.x0, logoY)
-	d.pdf.CellFormat(d.w, glyphH, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "RM", false, 0, "")
+	d.pdf.SetXY(d.x0, bandY)
+	d.pdf.CellFormat(d.w, bandH, fmt.Sprintf(d.c.footerPage, d.pdf.PageNo(), "{nb}"), "", 0, "RM", false, 0, "")
 }
 
 // versionSuffix formats the build tag as a footer suffix trailing the wordmark
@@ -170,7 +184,7 @@ func versionSuffix(v string) string {
 type lineOpt struct {
 	bold      bool
 	mutedText bool
-	accent    bool // brand indigo — section/net totals
+	accent    bool // brand brass — section/net totals
 	negative  bool // red — deficits and losses (wins over accent)
 	size      float64
 	topBorder bool
@@ -254,9 +268,11 @@ func (d *doc) position(p Position, indent float64) {
 
 func (d *doc) header() {
 	y0 := d.pdf.GetY()
-	const glyphH = 9.5
-	drawLogo(d.pdf, d.x0, y0, glyphH, 22, ink) // full-colour brand lockup
-	d.pdf.SetXY(d.x0, y0+glyphH+2.5)
+	// Box height, not word height — the tapered post accounts for roughly a
+	// third of it, so this sets a word about 7mm tall.
+	const markH = 15.0
+	drawWordmark(d.pdf, d.x0, y0, markH)
+	d.pdf.SetXY(d.x0, y0+markH+2.5)
 	d.pdf.SetTextColor(ink[0], ink[1], ink[2])
 	d.pdf.SetFont("Geist", "B", 13)
 	d.pdf.CellFormat(0, 8, d.c.title+" — "+d.fmtMonthYear(d.in.YearMonth), "", 1, "L", false, 0, "")

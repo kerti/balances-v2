@@ -1,4 +1,4 @@
-.PHONY: help up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
+.PHONY: help brand up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -75,6 +75,7 @@ help:
 	@echo "Release artifacts / licensing (issue #345):"
 	@echo "  licenses                regenerate THIRD-PARTY-NOTICES from Go + npm deps + fonts"
 	@echo "  licenses-check          CI gate: fail if THIRD-PARTY-NOTICES is stale"
+	@echo "  brand                   regenerate the brand assets and fan them out to the app"
 	@echo ""
 	@echo "Background dev servers (see issue #30):"
 	@echo "  backend-restart         restart the background backend (logs: $(BACKEND_LOG))"
@@ -172,6 +173,27 @@ api-routes-check:
 # scripts/gen-third-party-notices.sh and issue #345.
 licenses:
 	@bash scripts/gen-third-party-notices.sh
+
+# Regenerate the brand asset set from docs/brand/gen.py and fan it out to the
+# three places the app reads it from — the SPA's bundled imports, the served
+# favicon, and the email header raster. Hand-copying those was how the pre-
+# rebrand set drifted (docs/brand/svg and frontend/src/assets/brand held
+# separately-edited copies of the same files). Needs fontTools; the PNG steps
+# additionally need rsvg-convert and are skipped with a warning without it.
+brand:
+	@python3 docs/brand/gen.py
+	@cp docs/brand/svg/glyph-light.svg docs/brand/svg/glyph-dark.svg \
+	    docs/brand/svg/wordmark-light.svg docs/brand/svg/wordmark-dark.svg \
+	    frontend/src/assets/brand/
+	@cp docs/brand/svg/favicon.svg frontend/public/favicon.svg
+	@if command -v rsvg-convert >/dev/null 2>&1; then \
+	  rsvg-convert -w 280 docs/brand/svg/wordmark-light.svg -o frontend/public/brand/email-logo.png; \
+	  rsvg-convert -w 2560 -h 1280 docs/brand/social-card.svg -o docs/brand/social-card.png; \
+	  echo "✓ brand assets + rasters regenerated"; \
+	else \
+	  echo "⚠ rsvg-convert not found — SVGs regenerated, email-logo.png and social-card.png left stale" >&2; \
+	fi
+	@echo "  note: social-card.png must be uploaded by hand (repo Settings → Social preview)"
 
 # The CI gate (also in `make check`): fails if THIRD-PARTY-NOTICES is stale
 # relative to the current dependencies, without rewriting it. Mirrors the

@@ -63,48 +63,66 @@ body {
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Base color: Stone (warm neutral). Theme + chart color: Indigo — matches the
-   logo accent #6366F1 (docs/brand/logo.md), the Tailwind v4 oklch indigo-300…700
-   ramp; stone neutrals are shadcn's stone base set, nudged off pure white/near-
-   black (background 0.97 light / 0.19 dark, rather than 1.0 / ~0.147) for lower-
-   contrast surfaces. card/popover/sidebar/secondary/muted/accent/border step
-   down (light) or up (dark) from --background at the same relative gaps the
-   original pure-white/black scale used. The app currently boots in dark mode
-   (`class="dark"` on <html>); :root is kept in sync so a future light toggle
-   just works. */
+/* Brand: Graphite & Brass (ADR-0054, docs/brand/logo.md) — warm graphite
+   neutrals with a muted brass accent, replacing the indigo/stone pairing. Brass
+   is the constant brand colour; the ink/paper roles swap between themes.
+   Neutrals are warm throughout (hue ≈ 80 light, ≈ 260 dark) rather than
+   shadcn's stone base, so the accent never reads as a foreign hue dropped onto
+   a cool surface. Unlike the pre-rebrand theme, --card is pure white and
+   --background is warm paper: cards used to sit at exactly --background and
+   separate by border alone, and the brand's premise is a paper surface with the
+   card lifted off it. The app currently boots in dark mode (`class="dark"` on
+   <html>); :root is kept in sync so a future light toggle just works.
+
+   Two values deliberately depart from the brand spec's table, both to clear
+   WCAG AA — see the notes at --muted-foreground and --ring. */
 :root {
-  --background: oklch(0.97 0.002 106.424);
-  --foreground: oklch(0.147 0.004 49.25);
-  --card: oklch(0.97 0.002 106.424);
-  --card-foreground: oklch(0.147 0.004 49.25);
-  --popover: oklch(0.97 0.002 106.424);
-  --popover-foreground: oklch(0.147 0.004 49.25);
-  --primary: oklch(0.511 0.262 276.966);
-  --primary-foreground: oklch(0.985 0.001 106.423);
-  --secondary: oklch(0.94 0.001 106.424);
-  --secondary-foreground: oklch(0.216 0.006 56.043);
-  --muted: oklch(0.94 0.001 106.424);
-  /* Darkened from L=0.553 so muted secondary text clears WCAG AA (4.5:1) on a
-     muted surface too, not just on --background: the shared CardFooter is
-     bg-muted/50, so muted-foreground-on-muted (the AppInfo footer on every
-     pre-auth screen) was a 4.19:1 near-miss (#368). L=0.52 lands ≈4.8:1. */
-  --muted-foreground: oklch(0.52 0.013 58.071);
-  --accent: oklch(0.94 0.001 106.424);
-  --accent-foreground: oklch(0.216 0.006 56.043);
+  --background: oklch(0.971 0.006 84.6); /* #F7F5F1 warm paper */
+  --foreground: oklch(0.246 0.015 256.8); /* #1C2128 graphite ink */
+  --card: oklch(1 0 0); /* #FFFFFF */
+  --card-foreground: oklch(0.246 0.015 256.8);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.246 0.015 256.8);
+  --primary: oklch(0.544 0.086 80.1); /* #8A6A30 deep brass */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.941 0.01 81.8); /* #EFEBE4 */
+  --secondary-foreground: oklch(0.246 0.015 256.8);
+  --muted: oklch(0.944 0.009 84.6); /* #EFECE6 */
+  /* #6E675C, not the brand table's #736C60. Same rule as the pre-rebrand
+     theme's L=0.52 (#368): muted secondary text has to clear AA on a *muted*
+     surface, not just on --background, because the shared CardFooter is
+     bg-muted/50 — and #736C60 lands 4.41:1 there, the same near-miss #368
+     already fixed once. This is 4.74:1 on --muted, 5.13:1 on --background. */
+  --muted-foreground: oklch(0.517 0.019 79.3);
+  --accent: oklch(0.941 0.01 81.8); /* #EFEBE4 (hover) */
+  --accent-foreground: oklch(0.246 0.015 256.8);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.89 0.003 48.717);
-  --input: oklch(0.89 0.003 48.717);
-  --ring: oklch(0.511 0.262 276.966);
-  --chart-1: oklch(0.585 0.233 277.117);
-  --chart-2: oklch(0.511 0.262 276.966);
-  --chart-3: oklch(0.457 0.24 277.023);
-  --chart-4: oklch(0.673 0.182 276.935);
-  --chart-5: oklch(0.785 0.115 274.713);
+  --border: oklch(0.912 0.014 78.3); /* #E7E1D8 */
+  --input: oklch(0.912 0.014 78.3);
+  /* The focus ring is --primary (#8A6A30), not the lighter brass #B08947 the
+     brand table names: a focus indicator owes 3:1 against what it sits on
+     (WCAG 1.4.11) and #B08947 is 2.96:1 on --background. Keeping ring == primary
+     also matches how the pre-rebrand theme paired them. */
+  --ring: oklch(0.544 0.086 80.1);
+  --chart-1: oklch(0.654 0.097 78.9); /* #B08947 brass */
+  --chart-2: oklch(0.544 0.086 80.1); /* #8A6A30 deep brass */
+  --chart-3: oklch(0.505 0.023 250.6); /* #5B6672 slate */
+  --chart-4: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
+  --chart-5: oklch(0.796 0.091 84.3); /* #D8B877 pale brass */
   /* Dashboard net-worth chart (ADR-0001 Presentation). Net worth is drawn as
      a neutral graphite area — the authoritative aggregate — which frees the
      hue wheel for a CVD-safe categorical triple over its three components
      (assets / liabilities / investments, investments warm). Validated with the
-     dataviz palette script against the card surface, light mode. */
+     dataviz palette script against the card surface, light mode.
+
+     Deliberately NOT rebranded (ADR-0054): like tagColors.ts and
+     CategoryStackChartImpl.tsx, this is a categorical set chosen for mutual
+     distinctiveness under colour-vision deficiency, not brand ramp — collapsing
+     it onto the brass/graphite axis would make three of the four series
+     near-indistinguishable. Re-validated against the rebrand's card surface,
+     which moved from #F7F5F1 to pure white: all four still clear the 3:1
+     graphical floor (networth 10.3, liabilities 4.9, assets 4.4, investments
+     4.0), so only the surface beneath them changed. */
   --chart-networth: #44403c;
   --chart-assets: #2a78d6;
   --chart-liabilities: #c43e70;
@@ -120,42 +138,44 @@ body {
      `chevron-down` verbatim so the two match. Stroke is baked in per theme (a
      data URI can't read `currentColor`), tracking --muted-foreground: the arrow
      is an affordance, not content. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --sidebar: oklch(0.955 0.001 106.423);
-  --sidebar-foreground: oklch(0.147 0.004 49.25);
-  --sidebar-primary: oklch(0.511 0.262 276.966);
-  --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-accent: oklch(0.94 0.001 106.424);
-  --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-border: oklch(0.89 0.003 48.717);
-  --sidebar-ring: oklch(0.511 0.262 276.966);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236E675C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --sidebar: oklch(0.953 0.009 84.6); /* #F2EFE9, between paper and border */
+  --sidebar-foreground: oklch(0.246 0.015 256.8);
+  --sidebar-primary: oklch(0.544 0.086 80.1);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.941 0.01 81.8);
+  --sidebar-accent-foreground: oklch(0.246 0.015 256.8);
+  --sidebar-border: oklch(0.912 0.014 78.3);
+  --sidebar-ring: oklch(0.544 0.086 80.1);
 }
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.19 0.004 49.25);
-  --foreground: oklch(0.985 0.001 106.423);
-  --card: oklch(0.24 0.006 56.043);
-  --card-foreground: oklch(0.985 0.001 106.423);
-  --popover: oklch(0.24 0.006 56.043);
-  --popover-foreground: oklch(0.985 0.001 106.423);
-  --primary: oklch(0.673 0.182 276.935);
-  --primary-foreground: oklch(0.216 0.006 56.043);
-  --secondary: oklch(0.29 0.007 34.298);
-  --secondary-foreground: oklch(0.985 0.001 106.423);
-  --muted: oklch(0.29 0.007 34.298);
-  --muted-foreground: oklch(0.709 0.01 56.259);
-  --accent: oklch(0.29 0.007 34.298);
-  --accent-foreground: oklch(0.985 0.001 106.423);
+  --background: oklch(0.2 0.009 264.4); /* #14161A graphite black */
+  --foreground: oklch(0.925 0.007 88.6); /* #E8E6E1 warm off-white */
+  --card: oklch(0.238 0.011 260.7); /* #1C1F24 */
+  --card-foreground: oklch(0.925 0.007 88.6);
+  --popover: oklch(0.238 0.011 260.7);
+  --popover-foreground: oklch(0.925 0.007 88.6);
+  --primary: oklch(0.713 0.108 78.7); /* #C79A4E brass, lifted for dark */
+  --primary-foreground: oklch(0.246 0.015 256.8); /* #1C2128 ink on brass */
+  --secondary: oklch(0.268 0.014 261.7); /* #22262D */
+  --secondary-foreground: oklch(0.925 0.007 88.6);
+  --muted: oklch(0.268 0.014 261.7);
+  --muted-foreground: oklch(0.671 0.016 84.6); /* #9A958B */
+  --accent: oklch(0.268 0.014 261.7);
+  --accent-foreground: oklch(0.925 0.007 88.6);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.673 0.182 276.935);
-  --chart-1: oklch(0.673 0.182 276.935);
-  --chart-2: oklch(0.585 0.233 277.117);
-  --chart-3: oklch(0.511 0.262 276.966);
-  --chart-4: oklch(0.785 0.115 274.713);
-  --chart-5: oklch(0.87 0.065 274.039);
+  /* Solid rather than the pre-rebrand white-alpha: on a warm-graphite surface a
+     neutral white wash greys the hue out of every edge. */
+  --border: oklch(0.3 0.014 261.7); /* #2A2E35 */
+  --input: oklch(0.3 0.014 261.7);
+  --ring: oklch(0.713 0.108 78.7);
+  --chart-1: oklch(0.713 0.108 78.7); /* #C79A4E brass */
+  --chart-2: oklch(0.796 0.091 84.3); /* #D8B877 pale brass */
+  --chart-3: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
+  --chart-4: oklch(0.505 0.023 250.6); /* #5B6672 slate */
+  --chart-5: oklch(0.749 0.09 83.5); /* #C9A96A soft brass */
   /* Net-worth chart, dark variants — graphite inverts to a light warm grey;
      the triple is lightened for the dark surface, re-validated (dark mode). */
   --chart-networth: #d6d3cd;
@@ -163,15 +183,15 @@ body {
   --chart-liabilities: #d55181;
   --chart-investments: #cc7a0d;
   /* Same chevron, dark --muted-foreground. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a8a29e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --sidebar: oklch(0.24 0.006 56.043);
-  --sidebar-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-primary: oklch(0.673 0.182 276.935);
-  --sidebar-primary-foreground: oklch(0.216 0.006 56.043);
-  --sidebar-accent: oklch(0.29 0.007 34.298);
-  --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.673 0.182 276.935);
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239A958B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --sidebar: oklch(0.238 0.011 260.7);
+  --sidebar-foreground: oklch(0.925 0.007 88.6);
+  --sidebar-primary: oklch(0.713 0.108 78.7);
+  --sidebar-primary-foreground: oklch(0.246 0.015 256.8);
+  --sidebar-accent: oklch(0.268 0.014 261.7);
+  --sidebar-accent-foreground: oklch(0.925 0.007 88.6);
+  --sidebar-border: oklch(0.3 0.014 261.7);
+  --sidebar-ring: oklch(0.713 0.108 78.7);
 }
 
 @layer base {

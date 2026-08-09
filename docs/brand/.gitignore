@@ -1,3 +1,3 @@
-IBMPlexSans-var.ttf
-wordmark_path.json
+# Generated rasters — `make brand` re-exports them; only social-card.png is
+# used, and it goes to GitHub's social-preview upload, not into the repo.
 *.png
