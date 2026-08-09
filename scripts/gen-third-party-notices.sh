@@ -6,7 +6,7 @@
 # obligations apply to those artifacts, and this file is how we satisfy them.
 #
 # Sources, in the order they appear in the output:
-#   1. Fonts    — the curated OFL texts in frontend/licenses/. The IBM Plex
+#   1. Fonts    — the curated OFL texts in frontend/licenses/. The Plus Jakarta
 #                 Sans wordmark ships outlined as SVG (no font dependency) and
 #                 is invisible to the dependency scanners, so it must be listed
 #                 here explicitly; Geist ships as woff2 and IS an npm dep, but

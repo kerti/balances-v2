@@ -1,51 +1,23 @@
-<svg width="1280" height="640" viewBox="0 0 1280 640" xmlns="http://www.w3.org/2000/svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
   <defs>
     <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#6366F1" stop-opacity="0.22"/>
-      <stop offset="70%" stop-color="#6366F1" stop-opacity="0"/>
+      <stop offset="0%" stop-color="#C79A4E" stop-opacity="0.20"/>
+      <stop offset="70%" stop-color="#C79A4E" stop-opacity="0"/>
     </radialGradient>
   </defs>
-
-  <rect width="1280" height="640" fill="#0F172A"/>
+  <rect width="1280" height="640" fill="#14161A"/>
   <circle cx="1180" cy="620" r="360" fill="url(#glow)"/>
-
-  <!-- glyph, plated -->
   <g transform="translate(100,64)">
-    <rect width="132" height="132" rx="29" fill="#111c33"/>
-    <g transform="translate(25.7,27.3) scale(0.475)"><g transform="translate(-43,-39)">
-      <circle cx="128" cy="58" r="13" fill="#6366F1"/>
-      <rect x="124" y="71" width="8" height="42" rx="4" fill="#E2E8F0"/>
-      <rect x="52" y="108" width="152" height="10" rx="5" fill="#E2E8F0"/>
-      <rect x="69" y="118" width="4" height="22" fill="#475569"/>
-      <rect x="183" y="118" width="4" height="22" fill="#475569"/>
-      <rect x="49"  y="140" width="44" height="16" rx="3" fill="#6366F1"/>
-      <rect x="49"  y="160" width="44" height="16" rx="3" fill="#818CF8"/>
-      <rect x="49"  y="180" width="44" height="16" rx="3" fill="#A5B4FC"/>
-      <rect x="163" y="140" width="44" height="16" rx="3" fill="#334155"/>
-      <rect x="163" y="160" width="44" height="16" rx="3" fill="#334155"/>
-    </g></g>
+    <rect width="132" height="132" rx="29" fill="#1C1F24"/>
+    <g transform="translate(17.16,29.86) scale(1.95360)"><g transform="translate(-7,-14)"><circle cx="32" cy="24" r="7" fill="#C79A4E"/><rect x="10" y="31" width="44" height="6" rx="3" fill="#E8E6E1"/><path d="M32 37 L23 48 L41 48 Z" fill="#E8E6E1"/></g></g>
   </g>
-
-  <text x="256" y="168" font-family="'IBM Plex Sans','Helvetica Neue',Arial,sans-serif" font-size="92" font-weight="700" letter-spacing="-1" fill="#F8FAFC">Balances</text>
-
+  <g transform="translate(256,53.63) scale(1.27140)"><g transform="translate(6,111.98)"><g transform="translate(0.00,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M357.75 -12Q298.5 -12 249.0 11.25Q199.5 34.5 170.75 79L184.25 105V0H60.5V757H191.75V435.5L171.5 463.25Q199.75 506.75 248.0 531.125Q296.25 555.5 358.5 555.5Q436 555.5 498.125 517.875Q560.25 480.25 596.625 416.125Q633 352 633 271.75Q633 192.5 597.0 127.875Q561 63.25 498.875 25.625Q436.75 -12 357.75 -12ZM343.25 108Q388.25 108 422.875 129.0Q457.5 150 477.125 187.125Q496.75 224.25 496.75 271.75Q496.75 319.5 477.125 356.125Q457.5 392.75 422.875 414.125Q388.25 435.5 343.25 435.5Q299.75 435.5 265.25 414.5Q230.75 393.5 211.25 356.375Q191.75 319.25 191.75 271.75Q191.75 224.25 211.25 187.125Q230.75 150 265.25 129.0Q299.75 108 343.25 108Z"/></g><g transform="translate(65.20,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M226 -12Q169 -12 126.75 7.125Q84.5 26.25 61.5 61.375Q38.5 96.5 38.5 144.25Q38.5 189.25 58.75 224.5Q79 259.75 121.125 283.75Q163.25 307.75 226.75 317.75L404.5 346.75V247.25L251.5 220.5Q213 213.5 193.875 195.875Q174.75 178.25 174.75 148.75Q174.75 121 196.125 104.25Q217.5 87.5 249.75 87.5Q291.25 87.5 322.5 105.375Q353.75 123.25 371.125 153.875Q388.5 184.5 388.5 221.5V362Q388.5 397.25 361.375 420.5Q334.25 443.75 288.75 443.75Q246.5 443.75 214.375 421.125Q182.25 398.5 167.25 361.75L60.25 413.75Q76 456.75 110.375 488.5Q144.75 520.25 192.0 537.875Q239.25 555.5 294 555.5Q360.5 555.5 411.625 531.0Q462.75 506.5 491.25 463.0Q519.75 419.5 519.75 362V0H396V92.75L424.25 94.5Q402.75 60 373.625 36.25Q344.5 12.5 307.625 0.25Q270.75 -12 226 -12Z"/></g><g transform="translate(121.20,0) scale(0.100000,-0.100000)" fill="#C79A4E"><path d="M60.5 0L191.75 0L191.75 1059.80L60.5 706.53Z"/></g><g transform="translate(144.40,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M226 -12Q169 -12 126.75 7.125Q84.5 26.25 61.5 61.375Q38.5 96.5 38.5 144.25Q38.5 189.25 58.75 224.5Q79 259.75 121.125 283.75Q163.25 307.75 226.75 317.75L404.5 346.75V247.25L251.5 220.5Q213 213.5 193.875 195.875Q174.75 178.25 174.75 148.75Q174.75 121 196.125 104.25Q217.5 87.5 249.75 87.5Q291.25 87.5 322.5 105.375Q353.75 123.25 371.125 153.875Q388.5 184.5 388.5 221.5V362Q388.5 397.25 361.375 420.5Q334.25 443.75 288.75 443.75Q246.5 443.75 214.375 421.125Q182.25 398.5 167.25 361.75L60.25 413.75Q76 456.75 110.375 488.5Q144.75 520.25 192.0 537.875Q239.25 555.5 294 555.5Q360.5 555.5 411.625 531.0Q462.75 506.5 491.25 463.0Q519.75 419.5 519.75 362V0H396V92.75L424.25 94.5Q402.75 60 373.625 36.25Q344.5 12.5 307.625 0.25Q270.75 -12 226 -12Z"/></g><g transform="translate(200.40,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M60.5 0V543.5H184.25V436.5L174 455.5Q193.25 505.25 236.5 530.375Q279.75 555.5 337.5 555.5Q398.25 555.5 444.5 529.5Q490.75 503.5 516.875 457.25Q543 411 543 350.0232558139535V0H411.75V319Q411.75 355.25 398.0 381.0Q384.25 406.75 359.4301724137931 421.125Q334.61034482758623 435.5 302.3051724137931 435.5Q270 435.5 244.75 421.125Q219.5 406.75 205.625 380.875Q191.75 355 191.75 319V0Z"/></g><g transform="translate(257.70,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M322.75 -12Q241.5 -12 177.375 25.375Q113.25 62.75 75.875 127.375Q38.5 192 38.5 272.75Q38.5 353.5 75.5 417.625Q112.5 481.75 177.0 518.625Q241.5 555.5 322.75 555.5Q381 555.5 431.0 535.25Q481 515 517.25 479.25Q553.5 443.5 569.75 395.25L455.25 344.5Q439.75 386 404.375 410.75Q369 435.5 322.75 435.5Q280.25 435.5 246.75 414.625Q213.25 393.75 194.0 356.625Q174.75 319.5 174.75 271.75Q174.75 224.25 194.0 187.125Q213.25 150 246.75 129.0Q280.25 108 322.75 108Q369.75 108 404.625 132.75Q439.5 157.5 455.25 199.5L569.75 147.5Q554.25 101.75 518.0 65.5Q481.75 29.25 431.75 8.625Q381.75 -12 322.75 -12Z"/></g><g transform="translate(316.50,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M318.75 -12Q234.75 -12 171.625 26.0Q108.5 64 73.5 128.75Q38.5 193.5 38.5 273Q38.5 354.75 74.375 418.375Q110.25 482 171.375 518.75Q232.5 555.5 309.25 555.5Q372.5 555.5 421.375 534.75Q470.25 514 504.125 477.125Q538 440.25 555.75 392.5Q573.5 344.75 573.5 290Q573.5 275.5 572.125 260.75Q570.75 246 567.25 234.5H147.25V334.5H492.75L430.5 288Q440.25 334 426.625 370.0Q413 406 382.375 427.0Q351.75 448 309.25 448Q267.5 448 235.875 427.25Q204.25 406.5 187.75 367.125Q171.25 327.75 174.75 272Q170.5 221.5 188.125 183.375Q205.75 145.25 240.125 124.125Q274.5 103 320.25 103Q365 103 396.375 122.0Q427.75 141 446 172.5L552 121.25Q536 82.25 501.875 52.125Q467.75 22 421.125 5.0Q374.5 -12 318.75 -12Z"/></g><g transform="translate(375.70,0) scale(0.100000,-0.100000)" fill="#E8E6E1"><path d="M267.5 -12Q180.75 -12 116.375 29.625Q52 71.25 27.5 142L125.75 188.5Q147.25 143.25 184.625 117.25Q222 91.25 267.5 91.25Q303.5 91.25 324.5 106.875Q345.5 122.5 345.5 149.25Q345.5 165.25 337.0 175.75Q328.5 186.25 314.25 193.75Q300 201.25 282.5 206L193.5 231Q124.75 250.5 89.5 291.875Q54.25 333.25 54.25 389.25Q54.25 439.25 79.75 476.5Q105.25 513.75 150.75 534.625Q196.25 555.5 254.5 555.5Q331.5 555.5 390.75 518.5Q450 481.5 474.5 414.75L375.25 368.25Q361.25 405 328.25 426.75Q295.25 448.5 253.75 448.5Q220.75 448.5 201.625 433.75Q182.5 419 182.5 394.5Q182.5 379.5 190.5 368.75Q198.5 358 213.25 350.75Q228 343.5 246.5 338L334 312Q401.25 292.25 437.375 251.875Q473.5 211.5 473.5 153.75Q473.5 104.5 447.5 67.25Q421.5 30 375.5 9.0Q329.5 -12 267.5 -12Z"/></g></g></g>
   <g font-family="Helvetica,Arial,sans-serif" font-weight="700" font-size="52">
-    <text x="100" y="316" fill="#E2E8F0">Track your household's net worth</text>
-    <text x="100" y="384" fill="#818CF8">without itemising a single transaction.</text>
+    <text x="100" y="316" fill="#E8E6E1">Track your household's net worth</text>
+    <text x="100" y="384" fill="#C79A4E">without itemising a single transaction.</text>
   </g>
-
-  <g font-family="Helvetica,Arial,sans-serif" font-weight="400" font-size="30" fill="#94A3B8">
-    <text x="100" y="466">Enter your balances once a month. That's it.</text>
-  </g>
-
-  <!-- chips -->
-  <g font-family="Helvetica,Arial,sans-serif" font-weight="500" font-size="24" fill="#A5B4FC">
-    <rect x="100" y="556" width="222" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
-    <text x="211" y="590" text-anchor="middle">Household-first</text>
-    <rect x="338" y="556" width="204" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
-    <text x="440" y="590" text-anchor="middle">Snapshot-first</text>
-    <rect x="558" y="556" width="168" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
-    <text x="642" y="590" text-anchor="middle">Self-hosted</text>
-    <rect x="742" y="556" width="204" height="52" rx="26" fill="none" stroke="#334155" stroke-width="1.5"/>
-    <text x="844" y="590" text-anchor="middle">Multi-currency</text>
+  <text x="100" y="466" font-family="Helvetica,Arial,sans-serif" font-size="30" fill="#9A958B">Enter your balances once a month. That's it.</text>
+  <g font-family="Helvetica,Arial,sans-serif" font-weight="500" font-size="24" fill="#9A958B">
+    <rect x="100" y="556" width="254" height="52" rx="26" fill="none" stroke="#2A2E35" stroke-width="1.5"/><text x="227" y="590" text-anchor="middle">Household-first</text><rect x="370" y="556" width="241" height="52" rx="26" fill="none" stroke="#2A2E35" stroke-width="1.5"/><text x="490" y="590" text-anchor="middle">Snapshot-first</text><rect x="627" y="556" width="201" height="52" rx="26" fill="none" stroke="#2A2E35" stroke-width="1.5"/><text x="727" y="590" text-anchor="middle">Self-hosted</text><rect x="844" y="556" width="241" height="52" rx="26" fill="none" stroke="#2A2E35" stroke-width="1.5"/><text x="964" y="590" text-anchor="middle">Multi-currency</text>
   </g>
 </svg>
