@@ -26,7 +26,9 @@ Design constraints, carried over unchanged:
 - Audience is **non-technical** household members → instantly legible, no finance jargon glyphs.
 - **Multi-currency** → no currency symbol.
 - **Indonesian retail context** (bonds/gold/deposito) → culturally neutral.
-- Liabilities are not "bad" (receivables exist) → **no red/green** coding; colour-blind safe.
+- Liabilities are not "bad" (receivables exist) → **no red/green pairing**, no position type coloured
+  by whether it is good to own; colour-blind safe throughout. The dashboard's liabilities *line* may
+  read warm-red (ADR-0054 §2): that line is purely debt, since receivables fold into assets.
 
 ## Asset set (`svg/`)
 
@@ -83,17 +85,19 @@ depart from this table to clear WCAG AA, and both carry the reasoning inline: `-
 (the brand's `#736C60` is a 4.41:1 near-miss on `--muted`, which the shared `bg-muted/50` CardFooter
 actually uses — the same failure #368 fixed once already) and `--ring`.
 
-Three palettes are **not** part of the brand ramp and were deliberately left alone. They are
-categorical sets chosen for mutual distinctiveness under colour-vision deficiency, not brand
-identity — collapsing them onto the brass/graphite axis would make their series
-indistinguishable:
+Two palettes are **not** part of the brand ramp and are deliberately left alone. They are categorical
+sets chosen for mutual distinctiveness under colour-vision deficiency, not brand identity —
+collapsing them onto the brass/graphite axis would make their series indistinguishable:
 
 - `frontend/src/lib/tagColors.ts` — user-defined position tags
 - `frontend/src/components/CategoryStackChartImpl.tsx` — category stack chart
-- `--chart-networth` / `-assets` / `-liabilities` / `-investments` — the dashboard net-worth chart
 
-The last group was re-validated against the rebrand's card surface (which moved from `#F7F5F1` to
-pure white); all four still clear the 3:1 graphical floor.
+The **dashboard net-worth chart** (`--chart-networth` / `-assets` / `-liabilities` / `-investments`)
+is the one place the brand reaches into a chart, and only for one series: net worth is the headline
+rather than a category, so it carries the brass, and investments takes the neutral the headline used
+to wear. The other three remain a validated categorical triple. `index.css` carries the full
+reasoning for each hue — none of it is free choice, and all of it was computed with the dataviz
+validator (all-pairs, both modes, against the real card surface) rather than eyeballed.
 
 ## Geometry
 

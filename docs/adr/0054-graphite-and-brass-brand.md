@@ -40,19 +40,45 @@ The general rule: **a brand table names hues, not roles.** Every place a hue bec
 a border, or a focus ring, it has to re-clear the bar for that role, and the brand table is not
 evidence that it does.
 
-### 2. Three palettes are not brand, and the rebrand does not touch them
+### 2. A brand reaches identity, not data — but a headline is identity
 
-`tagColors.ts`, `CategoryStackChartImpl.tsx`, and the four dashboard net-worth chart tokens
-(`--chart-networth` / `-assets` / `-liabilities` / `-investments`) are **categorical** sets chosen
-for mutual distinctiveness under colour-vision deficiency. They are not the brand ramp and were
-deliberately left alone: pulled onto the brass/graphite axis, their series stop being tellable apart,
-which for the net-worth chart would mean three of four components collapsing into one another.
+`tagColors.ts` and `CategoryStackChartImpl.tsx` are **categorical** sets chosen for mutual
+distinctiveness under colour-vision deficiency. They are not the brand ramp and are left alone:
+pulled onto the brass/graphite axis, their series stop being tellable apart. A brand reaches every
+surface where colour carries *identity*, and stops where colour carries *data*.
 
-They were re-validated rather than assumed, because the rebrand *did* move the ground under them —
-light `--card` goes from `#F7F5F1` to pure white. All four still clear the 3:1 graphical floor.
+The dashboard net-worth chart sits on the line, and it resolves in favour of the brand for exactly
+one series. **Net worth is the headline**, not a category — it is the number the whole product
+exists to show — so it takes the brand brass. Its three components stay a CVD-validated categorical
+triple beneath it, with **investments taking the neutral the headline used to wear**. A neutral
+headline made the authoritative aggregate the quietest thing on its own chart, and kept the brand off
+the app's most-looked-at surface.
 
-This is the counterpart to the rule above: a brand reaches every surface where colour carries
-*identity*, and stops at every surface where colour carries *data*.
+The rest of that palette then follows by force, not by taste, and this is the part worth recording
+because none of it was a preference:
+
+- **Liabilities had to leave magenta.** Once investments became a light neutral, magenta sat
+  **ΔE 1.6** from it under deuteranopia — magenta desaturates to almost exactly that grey. Warm red
+  clears it.
+- **Assets stay blue.** Green/red is the pair deuteranopia collapses hardest (**ΔE 4.2** — one colour
+  for ~8% of men), so the cool slot is not available to give away. Blue also survives every CVD type
+  intact.
+- **The neutral is mid-grey, not the old near-black graphite.** Graphite is 10.3:1 on white against
+  the brass headline's 3.2:1; as a thin line it would out-shout the series it exists to sit behind.
+- **Dark is stepped, not flipped.** Dark brass is lighter and more saturated, which pulls it toward
+  red under deuteranopia, so dark liabilities take a deeper brick (`#C94A3C`) than light's `#C0392B`.
+
+Everything above was **computed, not eyeballed** — the dataviz validator, all-pairs (not adjacent-
+pairs, since all four lines are on screen simultaneously), against the real card surface in both
+modes. The light surface moved from `#F7F5F1` to pure white in this same rebrand, so the check could
+not have been inherited.
+
+This does bend the brand's own "liabilities are not bad, no red/green coding" line, and it is worth
+being precise about how. The rule survives in the part that carries the reasoning: there is **no
+red/green pairing** — assets are not green, and no position type is coloured by whether it is good to
+own. What changed is that the liabilities *line on this one chart* may read warm-red, and that line
+is purely debt: receivables fold into the assets line (ADR-0001), so the "receivables exist" caveat
+the rule was built on does not apply to it.
 
 ### 3. The wordmark's typeface is not the app's typeface
 

@@ -109,24 +109,39 @@ body {
   --chart-3: oklch(0.505 0.023 250.6); /* #5B6672 slate */
   --chart-4: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
   --chart-5: oklch(0.796 0.091 84.3); /* #D8B877 pale brass */
-  /* Dashboard net-worth chart (ADR-0001 Presentation). Net worth is drawn as
-     a neutral graphite area — the authoritative aggregate — which frees the
-     hue wheel for a CVD-safe categorical triple over its three components
-     (assets / liabilities / investments, investments warm). Validated with the
-     dataviz palette script against the card surface, light mode.
+  /* Dashboard net-worth chart (ADR-0001 Presentation, roles revised by
+     ADR-0054). Net worth is the headline and carries the **brand brass**; its
+     three components are a CVD-validated categorical triple beneath it, with
+     investments taking the neutral the headline used to wear.
 
-     Deliberately NOT rebranded (ADR-0054): like tagColors.ts and
-     CategoryStackChartImpl.tsx, this is a categorical set chosen for mutual
-     distinctiveness under colour-vision deficiency, not brand ramp — collapsing
-     it onto the brass/graphite axis would make three of the four series
-     near-indistinguishable. Re-validated against the rebrand's card surface,
-     which moved from #F7F5F1 to pure white: all four still clear the 3:1
-     graphical floor (networth 10.3, liabilities 4.9, assets 4.4, investments
-     4.0), so only the surface beneath them changed. */
-  --chart-networth: #44403c;
+     The roles traded places deliberately. A neutral headline made the
+     authoritative aggregate the quietest thing on its own chart, and left the
+     brand absent from the app's most-looked-at surface.
+
+     The rest of the palette follows from that one move, and is not free choice:
+
+     - **Liabilities had to leave magenta.** Once investments became a light
+       neutral, magenta sat ΔE 1.6 from it under deuteranopia — magenta
+       desaturates to almost exactly that grey. Warm red clears it.
+     - **Assets stay blue.** Green/red is the pair deuteranopia collapses hardest
+       (ΔE 4.2, effectively one colour for ~8% of men), so assets keep the cool
+       slot; blue is also the channel that survives every CVD type intact.
+     - **The neutral is mid-grey, not the old near-black graphite.** Graphite
+       reads 10.3:1 on white against the brass headline's 3.2:1, so as a thin
+       line it would out-shout the very series it is meant to sit behind.
+
+     Dark is stepped independently, not flipped: dark brass is lighter and more
+     saturated, which pulls it toward red under deuteranopia, so dark liabilities
+     take a deeper brick (#C94A3C) than light's #C0392B.
+
+     Every quad above was checked with the dataviz validator against this card
+     surface, all-pairs, both modes — not adjacent-pairs, since all four lines
+     are on screen at once. tagColors.ts and CategoryStackChartImpl.tsx remain
+     out of scope: they are categorical-only, with no headline to carry brand. */
+  --chart-networth: #b08947;
   --chart-assets: #2a78d6;
-  --chart-liabilities: #c43e70;
-  --chart-investments: #bf6a00;
+  --chart-liabilities: #c0392b;
+  --chart-investments: #857d70;
   --radius: 0.625rem;
   /* The `<select>` chevron (#572). `ui/select.tsx` resets `appearance`, because
      that is the only way iOS Safari honours a select's height — it otherwise
@@ -176,12 +191,12 @@ body {
   --chart-3: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
   --chart-4: oklch(0.505 0.023 250.6); /* #5B6672 slate */
   --chart-5: oklch(0.749 0.09 83.5); /* #C9A96A soft brass */
-  /* Net-worth chart, dark variants — graphite inverts to a light warm grey;
-     the triple is lightened for the dark surface, re-validated (dark mode). */
-  --chart-networth: #d6d3cd;
+  /* Net-worth chart, dark variants — stepped for this surface, not flipped;
+     see the light block for why each hue is where it is. */
+  --chart-networth: #c79a4e;
   --chart-assets: #3987e5;
-  --chart-liabilities: #d55181;
-  --chart-investments: #cc7a0d;
+  --chart-liabilities: #c94a3c;
+  --chart-investments: #a9a198;
   /* Same chevron, dark --muted-foreground. */
   --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239A958B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --sidebar: oklch(0.238 0.011 260.7);

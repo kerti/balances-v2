@@ -46,8 +46,8 @@ type Props = {
   // clearly beside the composition lines.
   primaryLabel?: string;
   // Colour of the primary area. Defaults to --chart-1 (detail screens); the
-  // dashboard passes the neutral graphite so the coloured composition lines
-  // read against it.
+  // dashboard passes the brand brass, so the headline aggregate carries the
+  // accent and its components read as context beneath it (ADR-0054).
   primaryColor?: string;
 };
 
