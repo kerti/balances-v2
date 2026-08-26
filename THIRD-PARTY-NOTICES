@@ -10117,8 +10117,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm packages may be included in this product:
 
- - @tanstack/query-core@5.101.2
- - @tanstack/react-query@5.101.2
+ - @tanstack/query-core@5.101.4
+ - @tanstack/react-query@5.101.4
 
 These packages each contain the following license:
 
