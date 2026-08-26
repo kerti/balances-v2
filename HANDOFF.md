@@ -48,8 +48,12 @@ Per-milestone history — what each tag contained — is in the GitHub Releases,
 
 **No named next slice.** The mobile line (epics #428/#503, ADR-0050/0051) closed at
 `v0.9.0-alpha.3`; the lifecycle/integrity line (#576, ADR-0052) and its sibling the Tracking Changes
-epic (#591, ADR-0053) are closed on `main` and awaiting a tag. Ask the user for direction rather than
-picking the next item off the backlog — they pause between items to direct.
+epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction rather than picking the
+next item off the backlog — they pause between items to direct.
+
+Unreleased on `main`: the **Graphite & Brass rebrand** (ADR-0054) — new palette, mark and outlined
+`balances` wordmark, reaching `index.css`, the brand assets, the PDF report, and the transactional
+emails. `social-card.png` still needs a manual upload under repo **Settings → Social preview**.
 
 Standing carry-forwards:
 
