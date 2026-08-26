@@ -16,6 +16,7 @@ import { useSession } from "@/hooks/useSession";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
 import { headlineSurface } from "@/lib/headline";
+import { cn } from "@/lib/utils";
 import type {
   DetailDescriptor,
   HistorySectionSpec,
@@ -30,6 +31,13 @@ type Props<TEntity, TCtx, TSnap extends SnapshotShape> = {
 };
 
 const PAGE_SIZE = 12;
+
+// Shared by both details-card column layouts below: a vertical divider
+// between desktop columns, with padding on either side of it.
+const detailColumnDivider = cn(
+  "md:divide-x md:divide-border",
+  "md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0",
+);
 
 // The five standard tour anchors. Each maps to a core-owned `tour-${step}`
 // data-testid and to `${tourKeyPrefix}.tour.${step}Title` / `${step}Body` copy,
@@ -244,7 +252,13 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
                three columns stack in reading order (left column fully, then the
                middle, then the meta), so the details card reads top-to-bottom the
                same way it reads left-to-right on desktop. */
-            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)] md:gap-x-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+            <div
+              className={cn(
+                "grid gap-4 md:gap-x-0",
+                "md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)]",
+                detailColumnDivider,
+              )}
+            >
               <div className="space-y-3">
                 {identity}
                 {/* Inline like the middle + meta columns, so an investment's
@@ -266,7 +280,9 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
             /* Amount-only layout: two columns on desktop with a divider between
                (the Income headline idiom) — identity + spec on the left, the
                shared meta on the right; one stacked column on mobile. */
-            <div className="grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0 md:divide-x md:divide-border md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0">
+            <div
+              className={cn("grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0", detailColumnDivider)}
+            >
               <div className="space-y-3">
                 {identity}
                 <InfoGrid fields={infoFields} />
