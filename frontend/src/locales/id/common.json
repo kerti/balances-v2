@@ -308,5 +308,9 @@
       "newlyTracked": "Kami sudah menanggungnya, atau ini masuk ke rumah tangga",
       "hint": "Ini memberi tahu laporan apakah utang ini diambil saat Anda sudah mencatat di sini (jadi uang yang cair, atau barang yang dibeli, ikut tercatat) atau memang sudah ditanggung sebelumnya. Hanya memengaruhi cara bulan pertama dibaca."
     }
+  },
+  "authHero": {
+    "headline": "Ketahui posisi keuangan rumah tangga Anda",
+    "body": "Pantau kekayaan bersih dari bulan ke bulan — tanpa mencatat setiap transaksi."
   }
 }
