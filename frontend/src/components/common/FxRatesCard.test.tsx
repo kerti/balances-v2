@@ -6,7 +6,7 @@
 // delete control clears the ≥44px tap floor.
 import { it, expect, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
@@ -111,4 +111,70 @@ it("add form: shows a live direction hint once a currency code is entered", asyn
   // Typing the rate fills it into the equation.
   fireEvent.change(screen.getByLabelText("Rate"), { target: { value: "12000" } });
   expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12000 IDR");
+});
+
+it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", async () => {
+  setViewport(1280);
+  let patched: { id: string; body: unknown } | null = null;
+  server.use(
+    http.patch("/api/fx-rates/:id", async ({ params, request }) => {
+      patched = { id: String(params.id), body: await request.json() };
+      return HttpResponse.json({ ...rates[0], rate: "16400" });
+    }),
+  );
+  renderCard();
+
+  await screen.findByTestId("fx-rate-table");
+  // Scope to the row — the add form shares the "Rate" label.
+  const row = within(screen.getByTestId("fx-rate-row"));
+  fireEvent.click(row.getByRole("button", { name: "Edit" }));
+
+  const input = row.getByLabelText("Rate");
+  expect(input).toHaveValue("16250");
+  fireEvent.change(input, { target: { value: "16400" } });
+  fireEvent.click(row.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(patched).not.toBeNull());
+  expect(patched).toEqual({ id: "fx-1", body: { rate: "16400" } });
+});
+
+it("desktop: Save is blocked for a non-positive rate", async () => {
+  setViewport(1280);
+  renderCard();
+
+  await screen.findByTestId("fx-rate-table");
+  const row = within(screen.getByTestId("fx-rate-row"));
+  fireEvent.click(row.getByRole("button", { name: "Edit" }));
+  fireEvent.change(row.getByLabelText("Rate"), { target: { value: "0" } });
+
+  // A rate must be > 0 (ADR-0002): Save stays disabled.
+  expect(row.getByRole("button", { name: "Save" })).toBeDisabled();
+});
+
+it("desktop: paginates at 12 rows per page", async () => {
+  setViewport(1280);
+  // 13 monthly rates → two pages (12 + 1).
+  const many: FxRate[] = Array.from({ length: 13 }, (_, i) => ({
+    ...rates[0],
+    id: `fx-${i}`,
+    year_month: `2025-${String((i % 12) + 1).padStart(2, "0")}`,
+  }));
+  server.use(
+    http.get("/api/fx-rates", () => HttpResponse.json(many)),
+    http.get("/api/me", () => HttpResponse.json(me)),
+  );
+  renderWithProviders(<FxRatesCard />);
+
+  await screen.findByTestId("fx-rate-table");
+  expect(screen.getAllByTestId("fx-rate-row")).toHaveLength(12);
+
+  fireEvent.click(screen.getByText("2"));
+  expect(screen.getAllByTestId("fx-rate-row")).toHaveLength(1);
+});
+
+it("shows no pagination control for a single page", async () => {
+  setViewport(1280);
+  renderCard();
+  await screen.findByTestId("fx-rate-table");
+  expect(screen.queryByTestId("pagination-next")).not.toBeInTheDocument();
 });

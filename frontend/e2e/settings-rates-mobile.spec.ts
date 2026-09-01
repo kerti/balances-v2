@@ -22,7 +22,7 @@ test(
     await page.getByLabel("Annual %").fill("3.5");
     await page.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("inflation-rate-table")).toBeVisible();
-    await expect(page.getByTestId("inflation-rate-value")).toHaveText("3.5");
+    await expect(page.getByTestId("inflation-rate-value")).toHaveText("3.50%");
 
     // --- Phone width: the renderer flips from table to cards ---
     await page.setViewportSize({ width: 390, height: 844 });

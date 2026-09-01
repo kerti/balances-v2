@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationControls } from "@/components/common/PaginationControls";
 import { errorMessage } from "@/lib/errorMessage";
-import { useFxRates, useCreateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
+import { useFxRates, useCreateFxRate, useUpdateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatYearMonth } from "@/lib/format";
 import type { FxRate } from "@/api/types";
+
+// One year of monthly rates per page — matches the Income screen's page size.
+const PAGE_SIZE = 12;
 
 // The desktop **Currency** column names the whole pair — the foreign currency
 // being priced and the reporting currency it converts to (ADR-0002: `rate` is
@@ -51,11 +55,16 @@ function fxEquation(currency: string, rate: string, base: string | undefined): s
 // the entered rows split at the renderer — `useIsMobile` (768px) mounts stacked
 // cards on phones and the wide table on desktop, so only one tree is ever in the
 // DOM. Both leaves are fed the same rows and share the `fx-rate-row` testid.
+//
+// A row's rate is editable in place (the month+currency are the row's identity —
+// the PATCH takes only `rate`): Edit swaps the rate into an input with
+// Save/Cancel; only one row edits at a time (`editingId`).
 export function FxRatesCard() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: rates, isPending } = useFxRates();
   const { data: me } = useSession();
   const createRate = useCreateFxRate();
+  const updateRate = useUpdateFxRate();
   const deleteRate = useDeleteFxRate();
   const isMobile = useIsMobile();
 
@@ -64,6 +73,14 @@ export function FxRatesCard() {
   const [month, setMonth] = useState("");
   const [currency, setCurrency] = useState("");
   const [rate, setRate] = useState("");
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editRate, setEditRate] = useState("");
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((rates?.length ?? 0) / PAGE_SIZE));
+  const effectivePage = Math.min(page, totalPages);
+  const pageRates = (rates ?? []).slice((effectivePage - 1) * PAGE_SIZE, effectivePage * PAGE_SIZE);
 
   const add = () => {
     createRate.mutate(
@@ -78,7 +95,17 @@ export function FxRatesCard() {
     );
   };
 
+  const startEdit = (r: FxRate) => {
+    setEditingId(r.id);
+    setEditRate(r.rate);
+  };
+  const cancelEdit = () => setEditingId(null);
+  const saveEdit = (id: string) => {
+    updateRate.mutate({ id, rate: editRate }, { onSuccess: () => setEditingId(null) });
+  };
+
   const canAdd = month !== "" && currency.length === 3 && rate !== "" && Number(rate) > 0;
+  const canSave = editRate !== "" && Number(editRate) > 0;
 
   return (
     <Card data-testid="fx-rates-card">
@@ -136,6 +163,10 @@ export function FxRatesCard() {
           <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
         )}
 
+        {updateRate.isError && (
+          <p className="text-sm text-destructive">{errorMessage(updateRate.error)}</p>
+        )}
+
         {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
         {rates && rates.length === 0 && (
@@ -146,12 +177,23 @@ export function FxRatesCard() {
           rates.length > 0 &&
           (isMobile ? (
             <div className="space-y-2" data-testid="fx-rate-cards">
-              {rates.map((r) => (
+              {pageRates.map((r) => (
                 <FxRateCard
                   key={r.id}
                   rate={r}
                   base={base}
+                  editLabel={t("common:actions.edit")}
                   deleteLabel={t("common:delete")}
+                  saveLabel={t("common:save")}
+                  cancelLabel={t("common:cancel")}
+                  isEditing={editingId === r.id}
+                  editValue={editRate}
+                  onEditChange={setEditRate}
+                  onEditStart={() => startEdit(r)}
+                  onSave={() => saveEdit(r.id)}
+                  onCancel={cancelEdit}
+                  canSave={canSave}
+                  isSaving={updateRate.isPending}
                   onDelete={() => deleteRate.mutate(r.id)}
                 />
               ))}
@@ -163,27 +205,81 @@ export function FxRatesCard() {
                   <TableHead>{t("fx.month")}</TableHead>
                   <TableHead>{t("fx.currency")}</TableHead>
                   <TableHead>{t("fx.rate")}</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rates.map((r) => (
-                  <TableRow key={r.id} data-testid="fx-rate-row">
-                    <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                    <TableCell>{fxPair(r.currency, base)}</TableCell>
-                    <TableCell className="tabular-nums" data-testid="fx-rate-value">
-                      {r.rate}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
-                        {t("common:delete")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {pageRates.map((r) => {
+                  const editing = editingId === r.id;
+                  return (
+                    <TableRow key={r.id} data-testid="fx-rate-row">
+                      <TableCell>{formatYearMonth(r.year_month)}</TableCell>
+                      <TableCell>{fxPair(r.currency, base)}</TableCell>
+                      <TableCell className="tabular-nums" data-testid="fx-rate-value">
+                        {editing ? (
+                          <Input
+                            inputMode="decimal"
+                            className="w-28"
+                            aria-label={t("fx.rate")}
+                            value={editRate}
+                            onChange={(e) => setEditRate(e.target.value)}
+                          />
+                        ) : (
+                          r.rate
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editing ? (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:save")}
+                              onClick={() => saveEdit(r.id)}
+                              disabled={!canSave || updateRate.isPending}
+                            >
+                              <Check className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:cancel")}
+                              onClick={cancelEdit}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:actions.edit")}
+                              onClick={() => startEdit(r)}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:delete")}
+                              onClick={() => deleteRate.mutate(r.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ))}
+
+        {totalPages > 1 && (
+          <PaginationControls page={effectivePage} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </CardContent>
     </Card>
   );
@@ -193,36 +289,89 @@ export function FxRatesCard() {
 // rate is promoted to the headline as a full **equation** (`1 USD = 15600 IDR`)
 // — a bare number beside "USD → IDR" would misread as "15600 USD"; the equation
 // binds the value to the reporting currency it actually is. The month sits
-// below. The delete control is an icon button sized to the 44px tap floor
-// (INV-PRESENTATION-08).
+// below. Edit swaps the headline for an input with Save/Cancel; the edit/delete
+// controls are icon buttons sized to the 44px tap floor (INV-PRESENTATION-08).
 function FxRateCard({
   rate,
   base,
+  editLabel,
   deleteLabel,
+  saveLabel,
+  cancelLabel,
+  isEditing,
+  editValue,
+  onEditChange,
+  onEditStart,
+  onSave,
+  onCancel,
+  canSave,
+  isSaving,
   onDelete,
 }: {
   rate: FxRate;
   base: string | undefined;
+  editLabel: string;
   deleteLabel: string;
+  saveLabel: string;
+  cancelLabel: string;
+  isEditing: boolean;
+  editValue: string;
+  onEditChange: (v: string) => void;
+  onEditStart: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  canSave: boolean;
+  isSaving: boolean;
   onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="fx-rate-row">
       <div className="min-w-0 flex-1">
-        <div className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
-          {fxEquation(rate.currency, rate.rate, base)}
-        </div>
+        {isEditing ? (
+          <Input
+            inputMode="decimal"
+            aria-label={editLabel}
+            value={editValue}
+            onChange={(e) => onEditChange(e.target.value)}
+          />
+        ) : (
+          <div className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
+            {fxEquation(rate.currency, rate.rate, base)}
+          </div>
+        )}
         <div className="text-sm text-muted-foreground">{formatYearMonth(rate.year_month)}</div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-11 shrink-0"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+      {isEditing ? (
+        <div className="flex shrink-0 gap-1">
+          <Button size="sm" onClick={onSave} disabled={!canSave || isSaving}>
+            {saveLabel}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex shrink-0 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label={editLabel}
+            onClick={onEditStart}
+          >
+            <Pencil className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label={deleteLabel}
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

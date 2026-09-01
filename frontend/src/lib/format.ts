@@ -161,6 +161,23 @@ export function formatSignedPercent(value: string): string {
   return `${sign}${Math.abs(n).toFixed(2)}%`;
 }
 
+// formatPercent renders a decimal-string rate as a plain 2dp percentage — no
+// forced "+" on positives (unlike formatSignedPercent, which is for signed
+// appreciation figures): normal inflation reads as "3.50%", deflation carries
+// the Intl minus ("-2.00%"). Locale-aware separators to match formatNumber (the
+// app's numeric display standard) — "3,50%" under id-ID. Used for the manual
+// inflation-rate table, where the figures are always shown to a fixed 2dp and
+// right-aligned so the decimal points line up.
+export function formatPercent(value: number | string, locale?: Locale): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  const num = new Intl.NumberFormat(resolve(locale), {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+  return `${num}%`;
+}
+
 // roundToCurrency rounds a decimal-string amount to the precision the currency
 // displays at — 0 dp for IDR/JPY/KRW/VND, 2 dp for everything else. Used when
 // pasting a computed suggestion (e.g. the revaluation helper) into a snapshot

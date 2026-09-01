@@ -10,6 +10,7 @@ import {
   formatNumber,
   formatCompactNumber,
   formatSignedPercent,
+  formatPercent,
   roundToCurrency,
 } from "@/lib/format";
 
@@ -177,6 +178,24 @@ describe("formatSignedPercent", () => {
   });
   it("returns the raw input when the value is not a number", () => {
     expect(formatSignedPercent("abc")).toBe("abc");
+  });
+});
+
+describe("formatPercent", () => {
+  it("renders a positive rate to a fixed 2dp with no forced sign", () => {
+    expect(formatPercent("3.5", "en-GB")).toBe("3.50%");
+  });
+  it("pads a whole number to 2dp", () => {
+    expect(formatPercent("4", "en-GB")).toBe("4.00%");
+  });
+  it("keeps the minus on a negative (deflation) rate", () => {
+    expect(formatPercent("-2", "en-GB")).toBe("-2.00%");
+  });
+  it("uses the locale decimal separator (id-ID → comma)", () => {
+    expect(formatPercent("3.5", "id-ID")).toBe("3,50%");
+  });
+  it("returns the raw input when the value is not a number", () => {
+    expect(formatPercent("abc", "en-GB")).toBe("abc");
   });
 });
 
