@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { AuthLayout } from "@/components/shell/AuthLayout";
 import { routes } from "@/lib/routes";
 
 // HouseholdErasedScreen is where the founder lands right after deleting their
@@ -15,10 +16,10 @@ export function HouseholdErasedScreen() {
   const { t } = useTranslation("common");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm" data-testid="household-erased-screen">
+    <AuthLayout>
+      <Card className="w-full max-w-md" data-testid="household-erased-screen">
         <CardHeader>
-          <AppLogo className="w-full h-auto" />
+          <AppLogo className="w-full h-auto md:hidden" />
           <CardTitle>{t("erased.title")}</CardTitle>
           <CardDescription>{t("erased.body")}</CardDescription>
         </CardHeader>
@@ -28,6 +29,6 @@ export function HouseholdErasedScreen() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

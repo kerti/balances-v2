@@ -148,3 +148,43 @@ New QA invariants for the divergence itself (correct renderer mounts; the a11y f
   wants one home.
 - **Render-both-and-CSS-hide; fully-separate components; inline `isMobile` branches.** Rejected
   above.
+
+## Amendment — the pre-auth gate surface (2026-09-01)
+
+The six shell-less **gate screens** rendered before the authed router — sign-in (incl. the
+public-demo variant), onboarding (founder / invited / *not-accepting-new-households* / expired),
+invite-accept, password-reset request + set, and household-erased — shared one mobile-first idiom:
+a single `max-w-sm` Card centered on the muted ground. On desktop that reads as under-designed —
+a small card adrift in a large empty field — and the terminal states (*not accepting new
+households*, *household deleted*) showed a near-empty card.
+
+They now diverge desktop-from-mobile through a shared `AuthLayout` (`components/shell`): the phone
+keeps the centered Card verbatim; from the same `768px` boundary up a bounded, page-centred block
+splits two-up — a brand **hero** on the left, the screen's Card on the right.
+
+The surface mixes both tools the doctrine sanctions — CSS media queries for the chrome, the
+`useIsMobile` mount-split for the one asserted element that changes *place* — and the boundary
+between them is what this amendment pins:
+
+- **Brand chrome is CSS-only.** The hero — logo, headline, tagline — is additive chrome carrying
+  **no** asserted `data-testid`, ARIA role, or form state, so it lives in a desktop-only
+  `hidden md:flex` aside (and the Card's own decorative logo is hidden above `md`, so one logo shows
+  per width). Render-both-and-hide of *this* trips nothing: the doctrine's rejection of that pattern
+  binds duplicated **interactive/asserted** trees, which the chrome has none of. This is the cosmetic
+  reflow the doctrine already blesses for media queries.
+- **Every asserted control stays single-instance.** The Google and local-auth controls, the
+  onboarding founder form, the invite and reset forms all live **once**, in the Card, at every width.
+  One tree → one set of testids.
+- **One asserted element changes container by breakpoint: the sign-in demo notice**
+  (`signin-demo-notice`). It reads better in the roomy hero column on desktop but belongs in the
+  Card's flow on a phone. Rather than render-both-and-hide it (which would duplicate its testid and
+  double it in jsdom, where both branches render), the sign-in screen reads `useIsMobile()` and
+  mounts it in **exactly one** place — the `AuthLayout` `aside` slot on desktop, the Card body on
+  mobile. This is the doctrine's own mechanism ("`useIsMobile()` picks *which* mounts; only one tree
+  is ever in the DOM") applied to a single element's placement, so the single-testid invariant holds.
+
+Because the decision is unchanged — diverge where the squeeze under-serves the surface, split at a
+single 768px boundary, keep the asserted/interactive core single-instance — this is an amendment,
+not a new ADR. The detail added: **a desktop divergence whose delta is non-asserted brand chrome
+uses a single-tree CSS reflow; when a single *asserted* element must change container across the
+boundary, the `useIsMobile` mount-split places it (one instance), never render-both-and-hide.**

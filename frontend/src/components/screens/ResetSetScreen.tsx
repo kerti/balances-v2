@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { AuthLayout } from "@/components/shell/AuthLayout";
 import { AppInfo } from "@/components/shell/AppInfo";
 import {
   Card,
@@ -60,10 +61,10 @@ export function ResetSetScreen() {
     token === "" || (preview.error instanceof ApiError && preview.error.status === 409);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm" data-testid="reset-set-card">
+    <AuthLayout>
+      <Card className="w-full max-w-md" data-testid="reset-set-card">
         <CardHeader>
-          <AppLogo className="w-full h-auto" />
+          <AppLogo className="w-full h-auto md:hidden" />
           <CardTitle className="pt-2">{t("resetSet.title")}</CardTitle>
           {preview.data && <CardDescription>{t("resetSet.subtitle")}</CardDescription>}
         </CardHeader>
@@ -128,6 +129,6 @@ export function ResetSetScreen() {
           <AppInfo variant="split" />
         </CardFooter>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

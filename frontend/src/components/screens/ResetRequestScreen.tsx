@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { AuthLayout } from "@/components/shell/AuthLayout";
 import { AppInfo } from "@/components/shell/AppInfo";
 import {
   Card,
@@ -41,10 +42,10 @@ export function ResetRequestScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm" data-testid="reset-request-card">
+    <AuthLayout>
+      <Card className="w-full max-w-md" data-testid="reset-request-card">
         <CardHeader>
-          <AppLogo className="w-full h-auto" />
+          <AppLogo className="w-full h-auto md:hidden" />
           <CardTitle className="pt-2">{t("resetRequest.title")}</CardTitle>
           <CardDescription>{t("resetRequest.subtitle")}</CardDescription>
         </CardHeader>
@@ -100,6 +101,6 @@ export function ResetRequestScreen() {
           <AppInfo variant="split" />
         </CardFooter>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }

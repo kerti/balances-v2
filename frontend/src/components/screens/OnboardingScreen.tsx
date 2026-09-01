@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { AuthLayout } from "@/components/shell/AuthLayout";
 import { AppInfo } from "@/components/shell/AppInfo";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import {
@@ -121,10 +122,10 @@ export function OnboardingScreen() {
       : t("confirmFound.descriptionMany");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm" data-testid="onboarding-card">
+    <AuthLayout>
+      <Card className="w-full max-w-md" data-testid="onboarding-card">
         <CardHeader>
-          <AppLogo className="w-full h-auto" />
+          <AppLogo className="w-full h-auto md:hidden" />
           <CardTitle className="pt-2">
             {foundingBlocked
               ? t("foundingDisabled.title")
@@ -150,7 +151,11 @@ export function OnboardingScreen() {
               </Button>
             </div>
           ) : foundingBlocked ? (
-            <div data-testid="onboarding-founding-disabled" />
+            <div className="space-y-3" data-testid="onboarding-founding-disabled">
+              <Button asChild variant="outline" className="w-full">
+                <a href="/">{t("signInAgain")}</a>
+              </Button>
+            </div>
           ) : (
             <>
               {hasInvites && !showFounder && (
@@ -265,6 +270,6 @@ export function OnboardingScreen() {
           setShowFounder(true);
         }}
       />
-    </div>
+    </AuthLayout>
   );
 }

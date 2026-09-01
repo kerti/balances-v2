@@ -308,5 +308,9 @@
       "newlyTracked": "We already owed it, or it came into the household",
       "hint": "This tells the report whether the debt was taken on while you were tracking here (so the money it released, or the thing it bought, is recorded too) or was already owed before. It only affects how the first month reads."
     }
+  },
+  "authHero": {
+    "headline": "Know where your household stands",
+    "body": "Track your net worth month to month — without itemising every transaction."
   }
 }

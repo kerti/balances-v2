@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { AuthLayout } from "@/components/shell/AuthLayout";
 import { AppInfo } from "@/components/shell/AppInfo";
 import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { useLocale } from "@/i18n/useLocale";
@@ -72,10 +73,10 @@ export function InviteAcceptScreen() {
     token === "" || (preview.error instanceof ApiError && preview.error.status === 409);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-6">
-      <Card className="w-full max-w-sm" data-testid="invite-accept-card">
+    <AuthLayout>
+      <Card className="w-full max-w-md" data-testid="invite-accept-card">
         <CardHeader>
-          <AppLogo className="w-full h-auto" />
+          <AppLogo className="w-full h-auto md:hidden" />
           <CardTitle className="pt-2">{t("invite.title")}</CardTitle>
           {preview.data && (
             <CardDescription>
@@ -168,6 +169,6 @@ export function InviteAcceptScreen() {
           <AppInfo variant="split" />
         </CardFooter>
       </Card>
-    </div>
+    </AuthLayout>
   );
 }
