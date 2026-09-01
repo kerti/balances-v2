@@ -7,7 +7,7 @@
 # ---- web (SPA) ----
 # Built on the native build platform — the SPA bundle is architecture-agnostic,
 # so there's no reason to emulate the target arch here.
-FROM --platform=$BUILDPLATFORM node:26@sha256:bde0dae02f2b12d2bce5ee72b2432f0e511767b7b2dc4dd3b064df11ae422fee AS web
+FROM --platform=$BUILDPLATFORM node:26@sha256:f5d1cc40abc10c2843339a2134d07817cf33c405cb16bfd052b0ed790254c3a3 AS web
 WORKDIR /web
 # Release tag baked into the bundle (issue #75). The deploy workflow passes it
 # as a build arg; Vite picks up VITE_*-prefixed vars from the environment at
@@ -26,7 +26,7 @@ RUN npm run build   # -> /web/dist
 # target arch (TARGETOS/TARGETARCH are supplied by buildx per --platform). Go
 # cross-compiles cleanly with CGO off, so this is far faster than emulating the
 # target under QEMU, and it produces a multi-arch image (amd64 + arm64).
-FROM --platform=$BUILDPLATFORM golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.0@sha256:4013ae0f9e7994f8535c58c811f8f863fbed38b72e0d51e6592156f758d66146 AS build
 ARG TARGETOS
 ARG TARGETARCH
 # Same release tag as the SPA's VITE_APP_VERSION (issue #75), baked into the Go
@@ -43,7 +43,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -trimpath -tags
     -o /out/balances ./cmd/balances
 
 # ---- run ----
-FROM gcr.io/distroless/static-debian12:nonroot@sha256:1b7b9f0f0e0a1d2155f531db587cc48ec26aaf97ab64364225f5bf18a054e66a
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 WORKDIR /app
 COPY --from=build /out/balances /app/balances
 COPY --from=web /web/dist /app/web
