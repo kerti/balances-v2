@@ -140,3 +140,26 @@ it("shows no pagination control for a single page", async () => {
   await screen.findByTestId("inflation-rate-table");
   expect(screen.queryByTestId("pagination-next")).not.toBeInTheDocument();
 });
+
+it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => {
+  setViewport(500);
+  let patched: { id: string; body: unknown } | null = null;
+  server.use(
+    http.patch("/api/inflation-rates/:id", async ({ params, request }) => {
+      patched = { id: String(params.id), body: await request.json() };
+      return HttpResponse.json({ ...rates[0], rate: "4.2" });
+    }),
+  );
+  renderCard();
+
+  await screen.findByTestId("inflation-rate-cards");
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+  // The promoted headline swaps for the edit input (labelled "Edit").
+  const input = screen.getByLabelText("Edit");
+  fireEvent.change(input, { target: { value: "4.2" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(patched).not.toBeNull());
+  expect(patched).toEqual({ id: "inf-1", body: { rate: "4.2" } });
+});

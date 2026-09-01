@@ -178,3 +178,25 @@ it("shows no pagination control for a single page", async () => {
   await screen.findByTestId("fx-rate-table");
   expect(screen.queryByTestId("pagination-next")).not.toBeInTheDocument();
 });
+
+it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => {
+  setViewport(500);
+  let patched: { id: string; body: unknown } | null = null;
+  server.use(
+    http.patch("/api/fx-rates/:id", async ({ params, request }) => {
+      patched = { id: String(params.id), body: await request.json() };
+      return HttpResponse.json({ ...rates[0], rate: "16400" });
+    }),
+  );
+  renderCard();
+
+  await screen.findByTestId("fx-rate-cards");
+  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+  const input = screen.getByLabelText("Edit");
+  fireEvent.change(input, { target: { value: "16400" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+  await waitFor(() => expect(patched).not.toBeNull());
+  expect(patched).toEqual({ id: "fx-1", body: { rate: "16400" } });
+});

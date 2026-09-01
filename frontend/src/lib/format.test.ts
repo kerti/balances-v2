@@ -185,6 +185,9 @@ describe("formatPercent", () => {
   it("renders a positive rate to a fixed 2dp with no forced sign", () => {
     expect(formatPercent("3.5", "en-GB")).toBe("3.50%");
   });
+  it("accepts a numeric value, not only a decimal string", () => {
+    expect(formatPercent(3.5, "en-GB")).toBe("3.50%");
+  });
   it("pads a whole number to 2dp", () => {
     expect(formatPercent("4", "en-GB")).toBe("4.00%");
   });
