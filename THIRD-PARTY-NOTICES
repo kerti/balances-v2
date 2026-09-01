@@ -3271,8 +3271,8 @@ The following npm packages may be included in this product:
  - @types/d3-shape@3.1.8
  - @types/d3-time@3.0.4
  - @types/d3-timer@3.0.2
- - @types/node@26.2.0
- - @types/react-dom@19.2.4
+ - @types/node@26.4.0
+ - @types/react-dom@19.2.5
  - @types/react@19.2.18
  - @types/use-sync-external-store@0.0.6
  - @types/validate-npm-package-name@4.0.2
