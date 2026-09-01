@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2 } from "lucide-react";
+import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,15 +13,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PaginationControls } from "@/components/common/PaginationControls";
 import { errorMessage } from "@/lib/errorMessage";
 import {
   useInflationRates,
   useCreateInflationRate,
+  useUpdateInflationRate,
   useDeleteInflationRate,
 } from "@/hooks/useInflationRates";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatYearMonth } from "@/lib/format";
+import { formatPercent, formatYearMonth } from "@/lib/format";
 import type { InflationRate } from "@/api/types";
+
+// One year of monthly figures per page — matches the Income screen's page size.
+const PAGE_SIZE = 12;
 
 // InflationRatesCard is the Settings ▸ Inflation Rates subpage's sole content:
 // the manual monthly table (ADR-0048's "FX-like store"). The assumed-annual
@@ -35,15 +40,28 @@ import type { InflationRate } from "@/api/types";
 // the entered rows split at the renderer — `useIsMobile` (768px) mounts stacked
 // cards on phones and the wide table on desktop, so only one tree is ever in the
 // DOM. Both leaves are fed the same rows and share the `inflation-rate-row` testid.
+//
+// A row's rate is editable in place (the month is the row's identity — the
+// PATCH takes only `rate`): Edit swaps the rate into an input with Save/Cancel;
+// only one row edits at a time (`editingId`).
 export function InflationRatesCard() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: rates, isPending } = useInflationRates();
   const createRate = useCreateInflationRate();
+  const updateRate = useUpdateInflationRate();
   const deleteRate = useDeleteInflationRate();
   const isMobile = useIsMobile();
 
   const [month, setMonth] = useState("");
   const [rate, setRate] = useState("");
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editRate, setEditRate] = useState("");
+
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil((rates?.length ?? 0) / PAGE_SIZE));
+  const effectivePage = Math.min(page, totalPages);
+  const pageRates = (rates ?? []).slice((effectivePage - 1) * PAGE_SIZE, effectivePage * PAGE_SIZE);
 
   const add = () => {
     createRate.mutate(
@@ -57,8 +75,19 @@ export function InflationRatesCard() {
     );
   };
 
+  const startEdit = (r: InflationRate) => {
+    setEditingId(r.id);
+    setEditRate(r.rate);
+  };
+  const cancelEdit = () => setEditingId(null);
+  const saveEdit = (id: string) => {
+    updateRate.mutate({ id, rate: editRate }, { onSuccess: () => setEditingId(null) });
+  };
+
   // A rate may be negative (deflation) or zero; only require a parseable number.
-  const canAdd = month !== "" && rate.trim() !== "" && !Number.isNaN(Number(rate));
+  const rateValid = (v: string) => v.trim() !== "" && !Number.isNaN(Number(v));
+  const canAdd = month !== "" && rateValid(rate);
+  const canSave = rateValid(editRate);
 
   return (
     <Card data-testid="inflation-rates-card">
@@ -95,6 +124,10 @@ export function InflationRatesCard() {
           <p className="text-sm text-destructive">{errorMessage(createRate.error)}</p>
         )}
 
+        {updateRate.isError && (
+          <p className="text-sm text-destructive">{errorMessage(updateRate.error)}</p>
+        )}
+
         {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
         {rates && rates.length === 0 && (
@@ -105,11 +138,22 @@ export function InflationRatesCard() {
           rates.length > 0 &&
           (isMobile ? (
             <div className="space-y-2" data-testid="inflation-rate-cards">
-              {rates.map((r) => (
+              {pageRates.map((r) => (
                 <InflationRateCard
                   key={r.id}
                   rate={r}
+                  editLabel={t("common:actions.edit")}
                   deleteLabel={t("common:delete")}
+                  saveLabel={t("common:save")}
+                  cancelLabel={t("common:cancel")}
+                  isEditing={editingId === r.id}
+                  editValue={editRate}
+                  onEditChange={setEditRate}
+                  onEditStart={() => startEdit(r)}
+                  onSave={() => saveEdit(r.id)}
+                  onCancel={cancelEdit}
+                  canSave={canSave}
+                  isSaving={updateRate.isPending}
                   onDelete={() => deleteRate.mutate(r.id)}
                 />
               ))}
@@ -119,27 +163,84 @@ export function InflationRatesCard() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("inflation.month")}</TableHead>
-                  <TableHead>{t("inflation.rate")}</TableHead>
-                  <TableHead className="w-16"></TableHead>
+                  <TableHead className="text-right">{t("inflation.rate")}</TableHead>
+                  <TableHead className="w-24"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rates.map((r) => (
-                  <TableRow key={r.id} data-testid="inflation-rate-row">
-                    <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                    <TableCell className="tabular-nums" data-testid="inflation-rate-value">
-                      {r.rate}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm" onClick={() => deleteRate.mutate(r.id)}>
-                        {t("common:delete")}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {pageRates.map((r) => {
+                  const editing = editingId === r.id;
+                  return (
+                    <TableRow key={r.id} data-testid="inflation-rate-row">
+                      <TableCell>{formatYearMonth(r.year_month)}</TableCell>
+                      <TableCell
+                        className="text-right tabular-nums"
+                        data-testid="inflation-rate-value"
+                      >
+                        {editing ? (
+                          <Input
+                            inputMode="decimal"
+                            className="w-28 ml-auto text-right"
+                            aria-label={t("inflation.rate")}
+                            value={editRate}
+                            onChange={(e) => setEditRate(e.target.value)}
+                          />
+                        ) : (
+                          formatPercent(r.rate)
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editing ? (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:save")}
+                              onClick={() => saveEdit(r.id)}
+                              disabled={!canSave || updateRate.isPending}
+                            >
+                              <Check className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:cancel")}
+                              onClick={cancelEdit}
+                            >
+                              <X className="size-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:actions.edit")}
+                              onClick={() => startEdit(r)}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={t("common:delete")}
+                              onClick={() => deleteRate.mutate(r.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ))}
+
+        {totalPages > 1 && (
+          <PaginationControls page={effectivePage} totalPages={totalPages} onPageChange={setPage} />
+        )}
       </CardContent>
     </Card>
   );
@@ -148,34 +249,88 @@ export function InflationRatesCard() {
 // Mobile leaf (ADR-0050 "wide table → stacked cards"): one card per inflation
 // row. The rate — the annualized figure the user came to check — is promoted to
 // the headline (a trailing "%" makes the unit explicit at a glance) with the
-// month below. The delete control is an icon button sized to the 44px tap floor
+// month below. Edit swaps the headline for an input with Save/Cancel; the
+// edit/delete controls are icon buttons sized to the 44px tap floor
 // (INV-PRESENTATION-08).
 function InflationRateCard({
   rate,
+  editLabel,
   deleteLabel,
+  saveLabel,
+  cancelLabel,
+  isEditing,
+  editValue,
+  onEditChange,
+  onEditStart,
+  onSave,
+  onCancel,
+  canSave,
+  isSaving,
   onDelete,
 }: {
   rate: InflationRate;
+  editLabel: string;
   deleteLabel: string;
+  saveLabel: string;
+  cancelLabel: string;
+  isEditing: boolean;
+  editValue: string;
+  onEditChange: (v: string) => void;
+  onEditStart: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  canSave: boolean;
+  isSaving: boolean;
   onDelete: () => void;
 }) {
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="inflation-rate-row">
       <div className="min-w-0 flex-1">
-        <div className="text-lg font-semibold tabular-nums" data-testid="inflation-rate-value">
-          {`${rate.rate}%`}
-        </div>
+        {isEditing ? (
+          <Input
+            inputMode="decimal"
+            aria-label={editLabel}
+            value={editValue}
+            onChange={(e) => onEditChange(e.target.value)}
+          />
+        ) : (
+          <div className="text-lg font-semibold tabular-nums" data-testid="inflation-rate-value">
+            {formatPercent(rate.rate)}
+          </div>
+        )}
         <div className="text-sm text-muted-foreground">{formatYearMonth(rate.year_month)}</div>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-11 shrink-0"
-        aria-label={deleteLabel}
-        onClick={onDelete}
-      >
-        <Trash2 className="size-4" />
-      </Button>
+      {isEditing ? (
+        <div className="flex shrink-0 gap-1">
+          <Button size="sm" onClick={onSave} disabled={!canSave || isSaving}>
+            {saveLabel}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+        </div>
+      ) : (
+        <div className="flex shrink-0 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label={editLabel}
+            onClick={onEditStart}
+          >
+            <Pencil className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-11"
+            aria-label={deleteLabel}
+            onClick={onDelete}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
