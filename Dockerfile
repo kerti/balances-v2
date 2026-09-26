@@ -26,7 +26,7 @@ RUN npm run build   # -> /web/dist
 # target arch (TARGETOS/TARGETARCH are supplied by buildx per --platform). Go
 # cross-compiles cleanly with CGO off, so this is far faster than emulating the
 # target under QEMU, and it produces a multi-arch image (amd64 + arm64).
-FROM --platform=$BUILDPLATFORM golang:1.27.1@sha256:f44f6e88636cfb311f9ebace870ded69d943f227bb3cb27d32ffd84ea18c43ea AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.1@sha256:3680233e3204827fbdc66088528ae6d4b3d034f51d03a99d454f6de034888244 AS build
 ARG TARGETOS
 ARG TARGETARCH
 # Same release tag as the SPA's VITE_APP_VERSION (issue #75), baked into the Go
