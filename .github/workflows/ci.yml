@@ -69,7 +69,7 @@ jobs:
       - name: Normalise coverage paths for Codecov
         run: sed -i 's#github.com/kerti/balances-v2/##g' coverage.out
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: backend/coverage.out
@@ -189,7 +189,7 @@ jobs:
       - run: npm run test:coverage
       - run: npm run build
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: frontend/coverage/lcov.info
