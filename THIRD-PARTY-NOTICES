@@ -7503,7 +7503,7 @@ END OF TERMS AND CONDITIONS
 
 The following npm package may be included in this product:
 
- - caniuse-lite@1.0.30001793
+ - caniuse-lite@1.0.30001812
 
 This package contains the following license:
 
@@ -8115,7 +8115,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - ip-address@10.2.0
+ - ip-address@10.7.2
 
 This package contains the following license:
 
@@ -8563,7 +8563,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - postcss-selector-parser@7.1.1
+ - postcss-selector-parser@7.1.6
 
 This package contains the following license:
 
@@ -8833,7 +8833,7 @@ distributed under the terms of the MIT license above.
 
 The following npm package may be included in this product:
 
- - electron-to-chromium@1.5.357
+ - electron-to-chromium@1.5.439
 
 This package contains the following license:
 
@@ -10972,7 +10972,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 The following npm packages may be included in this product:
 
  - undici-types@8.9.0
- - undici@7.28.0
+ - undici@7.30.0
 
 These packages each contain the following license:
 
@@ -11470,7 +11470,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - node-releases@2.0.44
+ - node-releases@2.0.57
 
 This package contains the following license:
 
@@ -12743,7 +12743,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - browserslist@4.28.2
+ - browserslist@4.29.1
 
 This package contains the following license:
 
@@ -12801,13 +12801,13 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - update-browserslist-db@1.2.3
+ - update-browserslist-db@1.3.3
 
 This package contains the following license:
 
 The MIT License (MIT)
 
-Copyright 2022 Andrey Sitnik <andrey@sitnik.ru> and other contributors
+Copyright 2022 Andrey Sitnik <andrey@sitnik.es> and other contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
