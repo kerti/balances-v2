@@ -84,7 +84,7 @@ Licensed under [AGPL-3.0](LICENSE) ([ADR-0042](docs/adr/0042-project-license-agp
 
 ## Local development
 
-Prerequisites: Docker (OrbStack recommended on macOS), Go 1.26.4+, Node 22+ (`.nvmrc` pins the version).
+Prerequisites: Docker (OrbStack recommended on macOS), Go 1.26.4+, Node 24+ (`.nvmrc` pins the version).
 
 ```sh
 make setup                    # first clone only: git hooks + frontend deps + seed .env

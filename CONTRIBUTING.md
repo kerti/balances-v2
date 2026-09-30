@@ -13,7 +13,7 @@ back-and-forth.
 
 ## Local setup
 
-Prerequisites: Docker (OrbStack on macOS), Go 1.26.4+, Node 22+ (`.nvmrc` pins it).
+Prerequisites: Docker (OrbStack on macOS), Go 1.26.4+, Node 24+ (`.nvmrc` pins it).
 
 ```sh
 make setup                 # first clone: git hooks + frontend deps + seed .env
