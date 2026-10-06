@@ -4381,7 +4381,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 The following npm packages may be included in this product:
 
  - etag@1.8.1
- - proxy-addr@2.0.7
+ - proxy-addr@2.0.8
 
 These packages each contain the following license:
 
