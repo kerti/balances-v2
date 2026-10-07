@@ -71,8 +71,15 @@ in front of the hostname closes the rest.
 
 ```bash
 make backend-sqlc            # regenerate backend/internal/db from queries/ + migrations
+make backend-sqlc-check      # fail if internal/db differs from a fresh generate (CI gate)
 make backend-gen-ts-types    # regenerate frontend/src/api/generated.types.ts from the Go structs
 ```
+
+sqlc needs no separate install: it is pinned in its own tool modfile, `backend/tools/sqlc.mod`, and
+run via `go tool -modfile=tools/sqlc.mod sqlc` (#668). It is kept out of `backend/go.mod` so its
+transitive deps (incl. the cgo `pg_query_go` parser) don't join the app's module graph, which also
+means Dependabot does not bump it. Upgrade deliberately — the command is in the Makefile comment above
+`backend-sqlc` — then regenerate and commit `internal/db` in the same PR.
 
 Run `backend-gen-ts-types` after a migration/sqlc regen changes a wire-facing struct's fields (see
 `frontend/src/api/types.ts`'s header and `backend/tools/gen-ts-types`, issue #365). `make check` /

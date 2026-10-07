@@ -1,4 +1,4 @@
-.PHONY: help brand up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-build e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
+.PHONY: help brand up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-sqlc-check backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-build e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -64,7 +64,8 @@ help:
 	@echo "  backend-migrate-down    roll back the last DB migration"
 	@echo "  backend-migrate-status  show migration status"
 	@echo "  backend-tidy            go mod tidy"
-	@echo "  backend-sqlc            regenerate sqlc code"
+	@echo "  backend-sqlc            regenerate sqlc code (pinned in backend/tools/sqlc.mod)"
+	@echo "  backend-sqlc-check      CI gate: fail if internal/db differs from a fresh sqlc generate"
 	@echo "  backend-gen-ts-types    regenerate frontend/src/api/generated.types.ts"
 	@echo "  backend-gen-ts-types-check  CI gate: fail if generated.types.ts is stale"
 	@echo ""
@@ -138,8 +139,21 @@ backend-migrate-status:
 backend-tidy:
 	( cd backend && go mod tidy )
 
+# sqlc is pinned in its own tool modfile (backend/tools/sqlc.mod, #668) so its
+# ~36 transitive deps (incl. the cgo pg_query_go parser) stay out of the app's
+# go.mod. Upgrade with:
+#   cd backend && go get -modfile=tools/sqlc.mod -tool github.com/sqlc-dev/sqlc/cmd/sqlc@vX.Y.Z
+# then `make backend-sqlc` and commit the regenerated internal/db with it.
+SQLC := go tool -modfile=tools/sqlc.mod sqlc
+
 backend-sqlc:
-	( cd backend && sqlc generate )
+	( cd backend && $(SQLC) generate )
+
+# The CI gate: fails if internal/db differs from what the pinned sqlc would
+# generate (a hand edit, or a regen with another version). `sqlc diff` compares
+# in memory, so nothing is written or repaired.
+backend-sqlc-check:
+	( cd backend && $(SQLC) diff )
 
 # Regenerate frontend/src/api/generated.types.ts, the structural (field
 # names + nullability) mirror of the sqlc/repo wire-facing Go structs. Run
@@ -406,6 +420,7 @@ check:
 	  sed -n '1s/^qa-matrix: /  /p' /tmp/balances-check-qa.log; \
 	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
 	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >/tmp/balances-check-ts-types.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-ts-types.log'; fail=1; }; \
+	printf '%-14s' 'sqlc';         $(MAKE) -s backend-sqlc-check                      >/tmp/balances-check-sqlc.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-sqlc.log'; fail=1; }; \
 	printf '%-14s' 'api-routes';   (cd backend && go run ./tools/gen-routes -check)   >/tmp/balances-check-api-routes.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-api-routes.log'; fail=1; }; \
 	printf '%-14s' 'licenses';     $(MAKE) -s licenses-check                          >/tmp/balances-check-licenses.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-licenses.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
