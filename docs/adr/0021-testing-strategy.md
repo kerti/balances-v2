@@ -40,6 +40,9 @@ package) and shared by every test in it — `internal/testutil.NewTestDB`.
 
 ### Assertions: stdlib `testing` + `google/go-cmp`
 
+> **Amended 2026-10-07:** the `go-cmp` half was never adopted — assertions are stdlib-only. See the
+> amendment at the end.
+
 Scalar checks use plain `if`-and-`t.Errorf`. Structural checks use `cmp.Diff(want, got)` — semantic
 diffs are excellent for spotting wrong fields in financial calculation outputs.
 
@@ -104,9 +107,35 @@ in the Go suites described above — E2E does not take them over.
 - A "leak test" pattern is established early — realized as the `*_tenancy_test.go` files in
   `internal/repo/`, each asserting one resource's cross-Household isolation (catalogued as the
   `INV-TENANCY-*` invariants in `docs/qa/invariants/`).
-- `go-cmp` is added as a dev dependency.
+- ~~`go-cmp` is added as a dev dependency.~~ Not adopted — see the 2026-10-07 amendment.
 - Frontend tests run via `vitest run` and `vitest --watch`; CI runs the non-watch command.
 - The dev container (OrbStack on the user's machine) has Docker available, satisfying
   testcontainers' requirement; CI runners must too.
 - Playwright is now adopted; see [[adr-0024]] for the session-injection approach and the dedicated
   `balances_e2e` database.
+
+## Amendment — 2026-10-07: `go-cmp` was never adopted; assertions stay stdlib-only (#667)
+
+The *Assertions* section named `google/go-cmp` for structural checks. That half of the decision was
+never taken up: `go-cmp` is not in `backend/go.mod`, and no test calls `cmp.Diff`. The `testify`
+rejection did hold — no test imports it (it is in `go.mod` only as an indirect dependency of
+`testcontainers-go`). Unlike a statement that *became* false,
+this one was never true; it is corrected the same way, by amendment, because the test is the same —
+the ADR would have been written differently had we known.
+
+**Why stdlib-only is the right call here, not just what happened:**
+
+- **The suite doesn't compare whole structs.** As of this amendment, 176 test files and no
+  `reflect.DeepEqual` anywhere: tests assert the specific fields that matter, through small
+  helpers such as `assertDec(t, got, "12.50")`, whose failure message already names the wrong
+  field — the benefit `cmp.Diff` was chosen for.
+- **The money type fights `go-cmp`.** Financial values are `shopspring/decimal.Decimal`, which has
+  unexported fields; `cmp.Diff` panics on those unless every call carries a custom
+  `cmp.Comparer`. The domain the ADR wanted `go-cmp` for is the one where it is most awkward.
+
+**Decision:** assertions are stdlib `testing` only — scalar and field-level `if`-and-`t.Errorf`, with
+per-package helpers where a comparison repeats (`decimal` via `.Equal`, never `==`). The rejection of
+`testify` stands.
+
+**Revisit if** whole-struct comparisons become common (e.g. golden report outputs compared field by
+field). Then adopt `go-cmp` with one shared `decimal` comparer in `internal/testutil`, not per call.
