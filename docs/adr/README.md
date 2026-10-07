@@ -25,7 +25,7 @@ touching the area it governs.
 | [0018](0018-pgx-and-sqlc-for-typed-postgres-access.md) | pgx + sqlc for typed Postgres access | backend data |
 | [0019](0019-goose-for-migrations-embedded-in-the-app-binary.md) | goose migrations embedded in the app binary | migrations |
 | [0020](0020-backend-miscellany-validator-env-slog-resend.md) | Backend libs: validator, env-config, slog, Resend mail | backend infra |
-| [0021](0021-testing-strategy.md) | Testing strategy across the stack | tests |
+| [0021](0021-testing-strategy.md) | Testing strategy across the stack (amended 2026-10-07: `go-cmp` never adopted — assertions are stdlib `testing` only; `testify` still rejected) | tests |
 | [0022](0022-snapshot-table-strategy-per-group.md) | One snapshot table per position group — no polymorphic table | snapshots, schema |
 | [0023](0023-investment-transaction-table-strategy.md) | Single polymorphic table for investment transactions | transactions, schema |
 | [0024](0024-e2e-tests-with-playwright-and-session-injection.md) | E2E via Playwright with session injection | e2e |
