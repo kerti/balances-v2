@@ -21,6 +21,13 @@ on:
 permissions:
   contents: read
 
+# Cancel a superseded run when a PR gets a new push. Non-PR runs get a unique
+# group (run_id): a shared group would let a newer queued main run silently
+# replace an older queued one, leaving a merge commit unchecked.
+concurrency:
+  group: codeql-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})

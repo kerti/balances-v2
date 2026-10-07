@@ -34,7 +34,11 @@ export default defineConfig({
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: [
     {
-      command: "go run ./cmd/balances serve",
+      // `make e2e` passes the binary it already built for seeding; a bare
+      // `npm run test:e2e` falls back to compiling via `go run`.
+      command: process.env.E2E_BACKEND_BIN
+        ? `${process.env.E2E_BACKEND_BIN} serve`
+        : "go run ./cmd/balances serve",
       cwd: "../backend",
       env: {
         PORT: String(E2E_BACKEND_PORT),
