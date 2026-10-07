@@ -3,7 +3,7 @@ package pdf
 import (
 	"math"
 
-	"github.com/go-pdf/fpdf"
+	"codeberg.org/go-pdf/fpdf"
 )
 
 // Hand-drawn vector charts (ADR-0045) — donut composition + net-worth trend
@@ -34,7 +34,7 @@ func paletteAt(i int) [3]int { return chartPalette[i%len(chartPalette)] }
 
 // drawDonut renders a donut at centre (cx,cy) with the given outer/inner radii
 // (mm), one segment per slice sized by value share. Zero-total is a no-op.
-func drawDonut(pdf *fpdf.Fpdf, cx, cy, rOuter, rInner float64, slices []slice) {
+func drawDonut(pdf *pdfDoc, cx, cy, rOuter, rInner float64, slices []slice) {
 	var total float64
 	for _, s := range slices {
 		if s.Value > 0 {
@@ -74,7 +74,7 @@ func drawDonut(pdf *fpdf.Fpdf, cx, cy, rOuter, rInner float64, slices []slice) {
 // drawLegend draws a colour-swatch + label list starting at (x,y), one row per
 // slice, using the same palette order as drawDonut. Values are formatted as a
 // percentage of the total. Returns the y after the last row.
-func drawLegend(pdf *fpdf.Fpdf, x, y float64, slices []slice) float64 {
+func drawLegend(pdf *pdfDoc, x, y float64, slices []slice) float64 {
 	var total float64
 	for _, s := range slices {
 		if s.Value > 0 {
@@ -105,7 +105,7 @@ func drawLegend(pdf *fpdf.Fpdf, x, y float64, slices []slice) float64 {
 // drawTrend renders a net-worth trend line inside the box (x,y,w,h): a light
 // baseline, a per-month tick under each point, the polyline with end markers,
 // first/last month labels, and a value callout above the latest point.
-func drawTrend(pdf *fpdf.Fpdf, x, y, w, h float64, pts []TrendPoint, lastLabel string) {
+func drawTrend(pdf *pdfDoc, x, y, w, h float64, pts []TrendPoint, lastLabel string) {
 	if len(pts) < 2 {
 		return
 	}

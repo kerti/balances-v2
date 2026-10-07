@@ -3,8 +3,6 @@ package pdf
 import (
 	"strconv"
 	"strings"
-
-	"github.com/go-pdf/fpdf"
 )
 
 // The Balances wordmark, drawn as fpdf vector paths rather than an embedded
@@ -36,7 +34,7 @@ func wordmarkBox() (w, h float64) {
 // ascender, so the word itself sits in the lower part of the box. Callers that
 // need to align the *word* with something (rather than the box) should use
 // wordmarkBaseline.
-func drawWordmark(pdf *fpdf.Fpdf, x, y, h float64) float64 {
+func drawWordmark(pdf *pdfDoc, x, y, h float64) float64 {
 	bw, bh := wordmarkBox()
 	s := h / bh
 	ox := x + wordmarkPad*s
@@ -67,7 +65,7 @@ func wordmarkBaseline(h float64) float64 {
 // absolute, whitespace-separated, font units, y-up) into fpdf's path API,
 // scaling by s and flipping y about the baseline at oy. It does not fill; the
 // caller issues DrawPath so that multiple contours share one fill operation.
-func tracePath(pdf *fpdf.Fpdf, d string, ox, oy, s float64) {
+func tracePath(pdf *pdfDoc, d string, ox, oy, s float64) {
 	tok := strings.Fields(d)
 	at := func(i int) (float64, float64) {
 		u, _ := strconv.ParseFloat(tok[i], 64)
