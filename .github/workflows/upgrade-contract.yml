@@ -53,9 +53,8 @@ jobs:
           # Full history + tags so `git describe --tags` and `git worktree add`
           # can resolve and check out the previous release.
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: e2e
       - name: Run upgrade contract
         run: bash scripts/upgrade-contract.sh

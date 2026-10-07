@@ -24,7 +24,8 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          # Kept cold on purpose alongside skip-cache below (SA5011 history).
+          cache: false
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
         with:
           version: v2.12.2
@@ -54,12 +55,22 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
+        id: go
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: test
       - name: Run tests with coverage
         run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+      # Only main refreshes the cache, and only when the Go sources changed (the
+      # key hashes them) — see .github/actions/setup-go-cached.
+      - name: Save Go cache
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && steps.go.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ steps.go.outputs.key }}
       # Go profiles carry module-qualified paths
       # (github.com/kerti/balances-v2/backend/...). The pip codecov-cli
       # (use_pypi) doesn't strip the module prefix the way the old binary
@@ -85,10 +96,9 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: e2e
       # Strict gate: fail if any catalogued invariant lacks per-PR coverage —
       # uncovered, or covered only by a nightly (non-smoke) Playwright spec this
       # PR's gate doesn't run. -report so the read-only check never rewrites the
@@ -104,10 +114,9 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: e2e
       # Fails if frontend/src/api/generated.types.ts doesn't match what the
       # Go source would produce — a changed nullability or an added/removed
       # column on a wire-facing struct without a matching regen. See
@@ -128,10 +137,9 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: e2e
       # Official Go vuln scanner. Reachability-based: only fails on
       # vulnerabilities our code actually calls, not every transitive CVE.
       - name: Run govulncheck
@@ -206,10 +214,9 @@ jobs:
       # matching `make licenses`. Needs both toolchains + frontend deps because
       # the generator runs go-licenses and generate-license-file. See issue #345.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      - uses: ./.github/actions/setup-go-cached
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
+          flavour: e2e
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: '24'

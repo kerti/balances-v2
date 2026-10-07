@@ -1,0 +1,42 @@
+# setup-go plus a Go module + build cache keyed per build flavour, restore-only.
+#
+# setup-go's built-in cache is one key (go.sum hash) shared by every job: the
+# first job to finish saves it and nothing ever overwrites it. Here that was a
+# small tool job, so every Go job restored a ~9MB cache and recompiled the
+# module graph cold. Instead, each flavour (e.g. `e2e` = plain build, `test` =
+# -race -cover build) gets its own key that also tracks the Go sources, and only
+# the job that owns a flavour saves it — via actions/cache/save at the end of
+# that job, gated to main so PR refs don't churn the repo's cache quota.
+name: Setup Go (cached)
+description: setup-go with a restore-only, per-flavour Go module + build cache
+
+inputs:
+  flavour:
+    description: Cache flavour to restore (e2e | test)
+    required: true
+
+outputs:
+  key:
+    description: Exact cache key for this commit's Go sources — pass to actions/cache/save
+    value: ${{ steps.restore.outputs.cache-primary-key }}
+  cache-hit:
+    description: "'true' when the exact key was restored (no save needed)"
+    value: ${{ steps.restore.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: backend/go.mod
+        cache: false
+    - id: restore
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/go/pkg/mod
+          ~/.cache/go-build
+        key: go-${{ inputs.flavour }}-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-${{ hashFiles('backend/**/*.go') }}
+        restore-keys: |
+          go-${{ inputs.flavour }}-${{ runner.os }}-${{ hashFiles('backend/go.sum') }}-
+          go-${{ inputs.flavour }}-${{ runner.os }}-
