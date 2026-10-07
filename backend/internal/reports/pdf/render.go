@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-pdf/fpdf"
+	"codeberg.org/go-pdf/fpdf"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/moneyfmt"
@@ -63,7 +63,7 @@ const (
 )
 
 type doc struct {
-	pdf *fpdf.Fpdf
+	pdf *pdfDoc
 	c   reportCopy
 	in  Input
 	x0  float64 // left content edge
@@ -72,7 +72,7 @@ type doc struct {
 
 // Render produces the report PDF bytes for one month.
 func Render(in Input) ([]byte, error) {
-	pdf := fpdf.New("P", "mm", "A4", "")
+	pdf := &pdfDoc{fpdf.New("P", "mm", "A4", "")}
 	pdf.AddUTF8FontFromBytes("Geist", "", geistRegular)
 	pdf.AddUTF8FontFromBytes("Geist", "B", geistBold)
 	pdf.SetMargins(marginL, marginT, marginR)
