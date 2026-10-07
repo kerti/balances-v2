@@ -1,4 +1,4 @@
-.PHONY: help brand up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
+.PHONY: help brand up down logs ps backend-run backend-build backend-test backend-migrate-up backend-migrate-down backend-migrate-status backend-tidy backend-sqlc backend-gen-ts-types backend-gen-ts-types-check licenses licenses-check frontend-install frontend-dev frontend-build backend-stop backend-restart frontend-stop frontend-restart restart servers-status e2e-db-create e2e-build e2e-seed e2e-backend e2e-mock-oidc e2e upgrade-contract start-task check qa-matrix qa-strict qa-gaps session-token hooks-install setup
 
 # `make` with no target prints help.
 .DEFAULT_GOAL := help
@@ -37,6 +37,7 @@ PG_CONTAINER := balances-v2-postgres-1
 PG_USER      := balances
 PG_DB        := balances
 E2E_DB       := balances_e2e
+E2E_BIN      := /tmp/balances-e2e
 E2E_DATABASE_URL := $(shell echo "$(DATABASE_URL)" | sed 's|/balances?|/$(E2E_DB)?|')
 
 # Upgrade contract (#368/#229): a throwaway DB, recreated empty each run, that
@@ -88,6 +89,7 @@ help:
 	@echo "E2E (Playwright; ADR-0024):"
 	@echo "  e2e                     full run — create+seed db, start mock OIDC, run suite"
 	@echo "  e2e-db-create           create the balances_e2e database if missing"
+	@echo "  e2e-build               build the shared e2e backend binary ($(E2E_BIN))"
 	@echo "  e2e-seed                migrate + reset balances_e2e to the fixture"
 	@echo "  e2e-backend             run the backend against balances_e2e (foreground)"
 	@echo "  upgrade-contract        migrate prev release tag -> HEAD on a throwaway DB + boot check (#368)"
@@ -288,6 +290,7 @@ restart: backend-restart frontend-restart
 #                  then Playwright launches its own backend (:8099) + vite
 #                  (:5273) and runs the suite
 # e2e-db-create  : create balances_e2e in the running container if missing
+# e2e-build      : build the backend binary that seed, mock-oidc and Playwright share
 # e2e-seed       : migrate + reset balances_e2e to the Playwright fixture, print SESSION_ID
 # e2e-backend    : run the backend against balances_e2e (foreground)
 # e2e-mock-oidc  : run the fake OIDC provider in the foreground (:8090) for debugging
@@ -300,35 +303,37 @@ restart: backend-restart frontend-restart
 # kills it on exit. Playwright owns the e2e backend/vite lifecycle on dedicated
 # ports, so the 8080/5173 dev servers are never touched.
 
-e2e: e2e-db-create e2e-seed
-	@( cd backend && go build -o /tmp/balances-e2e ./cmd/balances )
-	@/tmp/balances-e2e mock-oidc & \
+# Build the backend once; seed, mock-oidc and Playwright's webServer all run this
+# binary rather than each paying a `go run` compile+link.
+e2e-build:
+	@( cd backend && go build -o $(E2E_BIN) ./cmd/balances )
+
+e2e: e2e-db-create e2e-build
+	@DATABASE_URL="$(E2E_DATABASE_URL)" $(E2E_BIN) seed-e2e
+	@$(E2E_BIN) mock-oidc & \
 	  MOCK_PID=$$!; \
 	  trap "kill $$MOCK_PID 2>/dev/null" EXIT; \
 	  for i in $$(seq 1 50); do \
 	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
 	    sleep 0.2; \
 	  done; \
-	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS) )
+	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" E2E_BACKEND_BIN="$(E2E_BIN)" npm run test:e2e -- $(E2E_ARGS) )
 
 # CI variant of `e2e` (issue #70). Differs only in the DB-create step: CI runs a
 # GitHub `services: postgres` reachable on localhost — there is no docker
 # container to `docker exec` into — and the balances_e2e DB is created by the
 # service's POSTGRES_DB, so e2e-db-create is skipped. E2E_ARGS forwards Playwright
 # flags, e.g. `make e2e-ci E2E_ARGS='--grep @smoke'` for the per-PR smoke gate.
-e2e-ci: e2e-seed-ci
-	@( cd backend && go build -o /tmp/balances-e2e ./cmd/balances )
-	@/tmp/balances-e2e mock-oidc & \
+e2e-ci: e2e-build
+	@DATABASE_URL="$(E2E_DATABASE_URL)" $(E2E_BIN) seed-e2e
+	@$(E2E_BIN) mock-oidc & \
 	  MOCK_PID=$$!; \
 	  trap "kill $$MOCK_PID 2>/dev/null" EXIT; \
 	  for i in $$(seq 1 50); do \
 	    curl -sf http://localhost:8090/.well-known/openid-configuration >/dev/null && break; \
 	    sleep 0.2; \
 	  done; \
-	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" npm run test:e2e -- $(E2E_ARGS) )
-
-e2e-seed-ci:
-	@( cd backend && DATABASE_URL="$(E2E_DATABASE_URL)" go run ./cmd/balances seed-e2e )
+	  ( cd frontend && E2E_DATABASE_URL="$(E2E_DATABASE_URL)" E2E_BACKEND_BIN="$(E2E_BIN)" npm run test:e2e -- $(E2E_ARGS) )
 
 e2e-mock-oidc:
 	@( cd backend && go run ./cmd/balances mock-oidc )
