@@ -66,8 +66,11 @@ jobs:
         id: go
         with:
           flavour: test
+      # -count=1: the restored build cache also holds test results, and Go's
+      # result cache can't see non-Go inputs (the testcontainers Postgres image),
+      # so without it an unchanged-Go PR replays results instead of running tests.
       - name: Run tests with coverage
-        run: go test ./... -race -coverprofile=coverage.out -covermode=atomic
+        run: go test ./... -count=1 -race -coverprofile=coverage.out -covermode=atomic
       # Only main refreshes the cache, and only when the Go sources changed (the
       # key hashes them) — see .github/actions/setup-go-cached.
       - name: Save Go cache
