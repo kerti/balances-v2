@@ -62,26 +62,12 @@ jobs:
       - name: Install frontend deps
         working-directory: frontend
         run: npm ci
-      # Cache the browser download per Playwright version; the apt system deps
-      # can't be cached, so a hit still runs install-deps. --only-shell: CI runs
-      # headless, which uses chromium-headless-shell, not the full Chrome build.
-      - name: Resolve Playwright version
-        id: pw
-        working-directory: frontend
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        id: pw-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}-chromium-shell
+      # --only-shell: CI runs headless, which uses chromium-headless-shell, not the
+      # full Chrome build. Not cached: the download is ~5s; the apt system deps
+      # dominate this step and can't be cached.
       - name: Install Playwright browser
-        if: steps.pw-cache.outputs.cache-hit != 'true'
         working-directory: frontend
         run: npx playwright install --with-deps --only-shell chromium
-      - name: Install Playwright system deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        working-directory: frontend
-        run: npx playwright install-deps chromium
       - name: Run E2E (${{ inputs.tier }})
         # CI=true flips Playwright into forbidOnly + retries=1 + the github
         # reporter (annotates failures inline on the PR). e2e-ci seeds the DB,
