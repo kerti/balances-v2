@@ -2094,7 +2094,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm packages may be included in this product:
 
- - source-map-js@1.2.1
+ - source-map-js@1.2.2
  - source-map@0.6.1
 
 These packages each contain the following license:
