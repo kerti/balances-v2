@@ -133,6 +133,11 @@ jobs:
       # backend/tools/gen-ts-types and issue #365.
       - name: Check generated.types.ts is up to date
         run: go run ./tools/gen-ts-types -check
+      # Fails if backend/internal/db differs from what the pinned sqlc
+      # (backend/tools/sqlc.mod) generates — a hand edit, or a regen with a
+      # different sqlc version. `sqlc diff` compares in memory. See #668.
+      - name: Check sqlc output is up to date
+        run: go tool -modfile=tools/sqlc.mod sqlc diff
       # Fails if docs/api-routes.md doesn't match the live router — a route
       # added/removed/renamed in a handler's Mount without a matching regen.
       # See backend/tools/gen-routes and issue #370.
