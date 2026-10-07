@@ -39,7 +39,7 @@ beforeAll(async () => {
   // deterministic regardless of the jsdom navigator language.
   await i18nReady;
   await i18n.changeLanguage("en-GB");
-  server.listen({ onUnhandledRequest: "error" });
+  server.listen({ onUnhandledFrame: "error" });
 });
 
 afterEach(() => {
