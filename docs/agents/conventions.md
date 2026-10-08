@@ -163,3 +163,8 @@ Not ADRs because they're tactical, but load-bearing:
   through to 500 INTERNAL). Adding a code: declare it in `internal/httperr/codes.go` + emit it + add
   the catalog entry in both locales.
 
+- **Files reach the user through `triggerDownload`, never an in-app link** (ADR-0055). Inside the
+  installed iOS PWA a same-origin `<a href="/api/...">` replaces the app window (`download`/`target`
+  ignored, no way back); a fetched `Blob` via `blob:` opens iOS's file viewer instead. The service
+  worker caches the **shell only** — don't add `runtimeCaching`, and add any new server-owned path
+  prefix to `navigateFallbackDenylist` in `vite.config.ts`.

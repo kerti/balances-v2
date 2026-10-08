@@ -45,6 +45,22 @@ export class ApiError extends Error {
 // out and surfaces an error before the server would have anyway.
 const DEFAULT_TIMEOUT_MS = 20_000;
 
+// The client's own view of connectivity, for OfflineBanner: navigator.onLine
+// lies about captive portals and about a server that is simply unreachable,
+// so a failed request reports offline and any response — success or error —
+// reports back online.
+type ConnectivityListener = (online: boolean) => void;
+const connectivityListeners = new Set<ConnectivityListener>();
+
+export function onConnectivityChange(listener: ConnectivityListener): () => void {
+  connectivityListeners.add(listener);
+  return () => connectivityListeners.delete(listener);
+}
+
+function notifyConnectivity(online: boolean) {
+  for (const listener of connectivityListeners) listener(online);
+}
+
 export async function api<T = unknown>(input: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("Content-Type")) {
@@ -54,7 +70,16 @@ export async function api<T = unknown>(input: string, init: RequestInit = {}): P
   const timeoutSignal = AbortSignal.timeout(DEFAULT_TIMEOUT_MS);
   const signal = init.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
 
-  const res = await fetch(input, { ...init, headers, signal });
+  let res: Response;
+  try {
+    res = await fetch(input, { ...init, headers, signal });
+  } catch (err) {
+    // A caller cancelling its own request (a query unmounting) says nothing
+    // about the network; a refused connection or a timeout does.
+    if (!init.signal?.aborted) notifyConnectivity(false);
+    throw err;
+  }
+  notifyConnectivity(true);
 
   if (!res.ok) {
     let body: ErrorEnvelope | string | undefined;

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shell/UserAvatar";
 import { AppSidebar } from "@/components/shell/AppSidebar";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { OfflineBanner } from "@/components/shell/OfflineBanner";
+import { UpdateBanner } from "@/components/shell/UpdateBanner";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSession } from "@/hooks/useSession";
 import { useInviteIgnoredNotice } from "@/hooks/useInviteIgnoredNotice";
@@ -50,6 +52,8 @@ export function AppShell() {
     >
       <AppSidebar />
       <SidebarInset>
+        <UpdateBanner />
+        <OfflineBanner />
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
             {/* Drawer toggle: phones only — the sidebar is always visible on desktop. */}

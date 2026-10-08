@@ -67,6 +67,44 @@ func TestSPAHandler(t *testing.T) {
 	})
 }
 
+// covers: INV-SERVING-08
+func TestSPAHandler_CacheControl(t *testing.T) {
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "index.html"), "INDEX")
+	mustWrite(t, filepath.Join(dir, "sw.js"), "SW")
+	mustWrite(t, filepath.Join(dir, "manifest.webmanifest"), "{}")
+	mustWrite(t, filepath.Join(dir, "theme-init.js"), "THEME")
+	if err := os.MkdirAll(filepath.Join(dir, "assets"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mustWrite(t, filepath.Join(dir, "assets", "app-3f2a1b.js"), "APP")
+
+	h := spaHandler(dir)
+	cases := []struct {
+		name, path, want string
+	}{
+		{"root shell", "/", "no-cache"},
+		{"shell by name", "/index.html", "no-cache"},
+		{"client route fallback", "/settings", "no-cache"},
+		{"client route under assets fallback", "/assets/bank-accounts", "no-cache"},
+		{"service worker", "/sw.js", "no-cache"},
+		{"manifest", "/manifest.webmanifest", "no-cache"},
+		{"unhashed root script", "/theme-init.js", "no-cache"},
+		// Content-hashed: a new build gets a new name, so ordinary caching is
+		// safe and the handler leaves it alone.
+		{"hashed asset", "/assets/app-3f2a1b.js", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			h(rec, httptest.NewRequest("GET", c.path, nil))
+			if got := rec.Header().Get("Cache-Control"); got != c.want {
+				t.Errorf("%s: Cache-Control = %q, want %q", c.path, got, c.want)
+			}
+		})
+	}
+}
+
 func mustWrite(t *testing.T, path, body string) {
 	t.Helper()
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {

@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { AppLogo } from "@/components/shell/AppLogo";
+import { OfflineBanner } from "@/components/shell/OfflineBanner";
+import { UpdateBanner } from "@/components/shell/UpdateBanner";
 
 // AuthLayout is the shared shell for the six shell-less pre-auth gate screens
 // (sign-in, onboarding, invite-accept, reset request/set, household-erased). One
@@ -19,19 +21,23 @@ import { AppLogo } from "@/components/shell/AppLogo";
 export function AuthLayout({ children, aside }: { children: ReactNode; aside?: ReactNode }) {
   const { t } = useTranslation("common");
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted p-6 md:p-10">
-      <div className="w-full max-w-4xl md:grid md:grid-cols-2 md:items-center md:gap-10">
-        <aside className="hidden md:flex md:flex-col md:gap-6">
-          <div className="space-y-4">
-            <AppLogo className="h-14 w-auto" />
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-              {t("authHero.headline")}
-            </h1>
-            <p className="text-base text-muted-foreground">{t("authHero.body")}</p>
-          </div>
-          {aside}
-        </aside>
-        <main className="flex justify-center">{children}</main>
+    <div className="flex min-h-screen flex-col bg-muted">
+      <UpdateBanner />
+      <OfflineBanner />
+      <div className="flex flex-1 items-center justify-center p-6 md:p-10">
+        <div className="w-full max-w-4xl md:grid md:grid-cols-2 md:items-center md:gap-10">
+          <aside className="hidden md:flex md:flex-col md:gap-6">
+            <div className="space-y-4">
+              <AppLogo className="h-14 w-auto" />
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                {t("authHero.headline")}
+              </h1>
+              <p className="text-base text-muted-foreground">{t("authHero.body")}</p>
+            </div>
+            {aside}
+          </aside>
+          <main className="flex justify-center">{children}</main>
+        </div>
       </div>
     </div>
   );

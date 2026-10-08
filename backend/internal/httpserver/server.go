@@ -161,6 +161,16 @@ func spaHandler(dir string) http.HandlerFunc {
 	fileServer := http.FileServer(http.Dir(root))
 	index := filepath.Join(root, "index.html")
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Everything outside /assets/ keeps its name across deploys — the shell
+		// (which names the current hashed chunks), sw.js (which is how an
+		// installed PWA notices a new build at all), the manifest, theme-init.js,
+		// icons — so a heuristically-cached copy is how "the phone still shows
+		// the old app" happens (ADR-0055). no-cache still caches, it just
+		// revalidates: a 304 per launch. A client-route fallback under /assets/
+		// is the shell too, so it gets the header on its own branch below.
+		if !strings.HasPrefix(r.URL.Path, "/assets/") {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
 		full := filepath.Join(root, filepath.Clean("/"+r.URL.Path))
 		if info, err := os.Stat(full); err == nil && !info.IsDir() &&
 			strings.HasPrefix(full, root+string(os.PathSeparator)) {
@@ -171,6 +181,7 @@ func spaHandler(dir string) http.HandlerFunc {
 			http.NotFound(w, r)
 			return
 		}
+		w.Header().Set("Cache-Control", "no-cache")
 		http.ServeFile(w, r, index)
 	}
 }

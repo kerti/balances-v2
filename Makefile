@@ -205,6 +205,11 @@ brand:
 	@if command -v rsvg-convert >/dev/null 2>&1; then \
 	  rsvg-convert -w 280 docs/brand/svg/wordmark-light.svg -o frontend/public/brand/email-logo.png; \
 	  rsvg-convert -w 2560 -h 1280 docs/brand/social-card.svg -o docs/brand/social-card.png; \
+	  mkdir -p frontend/public/icons; \
+	  rsvg-convert -w 192 -h 192 docs/brand/svg/icon-plated.svg -o frontend/public/icons/icon-192.png; \
+	  rsvg-convert -w 512 -h 512 docs/brand/svg/icon-plated.svg -o frontend/public/icons/icon-512.png; \
+	  rsvg-convert -w 512 -h 512 docs/brand/svg/icon-fullbleed.svg -o frontend/public/icons/icon-maskable-512.png; \
+	  rsvg-convert -w 180 -h 180 docs/brand/svg/icon-fullbleed.svg -o frontend/public/icons/apple-touch-icon.png; \
 	  echo "✓ brand assets + rasters regenerated"; \
 	else \
 	  echo "⚠ rsvg-convert not found — SVGs regenerated, email-logo.png and social-card.png left stale" >&2; \
