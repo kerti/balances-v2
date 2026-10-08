@@ -103,8 +103,9 @@ permits `http` **only** for `localhost`).
 ### 2. Bring your own proxy
 
 You already run a reverse proxy (Nginx, Traefik, Caddy, a homelab/Proxmox setup with your own
-certificates). Balances stays plain HTTP on its published port; your proxy terminates TLS and forwards
-to it. This path is fully supported — it is simply the bundled proxy profile left off.
+certificates) or a **tunnel** (Cloudflare Tunnel, Tailscale Funnel, ngrok). Balances stays plain HTTP
+on its published port; your proxy or the tunnel's edge terminates TLS and forwards to it. This path is
+fully supported — it is simply the bundled proxy profile left off.
 
 ```ini
 APP_URL=https://balances.example.com
@@ -142,6 +143,12 @@ Prerequisites:
 
 - A domain name whose DNS **A/AAAA record points at this machine's public IP**.
 - **Ports 80 and 443 reachable from the internet** — Let's Encrypt validates over them.
+
+> **Using a tunnel (Cloudflare Tunnel, Tailscale Funnel, ngrok)? Use [topology 2](#2-bring-your-own-proxy)
+> instead.** A tunnel is outbound-only: there is no inbound port and no A/AAAA record pointing at your
+> machine, so Caddy can never complete the certificate challenge. It retries until Let's Encrypt
+> rate-limits it. The tunnel's edge already terminates TLS — point the tunnel at `http://<host>:8080`
+> and use topology 2's settings as written.
 
 ```ini
 APP_URL=https://balances.example.com
