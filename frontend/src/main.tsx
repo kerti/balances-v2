@@ -8,6 +8,7 @@ import i18n from "./i18n";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { Toaster } from "./components/ui/sonner";
 import { createQueryClient } from "./queryClient";
+import { AppUpdateProvider } from "./components/shell/UpdateBanner";
 
 const queryClient = createQueryClient();
 
@@ -16,7 +17,9 @@ createRoot(document.getElementById("root")!).render(
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <App />
+          <AppUpdateProvider>
+            <App />
+          </AppUpdateProvider>
           <Toaster />
         </QueryClientProvider>
       </ThemeProvider>

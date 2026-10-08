@@ -312,5 +312,10 @@
   "authHero": {
     "headline": "Ketahui posisi keuangan rumah tangga Anda",
     "body": "Pantau kekayaan bersih dari bulan ke bulan — tanpa mencatat setiap transaksi."
-  }
+  },
+  "appUpdate": {
+    "available": "Versi baru Balances tersedia.",
+    "reload": "Muat ulang"
+  },
+  "offline": "Anda sedang offline — Balances memerlukan koneksi internet."
 }

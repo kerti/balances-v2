@@ -9,7 +9,15 @@ import { defineConfig } from "vitest/config";
 // jsdom — so a helper test never pays for a DOM and a component test always
 // gets one. The E2E suite (Playwright) stays out of this runner and out of the
 // coverage metric.
-const alias = { "@": path.resolve(import.meta.dirname, "./src") };
+// virtual:pwa-register/react only exists once vite-plugin-pwa builds the
+// service worker (ADR-0055); point it at a stub so a layout can render at all.
+const alias = {
+  "@": path.resolve(import.meta.dirname, "./src"),
+  "virtual:pwa-register/react": path.resolve(
+    import.meta.dirname,
+    "./src/test/pwa-register-stub.ts",
+  ),
+};
 
 export default defineConfig({
   resolve: { alias },

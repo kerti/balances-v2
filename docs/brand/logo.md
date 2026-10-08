@@ -35,11 +35,16 @@ Design constraints, carried over unchanged:
 | File | Use | Canvas | Notes |
 |------|-----|--------|-------|
 | `icon-plated.svg`  | App icon, PWA, OS       | 256×256 | Full mark on the graphite plate; safe-area padding is intentional. |
+| `icon-fullbleed.svg` | apple-touch-icon, maskable PWA icon | 256×256 | Same mark, **square corners**: iOS and Android apply their own mask, and transparent corners render black on iOS. |
 | `favicon.svg`      | Browser tab, bookmarks  | 64×64   | **Simplified** mark — heavier beam, wider fulcrum; survives 16px where the full mark thins out. |
 | `glyph-light.svg`  | In-UI mark, **light**   | 50×37   | Transparent, cropped tight to the mark. |
 | `glyph-dark.svg`   | In-UI mark, **dark**    | 50×37   | Transparent, cropped tight. |
 | `wordmark-light.svg` | Wordmark, light bg    | 439×118 | Outlined "balances"; **no mark** — see below. |
 | `wordmark-dark.svg`  | Wordmark, dark bg     | 439×118 | Outlined "balances". |
+
+The PWA icons in `frontend/public/icons/` (192/512 from `icon-plated.svg`; 512 maskable and the
+180 `apple-touch-icon` from `icon-fullbleed.svg`) are rasterized by `make brand` and committed — CI
+has no rasterizer. ADR-0055.
 
 `AppLogo` shows the **wordmark alone**. The identity now lives *in* the word — the tall tapered
 brass `l` is the fulcrum post — so setting the mark beside it states the same idea twice. The

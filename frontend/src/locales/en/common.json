@@ -312,5 +312,10 @@
   "authHero": {
     "headline": "Know where your household stands",
     "body": "Track your net worth month to month — without itemising every transaction."
-  }
+  },
+  "appUpdate": {
+    "available": "A new version of Balances is available.",
+    "reload": "Reload"
+  },
+  "offline": "You're offline — Balances needs a connection."
 }

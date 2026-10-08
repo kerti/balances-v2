@@ -355,6 +355,13 @@ def main():
     files["svg/icon-plated.svg"] = svg(
         256, 256, plated(256, 56, mark_full, FULL_BOUNDS, 0.60), "Balances app icon"
     )
+    # Square-cornered cut for the platforms that apply their own mask: iOS's
+    # apple-touch-icon (transparent corners render black there) and Android's
+    # maskable icon. The 0.60 inset keeps the mark's corners within the 80%
+    # maskable safe circle.
+    files["svg/icon-fullbleed.svg"] = svg(
+        256, 256, plated(256, 0, mark_full, FULL_BOUNDS, 0.60), "Balances app icon"
+    )
 
     # outlined wordmarks
     for name, pal in (("light", LIGHT), ("dark", DARK)):

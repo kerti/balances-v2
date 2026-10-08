@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Installable PWA (ADR-0055). The manifest link is injected by
+         vite-plugin-pwa; iOS still reads its home-screen icon and title from
+         these. theme-color tracks the OS scheme, matching theme-init.js's
+         fallback when no theme is stored. -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="Balances" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F7F5F1" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#14161A" />
     <title>Balances</title>
     <!-- See public/theme-init.js: applies the persisted theme before first
          paint, kept as an external file (not inline) for CSP script-src 'self'. -->
