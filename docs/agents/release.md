@@ -226,6 +226,66 @@ Two layers, in order of convenience:
    `APP_VERSION`/`DEPLOY_ENV` are baked into the SPA bundle at build (issue #75, `appInfo.ts`).
 3. **Smoke-test** the headline flows for anything in the batch.
 
+## Rolling back
+
+A bad release is usually best **fixed forward**: revert the offending PR on `main` and cut the next
+tag. That is the default for `preview`, which has no real users. Roll back only when waiting for a
+fix-forward is worse than losing the release, e.g. `demo` or a self-host instance broken for visitors.
+
+### Traps
+
+- **Re-pushing an existing tag does nothing.** `git push origin <tag>` for a tag the remote already
+  has is a no-op, so `deploy.yml` never fires. The intuitive rollback silently does nothing.
+- **Never delete and re-create a tag.** That *does* fire `deploy.yml`, which rebuilds and overwrites
+  `ghcr.io/kerti/balances:<tag>`, the image self-hosters have pinned. A published tag is immutable.
+- **Never `migrate down` a deployed database.** Down-migrations are never exercised against real data
+  and cannot restore what an up-migration dropped or rewrote. The way back is the pre-tag snapshot
+  (see [Back up the database](#back-up-the-database-migration-bearing-cuts-only)).
+- **An older image runs happily on a newer schema, which is the danger.** Redeploying an older image
+  runs its `migrate up` release command against a database that is already ahead; goose reports "no
+  migrations to run" and exits 0, so the deploy succeeds. The old code then runs against the new
+  schema, which is fine for additive changes and broken for anything else.
+
+### Decision tree
+
+Start by checking whether the bad release carried a migration (pre-flight step 4, or the
+`needs-migration` / `migration:*` labels on its PRs).
+
+1. **No migration.** Redeploy the previous image. Nothing in the database changed.
+2. **Additive migration only** (`migration:additive`: new tables, nullable columns, new indexes).
+   Redeploy the previous image and leave the schema in place; old code ignores what it doesn't know
+   about. Check first that old code doesn't **write** to a table that gained a `NOT NULL` column
+   without a default, or a `CHECK` its inserts would violate. If it does, treat the migration as
+   destructive.
+3. **Destructive or data-changing migration** (`migration:destructive`: drops, renames, type
+   narrowing, backfills). Restore the pre-tag database snapshot **and** redeploy the previous image,
+   together. Every write since the tag is lost; say so in the release notes. If no pre-tag snapshot
+   exists, don't roll back: fix forward.
+
+### Redeploying the previous image
+
+Each tag's image is already on GHCR, so no rebuild is needed.
+
+| Environment | How |
+|---|---|
+| `demo` | Actions → **deploy** → *Run workflow* with the previous tag. This is the normal promote path. |
+| `preview` | `flyctl deploy --app balances-preview --image ghcr.io/kerti/balances:<prev-tag> --env DEPLOY_ENV=preview` (`workflow_dispatch` only targets `demo`). |
+| self-host | Set `BALANCES_TAG=<prev-tag>` in `.env`, then `docker compose pull && docker compose up -d`. For case 3, restore the operator's pre-upgrade backup first ([SELF-HOSTING.md → The upgrade contract](../../SELF-HOSTING.md#the-upgrade-contract)). |
+
+To restore the database in case 3, use Neon console → *Restore* on the env's branch from the
+`<env>-pre-<tag>` snapshot branch, or `pg_restore` the pre-tag dump (commands in [Back up the
+database](#back-up-the-database-migration-bearing-cuts-only)). Restore **before** redeploying, so the
+old image never meets the new schema.
+
+### After a rollback
+
+- Confirm the env serves the old version: `curl -s https://balances-<env>.fly.dev/healthz | jq .version`.
+- **Don't edit or delete the bad GitHub Release.** Prepend one line to its notes saying it was rolled
+  back and why. The tag and image stay, since self-hosters may have pulled them.
+- If the bad tag was the self-host default, move `BALANCES_TAG` in `.env.example` + `SELF-HOSTING.md`
+  back to the previous tag in a PR.
+- The fix ships as the **next** tag; never reuse the bad one.
+
 ## Post-release
 
 - **Close any issues** the release finishes that weren't auto-closed by their PR `closes #n`.
