@@ -43,8 +43,15 @@ exact versions Dependabot proposed — never "latest".
   `go build ./... && go test ./...`. Read the changelog of anything in the money path
   (`shopspring/decimal`) for rounding or serialisation changes before including it.
 - **npm (`frontend/`):** `npm install <pkg>@<version>` (`-D` for a devDependency), keeping the range
-  style `package.json` already uses for that package. **npm regenerates `package-lock.json`; never
-  hand-merge or cherry-pick a lockfile.** Check: `npx tsc -b` (not `--noEmit` — a no-op here),
+  style `package.json` already uses for that package. Give npm the bare version, not `^x.y.z` —
+  npm adds the `^` itself, and a caret spec resolves to the newest in range instead of Dependabot's
+  version. A PR that touches only `package-lock.json` bumps a **transitive** dependency: run
+  `npm update <pkg>` (an `npm install` would wrongly make it a direct dependency), and do these
+  last, since a direct bump can already have moved them. `npm update` takes the newest version the
+  parents' ranges allow, so it can land a patch past Dependabot's — confirm with
+  `npm ls <pkg> --all` that it is at or above the proposed version and report any drift.
+  **npm regenerates `package-lock.json`; never hand-merge or cherry-pick a lockfile.** Check:
+  `npx tsc -b` (not `--noEmit` — a no-op here),
   `npm run lint`, `npm run format:check`, `npm run test`, `npm run build`.
 - **github-actions:** edit the `uses:` lines to the new full commit SHA with its `# vX.Y.Z` comment,
   exactly as `gh pr diff <n>` has them. Keep every action SHA-pinned. Run `actionlint` if installed.
