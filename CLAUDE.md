@@ -20,6 +20,10 @@ Single-context layout — one `CONTEXT.md` and one `docs/adr/` at the repo root.
 
 Batched, tag-driven SemVer pre-releases (ADR-0029/0030). Cutting a release — pick version, label the batch, check migrations, tag, publish auto-generated notes, verify the deploy. See `docs/agents/release.md`.
 
+### Dependabot batches
+
+Fold every open Dependabot PR into one PR — exact versions, npm-regenerated lockfile, `make licenses`, `go.mod` `toolchain` moved with a golang image bump, no `Closes` lines. See `docs/agents/dependabot-batch.md` (skill: `dependabot-batch`).
+
 ### Codebase conventions
 
 Tactical, load-bearing rules that don't rise to an ADR — tenancy filters in SQL, subtype guards, the snapshot/transaction dialog forks, decimal shapes, the error envelope, E2E `data-testid` discipline, and the rest. Consult before touching the area they cover. See `docs/agents/conventions.md`.
