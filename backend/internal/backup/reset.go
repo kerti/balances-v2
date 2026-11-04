@@ -121,7 +121,7 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 		DisplayName: "Demo",
 		Email:       email,
 		Locale:      "en-GB",
-		TimeZone:    "Asia/Jakarta",
+		TimeZone:    demoTimeZone,
 	})
 	if err != nil {
 		return fmt.Errorf("demo reset: create demo user: %w", err)
@@ -142,7 +142,7 @@ func resetDemoHousehold(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, 
 		DisplayName: "Alex",
 		Email:       "alex+" + email,
 		Locale:      "en-GB",
-		TimeZone:    "Asia/Jakarta",
+		TimeZone:    demoTimeZone,
 		CreatedBy:   &demoUser.ID,
 	})
 	if err != nil {

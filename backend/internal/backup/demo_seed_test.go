@@ -50,7 +50,7 @@ func TestSeedDemoData_Reconciles(t *testing.T) {
 		DisplayName: "Demo",
 		Email:       "demo-recon@balances.local",
 		Locale:      "en-GB",
-		TimeZone:    "Asia/Jakarta",
+		TimeZone:    demoTimeZone,
 	})
 	if err != nil {
 		t.Fatalf("create owner: %v", err)
@@ -60,7 +60,7 @@ func TestSeedDemoData_Reconciles(t *testing.T) {
 		DisplayName: "Alex",
 		Email:       "alex-recon@balances.local",
 		Locale:      "en-GB",
-		TimeZone:    "Asia/Jakarta",
+		TimeZone:    demoTimeZone,
 		CreatedBy:   &owner.ID,
 	})
 	if err != nil {

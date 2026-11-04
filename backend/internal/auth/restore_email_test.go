@@ -129,6 +129,9 @@ func TestNotifyRestore_LocaleRenderedPerRecipient(t *testing.T) {
 	}
 	idMember := addMember(t, h.q, hid, "Budi", "id-ID")
 	enMember := addMember(t, h.q, hid, "Clara", "en-GB")
+	// A UTC month end that is already 1 August in the members' Asia/Jakarta
+	// zone: the notice must date it locally ("Agustus"), not in UTC ("Juli").
+	h.h.now = func() time.Time { return time.Date(2026, time.July, 31, 20, 0, 0, 0, time.UTC) }
 
 	h.h.NotifyRestore(context.Background(), hid, h.user.ID, 5)
 
@@ -140,9 +143,8 @@ func TestNotifyRestore_LocaleRenderedPerRecipient(t *testing.T) {
 		t.Errorf("en-GB member not rendered in English: %q", got.HTML)
 	}
 	// The notice date is human-readable + localized, never a machine ISO date.
-	idMonth := monthNames["id-ID"][int(time.Now().Month())-1]
-	if got := sent[idMember.Email]; !strings.Contains(got.HTML, idMonth) {
-		t.Errorf("id-ID notice should carry a localized month name %q: %q", idMonth, got.HTML)
+	if got := sent[idMember.Email]; !strings.Contains(got.HTML, "1 Agustus 2026") {
+		t.Errorf("id-ID notice should carry the local date %q: %q", "1 Agustus 2026", got.HTML)
 	}
 	if got := sent[idMember.Email]; isoDateRE.MatchString(got.HTML) {
 		t.Errorf("id-ID notice leaked a machine ISO date: %q", got.HTML)
