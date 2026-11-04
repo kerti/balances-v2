@@ -12,16 +12,16 @@ import "fmt"
 // paper.
 const BrandBrass = "#8A6A30"
 
-// Neutrals, matching the SPA's light theme: warm paper page, white card, warm
+// Neutrals, matching the SPA's light theme: near-grey paper page, white card, warm
 // border, graphite ink. muted is the same value the app derives for
 // --muted-foreground, chosen so 12px footer type still clears AA on white — the
 // pre-rebrand footer was slate-400 on white, a 2.6:1 that never passed.
 const (
-	brandPaper  = "#F7F5F1"
+	brandPaper  = "#F4F4F3"
 	brandCard   = "#FFFFFF"
 	brandBorder = "#E7E1D8"
 	brandInk    = "#3A4149"
-	brandMuted  = "#6E675C"
+	brandMuted  = "#696662"
 )
 
 // Layout wraps an HTML body fragment in the shared branded email shell: a header
