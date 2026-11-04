@@ -72,9 +72,9 @@ GitHub has no API for the social preview — upload `social-card.png` by hand un
 | Brass (mark, accent) | `#B08947` | `#C79A4E` | The balanced point; the brand colour. |
 | Brass, deep          | `#8A6A30` | `#C79A4E` | `--primary`, focus ring, **any brass that sets type** — see below. |
 | Ink                  | `#1C2128` | `#E8E6E1` | Beam + fulcrum; body text. |
-| Paper                | `#F7F5F1` | `#14161A` | Page ground. |
+| Paper                | `#F4F4F3` | `#14161A` | Page ground. |
 | Card                 | `#FFFFFF` | `#1C1F24` | Lifted surface. |
-| Muted text           | `#6E675C` | `#9A958B` | Secondary copy. |
+| Muted text           | `#696662` | `#9A958B` | Secondary copy. |
 | Border               | `#E7E1D8` | `#2A2E35` | Hairlines. |
 | Plate                | `#14161A` | `#14161A` | Favicon / app-icon / social ground, both themes. |
 

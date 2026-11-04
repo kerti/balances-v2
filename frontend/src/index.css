@@ -68,8 +68,11 @@ body {
    is the constant brand colour; the ink/paper roles swap between themes.
    Neutrals are warm throughout (hue ≈ 80 light, ≈ 260 dark) rather than
    shadcn's stone base, so the accent never reads as a foreign hue dropped onto
-   a cool surface. Unlike the pre-rebrand theme, --card is pure white and
-   --background is warm paper: cards used to sit at exactly --background and
+   a cool surface. The light page, fills and muted text keep only a trace of
+   that warmth (chroma cut to ~25%): a sand ground tinted the whole theme yellow
+   and dulled the brass. --border stays fully warm — a line, not a fill. Unlike
+   the pre-rebrand theme, --card is pure white and --background is near-grey
+   paper: cards used to sit at exactly --background and
    separate by border alone, and the brand's premise is a paper surface with the
    card lifted off it. The app currently boots in dark mode (`class="dark"` on
    <html>); :root is kept in sync so a future light toggle just works.
@@ -77,7 +80,7 @@ body {
    Two values deliberately depart from the brand spec's table, both to clear
    WCAG AA — see the notes at --muted-foreground and --ring. */
 :root {
-  --background: oklch(0.971 0.006 84.6); /* #F7F5F1 warm paper */
+  --background: oklch(0.967 0.0015 84.6); /* #F4F4F3 near-grey paper */
   --foreground: oklch(0.246 0.015 256.8); /* #1C2128 graphite ink */
   --card: oklch(1 0 0); /* #FFFFFF */
   --card-foreground: oklch(0.246 0.015 256.8);
@@ -85,16 +88,16 @@ body {
   --popover-foreground: oklch(0.246 0.015 256.8);
   --primary: oklch(0.544 0.086 80.1); /* #8A6A30 deep brass */
   --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.941 0.01 81.8); /* #EFEBE4 */
+  --secondary: oklch(0.936 0.0025 81.8); /* #EBEAE8 */
   --secondary-foreground: oklch(0.246 0.015 256.8);
-  --muted: oklch(0.944 0.009 84.6); /* #EFECE6 */
-  /* #6E675C, not the brand table's #736C60. Same rule as the pre-rebrand
+  --muted: oklch(0.938 0.0025 84.6); /* #EBEAE9 */
+  /* #696662, not the brand table's #736C60. Same rule as the pre-rebrand
      theme's L=0.52 (#368): muted secondary text has to clear AA on a *muted*
      surface, not just on --background, because the shared CardFooter is
      bg-muted/50 — and #736C60 lands 4.41:1 there, the same near-miss #368
-     already fixed once. This is 4.74:1 on --muted, 5.13:1 on --background. */
-  --muted-foreground: oklch(0.517 0.019 79.3);
-  --accent: oklch(0.941 0.01 81.8); /* #EFEBE4 (hover) */
+     already fixed once. This is 4.75:1 on --muted, 5.18:1 on --background. */
+  --muted-foreground: oklch(0.512 0.008 79.3);
+  --accent: oklch(0.936 0.0025 81.8); /* #EBEAE8 (hover) */
   --accent-foreground: oklch(0.246 0.015 256.8);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.912 0.014 78.3); /* #E7E1D8 */
@@ -153,12 +156,12 @@ body {
      `chevron-down` verbatim so the two match. Stroke is baked in per theme (a
      data URI can't read `currentColor`), tracking --muted-foreground: the arrow
      is an affordance, not content. */
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236E675C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  --sidebar: oklch(0.953 0.009 84.6); /* #F2EFE9, between paper and border */
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23696662' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --sidebar: oklch(0.949 0.00225 84.6); /* #EFEEEC, between paper and border */
   --sidebar-foreground: oklch(0.246 0.015 256.8);
   --sidebar-primary: oklch(0.544 0.086 80.1);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.941 0.01 81.8);
+  --sidebar-accent: oklch(0.936 0.0025 81.8);
   --sidebar-accent-foreground: oklch(0.246 0.015 256.8);
   --sidebar-border: oklch(0.912 0.014 78.3);
   --sidebar-ring: oklch(0.544 0.086 80.1);
