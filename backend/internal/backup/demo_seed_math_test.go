@@ -3,6 +3,7 @@ package backup
 import (
 	"math"
 	"testing"
+	"time"
 )
 
 // These are container-free unit tests for the pure cash-flow / series maths the
@@ -186,5 +187,40 @@ func TestDemoCashLedgerAccumulates(t *testing.T) {
 	l.addInvest(6, -52_083.33) // coupon paid out that month
 	if !approxEqual(l.investNetIn[6], 2_947_916.67) {
 		t.Errorf("investNetIn[6] = %v, want 2947916.67", l.investNetIn[6])
+	}
+}
+
+// covers: INV-FINANCE-28
+//
+// The report engine buckets "now" into the demo users' local month, and the
+// demo-reset cron fires at 19:00 UTC — already the next month in Asia/Jakarta on
+// every month end. The seeder's window must end on that same local month, or
+// the demo shows an empty current month with zero living expenses.
+func TestDemoMonthsAt_EndsOnLocalMonth(t *testing.T) {
+	cases := []struct {
+		name string
+		now  time.Time
+		want time.Time
+	}{
+		{"cron run on UTC month end is next month in Jakarta",
+			time.Date(2026, time.October, 31, 19, 0, 0, 0, time.UTC),
+			time.Date(2026, time.November, 1, 0, 0, 0, 0, time.UTC)},
+		{"UTC year end rolls the local year",
+			time.Date(2026, time.December, 31, 20, 0, 0, 0, time.UTC),
+			time.Date(2027, time.January, 1, 0, 0, 0, 0, time.UTC)},
+		{"mid-month agrees with UTC",
+			time.Date(2026, time.June, 15, 12, 0, 0, 0, time.UTC),
+			time.Date(2026, time.June, 1, 0, 0, 0, 0, time.UTC)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			months := demoMonthsAt(tc.now)
+			if len(months) != demoMonthCount {
+				t.Fatalf("got %d months, want %d", len(months), demoMonthCount)
+			}
+			if got := months[len(months)-1]; !got.Equal(tc.want) {
+				t.Errorf("window ends %s, want %s", got.Format("2006-01"), tc.want.Format("2006-01"))
+			}
+		})
 	}
 }

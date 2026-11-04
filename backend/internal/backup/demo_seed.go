@@ -28,11 +28,23 @@ const demoCurrency = "IDR"
 const demoExtraHistoryMonths = 15
 const demoMonthCount = 12 + demoExtraHistoryMonths
 
+// demoTimeZone is the demo users' time zone. The report engine buckets "now"
+// into the user's local month, and the 19:00 UTC reset cron is already the next
+// month here on every month end — so the seeder must bucket in the same zone,
+// or the demo's current month comes out empty.
+const demoTimeZone = "Asia/Jakarta"
+
 // demoMonths returns demoMonthCount consecutive calendar months ending at the
 // current month, oldest first, so every reset lands its snapshot trail in a
 // fixed window relative to "now" regardless of when the cron actually runs.
-func demoMonths() []time.Time {
-	now := time.Now().UTC()
+func demoMonths() []time.Time { return demoMonthsAt(time.Now()) }
+
+func demoMonthsAt(now time.Time) []time.Time {
+	loc, err := time.LoadLocation(demoTimeZone)
+	if err != nil {
+		loc = time.UTC // mirrors the report engine's fallback, keeping the two in step
+	}
+	now = now.In(loc)
 	months := make([]time.Time, demoMonthCount)
 	for i := 0; i < demoMonthCount; i++ {
 		offset := demoMonthCount - 1 - i
