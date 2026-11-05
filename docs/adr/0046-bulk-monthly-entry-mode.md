@@ -213,3 +213,29 @@ journeys.
 - **CONTEXT.md is unchanged** — "Snapshot", the carry-forward rule, and Position lifecycle already
   carry the domain language; this is presentation + write-path architecture, not new domain terms.
 - No migration: reuses the four existing snapshot tables and `carryover_date_mode`.
+
+## Amendment (2026-11-05): after the UI audit
+
+The 2026-11-04 UI audit (BUG-02, BUG-07, INC-25, SIM-01/02/03/10) changed four things. Money-field
+input itself is [[adr-0056]].
+
+- **"Unchanged" is a saved row.** Dirty-only stays, but a balance that really didn't move could never
+  be saved, so its month rode carry-forward and showed up as stale. Each prefilled row gets an
+  **Unchanged** action that marks it to save the carried value as this month's Snapshot, and a "Mark
+  the other N as unchanged" action sits beside Save. Saving every row on Save stays rejected: it
+  would write values nobody checked and empty the stale signal of meaning.
+- **The batch "when" no longer pre-stamps a date.** The statement date starts blank here and in the
+  per-position dialog, and `carryover_date_mode` is dropped. A date the user never stated is not a
+  fact, and nothing computes from `as_of_date`. (The code had already drifted from the "seeded from
+  existing preferences" section above, to end-of-month capped at today.)
+- **One overwrite rule.** Bulk entry and import keep replacing an existing month, now shown as a muted
+  "Current: …" rather than an orange "Will overwrite" on every row. The per-position dialog stops
+  refusing: picking a month that already has a value switches it to replacing that value, with a
+  notice. `POST` still answers `SNAPSHOT_MONTH_EXISTS`, but only as a guard against a stale tab or a
+  double submit. The per-position toolbar's "Copy carryover" and "New" merge into one **Record
+  month**, which defaults to the month after the latest Snapshot (capped at the current month) and
+  offers "Same as last month" rather than prefilling it. A Snapshot in the wrong month gets an atomic
+  **Move to another month** (soft-delete + insert, as in [[adr-0052]] §2); `year_month` stays
+  immutable.
+- **The front door.** The dashboard's stale-positions warning links to bulk entry for that month, and
+  saving a group offers the next group that still has stale Positions.

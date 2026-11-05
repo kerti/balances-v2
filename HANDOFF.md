@@ -51,9 +51,11 @@ Per-milestone history — what each tag contained — is in the GitHub Releases,
 epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction rather than picking the
 next item off the backlog — they pause between items to direct.
 
-Unreleased on `main`: the **Graphite & Brass rebrand** (ADR-0054) — new palette, mark and outlined
-`balances` wordmark, reaching `index.css`, the brand assets, the PDF report, and the transactional
-emails. `social-card.png` still needs a manual upload under repo **Settings → Social preview**.
+**Active line: the 2026-11-04 UI/UX audit of the demo.** Decided in themed grill rounds; each round
+files its own `ready-for-agent` issues. Quick wins #779–#784; round (a), money entry and the monthly
+flow (ADR-0056, ADR-0046 amendment), is #785–#792. Rounds (b)–(g) are still to grill. Phone-width
+(390px) findings wait for a real-device pass. `social-card.png` (ADR-0054, released in alpha.5)
+still needs a manual upload under repo **Settings → Social preview**.
 
 Standing carry-forwards:
 
