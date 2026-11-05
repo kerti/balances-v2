@@ -54,7 +54,7 @@ test(
     await page.getByTestId("assets-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: account });
     await expect(savedRow.getByText("Will overwrite")).toBeVisible();
-    await expect(savedRow.getByRole("textbox")).toHaveValue("12500000");
+    await expect(savedRow.getByRole("textbox")).toHaveValue("12,500,000");
 
     // --- Cleanup: delete the parent account (returns to the empty list) ---
     await page.goto("/assets/bank-accounts");
@@ -109,7 +109,7 @@ test(
     await page.getByTestId("liabilities-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
     await expect(savedRow.getByText("Will overwrite")).toBeVisible();
-    await expect(savedRow.getByRole("textbox")).toHaveValue("250000000");
+    await expect(savedRow.getByRole("textbox")).toHaveValue("250,000,000");
 
     // Cleanup: delete via the list row actions menu.
     await page.goto("/liabilities/personal");
@@ -158,7 +158,7 @@ test(
     await page.getByTestId("receivables-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
     await expect(savedRow.getByText("Will overwrite")).toBeVisible();
-    await expect(savedRow.getByRole("textbox")).toHaveValue("4500000");
+    await expect(savedRow.getByRole("textbox")).toHaveValue("4,500,000");
 
     // Cleanup: delete via the list row actions menu.
     await page.goto("/receivables");
@@ -223,7 +223,7 @@ test(
     const savedRow = page.locator("li").filter({ hasText: name });
     await expect(savedRow.getByText("Will overwrite")).toBeVisible();
     await expect(savedRow.getByLabel("Quantity")).toHaveValue("100");
-    await expect(savedRow.getByLabel("Price per unit")).toHaveValue("8500");
+    await expect(savedRow.getByLabel("Price per unit")).toHaveValue("8,500");
 
     // Cleanup: delete the parent stock from its detail page.
     await page.goto("/investments/stocks");
@@ -285,7 +285,7 @@ test(
     await page.getByTestId("investments-enter-accrued").click();
     const savedRow = page.locator("li").filter({ hasText: name });
     await expect(savedRow.getByText("Will overwrite")).toBeVisible();
-    await expect(savedRow.getByLabel("Total value")).toHaveValue("1010000");
+    await expect(savedRow.getByLabel("Total value")).toHaveValue("1,010,000");
     await expect(savedRow.getByLabel("Accrued")).toHaveValue("0");
 
     // Cleanup: delete the parent bond from its detail page.

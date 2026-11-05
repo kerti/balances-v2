@@ -77,8 +77,8 @@ it("renders eligible accrued positions grouped by subtype with prefill + disposi
 
   // The bond with history carries its last snapshot's total value + accrued...
   const amount = await screen.findByTestId("investment-accrued-entry-amount-b1");
-  expect(amount).toHaveValue("50250000");
-  expect(screen.getByTestId("investment-accrued-entry-accrued-b1")).toHaveValue("250000");
+  expect(amount).toHaveValue("50,250,000");
+  expect(screen.getByTestId("investment-accrued-entry-accrued-b1")).toHaveValue("250,000");
   // ...and the principal is computed (50,250,000 − 250,000 = 50,000,000).
   expect(screen.getByTestId("investment-accrued-entry-value-b1")).toHaveTextContent(/50/);
 

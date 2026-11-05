@@ -33,7 +33,7 @@ test("bank account snapshot create → edit → delete", { tag: "@smoke" }, asyn
   await page.getByRole("button", { name: "New" }).click();
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByText("Record monthly snapshot")).toBeVisible();
-  await createDialog.getByLabel("Amount (IDR)").fill("12500000");
+  await createDialog.getByLabel("Amount (IDR)").fill("12,500,000");
   await createDialog.getByLabel("Description (optional)").fill(desc);
   await createDialog.getByRole("button", { name: "Save snapshot" }).click();
 
@@ -45,7 +45,7 @@ test("bank account snapshot create → edit → delete", { tag: "@smoke" }, asyn
   //     prefill, then cancel without writing. ---
   await page.getByTestId("snapshot-carryover").click();
   const carryDialog = page.getByRole("dialog");
-  await expect(carryDialog.getByLabel("Amount (IDR)")).toHaveValue("12500000");
+  await expect(carryDialog.getByLabel("Amount (IDR)")).toHaveValue("12,500,000");
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   await expect(carryDialog.getByLabel("Statement date (optional)")).toHaveValue(todayStr);

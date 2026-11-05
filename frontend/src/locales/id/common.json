@@ -188,7 +188,7 @@
     "revaluationHintDepreciate": "💡 Saran {{amount}} — berdasarkan penyusutan {{magnitude}}% /thn × {{months}} bln dari {{anchor}}.",
     "revaluationApply": "Terapkan",
     "descriptionPlaceholder": "dari laporan BCA",
-    "amountPlaceholder": "mis. 12500000"
+    "amountPlaceholder": "mis. 12.500.000"
   },
   "terminate": {
     "closeTrigger": "Tutup",
@@ -317,5 +317,9 @@
     "available": "Versi baru Balances tersedia.",
     "reload": "Muat ulang"
   },
-  "offline": "Anda sedang offline — Balances memerlukan koneksi internet."
+  "offline": "Anda sedang offline — Balances memerlukan koneksi internet.",
+  "numericInput": {
+    "invalidPaste": "Isian ini tidak bisa dibaca sebagai angka.",
+    "tooLong": "Angka ini terlalu panjang untuk kolom ini."
+  }
 }

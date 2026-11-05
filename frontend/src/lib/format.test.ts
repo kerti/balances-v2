@@ -12,6 +12,10 @@ import {
   formatSignedPercent,
   formatPercent,
   roundToCurrency,
+  numberSeparators,
+  groupCanonical,
+  parseLocaleNumber,
+  currencyDecimals,
 } from "@/lib/format";
 
 // Intl output is locale/ICU-dependent (currency glyph placement, spacing,
@@ -218,5 +222,79 @@ describe("roundToCurrency", () => {
   });
   it("returns the raw input when the amount is not a number", () => {
     expect(roundToCurrency("not-a-number", "IDR")).toBe("not-a-number");
+  });
+});
+
+// covers: INV-PRESENTATION-13
+describe("numberSeparators", () => {
+  it("reads the grouping and decimal marks from the locale", () => {
+    expect(numberSeparators("en-GB")).toEqual({ group: ",", decimal: "." });
+    expect(numberSeparators("id-ID")).toEqual({ group: ".", decimal: "," });
+  });
+});
+
+describe("groupCanonical", () => {
+  it("groups the integer part and swaps in the locale's decimal mark", () => {
+    expect(groupCanonical("48500000.50", "en-GB")).toBe("48,500,000.50");
+    expect(groupCanonical("48500000.50", "id-ID")).toBe("48.500.000,50");
+  });
+
+  it("keeps a trailing decimal point, so a half-typed figure reads as typed", () => {
+    expect(groupCanonical("1234.", "en-GB")).toBe("1,234.");
+  });
+
+  it("does not round a figure past what a float holds", () => {
+    expect(groupCanonical("1234567890123456.1234", "en-GB")).toBe("1,234,567,890,123,456.1234");
+  });
+
+  it("renders empty as empty", () => {
+    expect(groupCanonical("", "en-GB")).toBe("");
+  });
+});
+
+describe("parseLocaleNumber", () => {
+  it("reads the locale's own grouped form", () => {
+    expect(parseLocaleNumber("48,500,000.50", "en-GB")).toBe("48500000.50");
+    expect(parseLocaleNumber("48.500.000,50", "id-ID")).toBe("48500000.50");
+  });
+
+  it("reads plain digits with the locale's decimal mark", () => {
+    expect(parseLocaleNumber("1234.5", "en-GB")).toBe("1234.5");
+    expect(parseLocaleNumber("1234,5", "id-ID")).toBe("1234.5");
+    expect(parseLocaleNumber("1,5", "id-ID")).toBe("1.5");
+  });
+
+  it("strips a currency symbol or code and spaces", () => {
+    expect(parseLocaleNumber("Rp 48.500.000", "id-ID")).toBe("48500000");
+    expect(parseLocaleNumber("Rp 48.500.000,00", "id-ID")).toBe("48500000.00");
+    expect(parseLocaleNumber("£1,234.56", "en-GB")).toBe("1234.56");
+    expect(parseLocaleNumber(" 1,234 IDR ", "en-GB")).toBe("1234");
+  });
+
+  it("accepts grouping only in correct groups of three", () => {
+    expect(parseLocaleNumber("1,5", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("12,34,567", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("1,2345", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("1.000,5", "en-GB")).toBeNull();
+  });
+
+  it("refuses anything else", () => {
+    expect(parseLocaleNumber("", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("abc", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("-500", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("1.2.3", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("12a34", "en-GB")).toBeNull();
+  });
+
+  it("drops leading zeros and reads a bare fraction", () => {
+    expect(parseLocaleNumber("007", "en-GB")).toBe("7");
+    expect(parseLocaleNumber(".5", "en-GB")).toBe("0.5");
+  });
+});
+
+describe("currencyDecimals", () => {
+  it("gives the currency's minor units", () => {
+    expect(currencyDecimals("USD")).toBe(2);
+    expect(currencyDecimals("JPY")).toBe(0);
   });
 });

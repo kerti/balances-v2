@@ -63,7 +63,7 @@ it("renders eligible investments grouped by subtype with qty + price prefill and
   // The stock's two tab-stops carry the last snapshot's factors...
   const qty = await screen.findByTestId("investment-entry-quantity-s1");
   expect(qty).toHaveValue("10");
-  expect(screen.getByTestId("investment-entry-price-s1")).toHaveValue("1500");
+  expect(screen.getByTestId("investment-entry-price-s1")).toHaveValue("1,500");
   // ...and the value is computed (10 × 1500 = 15000), not entered.
   expect(screen.getByTestId("investment-entry-value-s1")).toHaveTextContent(/15/);
 

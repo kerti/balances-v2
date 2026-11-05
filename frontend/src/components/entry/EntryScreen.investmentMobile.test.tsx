@@ -78,7 +78,7 @@ it("mobile: stacks quantity + price as full-width ≥44px lines with the value m
   const qty = await screen.findByTestId("investment-entry-quantity-s1");
   const price = screen.getByTestId("investment-entry-price-s1");
   expect(qty).toHaveValue("10");
-  expect(price).toHaveValue("1500");
+  expect(price).toHaveValue("1,500");
   // A11y floor: each tab-stop is a full-width ≥44px (h-11) target — the mobile
   // renderer, not the cramped desktop w-28 columns.
   expect(qty).toHaveClass("h-11");

@@ -53,8 +53,11 @@ next item off the backlog — they pause between items to direct.
 
 **Active line: the 2026-11-04 UI/UX audit of the demo.** Decided in themed grill rounds; each round
 files its own `ready-for-agent` issues. Quick wins #779–#784; round (a), money entry and the monthly
-flow (ADR-0056, ADR-0046 amendment), is #785–#792. Rounds (b)–(g) are still to grill. Phone-width
-(390px) findings wait for a real-device pass. `social-card.png` (ADR-0054, released in alpha.5)
+flow (ADR-0056, ADR-0046 amendment), is #785–#792. Order: code what later rounds can't change
+(#779–#784, #785 shared numeric input → #786 rollout, #787, #790, #792) while grilling (b)
+close/import/transactions and (c) feedback & safety; hold #788/#789/#791 until (c) decides whether an
+overwrite is recoverable. Rounds (d)–(g) after. Phone-width (390px) findings wait for a real-device
+pass. `social-card.png` (ADR-0054, released in alpha.5)
 still needs a manual upload under repo **Settings → Social preview**.
 
 Standing carry-forwards:

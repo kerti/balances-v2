@@ -12,9 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
 import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
-import { formatYearMonth } from "@/lib/format";
+import { formatYearMonth, currencyDecimals } from "@/lib/format";
 
 // Generic snapshot shape — only the fields the edit form needs.
 type SnapshotLike = {
@@ -102,12 +103,12 @@ export function EditSnapshotDialog<TResult>({
             <Label htmlFor="edit_amount">
               {t("fields.amountIn", { currency: snapshot.currency })}
             </Label>
-            <Input
+            <NumericInput
               id="edit_amount"
               required
-              inputMode="decimal"
+              decimals={currencyDecimals(snapshot.currency)}
               value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              onChange={(v) => setForm({ ...form, amount: v })}
             />
           </div>
 

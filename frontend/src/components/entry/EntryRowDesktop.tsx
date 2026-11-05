@@ -1,6 +1,6 @@
 import { RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Button } from "@/components/ui/button";
 import { EntryRowMeta, type EntryRowRendererProps } from "@/components/entry/entryRow";
 import type { EntryShape } from "@/components/entry/shapes";
@@ -81,14 +81,15 @@ export function EntryRowDesktop({
       )}
       <div className="flex items-center gap-2">
         {shape.fields.map((f) => (
-          <Input
+          <NumericInput
             key={f.key}
             className={`${f.widthClass} text-right${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
-            inputMode="decimal"
+            decimals={f.decimals(view.currency)}
+            maxIntegerDigits={f.maxIntegerDigits}
             aria-label={f.labelKey ? t(f.labelKey) : undefined}
             placeholder={f.labelKey ? t(f.labelKey) : undefined}
             value={view.fieldValues[f.key] ?? ""}
-            onChange={(e) => onFieldChange(f.key, e.target.value)}
+            onChange={(v) => onFieldChange(f.key, v)}
             data-testid={`${tid}-entry-${f.testidSuffix}-${positionId}`}
           />
         ))}

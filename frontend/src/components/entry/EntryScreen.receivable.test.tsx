@@ -58,7 +58,7 @@ it("renders eligible receivables as one flat list with carry-forward prefill", a
   renderScreen();
 
   const withHist = await screen.findByTestId("receivable-entry-amount-r1");
-  expect(withHist).toHaveValue("2000000");
+  expect(withHist).toHaveValue("2,000,000");
   expect(screen.getByTestId("receivable-entry-amount-r2")).toHaveValue("");
   expect(screen.getByTestId("receivable-entry-row-r2")).toHaveTextContent(/no previous value/i);
 

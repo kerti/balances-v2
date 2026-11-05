@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
@@ -100,12 +101,12 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
                   currency: snapshot.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_ai_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(snapshot.currency)}
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
               />
             </div>
             <div className="grid gap-2">
@@ -114,12 +115,12 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
                   currency: snapshot.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_ai_accrued"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(snapshot.currency)}
                 value={form.accrued_interest}
-                onChange={(e) => setForm({ ...form, accrued_interest: e.target.value })}
+                onChange={(v) => setForm({ ...form, accrued_interest: v })}
               />
             </div>
           </div>

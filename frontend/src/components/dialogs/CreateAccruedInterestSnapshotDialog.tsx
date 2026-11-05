@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
@@ -200,12 +201,12 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
                   currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="ai_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(currency)}
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
                 placeholder={t("investments:accruedInterestSnapshot.totalValuePlaceholder")}
               />
             </div>
@@ -215,12 +216,12 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
                   currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="ai_accrued"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(currency)}
                 value={form.accrued_interest}
-                onChange={(e) => setForm({ ...form, accrued_interest: e.target.value })}
+                onChange={(v) => setForm({ ...form, accrued_interest: v })}
                 placeholder={t("investments:accruedInterestSnapshot.accruedPlaceholder")}
               />
             </div>

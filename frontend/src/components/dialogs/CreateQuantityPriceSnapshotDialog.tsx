@@ -14,8 +14,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import {
+  formatCurrency,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+} from "@/lib/format";
 import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
@@ -185,12 +191,13 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
               <Label htmlFor="inv_quantity">
                 {t("investments:quantityPriceSnapshot.quantityLabel")}
               </Label>
-              <Input
+              <NumericInput
                 id="inv_quantity"
                 required
-                inputMode="decimal"
+                decimals={QUANTITY_DECIMALS}
+                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                 value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                onChange={(v) => setForm({ ...form, quantity: v })}
                 placeholder={t("investments:quantityPriceSnapshot.quantityPlaceholder")}
               />
             </div>
@@ -200,12 +207,12 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
                   currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="inv_price_per_unit"
                 required
-                inputMode="decimal"
+                decimals={PRICE_DECIMALS}
                 value={form.price_per_unit}
-                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
+                onChange={(v) => setForm({ ...form, price_per_unit: v })}
                 placeholder={t("investments:quantityPriceSnapshot.pricePerUnitPlaceholder")}
               />
             </div>

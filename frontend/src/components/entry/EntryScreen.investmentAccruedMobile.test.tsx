@@ -93,8 +93,8 @@ it("mobile: stacks total value + accrued as full-width ≥44px lines with the pr
   // Same testid contract as desktop, carry-forward prefill intact on both tab-stops.
   const amount = await screen.findByTestId("investment-accrued-entry-amount-b1");
   const accrued = screen.getByTestId("investment-accrued-entry-accrued-b1");
-  expect(amount).toHaveValue("50250000");
-  expect(accrued).toHaveValue("250000");
+  expect(amount).toHaveValue("50,250,000");
+  expect(accrued).toHaveValue("250,000");
   // A11y floor: each tab-stop is a full-width ≥44px (h-11) target — the mobile
   // renderer, not the cramped desktop w-28 columns.
   expect(amount).toHaveClass("h-11");
