@@ -4,6 +4,7 @@ import {
   PRICE_DECIMALS,
   QUANTITY_DECIMALS,
   QUANTITY_INTEGER_DIGITS,
+  roundToCurrency,
 } from "@/lib/format";
 
 // The bulk monthly-entry screen (ADR-0046) renders one row per eligible
@@ -39,6 +40,12 @@ export type EntryField = {
   // row in `currency`, and the integer digits its column holds (16 when unset).
   decimals: (currency: string) => number;
   maxIntegerDigits?: number;
+  // True for a money field (an amount, accrued interest): a carried-forward value
+  // is *shown* at the currency's minor units, "1408210.1634" as "1,408,210.16"
+  // (ADR-0056). Never set on a quantity or a price per unit, which legitimately
+  // carry more places than money does. Display only: dirty-tracking and the
+  // save body read the stored value, so an untouched row writes nothing.
+  money?: boolean;
 };
 
 export type EntryShape = {
@@ -60,6 +67,19 @@ export type EntryShape = {
   // number. Always set when `derived` is non-null.
   derivedLabelKey: string | null;
 };
+
+// minorUnitsShown is how a carried-forward money value reads in its input: the
+// stored figure rounded to the currency's minor units, without padding zeros it
+// didn't have ("1408210.1634" -> "1408210.16", "12500000" stays "12500000"). Not
+// padding keeps the field reading like what the user would type (NumericInput
+// shows no forced cents) and keeps a click-and-type from landing past the
+// field's decimal limit. Display only: the stored string stays the dirty-check
+// baseline and the save value, so rounding here never reaches the server.
+export function minorUnitsShown(stored: string, currency: string): string {
+  if (stored.trim() === "") return stored;
+  const rounded = roundToCurrency(stored, currency);
+  return rounded.includes(".") ? rounded.replace(/\.?0+$/, "") : rounded;
+}
 
 // deriveProduct computes quantity × price with Number — household scale is fine
 // and the precision-sensitive arithmetic is re-done on the backend
@@ -103,6 +123,7 @@ export const amountOnlyShape: EntryShape = {
       labelKey: null,
       widthClass: "w-36",
       decimals: currencyDecimals,
+      money: true,
     },
   ],
   prefill: (row) => ({ amount: row.prefill_amount ?? "" }),
@@ -157,6 +178,7 @@ export const accruedShape: EntryShape = {
       labelKey: "bulkEntry.totalValue",
       widthClass: "w-28",
       decimals: currencyDecimals,
+      money: true,
     },
     {
       key: "accrued_interest",
@@ -164,6 +186,7 @@ export const accruedShape: EntryShape = {
       labelKey: "bulkEntry.accrued",
       widthClass: "w-28",
       decimals: currencyDecimals,
+      money: true,
     },
   ],
   prefill: (row) => ({

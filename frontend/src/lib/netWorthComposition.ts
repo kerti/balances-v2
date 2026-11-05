@@ -4,6 +4,10 @@ import type { MonthlyReport } from "@/api/types";
 // (year_month + string amount), so these arrays feed SnapshotChart directly.
 export type SeriesPoint = { year_month: string; amount: string };
 
+// The order the composition lines read in, in the chart's legend and its
+// tooltip alike (INC-34): what you own, what it is invested in, what you owe.
+export const COMPOSITION_ORDER = ["assets", "investments", "liabilities"] as const;
+
 export type Composition = {
   assets: SeriesPoint[];
   liabilities: SeriesPoint[];

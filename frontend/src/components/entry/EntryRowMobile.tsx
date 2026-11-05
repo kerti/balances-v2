@@ -59,14 +59,17 @@ export function EntryRowMobile({
           // has no such header, so the footer carries the column's name inline —
           // the mobile twin of that header — so the figure reads as a named,
           // computed column ("Value 15.000" for qty×price, "Principal 3.000.000"
-          // for accrued) rather than a stray number. Currency sits at the card's
-          // top-right; a bare "—" after the label until the inputs complete.
+          // for accrued) rather than a stray number. The figure carries its currency
+          // symbol like every other money total (INC-32); a bare "—" after the
+          // label until the inputs complete.
           <span
             className="text-sm text-muted-foreground"
             data-testid={`${tid}-entry-value-${positionId}`}
           >
             {shape.derivedLabelKey && <span className="mr-1.5">{t(shape.derivedLabelKey)}</span>}
-            <span>{view.derived.value ?? "—"}</span>
+            <span>
+              {view.derived.value === null ? "—" : `${view.derived.symbol} ${view.derived.value}`}
+            </span>
           </span>
         ) : (
           <span />

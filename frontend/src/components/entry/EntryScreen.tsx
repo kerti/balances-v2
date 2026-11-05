@@ -17,7 +17,7 @@ import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBu
 import { EntryRowDesktop, EntryRowDesktopHeader } from "@/components/entry/EntryRowDesktop";
 import { EntryRowMobile } from "@/components/entry/EntryRowMobile";
 import type { EntryGroupConfig } from "@/components/entry/groups";
-import type { EntryFieldValues } from "@/components/entry/shapes";
+import { minorUnitsShown, type EntryField, type EntryFieldValues } from "@/components/entry/shapes";
 import type { EntryRowView, EntryWhen } from "@/components/entry/entryRow";
 
 // EntryScreen is the bulk monthly-entry view for one amount-only group
@@ -86,6 +86,15 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     if (edited !== undefined) return edited;
     return shape.prefill(row)[fieldKey] ?? "";
   }
+  // shownFor is what the input displays: valueFor, except that a carried-forward
+  // money value is rounded to the currency's minor units (ADR-0056). It is for
+  // display only. isDirty and the save body read valueFor/mergedValues, so a
+  // prefill shown rounded never makes a row dirty or changes what is sent.
+  function shownFor(row: EntryRow, f: EntryField): string {
+    const v = valueFor(row, f.key);
+    if (!f.money || edits[row.position_id]?.[f.key] !== undefined) return v;
+    return minorUnitsShown(v, row.currency);
+  }
   // The merged field values for a row: prefill overlaid with the user's edits.
   function mergedValues(row: EntryRow): EntryFieldValues {
     const out: EntryFieldValues = {};
@@ -141,7 +150,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // the chosen month, the shape's derived value) into plain display data.
   function rowView(row: EntryRow): EntryRowView {
     const fieldValues: EntryFieldValues = {};
-    for (const f of shape.fields) fieldValues[f.key] = valueFor(row, f.key);
+    for (const f of shape.fields) fieldValues[f.key] = shownFor(row, f);
 
     let derived: { symbol: string; value: string | null } | null = null;
     if (shape.derived) {
