@@ -11,6 +11,11 @@ language, an externally-visible contract), the earlier in the spine it must
 start.** A new feature starts at Phase 1; a bug fix usually starts at Phase 4; a
 docs tweak is just Phase 6.
 
+**Who runs each phase** (ADR-0057): the orchestrator owns 1, 3's acceptance, 6's sign-off and 7–8;
+`planner` drafts 3–4, `grill` runs 2, `builder` / `builder-deep` run 5, `reviewer` checks before 7,
+and `researcher` answers "where / how does it work" questions at any phase. Delegation is optional
+and gated; see `CLAUDE.md`.
+
 ## The spine
 
 1. **Capture** — an idea becomes a tracked issue. Use the `triage` skill / issue

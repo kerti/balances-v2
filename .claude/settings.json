@@ -1,0 +1,36 @@
+{
+  "$comment": [
+    "Shared, committed Claude Code settings for balances-v2 (ADR-0057). Personal",
+    "settings (your permission approvals) belong in .claude/settings.local.json,",
+    "which is gitignored. Paths use ${CLAUDE_PROJECT_DIR} so this file is portable",
+    "across clones; never hardcode an absolute path here.",
+    "model + effortLevel pin the orchestrator's tier and effort. 'opus' is an",
+    "alias, so the model behind it floats. They are a default, not enforcement:",
+    "/effort, --effort and CLAUDE_CODE_EFFORT_LEVEL all win, the env var over",
+    "everything. Role agents pin their own effort in .claude/agents/*.md",
+    "frontmatter, which overrides the session level.",
+    "CLAUDE_CODE_FORK_SUBAGENT=0 turns off the built-in 'fork' agent type. While",
+    "forks are on, every subagent runs in the background, so the foreground-",
+    "dispatch rule in CLAUDE.md could not be followed. balances-v2 delegates only",
+    "to its role agents, never to forks.",
+    "The Agent hook makes every subagent spawn a permission prompt."
+  ],
+  "env": {
+    "CLAUDE_CODE_FORK_SUBAGENT": "0"
+  },
+  "model": "opus",
+  "effortLevel": "medium",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/agent-gate.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
