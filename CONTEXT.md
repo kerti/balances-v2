@@ -68,9 +68,16 @@ accrued interest, where **total value is dirty** — it already includes the acc
 additive component. Net-worth aggregation sums `total value` uniformly across all snapshot tables.
 All snapshot values are entered manually from statements; the system does not auto-compute interest
 or market value. A Snapshot belongs to exactly one month: its `year_month` is immutable after
-creation (to move a reading to another month, delete it and record a new one), and its optional
-`as_of_date` (the statement date) must fall **within that same calendar month** — enforced by a DB
-CHECK on every snapshot table and by bounded date inputs in the UI.
+creation. **Moving** a reading to another month is one atomic act that archives (soft-deletes) the
+original and records a new Snapshot in the target month; a close Snapshot can't be moved. Its
+optional `as_of_date` (the statement date) must fall **within that same calendar month**, which a DB
+CHECK on every snapshot table and bounded date inputs in the UI enforce. The statement date is only
+ever what the user entered: it is never filled in for them.
+
+A month has at most one Snapshot per Position. Recording a value for a month that already has one
+**replaces** it, and the UI says so before you save; that is the rule for the single dialog, bulk
+entry and import alike. Recording a value that didn't change is still a Snapshot (an observation):
+it ends the Position's **stale** listing for that month, and carry-forward does not.
 
 **Transaction**: An event in an Investment instrument's ledger. Types: **Buy**, **Sell**,
 **Coupon**, **Dividend**, **Distribution**, **Fee**, **Maturity**.

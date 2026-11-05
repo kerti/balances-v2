@@ -30,7 +30,7 @@ plausible future case (fractional shares, crypto-grade precision) without future
 
 The frontend formats each stored value according to its currency's ISO 4217 convention:
 
-- IDR → no decimals (`15.000.000`)
+- IDR → ~~no decimals~~ 2 decimals (`15.000.000,00`) — amended by [[adr-0056]]: ISO 4217 gives IDR 2 minor units
 - USD → 2 decimals (`1,500.00`)
 - BHD / KWD → 3 decimals
 - Future crypto → up to 8 decimals
