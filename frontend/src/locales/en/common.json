@@ -188,7 +188,7 @@
     "revaluationHintDepreciate": "💡 Suggested {{amount}} — based on −{{magnitude}}% depreciation /yr × {{months}} mo from {{anchor}}.",
     "revaluationApply": "Apply",
     "descriptionPlaceholder": "from BCA statement",
-    "amountPlaceholder": "e.g. 12500000"
+    "amountPlaceholder": "e.g. 12,500,000"
   },
   "terminate": {
     "closeTrigger": "Close",
@@ -317,5 +317,9 @@
     "available": "A new version of Balances is available.",
     "reload": "Reload"
   },
-  "offline": "You're offline — Balances needs a connection."
+  "offline": "You're offline — Balances needs a connection.",
+  "numericInput": {
+    "invalidPaste": "That isn't a number this field can read.",
+    "tooLong": "That number is too long for this field."
+  }
 }

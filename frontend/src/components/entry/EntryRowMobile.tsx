@@ -1,6 +1,6 @@
 import { RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { EntryRowMeta, type EntryRowRendererProps } from "@/components/entry/entryRow";
@@ -39,13 +39,14 @@ export function EntryRowMobile({
                 {t(f.labelKey)}
               </Label>
             )}
-            <Input
+            <NumericInput
               id={inputId}
               className={`h-11 w-full text-right text-base${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
-              inputMode="decimal"
+              decimals={f.decimals(view.currency)}
+              maxIntegerDigits={f.maxIntegerDigits}
               aria-label={f.labelKey ? t(f.labelKey) : undefined}
               value={view.fieldValues[f.key] ?? ""}
-              onChange={(e) => onFieldChange(f.key, e.target.value)}
+              onChange={(v) => onFieldChange(f.key, v)}
               data-testid={inputId}
             />
           </div>

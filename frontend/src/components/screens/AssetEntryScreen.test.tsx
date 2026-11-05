@@ -69,7 +69,7 @@ it("renders eligible assets grouped by type, with owner + carry-forward prefill"
   renderScreen();
 
   const withHist = await screen.findByTestId("asset-entry-amount-a1");
-  expect(withHist).toHaveValue("1000000");
+  expect(withHist).toHaveValue("1,000,000");
   expect(screen.getByTestId("asset-entry-amount-a2")).toHaveValue("");
   expect(screen.getByTestId("asset-entry-row-a2")).toHaveTextContent(/no previous value/i);
 
@@ -142,7 +142,7 @@ it("marks a changed row and Undo reverts it to the prefill", async () => {
   expect(undo).toBeEnabled();
 
   await user.click(undo);
-  expect(input).toHaveValue("1000000");
+  expect(input).toHaveValue("1,000,000");
   expect(screen.queryByTestId("asset-entry-dirty-a1")).not.toBeInTheDocument();
   expect(screen.getByTestId("asset-entry-undo-a1")).toBeDisabled();
 });

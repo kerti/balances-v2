@@ -61,7 +61,7 @@ it("renders eligible liabilities grouped by subtype with carry-forward prefill",
   renderScreen();
 
   const withHist = await screen.findByTestId("liability-entry-amount-l1");
-  expect(withHist).toHaveValue("500000000");
+  expect(withHist).toHaveValue("500,000,000");
   expect(screen.getByTestId("liability-entry-amount-p1")).toHaveValue("");
   expect(screen.getByTestId("liability-entry-row-p1")).toHaveTextContent(/no previous value/i);
 

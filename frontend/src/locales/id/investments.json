@@ -88,7 +88,7 @@
     "pricePerUnitLabel": "Harga per unit ({{currency}})",
     "totalValueLabel": "Total nilai:",
     "quantityPlaceholder": "100",
-    "pricePerUnitPlaceholder": "8500",
+    "pricePerUnitPlaceholder": "8.500",
     "descriptionPlaceholder": "dari laporan broker"
   },
   "accruedInterestSnapshot": {
@@ -102,8 +102,8 @@
     "totalValueLabel": "Total nilai ({{currency}})",
     "accruedLabel": "Bunga berjalan ({{currency}})",
     "ofWhichPrincipalLabel": "Di mana pokok:",
-    "totalValuePlaceholder": "50250000",
-    "accruedPlaceholder": "250000",
+    "totalValuePlaceholder": "50.250.000",
+    "accruedPlaceholder": "250.000",
     "descriptionPlaceholder": "dari laporan bank",
     "accruedHint": "Biarkan bunga berjalan 0 jika obligasi Anda membayar kupon langsung ke rekening bank tiap periode (obligasi ritel pemerintah Indonesia: ORI/SBR/SR/ST). Timpa untuk obligasi pasar sekunder dan deposito di mana bunga akrual di dalam instrumen.",
     "accruedHintAccrues": "Obligasi ini diatur untuk mengakru kuponnya di dalam instrumen, jadi masukkan bunga berjalan yang termasuk dalam nilai total periode ini — baca dari laporan rekening Anda."

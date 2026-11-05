@@ -14,12 +14,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
 import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
-import { formatCurrency, formatYearMonth, roundToCurrency } from "@/lib/format";
+import { formatCurrency, formatYearMonth, roundToCurrency, currencyDecimals } from "@/lib/format";
 
 export type CreateSnapshotPayload = {
   year_month: string;
@@ -169,12 +170,12 @@ export function CreateSnapshotDialog<TResult>({
 
           <div className="grid gap-2">
             <Label htmlFor="amount">{t("fields.amountIn", { currency })}</Label>
-            <Input
+            <NumericInput
               id="amount"
               required
-              inputMode="decimal"
+              decimals={currencyDecimals(currency)}
               value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              onChange={(v) => setForm({ ...form, amount: v })}
               placeholder={t("snapshot.amountPlaceholder")}
             />
             {(() => {

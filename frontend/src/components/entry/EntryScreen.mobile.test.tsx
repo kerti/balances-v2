@@ -70,7 +70,7 @@ it("mobile: renders the stacked amount input under the same testid and meets the
 
   const input = await screen.findByTestId("receivable-entry-amount-r1");
   // Same testid contract as desktop, carry-forward prefill intact.
-  expect(input).toHaveValue("2000000");
+  expect(input).toHaveValue("2,000,000");
   // A11y floor: the value input is a full-width ≥44px (h-11) target — the mobile
   // renderer, not the desktop w-36 row.
   expect(input).toHaveClass("h-11");

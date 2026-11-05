@@ -12,8 +12,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import {
+  formatCurrency,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+} from "@/lib/format";
 import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
@@ -104,12 +110,13 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
               <Label htmlFor="edit_inv_quantity">
                 {t("investments:quantityPriceSnapshot.quantityLabel")}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_inv_quantity"
                 required
-                inputMode="decimal"
+                decimals={QUANTITY_DECIMALS}
+                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                 value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                onChange={(v) => setForm({ ...form, quantity: v })}
               />
             </div>
             <div className="grid gap-2">
@@ -118,12 +125,12 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
                   currency: snapshot.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_inv_price_per_unit"
                 required
-                inputMode="decimal"
+                decimals={PRICE_DECIMALS}
                 value={form.price_per_unit}
-                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
+                onChange={(v) => setForm({ ...form, price_per_unit: v })}
               />
             </div>
           </div>

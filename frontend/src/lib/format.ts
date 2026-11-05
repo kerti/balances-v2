@@ -18,6 +18,11 @@ import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 
 const NO_DECIMAL_CURRENCIES = new Set(["IDR", "JPY", "KRW", "VND"]);
 
+// The number of minor units a currency displays and accepts on entry.
+export function currencyDecimals(currency: string): number {
+  return NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+}
+
 // Active locale at the moment of the call, as the supported BCP47 string.
 // We accept anything i18next hands back (it may be a region-stripped base like
 // 'en' or 'id' after load: 'languageOnly' resolution) and project it onto the
@@ -39,7 +44,7 @@ function resolve(locale: Locale | undefined): Locale {
 export function formatCurrency(amount: string, currency: string, locale?: Locale): string {
   const n = Number(amount);
   if (Number.isNaN(n)) return amount;
-  const decimals = NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+  const decimals = currencyDecimals(currency);
   return new Intl.NumberFormat(resolve(locale), {
     style: "currency",
     currency,
@@ -60,7 +65,7 @@ export function formatCurrencyParts(
   currency: string,
   locale?: Locale,
 ): { symbol: string; value: string | null } {
-  const decimals = NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+  const decimals = currencyDecimals(currency);
   const fmt = new Intl.NumberFormat(resolve(locale), {
     style: "currency",
     currency,
@@ -188,7 +193,63 @@ export function formatPercent(value: number | string, locale?: Locale): string {
 export function roundToCurrency(amount: string, currency: string): string {
   const n = Number(amount);
   if (!Number.isFinite(n)) return amount;
-  const decimals = NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
+  const decimals = currencyDecimals(currency);
   const f = Math.pow(10, decimals);
   return (Math.round(n * f) / f).toFixed(decimals);
 }
+
+// The locale's digit-grouping and decimal marks. en-GB: "," and "."; id-ID:
+// "." and ",".
+export function numberSeparators(locale?: Locale): { group: string; decimal: string } {
+  const parts = new Intl.NumberFormat(resolve(locale)).formatToParts(1234.5);
+  return {
+    group: parts.find((p) => p.type === "group")?.value ?? ",",
+    decimal: parts.find((p) => p.type === "decimal")?.value ?? ".",
+  };
+}
+
+// groupCanonical renders a canonical decimal string ("48500000.50") in the
+// locale's marks ("48,500,000.50" / "48.500.000,50") without going through
+// Number, so a 20-digit figure is never rounded. A trailing "." stays, so a
+// half-typed figure reads back as typed (ADR-0056).
+export function groupCanonical(canonical: string, locale?: Locale): string {
+  const { group, decimal } = numberSeparators(locale);
+  const dot = canonical.indexOf(".");
+  const int = dot === -1 ? canonical : canonical.slice(0, dot);
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, group);
+  return dot === -1 ? grouped : grouped + decimal + canonical.slice(dot + 1);
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// parseLocaleNumber is the strict reader for pasted text (ADR-0056 §3): it
+// accepts the locale's grouping and decimal marks, with grouping valid only in
+// correct groups of three, and strips a currency symbol or code and spaces.
+// Returns the canonical decimal string ("48500000.50"), or null for anything
+// else — a minus sign included, since no field it serves takes a negative.
+export function parseLocaleNumber(text: string, locale?: Locale): string | null {
+  const { group, decimal } = numberSeparators(locale);
+  const s = text
+    .replace(/\s/gu, "")
+    .replace(/^[\p{L}\p{Sc}]+/u, "")
+    .replace(/[\p{L}\p{Sc}]+$/u, "");
+  const g = escapeRegExp(group);
+  const d = escapeRegExp(decimal);
+  const m = new RegExp(`^(\\d{1,3}(?:${g}\\d{3})+|\\d*)(?:${d}(\\d+))?$`).exec(s);
+  if (!m || (m[1] === "" && m[2] === undefined)) return null;
+  const int =
+    m[1]
+      .split(group)
+      .join("")
+      .replace(/^0+(?=\d)/, "") || "0";
+  return m[2] === undefined ? int : `${int}.${m[2]}`;
+}
+
+// Entry limits for the non-money numeric columns (ADR-0011 precision shapes):
+// quantities are NUMERIC(20,8); a price per unit is NUMERIC(20,4), and takes all
+// four places because a fund's NAV is quoted to four.
+export const QUANTITY_DECIMALS = 8;
+export const QUANTITY_INTEGER_DIGITS = 12;
+export const PRICE_DECIMALS = 4;

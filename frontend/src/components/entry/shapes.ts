@@ -1,4 +1,10 @@
 import type { EntryRow } from "@/hooks/useBulkEntry";
+import {
+  currencyDecimals,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+} from "@/lib/format";
 
 // The bulk monthly-entry screen (ADR-0046) renders one row per eligible
 // position, but the *editable* part of a row differs by the position's snapshot
@@ -29,6 +35,10 @@ export type EntryField = {
   labelKey: string | null;
   // Tailwind width for the input, tuned per shape (one wide field vs two narrow).
   widthClass: string;
+  // Entry limits for the field's NumericInput (ADR-0056): decimal places for a
+  // row in `currency`, and the integer digits its column holds (16 when unset).
+  decimals: (currency: string) => number;
+  maxIntegerDigits?: number;
 };
 
 export type EntryShape = {
@@ -86,7 +96,15 @@ function derivePrincipal(amount: string, accrued: string): { valid: boolean; amo
 
 // amount-only (Asset/Liability/Receivable): one value field, no computed line.
 export const amountOnlyShape: EntryShape = {
-  fields: [{ key: "amount", testidSuffix: "amount", labelKey: null, widthClass: "w-36" }],
+  fields: [
+    {
+      key: "amount",
+      testidSuffix: "amount",
+      labelKey: null,
+      widthClass: "w-36",
+      decimals: currencyDecimals,
+    },
+  ],
   prefill: (row) => ({ amount: row.prefill_amount ?? "" }),
   complete: (v) => v.amount.trim() !== "",
   derived: null,
@@ -102,12 +120,15 @@ export const qtyPriceShape: EntryShape = {
       testidSuffix: "quantity",
       labelKey: "bulkEntry.quantity",
       widthClass: "w-28",
+      decimals: () => QUANTITY_DECIMALS,
+      maxIntegerDigits: QUANTITY_INTEGER_DIGITS,
     },
     {
       key: "price_per_unit",
       testidSuffix: "price",
       labelKey: "bulkEntry.pricePerUnit",
       widthClass: "w-28",
+      decimals: () => PRICE_DECIMALS,
     },
   ],
   prefill: (row) => ({
@@ -135,12 +156,14 @@ export const accruedShape: EntryShape = {
       testidSuffix: "amount",
       labelKey: "bulkEntry.totalValue",
       widthClass: "w-28",
+      decimals: currencyDecimals,
     },
     {
       key: "accrued_interest",
       testidSuffix: "accrued",
       labelKey: "bulkEntry.accrued",
       widthClass: "w-28",
+      decimals: currencyDecimals,
     },
   ],
   prefill: (row) => ({

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/21-serving.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**7 / 7** invariants in this zone have at least one covering test (**7** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**8 / 8** invariants in this zone have at least one covering test (**8** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -15,3 +15,4 @@
 | INV-SERVING-05 | Traversal is rejected: a request path that escapes `WEB_DIR` (`..`) is refused (`http.ServeFile`'s guard / the within-root prefix check), never serving a file outside the served directory | `backend/internal/httpserver/spa_test.go` |
 | INV-SERVING-06 | Every response (API and static) carries hardening headers — CSP (`default-src 'self'`, `frame-ancestors 'none'`, no `script-src 'unsafe-inline'`), `X-Content-Type-Options: nosniff`, and `Referrer-Policy`; `Strict-Transport-Security` is set only when `COOKIE_SECURE=true`, never over an assumed-plain-HTTP deployment | `backend/internal/httpserver/security_headers_test.go` |
 | INV-SERVING-07 | `/healthz` never echoes the raw DB driver error to the client: a DB failure logs the error server-side and returns a bare `503` with no error text in the body, per the same no-message-on-the-wire convention ADR-0027 uses elsewhere | `backend/internal/httpserver/server_test.go` |
+| INV-SERVING-08 | The app shell is never served from a stale HTTP cache: every response outside `/assets/` — `index.html`, the client-route fallback (including the extensionless `/assets/<route>` one), `sw.js`, the manifest, `theme-init.js`, icons — carries `Cache-Control: no-cache`, so a launch revalidates instead of reusing heuristically-fresh HTML that names the previous build's chunks. Content-hashed `/assets/*` files are left to ordinary caching | `backend/internal/httpserver/spa_test.go` |
