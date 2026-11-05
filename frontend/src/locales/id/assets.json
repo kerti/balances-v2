@@ -121,8 +121,8 @@
     "placeholders": {
       "displayName": "Rumah di Bandung",
       "currency": "IDR",
-      "acquisitionCost": "1500000000",
-      "appreciationRate": "mis. 3.5 — negatif jika nilai menurun"
+      "acquisitionCost": "1.500.000.000",
+      "appreciationRate": "mis. 3,5 — negatif jika nilai menurun"
     },
     "tour": {
       "overviewTitle": "Sekilas tentang properti Anda",
@@ -189,7 +189,7 @@
       "make": "Honda",
       "model": "HR-V",
       "year": "2022",
-      "depreciationRate": "0.15 = 15% per tahun"
+      "depreciationRate": "mis. 15 untuk 15% per tahun"
     },
     "tour": {
       "overviewTitle": "Sekilas tentang kendaraan Anda",

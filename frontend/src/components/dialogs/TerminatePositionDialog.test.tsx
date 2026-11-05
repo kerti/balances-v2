@@ -106,7 +106,7 @@ describe("TerminatePositionDialog settlement capture", () => {
 
     const block = await screen.findByTestId("terminate-settlement");
     await waitFor(() => expect(screen.getByTestId("settlement-quantity")).toHaveValue("100"));
-    expect(screen.getByTestId("settlement-price")).toHaveValue("9500");
+    expect(screen.getByTestId("settlement-price")).toHaveValue("9,500");
     expect(within(block).getByTestId("settlement-total")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /save/i }));
@@ -170,9 +170,9 @@ describe("TerminatePositionDialog settlement capture", () => {
     await screen.findByTestId("terminate-settlement");
 
     await waitFor(() =>
-      expect(screen.getByTestId("settlement-principal")).toHaveValue("100000000"),
+      expect(screen.getByTestId("settlement-principal")).toHaveValue("100,000,000"),
     );
-    expect(screen.getByTestId("settlement-interest")).toHaveValue("4500000");
+    expect(screen.getByTestId("settlement-interest")).toHaveValue("4,500,000");
 
     await user.click(screen.getByRole("button", { name: /save/i }));
 
@@ -364,6 +364,6 @@ describe("TerminatePositionDialog untracked termination", () => {
     expect(screen.queryByTestId("terminate-untracked-hint")).not.toBeInTheDocument();
     await screen.findByTestId("terminate-settlement");
     await waitFor(() => expect(screen.getByTestId("settlement-quantity")).toHaveValue("100"));
-    expect(screen.getByTestId("settlement-price")).toHaveValue("9500");
+    expect(screen.getByTestId("settlement-price")).toHaveValue("9,500");
   });
 });

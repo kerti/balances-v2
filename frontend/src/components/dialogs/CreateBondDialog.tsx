@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { RATE_DECIMALS, RATE_INTEGER_DIGITS, currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useCreateBond } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
@@ -184,12 +186,12 @@ export function CreateBondDialog() {
             <div className="grid grid-cols-[1fr_120px] gap-3 [&>*]:content-end">
               <div className="grid gap-2">
                 <Label htmlFor="bond_face_value">{t("investments:bond.fields.faceValue")}</Label>
-                <Input
+                <NumericInput
                   id="bond_face_value"
                   required
-                  inputMode="decimal"
+                  decimals={currencyDecimals(form.native_currency)}
                   value={form.face_value}
-                  onChange={(e) => setForm({ ...form, face_value: e.target.value })}
+                  onChange={(v) => setForm({ ...form, face_value: v })}
                   placeholder={t("investments:bond.placeholders.faceValue")}
                 />
               </div>
@@ -226,12 +228,13 @@ export function CreateBondDialog() {
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
-            <Input
+            <NumericInput
               id="bond_coupon_rate"
               required
-              inputMode="decimal"
+              decimals={RATE_DECIMALS}
+              maxIntegerDigits={RATE_INTEGER_DIGITS}
               value={form.coupon_rate}
-              onChange={(e) => setForm({ ...form, coupon_rate: e.target.value })}
+              onChange={(v) => setForm({ ...form, coupon_rate: v })}
               placeholder={t("investments:bond.placeholders.couponRate")}
             />
           </div>

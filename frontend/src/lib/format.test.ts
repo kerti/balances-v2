@@ -247,6 +247,11 @@ describe("groupCanonical", () => {
     expect(groupCanonical("1234567890123456.1234", "en-GB")).toBe("1,234,567,890,123,456.1234");
   });
 
+  it("groups a signed figure after its minus", () => {
+    expect(groupCanonical("-1234567.5", "en-GB")).toBe("-1,234,567.5");
+    expect(groupCanonical("-123", "en-GB")).toBe("-123");
+  });
+
   it("renders empty as empty", () => {
     expect(groupCanonical("", "en-GB")).toBe("");
   });
@@ -284,6 +289,14 @@ describe("parseLocaleNumber", () => {
     expect(parseLocaleNumber("-500", "en-GB")).toBeNull();
     expect(parseLocaleNumber("1.2.3", "en-GB")).toBeNull();
     expect(parseLocaleNumber("12a34", "en-GB")).toBeNull();
+  });
+
+  it("reads a leading minus (hyphen or U+2212) only when asked", () => {
+    expect(parseLocaleNumber("-1,500.5", "en-GB", { allowNegative: true })).toBe("-1500.5");
+    expect(parseLocaleNumber("−3,5", "id-ID", { allowNegative: true })).toBe("-3.5");
+    expect(parseLocaleNumber("Rp -1.000", "id-ID", { allowNegative: true })).toBe("-1000");
+    expect(parseLocaleNumber("-1,500", "en-GB")).toBeNull();
+    expect(parseLocaleNumber("1-500", "en-GB", { allowNegative: true })).toBeNull();
   });
 
   it("drops leading zeros and reads a bare fraction", () => {

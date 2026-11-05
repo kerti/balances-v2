@@ -13,6 +13,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { todayDate } from "@/lib/dateLimits";
@@ -120,12 +122,12 @@ export function CreateCashIncomeTransactionDialog<TResult>({
               <Label htmlFor="cash_amount">
                 {t("investments:cashIncome.amountLabel", { currency })}
               </Label>
-              <Input
+              <NumericInput
                 id="cash_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(currency)}
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
                 placeholder={t("investments:cashIncome.amountPlaceholder")}
               />
             </div>

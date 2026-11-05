@@ -84,7 +84,7 @@
     "description": "Description (optional)"
   },
   "placeholders": {
-    "amount": "15000000",
+    "amount": "15,000,000",
     "description": "Base salary"
   },
   "submit": {

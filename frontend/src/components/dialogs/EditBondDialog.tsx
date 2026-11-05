@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useUpdateBond } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
@@ -140,12 +142,13 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
             <Label htmlFor="edit_bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
-            <Input
+            <NumericInput
               id="edit_bond_coupon_rate"
               required
-              inputMode="decimal"
+              decimals={RATE_DECIMALS}
+              maxIntegerDigits={RATE_INTEGER_DIGITS}
               value={form.coupon_rate}
-              onChange={(e) => setForm({ ...form, coupon_rate: e.target.value })}
+              onChange={(v) => setForm({ ...form, coupon_rate: v })}
             />
           </div>
           <div className="grid gap-2">

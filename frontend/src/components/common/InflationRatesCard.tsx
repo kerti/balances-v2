@@ -4,6 +4,7 @@ import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -22,7 +23,13 @@ import {
   useDeleteInflationRate,
 } from "@/hooks/useInflationRates";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatPercent, formatYearMonth } from "@/lib/format";
+import {
+  formatPercent,
+  formatYearMonth,
+  INFLATION_DECIMALS,
+  INFLATION_INTEGER_DIGITS,
+  groupCanonical,
+} from "@/lib/format";
 import type { InflationRate } from "@/api/types";
 
 // One year of monthly figures per page — matches the Income screen's page size.
@@ -105,14 +112,16 @@ export function InflationRatesCard() {
           </div>
           <div className="space-y-1">
             <Label htmlFor="inflation-rate">{t("inflation.rate")}</Label>
-            <Input
+            <NumericInput
               id="inflation-rate"
-              inputMode="decimal"
               className="w-36"
-              // Example numeric rate; not translatable copy.
-              placeholder={"3.5"}
+              // Example numeric rate, in the locale's marks; not translatable copy.
+              placeholder={groupCanonical("3.5")}
+              decimals={INFLATION_DECIMALS}
+              maxIntegerDigits={INFLATION_INTEGER_DIGITS}
+              allowNegative
               value={rate}
-              onChange={(e) => setRate(e.target.value)}
+              onChange={(v) => setRate(v)}
             />
           </div>
           <Button onClick={add} disabled={!canAdd || createRate.isPending}>
@@ -178,12 +187,14 @@ export function InflationRatesCard() {
                         data-testid="inflation-rate-value"
                       >
                         {editing ? (
-                          <Input
-                            inputMode="decimal"
+                          <NumericInput
                             className="w-28 ml-auto text-right"
                             aria-label={t("inflation.rate")}
+                            decimals={INFLATION_DECIMALS}
+                            maxIntegerDigits={INFLATION_INTEGER_DIGITS}
+                            allowNegative
                             value={editRate}
-                            onChange={(e) => setEditRate(e.target.value)}
+                            onChange={(v) => setEditRate(v)}
                           />
                         ) : (
                           formatPercent(r.rate)
@@ -287,11 +298,13 @@ function InflationRateCard({
     <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="inflation-rate-row">
       <div className="min-w-0 flex-1">
         {isEditing ? (
-          <Input
-            inputMode="decimal"
+          <NumericInput
             aria-label={editLabel}
+            decimals={INFLATION_DECIMALS}
+            maxIntegerDigits={INFLATION_INTEGER_DIGITS}
+            allowNegative
             value={editValue}
-            onChange={(e) => onEditChange(e.target.value)}
+            onChange={(v) => onEditChange(v)}
           />
         ) : (
           <div className="text-lg font-semibold tabular-nums" data-testid="inflation-rate-value">

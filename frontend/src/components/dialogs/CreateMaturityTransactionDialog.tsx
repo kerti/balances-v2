@@ -13,10 +13,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
 import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 import type { Disposition, RolloverPolicy } from "@/api/types";
@@ -165,12 +166,12 @@ export function CreateMaturityTransactionDialog<TResult>({
               <Label htmlFor="mat_principal">
                 {t("investments:maturityTxn.principalLabel", { currency })}
               </Label>
-              <Input
+              <NumericInput
                 id="mat_principal"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(currency)}
                 value={form.principal_amount}
-                onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, principal_amount: v })}
                 placeholder={t("investments:maturityTxn.principalPlaceholder")}
               />
             </div>
@@ -178,12 +179,12 @@ export function CreateMaturityTransactionDialog<TResult>({
               <Label htmlFor="mat_interest">
                 {t("investments:maturityTxn.interestLabel", { currency })}
               </Label>
-              <Input
+              <NumericInput
                 id="mat_interest"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(currency)}
                 value={form.interest_amount}
-                onChange={(e) => setForm({ ...form, interest_amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, interest_amount: v })}
                 placeholder={t("investments:maturityTxn.interestPlaceholder")}
               />
             </div>

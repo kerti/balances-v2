@@ -124,7 +124,7 @@
     "cashOutLabel": "Cash out:",
     "cashInLabel": "Cash in:",
     "quantityPlaceholder": "100",
-    "pricePerUnitPlaceholder": "8500",
+    "pricePerUnitPlaceholder": "8,500",
     "descriptionPlaceholder": "from broker confirmation",
     "recordBuy": "Record buy",
     "recordSell": "Record sell"
@@ -144,7 +144,7 @@
     "editDescription": "Adjust the payment date, amount, or description.",
     "paymentDateLabel": "Payment date",
     "amountLabel": "Amount ({{currency}})",
-    "amountPlaceholder": "50000",
+    "amountPlaceholder": "50,000",
     "descriptionPlaceholder": "Q1 2026 distribution",
     "recordCoupon": "Record coupon",
     "recordDividend": "Record dividend",
@@ -160,7 +160,7 @@
     "cashAmountLabel": "Cash amount ({{currency}})",
     "unitsDeductedLabel": "Units deducted ({{unit}}, optional)",
     "conversionPriceLabel": "Conversion price ({{currency}}, optional)",
-    "cashAmountPlaceholder": "50000",
+    "cashAmountPlaceholder": "50,000",
     "descriptionPlaceholder": "annual storage fee",
     "incompleteHint": "If recording a unit-settled fee, fill in both quantity and price.",
     "derivedHint": "Auto-filled from cash ÷ price. Edit to override.",
@@ -178,8 +178,8 @@
     "totalAtMaturityLabel": "Total at maturity:",
     "principalDispositionLabel": "Principal disposition",
     "interestDispositionLabel": "Interest disposition",
-    "principalPlaceholder": "50000000",
-    "interestPlaceholder": "2750000",
+    "principalPlaceholder": "50,000,000",
+    "interestPlaceholder": "2,750,000",
     "descriptionPlaceholder": "actual bank policy applied",
     "recordMaturity": "Record maturity"
   },
@@ -419,7 +419,7 @@
       "seriesCode": "ORI024",
       "issuer": "Republik Indonesia",
       "currency": "IDR",
-      "faceValue": "e.g. 50000000 for 50 lots of IDR 1,000,000 each",
+      "faceValue": "e.g. 50,000,000 for 50 lots of IDR 1,000,000 each",
       "couponRate": "6.25"
     },
     "tour": {
@@ -513,7 +513,7 @@
       "displayName": "Vacation fund TD",
       "bankName": "BCA",
       "currency": "IDR",
-      "principal": "50000000",
+      "principal": "50,000,000",
       "interestRate": "4.5",
       "termMonths": "12"
     },

@@ -17,7 +17,8 @@ import { groupCanonical, numberSeparators, parseLocaleNumber } from "@/lib/forma
 // canonical decimal string ("48500000.50", the wire format) and owns only how
 // that string is displayed: grouped live in the app locale while you type.
 //
-// The model is digits plus at most one decimal point. Because the field inserts
+// The model is digits plus at most one decimal point, after a leading "-" on a
+// field that takes negatives. Because the field inserts
 // the grouping itself, a typed "." or "," can only mean the decimal point, which
 // is what makes a phone's region-following decimal key work in either locale.
 // Pasted text goes through the strict parseLocaleNumber instead.
@@ -29,11 +30,14 @@ type Props = Omit<ComponentProps<typeof Input>, "value" | "onChange" | "type" | 
   decimals: number;
   // Integer digits the column holds: 16 for NUMERIC(20,4), 12 for (20,8).
   maxIntegerDigits?: number;
+  // A signed figure (an appreciation or inflation rate). A typed minus toggles
+  // the sign wherever the caret is.
+  allowNegative?: boolean;
 };
 
 type PasteError = "invalid" | "tooLong";
 
-const MODEL_RE = /^\d*(\.\d*)?$/;
+const MODEL_RE = /^-?\d*(\.\d*)?$/;
 
 // The model a stored value starts from. Anything that isn't one (it shouldn't
 // happen; values come from the wire) is shown raw rather than mangled.
@@ -41,9 +45,11 @@ function modelOf(value: string): string {
   return MODEL_RE.test(value) ? value : "";
 }
 
-// The model emitted on the wire: a half-typed "12." is sent as "12".
+// The model emitted on the wire: a half-typed "12." is sent as "12", a lone
+// "-" as nothing.
 function canonical(model: string): string {
-  return model.endsWith(".") ? model.slice(0, -1) : model;
+  const out = model.endsWith(".") ? model.slice(0, -1) : model;
+  return out === "-" ? "" : out;
 }
 
 function fracLen(model: string): number {
@@ -52,17 +58,20 @@ function fracLen(model: string): number {
 }
 
 function intLen(model: string): number {
-  const dot = model.indexOf(".");
-  return dot === -1 ? model.length : dot;
+  const body = model.startsWith("-") ? model.slice(1) : model;
+  const dot = body.indexOf(".");
+  return dot === -1 ? body.length : dot;
 }
 
 // normalize drops leading zeros ("05" reads as 5) and puts a 0 before a leading
 // decimal point, returning how far the caret moves with it.
 function normalize(model: string): { model: string; shift: number } {
-  const trimmed = model.replace(/^0+(?=\d)/, "");
-  const shift = trimmed.length - model.length;
-  if (trimmed.startsWith(".")) return { model: "0" + trimmed, shift: shift + 1 };
-  return { model: trimmed, shift };
+  const sign = model.startsWith("-") ? "-" : "";
+  const body = model.slice(sign.length);
+  const trimmed = body.replace(/^0+(?=\d)/, "");
+  const shift = trimmed.length - body.length;
+  if (trimmed.startsWith(".")) return { model: sign + "0" + trimmed, shift: shift + 1 };
+  return { model: sign + trimmed, shift };
 }
 
 export function NumericInput({
@@ -70,6 +79,7 @@ export function NumericInput({
   onChange,
   decimals,
   maxIntegerDigits = 16,
+  allowNegative = false,
   className,
   onFocus,
   onBlur,
@@ -92,12 +102,12 @@ export function NumericInput({
   const shownModel = focused && canonical(model) === value ? model : modelOf(value);
   const display = MODEL_RE.test(value) || focused ? groupCanonical(shownModel) : value;
 
-  // Display text → model characters: digits stay, the locale's decimal mark is
-  // the point, a group mark is dropped.
+  // Display text → model characters: digits and the sign stay, the locale's
+  // decimal mark is the point, a group mark is dropped.
   function toModel(text: string): string {
     let out = "";
     for (const ch of text) {
-      if (ch >= "0" && ch <= "9") out += ch;
+      if ((ch >= "0" && ch <= "9") || ch === "-") out += ch;
       else if (ch === decimal) out += ".";
     }
     return out;
@@ -159,9 +169,11 @@ export function NumericInput({
     let head = toModel(prev.slice(0, p));
     let tail = toModel(prev.slice(prev.length - s));
     let typed = "";
+    let flipSign = false;
     for (const ch of inserted) {
       if (ch >= "0" && ch <= "9") typed += ch;
       else if ((ch === "." || ch === ",") && decimals > 0) typed += ".";
+      else if ((ch === "-" || ch === "\u2212") && allowNegative) flipSign = !flipSign;
     }
     // A delete that took only a group mark meant the digit beside it.
     if (inserted === "" && removed !== "" && toModel(removed) === "") {
@@ -169,7 +181,13 @@ export function NumericInput({
       if (inputType === "deleteContentBackward") head = head.slice(0, -1);
       else if (inputType === "deleteContentForward") tail = tail.slice(1);
     }
-    const candidate = head + typed + tail;
+    let candidate = head + typed + tail;
+    let caret = head.length + typed.length;
+    if (flipSign) {
+      const negative = candidate.startsWith("-");
+      candidate = negative ? candidate.slice(1) : "-" + candidate;
+      caret = Math.max(0, caret + (negative ? -1 : 1));
+    }
     const prevModel = toModel(prev);
     if (candidate === prevModel || !fits(candidate, prevModel)) {
       // Refused: put the text back as it was, caret where the edit started.
@@ -177,13 +195,15 @@ export function NumericInput({
       input.setSelectionRange(p, p);
       return;
     }
-    commit(candidate, head.length + typed.length);
+    commit(candidate, caret);
   }
 
   function handlePaste(event: ClipboardEvent<HTMLInputElement>) {
     event.preventDefault();
     const input = event.currentTarget;
-    const parsed = parseLocaleNumber(event.clipboardData.getData("text"));
+    const parsed = parseLocaleNumber(event.clipboardData.getData("text"), undefined, {
+      allowNegative,
+    });
     if (parsed === null) {
       setError("invalid");
       return;
@@ -198,6 +218,11 @@ export function NumericInput({
     const end = input.selectionEnd ?? display.length;
     const head = toModel(display.slice(0, start));
     const candidate = head + pasted + toModel(display.slice(end));
+    // A signed paste can only land at the start of the figure.
+    if (!MODEL_RE.test(candidate)) {
+      setError("invalid");
+      return;
+    }
     if (!fits(candidate, "")) {
       setError("tooLong");
       return;
@@ -232,7 +257,9 @@ export function NumericInput({
         {...rest}
         ref={inputRef}
         type="text"
-        inputMode={decimals > 0 ? "decimal" : "numeric"}
+        // A phone's decimal keypad has no minus key, so a signed field gets the
+        // full keyboard.
+        inputMode={allowNegative ? "text" : decimals > 0 ? "decimal" : "numeric"}
         autoComplete="off"
         className={className}
         value={display}

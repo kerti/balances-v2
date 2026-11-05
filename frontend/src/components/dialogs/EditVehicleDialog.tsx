@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useUpdateVehicle } from "@/hooks/useVehicles";
 import { useSession } from "@/hooks/useSession";
@@ -137,14 +139,15 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="ev_depr">{t("assets:vehicle.fields.depreciationRateEdit")}</Label>
-        <Input
+        <NumericInput
           id="ev_depr"
-          inputMode="decimal"
+          decimals={RATE_DECIMALS}
+          maxIntegerDigits={RATE_INTEGER_DIGITS}
           value={form.annual_depreciation_rate}
-          onChange={(e) =>
+          onChange={(v) =>
             setForm({
               ...form,
-              annual_depreciation_rate: e.target.value,
+              annual_depreciation_rate: v,
             })
           }
         />

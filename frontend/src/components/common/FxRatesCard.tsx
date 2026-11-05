@@ -4,6 +4,7 @@ import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -18,7 +19,7 @@ import { errorMessage } from "@/lib/errorMessage";
 import { useFxRates, useCreateFxRate, useUpdateFxRate, useDeleteFxRate } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { formatYearMonth } from "@/lib/format";
+import { formatYearMonth, groupCanonical, RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
 import type { FxRate } from "@/api/types";
 
 // One year of monthly rates per page — matches the Income screen's page size.
@@ -42,8 +43,11 @@ function fxPair(currency: string, base: string | undefined): string {
 // is what it actually is. `rate` may be "?" in the live add-form hint before a
 // value is typed. Built as an expression to stay clear of the ADR-0026
 // bare-JSX-text lint.
+// The rate is grouped the way the rate field shows it (ADR-0056), so the hint
+// echoes the figure being typed and a saved row reads the same.
 function fxEquation(currency: string, rate: string, base: string | undefined): string {
-  return base ? `1 ${currency} = ${rate} ${base}` : `1 ${currency} = ${rate}`;
+  const shown = rate === "?" ? rate : groupCanonical(rate);
+  return base ? `1 ${currency} = ${shown} ${base}` : `1 ${currency} = ${shown}`;
 }
 
 // FxRatesCard is the Settings ▸ Exchange Rates subpage's sole content: the
@@ -135,14 +139,15 @@ export function FxRatesCard() {
           </div>
           <div className="space-y-1">
             <Label htmlFor="fx-rate">{t("fx.rate")}</Label>
-            <Input
+            <NumericInput
               id="fx-rate"
-              inputMode="decimal"
               className="w-36"
-              // Example numeric rate; not translatable copy.
-              placeholder={"16000"}
+              // Example numeric rate, in the locale's marks; not translatable copy.
+              placeholder={groupCanonical("16000")}
+              decimals={RATE_DECIMALS}
+              maxIntegerDigits={RATE_INTEGER_DIGITS}
               value={rate}
-              onChange={(e) => setRate(e.target.value)}
+              onChange={(v) => setRate(v)}
             />
           </div>
           <Button onClick={add} disabled={!canAdd || createRate.isPending}>
@@ -217,15 +222,16 @@ export function FxRatesCard() {
                       <TableCell>{fxPair(r.currency, base)}</TableCell>
                       <TableCell className="tabular-nums" data-testid="fx-rate-value">
                         {editing ? (
-                          <Input
-                            inputMode="decimal"
+                          <NumericInput
                             className="w-28"
                             aria-label={t("fx.rate")}
+                            decimals={RATE_DECIMALS}
+                            maxIntegerDigits={RATE_INTEGER_DIGITS}
                             value={editRate}
-                            onChange={(e) => setEditRate(e.target.value)}
+                            onChange={(v) => setEditRate(v)}
                           />
                         ) : (
-                          r.rate
+                          groupCanonical(r.rate)
                         )}
                       </TableCell>
                       <TableCell>
@@ -328,11 +334,12 @@ function FxRateCard({
     <div className="flex items-center gap-3 rounded-lg border p-3" data-testid="fx-rate-row">
       <div className="min-w-0 flex-1">
         {isEditing ? (
-          <Input
-            inputMode="decimal"
+          <NumericInput
             aria-label={editLabel}
+            decimals={RATE_DECIMALS}
+            maxIntegerDigits={RATE_INTEGER_DIGITS}
             value={editValue}
-            onChange={(e) => onEditChange(e.target.value)}
+            onChange={(v) => onEditChange(v)}
           />
         ) : (
           <div className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">

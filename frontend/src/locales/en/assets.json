@@ -121,7 +121,7 @@
     "placeholders": {
       "displayName": "House in Bandung",
       "currency": "IDR",
-      "acquisitionCost": "1500000000",
+      "acquisitionCost": "1,500,000,000",
       "appreciationRate": "e.g. 3.5 — negative if losing value"
     },
     "tour": {
@@ -189,7 +189,7 @@
       "make": "Honda",
       "model": "HR-V",
       "year": "2022",
-      "depreciationRate": "0.15 = 15% per year"
+      "depreciationRate": "e.g. 15 for 15% per year"
     },
     "tour": {
       "overviewTitle": "Your vehicle at a glance",

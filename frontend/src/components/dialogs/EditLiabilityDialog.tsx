@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import {
+  RATE_DECIMALS,
+  RATE_INTEGER_DIGITS,
+  TERM_MONTHS_DIGITS,
+  currencyDecimals,
+} from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useUpdateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
@@ -93,20 +100,21 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="edit_l_principal">{t("liabilities:fields.principalEdit")}</Label>
-          <Input
+          <NumericInput
             id="edit_l_principal"
-            inputMode="decimal"
+            decimals={currencyDecimals(liability.native_currency)}
             value={form.principal}
-            onChange={(e) => setForm({ ...form, principal: e.target.value })}
+            onChange={(v) => setForm({ ...form, principal: v })}
           />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="edit_l_interest_rate">{t("liabilities:fields.interestRateEdit")}</Label>
-          <Input
+          <NumericInput
             id="edit_l_interest_rate"
-            inputMode="decimal"
+            decimals={RATE_DECIMALS}
+            maxIntegerDigits={RATE_INTEGER_DIGITS}
             value={form.interest_rate}
-            onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+            onChange={(v) => setForm({ ...form, interest_rate: v })}
           />
         </div>
       </div>
@@ -115,11 +123,12 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="edit_l_term">{t("liabilities:fields.termEdit")}</Label>
-          <Input
+          <NumericInput
             id="edit_l_term"
-            inputMode="numeric"
+            decimals={0}
+            maxIntegerDigits={TERM_MONTHS_DIGITS}
             value={form.term_months}
-            onChange={(e) => setForm({ ...form, term_months: e.target.value })}
+            onChange={(v) => setForm({ ...form, term_months: v })}
           />
         </div>
         <div className="grid gap-2">

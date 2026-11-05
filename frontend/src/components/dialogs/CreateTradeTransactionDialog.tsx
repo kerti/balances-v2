@@ -13,9 +13,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import {
+  formatCurrency,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+} from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
 import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 
@@ -136,12 +142,13 @@ export function CreateTradeTransactionDialog<TResult>({
               <Label htmlFor="trade_quantity">
                 {t("investments:trade.quantityLabel", { unit: quantityUnit })}
               </Label>
-              <Input
+              <NumericInput
                 id="trade_quantity"
                 required
-                inputMode="decimal"
+                decimals={QUANTITY_DECIMALS}
+                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                 value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                onChange={(v) => setForm({ ...form, quantity: v })}
                 placeholder={t("investments:trade.quantityPlaceholder")}
               />
             </div>
@@ -149,12 +156,12 @@ export function CreateTradeTransactionDialog<TResult>({
               <Label htmlFor="trade_price">
                 {t("investments:trade.pricePerUnitLabel", { currency })}
               </Label>
-              <Input
+              <NumericInput
                 id="trade_price"
                 required
-                inputMode="decimal"
+                decimals={PRICE_DECIMALS}
                 value={form.price_per_unit}
-                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
+                onChange={(v) => setForm({ ...form, price_per_unit: v })}
                 placeholder={t("investments:trade.pricePerUnitPlaceholder")}
               />
             </div>

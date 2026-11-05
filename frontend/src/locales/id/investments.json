@@ -124,7 +124,7 @@
     "cashOutLabel": "Kas keluar:",
     "cashInLabel": "Kas masuk:",
     "quantityPlaceholder": "100",
-    "pricePerUnitPlaceholder": "8500",
+    "pricePerUnitPlaceholder": "8.500",
     "descriptionPlaceholder": "dari konfirmasi broker",
     "recordBuy": "Catat pembelian",
     "recordSell": "Catat penjualan"
@@ -144,7 +144,7 @@
     "editDescription": "Sesuaikan tanggal pembayaran, nominal, atau deskripsi.",
     "paymentDateLabel": "Tanggal pembayaran",
     "amountLabel": "Nominal ({{currency}})",
-    "amountPlaceholder": "50000",
+    "amountPlaceholder": "50.000",
     "descriptionPlaceholder": "Distribusi Q1 2026",
     "recordCoupon": "Catat kupon",
     "recordDividend": "Catat dividen",
@@ -160,7 +160,7 @@
     "cashAmountLabel": "Nominal kas ({{currency}})",
     "unitsDeductedLabel": "Unit yang dipotong ({{unit}}, opsional)",
     "conversionPriceLabel": "Harga konversi ({{currency}}, opsional)",
-    "cashAmountPlaceholder": "50000",
+    "cashAmountPlaceholder": "50.000",
     "descriptionPlaceholder": "biaya penyimpanan tahunan",
     "incompleteHint": "Jika mencatat biaya yang dipotong unit, isi jumlah dan harga.",
     "derivedHint": "Terisi otomatis dari kas ÷ harga. Ubah untuk menimpa.",
@@ -178,8 +178,8 @@
     "totalAtMaturityLabel": "Total saat jatuh tempo:",
     "principalDispositionLabel": "Disposisi pokok",
     "interestDispositionLabel": "Disposisi bunga",
-    "principalPlaceholder": "50000000",
-    "interestPlaceholder": "2750000",
+    "principalPlaceholder": "50.000.000",
+    "interestPlaceholder": "2.750.000",
     "descriptionPlaceholder": "kebijakan bank aktual diterapkan",
     "recordMaturity": "Catat jatuh tempo"
   },
@@ -419,7 +419,7 @@
       "seriesCode": "ORI024",
       "issuer": "Republik Indonesia",
       "currency": "IDR",
-      "faceValue": "mis. 50000000 untuk 50 lot @ IDR 1.000.000",
+      "faceValue": "mis. 50.000.000 untuk 50 lot @ IDR 1.000.000",
       "couponRate": "6.25"
     },
     "tour": {
@@ -513,7 +513,7 @@
       "displayName": "Deposito dana liburan",
       "bankName": "BCA",
       "currency": "IDR",
-      "principal": "50000000",
+      "principal": "50.000.000",
       "interestRate": "4.5",
       "termMonths": "12"
     },
@@ -581,7 +581,7 @@
     "placeholders": {
       "displayName": "Emas batangan Antam 10g",
       "currency": "IDR",
-      "purity": "0.9999 = 24K"
+      "purity": "0,9999 = 24K"
     },
     "tour": {
       "overviewTitle": "Sekilas tentang emas Anda",

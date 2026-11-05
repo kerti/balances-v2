@@ -11,9 +11,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import {
+  formatCurrency,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+} from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
 import type { UpdateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 import type { InvestmentTransaction } from "@/api/types";
@@ -108,12 +114,13 @@ export function EditTradeTransactionDialog<TResult>({
               <Label htmlFor="edit_trade_quantity">
                 {t("investments:trade.quantityLabel", { unit: quantityUnit })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_trade_quantity"
                 required
-                inputMode="decimal"
+                decimals={QUANTITY_DECIMALS}
+                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                 value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                onChange={(v) => setForm({ ...form, quantity: v })}
               />
             </div>
             <div className="grid gap-2">
@@ -122,12 +129,12 @@ export function EditTradeTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_trade_price"
                 required
-                inputMode="decimal"
+                decimals={PRICE_DECIMALS}
                 value={form.price_per_unit}
-                onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })}
+                onChange={(v) => setForm({ ...form, price_per_unit: v })}
               />
             </div>
           </div>

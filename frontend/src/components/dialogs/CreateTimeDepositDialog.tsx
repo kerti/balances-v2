@@ -3,6 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import {
+  RATE_DECIMALS,
+  RATE_INTEGER_DIGITS,
+  TERM_MONTHS_DIGITS,
+  currencyDecimals,
+} from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useCreateTimeDeposit } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
@@ -190,12 +197,12 @@ export function CreateTimeDepositDialog({
         </div>
         <div className="grid gap-2">
           <Label htmlFor="td_principal">{t("investments:timeDeposit.fields.principal")}</Label>
-          <Input
+          <NumericInput
             id="td_principal"
             required
-            inputMode="decimal"
+            decimals={currencyDecimals(form.native_currency)}
             value={form.principal}
-            onChange={(e) => setForm({ ...form, principal: e.target.value })}
+            onChange={(v) => setForm({ ...form, principal: v })}
             placeholder={t("investments:timeDeposit.placeholders.principal")}
           />
         </div>
@@ -207,23 +214,25 @@ export function CreateTimeDepositDialog({
             <Label htmlFor="td_interest_rate">
               {t("investments:timeDeposit.fields.interestRate")}
             </Label>
-            <Input
+            <NumericInput
               id="td_interest_rate"
               required
-              inputMode="decimal"
+              decimals={RATE_DECIMALS}
+              maxIntegerDigits={RATE_INTEGER_DIGITS}
               value={form.interest_rate}
-              onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+              onChange={(v) => setForm({ ...form, interest_rate: v })}
               placeholder={t("investments:timeDeposit.placeholders.interestRate")}
             />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="td_term_months">{t("investments:timeDeposit.fields.termMonths")}</Label>
-            <Input
+            <NumericInput
               id="td_term_months"
               required
-              inputMode="numeric"
+              decimals={0}
+              maxIntegerDigits={TERM_MONTHS_DIGITS}
               value={form.term_months}
-              onChange={(e) => setTerm(e.target.value)}
+              onChange={(v) => setTerm(v)}
               placeholder={t("investments:timeDeposit.placeholders.termMonths")}
             />
           </div>
