@@ -46,7 +46,7 @@ export function TransactionCard<TUpdate, TDelete>({
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-0.5">
               <div
-                className={`text-lg font-semibold tabular-nums ${impactColorClass}`}
+                className={`text-lg font-semibold ${impactColorClass}`}
                 data-testid="transaction-amount"
               >
                 {impactText}

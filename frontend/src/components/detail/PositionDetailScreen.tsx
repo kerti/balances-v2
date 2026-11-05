@@ -239,7 +239,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
                 rows would cost (ADR-0051 Phase B). */}
             <div className="flex items-center gap-2 text-sm">
               {headerBadge}
-              <span className="tabular-nums text-muted-foreground">{asset.native_currency}</span>
+              <span className="text-muted-foreground">{asset.native_currency}</span>
               <StatusBadge group={descriptor.group} status={asset.status} />
             </div>
           </div>

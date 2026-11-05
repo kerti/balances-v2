@@ -48,6 +48,7 @@ func loadGolden(t *testing.T) goldenFile {
 	return g
 }
 
+// covers: INV-PRESENTATION-01
 func TestFormatCurrencyMatchesIntl(t *testing.T) {
 	g := loadGolden(t)
 	if len(g.Currency) == 0 {

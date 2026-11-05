@@ -20,11 +20,17 @@ and amends [[adr-0011]]'s display table.
    itself, a typed separator can only mean a decimal. That covers a phone's decimal keypad, which
    follows the device's region rather than the app's language. On a field with no decimal places
    (JPY, KRW, VND), a typed separator is ignored, so the en-GB habit of typing `48,500,000` costs
-   nothing there.
+   nothing there. On a field with decimals, IDR included, typing that habit key by key gives
+   `48.50`; reaffirmed 2026-11-05 (#787) rather than guessing, because the live grouping shows the
+   mistake before saving.
 3. **Pasted text goes through a strict, locale-aware parser.** It accepts the app locale's grouping
    and decimal separators and strips a currency symbol or spaces, but grouping is valid only in
    correct groups of three. Anything else gets an inline message on the field and never reaches the
    server. The wire format is unchanged: a canonical decimal string such as `48500000.50`.
+   Text inserted in one edit rather than keyed (autofill, dictation, text replacement) is read the
+   same way when the whole field then parses, so dictating `48,500,000` lands as grouping; a single
+   keystroke keeps rule 2. Amended 2026-11-05 (#787), when IDR gaining decimals turned a bulk
+   `48,500,000` into two decimal points.
 4. **IDR has 2 minor units.** [[adr-0011]] listed "IDR → no decimals" as the ISO 4217 convention, but
    ISO 4217 gives IDR 2, and Indonesian banks state balances in cents. IDR now displays with 2
    decimals everywhere USD and GBP do: inputs, rows, dashboard, heroes, totals, tooltips and the PDF.

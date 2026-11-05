@@ -66,7 +66,7 @@ export function EntryRowMobile({
             data-testid={`${tid}-entry-value-${positionId}`}
           >
             {shape.derivedLabelKey && <span className="mr-1.5">{t(shape.derivedLabelKey)}</span>}
-            <span className="tabular-nums">{view.derived.value ?? "—"}</span>
+            <span>{view.derived.value ?? "—"}</span>
           </span>
         ) : (
           <span />

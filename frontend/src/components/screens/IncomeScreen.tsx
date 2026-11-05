@@ -223,7 +223,7 @@ export function IncomeScreen() {
                       <div className="text-xs uppercase tracking-wide text-muted-foreground">
                         {t("income:headline.total")}
                       </div>
-                      <div className="text-2xl font-semibold tabular-nums">
+                      <div className="text-2xl font-semibold">
                         {formatCurrency(String(h.total), h.currency)}
                       </div>
                     </div>
@@ -246,13 +246,13 @@ export function IncomeScreen() {
                         <dl className="mt-1 space-y-0.5 text-sm">
                           <div className="flex justify-between gap-3">
                             <dt>{t("income:headline.routine")}</dt>
-                            <dd className="tabular-nums text-right">
+                            <dd className="text-right">
                               {formatCurrency(String(h.routine), h.currency)}
                             </dd>
                           </div>
                           <div className="flex justify-between gap-3">
                             <dt>{t("income:headline.incidental")}</dt>
-                            <dd className="tabular-nums text-right">
+                            <dd className="text-right">
                               {formatCurrency(String(h.incidental), h.currency)}
                             </dd>
                           </div>
@@ -267,7 +267,7 @@ export function IncomeScreen() {
                             {h.byUser.map((u) => (
                               <div key={u.label} className="flex justify-between gap-3">
                                 <dt>{u.label}</dt>
-                                <dd className="tabular-nums text-right">
+                                <dd className="text-right">
                                   {formatCurrency(String(u.amount), h.currency)}
                                 </dd>
                               </div>
@@ -283,7 +283,7 @@ export function IncomeScreen() {
                           {h.byCategory.map((c) => (
                             <div key={c.category} className="flex justify-between gap-3">
                               <dt>{t(`income:categories.${c.category}`)}</dt>
-                              <dd className="tabular-nums text-right">
+                              <dd className="text-right">
                                 {formatCurrency(String(c.amount), h.currency)}
                               </dd>
                             </div>

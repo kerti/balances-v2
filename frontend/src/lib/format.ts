@@ -2,7 +2,8 @@
 // Locale-aware via i18next's active language (ADR-0026); helpers accept an
 // optional locale override for tests and non-React call sites.
 //
-// IDR (and JPY etc.) display with no decimals; most other currencies with 2.
+// JPY, KRW and VND display with no decimals; every other currency, IDR included,
+// with 2 (ADR-0056 §4: ISO 4217 gives IDR 2 minor units and banks state cents).
 // The amount comes in as a string for precision; for display we convert
 // through Number which is fine at household scale but would need a decimal
 // library if we ever did arithmetic on these values in the frontend (don't —
@@ -16,7 +17,7 @@
 import i18n from "@/i18n";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 
-const NO_DECIMAL_CURRENCIES = new Set(["IDR", "JPY", "KRW", "VND"]);
+const NO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND"]);
 
 // The number of minor units a currency displays and accepts on entry.
 export function currencyDecimals(currency: string): number {

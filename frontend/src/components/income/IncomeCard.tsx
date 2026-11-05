@@ -27,7 +27,7 @@ export function IncomeCard({ income }: Props) {
               chip + regularity icon float to the right, clustered next to the
               actions button. */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 text-xl font-semibold tabular-nums" data-testid="income-amount">
+            <div className="flex-1 text-xl font-semibold" data-testid="income-amount">
               {row.amountText}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">

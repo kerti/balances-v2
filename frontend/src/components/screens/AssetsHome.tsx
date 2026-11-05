@@ -179,7 +179,7 @@ function TotalValueCard({
   return (
     <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid="home-total">
       <div className="text-sm text-muted-foreground">{t("home.totalValueTitle")}</div>
-      <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+      <div className="mt-0.5 text-2xl font-semibold">
         {aggregates.map((a, i) => (
           // Multi-currency stacks one figure per line on mobile (ADR-0050) —
           // additional currencies drop below the primary instead of running off

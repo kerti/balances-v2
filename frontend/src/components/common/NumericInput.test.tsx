@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import { NumericInput } from "@/components/common/NumericInput";
+import { currencyDecimals } from "@/lib/format";
 
 // Ported from kerti/uruni's AmountInput tests (ADR-0056), widened from whole
 // rupiah to a decimal model: digits plus at most one decimal point.
@@ -83,6 +84,33 @@ describe("NumericInput", () => {
     await userEvent.type(input, "1a5b0-0");
     expect(input.value).toBe("1,500");
     expect(onChange).toHaveBeenLastCalledWith("1500");
+  });
+
+  // ADR-0056 §2, kept on purpose when IDR gained cents (#787, 2026-11-05): on a
+  // field that takes decimals, a typed separator is the decimal point, so the
+  // en-GB habit of typing the grouping lands on 48.50. Live grouping shows it
+  // before saving; a paste of the same text is read as grouping.
+  it("reads a typed comma as the decimal point on an IDR amount", async () => {
+    const { onChange, input } = setup({ decimals: currencyDecimals("IDR") });
+    await userEvent.type(input, "48,500,000");
+    expect(input.value).toBe("48.50");
+    expect(onChange).toHaveBeenLastCalledWith("48.50");
+
+    await userEvent.clear(input);
+    await userEvent.paste("48,500,000");
+    expect(input.value).toBe("48,500,000");
+    expect(onChange).toHaveBeenLastCalledWith("48500000");
+  });
+
+  it("reads text inserted in one go (autofill, dictation, fill()) like a paste", () => {
+    const { onChange, input } = setup({ decimals: currencyDecimals("IDR") });
+    fireEvent.change(input, { target: { value: "48,500,000" } });
+    expect(input.value).toBe("48,500,000");
+    expect(onChange).toHaveBeenLastCalledWith("48500000");
+
+    // Text that doesn't parse whole falls back to the per-key rule.
+    fireEvent.change(input, { target: { value: "48,500,0001,5" } });
+    expect(onChange).toHaveBeenLastCalledWith("485000001.5");
   });
 
   it("ignores a typed separator on a field with no decimal places", async () => {

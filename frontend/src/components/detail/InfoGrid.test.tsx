@@ -18,7 +18,7 @@ describe("InfoGrid", () => {
       <InfoGrid
         fields={[
           { label: "Interest rate", value: "5.5%" },
-          { label: "Balance", value: <span className="ml-auto tabular-nums">{"1,234"}</span> },
+          { label: "Balance", value: <span className="ml-auto">{"1,234"}</span> },
         ]}
       />,
     );

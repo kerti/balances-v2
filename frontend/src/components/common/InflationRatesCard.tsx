@@ -182,10 +182,7 @@ export function InflationRatesCard() {
                   return (
                     <TableRow key={r.id} data-testid="inflation-rate-row">
                       <TableCell>{formatYearMonth(r.year_month)}</TableCell>
-                      <TableCell
-                        className="text-right tabular-nums"
-                        data-testid="inflation-rate-value"
-                      >
+                      <TableCell className="text-right" data-testid="inflation-rate-value">
                         {editing ? (
                           <NumericInput
                             className="w-28 ml-auto text-right"
@@ -307,7 +304,7 @@ function InflationRateCard({
             onChange={(v) => onEditChange(v)}
           />
         ) : (
-          <div className="text-lg font-semibold tabular-nums" data-testid="inflation-rate-value">
+          <div className="text-lg font-semibold" data-testid="inflation-rate-value">
             {formatPercent(rate.rate)}
           </div>
         )}

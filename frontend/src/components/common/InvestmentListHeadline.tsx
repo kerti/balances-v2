@@ -36,7 +36,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
   return (
     <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid={testId}>
       <div className="text-sm text-muted-foreground">{t("investments:list.totalValue")}</div>
-      <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+      <div className="mt-0.5 text-2xl font-semibold">
         {aggregates.map((a, i) => (
           <span key={a.currency} className={stack}>
             {i > 0 && <Sep />}
@@ -44,7 +44,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
           </span>
         ))}
       </div>
-      <div className="mt-1 text-sm text-muted-foreground tabular-nums">
+      <div className="mt-1 text-sm text-muted-foreground">
         <span>{t("investments:list.totalCost")}</span>{" "}
         {aggregates.map((a, i) => (
           <span key={a.currency} className={stack}>
@@ -58,7 +58,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
         {aggregates.map((a, i) => (
           <span key={a.currency} className={stack}>
             {i > 0 && <SepMuted />}
-            <span className={cn("tabular-nums", plColor(a.pl))}>{formatPL(a)}</span>
+            <span className={cn("", plColor(a.pl))}>{formatPL(a)}</span>
           </span>
         ))}
       </div>
