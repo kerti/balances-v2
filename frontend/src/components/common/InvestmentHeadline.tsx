@@ -72,12 +72,12 @@ export function InvestmentHeadline({
   // every width — the shared InfoGrid `inline` idiom, the same one the details
   // card's ownership meta uses — so the middle column stays a compact money
   // summary rather than a tall stacked list. InfoGrid right-aligns the value
-  // cell itself, so the value nodes carry only `tabular-nums` / colour, no
+  // cell itself, so the value nodes carry only `` / colour, no
   // per-node `ml-auto`.
   const fields: InfoField[] = [
     {
       label: t("headline.totalCost"),
-      value: <span className="tabular-nums">{formatCurrency(totalCost.toString(), currency)}</span>,
+      value: <span>{formatCurrency(totalCost.toString(), currency)}</span>,
     },
     isClosed
       ? {
@@ -90,10 +90,7 @@ export function InvestmentHeadline({
             pl === null ? (
               <span className="text-muted-foreground">{t("headline.unrealizedPLEmpty")}</span>
             ) : (
-              <span
-                className={cn("tabular-nums", plColor(pl))}
-                data-testid="investment-headline-pl"
-              >
+              <span className={cn("", plColor(pl))} data-testid="investment-headline-pl">
                 {formatPL(pl, plPct, currency)}
               </span>
             ),
@@ -104,7 +101,7 @@ export function InvestmentHeadline({
         latestValue === null ? (
           <span className="text-muted-foreground">{t("headline.totalValueEmpty")}</span>
         ) : (
-          <span className="tabular-nums" data-testid="investment-headline-value">
+          <span data-testid="investment-headline-value">
             {formatCurrency(latestValue.toString(), currency)}
           </span>
         ),

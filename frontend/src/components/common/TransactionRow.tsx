@@ -44,10 +44,7 @@ export function TransactionRow<TUpdate, TDelete>({
           <div className="font-medium">{label}</div>
           {detail && <div className="text-xs text-muted-foreground">{detail}</div>}
         </TableCell>
-        <TableCell
-          className={`text-right tabular-nums ${impactColorClass}`}
-          data-testid="transaction-amount"
-        >
+        <TableCell className={`text-right ${impactColorClass}`} data-testid="transaction-amount">
           {impactText}
         </TableCell>
         <TableCell className="text-muted-foreground">{description ?? "—"}</TableCell>

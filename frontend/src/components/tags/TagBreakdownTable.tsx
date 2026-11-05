@@ -53,13 +53,13 @@ export function TagBreakdownTable({ bd, isChecked, toggle }: Props) {
               <TableCell>
                 <TagBadge name={c.name} color={c.color} />
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right">
                 {c.holdings > 0 ? formatCurrency(String(c.holdings), bd.currency) : "—"}
               </TableCell>
-              <TableCell className="text-right tabular-nums text-destructive">
+              <TableCell className="text-right text-destructive">
                 {c.liabilities > 0 ? `−${formatCurrency(String(c.liabilities), bd.currency)}` : "—"}
               </TableCell>
-              <TableCell className="text-right tabular-nums">
+              <TableCell className="text-right">
                 {formatCurrency(String(c.net), bd.currency)}
               </TableCell>
             </TableRow>
@@ -68,15 +68,15 @@ export function TagBreakdownTable({ bd, isChecked, toggle }: Props) {
         <TableRow className="font-medium">
           <TableCell />
           <TableCell>{t("report.total")}</TableCell>
-          <TableCell className="text-right tabular-nums">
+          <TableCell className="text-right">
             {formatCurrency(String(bd.totalHoldings), bd.currency)}
           </TableCell>
-          <TableCell className="text-right tabular-nums text-destructive">
+          <TableCell className="text-right text-destructive">
             {bd.totalLiabilities > 0
               ? `−${formatCurrency(String(bd.totalLiabilities), bd.currency)}`
               : "—"}
           </TableCell>
-          <TableCell className="text-right tabular-nums">
+          <TableCell className="text-right">
             {formatCurrency(String(bd.totalHoldings - bd.totalLiabilities), bd.currency)}
           </TableCell>
         </TableRow>

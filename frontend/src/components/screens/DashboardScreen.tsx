@@ -480,10 +480,7 @@ function SecondaryAmount({
   const amount = convert(selected.nw_total, resolved.rate);
   const carried = resolved.rateMonth.slice(0, 7) !== selected.year_month.slice(0, 7);
   return (
-    <p
-      data-testid="dashboard-secondary-amount"
-      className="text-sm text-muted-foreground tabular-nums"
-    >
+    <p data-testid="dashboard-secondary-amount" className="text-sm text-muted-foreground">
       {"≈ "}
       {formatCurrency(String(amount), currency)}
       {carried && (
@@ -600,7 +597,7 @@ function GroupBreakdown({ selected, currency }: { selected: MonthlyReport; curre
                   style={{ width: `${(r.value / max) * 100}%` }}
                 />
               </div>
-              <span className="w-40 text-right text-sm tabular-nums">
+              <span className="w-40 text-right text-sm">
                 {r.negative && r.value > 0 ? "−" : ""}
                 {formatCurrency(String(r.value), currency)}
               </span>
@@ -639,9 +636,7 @@ function ByPerson({
               <div className="text-sm text-muted-foreground">
                 {personLabel(t, key, members, me)}
               </div>
-              <div className="text-lg font-medium tabular-nums">
-                {formatCurrency(bucket.nw, currency)}
-              </div>
+              <div className="text-lg font-medium">{formatCurrency(bucket.nw, currency)}</div>
             </div>
           ))}
         </div>
@@ -666,7 +661,7 @@ function ExchangeRates({ selected, currency }: { selected: MonthlyReport; curren
           {entries
             .sort(([a], [b]) => a.localeCompare(b))
             .map(([cur, rate]) => (
-              <div key={cur} className="tabular-nums">
+              <div key={cur}>
                 {t("fxThisMonth.line", {
                   base: cur,
                   rate: formatNumber(rate),
@@ -751,7 +746,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
             {writeOffPositions.map((p) => (
               <li key={p.position_id} className="flex items-center justify-between gap-4">
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -772,7 +767,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
             {trackingChangePositions.map((p) => (
               <li key={p.position_id} className="flex items-center justify-between gap-4">
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -826,7 +821,7 @@ function StatementRow({
         {label}
         {hint && <span className="ml-1 cursor-help text-muted-foreground">{"ⓘ"}</span>}
       </span>
-      <span className={`tabular-nums ${bold ? "font-semibold" : ""} ${amountClass}`}>
+      <span className={`${bold ? "font-semibold" : ""} ${amountClass}`}>
         {positive ? "+" : "−"}
         {formatCurrency(String(Math.abs(value)), currency)}
       </span>

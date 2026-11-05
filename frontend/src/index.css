@@ -216,8 +216,11 @@ body {
   * {
     @apply border-border outline-ring/50;
   }
+  /* Tabular figures everywhere (ADR-0056 §5): inputs, table cells and cards
+     line up without each opting in, and with 2 decimals in right-aligned
+     columns the decimal points align. */
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground tabular-nums;
   }
   html {
     @apply font-sans;

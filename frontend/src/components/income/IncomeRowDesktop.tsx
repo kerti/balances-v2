@@ -30,10 +30,7 @@ export function IncomeRowDesktop({ income }: Props) {
             />
           </div>
         </TableCell>
-        <TableCell
-          className="whitespace-nowrap text-right font-medium tabular-nums"
-          data-testid="income-amount"
-        >
+        <TableCell className="whitespace-nowrap text-right font-medium" data-testid="income-amount">
           {row.amountText}
         </TableCell>
         <TableCell className="text-sm text-muted-foreground">

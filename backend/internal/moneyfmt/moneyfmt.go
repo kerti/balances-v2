@@ -20,6 +20,11 @@ import (
 	"golang.org/x/text/number"
 )
 
+// fractionOverride pins the fraction digits for a currency whose CLDR default
+// disagrees with the frontend. CLDR gives IDR 0 (its cash rounding), but ISO 4217
+// gives it 2 and Indonesian banks state balances in cents (ADR-0056 §4).
+var fractionOverride = map[string]int{"IDR": 2}
+
 func localeOf(locale string) language.Tag {
 	if locale == "" {
 		return language.MustParse("en-GB")
@@ -31,12 +36,12 @@ func localeOf(locale string) language.Tag {
 // currency and BCP-47 locale — the server-side counterpart of the frontend's
 // formatCurrency. Falls back to the raw string if the amount doesn't parse.
 //
-// Fraction digits follow x/text's CLDR default (0 for IDR/JPY/KRW/VND, 2 for
-// USD/EUR/SGD/…), which coincides with lib/format.ts's NO_DECIMAL_CURRENCIES
-// rule for every currency this app realistically handles; the golden matrix
-// enforces that coincidence. A currency whose CLDR fraction disagrees with the
-// frontend rule (e.g. CLP=0, BHD=3) would need an explicit override — none is in
-// use, and the parity test flags it the moment one is added to the matrix.
+// Fraction digits follow x/text's CLDR default (0 for JPY/KRW/VND, 2 for
+// USD/EUR/SGD/…) except where fractionOverride says otherwise, so the result
+// matches lib/format.ts's NO_DECIMAL_CURRENCIES rule; the golden matrix enforces
+// that. A currency whose CLDR fraction disagrees with the frontend rule needs an
+// entry in fractionOverride, and the parity test flags it the moment one is
+// added to the matrix.
 func FormatCurrency(amount, cur, locale string) string {
 	f, err := strconv.ParseFloat(amount, 64)
 	if err != nil {
@@ -55,6 +60,11 @@ func FormatCurrency(amount, cur, locale string) string {
 		// Unknown currency code: ISO code + locale-grouped number, matching
 		// Intl's own no-symbol fallback shape.
 		s = cur + " " + p.Sprint(number.Decimal(mag))
+	} else if digits, ok := fractionOverride[cur]; ok {
+		// The locale's symbol alone, then the number at the pinned scale; x/text's
+		// currency formatter has no per-currency digits option.
+		s = p.Sprint(currency.Symbol(c)) + " " +
+			p.Sprint(number.Decimal(mag, number.MinFractionDigits(digits), number.MaxFractionDigits(digits)))
 	} else {
 		s = p.Sprint(currency.Symbol(c.Amount(mag)))
 	}

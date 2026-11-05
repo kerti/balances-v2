@@ -31,7 +31,7 @@ export function ListHeadline({ totals, count, label, noun, nounPlural, testId }:
   return (
     <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid={testId}>
       <div className="text-sm text-muted-foreground">{label}</div>
-      <div className="mt-0.5 text-2xl font-semibold tabular-nums">
+      <div className="mt-0.5 text-2xl font-semibold">
         {totals.map((row, i) => (
           <span key={row.currency} className={multi ? "block md:inline" : undefined}>
             {i > 0 && (

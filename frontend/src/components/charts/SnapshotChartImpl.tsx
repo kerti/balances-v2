@@ -198,7 +198,7 @@ export default function SnapshotChartImpl({
                       />
                       {seriesLabel ?? key}
                     </span>
-                    <span className="font-mono font-medium tabular-nums text-foreground">
+                    <span className="font-medium text-foreground">
                       {formatCurrency(String(value), currency)}
                     </span>
                   </div>

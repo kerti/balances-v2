@@ -175,15 +175,11 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     const fields: InfoField[] = [
       {
         label: t("investments:bond.faceValueLabel"),
-        value: (
-          <span className="tabular-nums">
-            {formatCurrency(entity.outstanding_face, investment.native_currency)}
-          </span>
-        ),
+        value: <span>{formatCurrency(entity.outstanding_face, investment.native_currency)}</span>,
       },
       {
         label: t("investments:bond.maturityLabel"),
-        value: <span className="tabular-nums">{formatDate(details.maturity_date)}</span>,
+        value: <span>{formatDate(details.maturity_date)}</span>,
       },
     ];
     return fields;
@@ -394,17 +390,13 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
                 <span className="text-muted-foreground">
                   {t("investments:bond.totalCouponsLabel")}
                 </span>{" "}
-                <span className="tabular-nums">
-                  {formatCurrency(totalCoupons.toString(), currency)}
-                </span>
+                <span>{formatCurrency(totalCoupons.toString(), currency)}</span>
               </div>
               <div>
                 <span className="text-muted-foreground">
                   {t("investments:bond.totalFeesLabel")}
                 </span>{" "}
-                <span className="tabular-nums">
-                  {formatCurrency(totalFees.toString(), currency)}
-                </span>
+                <span>{formatCurrency(totalFees.toString(), currency)}</span>
               </div>
             </div>
             <Input

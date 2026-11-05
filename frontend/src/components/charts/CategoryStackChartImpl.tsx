@@ -113,7 +113,7 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
                       />
                       {seriesLabel ?? key}
                     </span>
-                    <span className="font-mono font-medium tabular-nums text-foreground">
+                    <span className="font-medium text-foreground">
                       {pct.toFixed(1)}%
                       <span className="ml-2 font-normal text-muted-foreground">
                         {formatCurrency(String(value), currency)}

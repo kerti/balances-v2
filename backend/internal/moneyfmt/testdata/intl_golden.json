@@ -4,37 +4,37 @@
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "6274520496.58",
-      "want": "IDR 6,274,520,497"
+      "want": "IDR 6,274,520,496.58"
     },
     {
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "0",
-      "want": "IDR 0"
+      "want": "IDR 0.00"
     },
     {
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "-70000000",
-      "want": "-IDR 70,000,000"
+      "want": "-IDR 70,000,000.00"
     },
     {
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "20665178.19",
-      "want": "IDR 20,665,178"
+      "want": "IDR 20,665,178.19"
     },
     {
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "1234.5",
-      "want": "IDR 1,235"
+      "want": "IDR 1,234.50"
     },
     {
       "locale": "en-GB",
       "currency": "IDR",
       "amount": "-0.004",
-      "want": "-IDR 0"
+      "want": "-IDR 0.00"
     },
     {
       "locale": "en-GB",
@@ -184,37 +184,37 @@
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "6274520496.58",
-      "want": "Rp 6.274.520.497"
+      "want": "Rp 6.274.520.496,58"
     },
     {
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "0",
-      "want": "Rp 0"
+      "want": "Rp 0,00"
     },
     {
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "-70000000",
-      "want": "-Rp 70.000.000"
+      "want": "-Rp 70.000.000,00"
     },
     {
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "20665178.19",
-      "want": "Rp 20.665.178"
+      "want": "Rp 20.665.178,19"
     },
     {
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "1234.5",
-      "want": "Rp 1.235"
+      "want": "Rp 1.234,50"
     },
     {
       "locale": "id-ID",
       "currency": "IDR",
       "amount": "-0.004",
-      "want": "-Rp 0"
+      "want": "-Rp 0,00"
     },
     {
       "locale": "id-ID",

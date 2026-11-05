@@ -166,6 +166,17 @@ export function NumericInput({
       s++;
     const removed = prev.slice(p, prev.length - s);
     const inserted = next.slice(p, next.length - s);
+    // Text inserted in one go rather than keyed — autofill, dictation, text
+    // replacement, Playwright's fill() — is read like a paste when the whole field
+    // then parses, so "48,500,000" lands as grouping, not as decimals. A single
+    // keystroke keeps the typed-separator rule (ADR-0056 §2).
+    if (inserted.length > 1) {
+      const whole = readPasted(next);
+      if (whole !== null && fits(whole, "")) {
+        commit(whole, whole.length);
+        return;
+      }
+    }
     let head = toModel(prev.slice(0, p));
     let tail = toModel(prev.slice(prev.length - s));
     let typed = "";
@@ -198,21 +209,24 @@ export function NumericInput({
     commit(candidate, caret);
   }
 
+  // readPasted runs text through the strict locale parser, dropping zero cents a
+  // field with fewer decimals doesn't take (no change in value).
+  function readPasted(text: string): string | null {
+    let parsed = parseLocaleNumber(text, undefined, { allowNegative });
+    if (parsed !== null && fracLen(parsed) > decimals) {
+      parsed = parsed.replace(/0+$/, "");
+      if (parsed.endsWith(".")) parsed = parsed.slice(0, -1);
+    }
+    return parsed;
+  }
+
   function handlePaste(event: ClipboardEvent<HTMLInputElement>) {
     event.preventDefault();
     const input = event.currentTarget;
-    const parsed = parseLocaleNumber(event.clipboardData.getData("text"), undefined, {
-      allowNegative,
-    });
-    if (parsed === null) {
+    const pasted = readPasted(event.clipboardData.getData("text"));
+    if (pasted === null) {
       setError("invalid");
       return;
-    }
-    // Zero cents on a field that takes fewer decimals are no change in value.
-    let pasted = parsed;
-    if (fracLen(pasted) > decimals) {
-      pasted = pasted.replace(/0+$/, "");
-      if (pasted.endsWith(".")) pasted = pasted.slice(0, -1);
     }
     const start = input.selectionStart ?? display.length;
     const end = input.selectionEnd ?? display.length;

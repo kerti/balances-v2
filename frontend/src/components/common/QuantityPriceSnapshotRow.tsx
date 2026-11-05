@@ -45,9 +45,9 @@ export function QuantityPriceSnapshotRow<TUpdate, TDelete>({
           <div className="font-medium">{monthText}</div>
           {statementText && <div className="text-xs text-muted-foreground">{statementText}</div>}
         </TableCell>
-        <TableCell className="text-right tabular-nums">{quantityText ?? "—"}</TableCell>
-        <TableCell className="text-right tabular-nums">{priceText ?? "—"}</TableCell>
-        <TableCell className="text-right tabular-nums" data-testid="snapshot-amount">
+        <TableCell className="text-right">{quantityText ?? "—"}</TableCell>
+        <TableCell className="text-right">{priceText ?? "—"}</TableCell>
+        <TableCell className="text-right" data-testid="snapshot-amount">
           {amountText}
         </TableCell>
         <TableCell className="text-muted-foreground">{description ?? "—"}</TableCell>

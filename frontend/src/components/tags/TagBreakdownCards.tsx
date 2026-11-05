@@ -41,7 +41,7 @@ export function TagBreakdownCards({ bd, isChecked, toggle }: Props) {
                 <TagBadge name={c.name} color={c.color} />
               </label>
               <div
-                className="shrink-0 text-right text-lg font-semibold tabular-nums"
+                className="shrink-0 text-right text-lg font-semibold"
                 data-testid="tag-breakdown-net"
               >
                 {formatCurrency(String(c.net), bd.currency)}
@@ -50,13 +50,11 @@ export function TagBreakdownCards({ bd, isChecked, toggle }: Props) {
             <dl className="mt-1 space-y-1 text-sm">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("report.col.holdings")}</dt>
-                <dd className="tabular-nums">
-                  {c.holdings > 0 ? formatCurrency(String(c.holdings), bd.currency) : "—"}
-                </dd>
+                <dd>{c.holdings > 0 ? formatCurrency(String(c.holdings), bd.currency) : "—"}</dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("report.col.liabilities")}</dt>
-                <dd className="tabular-nums text-destructive">
+                <dd className="text-destructive">
                   {c.liabilities > 0
                     ? `−${formatCurrency(String(c.liabilities), bd.currency)}`
                     : "—"}
@@ -71,20 +69,18 @@ export function TagBreakdownCards({ bd, isChecked, toggle }: Props) {
       <div className="rounded-lg border bg-muted/50 p-3 font-medium">
         <div className="flex items-center justify-between gap-3">
           <span>{t("report.total")}</span>
-          <span className="text-right text-lg tabular-nums">
+          <span className="text-right text-lg">
             {formatCurrency(String(bd.totalHoldings - bd.totalLiabilities), bd.currency)}
           </span>
         </div>
         <dl className="mt-1 space-y-1 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">{t("report.col.holdings")}</dt>
-            <dd className="tabular-nums">
-              {formatCurrency(String(bd.totalHoldings), bd.currency)}
-            </dd>
+            <dd>{formatCurrency(String(bd.totalHoldings), bd.currency)}</dd>
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">{t("report.col.liabilities")}</dt>
-            <dd className="tabular-nums text-destructive">
+            <dd className="text-destructive">
               {bd.totalLiabilities > 0
                 ? `−${formatCurrency(String(bd.totalLiabilities), bd.currency)}`
                 : "—"}

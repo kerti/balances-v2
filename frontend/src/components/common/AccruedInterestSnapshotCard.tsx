@@ -61,7 +61,7 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
         <CardContent className="space-y-2 p-4">
           <div className="flex items-start gap-2">
             <div className="flex-1 space-y-0.5">
-              <div className="text-lg font-semibold tabular-nums" data-testid="snapshot-amount">
+              <div className="text-lg font-semibold" data-testid="snapshot-amount">
                 {amountText}
               </div>
               {legs.map((leg) => (
@@ -70,7 +70,7 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
                   className="flex justify-between gap-2 text-sm text-muted-foreground"
                 >
                   <span>{leg.label}</span>
-                  <span className="tabular-nums">{leg.value}</span>
+                  <span>{leg.value}</span>
                 </div>
               ))}
               <div className="text-sm text-muted-foreground">{monthText}</div>

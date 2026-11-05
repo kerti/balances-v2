@@ -220,7 +220,7 @@ export function FxRatesCard() {
                     <TableRow key={r.id} data-testid="fx-rate-row">
                       <TableCell>{formatYearMonth(r.year_month)}</TableCell>
                       <TableCell>{fxPair(r.currency, base)}</TableCell>
-                      <TableCell className="tabular-nums" data-testid="fx-rate-value">
+                      <TableCell data-testid="fx-rate-value">
                         {editing ? (
                           <NumericInput
                             className="w-28"
@@ -342,7 +342,7 @@ function FxRateCard({
             onChange={(v) => onEditChange(v)}
           />
         ) : (
-          <div className="text-lg font-semibold tabular-nums" data-testid="fx-rate-value">
+          <div className="text-lg font-semibold" data-testid="fx-rate-value">
             {fxEquation(rate.currency, rate.rate, base)}
           </div>
         )}

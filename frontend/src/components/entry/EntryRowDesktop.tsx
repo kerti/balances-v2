@@ -14,12 +14,12 @@ const CURRENCY_COL = "w-10 shrink-0 text-right";
 // the inputs (no extra margin — the row's own gap-3 alone sets it apart; a wider
 // margin left the currency symbol floating too far from the price): the currency
 // symbol in its own fixed column (so the symbols line up by themselves), then the
-// total number right-aligned in its own column (tabular-nums, wide enough for
+// total number right-aligned in its own column (, wide enough for
 // household IDR figures). Reads "[qty] [price] IDR 15.000" with the symbol
 // between the last input and the number.
 const MONEY_CLUSTER = "flex items-center gap-2";
 const SYMBOL_COL = "w-9 shrink-0 text-right";
-const TOTAL_COL = "w-32 shrink-0 text-right tabular-nums";
+const TOTAL_COL = "w-32 shrink-0 text-right";
 
 // EntryRowDesktopHeader labels the input columns once per group (ADR-0046
 // Presentation / UX): with the shape's placeholders hidden the moment a value

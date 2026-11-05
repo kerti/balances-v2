@@ -64,10 +64,7 @@ export function PositionListTable<T>({
                 onClick={() => onSelect(row.id)}
               >
                 {columns.map((col) => (
-                  <TableCell
-                    key={col.id}
-                    className={cn(col.align === "right" && "text-right tabular-nums")}
-                  >
+                  <TableCell key={col.id} className={cn(col.align === "right" && "text-right")}>
                     {col.cell(row)}
                   </TableCell>
                 ))}

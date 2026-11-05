@@ -182,7 +182,7 @@ export const timeDepositDescriptor: DetailDescriptor<
       {
         label: t("investments:timeDeposit.interestRateLabel"),
         value: (
-          <span className="tabular-nums">
+          <span>
             {t("investments:timeDeposit.interestRateValue", {
               rate: Number(details.interest_rate).toFixed(2),
             })}
@@ -192,9 +192,7 @@ export const timeDepositDescriptor: DetailDescriptor<
       {
         label: t("investments:timeDeposit.termLabel"),
         value: (
-          <span className="tabular-nums">
-            {t("investments:timeDeposit.termValue", { months: details.term_months })}
-          </span>
+          <span>{t("investments:timeDeposit.termValue", { months: details.term_months })}</span>
         ),
       },
     ];
@@ -216,7 +214,7 @@ export const timeDepositDescriptor: DetailDescriptor<
           {
             label: t("investments:timeDeposit.periodLabel"),
             value: (
-              <span className="tabular-nums">
+              <span>
                 {t("investments:timeDeposit.periodValue", {
                   start: formatDate(details.placement_date),
                   end: formatDate(details.maturity_date),

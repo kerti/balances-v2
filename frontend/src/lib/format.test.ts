@@ -29,16 +29,16 @@ import {
 
 // covers: INV-PRESENTATION-01
 describe("formatCurrency", () => {
-  it("renders no-decimal currencies (IDR) without a fractional part in en", () => {
-    const out = formatCurrency("1500000", "IDR", "en-GB");
-    expect(out).toMatch(/IDR|Rp/);
-    expect(out).not.toMatch(/[.,]\d{2}\b/); // no two-digit fraction
-  });
-
-  it("renders no-decimal currencies (IDR) without a fractional part in id", () => {
-    const out = formatCurrency("1500000", "IDR", "id-ID");
-    expect(out).toMatch(/Rp/);
-    expect(out).not.toMatch(/[.,]\d{2}\b/);
+  // ADR-0056 §4: IDR has 2 minor units, so a bank's cents survive display.
+  it("renders IDR with its cents in both locales", () => {
+    const space = /\s/gu;
+    expect(formatCurrency("48056131.79", "IDR", "en-GB").replace(space, " ")).toBe(
+      "IDR 48,056,131.79",
+    );
+    expect(formatCurrency("48056131.79", "IDR", "id-ID").replace(space, " ")).toBe(
+      "Rp 48.056.131,79",
+    );
+    expect(formatCurrency("1500000", "IDR", "en-GB")).toMatch(/1,500,000\.00$/);
   });
 
   it("renders other no-decimal currencies (JPY, KRW, VND) without decimals", () => {
@@ -67,9 +67,10 @@ describe("formatCurrencyParts", () => {
   it("splits symbol from number, applying the currency's decimals", () => {
     const idr = formatCurrencyParts("1500000", "IDR", "en-GB");
     expect(idr.symbol).toMatch(/IDR|Rp/);
-    expect(idr.value).toMatch(/\d/);
-    expect(idr.value).not.toMatch(/[.,]\d{2}\b/); // IDR: no fraction
-    expect(idr.value).not.toMatch(/IDR|Rp/); // symbol stripped out of the number
+    expect(idr.value).toBe("1,500,000.00");
+
+    const jpy = formatCurrencyParts("1500000", "JPY", "en-GB");
+    expect(jpy.value).toBe("1,500,000"); // JPY: no fraction
 
     const usd = formatCurrencyParts("1234.5", "USD", "en-GB");
     expect(usd.symbol).toMatch(/\$|USD/);
@@ -207,9 +208,11 @@ describe("formatPercent", () => {
 });
 
 describe("roundToCurrency", () => {
-  it("rounds to 0 dp for no-decimal currencies (IDR)", () => {
-    expect(roundToCurrency("19493588.6896", "IDR")).toBe("19493589");
-    expect(roundToCurrency("19493588.4", "IDR")).toBe("19493588");
+  // Rounding a stored IDR value to whole rupiah silently lost the bank's cents
+  // (the revaluation Apply prefill turned 48056131.79 into 48056132).
+  it("keeps IDR cents, rounding to 2 dp", () => {
+    expect(roundToCurrency("48056131.79", "IDR")).toBe("48056131.79");
+    expect(roundToCurrency("19493588.6896", "IDR")).toBe("19493588.69");
   });
   it("rounds to 0 dp for other no-decimal currencies (JPY/KRW/VND)", () => {
     for (const ccy of ["JPY", "KRW", "VND"]) {
@@ -308,6 +311,7 @@ describe("parseLocaleNumber", () => {
 describe("currencyDecimals", () => {
   it("gives the currency's minor units", () => {
     expect(currencyDecimals("USD")).toBe(2);
+    expect(currencyDecimals("IDR")).toBe(2);
     expect(currencyDecimals("JPY")).toBe(0);
   });
 });
