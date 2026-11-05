@@ -32,7 +32,7 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   // --- Record a Dividend (CashIncome shape — amount only) ---
   await page.getByRole("button", { name: "Dividend" }).click();
   const divDialog = page.getByRole("dialog");
-  await expect(divDialog.getByRole("heading", { name: "Record Dividend" })).toBeVisible();
+  await expect(divDialog.getByRole("heading", { name: "Record dividend" })).toBeVisible();
   await divDialog.getByLabel("Amount (IDR)").fill("50000");
   await divDialog.getByRole("button", { name: "Record dividend" }).click();
   await expect(page.getByRole("row", { name: /Dividend/ })).toBeVisible();
@@ -40,7 +40,7 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   // --- Record a Fee (pure-cash variant — quantity/price left blank) ---
   await page.getByRole("button", { name: "Fee" }).click();
   const feeDialog = page.getByRole("dialog");
-  await expect(feeDialog.getByRole("heading", { name: "Record Fee" })).toBeVisible();
+  await expect(feeDialog.getByRole("heading", { name: "Record fee" })).toBeVisible();
   await feeDialog.getByLabel("Cash amount (IDR)").fill("25000");
   await feeDialog.getByRole("button", { name: "Record fee" }).click();
   await expect(page.getByRole("row", { name: /Fee/ })).toBeVisible();

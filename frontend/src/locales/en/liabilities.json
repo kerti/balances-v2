@@ -21,11 +21,11 @@
   },
   "screens": {
     "personal": {
-      "title": "Personal Liabilities",
+      "title": "Personal liabilities",
       "description": "Informal debts — money owed to family, friends, or other individuals."
     },
     "institutional": {
-      "title": "Institutional Liabilities",
+      "title": "Institutional liabilities",
       "description": "Formal debts — mortgages, bank loans, outstanding credit-card balances."
     }
   },
@@ -45,7 +45,7 @@
   "editTitle": "Edit liability",
   "editDescription": "Subtype and currency are not editable — create a new liability if those need to change. Ownership is editable.",
   "detailSubtitle": "{{subtype}} · {{counterparty}}",
-  "detailsCardTitle": "Liability Details",
+  "detailsCardTitle": "Liability details",
   "detailsCardLine": "Ownership: {{ownership}} · Currency: {{currency}} · Status:",
   "principalLabel": "Principal:",
   "interestRateLabel": "Interest rate:",
@@ -56,7 +56,7 @@
   "periodLabel": "Period:",
   "periodValue": "{{start}} → {{end}}",
   "periodMissing": "—",
-  "chartTitle": "Outstanding Balance Over Time",
+  "chartTitle": "Outstanding balance over time",
   "chartDescription": "Monthly balance progression in {{currency}}.",
   "snapshotsTitle": "Snapshots",
   "snapshotsDescription": "Monthly outstanding-balance readings (manual entry).",

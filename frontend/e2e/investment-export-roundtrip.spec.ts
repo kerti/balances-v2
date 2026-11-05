@@ -38,7 +38,7 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   // --- Record a Buy so the export's Transactions sheet has a real ledger row ---
   await page.getByRole("button", { name: "Buy" }).click();
   const buyDialog = page.getByRole("dialog");
-  await expect(buyDialog.getByRole("heading", { name: "Record Buy" })).toBeVisible();
+  await expect(buyDialog.getByRole("heading", { name: "Record buy" })).toBeVisible();
   await buyDialog.getByLabel("Quantity (sh)").fill("100");
   await buyDialog.getByLabel("Price per unit (IDR)").fill("8500");
   await buyDialog.getByRole("button", { name: "Record buy" }).click();

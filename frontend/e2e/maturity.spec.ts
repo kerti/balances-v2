@@ -42,7 +42,7 @@ test("time deposit maturity flips status to matured and gates the row", async ({
   // --- Record Maturity (no_rollover default → both dispositions cash out) ---
   await page.getByRole("button", { name: "Maturity" }).click();
   const matDialog = page.getByRole("dialog");
-  await expect(matDialog.getByRole("heading", { name: "Record Maturity" })).toBeVisible();
+  await expect(matDialog.getByRole("heading", { name: "Record maturity" })).toBeVisible();
   await matDialog.getByLabel("Principal (IDR)").fill("50000000");
   await matDialog.getByLabel("Interest (IDR)").fill("2750000");
   await matDialog.getByRole("button", { name: "Record maturity" }).click();

@@ -220,7 +220,7 @@ export function IncomeScreen() {
                 >
                   <CardContent className="pt-4 space-y-3">
                     <div>
-                      <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                      <div className="text-xs text-muted-foreground">
                         {t("income:headline.total")}
                       </div>
                       <div className="text-2xl font-semibold">
@@ -240,7 +240,7 @@ export function IncomeScreen() {
                       )}
                     >
                       <div>
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {t("income:headline.byRegularity")}
                         </div>
                         <dl className="mt-1 space-y-0.5 text-sm">
@@ -260,7 +260,7 @@ export function IncomeScreen() {
                       </div>
                       {h.byUser.length > 1 && (
                         <div>
-                          <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                          <div className="text-xs text-muted-foreground">
                             {t("income:headline.byPerson")}
                           </div>
                           <dl className="mt-1 space-y-0.5 text-sm">
@@ -276,7 +276,7 @@ export function IncomeScreen() {
                         </div>
                       )}
                       <div>
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                        <div className="text-xs text-muted-foreground">
                           {t("income:headline.byCategory")}
                         </div>
                         <dl className="mt-1 space-y-0.5 text-sm">

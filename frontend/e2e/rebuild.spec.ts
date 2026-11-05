@@ -41,7 +41,7 @@ test("dashboard rebuild: per-month + rebuild-all", async ({ page }) => {
   // then the Dashboard menu item opens the dashboard.
   await page.getByRole("button", { name: "← Back" }).click();
   await page.getByRole("link", { name: "Dashboard" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
 
   // --- Rebuild this month (per-month scope: /api/reports/YYYY-MM/rebuild) ---
   const monthResp = page.waitForResponse(
@@ -59,10 +59,10 @@ test("dashboard rebuild: per-month + rebuild-all", async ({ page }) => {
 
   // Dashboard stayed healthy through both rebuilds.
   await expect(page.getByText("Rebuild failed — try again.")).toHaveCount(0);
-  await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
 
   // --- Cleanup: delete the snapshot, then the parent account ---
-  await page.getByRole("link", { name: "Bank Accounts" }).click();
+  await page.getByRole("link", { name: "Bank accounts" }).click();
   await page
     .getByRole("row", { name: new RegExp(account) })
     .getByText(account)

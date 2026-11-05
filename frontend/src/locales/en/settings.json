@@ -57,11 +57,11 @@
     "disabledHint": "Exchange rates only apply once multi-currency tracking is on.",
     "deleteTitle": "Delete the {{currency}} rate for {{month}}?",
     "deleteDescription": "Later months will reuse the most recent earlier rate.",
-    "disabledLink": "Go to Currency settings"
+    "disabledLink": "Go to currency settings"
   },
   "inflation": {
     "title": "Inflation",
-    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualized (year-on-year) figure each month on the Inflation Rates page — the estimate averages the last 12 months when available.",
+    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualised (year-on-year) figure each month on the Inflation rates page — the estimate averages the last 12 months when available.",
     "assumedLabel": "Assumed annual %",
     "month": "Month",
     "rate": "Annual %",
@@ -72,8 +72,8 @@
     "manageRates": "Manage monthly rates →"
   },
   "inflationRatesPage": {
-    "title": "Inflation Rates",
-    "subtitle": "Enter the actual annualized (year-on-year) inflation figure for any month you have it. Months you leave blank fall back to the assumed rate on the Settings page."
+    "title": "Inflation rates",
+    "subtitle": "Enter the actual annualised (year-on-year) inflation figure for any month you have it. Months you leave blank fall back to the assumed rate on the Settings page."
   },
   "invite": {
     "title": "Invite someone to your household",

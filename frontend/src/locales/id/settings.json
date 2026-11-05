@@ -3,7 +3,7 @@
   "subtitle": "Nama dan preferensi Anda, pengaturan rumah tangga, anggota, dan cadangan.",
   "sections": {
     "profile": "Profil",
-    "household": "Rumah Tangga",
+    "household": "Rumah tangga",
     "membership": "Keanggotaan",
     "data": "Data"
   },
@@ -38,7 +38,7 @@
     }
   },
   "currency": {
-    "title": "Mata Uang",
+    "title": "Mata uang",
     "description": "Kekayaan bersih dilaporkan dalam mata uang ini.",
     "reportingLabel": "Mata uang pelaporan",
     "multiTitle": "Multi-mata-uang",
@@ -50,18 +50,18 @@
     "title": "Kurs",
     "description": "Satu kurs per bulan per mata uang — unit mata uang pelaporan per 1 unit mata uang asing (kurs akhir bulan). Bulan berikutnya memakai kurs terakhir hingga Anda memasukkan yang baru.",
     "month": "Bulan",
-    "currency": "Mata Uang",
+    "currency": "Mata uang",
     "rate": "Kurs",
     "addRate": "Tambah kurs",
     "empty": "Belum ada kurs.",
     "disabledHint": "Kurs hanya berlaku jika pelacakan multi-mata-uang aktif.",
     "deleteTitle": "Hapus kurs {{currency}} untuk {{month}}?",
     "deleteDescription": "Bulan berikutnya akan memakai kurs terakhir sebelumnya.",
-    "disabledLink": "Buka pengaturan Mata Uang"
+    "disabledLink": "Buka pengaturan mata uang"
   },
   "inflation": {
     "title": "Inflasi",
-    "description": "Digunakan untuk memperkirakan berapa lama investasi Anda bertahan jika pemasukan berhenti (ketahanan dana). Tetapkan asumsi laju tahunan, dan bila mau, masukkan angka tahunan (year-on-year) aktual tiap bulan di halaman Laju Inflasi — perkiraan memakai rata-rata 12 bulan terakhir bila tersedia.",
+    "description": "Digunakan untuk memperkirakan berapa lama investasi Anda bertahan jika pemasukan berhenti (ketahanan dana). Tetapkan asumsi laju tahunan, dan bila mau, masukkan angka tahunan (year-on-year) aktual tiap bulan di halaman Laju inflasi — perkiraan memakai rata-rata 12 bulan terakhir bila tersedia.",
     "assumedLabel": "Asumsi % tahunan",
     "month": "Bulan",
     "rate": "% Tahunan",
@@ -72,7 +72,7 @@
     "manageRates": "Kelola laju bulanan →"
   },
   "inflationRatesPage": {
-    "title": "Laju Inflasi",
+    "title": "Laju inflasi",
     "subtitle": "Masukkan angka inflasi tahunan (year-on-year) aktual untuk bulan mana pun yang Anda miliki. Bulan yang dikosongkan memakai asumsi laju di halaman Pengaturan."
   },
   "invite": {

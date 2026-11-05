@@ -21,11 +21,11 @@
   },
   "screens": {
     "personal": {
-      "title": "Liabilitas Pribadi",
+      "title": "Liabilitas pribadi",
       "description": "Utang informal — uang yang terutang kepada keluarga, teman, atau individu lain."
     },
     "institutional": {
-      "title": "Liabilitas Institusional",
+      "title": "Liabilitas institusional",
       "description": "Utang formal — KPR, pinjaman bank, saldo kartu kredit yang belum lunas."
     }
   },
@@ -45,7 +45,7 @@
   "editTitle": "Ubah liabilitas",
   "editDescription": "Subtipe dan mata uang tidak bisa diubah — buat liabilitas baru jika perlu diubah. Kepemilikan bisa diubah.",
   "detailSubtitle": "{{subtype}} · {{counterparty}}",
-  "detailsCardTitle": "Detail Liabilitas",
+  "detailsCardTitle": "Detail liabilitas",
   "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
   "principalLabel": "Pokok:",
   "interestRateLabel": "Suku bunga:",
@@ -56,7 +56,7 @@
   "periodLabel": "Periode:",
   "periodValue": "{{start}} → {{end}}",
   "periodMissing": "—",
-  "chartTitle": "Saldo Terutang dari Waktu ke Waktu",
+  "chartTitle": "Saldo terutang dari waktu ke waktu",
   "chartDescription": "Perkembangan saldo bulanan dalam {{currency}}.",
   "snapshotsTitle": "Snapshot",
   "snapshotsDescription": "Bacaan saldo terutang bulanan (input manual).",

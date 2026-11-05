@@ -6,7 +6,7 @@
   },
   "manage": {
     "title": "Manage tags",
-    "description": "Group positions however you like — the breakdown below reflects any changes.",
+    "description": "Group positions however you like — the breakdown above reflects any changes.",
     "empty": "No tags yet. Add one below.",
     "newLabel": "New tag",
     "namePlaceholder": "e.g. BCA, Retirement",
