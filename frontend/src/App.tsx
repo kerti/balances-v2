@@ -2,7 +2,6 @@ import { useEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   createBrowserRouter,
-  Navigate,
   RouterProvider,
   useNavigate,
   useParams,
@@ -18,6 +17,7 @@ import { ResetSetScreen } from "@/components/screens/ResetSetScreen";
 import { HouseholdErasedScreen } from "@/components/screens/HouseholdErasedScreen";
 import { AppShell } from "@/components/shell/AppShell";
 import { RouteErrorBoundary } from "@/components/shell/RouteErrorBoundary";
+import { NotFoundScreen } from "@/components/screens/NotFoundScreen";
 import { DashboardScreen } from "@/components/screens/DashboardScreen";
 import { AssetsHome } from "@/components/screens/AssetsHome";
 import { AssetEntryScreen } from "@/components/screens/AssetEntryScreen";
@@ -375,8 +375,8 @@ const router = createBrowserRouter([
       { path: "settings/fx-rates", element: <SettingsFxRatesScreen /> },
       { path: "settings/inflation-rates", element: <SettingsInflationRatesScreen /> },
 
-      // Unknown path → dashboard.
-      { path: "*", element: <Navigate to={routes.dashboard} replace /> },
+      // Unknown path → Not found screen, inside the shell.
+      { path: "*", element: <NotFoundScreen /> },
     ],
   },
 ]);

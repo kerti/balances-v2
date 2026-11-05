@@ -149,7 +149,8 @@
       "commit": "Permanently delete",
       "deleting": "Deleting…",
       "cancel": "Cancel",
-      "failed": "Couldn't delete this household. Please try again."
+      "failed": "Couldn't delete this household. Please try again.",
+      "demoDisabled": "Turned off on the public demo"
     }
   }
 }

@@ -11,7 +11,7 @@
     "UNAUTHORIZED": "Silakan masuk kembali.",
     "NOT_FOUND": "Tidak ditemukan.",
     "INVALID_ID": "{{field}} tidak valid.",
-    "INVALID_JSON_BODY": "Format permintaan tidak valid.",
+    "INVALID_JSON_BODY": "Ada isian di formulir ini yang tidak dapat dibaca. Periksa angkanya lalu coba lagi.",
     "INVALID_DATE": "{{field}} tidak valid: format yang diharapkan YYYY-MM-DD.",
     "INVALID_YEAR_MONTH": "Bulan tidak valid: format yang diharapkan YYYY-MM.",
     "FUTURE_YEAR_MONTH": "Bulan tidak boleh di masa depan.",
@@ -60,6 +60,9 @@
     "WEAK_PASSWORD": "Pilih kata sandi yang lebih kuat: minimal 10 karakter dan bukan kata sandi yang umum.",
     "INVALID_CREDENTIALS": "Email atau kata sandi salah.",
     "TOO_MANY_ATTEMPTS": "Terlalu banyak percobaan. Mohon tunggu sebentar lalu coba lagi.",
-    "HOUSEHOLD_NAME_MISMATCH": "Itu tidak cocok dengan nama rumah tangga Anda. Ketik persis untuk konfirmasi."
+    "HOUSEHOLD_NAME_MISMATCH": "Itu tidak cocok dengan nama rumah tangga Anda. Ketik persis untuk konfirmasi.",
+    "ERASURE_DISABLED_DEMO": "Penghapusan rumah tangga dinonaktifkan pada demo publik.",
+    "CROSS_SITE_REQUEST_BLOCKED": "Permintaan ini diblokir demi keamanan Anda. Muat ulang halaman lalu coba lagi.",
+    "INFLATION_RATE_EXISTS": "Tingkat inflasi untuk bulan tersebut sudah ada."
   }
 }

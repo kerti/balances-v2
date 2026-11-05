@@ -321,5 +321,10 @@
   "numericInput": {
     "invalidPaste": "Isian ini tidak bisa dibaca sebagai angka.",
     "tooLong": "Angka ini terlalu panjang untuk kolom ini."
+  },
+  "notFound": {
+    "title": "Halaman tidak ditemukan",
+    "body": "Tidak ada apa pun di alamat ini. Halamannya mungkin telah dipindahkan, atau tautannya salah ketik.",
+    "backToDashboard": "Kembali ke Dashboard"
   }
 }

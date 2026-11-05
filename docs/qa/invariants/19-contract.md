@@ -9,8 +9,9 @@ leak (an unmapped error spilling schema/SQL internals) and a false-state (a
 conflict that reads as success or the wrong status). It is the error twin of the
 success-path zones. The OAuth callback redirect flow and the dev-only mock-OIDC
 subcommand are the documented exceptions that keep plain `http.Error` bodies and
-are out of scope here. Every row below is already test-backed in
-`internal/httperr/httperr_test.go` — this was annotation work, not new tests.
+are out of scope here. Rows 01-04 are test-backed in
+`internal/httperr/httperr_test.go` (annotation work, not new tests); row 05 by the
+frontend `catalogs.test.ts`, which reads `codes.go` (#782).
 Source: ADR-0027 (error envelope), ADR-0026 (the i18n catalog the codes key into).
 
 | ID | Invariant | Source | Severity |
@@ -19,8 +20,9 @@ Source: ADR-0027 (error envelope), ADR-0026 (the i18n catalog the codes key into
 | INV-CONTRACT-02 | Sentinel→code+status fidelity — each repo sentinel maps to its stable wire `Code` and the *correct* HTTP status (404 not-found, 409 conflict, 400 bad-shape), resolved through `errors.Is` so a wrapped sentinel (`fmt.Errorf("...: %w", errs.ErrNotFound)`) still maps. A conflict that read as 200/404 is a false-state. Covered by `TestWriteRepo_sentinelMapping` / `TestWriteRepo_wrappedSentinel` | ADR-0027 | High |
 | INV-CONTRACT-03 | Envelope shape is code-only — `Write` emits `{"code": ...}` with `Args` **omitted when nil** (never `"args":null`) and no `message` field, the exact shape the i18n catalog lookup depends on; `Content-Type: application/json`. Covered by `TestWrite_envelope` / `TestWrite_argsOmittedWhenNil` | ADR-0027 / ADR-0026 | Medium |
 | INV-CONTRACT-04 | Validation reports the wire field, not the Go name — `WriteValidation` surfaces `args.field` as the JSON tag (`amount`, not `Amount`) + `args.rule` as the validator tag that fired (`required`, `oneof`), so the frontend catalog keys on stable snake_case names; a non-validator error falls through to `CodeInternal` / 500. An untagged field falls back to the Go name (safety-net, locked so a contributor doesn't silently leak it). Covered by `TestWriteValidation_envelopeFromFirstFieldError` / `_oneofTagSurfaces` / `_nonValidatorErrorMapsToInternal` / `TestNewValidator_untaggedFieldFallsBackToGoName` | ADR-0027 | Medium |
+| INV-CONTRACT-05 | Every wire error code has copy in both locales — each `Code` constant in `internal/httperr/codes.go` has a `code.<CODE>` entry in `locales/en/errors.json` and `locales/id/errors.json`; a code with no entry makes `errorMessage` fall through to the generic UNKNOWN line, so the user sees "Something went wrong" for a failure the server named. Covered by `catalogs.test.ts` (reads `codes.go`) | ADR-0027 / ADR-0026 | Medium |
 
-> _Zone complete at 4/4. Grows when a new failure surface lands that doesn't fit
+> _Zone complete at 5/5. Grows when a new failure surface lands that doesn't fit
 > the envelope (e.g. a streaming endpoint, a non-JSON download error path); until
 > then every `internal/*` handler funnels through `httperr.Write*` and is covered
 > by the rows above._
@@ -58,5 +60,5 @@ household app, so nothing to catalogue); MIGRATIONS (ADR-0033 immutability is a
 release/process guarantee via goose checksums, not a runtime invariant a repo
 test asserts); pure infra (chi/pgx/sqlc/vite/PWA/hosting — ADR-0013/14/15/16/18/30);
 meta/process (ADR-0021/29/31/34); i18n *completeness* (a missing catalog key is
-cosmetic, below the bar — the privacy-safe rendering half is already
-PRESENTATION).
+cosmetic, below the bar; error-code copy is the exception, INV-CONTRACT-05; the
+privacy-safe rendering half is already PRESENTATION).

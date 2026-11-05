@@ -3,6 +3,7 @@
 // and the en/id key sets stay in lockstep. Catches namespace drift (e.g. a new
 // namespace added to the array without its catalog files) before runtime.
 // JSON imports work via tsc's resolveJsonModule + Vite's JSON loader.
+import codesGo from "../../../backend/internal/httperr/codes.go?raw";
 import { describe, expect, it } from "vitest";
 import { NAMESPACES, SUPPORTED_LOCALES, type Locale } from "./index";
 
@@ -84,4 +85,26 @@ describe("i18n catalogs", () => {
       expect(idKeys, `id/${ns}.json keys diverge from en/${ns}.json`).toEqual(enKeys);
     }
   });
+});
+
+// Every wire error code in internal/httperr/codes.go must have copy in both
+// error catalogs; otherwise errorMessage() falls back to the generic UNKNOWN
+// line and the user sees "Something went wrong" for a failure we can name.
+// gen-ts-types doesn't emit the codes, so this reads the Go source.
+// covers: INV-CONTRACT-05
+describe("backend error codes", () => {
+  const codes = [...codesGo.matchAll(/^\s*Code\w+\s+Code\s*=\s*"([A-Z0-9_]+)"/gm)].map((m) => m[1]);
+
+  it("finds the codes it is meant to guard", () => {
+    expect(codes.length).toBeGreaterThan(40);
+    expect(codes).toContain("ERASURE_DISABLED_DEMO");
+  });
+
+  for (const lng of SUPPORTED_LOCALES) {
+    it(`${lng} errors catalog has an entry for every code`, () => {
+      const entries = (CATALOGS[lng].errors as { code: Record<string, string> }).code;
+      const missing = codes.filter((c) => !entries[c]);
+      expect(missing, `codes without ${lng} copy`).toEqual([]);
+    });
+  }
 });

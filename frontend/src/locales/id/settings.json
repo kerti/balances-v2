@@ -149,7 +149,8 @@
       "commit": "Hapus secara permanen",
       "deleting": "Menghapus…",
       "cancel": "Batal",
-      "failed": "Rumah tangga tidak dapat dihapus. Silakan coba lagi."
+      "failed": "Rumah tangga tidak dapat dihapus. Silakan coba lagi.",
+      "demoDisabled": "Dinonaktifkan pada demo publik"
     }
   }
 }
