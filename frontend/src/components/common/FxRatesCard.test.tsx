@@ -223,3 +223,64 @@ it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => 
   await waitFor(() => expect(patched).not.toBeNull());
   expect(patched).toEqual({ id: "fx-1", body: { rate: "16400" } });
 });
+
+// covers: INV-PRESENTATION-16
+it("desktop: trash opens a destructive confirm; Cancel sends nothing, Confirm deletes once", async () => {
+  setViewport(1280);
+  let deletes = 0;
+  server.use(
+    http.delete("/api/fx-rates/:id", () => {
+      deletes += 1;
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  renderCard();
+  await screen.findByTestId("fx-rate-table");
+
+  fireEvent.click(
+    within(screen.getByTestId("fx-rate-row")).getByRole("button", { name: "Delete" }),
+  );
+  const dialog = await screen.findByRole("alertdialog");
+  expect(within(dialog).getByText("Delete the USD rate for May 2026?")).toBeInTheDocument();
+  expect(deletes).toBe(0);
+
+  // Cancel: no request, the row stays.
+  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(deletes).toBe(0);
+  expect(screen.getByTestId("fx-rate-row")).toBeInTheDocument();
+
+  // Confirm: red button, one DELETE.
+  fireEvent.click(
+    within(screen.getByTestId("fx-rate-row")).getByRole("button", { name: "Delete" }),
+  );
+  const confirm = within(await screen.findByRole("alertdialog")).getByRole("button", {
+    name: "Delete",
+  });
+  // The variant, and no leftover bg-primary: a className override used to lose to it (#779).
+  expect(confirm).toHaveAttribute("data-variant", "destructive");
+  expect(confirm).not.toHaveClass("bg-primary");
+  fireEvent.click(confirm);
+  await waitFor(() => expect(deletes).toBe(1));
+});
+
+// covers: INV-PRESENTATION-16
+it("mobile: the card's trash also asks first", async () => {
+  setViewport(500);
+  let deletes = 0;
+  server.use(
+    http.delete("/api/fx-rates/:id", () => {
+      deletes += 1;
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  renderCard();
+  await screen.findByTestId("fx-rate-cards");
+
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  const dialog = await screen.findByRole("alertdialog");
+  expect(deletes).toBe(0);
+  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+  expect(deletes).toBe(0);
+});

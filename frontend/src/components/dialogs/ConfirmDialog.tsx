@@ -53,7 +53,10 @@ export function ConfirmDialog({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={pending}
-            className={destructive ? "bg-destructive hover:bg-destructive/90" : undefined}
+            // A variant, not a className: AlertDialogAction renders Button asChild,
+            // and Slot joins classes without tailwind-merge, so a bg-* override
+            // lost to the default variant's bg-primary (#779).
+            variant={destructive ? "destructive" : "default"}
           >
             {pending ? t("working") : confirm}
           </AlertDialogAction>

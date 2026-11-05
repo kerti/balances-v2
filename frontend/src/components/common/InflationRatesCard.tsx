@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { PaginationControls } from "@/components/common/PaginationControls";
 import { errorMessage } from "@/lib/errorMessage";
 import {
@@ -64,6 +65,8 @@ export function InflationRatesCard() {
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editRate, setEditRate] = useState("");
+
+  const [pendingDelete, setPendingDelete] = useState<InflationRate | null>(null);
 
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil((rates?.length ?? 0) / PAGE_SIZE));
@@ -163,7 +166,7 @@ export function InflationRatesCard() {
                   onCancel={cancelEdit}
                   canSave={canSave}
                   isSaving={updateRate.isPending}
-                  onDelete={() => deleteRate.mutate(r.id)}
+                  onDelete={() => setPendingDelete(r)}
                 />
               ))}
             </div>
@@ -232,7 +235,7 @@ export function InflationRatesCard() {
                               variant="ghost"
                               size="icon"
                               aria-label={t("common:delete")}
-                              onClick={() => deleteRate.mutate(r.id)}
+                              onClick={() => setPendingDelete(r)}
                             >
                               <Trash2 className="size-4" />
                             </Button>
@@ -250,6 +253,24 @@ export function InflationRatesCard() {
           <PaginationControls page={effectivePage} totalPages={totalPages} onPageChange={setPage} />
         )}
       </CardContent>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        title={t("inflation.deleteTitle", {
+          month: pendingDelete ? formatYearMonth(pendingDelete.year_month) : "",
+        })}
+        description={t("inflation.deleteDescription")}
+        confirmLabel={t("common:delete")}
+        destructive
+        pending={deleteRate.isPending}
+        onConfirm={() => {
+          if (pendingDelete)
+            deleteRate.mutate(pendingDelete.id, { onSettled: () => setPendingDelete(null) });
+        }}
+      />
     </Card>
   );
 }
