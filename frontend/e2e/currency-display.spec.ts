@@ -46,7 +46,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   // either way, but only shows the CRUD form once multi-currency is on).
   await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
-  await page.getByRole("link", { name: "Exchange Rates", exact: true }).click();
+  await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
   const fxCard = page.getByTestId("fx-rates-card");
   await fxCard.locator("#fx-month").fill(month);
   await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
@@ -56,7 +56,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
 
   // --- Dashboard: pick "Also in: USD" → headline gains the ≈ approximation ---
   await page.getByRole("link", { name: "Dashboard" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
   await page.getByTestId("dashboard-secondary-currency").selectOption("USD");
 
   const approx = page.getByTestId("dashboard-secondary-amount");
@@ -65,7 +65,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(approx).not.toContainText("no USD rate yet");
 
   // --- Cleanup: snapshot + account, then the rate, then turn multi-currency off ---
-  await page.getByRole("link", { name: "Bank Accounts" }).click();
+  await page.getByRole("link", { name: "Bank accounts" }).click();
   await page
     .getByRole("row", { name: new RegExp(account) })
     .getByText(account)
@@ -80,8 +80,9 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText(account)).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Exchange Rates", exact: true }).click();
+  await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
   await page.getByRole("row", { name: /USD/ }).getByRole("button", { name: "Delete" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings" }).click();

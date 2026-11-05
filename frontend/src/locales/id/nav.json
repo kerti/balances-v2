@@ -1,7 +1,7 @@
 {
   "dashboard": "Dashboard",
   "assets": "Aset",
-  "bankAccounts": "Rekening Bank",
+  "bankAccounts": "Rekening bank",
   "properties": "Properti",
   "vehicles": "Kendaraan",
   "liabilities": "Liabilitas",
@@ -10,7 +10,7 @@
   "receivables": "Piutang",
   "investments": "Investasi",
   "stocks": "Saham",
-  "mutualFunds": "Reksa Dana",
+  "mutualFunds": "Reksa dana",
   "bonds": "Obligasi",
   "timeDeposits": "Deposito",
   "gold": "Emas",
@@ -18,7 +18,7 @@
   "tags": "Tag",
   "settings": "Pengaturan",
   "fxRates": "Kurs",
-  "inflationRates": "Laju Inflasi",
+  "inflationRates": "Laju inflasi",
   "footer": {
     "deploy": {
       "preview": "Pratinjau",

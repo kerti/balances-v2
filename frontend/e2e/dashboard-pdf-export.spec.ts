@@ -39,7 +39,7 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
 
   // --- Dashboard: download the PDF ---
   await page.getByRole("link", { name: "Dashboard" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
 
   // a11y smoke on the populated dashboard — the main authed aggregate view,
   // charts + figures + header actions all mounted (#368).
@@ -55,7 +55,7 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   expect(download.suggestedFilename()).toMatch(/^Balances_\d{4}-\d{2}\.pdf$/);
 
   // --- Cleanup: snapshot, then the account ---
-  await page.getByRole("link", { name: "Bank Accounts" }).click();
+  await page.getByRole("link", { name: "Bank accounts" }).click();
   await page
     .getByRole("row", { name: new RegExp(account) })
     .getByText(account)

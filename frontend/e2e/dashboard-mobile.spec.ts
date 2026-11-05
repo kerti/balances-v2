@@ -43,7 +43,7 @@ test("dashboard holds the mobile a11y floor at 390px", { tag: "@smoke" }, async 
   // to the dashboard route ("/") by URL instead.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Net Worth" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
 
   // Primary value reachable: the headline is visible and inside the viewport
   // (not pushed off-screen by a crammed header row).
@@ -67,7 +67,7 @@ test("dashboard holds the mobile a11y floor at 390px", { tag: "@smoke" }, async 
 
   // --- Cleanup: snapshot, then the account (desktop width for the wide table) ---
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByRole("link", { name: "Bank Accounts" }).click();
+  await page.getByRole("link", { name: "Bank accounts" }).click();
   await page
     .getByRole("row", { name: new RegExp(account) })
     .getByText(account)

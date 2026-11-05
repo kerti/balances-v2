@@ -146,7 +146,7 @@
     "investments": {
       "active": "Aktif",
       "sold": "Terjual",
-      "matured": "Jatuh Tempo",
+      "matured": "Jatuh tempo",
       "untracked": "Tidak lagi dicatat"
     }
   },

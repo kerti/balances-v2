@@ -1,7 +1,7 @@
 {
   "dashboard": "Dashboard",
   "assets": "Assets",
-  "bankAccounts": "Bank Accounts",
+  "bankAccounts": "Bank accounts",
   "properties": "Properties",
   "vehicles": "Vehicles",
   "liabilities": "Liabilities",
@@ -10,15 +10,15 @@
   "receivables": "Receivables",
   "investments": "Investments",
   "stocks": "Stocks",
-  "mutualFunds": "Mutual Funds",
+  "mutualFunds": "Mutual funds",
   "bonds": "Bonds",
-  "timeDeposits": "Time Deposits",
+  "timeDeposits": "Time deposits",
   "gold": "Gold",
   "income": "Income",
   "tags": "Tags",
   "settings": "Settings",
-  "fxRates": "Exchange Rates",
-  "inflationRates": "Inflation Rates",
+  "fxRates": "Exchange rates",
+  "inflationRates": "Inflation rates",
   "footer": {
     "deploy": {
       "preview": "Preview",
