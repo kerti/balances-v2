@@ -87,3 +87,43 @@ test(
     await expect(page.getByText(account)).toHaveCount(0);
   },
 );
+
+// Tablet overflow (#781): between 768px and ~810px the SidebarInset used to grow
+// to its content's minimum width, so every list and detail page scrolled
+// sideways and clipped Sign out / New / row menus. Asserts no horizontal page
+// overflow at 768px on a list page and a detail page.
+//
+// covers: INV-PRESENTATION-14
+test(
+  "list and detail pages have no horizontal overflow at 768px",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const account = `E2E tablet overflow ${Date.now()}`;
+    const overflow = () =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+
+    await page.goto("/assets/bank-accounts");
+    await page.getByRole("button", { name: "New bank account" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Display name").fill(account);
+    await dialog.getByLabel("Bank name").fill("E2E Bank");
+    await dialog.getByLabel("Account number").fill("1234567890");
+    await dialog.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
+
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.reload();
+    await expect(page.getByText(account)).toBeVisible();
+    expect(await overflow()).toBeLessThanOrEqual(0);
+
+    await page.getByText(account).click();
+    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
+    expect(await overflow()).toBeLessThanOrEqual(0);
+
+    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
+    await expect(page.getByText(account)).toHaveCount(0);
+  },
+);

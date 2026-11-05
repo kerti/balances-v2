@@ -11,6 +11,12 @@ body,
   height: 100%;
 }
 
+/* The viewport (html) is the page's scroll container. Reserve the scrollbar's
+   width always so short and long pages lay out identically (#781). */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* No `font-family` here on purpose (#565): a declaration on `body` beats the
    `html { @apply font-sans }` base layer for everything inside it, which is the
    whole app — so the bundled Geist was downloaded on every cold load and then
