@@ -185,12 +185,15 @@ export function formatPercent(value: number | string, locale?: Locale): string {
 }
 
 // roundToCurrency rounds a decimal-string amount to the precision the currency
-// displays at — 0 dp for IDR/JPY/KRW/VND, 2 dp for everything else. Used when
-// pasting a computed suggestion (e.g. the revaluation helper) into a snapshot
-// amount input so the field shows "19493589" for IDR rather than the helper's
-// raw 4dp "19493588.6896". Returns the input unchanged on NaN. Locale-agnostic
-// — outputs a raw decimal string, never with thousand separators (this is for
-// form input values, not for display).
+// displays at — 0 dp for JPY/KRW/VND, 2 dp for everything else, IDR included
+// (ADR-0056 §4). Used when pasting a computed suggestion (e.g. the revaluation
+// helper) into a snapshot amount input, so the field shows "19493588.69" for IDR
+// rather than the helper's raw 4dp "19493588.6896", and to show a carried-forward
+// bulk-entry amount at the currency's minor units. It goes through Number, so it
+// is for display and form seeds, never for a value that is stored or summed.
+// Returns the input unchanged on NaN. Locale-agnostic — outputs a raw decimal
+// string, never with thousand separators (this is for form input values, not
+// for display).
 export function roundToCurrency(amount: string, currency: string): string {
   const n = Number(amount);
   if (!Number.isFinite(n)) return amount;

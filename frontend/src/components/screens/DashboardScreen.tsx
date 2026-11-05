@@ -15,7 +15,7 @@ import { useSession } from "@/hooks/useSession";
 import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
-import { netWorthComposition } from "@/lib/netWorthComposition";
+import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
 import { positionDetail } from "@/lib/routes";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
@@ -77,26 +77,12 @@ export function DashboardScreen() {
   // CVD-validated composition tokens from index.css; labels reuse the breakdown
   // strings so the chart legend and the "Where it's held" card agree.
   const composition = netWorthComposition(reports);
-  const compositionSeries = [
-    {
-      key: "assets",
-      label: t("breakdown.assets"),
-      color: "var(--chart-assets)",
-      snapshots: composition.assets,
-    },
-    {
-      key: "liabilities",
-      label: t("breakdown.liabilities"),
-      color: "var(--chart-liabilities)",
-      snapshots: composition.liabilities,
-    },
-    {
-      key: "investments",
-      label: t("breakdown.investments"),
-      color: "var(--chart-investments)",
-      snapshots: composition.investments,
-    },
-  ];
+  const compositionSeries = COMPOSITION_ORDER.map((key) => ({
+    key,
+    label: t(`breakdown.${key}`),
+    color: `var(--chart-${key})`,
+    snapshots: composition[key],
+  }));
 
   // Side-by-side currencies the user can pick (multi-currency households only).
   const displayCurrencies = me?.multi_currency_enabled

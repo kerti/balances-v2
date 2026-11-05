@@ -97,6 +97,8 @@ it("mobile: stacks quantity + price as full-width ≥44px lines with the value m
   const stockValue = screen.getByTestId("investment-entry-value-s1");
   expect(stockValue).toHaveTextContent("Value");
   expect(stockValue).toHaveTextContent(/15/);
+  // ...with its currency code, like every other money total (INC-32, #784).
+  expect(stockValue).toHaveTextContent("IDR");
   // The fresh gold's incomplete pair still names the column but shows "—".
   const freshValue = screen.getByTestId("investment-entry-value-g1");
   expect(freshValue).toHaveTextContent("Value");

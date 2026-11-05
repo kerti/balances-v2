@@ -8,6 +8,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { seriesOrder, seriesRank, sortBySeriesOrder } from "@/lib/chartSeries";
 import { formatChartMonth, formatCompactNumber, formatCurrency } from "@/lib/format";
 import { monthRange } from "@/lib/months";
 
@@ -159,6 +160,12 @@ export default function SnapshotChartImpl({
     ...Object.fromEntries(extras.map((s) => [s.key, { label: s.label, color: s.color }])),
   } satisfies ChartConfig;
 
+  // One order for the legend and the tooltip (INC-34); see lib/chartSeries.
+  const order = seriesOrder(
+    extras.map((s) => s.key),
+    hasCost,
+  );
+
   return (
     <ChartContainer config={chartConfig} className="h-64 w-full">
       <AreaChart
@@ -179,8 +186,11 @@ export default function SnapshotChartImpl({
           tickFormatter={(v: number) => formatCompactNumber(v)}
         />
         <ChartTooltip
-          content={
+          content={(props) => (
             <ChartTooltipContent
+              active={props.active}
+              label={props.label}
+              payload={sortBySeriesOrder(props.payload ?? [], order, (p) => p.dataKey)}
               // Render a full row per series — colored indicator + series
               // label + formatted value — so amount vs cost is legible.
               // (ChartTooltipContent renders *only* the formatter's output
@@ -206,7 +216,7 @@ export default function SnapshotChartImpl({
               }}
               labelFormatter={(label) => label}
             />
-          }
+          )}
         />
         <Area
           dataKey="amount"
@@ -264,7 +274,12 @@ export default function SnapshotChartImpl({
             }}
           />
         )}
-        {(hasCost || hasExtras) && <ChartLegend content={<ChartLegendContent />} />}
+        {(hasCost || hasExtras) && (
+          <ChartLegend
+            itemSorter={(item) => seriesRank(order, item.dataKey)}
+            content={<ChartLegendContent />}
+          />
+        )}
       </AreaChart>
     </ChartContainer>
   );
