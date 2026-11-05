@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { PanelActions, SettingsPanel } from "@/components/common/SettingsSurface";
 import { api } from "@/api/client";
 import { useSession } from "@/hooks/useSession";
+import { useAuthMethods } from "@/hooks/useAuthMethods";
 import { errorMessage } from "@/lib/errorMessage";
 import { downloadBackup } from "@/lib/backup";
 import { routes } from "@/lib/routes";
@@ -32,12 +33,16 @@ type EraseHouseholdResp = { erased: boolean };
 export function ErasePanel() {
   const { t } = useTranslation("settings");
   const { data: me } = useSession();
+  const { data: methods } = useAuthMethods();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [deleting, setDeleting] = useState(false);
 
   if (!me?.is_founder) return null;
 
+  // The public demo refuses erasure server-side (403 ERASURE_DISABLED_DEMO); say
+  // so up front rather than after the type-the-name ceremony.
+  const demo = methods?.demo_mode === true;
   const householdName = me.household_display_name;
   const confirmed = input === householdName;
 
@@ -70,7 +75,16 @@ export function ErasePanel() {
       title={t("data.erase.title")}
       description={t("data.erase.description")}
     >
-      {!open ? (
+      {demo ? (
+        <PanelActions>
+          <Button variant="destructive" disabled data-testid="erase-open-button">
+            {t("data.erase.open")}
+          </Button>
+          <p className="text-sm text-muted-foreground" data-testid="erase-demo-disabled">
+            {t("data.erase.demoDisabled")}
+          </p>
+        </PanelActions>
+      ) : !open ? (
         <PanelActions>
           <Button
             variant="destructive"

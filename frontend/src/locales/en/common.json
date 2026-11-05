@@ -321,5 +321,10 @@
   "numericInput": {
     "invalidPaste": "That isn't a number this field can read.",
     "tooLong": "That number is too long for this field."
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "There's nothing at this address. It may have moved, or the link may be mistyped.",
+    "backToDashboard": "Back to the dashboard"
   }
 }

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/19-contract.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**4 / 4** invariants in this zone have at least one covering test (**4** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**5 / 5** invariants in this zone have at least one covering test (**5** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -12,3 +12,4 @@
 | INV-CONTRACT-02 | Sentinel→code+status fidelity — each repo sentinel maps to its stable wire `Code` and the *correct* HTTP status (404 not-found, 409 conflict, 400 bad-shape), resolved through `errors.Is` so a wrapped sentinel (`fmt.Errorf("...: %w", errs.ErrNotFound)`) still maps. A conflict that read as 200/404 is a false-state. Covered by `TestWriteRepo_sentinelMapping` / `TestWriteRepo_wrappedSentinel` | `backend/internal/httperr/httperr_test.go` |
 | INV-CONTRACT-03 | Envelope shape is code-only — `Write` emits `{"code": ...}` with `Args` **omitted when nil** (never `"args":null`) and no `message` field, the exact shape the i18n catalog lookup depends on; `Content-Type: application/json`. Covered by `TestWrite_envelope` / `TestWrite_argsOmittedWhenNil` | `backend/internal/httperr/httperr_test.go` |
 | INV-CONTRACT-04 | Validation reports the wire field, not the Go name — `WriteValidation` surfaces `args.field` as the JSON tag (`amount`, not `Amount`) + `args.rule` as the validator tag that fired (`required`, `oneof`), so the frontend catalog keys on stable snake_case names; a non-validator error falls through to `CodeInternal` / 500. An untagged field falls back to the Go name (safety-net, locked so a contributor doesn't silently leak it). Covered by `TestWriteValidation_envelopeFromFirstFieldError` / `_oneofTagSurfaces` / `_nonValidatorErrorMapsToInternal` / `TestNewValidator_untaggedFieldFallsBackToGoName` | `backend/internal/httperr/httperr_test.go` |
+| INV-CONTRACT-05 | Every wire error code has copy in both locales — each `Code` constant in `internal/httperr/codes.go` has a `code.<CODE>` entry in `locales/en/errors.json` and `locales/id/errors.json`; a code with no entry makes `errorMessage` fall through to the generic UNKNOWN line, so the user sees "Something went wrong" for a failure the server named. Covered by `catalogs.test.ts` (reads `codes.go`) | `frontend/src/i18n/catalogs.test.ts` |

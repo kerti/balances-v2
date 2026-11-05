@@ -11,7 +11,7 @@
     "UNAUTHORIZED": "Please sign in again.",
     "NOT_FOUND": "Not found.",
     "INVALID_ID": "Invalid {{field}}.",
-    "INVALID_JSON_BODY": "Malformed request body.",
+    "INVALID_JSON_BODY": "Something in this form couldn't be read. Check the numbers and try again.",
     "INVALID_DATE": "Invalid {{field}}: expected a YYYY-MM-DD date.",
     "INVALID_YEAR_MONTH": "Invalid month: expected YYYY-MM.",
     "FUTURE_YEAR_MONTH": "Month cannot be in the future.",
@@ -60,6 +60,9 @@
     "WEAK_PASSWORD": "Choose a stronger password: at least 10 characters and not a commonly-used one.",
     "INVALID_CREDENTIALS": "Incorrect email or password.",
     "TOO_MANY_ATTEMPTS": "Too many attempts. Please wait a moment and try again.",
-    "HOUSEHOLD_NAME_MISMATCH": "That doesn't match your household's name. Please type it exactly to confirm."
+    "HOUSEHOLD_NAME_MISMATCH": "That doesn't match your household's name. Please type it exactly to confirm.",
+    "ERASURE_DISABLED_DEMO": "Deleting a household is turned off on the public demo.",
+    "CROSS_SITE_REQUEST_BLOCKED": "This request was blocked for your safety. Reload the page and try again.",
+    "INFLATION_RATE_EXISTS": "An inflation rate already exists for that month."
   }
 }
