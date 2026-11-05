@@ -55,6 +55,8 @@
     "addRate": "Add rate",
     "empty": "No rates entered yet.",
     "disabledHint": "Exchange rates only apply once multi-currency tracking is on.",
+    "deleteTitle": "Delete the {{currency}} rate for {{month}}?",
+    "deleteDescription": "Later months will reuse the most recent earlier rate.",
     "disabledLink": "Go to Currency settings"
   },
   "inflation": {
@@ -65,6 +67,8 @@
     "rate": "Annual %",
     "addRate": "Add rate",
     "empty": "No monthly figures entered — the assumed rate is used.",
+    "deleteTitle": "Delete the inflation figure for {{month}}?",
+    "deleteDescription": "That month will fall back to the assumed annual rate.",
     "manageRates": "Manage monthly rates →"
   },
   "inflationRatesPage": {

@@ -50,6 +50,7 @@ test(
 
     // --- Cleanup: delete the seeded figure via the mobile card control ---
     await del.click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByTestId("inflation-rate-row")).toHaveCount(0);
   },
 );
@@ -118,6 +119,7 @@ test(
 
     // --- Cleanup: delete the seeded rate, then turn multi-currency back off ---
     await del.click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByTestId("fx-rate-row")).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");
