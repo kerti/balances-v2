@@ -3,6 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import {
+  RATE_DECIMALS,
+  RATE_INTEGER_DIGITS,
+  TERM_MONTHS_DIGITS,
+  currencyDecimals,
+} from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useCreateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
@@ -146,21 +153,22 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="principal">{t("liabilities:fields.principal")}</Label>
-          <Input
+          <NumericInput
             id="principal"
-            inputMode="decimal"
+            decimals={currencyDecimals(form.native_currency)}
             value={form.principal}
-            onChange={(e) => setForm({ ...form, principal: e.target.value })}
+            onChange={(v) => setForm({ ...form, principal: v })}
             placeholder={t("liabilities:placeholders.principal")}
           />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="interest_rate">{t("liabilities:fields.interestRate")}</Label>
-          <Input
+          <NumericInput
             id="interest_rate"
-            inputMode="decimal"
+            decimals={RATE_DECIMALS}
+            maxIntegerDigits={RATE_INTEGER_DIGITS}
             value={form.interest_rate}
-            onChange={(e) => setForm({ ...form, interest_rate: e.target.value })}
+            onChange={(v) => setForm({ ...form, interest_rate: v })}
             placeholder={t("liabilities:placeholders.interestRate")}
           />
         </div>
@@ -177,11 +185,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="grid gap-2">
           <Label htmlFor="term_months">{t("liabilities:fields.term")}</Label>
-          <Input
+          <NumericInput
             id="term_months"
-            inputMode="numeric"
+            decimals={0}
+            maxIntegerDigits={TERM_MONTHS_DIGITS}
             value={form.term_months}
-            onChange={(e) => setForm({ ...form, term_months: e.target.value })}
+            onChange={(v) => setForm({ ...form, term_months: v })}
             placeholder={t("liabilities:placeholders.term")}
           />
         </div>

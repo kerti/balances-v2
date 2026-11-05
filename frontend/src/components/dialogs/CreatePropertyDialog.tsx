@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { RATE_DECIMALS, RATE_INTEGER_DIGITS, currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useCreateProperty } from "@/hooks/useProperties";
 import { useSession } from "@/hooks/useSession";
@@ -144,11 +146,11 @@ export function CreatePropertyDialog() {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="acquisition_cost">{t("assets:property.fields.acquisitionCost")}</Label>
-          <Input
+          <NumericInput
             id="acquisition_cost"
-            inputMode="decimal"
+            decimals={currencyDecimals(form.native_currency)}
             value={form.acquisition_cost}
-            onChange={(e) => setForm({ ...form, acquisition_cost: e.target.value })}
+            onChange={(v) => setForm({ ...form, acquisition_cost: v })}
             placeholder={t("assets:property.placeholders.acquisitionCost")}
           />
         </div>
@@ -158,14 +160,16 @@ export function CreatePropertyDialog() {
         <Label htmlFor="annual_appreciation_rate">
           {t("assets:property.fields.appreciationRate")}
         </Label>
-        <Input
+        <NumericInput
           id="annual_appreciation_rate"
-          inputMode="decimal"
+          decimals={RATE_DECIMALS}
+          maxIntegerDigits={RATE_INTEGER_DIGITS}
+          allowNegative
           value={form.annual_appreciation_rate}
-          onChange={(e) =>
+          onChange={(v) =>
             setForm({
               ...form,
-              annual_appreciation_rate: e.target.value,
+              annual_appreciation_rate: v,
             })
           }
           placeholder={t("assets:property.placeholders.appreciationRate")}

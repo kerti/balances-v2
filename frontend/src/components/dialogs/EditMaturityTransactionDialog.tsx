@@ -11,9 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
 import type { InvestmentTransaction, Disposition } from "@/api/types";
 import type { UpdateTransactionMutationVariables } from "@/components/dialogs/EditTradeTransactionDialog";
@@ -99,12 +100,12 @@ export function EditMaturityTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_mat_principal"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(transaction.currency)}
                 value={form.principal_amount}
-                onChange={(e) => setForm({ ...form, principal_amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, principal_amount: v })}
               />
             </div>
             <div className="grid gap-2">
@@ -113,12 +114,12 @@ export function EditMaturityTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_mat_interest"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(transaction.currency)}
                 value={form.interest_amount}
-                onChange={(e) => setForm({ ...form, interest_amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, interest_amount: v })}
               />
             </div>
           </div>

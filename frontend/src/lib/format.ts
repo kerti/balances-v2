@@ -228,13 +228,22 @@ function escapeRegExp(s: string): string {
 // accepts the locale's grouping and decimal marks, with grouping valid only in
 // correct groups of three, and strips a currency symbol or code and spaces.
 // Returns the canonical decimal string ("48500000.50"), or null for anything
-// else — a minus sign included, since no field it serves takes a negative.
-export function parseLocaleNumber(text: string, locale?: Locale): string | null {
+// else. A leading minus (hyphen or U+2212) is read only with allowNegative.
+export function parseLocaleNumber(
+  text: string,
+  locale?: Locale,
+  { allowNegative = false }: { allowNegative?: boolean } = {},
+): string | null {
   const { group, decimal } = numberSeparators(locale);
-  const s = text
+  let s = text
     .replace(/\s/gu, "")
     .replace(/^[\p{L}\p{Sc}]+/u, "")
     .replace(/[\p{L}\p{Sc}]+$/u, "");
+  const negative = /^[-\u2212]/.test(s);
+  if (negative) {
+    if (!allowNegative) return null;
+    s = s.slice(1);
+  }
   const g = escapeRegExp(group);
   const d = escapeRegExp(decimal);
   const m = new RegExp(`^(\\d{1,3}(?:${g}\\d{3})+|\\d*)(?:${d}(\\d+))?$`).exec(s);
@@ -244,7 +253,8 @@ export function parseLocaleNumber(text: string, locale?: Locale): string | null 
       .split(group)
       .join("")
       .replace(/^0+(?=\d)/, "") || "0";
-  return m[2] === undefined ? int : `${int}.${m[2]}`;
+  const sign = negative ? "-" : "";
+  return m[2] === undefined ? sign + int : `${sign}${int}.${m[2]}`;
 }
 
 // Entry limits for the non-money numeric columns (ADR-0011 precision shapes):
@@ -253,3 +263,12 @@ export function parseLocaleNumber(text: string, locale?: Locale): string | null 
 export const QUANTITY_DECIMALS = 8;
 export const QUANTITY_INTEGER_DIGITS = 12;
 export const PRICE_DECIMALS = 4;
+// Rates on positions and FX rates are NUMERIC(20,8); inflation rates (monthly
+// and the assumed annual one) are NUMERIC(9,4); gold purity is a 0–1 fraction,
+// NUMERIC(5,4); a term in months is a whole number.
+export const RATE_DECIMALS = 8;
+export const RATE_INTEGER_DIGITS = 12;
+export const INFLATION_DECIMALS = 4;
+export const INFLATION_INTEGER_DIGITS = 5;
+export const PURITY_DECIMALS = 4;
+export const TERM_MONTHS_DIGITS = 4;

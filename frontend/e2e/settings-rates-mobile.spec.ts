@@ -83,10 +83,10 @@ test(
     // typed, so the foreign-only field isn't a clueless single input.
     await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = \? /);
     await page.getByLabel("Rate").fill("16250");
-    await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = 16250 /);
+    await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = 16,250 /);
     await page.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("fx-rate-table")).toBeVisible();
-    await expect(page.getByTestId("fx-rate-value")).toHaveText("16250");
+    await expect(page.getByTestId("fx-rate-value")).toHaveText("16,250");
     // The currency column names the pair + direction, not just the foreign code.
     await expect(page.getByText(/USD →/)).toBeVisible();
 
@@ -100,7 +100,7 @@ test(
     // to the reporting currency, so it can't misread as "16250 USD"), in view.
     const value = page.getByTestId("fx-rate-value").first();
     await expect(value).toBeVisible();
-    await expect(value).toHaveText(/^1 USD = 16250 /);
+    await expect(value).toHaveText(/^1 USD = 16,250 /);
     await expect(value).toBeInViewport();
 
     // No horizontal page scroll — the stacked card fits the phone width.

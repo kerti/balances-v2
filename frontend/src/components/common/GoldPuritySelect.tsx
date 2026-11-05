@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { PURITY_DECIMALS } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { GOLD_PURITY_PRESETS, goldPurityPresetKarat } from "@/lib/gold";
@@ -60,13 +61,14 @@ export function GoldPuritySelect({ idPrefix, value, onChange }: Props) {
         <option value={CUSTOM}>{t("gold.purity.customOption")}</option>
       </Select>
       {mode === CUSTOM && (
-        <Input
+        <NumericInput
           required
-          inputMode="decimal"
           data-testid={`${idPrefix}-purity-custom`}
           aria-label={t("gold.purity.customLabel")}
+          decimals={PURITY_DECIMALS}
+          maxIntegerDigits={1}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(v) => onChange(v)}
           placeholder={t("gold.placeholders.purity")}
         />
       )}

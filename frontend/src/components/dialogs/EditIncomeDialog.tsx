@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { OwnershipField } from "@/components/common/OwnershipField";
 import { Select } from "@/components/ui/select";
@@ -120,12 +122,12 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
           <div className="grid grid-cols-[1fr_120px] gap-3">
             <div className="grid gap-2">
               <Label htmlFor="edit_income_amount">{t("income:fields.amount")}</Label>
-              <Input
+              <NumericInput
                 id="edit_income_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(form.currency)}
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
               />
             </div>
             <div className="grid gap-2">

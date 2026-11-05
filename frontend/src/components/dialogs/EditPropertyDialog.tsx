@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { RATE_DECIMALS, RATE_INTEGER_DIGITS, currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { useUpdateProperty } from "@/hooks/useProperties";
 import { useSession } from "@/hooks/useSession";
@@ -119,25 +121,27 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="edit_p_acq_cost">{t("assets:property.fields.acquisitionCostEdit")}</Label>
-          <Input
+          <NumericInput
             id="edit_p_acq_cost"
-            inputMode="decimal"
+            decimals={currencyDecimals(property.asset.native_currency)}
             value={form.acquisition_cost}
-            onChange={(e) => setForm({ ...form, acquisition_cost: e.target.value })}
+            onChange={(v) => setForm({ ...form, acquisition_cost: v })}
           />
         </div>
       </div>
 
       <div className="grid gap-2">
         <Label htmlFor="edit_p_apprec">{t("assets:property.fields.appreciationRateEdit")}</Label>
-        <Input
+        <NumericInput
           id="edit_p_apprec"
-          inputMode="decimal"
+          decimals={RATE_DECIMALS}
+          maxIntegerDigits={RATE_INTEGER_DIGITS}
+          allowNegative
           value={form.annual_appreciation_rate}
-          onChange={(e) =>
+          onChange={(v) =>
             setForm({
               ...form,
-              annual_appreciation_rate: e.target.value,
+              annual_appreciation_rate: v,
             })
           }
           placeholder={t("assets:property.placeholders.appreciationRate")}

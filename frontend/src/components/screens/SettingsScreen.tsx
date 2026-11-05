@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { INFLATION_DECIMALS, INFLATION_INTEGER_DIGITS } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/errorMessage";
@@ -514,12 +516,14 @@ function AssumedInflationRow() {
         }
       >
         <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
-        <Input
+        <NumericInput
           id="assumed-inflation"
-          inputMode="decimal"
           className={CONTROL_WIDTH.narrow}
+          decimals={INFLATION_DECIMALS}
+          maxIntegerDigits={INFLATION_INTEGER_DIGITS}
+          allowNegative
           value={assumedValue}
-          onChange={(e) => setAssumed(e.target.value)}
+          onChange={(v) => setAssumed(v)}
         />
       </SettingsControlRow>
 

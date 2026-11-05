@@ -11,6 +11,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import { currencyDecimals } from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { todayDate } from "@/lib/dateLimits";
@@ -95,12 +97,12 @@ export function EditCashIncomeTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_cash_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(transaction.currency)}
                 value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                onChange={(v) => setForm({ ...form, amount: v })}
               />
             </div>
           </div>

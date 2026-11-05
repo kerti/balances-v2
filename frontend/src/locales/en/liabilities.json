@@ -79,7 +79,7 @@
     "displayName": "BCA KPR",
     "currency": "IDR",
     "counterparty": "Bank BCA / John Doe",
-    "principal": "1500000000",
+    "principal": "1,500,000,000",
     "interestRate": "0.08 = 8% /yr",
     "term": "180"
   },

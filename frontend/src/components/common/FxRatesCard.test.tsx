@@ -8,6 +8,7 @@ import { it, expect, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { server } from "@/test/server";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
 import type { FxRate } from "@/api/types";
@@ -75,8 +76,8 @@ it("mobile: mounts the card renderer, promotes the rate, meets the 44px tap floo
 
   // Rate (primary figure) reads — as an equation binding it to the reporting
   // currency, so "16250" can't misread as "16250 USD".
-  expect(await screen.findByText("1 USD = 16250 IDR")).toBeInTheDocument();
-  expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
+  expect(await screen.findByText("1 USD = 16,250 IDR")).toBeInTheDocument();
+  expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16,250");
 
   // A11y floor: the delete control is a ≥44px (size-11) tap target.
   expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("size-11");
@@ -89,7 +90,7 @@ it("desktop: mounts the table renderer under the same primary-figure testid", as
   expect(await screen.findByTestId("fx-rate-table")).toBeInTheDocument();
   expect(screen.getByRole("table")).toBeInTheDocument();
   expect(screen.queryByTestId("fx-rate-cards")).not.toBeInTheDocument();
-  expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16250");
+  expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16,250");
   expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
 });
 
@@ -108,9 +109,31 @@ it("add form: shows a live direction hint once a currency code is entered", asyn
   fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
   expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR");
 
-  // Typing the rate fills it into the equation.
+  // Typing the rate fills it into the equation, grouped as the field shows it.
   fireEvent.change(screen.getByLabelText("Rate"), { target: { value: "12000" } });
-  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12000 IDR");
+  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12,000 IDR");
+});
+
+// covers: INV-PRESENTATION-13
+it("the add hint and the Add button read the same figure, phone comma included", async () => {
+  setViewport(1280);
+  renderCard();
+  await screen.findByTestId("fx-rate-table");
+  fireEvent.change(screen.getByLabelText("Month"), { target: { value: "2026-02" } });
+  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
+  const rate = screen.getByLabelText("Rate");
+  const add = screen.getByRole("button", { name: "Add rate" });
+
+  // A letter never reaches the field, so the hint can't show what Add refuses.
+  await userEvent.type(rate, "x");
+  expect(rate).toHaveValue("");
+  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR");
+  expect(add).toBeDisabled();
+
+  await userEvent.type(rate, "12000,5");
+  expect(rate).toHaveValue("12,000.5");
+  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12,000.5 IDR");
+  expect(add).toBeEnabled();
 });
 
 it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", async () => {
@@ -130,7 +153,7 @@ it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", 
   fireEvent.click(row.getByRole("button", { name: "Edit" }));
 
   const input = row.getByLabelText("Rate");
-  expect(input).toHaveValue("16250");
+  expect(input).toHaveValue("16,250");
   fireEvent.change(input, { target: { value: "16400" } });
   fireEvent.click(row.getByRole("button", { name: "Save" }));
 

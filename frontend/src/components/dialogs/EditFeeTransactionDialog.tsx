@@ -11,6 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
+import {
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+  currencyDecimals,
+} from "@/lib/format";
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { todayDate } from "@/lib/dateLimits";
@@ -109,12 +116,12 @@ export function EditFeeTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_fee_amount"
                 required
-                inputMode="decimal"
+                decimals={currencyDecimals(transaction.currency)}
                 value={form.amount}
-                onChange={(e) => patch({ amount: e.target.value })}
+                onChange={(v) => patch({ amount: v })}
               />
             </div>
           </div>
@@ -126,11 +133,11 @@ export function EditFeeTransactionDialog<TResult>({
                   currency: transaction.currency,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_fee_price"
-                inputMode="decimal"
+                decimals={PRICE_DECIMALS}
                 value={form.price_per_unit}
-                onChange={(e) => patch({ price_per_unit: e.target.value })}
+                onChange={(v) => patch({ price_per_unit: v })}
               />
             </div>
             <div className="grid gap-2">
@@ -139,13 +146,14 @@ export function EditFeeTransactionDialog<TResult>({
                   unit: quantityUnit,
                 })}
               </Label>
-              <Input
+              <NumericInput
                 id="edit_fee_quantity"
-                inputMode="decimal"
+                decimals={QUANTITY_DECIMALS}
+                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                 value={form.quantity}
-                onChange={(e) => {
+                onChange={(v) => {
                   setQtyTouched(true);
-                  setForm((prev) => ({ ...prev, quantity: e.target.value }));
+                  setForm((prev) => ({ ...prev, quantity: v }));
                 }}
               />
               {qtyAutoDerived && (

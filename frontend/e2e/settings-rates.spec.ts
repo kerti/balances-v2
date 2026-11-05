@@ -104,14 +104,14 @@ test("exchange rates: edit a row in place", async ({ page }) => {
   const id = await seedFx(page, "2026-05", "USD", "16250");
   try {
     await page.goto("/settings/fx-rates");
-    await expect(page.getByTestId("fx-rate-value")).toHaveText("16250");
+    await expect(page.getByTestId("fx-rate-value")).toHaveText("16,250");
 
     const row = page.getByTestId("fx-rate-row");
     await row.getByRole("button", { name: "Edit", exact: true }).click();
 
     // Scoped to the row — the add form shares the "Rate" label.
     const input = row.getByLabel("Rate");
-    await expect(input).toHaveValue("16250");
+    await expect(input).toHaveValue("16,250");
     await input.fill("16400");
 
     const saved = page.waitForResponse(
@@ -120,7 +120,7 @@ test("exchange rates: edit a row in place", async ({ page }) => {
     await row.getByRole("button", { name: "Save", exact: true }).click();
     await saved;
 
-    await expect(page.getByTestId("fx-rate-value")).toHaveText("16400");
+    await expect(page.getByTestId("fx-rate-value")).toHaveText("16,400");
   } finally {
     await page.request.delete(`/api/fx-rates/${id}`);
     await setMultiCurrency(page, false);

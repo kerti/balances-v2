@@ -12,11 +12,13 @@ function Controlled({
   onChange,
   decimals = 2,
   maxIntegerDigits,
+  allowNegative,
   initial = "",
 }: {
   onChange: (v: string) => void;
   decimals?: number;
   maxIntegerDigits?: number;
+  allowNegative?: boolean;
   initial?: string;
 }) {
   const [value, setValue] = useState(initial);
@@ -27,6 +29,7 @@ function Controlled({
         id="amt"
         decimals={decimals}
         maxIntegerDigits={maxIntegerDigits}
+        allowNegative={allowNegative}
         value={value}
         onChange={(v) => {
           setValue(v);
@@ -279,5 +282,62 @@ describe("NumericInput", () => {
     expect(input.value).toBe("1,000");
     rerender(<NumericInput aria-label="X" decimals={2} value="2500.5" onChange={() => {}} />);
     expect(input.value).toBe("2,500.5");
+  });
+
+  describe("allowNegative", () => {
+    it("ignores a minus on a field that takes no negative", async () => {
+      const { onChange, input } = setup();
+      await userEvent.type(input, "-35");
+      expect(input.value).toBe("35");
+      expect(onChange).toHaveBeenLastCalledWith("35");
+    });
+
+    it("takes a leading minus and emits a signed canonical value", async () => {
+      const { onChange, input } = setup({ allowNegative: true });
+      await userEvent.type(input, "-1234,5");
+      expect(input.value).toBe("-1,234.5");
+      expect(onChange).toHaveBeenLastCalledWith("-1234.5");
+    });
+
+    it("emits nothing for a lone minus", async () => {
+      const { onChange, input } = setup({ allowNegative: true });
+      await userEvent.type(input, "-");
+      expect(input.value).toBe("-");
+      expect(onChange).toHaveBeenLastCalledWith("");
+    });
+
+    it("toggles the sign when a minus is typed anywhere, keeping the caret by its digit", async () => {
+      const { onChange, input } = setup({ allowNegative: true, initial: "2.5" });
+      await userEvent.type(input, "-", { initialSelectionStart: 3, initialSelectionEnd: 3 });
+      expect(input.value).toBe("-2.5");
+      expect(input.selectionStart).toBe(4);
+      expect(onChange).toHaveBeenLastCalledWith("-2.5");
+      await userEvent.type(input, "-", { initialSelectionStart: 4, initialSelectionEnd: 4 });
+      expect(input.value).toBe("2.5");
+      expect(onChange).toHaveBeenLastCalledWith("2.5");
+    });
+
+    it("drops the sign on backspace over it", async () => {
+      const { onChange, input } = setup({ allowNegative: true, initial: "-3" });
+      await userEvent.type(input, "{Backspace}", {
+        initialSelectionStart: 1,
+        initialSelectionEnd: 1,
+      });
+      expect(input.value).toBe("3");
+      expect(onChange).toHaveBeenLastCalledWith("3");
+    });
+
+    it("reads a pasted negative", async () => {
+      const { onChange, input } = setup({ allowNegative: true });
+      await userEvent.click(input);
+      await userEvent.paste("−1,250.75");
+      expect(input.value).toBe("-1,250.75");
+      expect(onChange).toHaveBeenLastCalledWith("-1250.75");
+    });
+
+    it("prefills a stored negative grouped", () => {
+      setup({ allowNegative: true, initial: "-1500.5" });
+      expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("-1,500.5");
+    });
   });
 });

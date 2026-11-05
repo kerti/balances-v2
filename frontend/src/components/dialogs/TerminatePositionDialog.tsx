@@ -12,10 +12,17 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency } from "@/lib/format";
+import {
+  formatCurrency,
+  PRICE_DECIMALS,
+  QUANTITY_DECIMALS,
+  QUANTITY_INTEGER_DIGITS,
+  currencyDecimals,
+} from "@/lib/format";
 import { computeCostBasis } from "@/lib/costBasis";
 import { useUpdateLifecycle, type LifecycleSettlement } from "@/hooks/useLifecycle";
 import { useInvestmentTransactions } from "@/hooks/useInvestmentTransactions";
@@ -326,29 +333,28 @@ export function TerminatePositionDialog({
                     <Label htmlFor="settlement_quantity">
                       {t("terminate.settlementQuantityLabel")}
                     </Label>
-                    <Input
+                    <NumericInput
                       id="settlement_quantity"
                       required
-                      inputMode="decimal"
                       data-testid="settlement-quantity"
+                      decimals={QUANTITY_DECIMALS}
+                      maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
                       value={settlement.quantity}
-                      onChange={(e) => setSettlement({ ...settlement, quantity: e.target.value })}
+                      onChange={(v) => setSettlement({ ...settlement, quantity: v })}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="settlement_price">
                       {t("terminate.settlementPriceLabel", { currency })}
                     </Label>
-                    <Input
+                    <NumericInput
                       id="settlement_price"
                       required
-                      inputMode="decimal"
                       disabled={writeOff}
                       data-testid="settlement-price"
+                      decimals={PRICE_DECIMALS}
                       value={settlement.price_per_unit}
-                      onChange={(e) =>
-                        setSettlement({ ...settlement, price_per_unit: e.target.value })
-                      }
+                      onChange={(v) => setSettlement({ ...settlement, price_per_unit: v })}
                     />
                   </div>
                 </div>
@@ -358,32 +364,28 @@ export function TerminatePositionDialog({
                     <Label htmlFor="settlement_principal">
                       {t("terminate.settlementPrincipalLabel", { currency })}
                     </Label>
-                    <Input
+                    <NumericInput
                       id="settlement_principal"
                       required
-                      inputMode="decimal"
                       disabled={writeOff}
                       data-testid="settlement-principal"
+                      decimals={currencyDecimals(currency ?? "")}
                       value={settlement.principal_amount}
-                      onChange={(e) =>
-                        setSettlement({ ...settlement, principal_amount: e.target.value })
-                      }
+                      onChange={(v) => setSettlement({ ...settlement, principal_amount: v })}
                     />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="settlement_interest">
                       {t("terminate.settlementInterestLabel", { currency })}
                     </Label>
-                    <Input
+                    <NumericInput
                       id="settlement_interest"
                       required
-                      inputMode="decimal"
                       disabled={writeOff}
                       data-testid="settlement-interest"
+                      decimals={currencyDecimals(currency ?? "")}
                       value={settlement.interest_amount}
-                      onChange={(e) =>
-                        setSettlement({ ...settlement, interest_amount: e.target.value })
-                      }
+                      onChange={(v) => setSettlement({ ...settlement, interest_amount: v })}
                     />
                   </div>
                 </div>
