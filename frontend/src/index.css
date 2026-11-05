@@ -222,7 +222,10 @@ body {
   body {
     @apply bg-background text-foreground tabular-nums;
   }
+  /* Native radios and checkboxes otherwise draw in the browser's blue (#780).
+     accent-color inherits, and --primary is redefined under .dark. */
   html {
     @apply font-sans;
+    accent-color: var(--primary);
   }
 }
