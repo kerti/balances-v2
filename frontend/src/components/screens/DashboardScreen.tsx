@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ChevronDown } from "lucide-react";
@@ -16,7 +16,7 @@ import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
-import { positionDetail } from "@/lib/routes";
+import { positionDetail, positionEntry, routes } from "@/lib/routes";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
 import type { Me } from "@/hooks/useSession";
@@ -294,6 +294,21 @@ function HeadlineCard({
   );
 }
 
+// The bulk-entry screens in the order the stale warning links to them: the
+// first one with a stale position wins, whatever the report's own ordering.
+const STALE_ENTRY_ORDER = [
+  routes.assetsEnter,
+  routes.liabilitiesEnter,
+  routes.receivablesEnter,
+  routes.investmentsEnterPrices,
+  routes.investmentsEnterAccrued,
+];
+
+function staleEntryRoute(stale: MonthlyReport["stale_positions"]): string | null {
+  const present = new Set(stale.map((p) => positionEntry(p.group, p.subtype)));
+  return STALE_ENTRY_ORDER.find((r) => present.has(r)) ?? null;
+}
+
 // StalePositions surfaces the carried-forward warning as an expandable list
 // (#50): the amber summary line is a toggle; opening it reveals each position
 // that needs a fresh snapshot, with a deep-link to its detail page. Collapsed by
@@ -322,26 +337,38 @@ function StalePositions({ selected }: { selected: MonthlyReport }) {
       </p>
     );
   }
+  const entryRoute = staleEntryRoute(stale);
   return (
     <div data-testid="dashboard-stale" className="text-sm text-amber-600">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        data-testid="dashboard-stale-toggle"
-        className="flex items-center gap-1 text-left hover:underline"
-      >
-        <ChevronDown
-          className={`size-4 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
-          aria-hidden
-        />
-        <span>
-          {t("headline.stalePositions", {
-            count: stale.length,
-            when: formatYearMonth(selected.year_month),
-          })}
-        </span>
-      </button>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-5">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          data-testid="dashboard-stale-toggle"
+          className="-ml-5 flex items-center gap-1 text-left hover:underline"
+        >
+          <ChevronDown
+            className={`size-4 shrink-0 transition-transform ${open ? "" : "-rotate-90"}`}
+            aria-hidden
+          />
+          <span>
+            {t("headline.stalePositions", {
+              count: stale.length,
+              when: formatYearMonth(selected.year_month),
+            })}
+          </span>
+        </button>
+        {entryRoute && (
+          <Link
+            to={`${entryRoute}?month=${selected.year_month.slice(0, 7)}`}
+            data-testid="dashboard-stale-enter"
+            className="font-medium hover:underline"
+          >
+            {t("headline.staleEnter")}
+          </Link>
+        )}
+      </div>
       {open && (
         <ul className="mt-2 space-y-1 pl-5">
           {stale.map((p) => {

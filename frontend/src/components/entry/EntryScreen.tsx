@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { thisYearMonth, monthEndDateCapped, monthStartDate } from "@/lib/dateLimits";
+import {
+  thisYearMonth,
+  monthEndDateCapped,
+  monthStartDate,
+  pastYearMonthOrNull,
+} from "@/lib/dateLimits";
 import { formatYearMonth, formatCurrencyParts } from "@/lib/format";
 import { errorMessage } from "@/lib/errorMessage";
 import { ownershipLabel } from "@/lib/ownership";
@@ -37,12 +42,18 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // (investments → holdings wording). Field labels stay under bulkEntry.*.
   const copy = config.copyPrefix ?? "bulkEntry";
 
-  const [yearMonth, setYearMonth] = useState(thisYearMonth());
+  // ?month=YYYY-MM seeds the initial month (the dashboard stale warning links
+  // here, #792); only the seed — the picker stays free afterwards.
+  const [searchParams] = useSearchParams();
+  const [seedMonth] = useState(
+    () => pastYearMonthOrNull(searchParams.get("month")) ?? thisYearMonth(),
+  );
+  const [yearMonth, setYearMonth] = useState(seedMonth);
   // as_of_date must fall within the target month (backend CHECK), so it seeds
   // to the end of that month (capped at today) rather than the single-snapshot
   // carryover_date_mode date, which does not generalise to an arbitrarily
   // chosen target month.
-  const [asOfDate, setAsOfDate] = useState(monthEndDateCapped(thisYearMonth()));
+  const [asOfDate, setAsOfDate] = useState(monthEndDateCapped(seedMonth));
   // Per-position edits: only the fields the user actually typed. An untouched
   // field falls back to the row's shape prefill (see valueFor). Keyed by
   // position id, then by shape field key ("amount"; or "quantity"/"price…").

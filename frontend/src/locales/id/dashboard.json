@@ -18,6 +18,7 @@
     "vsYoY": "vs {{when}} · YoY",
     "stalePositions_one": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
     "stalePositions_other": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
+    "staleEnter": "Perbarui sekarang →",
     "unsettledTerminations_one": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian.",
     "unsettledTerminations_other": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian."
   },
