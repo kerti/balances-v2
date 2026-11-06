@@ -96,6 +96,33 @@ export const routes = {
   settingsInflationRates: "/settings/inflation-rates",
 } as const;
 
+// positionEntry maps a position's (group, subtype) to the bulk-entry screen that
+// records its snapshots (#792). Investments split by how the holding is valued:
+// priced (stock, mutual fund, gold) vs accrued (bond, time deposit). Returns
+// null for an unknown pair so callers render no link.
+export function positionEntry(group: string, subtype: string): string | null {
+  switch (group) {
+    case "asset":
+      return routes.assetsEnter;
+    case "liability":
+      return routes.liabilitiesEnter;
+    case "receivable":
+      return routes.receivablesEnter;
+    case "investment":
+      switch (subtype) {
+        case "stock":
+        case "mutual_fund":
+        case "gold":
+          return routes.investmentsEnterPrices;
+        case "bond":
+        case "time_deposit":
+          return routes.investmentsEnterAccrued;
+      }
+      return null;
+  }
+  return null;
+}
+
 // positionDetail resolves a position's detail-page path from the (group,
 // subtype) pair the report carries for stale positions (#50). Returns null for
 // any pair without a detail page (none today) so callers render a plain label

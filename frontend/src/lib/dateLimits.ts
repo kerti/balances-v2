@@ -15,6 +15,14 @@ export function thisYearMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// pastYearMonthOrNull returns `value` when it is a well-formed "YYYY-MM" that is
+// not after the current month, else null — for seeding a month input from a URL
+// param without trusting it.
+export function pastYearMonthOrNull(value: string | null): string | null {
+  if (value === null || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return null;
+  return value <= thisYearMonth() ? value : null;
+}
+
 // todayDate returns the current local date as "YYYY-MM-DD", suitable for
 // <input type="date" max=…>.
 export function todayDate(): string {
