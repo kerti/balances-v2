@@ -6,7 +6,7 @@ toolchain go1.27.3
 
 require (
 	codeberg.org/go-pdf/fpdf v0.12.0
-	github.com/caarlos0/env/v11 v11.4.1
+	github.com/caarlos0/env/v11 v11.4.2
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/go-chi/chi/v5 v5.5.0
 	github.com/go-jose/go-jose/v4 v4.1.6
