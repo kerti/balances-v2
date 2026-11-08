@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { routes, positionDetail } from "@/lib/routes";
+import { routes, positionDetail, positionEntry } from "@/lib/routes";
 
 // The route builders are the link-safety convention (ADR-0025): these assert
 // each id-builder nests its detail under the matching list path, so a typo in
@@ -58,5 +58,24 @@ describe("positionDetail", () => {
     expect(positionDetail("investment", "mystery", "x")).toBeNull();
     expect(positionDetail("liability", "mystery", "x")).toBeNull();
     expect(positionDetail("nonsense", "whatever", "x")).toBeNull();
+  });
+});
+
+describe("positionEntry", () => {
+  it("maps each (group, subtype) to its bulk-entry route", () => {
+    expect(positionEntry("asset", "property")).toBe(routes.assetsEnter);
+    expect(positionEntry("liability", "personal")).toBe(routes.liabilitiesEnter);
+    expect(positionEntry("receivable", "")).toBe(routes.receivablesEnter);
+    for (const st of ["stock", "mutual_fund", "gold"]) {
+      expect(positionEntry("investment", st)).toBe(routes.investmentsEnterPrices);
+    }
+    for (const st of ["bond", "time_deposit"]) {
+      expect(positionEntry("investment", st)).toBe(routes.investmentsEnterAccrued);
+    }
+  });
+
+  it("returns null for an unknown pair", () => {
+    expect(positionEntry("investment", "crypto")).toBeNull();
+    expect(positionEntry("mystery", "x")).toBeNull();
   });
 });
