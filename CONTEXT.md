@@ -69,7 +69,11 @@ additive component. Net-worth aggregation sums `total value` uniformly across al
 All snapshot values are entered manually from statements; the system does not auto-compute interest
 or market value. A Snapshot belongs to exactly one month: its `year_month` is immutable after
 creation. **Moving** a reading to another month is one atomic act that archives (soft-deletes) the
-original and records a new Snapshot in the target month; a close Snapshot can't be moved. Its
+original and records a new Snapshot in the target month; a close Snapshot can't be moved.
+**Replacing** a month's value from any flow (editing it, bulk entry, import, Record month) works the same way:
+the earlier Snapshot is archived, never overwritten. A
+single-item replace or delete can be undone from its confirmation toast; a bulk save cannot, but
+its displaced values are still archived. Its
 optional `as_of_date` (the statement date) must fall **within that same calendar month**, which a DB
 CHECK on every snapshot table and bounded date inputs in the UI enforce. The statement date is only
 ever what the user entered: it is never filled in for them.
