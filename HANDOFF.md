@@ -58,7 +58,8 @@ archive, single-item Undo toasts, confirm tiers, one toast per write), is #820�
 #788 (after #820 + #822), #791 (after #820) and #805 (after #822); #790 still waits on #788. Round
 (b), close/import/trades (no ADR), is #827–#830. Round (d), wording (no ADR; vocabulary in
 `CONTEXT.md`), is #832 copy sweep + #833 counts/months; it renamed ADR-0058's "Record month" button
-to **Record snapshot**. Next: rounds (e) colour, (f) layout and shell, (g) scope calls. Phone-width (390px) findings wait for a
+to **Record snapshot**. Round (e), colour (ADR-0054 amendment), is #835 tokens + #836 palettes and
+badges. Next: rounds (f) layout and shell, (g) scope calls. Phone-width (390px) findings wait for a
 real-device pass. `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
 under repo **Settings → Social preview**.
 
