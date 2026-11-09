@@ -81,7 +81,13 @@ ever what the user entered: it is never filled in for them.
 A month has at most one Snapshot per Position. Recording a value for a month that already has one
 **replaces** it, and the UI says so before you save; that is the rule for the single dialog, bulk
 entry and import alike. Recording a value that didn't change is still a Snapshot (an observation):
-it ends the Position's **stale** listing for that month, and carry-forward does not.
+it ends the Position's **stale** listing for that month, and carry-forward does not. Re-recording a
+month with every field identical to its live Snapshot is **unchanged**, not a replace: nothing is
+written or archived.
+
+A write on one Position never writes another Position's Snapshot. Where value moves between
+Positions — a closed account's balance landing in another, a trade's cash leaving a bank account —
+the receiving Position's own Snapshot records it, entered by the Household.
 
 **Transaction**: An event in an Investment instrument's ledger. Types: **Buy**, **Sell**,
 **Coupon**, **Dividend**, **Distribution**, **Fee**, **Maturity**.
