@@ -232,7 +232,8 @@ input itself is [[adr-0056]].
   "Current: …" rather than an orange "Will overwrite" on every row. The per-position dialog stops
   refusing: picking a month that already has a value switches it to replacing that value, with a
   notice. `POST` still answers `SNAPSHOT_MONTH_EXISTS`, but only as a guard against a stale tab or a
-  double submit. The per-position toolbar's "Copy carryover" and "New" merge into one **Record
+  double submit. ([[adr-0058]]: the replace archives the earlier Snapshot rather than editing it in
+  place, and can be undone.) The per-position toolbar's "Copy carryover" and "New" merge into one **Record
   month**, which defaults to the month after the latest Snapshot (capped at the current month) and
   offers "Same as last month" rather than prefilling it. A Snapshot in the wrong month gets an atomic
   **Move to another month** (soft-delete + insert, as in [[adr-0052]] §2); `year_month` stays
