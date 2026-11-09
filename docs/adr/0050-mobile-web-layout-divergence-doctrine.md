@@ -188,3 +188,17 @@ single 768px boundary, keep the asserted/interactive core single-instance — th
 not a new ADR. The detail added: **a desktop divergence whose delta is non-asserted brand chrome
 uses a single-tree CSS reflow; when a single *asserted* element must change container across the
 boundary, the `useIsMobile` mount-split places it (one instance), never render-both-and-hide.**
+
+## Amendment — the shell has its own boundary at 1024px (2026-11-09)
+
+Round (f) of the 2026-11-04 UI audit (TAB-01). From 768 to 1023px the full 192px sidebar stayed open
+beside desktop content, leaving ~560px for pages built for more; #781 stopped the sideways scroll,
+but details cards still collided. **Below 1024px the sidebar is off-canvas** behind the same ☰
+trigger phones already use; content keeps the desktop renderer from 768px up. The *renderer*
+boundary stays the single 768px `useIsMobile` split this ADR fixes — no tablet tier for content.
+Only the shell reads a second, 1024px query, and only to decide whether the sidebar is docked.
+
+Rejected: an icon rail between 768 and 1024 (the nav has no icons and nests Assets/Liabilities
+children — seven icons plus fly-outs for a rarely used width); moving the renderer boundary to 1024
+(tablets would get phone cards at widths the desktop layout serves once the sidebar is gone).
+Implementation: #837.
