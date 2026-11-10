@@ -178,3 +178,7 @@ Not ADRs because they're tactical, but load-bearing:
   ignored, no way back); a fetched `Blob` via `blob:` opens iOS's file viewer instead. The service
   worker caches the **shell only** — don't add `runtimeCaching`, and add any new server-owned path
   prefix to `navigateFallbackDenylist` in `vite.config.ts`.
+- **No raw red/green/amber/emerald/rose Tailwind colour classes** outside `components/ui/` and the
+  allowlisted palettes in `frontend/scripts/check-colour-classes.mjs` (run by `npm run lint`, so by
+  `make check`). Use `text-positive`/`text-negative` (direction), `text-warning` / `<Callout>`
+  (warning), `--primary` (changed). Extend the allowlist only for a category/tag palette.

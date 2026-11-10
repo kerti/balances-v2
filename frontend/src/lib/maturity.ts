@@ -81,7 +81,7 @@ export function maturityInfo(maturityDate: string, now: Date = new Date()): Matu
 export function maturityClass(state: MaturityState): string {
   switch (state) {
     case "imminent":
-      return "text-amber-600 dark:text-amber-400 font-semibold";
+      return "text-warning font-semibold";
     case "approaching":
       return "font-semibold";
     case "matured":

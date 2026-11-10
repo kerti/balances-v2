@@ -29,6 +29,7 @@ export function HelpTourButton({ steps }: Props) {
     if (present.length === 0) return;
     driver({
       showProgress: true,
+      popoverClass: "app-tour",
       nextBtnText: t("tour.next"),
       prevBtnText: t("tour.back"),
       doneBtnText: t("tour.done"),

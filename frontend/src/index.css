@@ -46,6 +46,11 @@ body {
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-hero: var(--hero);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -106,6 +111,15 @@ body {
   --accent: oklch(0.936 0.0025 81.8); /* #EBEAE8 (hover) */
   --accent-foreground: oklch(0.246 0.015 256.8);
   --destructive: oklch(0.577 0.245 27.325);
+  /* Semantic colour roles (ADR-0054 amendment 2026-11-09). positive/negative
+     mean direction only (gain/loss); warning is pushed toward orange so it
+     never reads as brass, the primary action; hero is the brass-tinted
+     headline surface (no shadow, either theme). */
+  --positive: oklch(0.52 0.13 155);
+  --negative: oklch(0.55 0.2 27);
+  --warning: oklch(0.55 0.15 55);
+  --warning-surface: oklch(0.97 0.03 65);
+  --hero: oklch(0.975 0.014 82);
   --border: oklch(0.912 0.014 78.3); /* #E7E1D8 */
   --input: oklch(0.912 0.014 78.3);
   /* The focus ring is --primary (#8A6A30), not the lighter brass #B08947 the
@@ -190,6 +204,11 @@ body {
   --accent: oklch(0.268 0.014 261.7);
   --accent-foreground: oklch(0.925 0.007 88.6);
   --destructive: oklch(0.704 0.191 22.216);
+  --positive: oklch(0.75 0.15 155);
+  --negative: oklch(0.72 0.17 22);
+  --warning: oklch(0.76 0.15 55);
+  --warning-surface: oklch(0.28 0.05 55);
+  --hero: oklch(0.27 0.02 80);
   /* Solid rather than the pre-rebrand white-alpha: on a warm-graphite surface a
      neutral white wash greys the hue out of every edge. */
   --border: oklch(0.3 0.014 261.7); /* #2A2E35 */
@@ -234,4 +253,53 @@ body {
     @apply font-sans;
     accent-color: var(--primary);
   }
+}
+
+/* Help tour (driver.js) on app tokens: the library ships a white card. */
+.driver-popover.app-tour {
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+}
+.driver-popover.app-tour .driver-popover-title {
+  color: var(--popover-foreground);
+}
+.driver-popover.app-tour .driver-popover-description,
+.driver-popover.app-tour .driver-popover-progress-text {
+  color: var(--muted-foreground);
+}
+.driver-popover.app-tour .driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--popover);
+}
+.driver-popover.app-tour .driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--popover);
+}
+.driver-popover.app-tour .driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--popover);
+}
+.driver-popover.app-tour .driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--popover);
+}
+.driver-popover.app-tour button {
+  background-color: var(--secondary);
+  color: var(--secondary-foreground);
+  border: 1px solid var(--border);
+  text-shadow: none;
+  border-radius: var(--radius-md);
+}
+.driver-popover.app-tour button:hover,
+.driver-popover.app-tour button:focus-visible {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+}
+.driver-popover.app-tour .driver-popover-next-btn,
+.driver-popover.app-tour .driver-popover-close-btn:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: transparent;
+}
+.driver-popover.app-tour .driver-popover-close-btn {
+  background: transparent;
+  border: 0;
+  color: var(--muted-foreground);
 }

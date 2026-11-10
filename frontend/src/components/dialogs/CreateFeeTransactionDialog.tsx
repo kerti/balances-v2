@@ -182,7 +182,7 @@ export function CreateFeeTransactionDialog<TResult>({
           </div>
 
           {unitFeeIncomplete && (
-            <p className="text-xs text-amber-600">{t("investments:fee.incompleteHint")}</p>
+            <p className="text-xs text-warning">{t("investments:fee.incompleteHint")}</p>
           )}
 
           <div className="grid gap-2">

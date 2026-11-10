@@ -41,7 +41,7 @@ export function EntryRowMobile({
             )}
             <NumericInput
               id={inputId}
-              className={`h-11 w-full text-right text-base${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+              className={`h-11 w-full text-right text-base${dirty ? " border-primary ring-1 ring-primary" : ""}`}
               decimals={f.decimals(view.currency)}
               maxIntegerDigits={f.maxIntegerDigits}
               aria-label={f.labelKey ? t(f.labelKey) : undefined}

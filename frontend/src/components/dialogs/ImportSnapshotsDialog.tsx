@@ -220,7 +220,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
           )}
 
           {committed && (
-            <p className="text-sm text-emerald-600" data-testid="import-done">
+            <p className="text-sm text-positive" data-testid="import-done">
               {t("import.committed", {
                 count: total,
                 insert: result.to_insert,

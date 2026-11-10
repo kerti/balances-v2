@@ -60,7 +60,7 @@ export function EntryRowMeta({
       <div className="flex items-center gap-1.5">
         {view.dirty && (
           <span
-            className="size-1.5 shrink-0 rounded-full bg-amber-500"
+            className="size-1.5 shrink-0 rounded-full bg-primary"
             data-testid={`${tid}-entry-dirty-${view.positionId}`}
             aria-hidden
           />
@@ -71,10 +71,7 @@ export function EntryRowMeta({
         {view.ownership}
         {" · "}
         {view.when.kind === "overwrite" ? (
-          <span
-            className="text-amber-600"
-            data-testid={`${tid}-entry-overwrite-${view.positionId}`}
-          >
+          <span className="text-warning" data-testid={`${tid}-entry-overwrite-${view.positionId}`}>
             {t("bulkEntry.overwritesThisMonth")}
           </span>
         ) : view.when.kind === "carried" ? (

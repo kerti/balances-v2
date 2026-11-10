@@ -1,3 +1,4 @@
+import { Callout } from "@/components/common/Callout";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
@@ -341,12 +342,12 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
           ) : undefined,
         banner:
           recon && !recon.matches ? (
-            <div className="mx-6 mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <Callout variant="warning" className="mx-6 mb-3">
               {t("investments:mutualFund.reconcileWarning", {
                 actual: recon.actual,
                 expected: recon.expected,
               })}
-            </div>
+            </Callout>
           ) : undefined,
       };
 
