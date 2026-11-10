@@ -116,7 +116,7 @@ export const receivableDescriptor = {
     headlineLabelKey: "receivables:totalOutstanding",
     headlineTestId: "receivables-total",
     renderHeadlineExtra: (items) => <ReceivableCharts items={items} />,
-    renderCreateDialog: () => <CreateReceivableDialog />,
+    renderCreateDialog: (onCreated) => <CreateReceivableDialog onCreated={onCreated} />,
     renderEditDialog: (item, props) => (
       <EditReceivableDialog key={item.receivable.id} receivable={item.receivable} {...props} />
     ),

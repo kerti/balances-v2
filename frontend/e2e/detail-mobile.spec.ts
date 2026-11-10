@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Detail-page mobile divergence (#535, ADR-0051 Phase B / ADR-0050 "wide table →
 // stacked cards"). The ten detail pages share one `PositionDetailScreen` shell,
@@ -26,6 +27,7 @@ test(
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     await page
       .getByRole("row", { name: new RegExp(account) })
@@ -110,6 +112,7 @@ test(
     await dialog.getByLabel("Bank name").fill("E2E Bank");
     await dialog.getByLabel("Account number").fill("1234567890");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
 
     await page.setViewportSize({ width: 768, height: 900 });

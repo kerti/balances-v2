@@ -12,6 +12,8 @@ type Props = {
   // When the dialog opens from inside an inner-tab (Personal / Institutional),
   // the subtype is fixed by the tab — we pre-fill and hide the selector.
   defaultSubtype?: "personal" | "institutional";
+  // Called with the new liability's id after a successful create (#843).
+  onCreated?: (id: string) => void;
 };
 
 function emptyForm(defaultSubtype: "personal" | "institutional") {
@@ -19,7 +21,7 @@ function emptyForm(defaultSubtype: "personal" | "institutional") {
     display_name: "",
     description: "",
     subtype: defaultSubtype,
-    ownership_type: "joint" as "sole" | "joint",
+    ownership_type: "sole" as "sole" | "joint",
     entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     native_currency: "IDR",
@@ -32,7 +34,7 @@ function emptyForm(defaultSubtype: "personal" | "institutional") {
   };
 }
 
-export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
+export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }: Props) {
   const { t } = useTranslation(["liabilities", "common"]);
   const [form, setForm] = useState(emptyForm(defaultSubtype));
   const { data: user } = useSession();
@@ -58,7 +60,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal" }: Props) {
         start_date: form.start_date || null,
         maturity_date: form.maturity_date || null,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.id);
+        },
+      },
     );
   }
 

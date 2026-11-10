@@ -13,7 +13,7 @@ function emptyForm() {
   return {
     display_name: "",
     description: "",
-    ownership_type: "joint" as "sole" | "joint",
+    ownership_type: "sole" as "sole" | "joint",
     entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     risk_profile: "" as RiskProfile | "",
@@ -30,7 +30,13 @@ function emptyForm() {
   };
 }
 
-export function CreateBondDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreateBondDialog({ onCreated }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(emptyForm);
   const { data: user } = useSession();
@@ -60,7 +66,12 @@ export function CreateBondDialog() {
         coupon_disposition: form.coupon_disposition,
         maturity_date: form.maturity_date,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.investment.id);
+        },
+      },
     );
   }
 

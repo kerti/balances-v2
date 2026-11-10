@@ -43,7 +43,7 @@ export const vehicleDescriptor = nonInvestmentDescriptor<VehicleListItem>({
   },
   headlineLabelKey: "assets:vehicle.totalValue",
   headlineTestId: "vehicles-total",
-  renderCreateDialog: () => <CreateVehicleDialog />,
+  renderCreateDialog: (onCreated) => <CreateVehicleDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditVehicleDialog
       key={item.asset.id}

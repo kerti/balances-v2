@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Maturity-flips-status invariant (M4.6, ADR-0009): recording a Maturity
 // transaction on a TimeDeposit atomically flips the position to 'matured' on
@@ -28,6 +29,7 @@ test("time deposit maturity flips status to matured and gates the row", async ({
   await createDialog.getByLabel("Maturity date").fill("2026-01-01");
   await createDialog.getByLabel("Risk profile").selectOption("medium");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Navigate to the detail page ---
   const row = page.getByRole("row", { name: new RegExp(name) });

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Property CRUD through the real UI + backend — an Assets subtype reached at
 // /assets/properties. Structurally a mirror of receivable.spec /
@@ -17,6 +18,7 @@ test("property create → edit → delete round-trip", async ({ page }) => {
   await expect(createDialog.getByText("New property")).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   const row = page.getByRole("row", { name: new RegExp(name) });
   await expect(row).toBeVisible();

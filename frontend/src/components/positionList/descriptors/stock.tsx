@@ -44,7 +44,7 @@ export const stockDescriptor = investmentDescriptor<StockListItem>({
     },
   ],
   headlineTestId: "stocks-total",
-  renderCreateDialog: () => <CreateStockDialog />,
+  renderCreateDialog: (onCreated) => <CreateStockDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditStockDialog key={item.investment.id} stock={item} {...props} />
   ),

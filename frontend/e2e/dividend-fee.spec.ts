@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // The last two transaction dialog families (M4.4, ADR-0003): on a stock detail
 // page, record a Dividend (CashIncome shape — also covers Coupon/Distribution,
@@ -21,6 +22,7 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   await createDialog.getByLabel("Exchange").fill("IDX");
   await createDialog.getByLabel("Risk profile").selectOption("medium");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Navigate to the detail page ---
   await page

@@ -63,7 +63,7 @@ export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
     },
   ],
   headlineTestId: "time-deposits-total",
-  renderCreateDialog: () => <CreateTimeDepositDialog />,
+  renderCreateDialog: (onCreated) => <CreateTimeDepositDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditTimeDepositDialog key={item.investment.id} timeDeposit={item} {...props} />
   ),

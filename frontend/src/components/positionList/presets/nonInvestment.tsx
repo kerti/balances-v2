@@ -62,7 +62,7 @@ export type NonInvestmentConfig<T> = {
   headlineLabelKey: string;
   headlineTestId: string;
   renderHeadlineExtra?: (items: T[]) => ReactNode;
-  renderCreateDialog: () => ReactNode;
+  renderCreateDialog: (onCreated: (id: string) => void) => ReactNode;
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
 };
 

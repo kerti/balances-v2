@@ -50,6 +50,22 @@ func TestBankAccountHandlers_Create(t *testing.T) {
 		requireStatus(t, rec, http.StatusBadRequest)
 	})
 
+	t.Run("201 blank account_number is accepted and stored as empty", func(t *testing.T) {
+		rec := h.do(t, "POST", "/bank-accounts", map[string]any{
+			"display_name":    "No number",
+			"ownership_type":  "joint",
+			"native_currency": "IDR",
+			"bank_name":       "BCA",
+			"account_number":  "",
+			"account_type":    "savings",
+		})
+		requireStatus(t, rec, http.StatusCreated)
+		body := decodeBody[*repo.BankAccount](t, rec)
+		if body.Details.AccountNumber != "" {
+			t.Errorf("account_number: want empty, got %q", body.Details.AccountNumber)
+		}
+	})
+
 	t.Run("400 missing required bank_name", func(t *testing.T) {
 		rec := h.do(t, "POST", "/bank-accounts", map[string]any{
 			"display_name":    "X",
@@ -144,6 +160,21 @@ func TestBankAccountHandlers_Update(t *testing.T) {
 		}
 		if body.Details.BankName != "Mandiri" {
 			t.Errorf("bank_name: want Mandiri, got %q", body.Details.BankName)
+		}
+	})
+
+	t.Run("200 blank account_number clears the number", func(t *testing.T) {
+		rec := h.do(t, "PATCH", "/bank-accounts/"+created.Asset.ID.String(), map[string]any{
+			"display_name":   "Renamed",
+			"ownership_type": "joint",
+			"bank_name":      "Mandiri",
+			"account_number": "",
+			"account_type":   "current",
+		})
+		requireStatus(t, rec, http.StatusOK)
+		body := decodeBody[*repo.BankAccount](t, rec)
+		if body.Details.AccountNumber != "" {
+			t.Errorf("account_number: want empty, got %q", body.Details.AccountNumber)
 		}
 	})
 

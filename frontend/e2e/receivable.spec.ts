@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Position-group CRUD through the real UI + backend for the Receivables group
 // (flat — no subtype nav, no transactions): create an entry, edit it, delete
@@ -20,6 +21,7 @@ test("receivable create → edit → delete round-trip", async ({ page }) => {
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByLabel("Counterparty").fill("E2E Counterparty");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   const row = page.getByRole("row", { name: new RegExp(name) });
   await expect(row).toBeVisible();

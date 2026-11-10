@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Bulk monthly-entry for the Asset group through the real UI + backend
 // (ADR-0046): from Assets home, open "Enter this month", find a freshly-created
@@ -23,6 +24,7 @@ test(
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
 
     // --- Open the bulk monthly-entry view from Assets home ---
@@ -86,6 +88,7 @@ test(
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // Launch from the Liabilities Home header.
@@ -137,6 +140,7 @@ test(
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // Launch from the list toolbar (flat group has no Home).
@@ -191,6 +195,7 @@ test(
     await dialog.getByLabel("Exchange").fill("IDX");
     await dialog.getByLabel("Risk profile").selectOption("medium");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // Launch the qty×price price-entry view from the Investments Home header.
@@ -256,6 +261,7 @@ test(
     await dialog.getByLabel("Placement date").fill("2024-01-01");
     await dialog.getByLabel("Risk profile").selectOption("medium");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // Launch the accrued value-entry view from the Investments Home header.
@@ -321,6 +327,7 @@ test(
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
 
     // --- Mobile width: the stacked renderer mounts, value input is a full-width
@@ -381,6 +388,7 @@ test(
     await dialog.getByLabel("Exchange").fill("IDX");
     await dialog.getByLabel("Risk profile").selectOption("medium");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
@@ -455,6 +463,7 @@ test(
     await dialog.getByLabel("Placement date").fill("2024-01-01");
     await dialog.getByLabel("Risk profile").selectOption("medium");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
     // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
