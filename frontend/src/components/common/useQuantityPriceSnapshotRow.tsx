@@ -5,7 +5,7 @@ import {
   EditQuantityPriceSnapshotDialog,
   type UpdateQuantityPriceSnapshotMutationVariables,
 } from "@/components/dialogs/EditQuantityPriceSnapshotDialog";
-import { formatCurrency, formatYearMonth, formatDate } from "@/lib/format";
+import { formatCurrency, formatYearMonth, formatDate, formatQuantity } from "@/lib/format";
 
 export type QuantityPriceSnapshotLike = {
   id: string;
@@ -36,7 +36,9 @@ export function useQuantityPriceSnapshotRow<TUpdate, TDelete>(
 
   const monthText = formatYearMonth(snapshot.year_month);
   const amountText = formatCurrency(snapshot.amount, snapshot.currency);
-  const quantityText = snapshot.quantity ? `${snapshot.quantity} ${quantityUnit}` : null;
+  const quantityText = snapshot.quantity
+    ? `${formatQuantity(snapshot.quantity)} ${quantityUnit}`
+    : null;
   const priceText = snapshot.price_per_unit
     ? formatCurrency(snapshot.price_per_unit, snapshot.currency)
     : null;
