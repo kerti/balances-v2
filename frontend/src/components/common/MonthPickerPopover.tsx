@@ -13,7 +13,8 @@ import { formatShortMonth, formatYearMonth } from "@/lib/format";
 // `months`) plus a 4×3 month grid with cells disabled for months without an
 // entry. Selecting a cell fires onSelect with the exact string it was handed
 // in `months` — the caller keeps whatever key shape it uses (full ISO
-// `year_month` for the dashboard, `"YYYY-MM"` for income).
+// `year_month` for the dashboard, `"YYYY-MM"` for income and for form fields
+// fed by `yearMonthsUpToNow`).
 
 const MONTH_INDEXES = Array.from({ length: 12 }, (_, i) => i);
 
@@ -36,10 +37,19 @@ export function MonthPickerPopover({
   months,
   selected,
   onSelect,
+  id,
+  testId = "month-picker-trigger",
+  placeholder,
 }: {
   months: string[];
   selected: string;
   onSelect: (yearMonth: string) => void;
+  /** Lets a form <Label htmlFor> name the trigger. */
+  id?: string;
+  /** Overrides the trigger's data-testid so several pickers can share a page. */
+  testId?: string;
+  /** Trigger text while `selected` is empty (a form field not yet filled). */
+  placeholder?: string;
 }) {
   const { t } = useTranslation(["dashboard", "common"]);
   // Key-by-month lookup so the cell click fires with the exact string the
@@ -50,8 +60,9 @@ export function MonthPickerPopover({
   const minYear = years[0];
   const maxYear = years[years.length - 1];
 
-  const selectedYear = yearOf(selected);
-  const selectedMonthIdx = monthIdxOf(selected);
+  const hasSelection = selected !== "";
+  const selectedYear = hasSelection ? yearOf(selected) : maxYear;
+  const selectedMonthIdx = hasSelection ? monthIdxOf(selected) : -1;
 
   // Prev/next walk the sorted *available* months, not calendar months — a
   // multi-year gap in `months` collapses to a single click since the arrows
@@ -67,9 +78,11 @@ export function MonthPickerPopover({
   // Format the trigger label from the UTC parts via a canonical noon-UTC ISO
   // so a local-timezone rollover never shifts the displayed month (the raw
   // `selected` may be a bare "YYYY-MM" or a midnight-Z ISO).
-  const selectedLabel = formatYearMonth(
-    `${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, "0")}-01T12:00:00Z`,
-  );
+  const selectedLabel = hasSelection
+    ? formatYearMonth(
+        `${selectedYear}-${String(selectedMonthIdx + 1).padStart(2, "0")}-01T12:00:00Z`,
+      )
+    : (placeholder ?? "");
 
   const [open, setOpen] = useState(false);
   const [viewYear, setViewYear] = useState(selectedYear);
@@ -98,9 +111,10 @@ export function MonthPickerPopover({
       <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
+            id={id}
             variant="outline"
             size="lg"
-            data-testid="month-picker-trigger"
+            data-testid={testId}
             className="relative h-11 min-w-40 justify-between gap-2 rounded-none focus-visible:z-10 md:h-9"
           >
             {selectedLabel}

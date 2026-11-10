@@ -124,7 +124,8 @@ it("the add hint and the Add button read the same figure, phone comma included",
   setViewport(1280);
   renderCard();
   await screen.findByTestId("fx-rate-table");
-  fireEvent.change(screen.getByLabelText("Month"), { target: { value: "2026-02" } });
+  await userEvent.click(screen.getByLabelText("Month"));
+  await userEvent.click(await screen.findByTestId("month-picker-cell-2026-02"));
   fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
   const rate = screen.getByLabelText("Rate");
   const add = screen.getByRole("button", { name: "Add rate" });

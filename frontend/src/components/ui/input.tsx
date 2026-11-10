@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 // with `max-md:min-h-0` (tailwind-merge lets the callsite win).
 //
 // The floor did not actually hold for the temporal input types, though (#572).
-// A `type="date"` / `type="month"` field is drawn by the *platform*, not by us:
+// A `type="date"` / month field is drawn by the *platform*, not by us:
 // iOS Safari renders a native control that keeps its own intrinsic width and
 // height, so it ignored both `h-8` and `max-md:min-h-11` and refused to shrink
 // into its grid column — on a real iPhone the Entry screen's two-column row
