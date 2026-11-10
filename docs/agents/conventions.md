@@ -143,6 +143,10 @@ Not ADRs because they're tactical, but load-bearing:
   `InflationRateDialog`, `TagDialog`) take `mode` the same way. Every row gets a `⋯` menu with icon items
   (`RowActionsMenu` and its snapshot/transaction/income siblings) — no icon-only pencil/trash and no
   inline create/edit forms.
+- **Every form dialog is a `ValidatedForm`** (#824, ADR-0058 §5). Never disable submit for an invalid
+  form; express rules as native constraints (`required`, `min`, `max`) or the `validate` prop, keyed by
+  field `id`. A server code that belongs to a field goes in `FIELD_FOR_CODE` (`lib/formErrors.ts`);
+  anything else renders through `<FormError />`, not a toast. Fields need an `id` to get a message.
 - **Edit dialogs do not reset form state via `useEffect`.** Initial form state comes from the entity
   prop in `useState(() => toForm(entity))` or inline initializer. Parents pass `key={entity.id}` so
   React remounts on entity switch. Within the same entity, form state persists across

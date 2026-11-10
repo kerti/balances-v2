@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { errorMessage } from "@/lib/errorMessage";
 import {
   formatCurrency,
   PRICE_DECIMALS,
@@ -288,7 +288,7 @@ export function TerminatePositionDialog({
           </DialogTitle>
           <DialogDescription>{t("terminate.description")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="lifecycle_status">{t("terminate.statusLabel")}</Label>
             <Select
@@ -427,9 +427,7 @@ export function TerminatePositionDialog({
             />
           </div>
 
-          {mutation.error && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
@@ -439,7 +437,7 @@ export function TerminatePositionDialog({
               {mutation.isPending ? t("actions.saving") : t("save")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

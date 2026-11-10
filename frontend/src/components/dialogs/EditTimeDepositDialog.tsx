@@ -83,7 +83,9 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
-      submitDisabled={termInvalid}
+      validate={() =>
+        termInvalid ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") } : {}
+      }
       error={mutation.error}
       onSubmit={submit}
     >
@@ -92,7 +94,6 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
         form={form}
         setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        termInvalid={termInvalid}
       />
     </PositionFormDialog>
   );

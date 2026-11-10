@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,6 @@ import { OwnershipField } from "@/components/common/OwnershipField";
 import { Select } from "@/components/ui/select";
 import { useUpdateIncome } from "@/hooks/useIncome";
 import { useSession } from "@/hooks/useSession";
-import { errorMessage } from "@/lib/errorMessage";
 import type { Income, IncomeCategory } from "@/api/types";
 
 type Props = {
@@ -74,7 +74,7 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
           <DialogTitle>{t("income:editTitle")}</DialogTitle>
           <DialogDescription>{t("income:editDescription")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           {/* Full-width rows, not a two-column pair — see the note in
               CreateIncomeDialog: the dialog is `sm:max-w-sm` at every width, so
               a shared row truncated the longer category labels everywhere, not
@@ -202,9 +202,7 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
             onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
           />
 
-          {mutation.error && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -214,7 +212,7 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
               {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

@@ -106,7 +106,9 @@ export function CreateTimeDepositDialog({
       submitLabel={t("common:actions.create")}
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
-      submitDisabled={termInvalid}
+      validate={() =>
+        termInvalid ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") } : {}
+      }
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {
@@ -119,7 +121,6 @@ export function CreateTimeDepositDialog({
         form={form}
         setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        termInvalid={termInvalid}
       />
     </PositionFormDialog>
   );

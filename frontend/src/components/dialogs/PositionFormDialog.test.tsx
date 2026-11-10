@@ -12,6 +12,7 @@ import userEvent from "@testing-library/user-event";
 import i18n from "@/i18n";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
+import { Input } from "@/components/ui/input";
 
 const cancelLabel = i18n.t("common:cancel");
 
@@ -119,9 +120,10 @@ describe("PositionFormDialog", () => {
     expect(submit).toBeDisabled();
   });
 
-  // covers: INV-PRESENTATION-06
-  it("submitDisabled disables submit but keeps the rest label (not pending)", async () => {
+  // covers: INV-PRESENTATION-06, INV-PRESENTATION-19
+  it("an invalid form keeps submit enabled and says why on click", async () => {
     const user = userEvent.setup();
+    const onSubmit = vi.fn();
     renderWithProviders(
       <PositionFormDialog
         trigger={<button>Add thing</button>}
@@ -130,19 +132,22 @@ describe("PositionFormDialog", () => {
         submitLabel="Create"
         pendingLabel="Creating…"
         isPending={false}
-        submitDisabled
+        validate={() => ({ thing: "Needs a name" })}
         error={null}
-        onSubmit={() => {}}
+        onSubmit={onSubmit}
       >
-        <input aria-label="thing name" />
+        <Input id="thing" aria-label="thing name" />
       </PositionFormDialog>,
     );
 
     await user.click(screen.getByRole("button", { name: "Add thing" }));
-    // Label stays "Create" (a merely-invalid form must not read as in-flight),
-    // but the button is disabled.
+    // Label stays "Create" (a merely-invalid form must not read as in-flight)
+    // and the button stays clickable.
     const submit = await screen.findByRole("button", { name: "Create" });
-    expect(submit).toBeDisabled();
+    expect(submit).toBeEnabled();
+    await user.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getByText("Needs a name")).toBeInTheDocument();
   });
 
   // covers: INV-PRESENTATION-06

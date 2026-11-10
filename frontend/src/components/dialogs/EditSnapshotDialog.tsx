@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { errorMessage } from "@/lib/errorMessage";
 
 // Generic snapshot shape — only the fields the edit form needs.
 type SnapshotLike = {
@@ -84,7 +84,7 @@ export function EditSnapshotDialog<TResult>({
           <DialogTitle>{t("snapshot.editTitle")}</DialogTitle>
           <DialogDescription>{t("snapshot.editDescription")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <SnapshotFormBody
             mode="edit"
             currency={snapshot.currency}
@@ -92,9 +92,7 @@ export function EditSnapshotDialog<TResult>({
             setForm={setForm}
           />
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -104,7 +102,7 @@ export function EditSnapshotDialog<TResult>({
               {mutation.isPending ? t("actions.saving") : t("actions.saveChanges")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

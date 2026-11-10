@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FieldError, describedBy, useFieldError } from "@/components/ui/field-error";
 
 // The `max-md:min-h-11` in the base class is the app-wide mobile tap floor
 // (INV-PRESENTATION-08 / ADR-0050): a text field is an interactive control, and
@@ -34,17 +35,25 @@ import { cn } from "@/lib/utils";
 const DATE_LIKE_TYPES = ["date", "month", "week", "time", "datetime-local"];
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  // Inside a ValidatedForm (#824) the field's message renders right under it and
+  // the input announces it; elsewhere `message` is always undefined.
+  const { message, invalid } = useFieldError(props.id);
   return (
-    <input
-      type={type}
-      data-slot="input"
-      className={cn(
-        "h-8 max-md:min-h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        type !== undefined && DATE_LIKE_TYPES.includes(type) && "appearance-none",
-        className,
-      )}
-      {...props}
-    />
+    <>
+      <input
+        type={type}
+        data-slot="input"
+        className={cn(
+          "h-8 max-md:min-h-11 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+          type !== undefined && DATE_LIKE_TYPES.includes(type) && "appearance-none",
+          className,
+        )}
+        {...props}
+        aria-invalid={invalid || props["aria-invalid"]}
+        aria-describedby={describedBy(props["aria-describedby"], props.id, invalid)}
+      />
+      {message && props.id && <FieldError id={props.id}>{message}</FieldError>}
+    </>
   );
 }
 

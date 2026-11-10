@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,6 @@ import { OwnershipField } from "@/components/common/OwnershipField";
 import { Select } from "@/components/ui/select";
 import { useCreateIncome } from "@/hooks/useIncome";
 import { useSession } from "@/hooks/useSession";
-import { errorMessage } from "@/lib/errorMessage";
 import type { IncomeCategory, Regularity } from "@/api/types";
 
 // todayISO returns YYYY-MM-DD in the local timezone. toISOString() would shift
@@ -195,7 +195,7 @@ export function CreateIncomeDialog({
             {seed ? t("income:duplicateDescription") : t("income:createDescription")}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           {/* Date and category used to share a two-column row, which truncated
               every longer category label (#572). Not a phone-only squeeze, so
               not a `md:` divergence: `DialogContent` is `sm:max-w-sm`, so the
@@ -341,9 +341,7 @@ export function CreateIncomeDialog({
             onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
           />
 
-          {mutation.error && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
@@ -353,7 +351,7 @@ export function CreateIncomeDialog({
               {mutation.isPending ? t("income:submit.saving") : t("income:submit.create")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

@@ -81,7 +81,9 @@ it("New tag opens a dialog; Edit renames in a dialog with no inline form", async
   fireEvent.click(screen.getByRole("button", { name: "New tag" }));
   let dialog = within(await screen.findByRole("dialog"));
   const add = dialog.getByRole("button", { name: "Add" });
-  expect(add).toBeDisabled();
+  expect(add).toBeEnabled();
+  fireEvent.click(add);
+  expect(dialog.getByTestId("field-error-new-tag-name")).toBeInTheDocument();
   fireEvent.change(dialog.getByLabelText("Name"), { target: { value: "  Travel " } });
   fireEvent.click(add);
   await waitFor(() => expect(created).toMatchObject({ name: "Travel" }));

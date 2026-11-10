@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
+import type { FieldMessages } from "@/components/common/ValidatedForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +43,7 @@ function InflationRateFormBody({
         <Label htmlFor="inflation-month">{t("inflation.month")}</Label>
         {mode === "create" ? (
           <MonthPickerPopover
+            fullWidth
             id="inflation-month"
             testId="inflation-month"
             months={yearMonthsUpToNow()}
@@ -82,10 +84,16 @@ export function InflationRateDialog(props: Props) {
   );
 
   // A rate may be negative (deflation) or zero; only require a parseable number.
-  const valid =
-    form.rate.trim() !== "" &&
-    !Number.isNaN(Number(form.rate)) &&
-    (props.mode === "edit" || form.year_month !== "");
+  function validate() {
+    const messages: FieldMessages = {};
+    const required = t("common:validation.required");
+    if (props.mode === "create" && form.year_month === "") messages["inflation-month"] = required;
+    if (form.rate.trim() === "") messages["inflation-rate"] = required;
+    else if (Number.isNaN(Number(form.rate))) {
+      messages["inflation-rate"] = t("common:validation.invalid");
+    }
+    return messages;
+  }
 
   function submit(close: () => void) {
     if (props.mode === "edit") {
@@ -107,7 +115,7 @@ export function InflationRateDialog(props: Props) {
         submitLabel={t("common:actions.saveChanges")}
         pendingLabel={t("common:actions.saving")}
         isPending={updateRate.isPending}
-        submitDisabled={!valid}
+        validate={validate}
         error={updateRate.error}
         onSubmit={submit}
       >
@@ -129,7 +137,7 @@ export function InflationRateDialog(props: Props) {
       submitLabel={t("settings:inflation.addRate")}
       pendingLabel={t("common:actions.creating")}
       isPending={createRate.isPending}
-      submitDisabled={!valid}
+      validate={validate}
       error={createRate.error}
       onSubmit={submit}
       onClosed={() => {

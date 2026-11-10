@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,6 @@ import {
   currencyDecimals,
 } from "@/lib/format";
 import { Label } from "@/components/ui/label";
-import { errorMessage } from "@/lib/errorMessage";
 import { todayDate } from "@/lib/dateLimits";
 import { deriveFeeQuantity } from "@/lib/feeQuantity";
 import type { InvestmentTransaction } from "@/api/types";
@@ -97,7 +97,20 @@ export function EditFeeTransactionDialog<TResult>({
           <DialogTitle>{t("investments:fee.editTitle")}</DialogTitle>
           <DialogDescription>{t("investments:fee.editDescription")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm
+          onSubmit={submit}
+          error={mutation.error}
+          validate={() =>
+            unitFeeIncomplete
+              ? {
+                  [hasQty ? "edit_fee_price" : "edit_fee_quantity"]: t(
+                    "common:validation.required",
+                  ),
+                }
+              : {}
+          }
+          className="space-y-3"
+        >
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="edit_fee_date">{t("investments:fee.feeDateLabel")}</Label>
@@ -175,22 +188,17 @@ export function EditFeeTransactionDialog<TResult>({
             />
           </div>
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !form.amount || unitFeeIncomplete}
-            >
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

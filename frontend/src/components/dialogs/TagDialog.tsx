@@ -83,6 +83,8 @@ export function TagDialog(props: Props) {
   );
 
   const valid = form.name.trim() !== "";
+  const nameId = props.mode === "edit" ? "edit-tag-name" : "new-tag-name";
+  const validate = () => (valid ? {} : { [nameId]: t("common:validation.required") });
 
   function submit(close: () => void) {
     const payload = { name: form.name.trim(), color: form.color };
@@ -106,7 +108,7 @@ export function TagDialog(props: Props) {
         submitLabel={t("common:actions.saveChanges")}
         pendingLabel={t("common:actions.saving")}
         isPending={updateTag.isPending}
-        submitDisabled={!valid}
+        validate={validate}
         error={updateTag.error}
         onSubmit={submit}
       >
@@ -128,7 +130,7 @@ export function TagDialog(props: Props) {
       submitLabel={t("tags:manage.add")}
       pendingLabel={t("common:actions.creating")}
       isPending={createTag.isPending}
-      submitDisabled={!valid}
+      validate={validate}
       error={createTag.error}
       onSubmit={submit}
       onClosed={() => {

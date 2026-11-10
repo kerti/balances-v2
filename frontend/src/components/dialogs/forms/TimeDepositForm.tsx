@@ -23,13 +23,12 @@ type Props = {
   form: TimeDepositFormState;
   setForm: (next: TimeDepositFormState) => void;
   soleOwnerID: string | null;
-  termInvalid: boolean;
 };
 
 // Create derives maturity from placement + term (the user may nudge it by a
 // day or two afterwards); Edit keeps the stored maturity until it is edited
 // directly, so reopening a deposit never silently rewrites it.
-export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID, termInvalid }: Props) {
+export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const derive = mode === "create";
 
@@ -172,11 +171,6 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID, termInva
             />
           </div>
         </div>
-        {termInvalid && (
-          <p data-testid="td-term-error" className="text-sm text-destructive">
-            {t("investments:timeDeposit.maturityAfterPlacement")}
-          </p>
-        )}
       </div>
 
       <div className="space-y-3 border-t pt-4">

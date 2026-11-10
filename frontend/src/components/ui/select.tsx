@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { FieldError, describedBy, useFieldError } from "@/components/ui/field-error";
 
 // The native-`<select>` counterpart to `Input`, added by #541.
 //
@@ -43,15 +44,21 @@ import { cn } from "@/lib/utils";
 // A caller that genuinely needs a denser control opts out with `max-md:min-h-0`
 // (tailwind-merge lets the callsite win), same escape hatch as `Input`.
 function Select({ className, ...props }: React.ComponentProps<"select">) {
+  const { message, invalid } = useFieldError(props.id);
   return (
-    <select
-      data-slot="select"
-      className={cn(
-        "h-8 max-md:min-h-11 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent bg-[image:var(--select-chevron)] bg-[position:right_0.625rem_center] bg-no-repeat py-1 pl-2.5 pr-8 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
-        className,
-      )}
-      {...props}
-    />
+    <>
+      <select
+        data-slot="select"
+        className={cn(
+          "h-8 max-md:min-h-11 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent bg-[image:var(--select-chevron)] bg-[position:right_0.625rem_center] bg-no-repeat py-1 pl-2.5 pr-8 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+          className,
+        )}
+        {...props}
+        aria-invalid={invalid || props["aria-invalid"]}
+        aria-describedby={describedBy(props["aria-describedby"], props.id, invalid)}
+      />
+      {message && props.id && <FieldError id={props.id}>{message}</FieldError>}
+    </>
   );
 }
 
