@@ -13,6 +13,39 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeRestoreAssetSnapshots = `-- name: CascadeRestoreAssetSnapshots :execrows
+UPDATE asset_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM assets p
+WHERE s.asset_id = $1
+  AND s.asset_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at
+`
+
+type CascadeRestoreAssetSnapshotsParams struct {
+	AssetID     uuid.UUID  `json:"asset_id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeRestoreAssetSnapshots is the child half of a position undo-delete. It
+// restores exactly the snapshots the position delete cascaded: those whose
+// `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+// snapshot the user deleted or replaced earlier carries a different timestamp
+// and stays archived. Runs *before* the parent UPDATE, while the parent is still
+// deleted: the mirror of CascadeSoftDeleteAssetSnapshots.
+func (q *Queries) CascadeRestoreAssetSnapshots(ctx context.Context, arg CascadeRestoreAssetSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeRestoreAssetSnapshots, arg.AssetID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const cascadeSoftDeleteAssetSnapshots = `-- name: CascadeSoftDeleteAssetSnapshots :execrows
 UPDATE asset_snapshots s
 SET deleted_at = now(),
@@ -38,9 +71,10 @@ type CascadeSoftDeleteAssetSnapshotsParams struct {
 // is still live here and this keeps the same `a.deleted_at IS NULL` +
 // household guard as the single-snapshot delete above. `AND s.deleted_at IS
 // NULL` means a snapshot the user already deleted keeps its original timestamp
-// rather than being re-stamped (INV-SOFT-DELETE-01). If an undelete path is
-// ever added it must un-cascade using the parent's `deleted_at` as the
-// discriminator, or it will resurrect children the user deleted by hand.
+// rather than being re-stamped (INV-SOFT-DELETE-01). The position undo
+// un-cascades with CascadeRestoreAssetSnapshots, using the parent's
+// `deleted_at` as the discriminator so it cannot resurrect children the user
+// deleted by hand (INV-SOFT-DELETE-12).
 func (q *Queries) CascadeSoftDeleteAssetSnapshots(ctx context.Context, arg CascadeSoftDeleteAssetSnapshotsParams) (int64, error) {
 	result, err := q.db.Exec(ctx, cascadeSoftDeleteAssetSnapshots, arg.AssetID, arg.HouseholdID, arg.UpdatedBy)
 	if err != nil {
@@ -139,6 +173,43 @@ func (q *Queries) GetAssetForImport(ctx context.Context, arg GetAssetForImportPa
 	row := q.db.QueryRow(ctx, getAssetForImport, arg.ID, arg.HouseholdID)
 	var i GetAssetForImportRow
 	err := row.Scan(&i.DisplayName, &i.NativeCurrency)
+	return i, err
+}
+
+const getAssetSnapshotAnyState = `-- name: GetAssetSnapshotAnyState :one
+SELECT s.id, s.asset_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
+FROM asset_snapshots s
+JOIN assets p ON p.id = s.asset_id
+WHERE s.id = $1
+  AND p.household_id = $2
+`
+
+type GetAssetSnapshotAnyStateParams struct {
+	ID          uuid.UUID `json:"id"`
+	HouseholdID uuid.UUID `json:"household_id"`
+}
+
+// GetAssetSnapshotAnyState reads one snapshot, live or archived, household-scoped
+// through its parent. The undo-replace path needs it to tell "no such row in this
+// household" (not found) from "exists but is no longer live" (conflict).
+func (q *Queries) GetAssetSnapshotAnyState(ctx context.Context, arg GetAssetSnapshotAnyStateParams) (AssetSnapshot, error) {
+	row := q.db.QueryRow(ctx, getAssetSnapshotAnyState, arg.ID, arg.HouseholdID)
+	var i AssetSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.AssetID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Supersedes,
+	)
 	return i, err
 }
 
@@ -540,10 +611,13 @@ type RestoreAssetSnapshotParams struct {
 	HouseholdID uuid.UUID  `json:"household_id"`
 }
 
-// RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Only ever
-// called on the row a close row's `supersedes` names, in the same transaction
-// that soft-deleted that close row — so the partial unique index cannot be
-// violated.
+// RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Two callers
+// share it, for all four groups (the other three have no comment, same query):
+// the close machinery restores the row a close row's `supersedes` names in the
+// transaction that soft-deleted that close row, so the partial unique index
+// cannot be violated there; the Undo endpoints (ADR-0058 §2) call it on a row
+// the user deleted or replaced, where a violation is the "slot was re-filled"
+// answer and the repo maps it to ErrUndoSlotTaken.
 func (q *Queries) RestoreAssetSnapshot(ctx context.Context, arg RestoreAssetSnapshotParams) (int64, error) {
 	result, err := q.db.Exec(ctx, restoreAssetSnapshot, arg.UpdatedBy, arg.ID, arg.HouseholdID)
 	if err != nil {

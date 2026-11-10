@@ -15,6 +15,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
@@ -35,6 +36,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Route("/{id}", func(r chi.Router) {
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
+			r.Post("/undo-delete", httpundo.Delete("undo delete fx rate", "id", "id", h.repository, (*repo.FxRateRepo).UndoDeleteFxRate))
 		})
 	})
 }
@@ -148,3 +150,7 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 		_ = json.NewEncoder(w).Encode(body)
 	}
 }
+
+// repository hands httpundo the repo lazily: Mount must stay safe on a nil
+// *Handlers, so no field is read until a request arrives.
+func (h *Handlers) repository() *repo.FxRateRepo { return h.repo }

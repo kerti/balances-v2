@@ -19,6 +19,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
@@ -73,6 +74,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGet)
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
+			r.Post("/undo-delete", httpundo.Delete("undo delete liability", "id", "id", h.repository, (*repo.LiabilityRepo).UndoDeleteLiability))
 			r.Patch("/lifecycle", h.handleUpdateLifecycle)
 			// Export the full position workbook (Detail + Snapshots) in the
 			// importer's format, so it round-trips back through the snapshot
@@ -83,6 +85,8 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleListSnapshots)
 				r.Patch("/{snapshotID}", h.handleUpdateSnapshot)
 				r.Delete("/{snapshotID}", h.handleDeleteSnapshot)
+				r.Post("/{snapshotID}/undo-delete", httpundo.Delete("undo delete liability snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.LiabilityRepo).UndoDeleteLiabilitySnapshot))
+				r.Post("/{snapshotID}/undo-replace", httpundo.Replace("undo replace liability snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.LiabilityRepo).UndoReplaceLiabilitySnapshot))
 				// Bulk import (M6 side item): download a scoped .xlsx
 				// template, then upload a filled one. Static segments, so no
 				// clash with the /{snapshotID} routes above.
@@ -455,3 +459,7 @@ func parseYearMonth(s string) (time.Time, error) {
 	}
 	return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC), nil
 }
+
+// repository hands httpundo the repo lazily: Mount must stay safe on a nil
+// *Handlers, so no field is read until a request arrives.
+func (h *Handlers) repository() *repo.LiabilityRepo { return h.repo }

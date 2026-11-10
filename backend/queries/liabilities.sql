@@ -59,3 +59,12 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreLiability undoes a position delete (ADR-0058 §2); its cascaded
+-- snapshots are restored first, in the same transaction.
+-- name: RestoreLiability :execrows
+UPDATE liabilities
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL;

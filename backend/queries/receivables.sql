@@ -53,3 +53,12 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreReceivable undoes a position delete (ADR-0058 §2); its cascaded
+-- snapshots are restored first, in the same transaction.
+-- name: RestoreReceivable :execrows
+UPDATE receivables
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL;

@@ -72,6 +72,8 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"InvalidDepositTerm", errs.ErrInvalidDepositTerm, http.StatusBadRequest, CodeInvalidDepositTerm},
 		{"OutsideDepositTerm", errs.ErrOutsideDepositTerm, http.StatusBadRequest, CodeOutsideDepositTerm},
 		{"SnapshotMonthExists", errs.ErrSnapshotMonthExists, http.StatusConflict, CodeSnapshotMonthExists},
+		{"UndoSlotTaken", errs.ErrUndoSlotTaken, http.StatusConflict, CodeUndoSlotTaken},
+		{"UndoReplacementChanged", errs.ErrUndoReplacementChanged, http.StatusConflict, CodeUndoReplacementChanged},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

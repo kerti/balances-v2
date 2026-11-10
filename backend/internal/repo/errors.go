@@ -30,4 +30,6 @@ var (
 	ErrInvalidDepositTerm       = errs.ErrInvalidDepositTerm
 	ErrOutsideDepositTerm       = errs.ErrOutsideDepositTerm
 	ErrSnapshotMonthExists      = errs.ErrSnapshotMonthExists
+	ErrUndoSlotTaken            = errs.ErrUndoSlotTaken
+	ErrUndoReplacementChanged   = errs.ErrUndoReplacementChanged
 )

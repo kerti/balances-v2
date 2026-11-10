@@ -42,3 +42,12 @@ SELECT * FROM inflation_rates
 WHERE household_id = sqlc.arg(household_id)
   AND (deleted_at IS NULL OR sqlc.arg(include_deleted)::bool)
 ORDER BY year_month, id;
+
+-- RestoreInflationRate undoes a delete (ADR-0058 §2). A unique_violation on the
+-- live (household, year_month) index means the rate was re-entered meanwhile.
+-- name: RestoreInflationRate :execrows
+UPDATE inflation_rates
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL;

@@ -161,6 +161,30 @@ func (q *Queries) ListReceivablesByHousehold(ctx context.Context, householdID uu
 	return items, nil
 }
 
+const restoreReceivable = `-- name: RestoreReceivable :execrows
+UPDATE receivables
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL
+`
+
+type RestoreReceivableParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// RestoreReceivable undoes a position delete (ADR-0058 §2); its cascaded
+// snapshots are restored first, in the same transaction.
+func (q *Queries) RestoreReceivable(ctx context.Context, arg RestoreReceivableParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreReceivable, arg.ID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const softDeleteReceivable = `-- name: SoftDeleteReceivable :execrows
 UPDATE receivables
 SET deleted_at = now(),

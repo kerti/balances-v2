@@ -124,4 +124,18 @@ var (
 	// snapshot tables. The caller should edit or delete the existing snapshot
 	// instead of creating a second one. Mapped to 409 (#395).
 	ErrSnapshotMonthExists = errors.New("repo: a snapshot already exists for that month")
+
+	// ErrUndoSlotTaken is returned when an Undo would restore a soft-deleted row
+	// into a slot that something else has filled in the meantime: the same
+	// snapshot month, FX-rate month+currency or inflation-rate month.
+	// The live partial unique index (WHERE deleted_at IS NULL) raises it; the
+	// restore changes nothing. Mapped to 409 (ADR-0058 §2).
+	ErrUndoSlotTaken = errors.New("repo: undo target's slot has been taken")
+
+	// ErrUndoReplacementChanged is returned by a snapshot undo-replace when the
+	// row that replaced the archived one is no longer the live row for that slot
+	// (edited again, deleted, or not the original's slot at all). Restoring over
+	// it would discard a later change, so nothing is touched. Mapped to 409
+	// (ADR-0058 §2).
+	ErrUndoReplacementChanged = errors.New("repo: undo target's replacement has changed")
 )

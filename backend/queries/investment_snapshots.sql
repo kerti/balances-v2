@@ -280,3 +280,31 @@ WHERE s.id = sqlc.arg('id')
   AND i.household_id = sqlc.arg('household_id')::uuid
   AND i.deleted_at IS NULL
   AND s.deleted_at IS NOT NULL;
+
+-- GetInvestmentSnapshotAnyState reads one snapshot, live or archived, household-scoped
+-- through its parent. The undo-replace path needs it to tell "no such row in this
+-- household" (not found) from "exists but is no longer live" (conflict).
+-- name: GetInvestmentSnapshotAnyState :one
+SELECT s.*
+FROM investment_snapshots s
+JOIN investments p ON p.id = s.investment_id
+WHERE s.id = $1
+  AND p.household_id = $2;
+
+-- CascadeRestoreInvestmentSnapshots is the child half of a position undo-delete. It
+-- restores exactly the snapshots the position delete cascaded: those whose
+-- `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+-- snapshot the user deleted or replaced earlier carries a different timestamp
+-- and stays archived. Runs *before* the parent UPDATE, while the parent is still
+-- deleted: the mirror of CascadeSoftDeleteInvestmentSnapshots.
+-- name: CascadeRestoreInvestmentSnapshots :execrows
+UPDATE investment_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments p
+WHERE s.investment_id = $1
+  AND s.investment_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at;

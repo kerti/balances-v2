@@ -63,6 +63,8 @@
     "HOUSEHOLD_NAME_MISMATCH": "That doesn't match your household's name. Please type it exactly to confirm.",
     "ERASURE_DISABLED_DEMO": "Deleting a household is turned off on the public demo.",
     "CROSS_SITE_REQUEST_BLOCKED": "This request was blocked for your safety. Reload the page and try again.",
-    "INFLATION_RATE_EXISTS": "An inflation rate already exists for that month."
+    "INFLATION_RATE_EXISTS": "An inflation rate already exists for that month.",
+    "UNDO_SLOT_TAKEN": "Can't undo: something else now fills that spot (the same month or rate). Remove or edit it first.",
+    "UNDO_REPLACEMENT_CHANGED": "Can't undo: this value was changed again after it was replaced."
   }
 }

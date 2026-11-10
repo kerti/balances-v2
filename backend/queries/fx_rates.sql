@@ -36,3 +36,12 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreFxRate undoes a delete (ADR-0058 §2). A unique_violation on the live
+-- (household, year_month, currency) index means the rate was re-entered meanwhile.
+-- name: RestoreFxRate :execrows
+UPDATE fx_rates
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL;
