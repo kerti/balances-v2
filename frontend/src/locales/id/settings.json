@@ -1,5 +1,6 @@
 {
   "title": "Pengaturan",
+  "backToSettings": "← Pengaturan",
   "subtitle": "Nama dan preferensi Anda, pengaturan rumah tangga, anggota, dan cadangan.",
   "sections": {
     "profile": "Profil",
@@ -44,7 +45,7 @@
     "multiTitle": "Multi-mata-uang",
     "multiDescription": "Simpan posisi dalam mata uang lain dan masukkan kurs bulanan untuk masing-masing.",
     "multiLabel": "Aktif",
-    "manageFx": "Kelola kurs →"
+    "manageFx": "Kelola kurs"
   },
   "fx": {
     "title": "Kurs",
@@ -67,7 +68,7 @@
     "rate": "% Tahunan",
     "addRate": "Tambah laju",
     "empty": "Belum ada angka bulanan — asumsi laju yang dipakai.",
-    "manageRates": "Kelola laju bulanan →"
+    "manageRates": "Kelola laju bulanan"
   },
   "inflationRatesPage": {
     "title": "Laju inflasi",

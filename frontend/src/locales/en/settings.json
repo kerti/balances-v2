@@ -1,5 +1,6 @@
 {
   "title": "Settings",
+  "backToSettings": "← Settings",
   "subtitle": "Your name and preferences, household-wide settings, members, and backups.",
   "sections": {
     "profile": "Profile",
@@ -44,7 +45,7 @@
     "multiTitle": "Multi-currency",
     "multiDescription": "Hold positions in other currencies and enter a monthly exchange rate for each.",
     "multiLabel": "Enabled",
-    "manageFx": "Manage exchange rates →"
+    "manageFx": "Manage exchange rates"
   },
   "fx": {
     "title": "Exchange rates",
@@ -67,7 +68,7 @@
     "rate": "Annual %",
     "addRate": "Add rate",
     "empty": "No monthly figures entered — the assumed rate is used.",
-    "manageRates": "Manage monthly rates →"
+    "manageRates": "Manage monthly rates"
   },
   "inflationRatesPage": {
     "title": "Inflation rates",

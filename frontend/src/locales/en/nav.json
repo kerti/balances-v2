@@ -17,8 +17,6 @@
   "income": "Income",
   "tags": "Tags",
   "settings": "Settings",
-  "fxRates": "Exchange rates",
-  "inflationRates": "Inflation rates",
   "footer": {
     "deploy": {
       "preview": "Preview",

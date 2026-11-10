@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/common/PageHeader";
 import { Link } from "react-router";
 import { useSession } from "@/hooks/useSession";
 import { routes } from "@/lib/routes";
@@ -18,10 +19,12 @@ export function SettingsFxRatesScreen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("fx.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("fx.description")}</p>
-      </div>
+      <PageHeader
+        variant="sub-page"
+        back={{ label: t("backToSettings"), to: routes.settings }}
+        title={t("fx.title")}
+        subtitle={t("fx.description")}
+      />
 
       {me.multi_currency_enabled ? (
         <FxRatesCard />

@@ -1,6 +1,8 @@
 import * as React from "react";
 
 const MOBILE_BREAKPOINT = 768;
+// The shell (sidebar docking) has its own boundary, ADR-0050 amendment 2026-11-09.
+const SHELL_BREAKPOINT = 1024;
 
 // useSyncExternalStore instead of the shadcn default (useEffect + setState):
 // a media query is exactly an external store, and this keeps the repo's
@@ -14,20 +16,32 @@ const MOBILE_BREAKPOINT = 768;
 // fires on a viewport change, so it's the reliable fallback; getSnapshot
 // returns a boolean, so re-renders only happen when the breakpoint actually
 // flips, not on every resize tick.
-export function useIsMobile() {
-  const subscribe = React.useCallback((onStoreChange: () => void) => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    mql.addEventListener("change", onStoreChange);
-    window.addEventListener("resize", onStoreChange);
-    return () => {
-      mql.removeEventListener("change", onStoreChange);
-      window.removeEventListener("resize", onStoreChange);
-    };
-  }, []);
+function useIsBelow(breakpoint: number) {
+  const subscribe = React.useCallback(
+    (onStoreChange: () => void) => {
+      const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+      mql.addEventListener("change", onStoreChange);
+      window.addEventListener("resize", onStoreChange);
+      return () => {
+        mql.removeEventListener("change", onStoreChange);
+        window.removeEventListener("resize", onStoreChange);
+      };
+    },
+    [breakpoint],
+  );
 
   return React.useSyncExternalStore(
     subscribe,
-    () => window.innerWidth < MOBILE_BREAKPOINT,
+    () => window.innerWidth < breakpoint,
     () => false,
   );
+}
+
+export function useIsMobile() {
+  return useIsBelow(MOBILE_BREAKPOINT);
+}
+
+// True when the sidebar is off-canvas behind the ☰ trigger (< 1024px).
+export function useIsShellCompact() {
+  return useIsBelow(SHELL_BREAKPOINT);
 }

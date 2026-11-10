@@ -60,14 +60,7 @@ const NAV: Section[] = [
   },
   { labelKey: "income", to: routes.income },
   { labelKey: "tags", to: routes.tags },
-  {
-    labelKey: "settings",
-    to: routes.settings,
-    children: [
-      { labelKey: "fxRates", to: routes.settingsFxRates },
-      { labelKey: "inflationRates", to: routes.settingsInflationRates },
-    ],
-  },
+  { labelKey: "settings", to: routes.settings },
 ];
 
 // Uses shadcn's default text-sm for both main and sub items so the menu reads at
@@ -92,9 +85,9 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        {/* Desktop only — on phones the top header already shows the logo, so
+        {/* Docked only — below 1024px the top header already shows the logo, so
             the drawer would double it up (issue #123). */}
-        <div className="hidden px-2 py-1 md:block">
+        <div className="hidden px-2 py-1 lg:block">
           <AppLogo className="w-full h-auto" />
         </div>
       </SidebarHeader>

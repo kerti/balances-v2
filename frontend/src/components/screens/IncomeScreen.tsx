@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -138,16 +139,29 @@ export function IncomeScreen() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("income:listTitle")}</h1>
-          <p className="text-sm text-muted-foreground">{t("income:listSubtitle")}</p>
-        </div>
-        {/* Desktop: the primary action lives top-right. On mobile it moves onto
-            the filter toolbar as a compact "New" (see below) to reclaim the
-            vertical space under the page copy. */}
-        {!isMobile && <CreateIncomeDialog />}
-      </div>
+      <PageHeader
+        variant="hub"
+        title={t("income:listTitle")}
+        subtitle={t("income:listSubtitle")}
+        actions={
+          <>
+            {data && data.length > 0 && effectiveMonth && (
+              <MonthPickerPopover
+                months={availableMonths}
+                selected={effectiveMonth}
+                onSelect={(ym) => {
+                  setSelectedMonth(ym);
+                  setPage(1);
+                }}
+              />
+            )}
+            {/* Desktop: the primary action lives top-right. On mobile it moves onto
+                the filter toolbar as a compact "New" (see below) to reclaim the
+                vertical space under the page copy. */}
+            {!isMobile && <CreateIncomeDialog />}
+          </>
+        }
+      />
 
       {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
@@ -172,17 +186,6 @@ export function IncomeScreen() {
       {data && data.length > 0 && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            {effectiveMonth && (
-              <MonthPickerPopover
-                months={availableMonths}
-                selected={effectiveMonth}
-                onSelect={(ym) => {
-                  setSelectedMonth(ym);
-                  setPage(1);
-                }}
-              />
-            )}
-
             <div className="flex gap-2" role="group" aria-label={t("income:filter.ariaLabel")}>
               {FILTER_VALUES.map((value) => (
                 <Button

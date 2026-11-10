@@ -56,9 +56,9 @@ export function AppShell() {
         <OfflineBanner />
         <header className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-border bg-background px-4 py-3 md:px-6">
           <div className="flex items-center gap-2">
-            {/* Drawer toggle: phones only — the sidebar is always visible on desktop. */}
-            <SidebarTrigger className="md:hidden" />
-            <div className="md:hidden">
+            {/* Drawer toggle: below 1024px — the sidebar docks from there. */}
+            <SidebarTrigger className="lg:hidden" />
+            <div className="lg:hidden">
               <AppLogo />
             </div>
           </div>

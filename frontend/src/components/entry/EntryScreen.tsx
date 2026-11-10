@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useNavigate, useSearchParams } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Wallet } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { Label } from "@/components/ui/label";
@@ -227,20 +228,17 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
 
   return (
     <div className="mx-auto max-w-4xl p-4">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate(config.backRoute)}
-        className="-ml-2 mb-1"
-        data-testid={`${tid}-entry-back`}
-      >
-        {t("common:actions.back")}
-      </Button>
-      <Card>
-        <CardHeader>
-          <CardTitle>{t(`${copy}.title`)}</CardTitle>
-          <CardDescription>{t(`${copy}.description`)}</CardDescription>
-        </CardHeader>
+      <PageHeader
+        variant="sub-page"
+        back={{
+          label: t("common:actions.back"),
+          onClick: () => navigate(config.backRoute),
+          testId: `${tid}-entry-back`,
+        }}
+        title={t(`${copy}.title`)}
+        subtitle={t(`${copy}.description`)}
+      />
+      <Card className="mt-4">
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
             {/* items-end keeps both inputs on one line even when a label wraps

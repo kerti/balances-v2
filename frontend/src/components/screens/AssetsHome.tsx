@@ -14,6 +14,7 @@
 // include terminated positions historically (capped at terminated_at), via
 // the shared `aggregateGroupHome` helper.
 
+import { PageHeader } from "@/components/common/PageHeader";
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { CalendarPlus } from "lucide-react";
@@ -106,18 +107,19 @@ export function AssetsHome() {
 
   return (
     <div className="space-y-6" data-testid="assets-home">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("common:home.assets.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("assets:home.subtitle")}</p>
-        </div>
-        <Button asChild size="sm" className="h-11 md:h-8" data-testid="assets-enter-month">
-          <Link to={routes.assetsEnter}>
-            <CalendarPlus className="mr-1 size-4" />
-            {t("common:bulkEntry.trigger")}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        variant="hub"
+        title={t("common:home.assets.title")}
+        subtitle={t("assets:home.subtitle")}
+        actions={
+          <Button asChild data-testid="assets-enter-month">
+            <Link to={routes.assetsEnter}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.trigger")}
+            </Link>
+          </Button>
+        }
+      />
 
       {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 

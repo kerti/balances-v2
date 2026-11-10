@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -194,22 +195,24 @@ function DashboardHeader({
 }) {
   const { t } = useTranslation("dashboard");
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-      {/* Navigation + export only. The second-currency toggle lives on the
-          headline card (below), next to the amount it controls — not here
-          among the month nav / PDF actions. The PDF button is a fixed-width
-          icon + "PDF", so month-nav + export stay on one inline row at phone
-          width in every locale (no label-length-dependent wrap). */}
-      <div className="flex flex-wrap items-center gap-2">
-        <MonthPickerPopover
-          months={reports.map((r) => r.year_month)}
-          selected={selected.year_month}
-          onSelect={onSelect}
-        />
-        <ReportPdfButton selected={selected} />
-      </div>
-    </div>
+    // Navigation + export only. The second-currency toggle lives on the
+    // headline card (below), next to the amount it controls — not here among the
+    // month nav / PDF actions. The PDF button is a fixed-width icon + "PDF", so
+    // month-nav + export stay on one inline row at phone width in every locale.
+    <PageHeader
+      variant="hub"
+      title={t("title")}
+      actions={
+        <>
+          <MonthPickerPopover
+            months={reports.map((r) => r.year_month)}
+            selected={selected.year_month}
+            onSelect={onSelect}
+          />
+          <ReportPdfButton selected={selected} />
+        </>
+      }
+    />
   );
 }
 

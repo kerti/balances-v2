@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useTranslation } from "react-i18next";
 import { TagsCard } from "@/components/common/TagsCard";
 import { TagBreakdownSection } from "@/components/tags/TagBreakdownSection";
@@ -41,10 +42,7 @@ export function TagsScreen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("report.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("report.subtitle")}</p>
-      </div>
+      <PageHeader variant="hub" title={t("report.title")} subtitle={t("report.subtitle")} />
 
       {!isLoading && breakdowns.length === 0 && (
         <p className="text-sm text-muted-foreground" data-testid="tags-empty">

@@ -13,6 +13,7 @@
 // + pie are active-only; the time + stack series include terminated positions
 // historically (capped at terminated_at), via the shared `aggregateGroupHome`.
 
+import { PageHeader } from "@/components/common/PageHeader";
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { CalendarPlus } from "lucide-react";
@@ -81,20 +82,19 @@ export function LiabilitiesHome() {
 
   return (
     <div className="space-y-6" data-testid="liabilities-home">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("common:home.liabilities.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t("liabilities:home.subtitle")}</p>
-        </div>
-        <Button asChild size="sm" className="h-11 md:h-8" data-testid="liabilities-enter-month">
-          <Link to={routes.liabilitiesEnter}>
-            <CalendarPlus className="mr-1 size-4" />
-            {t("common:bulkEntry.trigger")}
-          </Link>
-        </Button>
-      </div>
+      <PageHeader
+        variant="hub"
+        title={t("common:home.liabilities.title")}
+        subtitle={t("liabilities:home.subtitle")}
+        actions={
+          <Button asChild data-testid="liabilities-enter-month">
+            <Link to={routes.liabilitiesEnter}>
+              <CalendarPlus className="mr-1 size-4" />
+              {t("common:bulkEntry.trigger")}
+            </Link>
+          </Button>
+        }
+      />
 
       {liabilities.isPending && (
         <p className="text-sm text-muted-foreground">{t("common:loading")}</p>
