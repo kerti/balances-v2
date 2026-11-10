@@ -35,7 +35,9 @@ type bulkInvestmentSnapshotReq struct {
 }
 
 type bulkInvestmentSnapshotResp struct {
-	Written int `json:"written"`
+	Written   int `json:"written"`   // rows that created or replaced a snapshot
+	Replaced  int `json:"replaced"`  // subset of written that archived an earlier value
+	Unchanged int `json:"unchanged"` // rows identical to the live snapshot, not written
 }
 
 // bulkInvestmentRowError reports one rejected row, keyed by investment so the UI
@@ -172,7 +174,7 @@ func (h *Handlers) handleBulkCreateInvestmentSnapshots(w http.ResponseWriter, r 
 		}
 	}
 
-	written, rowErrs, err := h.repo.BulkUpsertInvestmentSnapshots(r.Context(), repo.BulkUpsertInvestmentSnapshotsParams{
+	res, rowErrs, err := h.repo.BulkUpsertInvestmentSnapshots(r.Context(), repo.BulkUpsertInvestmentSnapshotsParams{
 		YearMonth: ym,
 		AsOfDate:  asOf,
 		Rows:      rows,
@@ -189,7 +191,7 @@ func (h *Handlers) handleBulkCreateInvestmentSnapshots(w http.ResponseWriter, r 
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
-	writeJSON(w, http.StatusOK, bulkInvestmentSnapshotResp{Written: written})
+	writeJSON(w, http.StatusOK, bulkInvestmentSnapshotResp{Written: res.Written, Replaced: res.Replaced, Unchanged: res.Unchanged})
 }
 
 // ----- bulk monthly-entry, accrued shape (ADR-0046, #424) --------------------
@@ -297,7 +299,7 @@ func (h *Handlers) handleInvestmentAccruedEntryList(w http.ResponseWriter, r *ht
 
 // handleBulkCreateInvestmentAccruedSnapshots writes an accrued bulk
 // monthly-entry batch for the Investment group — atomically, dirty-rows-only,
-// upserting on (investment_id, year_month) with the total value stored as
+// replacing an existing month (ADR-0058) with the total value stored as
 // `amount` and accrued_interest set (quantity/price null).
 func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWriter, r *http.Request) {
 	var req bulkInvestmentAccruedSnapshotReq
@@ -349,7 +351,7 @@ func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWri
 		}
 	}
 
-	written, rowErrs, err := h.repo.BulkUpsertInvestmentAccruedSnapshots(r.Context(), repo.BulkUpsertInvestmentAccruedSnapshotsParams{
+	res, rowErrs, err := h.repo.BulkUpsertInvestmentAccruedSnapshots(r.Context(), repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 		YearMonth: ym,
 		AsOfDate:  asOf,
 		Rows:      rows,
@@ -366,5 +368,5 @@ func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWri
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
-	writeJSON(w, http.StatusOK, bulkInvestmentSnapshotResp{Written: written})
+	writeJSON(w, http.StatusOK, bulkInvestmentSnapshotResp{Written: res.Written, Replaced: res.Replaced, Unchanged: res.Unchanged})
 }

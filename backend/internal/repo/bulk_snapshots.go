@@ -117,16 +117,18 @@ func (r *AssetRepo) ListAssetEntryRows(ctx context.Context, yearMonth time.Time)
 // transaction — all-or-nothing (ADR-0046). Every row is validated for
 // month-aware eligibility first; if any row is ineligible the batch writes
 // nothing and the offending rows are returned so the caller can surface a
-// per-row error. Otherwise each row upserts on (asset_id, year_month), so
-// re-entering a month edits its snapshot rather than inserting a duplicate.
-// Returns the number of rows written and any per-row rejections.
-func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAssetSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+// per-row error. Otherwise each row is written through the replace path (ADR-0058 §1): a
+// month with no live snapshot is inserted, one with different values has its
+// live row archived and the new values inserted, and one with identical values
+// is skipped. Returns the written/replaced/unchanged tally and any per-row
+// rejections.
+func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAssetSnapshotsParams) (BulkResult, []BulkSnapshotRowError, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
-		return 0, nil, err
+		return BulkResult{}, nil, err
 	}
 	if len(p.Rows) == 0 {
-		return 0, nil, nil
+		return BulkResult{}, nil, nil
 	}
 
 	eligible, err := r.q.ListEligibleAssetIDsForMonth(ctx, db.ListEligibleAssetIDsForMonthParams{
@@ -134,7 +136,7 @@ func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAs
 		YearMonth:   p.YearMonth,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk asset snapshots: list eligible: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk asset snapshots: list eligible: %w", err)
 	}
 	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
 	for _, id := range eligible {
@@ -148,18 +150,19 @@ func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAs
 		}
 	}
 	if len(rowErrs) > 0 {
-		return 0, rowErrs, nil
+		return BulkResult{}, rowErrs, nil
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk asset snapshots: begin tx: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk asset snapshots: begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var res BulkResult
 	for _, row := range p.Rows {
-		if _, err := qtx.UpsertAssetSnapshot(ctx, db.UpsertAssetSnapshotParams{
+		_, _, outcome, err := replaceAssetSnapshot(ctx, qtx, user, db.CreateAssetSnapshotParams{
 			ID:          row.AssetID,
 			YearMonth:   p.YearMonth,
 			Amount:      row.Amount,
@@ -168,15 +171,17 @@ func (r *AssetRepo) BulkUpsertAssetSnapshots(ctx context.Context, p BulkUpsertAs
 			Description: nil,
 			CreatedBy:   &user,
 			HouseholdID: hid,
-		}); err != nil {
-			return 0, nil, fmt.Errorf("bulk asset snapshots: upsert %s: %w", row.AssetID, err)
+		})
+		if err != nil {
+			return BulkResult{}, nil, err
 		}
+		res.add(outcome)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("bulk asset snapshots: commit: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk asset snapshots: commit: %w", err)
 	}
-	return len(p.Rows), nil, nil
+	return res, nil, nil
 }
 
 // ----- Liability bulk monthly-entry (ADR-0046) -----------------------------
@@ -277,16 +282,16 @@ func (r *LiabilityRepo) ListLiabilityEntryRows(ctx context.Context, yearMonth ti
 // BulkUpsertLiabilitySnapshots writes a bulk monthly-entry batch in a single
 // transaction — all-or-nothing (ADR-0046). Every row is validated for
 // month-aware eligibility first; if any row is ineligible the batch writes
-// nothing and the offending rows are returned. Otherwise each row upserts on
-// (liability_id, year_month). Returns the number of rows written and any
-// per-row rejections.
-func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p BulkUpsertLiabilitySnapshotsParams) (int, []BulkSnapshotRowError, error) {
+// nothing and the offending rows are returned. Otherwise each row is
+// written through the replace path (ADR-0058 §1), as for assets. Returns the
+// written/replaced/unchanged tally and any per-row rejections.
+func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p BulkUpsertLiabilitySnapshotsParams) (BulkResult, []BulkSnapshotRowError, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
-		return 0, nil, err
+		return BulkResult{}, nil, err
 	}
 	if len(p.Rows) == 0 {
-		return 0, nil, nil
+		return BulkResult{}, nil, nil
 	}
 
 	eligible, err := r.q.ListEligibleLiabilityIDsForMonth(ctx, db.ListEligibleLiabilityIDsForMonthParams{
@@ -294,7 +299,7 @@ func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p Bulk
 		YearMonth:   p.YearMonth,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk liability snapshots: list eligible: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk liability snapshots: list eligible: %w", err)
 	}
 	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
 	for _, id := range eligible {
@@ -308,18 +313,19 @@ func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p Bulk
 		}
 	}
 	if len(rowErrs) > 0 {
-		return 0, rowErrs, nil
+		return BulkResult{}, rowErrs, nil
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk liability snapshots: begin tx: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk liability snapshots: begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var res BulkResult
 	for _, row := range p.Rows {
-		if _, err := qtx.UpsertLiabilitySnapshot(ctx, db.UpsertLiabilitySnapshotParams{
+		_, _, outcome, err := replaceLiabilitySnapshot(ctx, qtx, user, db.CreateLiabilitySnapshotParams{
 			ID:          row.LiabilityID,
 			YearMonth:   p.YearMonth,
 			Amount:      row.Amount,
@@ -328,15 +334,17 @@ func (r *LiabilityRepo) BulkUpsertLiabilitySnapshots(ctx context.Context, p Bulk
 			Description: nil,
 			CreatedBy:   &user,
 			HouseholdID: hid,
-		}); err != nil {
-			return 0, nil, fmt.Errorf("bulk liability snapshots: upsert %s: %w", row.LiabilityID, err)
+		})
+		if err != nil {
+			return BulkResult{}, nil, err
 		}
+		res.add(outcome)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("bulk liability snapshots: commit: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk liability snapshots: commit: %w", err)
 	}
-	return len(p.Rows), nil, nil
+	return res, nil, nil
 }
 
 // ----- Receivable bulk monthly-entry (ADR-0046) ----------------------------
@@ -433,16 +441,16 @@ func (r *ReceivableRepo) ListReceivableEntryRows(ctx context.Context, yearMonth 
 // BulkUpsertReceivableSnapshots writes a bulk monthly-entry batch in a single
 // transaction — all-or-nothing (ADR-0046). Every row is validated for
 // month-aware eligibility first; if any row is ineligible the batch writes
-// nothing and the offending rows are returned. Otherwise each row upserts on
-// (receivable_id, year_month). Returns the number of rows written and any
-// per-row rejections.
-func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p BulkUpsertReceivableSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+// nothing and the offending rows are returned. Otherwise each row is
+// written through the replace path (ADR-0058 §1), as for assets. Returns the
+// written/replaced/unchanged tally and any per-row rejections.
+func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p BulkUpsertReceivableSnapshotsParams) (BulkResult, []BulkSnapshotRowError, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
-		return 0, nil, err
+		return BulkResult{}, nil, err
 	}
 	if len(p.Rows) == 0 {
-		return 0, nil, nil
+		return BulkResult{}, nil, nil
 	}
 
 	eligible, err := r.q.ListEligibleReceivableIDsForMonth(ctx, db.ListEligibleReceivableIDsForMonthParams{
@@ -450,7 +458,7 @@ func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p Bu
 		YearMonth:   p.YearMonth,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk receivable snapshots: list eligible: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk receivable snapshots: list eligible: %w", err)
 	}
 	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
 	for _, id := range eligible {
@@ -464,18 +472,19 @@ func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p Bu
 		}
 	}
 	if len(rowErrs) > 0 {
-		return 0, rowErrs, nil
+		return BulkResult{}, rowErrs, nil
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk receivable snapshots: begin tx: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk receivable snapshots: begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var res BulkResult
 	for _, row := range p.Rows {
-		if _, err := qtx.UpsertReceivableSnapshot(ctx, db.UpsertReceivableSnapshotParams{
+		_, _, outcome, err := replaceReceivableSnapshot(ctx, qtx, user, db.CreateReceivableSnapshotParams{
 			ID:          row.ReceivableID,
 			YearMonth:   p.YearMonth,
 			Amount:      row.Amount,
@@ -484,15 +493,17 @@ func (r *ReceivableRepo) BulkUpsertReceivableSnapshots(ctx context.Context, p Bu
 			Description: nil,
 			CreatedBy:   &user,
 			HouseholdID: hid,
-		}); err != nil {
-			return 0, nil, fmt.Errorf("bulk receivable snapshots: upsert %s: %w", row.ReceivableID, err)
+		})
+		if err != nil {
+			return BulkResult{}, nil, err
 		}
+		res.add(outcome)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("bulk receivable snapshots: commit: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk receivable snapshots: commit: %w", err)
 	}
-	return len(p.Rows), nil, nil
+	return res, nil, nil
 }
 
 // ----- Investment bulk monthly-entry, qty×price shape (ADR-0046, #423) -------
@@ -603,17 +614,17 @@ func (r *InvestmentRepo) ListInvestmentEntryRows(ctx context.Context, yearMonth 
 // month-aware eligibility (owned, not deleted, still within its termination
 // bound, and one of the three qty×price subtypes) before any write; if any row
 // is ineligible the batch writes nothing and the offending rows are returned.
-// Otherwise each row upserts on (investment_id, year_month) with amount derived
-// as quantity × price_per_unit and accrued_interest null (the shape CHECK's
-// qty×price branch). Returns the number of rows written and any per-row
-// rejections.
-func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p BulkUpsertInvestmentSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+// Otherwise each row goes through the replace path (ADR-0058 §1) with amount
+// derived as quantity × price_per_unit and accrued_interest null (the shape
+// CHECK's qty×price branch). Returns the written/replaced/unchanged tally and
+// any per-row rejections.
+func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p BulkUpsertInvestmentSnapshotsParams) (BulkResult, []BulkSnapshotRowError, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
-		return 0, nil, err
+		return BulkResult{}, nil, err
 	}
 	if len(p.Rows) == 0 {
-		return 0, nil, nil
+		return BulkResult{}, nil, nil
 	}
 
 	eligible, err := r.q.ListEligibleQtyPriceInvestmentIDsForMonth(ctx, db.ListEligibleQtyPriceInvestmentIDsForMonthParams{
@@ -621,7 +632,7 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 		YearMonth:   p.YearMonth,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk investment snapshots: list eligible: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk investment snapshots: list eligible: %w", err)
 	}
 	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
 	for _, id := range eligible {
@@ -635,21 +646,22 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 		}
 	}
 	if len(rowErrs) > 0 {
-		return 0, rowErrs, nil
+		return BulkResult{}, rowErrs, nil
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk investment snapshots: begin tx: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk investment snapshots: begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var res BulkResult
 	for _, row := range p.Rows {
 		qty := row.Quantity
 		price := row.PricePerUnit
 		amount := qty.Mul(price)
-		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
+		_, _, outcome, err := replaceInvestmentSnapshot(ctx, qtx, user, db.CreateInvestmentSnapshotParams{
 			ID:              row.InvestmentID,
 			YearMonth:       p.YearMonth,
 			Amount:          amount,
@@ -661,15 +673,17 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 			Description:     nil,
 			CreatedBy:       &user,
 			HouseholdID:     hid,
-		}); err != nil {
-			return 0, nil, fmt.Errorf("bulk investment snapshots: upsert %s: %w", row.InvestmentID, err)
+		})
+		if err != nil {
+			return BulkResult{}, nil, err
 		}
+		res.add(outcome)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("bulk investment snapshots: commit: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk investment snapshots: commit: %w", err)
 	}
-	return len(p.Rows), nil, nil
+	return res, nil, nil
 }
 
 // ----- Investment bulk monthly-entry, accrued shape (ADR-0046, #424) ----------
@@ -787,17 +801,17 @@ func (r *InvestmentRepo) ListInvestmentAccruedEntryRows(ctx context.Context, yea
 // validated for month-aware eligibility (owned, not deleted, still within its
 // termination bound, and one of the two accrued subtypes) before any write; if
 // any row is ineligible the batch writes nothing and the offending rows are
-// returned. Otherwise each row upserts on (investment_id, year_month) with the
+// returned. Otherwise each row goes through the replace path (ADR-0058 §1) with the
 // total value stored as `amount` and accrued_interest set (quantity/price null —
-// the shape CHECK's accrued branch). Returns the number of rows written and any
-// per-row rejections.
-func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Context, p BulkUpsertInvestmentAccruedSnapshotsParams) (int, []BulkSnapshotRowError, error) {
+// the shape CHECK's accrued branch). Returns the written/replaced/unchanged
+// tally and any per-row rejections.
+func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Context, p BulkUpsertInvestmentAccruedSnapshotsParams) (BulkResult, []BulkSnapshotRowError, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
-		return 0, nil, err
+		return BulkResult{}, nil, err
 	}
 	if len(p.Rows) == 0 {
-		return 0, nil, nil
+		return BulkResult{}, nil, nil
 	}
 
 	eligible, err := r.q.ListEligibleAccruedInvestmentIDsForMonth(ctx, db.ListEligibleAccruedInvestmentIDsForMonthParams{
@@ -805,7 +819,7 @@ func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Contex
 		YearMonth:   p.YearMonth,
 	})
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk accrued snapshots: list eligible: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk accrued snapshots: list eligible: %w", err)
 	}
 	eligibleSet := make(map[uuid.UUID]struct{}, len(eligible))
 	for _, id := range eligible {
@@ -819,20 +833,21 @@ func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Contex
 		}
 	}
 	if len(rowErrs) > 0 {
-		return 0, rowErrs, nil
+		return BulkResult{}, rowErrs, nil
 	}
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return 0, nil, fmt.Errorf("bulk accrued snapshots: begin tx: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk accrued snapshots: begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var res BulkResult
 	for _, row := range p.Rows {
 		amount := row.Amount
 		accrued := row.AccruedInterest
-		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
+		_, _, outcome, err := replaceInvestmentSnapshot(ctx, qtx, user, db.CreateInvestmentSnapshotParams{
 			ID:              row.InvestmentID,
 			YearMonth:       p.YearMonth,
 			Amount:          amount,
@@ -844,13 +859,15 @@ func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Contex
 			Description:     nil,
 			CreatedBy:       &user,
 			HouseholdID:     hid,
-		}); err != nil {
-			return 0, nil, fmt.Errorf("bulk accrued snapshots: upsert %s: %w", row.InvestmentID, err)
+		})
+		if err != nil {
+			return BulkResult{}, nil, err
 		}
+		res.add(outcome)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("bulk accrued snapshots: commit: %w", err)
+		return BulkResult{}, nil, fmt.Errorf("bulk accrued snapshots: commit: %w", err)
 	}
-	return len(p.Rows), nil, nil
+	return res, nil, nil
 }

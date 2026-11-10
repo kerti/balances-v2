@@ -30,6 +30,11 @@ var (
 
 func di(n int64) decimal.Decimal { return decimal.NewFromInt(n) }
 
+// written adapts a bulk save to its row count, for tests that only assert how many rows landed.
+func written(res repo.BulkResult, errs []repo.BulkSnapshotRowError, err error) (int, []repo.BulkSnapshotRowError, error) {
+	return res.Written, errs, err
+}
+
 // covers: INV-SNAPSHOTS-06
 // covers: INV-SNAPSHOTS-07
 func TestAssetRepo_BulkMonthlyEntry(t *testing.T) {
@@ -79,10 +84,10 @@ func TestAssetRepo_BulkMonthlyEntry(t *testing.T) {
 	}
 
 	// Happy bulk save: one dirty row, written and committed.
-	n, rowErrs, err := r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
+	n, rowErrs, err := written(r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkAssetSnapshotRow{{AssetID: id, Amount: di(1_200_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -92,10 +97,10 @@ func TestAssetRepo_BulkMonthlyEntry(t *testing.T) {
 	}
 
 	// Re-entry upserts in place rather than duplicating.
-	n, _, err = r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
+	n, _, err = written(r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkAssetSnapshotRow{{AssetID: id, Amount: di(1_300_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 1 {
 		t.Fatalf("re-entry upsert: want (1, nil), got (%d, %v)", n, err)
 	}
@@ -105,16 +110,16 @@ func TestAssetRepo_BulkMonthlyEntry(t *testing.T) {
 	}
 
 	// An ineligible row (unknown id) rejects the whole batch, nothing written.
-	n, rowErrs, err = r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
+	n, rowErrs, err = written(r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkAssetSnapshotRow{{AssetID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
 
 	// Empty batch is a no-op.
-	if n, _, err := r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{YearMonth: targetMonth}); err != nil || n != 0 {
+	if n, _, err := written(r.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{YearMonth: targetMonth})); err != nil || n != 0 {
 		t.Errorf("empty batch: want (0, nil), got (%d, %v)", n, err)
 	}
 }
@@ -158,10 +163,10 @@ func TestLiabilityRepo_BulkMonthlyEntry(t *testing.T) {
 		t.Fatalf("carry-forward prefill: want 500000000, got %v", rows[0].PrefillAmount)
 	}
 
-	n, rowErrs, err := r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
+	n, rowErrs, err := written(r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkLiabilitySnapshotRow{{LiabilityID: id, Amount: di(495_000_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -171,10 +176,10 @@ func TestLiabilityRepo_BulkMonthlyEntry(t *testing.T) {
 	}
 
 	// Re-entry overwrites.
-	if _, _, err := r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
+	if _, _, err := written(r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkLiabilitySnapshotRow{{LiabilityID: id, Amount: di(490_000_000), Currency: "IDR"}},
-	}); err != nil {
+	})); err != nil {
 		t.Fatalf("re-entry: %v", err)
 	}
 	rows, _ = r.ListLiabilityEntryRows(ctx, targetMonth)
@@ -182,10 +187,10 @@ func TestLiabilityRepo_BulkMonthlyEntry(t *testing.T) {
 		t.Errorf("re-entry overwrite: want 490000000, got %v", rows[0].PrefillAmount)
 	}
 
-	n, rowErrs, err = r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
+	n, rowErrs, err = written(r.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkLiabilitySnapshotRow{{LiabilityID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -226,10 +231,10 @@ func TestReceivableRepo_BulkMonthlyEntry(t *testing.T) {
 		t.Fatalf("carry-forward prefill: want 5000000, got %v", rows[0].PrefillAmount)
 	}
 
-	n, rowErrs, err := r.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
+	n, rowErrs, err := written(r.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkReceivableSnapshotRow{{ReceivableID: id, Amount: di(4_500_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -238,10 +243,10 @@ func TestReceivableRepo_BulkMonthlyEntry(t *testing.T) {
 		t.Errorf("post-write prefill: want 4500000, got %v", rows[0].PrefillAmount)
 	}
 
-	n, rowErrs, err = r.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
+	n, rowErrs, err = written(r.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkReceivableSnapshotRow{{ReceivableID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -290,10 +295,10 @@ func TestInvestmentRepo_BulkMonthlyEntry_QtyPrice(t *testing.T) {
 	}
 
 	// Happy save: amount derived server-side from qty × price.
-	n, rowErrs, err := r.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
+	n, rowErrs, err := written(r.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkInvestmentSnapshotRow{{InvestmentID: id, Quantity: di(120), PricePerUnit: di(10_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -302,10 +307,10 @@ func TestInvestmentRepo_BulkMonthlyEntry_QtyPrice(t *testing.T) {
 		t.Errorf("post-write prefill: want 120 @ 10000, got %v @ %v", rows[0].PrefillQuantity, rows[0].PrefillPrice)
 	}
 
-	n, rowErrs, err = r.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
+	n, rowErrs, err = written(r.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkInvestmentSnapshotRow{{InvestmentID: uuid.New(), Quantity: di(1), PricePerUnit: di(1), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -356,10 +361,10 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 		t.Fatalf("carry-forward prefill: want 10000000 / 50000, got %v / %v", rows[0].PrefillAmount, rows[0].PrefillAccruedInterest)
 	}
 
-	n, rowErrs, err := r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
+	n, rowErrs, err := written(r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: id, Amount: di(10_100_000), AccruedInterest: di(60_000), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -368,10 +373,10 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 		t.Errorf("post-write prefill: want 10100000 / 60000, got %v / %v", rows[0].PrefillAmount, rows[0].PrefillAccruedInterest)
 	}
 
-	n, rowErrs, err = r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
+	n, rowErrs, err = written(r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 		YearMonth: targetMonth,
 		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: di(0), Currency: "IDR"}},
-	})
+	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
 	}
@@ -402,38 +407,38 @@ func TestBulkRepo_Unauthenticated(t *testing.T) {
 		"ListInvestmentEntryRows":        func() error { _, e := ir.ListInvestmentEntryRows(ctx, targetMonth); return e },
 		"ListInvestmentAccruedEntryRows": func() error { _, e := ir.ListInvestmentAccruedEntryRows(ctx, targetMonth); return e },
 		"BulkUpsertAssetSnapshots": func() error {
-			_, _, e := ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
+			_, _, e := written(ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{
 				YearMonth: targetMonth,
 				Rows:      []repo.BulkAssetSnapshotRow{{AssetID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-			})
+			}))
 			return e
 		},
 		"BulkUpsertLiabilitySnapshots": func() error {
-			_, _, e := lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
+			_, _, e := written(lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{
 				YearMonth: targetMonth,
 				Rows:      []repo.BulkLiabilitySnapshotRow{{LiabilityID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-			})
+			}))
 			return e
 		},
 		"BulkUpsertReceivableSnapshots": func() error {
-			_, _, e := rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
+			_, _, e := written(rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{
 				YearMonth: targetMonth,
 				Rows:      []repo.BulkReceivableSnapshotRow{{ReceivableID: uuid.New(), Amount: di(1), Currency: "IDR"}},
-			})
+			}))
 			return e
 		},
 		"BulkUpsertInvestmentSnapshots": func() error {
-			_, _, e := ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
+			_, _, e := written(ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{
 				YearMonth: targetMonth,
 				Rows:      []repo.BulkInvestmentSnapshotRow{{InvestmentID: uuid.New(), Quantity: di(1), PricePerUnit: di(1), Currency: "IDR"}},
-			})
+			}))
 			return e
 		},
 		"BulkUpsertInvestmentAccruedSnapshots": func() error {
-			_, _, e := ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
+			_, _, e := written(ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 				YearMonth: targetMonth,
 				Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: di(0), Currency: "IDR"}},
-			})
+			}))
 			return e
 		},
 	}
@@ -479,23 +484,23 @@ func TestBulkRepo_EmptyHousehold(t *testing.T) {
 	// An empty batch is a no-op for every group (currentUser passes, len==0 short-circuits).
 	batches := map[string]func() (int, error){
 		"asset": func() (int, error) {
-			n, _, e := ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{YearMonth: targetMonth})
+			n, _, e := written(ar.BulkUpsertAssetSnapshots(ctx, repo.BulkUpsertAssetSnapshotsParams{YearMonth: targetMonth}))
 			return n, e
 		},
 		"liability": func() (int, error) {
-			n, _, e := lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{YearMonth: targetMonth})
+			n, _, e := written(lr.BulkUpsertLiabilitySnapshots(ctx, repo.BulkUpsertLiabilitySnapshotsParams{YearMonth: targetMonth}))
 			return n, e
 		},
 		"receivable": func() (int, error) {
-			n, _, e := rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{YearMonth: targetMonth})
+			n, _, e := written(rr.BulkUpsertReceivableSnapshots(ctx, repo.BulkUpsertReceivableSnapshotsParams{YearMonth: targetMonth}))
 			return n, e
 		},
 		"investment": func() (int, error) {
-			n, _, e := ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{YearMonth: targetMonth})
+			n, _, e := written(ir.BulkUpsertInvestmentSnapshots(ctx, repo.BulkUpsertInvestmentSnapshotsParams{YearMonth: targetMonth}))
 			return n, e
 		},
 		"investmentAccrued": func() (int, error) {
-			n, _, e := ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{YearMonth: targetMonth})
+			n, _, e := written(ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{YearMonth: targetMonth}))
 			return n, e
 		},
 	}

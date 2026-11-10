@@ -236,6 +236,16 @@ func TestInvestmentSnapshotHandlers_ListUpdateDelete(t *testing.T) {
 				"price_per_unit": "200000",
 			})
 		requireStatus(t, rec, http.StatusOK)
+		// ADR-0058 §1: the edit archives the row and inserts a new one, so the
+		// id changes and the response names the displaced row.
+		got := decodeBody[struct {
+			db.InvestmentSnapshot
+			ReplacedID *uuid.UUID `json:"replaced_id"`
+		}](t, rec)
+		if got.ReplacedID == nil || *got.ReplacedID != snap.ID || got.ID == snap.ID {
+			t.Fatalf("want a new id and replaced_id=%s, got id=%s replaced_id=%v", snap.ID, got.ID, got.ReplacedID)
+		}
+		snap = got.InvestmentSnapshot
 	})
 
 	t.Run("Update 404 unknown snapshot", func(t *testing.T) {

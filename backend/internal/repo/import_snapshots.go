@@ -13,7 +13,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
 
-// ImportSnapshotRow is one snapshot to upsert during a bulk import. It mirrors
+// ImportSnapshotRow is one snapshot to write during a bulk import. It mirrors
 // CreateAssetSnapshotParams minus the asset id, which is supplied once for the
 // whole batch.
 type ImportSnapshotRow struct {
@@ -24,11 +24,14 @@ type ImportSnapshotRow struct {
 	Description *string
 }
 
-// ImportResult summarises an import or its dry-run preview: how many rows would
-// create a new month vs overwrite an existing one.
+// ImportResult summarises an import or its dry-run preview: how many rows
+// create a new month, how many replace an existing month's different values
+// (archiving the earlier row, ADR-0058 §1), and how many are identical to the
+// live snapshot and so write nothing.
 type ImportResult struct {
-	ToInsert int
-	ToUpdate int
+	ToInsert  int
+	ToUpdate  int
+	Unchanged int
 }
 
 // AssetImportMeta returns the display name + native currency of an owned asset,
@@ -48,12 +51,15 @@ func (r *AssetRepo) AssetImportMeta(ctx context.Context, assetID uuid.UUID) (nam
 	return row.DisplayName, row.NativeCurrency, nil
 }
 
-// ImportAssetSnapshots upserts a batch of snapshots for one asset in a single
-// transaction (all-or-nothing). When dryRun is true it classifies the rows
-// against the asset's existing months and returns without writing. The asset
+// ImportAssetSnapshots writes a batch of snapshots for one asset in a single
+// transaction (all-or-nothing). A month with no live snapshot is inserted, one
+// whose values differ has its live row archived and the new values inserted
+// (ADR-0058 §1), and one identical to the live row is skipped. When dryRun is
+// true it classifies the rows against the asset's existing months and returns
+// without writing. The asset
 // must belong to the caller's household, otherwise ErrNotFound.
 //
-// Classification (insert vs update) is computed from a snapshot read taken
+// Classification (insert vs replace vs unchanged) is computed from a snapshot read taken
 // before the write; in a single-household app the window between preview and
 // commit is not worth locking against.
 func (r *AssetRepo) ImportAssetSnapshots(ctx context.Context, assetID uuid.UUID, rows []ImportSnapshotRow, dryRun bool) (*ImportResult, error) {
@@ -78,17 +84,34 @@ func (r *AssetRepo) ImportAssetSnapshots(ctx context.Context, assetID uuid.UUID,
 	if err != nil {
 		return nil, fmt.Errorf("import: list existing snapshots: %w", err)
 	}
-	months := make(map[string]struct{}, len(existing))
+	params := func(row ImportSnapshotRow) db.CreateAssetSnapshotParams {
+		return db.CreateAssetSnapshotParams{
+			ID:          assetID,
+			YearMonth:   row.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    row.AsOfDate,
+			Description: row.Description,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}
+	}
+
+	live := make(map[string]db.AssetSnapshot, len(existing))
 	for _, s := range existing {
-		months[s.YearMonth.Format("2006-01")] = struct{}{}
+		live[s.YearMonth.Format("2006-01")] = s
 	}
 
 	var res ImportResult
 	for _, row := range rows {
-		if _, ok := months[row.YearMonth.Format("2006-01")]; ok {
-			res.ToUpdate++
-		} else {
+		cur, ok := live[row.YearMonth.Format("2006-01")]
+		switch {
+		case !ok:
 			res.ToInsert++
+		case assetSnapshotUnchanged(cur, params(row)):
+			res.Unchanged++
+		default:
+			res.ToUpdate++
 		}
 	}
 
@@ -103,25 +126,26 @@ func (r *AssetRepo) ImportAssetSnapshots(ctx context.Context, assetID uuid.UUID,
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var written ImportResult
 	for _, row := range rows {
-		if _, err := qtx.UpsertAssetSnapshot(ctx, db.UpsertAssetSnapshotParams{
-			ID:          assetID,
-			YearMonth:   row.YearMonth,
-			Amount:      row.Amount,
-			Currency:    row.Currency,
-			AsOfDate:    row.AsOfDate,
-			Description: row.Description,
-			CreatedBy:   &user,
-			HouseholdID: hid,
-		}); err != nil {
-			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		_, _, outcome, err := replaceAssetSnapshot(ctx, qtx, user, params(row))
+		if err != nil {
+			return nil, err
+		}
+		switch outcome {
+		case replaceInserted:
+			written.ToInsert++
+		case replaceReplaced:
+			written.ToUpdate++
+		case replaceUnchanged:
+			written.Unchanged++
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("import: commit: %w", err)
 	}
-	return &res, nil
+	return &written, nil
 }
 
 // LiabilityImportMeta mirrors AssetImportMeta for the Liability group: display
@@ -143,7 +167,7 @@ func (r *LiabilityRepo) LiabilityImportMeta(ctx context.Context, liabilityID uui
 }
 
 // ImportLiabilitySnapshots is the Liability-group analogue of
-// ImportAssetSnapshots: all-or-nothing upsert in one tx, dry-run classifies
+// ImportAssetSnapshots: all-or-nothing replace-or-insert in one tx, dry-run classifies
 // without writing, ownership enforced via GetLiabilityForImport.
 func (r *LiabilityRepo) ImportLiabilitySnapshots(ctx context.Context, liabilityID uuid.UUID, rows []ImportSnapshotRow, dryRun bool) (*ImportResult, error) {
 	user, hid, err := currentUser(ctx)
@@ -165,17 +189,34 @@ func (r *LiabilityRepo) ImportLiabilitySnapshots(ctx context.Context, liabilityI
 	if err != nil {
 		return nil, fmt.Errorf("import: list existing snapshots: %w", err)
 	}
-	months := make(map[string]struct{}, len(existing))
+	params := func(row ImportSnapshotRow) db.CreateLiabilitySnapshotParams {
+		return db.CreateLiabilitySnapshotParams{
+			ID:          liabilityID,
+			YearMonth:   row.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    row.AsOfDate,
+			Description: row.Description,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}
+	}
+
+	live := make(map[string]db.LiabilitySnapshot, len(existing))
 	for _, s := range existing {
-		months[s.YearMonth.Format("2006-01")] = struct{}{}
+		live[s.YearMonth.Format("2006-01")] = s
 	}
 
 	var res ImportResult
 	for _, row := range rows {
-		if _, ok := months[row.YearMonth.Format("2006-01")]; ok {
-			res.ToUpdate++
-		} else {
+		cur, ok := live[row.YearMonth.Format("2006-01")]
+		switch {
+		case !ok:
 			res.ToInsert++
+		case liabilitySnapshotUnchanged(cur, params(row)):
+			res.Unchanged++
+		default:
+			res.ToUpdate++
 		}
 	}
 
@@ -190,25 +231,26 @@ func (r *LiabilityRepo) ImportLiabilitySnapshots(ctx context.Context, liabilityI
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var written ImportResult
 	for _, row := range rows {
-		if _, err := qtx.UpsertLiabilitySnapshot(ctx, db.UpsertLiabilitySnapshotParams{
-			ID:          liabilityID,
-			YearMonth:   row.YearMonth,
-			Amount:      row.Amount,
-			Currency:    row.Currency,
-			AsOfDate:    row.AsOfDate,
-			Description: row.Description,
-			CreatedBy:   &user,
-			HouseholdID: hid,
-		}); err != nil {
-			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		_, _, outcome, err := replaceLiabilitySnapshot(ctx, qtx, user, params(row))
+		if err != nil {
+			return nil, err
+		}
+		switch outcome {
+		case replaceInserted:
+			written.ToInsert++
+		case replaceReplaced:
+			written.ToUpdate++
+		case replaceUnchanged:
+			written.Unchanged++
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("import: commit: %w", err)
 	}
-	return &res, nil
+	return &written, nil
 }
 
 // ReceivableImportMeta mirrors AssetImportMeta for the Receivable group.
@@ -249,17 +291,34 @@ func (r *ReceivableRepo) ImportReceivableSnapshots(ctx context.Context, receivab
 	if err != nil {
 		return nil, fmt.Errorf("import: list existing snapshots: %w", err)
 	}
-	months := make(map[string]struct{}, len(existing))
+	params := func(row ImportSnapshotRow) db.CreateReceivableSnapshotParams {
+		return db.CreateReceivableSnapshotParams{
+			ID:          receivableID,
+			YearMonth:   row.YearMonth,
+			Amount:      row.Amount,
+			Currency:    row.Currency,
+			AsOfDate:    row.AsOfDate,
+			Description: row.Description,
+			CreatedBy:   &user,
+			HouseholdID: hid,
+		}
+	}
+
+	live := make(map[string]db.ReceivableSnapshot, len(existing))
 	for _, s := range existing {
-		months[s.YearMonth.Format("2006-01")] = struct{}{}
+		live[s.YearMonth.Format("2006-01")] = s
 	}
 
 	var res ImportResult
 	for _, row := range rows {
-		if _, ok := months[row.YearMonth.Format("2006-01")]; ok {
-			res.ToUpdate++
-		} else {
+		cur, ok := live[row.YearMonth.Format("2006-01")]
+		switch {
+		case !ok:
 			res.ToInsert++
+		case receivableSnapshotUnchanged(cur, params(row)):
+			res.Unchanged++
+		default:
+			res.ToUpdate++
 		}
 	}
 
@@ -274,28 +333,29 @@ func (r *ReceivableRepo) ImportReceivableSnapshots(ctx context.Context, receivab
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var written ImportResult
 	for _, row := range rows {
-		if _, err := qtx.UpsertReceivableSnapshot(ctx, db.UpsertReceivableSnapshotParams{
-			ID:          receivableID,
-			YearMonth:   row.YearMonth,
-			Amount:      row.Amount,
-			Currency:    row.Currency,
-			AsOfDate:    row.AsOfDate,
-			Description: row.Description,
-			CreatedBy:   &user,
-			HouseholdID: hid,
-		}); err != nil {
-			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		_, _, outcome, err := replaceReceivableSnapshot(ctx, qtx, user, params(row))
+		if err != nil {
+			return nil, err
+		}
+		switch outcome {
+		case replaceInserted:
+			written.ToInsert++
+		case replaceReplaced:
+			written.ToUpdate++
+		case replaceUnchanged:
+			written.Unchanged++
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("import: commit: %w", err)
 	}
-	return &res, nil
+	return &written, nil
 }
 
-// ImportInvestmentSnapshotRow is one snapshot to upsert during an investment
+// ImportInvestmentSnapshotRow is one snapshot to write during an investment
 // bulk import. Unlike the flat ImportSnapshotRow it carries the value-shape
 // columns: quantity+price_per_unit (stock/mutual_fund/gold) or accrued_interest
 // (bond/time_deposit). Amount is always set (derived from quantity×price for
@@ -360,17 +420,37 @@ func (r *InvestmentRepo) ImportInvestmentSnapshots(ctx context.Context, investme
 	if err != nil {
 		return nil, fmt.Errorf("import: list existing snapshots: %w", err)
 	}
-	months := make(map[string]struct{}, len(existing))
+	params := func(row ImportInvestmentSnapshotRow) db.CreateInvestmentSnapshotParams {
+		return db.CreateInvestmentSnapshotParams{
+			ID:              investmentID,
+			YearMonth:       row.YearMonth,
+			Amount:          row.Amount,
+			Currency:        row.Currency,
+			Quantity:        row.Quantity,
+			PricePerUnit:    row.PricePerUnit,
+			AccruedInterest: row.AccruedInterest,
+			AsOfDate:        row.AsOfDate,
+			Description:     row.Description,
+			CreatedBy:       &user,
+			HouseholdID:     hid,
+		}
+	}
+
+	live := make(map[string]db.InvestmentSnapshot, len(existing))
 	for _, s := range existing {
-		months[s.YearMonth.Format("2006-01")] = struct{}{}
+		live[s.YearMonth.Format("2006-01")] = s
 	}
 
 	var res ImportResult
 	for _, row := range rows {
-		if _, ok := months[row.YearMonth.Format("2006-01")]; ok {
-			res.ToUpdate++
-		} else {
+		cur, ok := live[row.YearMonth.Format("2006-01")]
+		switch {
+		case !ok:
 			res.ToInsert++
+		case investmentSnapshotUnchanged(cur, params(row)):
+			res.Unchanged++
+		default:
+			res.ToUpdate++
 		}
 	}
 
@@ -385,26 +465,24 @@ func (r *InvestmentRepo) ImportInvestmentSnapshots(ctx context.Context, investme
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	var written ImportResult
 	for _, row := range rows {
-		if _, err := qtx.UpsertInvestmentSnapshot(ctx, db.UpsertInvestmentSnapshotParams{
-			ID:              investmentID,
-			YearMonth:       row.YearMonth,
-			Amount:          row.Amount,
-			Currency:        row.Currency,
-			Quantity:        row.Quantity,
-			PricePerUnit:    row.PricePerUnit,
-			AccruedInterest: row.AccruedInterest,
-			AsOfDate:        row.AsOfDate,
-			Description:     row.Description,
-			CreatedBy:       &user,
-			HouseholdID:     hid,
-		}); err != nil {
-			return nil, fmt.Errorf("import: upsert %s: %w", row.YearMonth.Format("2006-01"), err)
+		_, _, outcome, err := replaceInvestmentSnapshot(ctx, qtx, user, params(row))
+		if err != nil {
+			return nil, err
+		}
+		switch outcome {
+		case replaceInserted:
+			written.ToInsert++
+		case replaceReplaced:
+			written.ToUpdate++
+		case replaceUnchanged:
+			written.Unchanged++
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("import: commit: %w", err)
 	}
-	return &res, nil
+	return &written, nil
 }

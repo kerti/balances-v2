@@ -61,14 +61,15 @@ type importResponse struct {
 	Mode      string                    `json:"mode"`      // "preview" | "commit"
 	Committed bool                      `json:"committed"` // true only when rows were written
 	ToInsert  int                       `json:"to_insert"`
-	ToUpdate  int                       `json:"to_update"`
+	ToUpdate  int                       `json:"to_update"` // existing month, different values: the earlier row is archived
+	Unchanged int                       `json:"unchanged"` // existing month, identical values: nothing written
 	Errors    []snapshotimport.RowError `json:"errors"`
 }
 
 // handleImportSnapshots accepts a filled-in template (multipart "file"). The
 // column shape parsed is selected by the investment's subtype. With mode=preview
 // (default) it parses + validates + classifies and writes nothing; with
-// mode=commit it additionally upserts, but only if zero rows errored
+// mode=commit it additionally writes (replacing changed months, ADR-0058), but only if zero rows errored
 // (all-or-nothing) — otherwise it returns 422 with the row errors.
 func (h *Handlers) handleImportSnapshots(w http.ResponseWriter, r *http.Request) {
 	investmentID, err := parseIDParam(r, "id")
@@ -146,6 +147,7 @@ func (h *Handlers) handleImportSnapshots(w http.ResponseWriter, r *http.Request)
 
 	resp.ToInsert = res.ToInsert
 	resp.ToUpdate = res.ToUpdate
+	resp.Unchanged = res.Unchanged
 	resp.Committed = mode == "commit"
 	writeJSON(w, http.StatusOK, resp)
 }
