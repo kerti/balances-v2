@@ -281,7 +281,7 @@ func TestPositionLifecycle_CloseSnapshotAllGroups(t *testing.T) {
 			// ----- collision: a value recorded while terminated wins over the archive.
 			// Snapshots, unlike investment transactions, are not blocked on a
 			// terminated position, so this is a reachable state — the import path
-			// upserts straight over the live close row.
+			// replaces the live close row, archiving it (ADR-0058 §1).
 			if err := g.lifecycle(posID, repo.LifecycleParams{
 				Status: g.terminal, TerminatedAt: &termDate, TerminationNote: &note,
 			}); err != nil {
@@ -292,11 +292,12 @@ func TestPositionLifecycle_CloseSnapshotAllGroups(t *testing.T) {
 				t.Fatalf("un-terminate after collision: %v", err)
 			}
 			assertSnapshots(t, g.list(t, posID), map[time.Time]int64{jan: 20, mar: 30})
-			// Two archived rows: the first cycle's 0 close, and the March 25 the
+			// Three archived rows: the first cycle's 0 close, the March 25 the
 			// second cycle displaced — which stays archived, since the user's 30
-			// occupies the month.
-			if n := countArchivedSnapshots(t, tdb.Pool, g.table, g.fkCol, posID); n != 2 {
-				t.Fatalf("archived rows after collision: got %d, want 2", n)
+			// occupies the month — and the second cycle's 0 close, which the
+			// user's 30 replaced.
+			if n := countArchivedSnapshots(t, tdb.Pool, g.table, g.fkCol, posID); n != 3 {
+				t.Fatalf("archived rows after collision: got %d, want 3", n)
 			}
 		})
 	}

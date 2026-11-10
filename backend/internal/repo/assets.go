@@ -93,30 +93,47 @@ func (r *AssetRepo) ListAssetSnapshots(ctx context.Context, assetID uuid.UUID) (
 	})
 }
 
-func (r *AssetRepo) UpdateAssetSnapshot(ctx context.Context, p UpdateAssetSnapshotParams) (*db.AssetSnapshot, error) {
+// UpdateAssetSnapshot replaces the live snapshot with the edited values
+// (ADR-0058 §1): the old row is archived and a new one inserted in one
+// transaction, so the snapshot's id changes and the response carries the
+// displaced id. An edit that changes nothing writes nothing and returns the
+// live row with a nil ReplacedID.
+func (r *AssetRepo) UpdateAssetSnapshot(ctx context.Context, p UpdateAssetSnapshotParams) (*AssetSnapshotWrite, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	snap, err := r.q.UpdateAssetSnapshot(ctx, db.UpdateAssetSnapshotParams{
-		ID:          p.SnapshotID,
-		HouseholdID: hid,
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update asset snapshot: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	cur, err := qtx.GetAssetSnapshotByID(ctx, db.GetAssetSnapshotByIDParams{ID: p.SnapshotID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("update asset snapshot: load: %w", err)
+	}
+	snap, replacedID, _, err := replaceAssetSnapshot(ctx, qtx, user, db.CreateAssetSnapshotParams{
+		ID:          cur.AssetID,
+		YearMonth:   cur.YearMonth,
 		Amount:      p.Amount,
 		Currency:    p.Currency,
 		AsOfDate:    p.AsOfDate,
 		Description: p.Description,
-		UpdatedBy:   &user,
+		CreatedBy:   &user,
+		HouseholdID: hid,
 	})
 	if err != nil {
-		if asOfMonthViolation(err) {
-			return nil, ErrSnapshotDateOutsideMonth
-		}
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, fmt.Errorf("update asset snapshot: %w", err)
+		return nil, err
 	}
-	return &snap, nil
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("update asset snapshot: commit: %w", err)
+	}
+	return &AssetSnapshotWrite{AssetSnapshot: snap, ReplacedID: replacedID}, nil
 }
 
 func (r *AssetRepo) DeleteAssetSnapshot(ctx context.Context, snapshotID uuid.UUID) error {

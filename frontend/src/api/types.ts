@@ -46,6 +46,12 @@ export type Asset = Omit<
 
 export type AssetSnapshot = Generated.AssetSnapshot;
 
+// What a snapshot PATCH returns (ADR-0058 §1): the live snapshot plus the id of
+// the row it archived, null when the edit changed nothing. Hand-written because
+// it is a repo wrapper (`*SnapshotWrite` in internal/repo/snapshot_replace.go),
+// not a table row; the snapshot's own id changes on every replace.
+export type SnapshotWrite<T> = T & { replaced_id: string | null };
+
 // ----- bank account -----------------------------------------------------
 
 export type BankAccountDetails = Omit<Generated.BankAccountDetails, "account_type"> & {

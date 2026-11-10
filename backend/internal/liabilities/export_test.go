@@ -116,8 +116,8 @@ func TestLiabilityHandlers_Export(t *testing.T) {
 		reimport := h.doUpload(t, base+"/import?mode=commit", xlsx)
 		requireStatus(t, reimport, http.StatusOK)
 		body := decodeBody[importResp](t, reimport)
-		if body.ToUpdate != 2 || body.ToInsert != 0 {
-			t.Errorf("re-import counts: want update=2 insert=0, got update=%d insert=%d", body.ToUpdate, body.ToInsert)
+		if body.ToUpdate != 0 || body.ToInsert != 0 || body.Unchanged != 2 {
+			t.Errorf("re-import counts: identical data must be unchanged=2 (nothing archived), got update=%d insert=%d unchanged=%d", body.ToUpdate, body.ToInsert, body.Unchanged)
 		}
 	})
 }

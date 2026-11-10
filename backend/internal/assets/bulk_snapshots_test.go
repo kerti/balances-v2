@@ -17,6 +17,13 @@ import (
 // rawSnapshotCount counts live snapshots for an asset directly against the DB,
 // bypassing the handler getters — a mutation must be provable without trusting
 // the same read path that could mask a false positive.
+// bulkResp mirrors the bulk-save response body.
+type bulkResp struct {
+	Written   int `json:"written"`
+	Replaced  int `json:"replaced"`
+	Unchanged int `json:"unchanged"`
+}
+
 func (h *handlerHarness) rawSnapshotCount(t *testing.T, assetID uuid.UUID) int {
 	t.Helper()
 	var n int
@@ -73,17 +80,40 @@ func TestAssetSnapshotHandlers_Bulk(t *testing.T) {
 		}
 	})
 
-	t.Run("T2 re-entering a month upserts, no duplicate", func(t *testing.T) {
+	t.Run("T2 re-entering a month replaces it, archiving the earlier value", func(t *testing.T) {
 		h := newHarness(t)
 		acct := h.createBankAccount(t, "Bulk reentry")
 
-		requireStatus(t, h.bulkSave(t, "2026-05", []map[string]any{
+		first := h.bulkSave(t, "2026-05", []map[string]any{
 			{"asset_id": acct.Asset.ID.String(), "amount": "1000000", "currency": "IDR"},
-		}), http.StatusOK)
+		})
+		requireStatus(t, first, http.StatusOK)
+		if got := decodeBody[bulkResp](t, first); got != (bulkResp{Written: 1}) {
+			t.Errorf("first save = %+v, want written=1 replaced=0", got)
+		}
 
-		requireStatus(t, h.bulkSave(t, "2026-05", []map[string]any{
+		second := h.bulkSave(t, "2026-05", []map[string]any{
 			{"asset_id": acct.Asset.ID.String(), "amount": "7000000", "currency": "IDR"},
-		}), http.StatusOK)
+		})
+		requireStatus(t, second, http.StatusOK)
+		if got := decodeBody[bulkResp](t, second); got != (bulkResp{Written: 1, Replaced: 1}) {
+			t.Errorf("re-entry = %+v, want written=1 replaced=1", got)
+		}
+
+		// The same values again are untouched: nothing written, nothing archived.
+		third := h.bulkSave(t, "2026-05", []map[string]any{
+			{"asset_id": acct.Asset.ID.String(), "amount": "7000000", "currency": "IDR"},
+		})
+		requireStatus(t, third, http.StatusOK)
+		if got := decodeBody[bulkResp](t, third); got != (bulkResp{Unchanged: 1}) {
+			t.Errorf("identical re-save = %+v, want unchanged=1", got)
+		}
+		var archived int
+		if err := h.pool.QueryRow(context.Background(),
+			`SELECT count(*) FROM asset_snapshots WHERE asset_id = $1 AND deleted_at IS NOT NULL`,
+			acct.Asset.ID).Scan(&archived); err != nil || archived != 1 {
+			t.Errorf("archived rows = %d (err %v), want 1", archived, err)
+		}
 
 		if got := h.rawSnapshotCount(t, acct.Asset.ID); got != 1 {
 			t.Fatalf("want 1 snapshot after re-entry, got %d", got)

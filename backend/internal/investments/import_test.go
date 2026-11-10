@@ -141,8 +141,8 @@ func TestInvestmentHandlers_ImportSnapshots(t *testing.T) {
 		again := h.doUpload(t, base+"/import?mode=commit", buildImportXLSX(t, validRows()))
 		requireStatus(t, again, http.StatusOK)
 		ab := decodeBody[importResp](t, again)
-		if ab.ToUpdate != 2 || ab.ToInsert != 0 {
-			t.Errorf("re-commit counts: want update=2 insert=0, got update=%d insert=%d", ab.ToUpdate, ab.ToInsert)
+		if ab.ToUpdate != 0 || ab.ToInsert != 0 || ab.Unchanged != 2 {
+			t.Errorf("re-commit counts: identical data must be unchanged=2 (nothing archived), got update=%d insert=%d unchanged=%d", ab.ToUpdate, ab.ToInsert, ab.Unchanged)
 		}
 	})
 
@@ -197,5 +197,6 @@ type importResp struct {
 	Committed bool                      `json:"committed"`
 	ToInsert  int                       `json:"to_insert"`
 	ToUpdate  int                       `json:"to_update"`
+	Unchanged int                       `json:"unchanged"`
 	Errors    []snapshotimport.RowError `json:"errors"`
 }

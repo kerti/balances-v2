@@ -211,6 +211,12 @@ func TestAssetRepo_TenancyIsolation(t *testing.T) {
 		if !updated.Amount.Equal(decimal.NewFromInt(42)) {
 			t.Errorf("Amount: got %s, want 42", updated.Amount)
 		}
+		if updated.ReplacedID == nil || *updated.ReplacedID != aliceSnap.ID {
+			t.Errorf("ReplacedID: got %v, want the displaced %s", updated.ReplacedID, aliceSnap.ID)
+		}
+		// An edit archives the row and inserts a new one (ADR-0058 §1): the id
+		// changes, so the following subtests follow the live row.
+		aliceSnap.ID = updated.ID
 	})
 
 	t.Run("alice delete snapshot removes it from list", func(t *testing.T) {

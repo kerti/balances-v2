@@ -121,7 +121,12 @@ func (r *InvestmentRepo) ListInvestmentSnapshots(ctx context.Context, investment
 	})
 }
 
-func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateInvestmentSnapshotParams) (*db.InvestmentSnapshot, error) {
+// UpdateInvestmentSnapshot replaces the live snapshot with the edited values
+// (ADR-0058 §1): the old row is archived and a new one inserted in one
+// transaction, so the snapshot id changes and the response carries the displaced
+// id. An edit that changes nothing writes nothing and returns the live row with
+// a nil ReplacedID.
+func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateInvestmentSnapshotParams) (*InvestmentSnapshotWrite, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return nil, err
@@ -158,9 +163,14 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		return nil, err
 	}
 
-	snap, err := r.q.UpdateInvestmentSnapshot(ctx, db.UpdateInvestmentSnapshotParams{
-		ID:              p.SnapshotID,
-		HouseholdID:     hid,
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update investment snapshot: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	snap, replacedID, _, err := replaceInvestmentSnapshot(ctx, r.q.WithTx(tx), user, db.CreateInvestmentSnapshotParams{
+		ID:              existing.InvestmentID,
+		YearMonth:       existing.YearMonth,
 		Amount:          p.Amount,
 		Currency:        p.Currency,
 		Quantity:        p.Quantity,
@@ -168,18 +178,16 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		AccruedInterest: p.AccruedInterest,
 		AsOfDate:        p.AsOfDate,
 		Description:     p.Description,
-		UpdatedBy:       &user,
+		CreatedBy:       &user,
+		HouseholdID:     hid,
 	})
 	if err != nil {
-		if asOfMonthViolation(err) {
-			return nil, ErrSnapshotDateOutsideMonth
-		}
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, fmt.Errorf("update investment snapshot: %w", err)
+		return nil, err
 	}
-	return &snap, nil
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("update investment snapshot: commit: %w", err)
+	}
+	return &InvestmentSnapshotWrite{InvestmentSnapshot: snap, ReplacedID: replacedID}, nil
 }
 
 func (r *InvestmentRepo) DeleteInvestmentSnapshot(ctx context.Context, snapshotID uuid.UUID) error {

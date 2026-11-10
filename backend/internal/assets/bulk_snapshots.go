@@ -32,7 +32,9 @@ type bulkSnapshotReq struct {
 }
 
 type bulkSnapshotResp struct {
-	Written int `json:"written"`
+	Written   int `json:"written"`   // rows that created or replaced a snapshot
+	Replaced  int `json:"replaced"`  // subset of written that archived an earlier value
+	Unchanged int `json:"unchanged"` // rows identical to the live snapshot, not written
 }
 
 // bulkRowError reports one rejected row, keyed by asset so the UI marks exactly
@@ -112,7 +114,7 @@ func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) 
 }
 
 // handleBulkCreateSnapshots writes a bulk monthly-entry batch for the Asset
-// group — atomically, dirty-rows-only, upserting on (asset_id, year_month).
+// group — atomically, dirty-rows-only, replacing an existing month (ADR-0058).
 func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Request) {
 	var req bulkSnapshotReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -162,7 +164,7 @@ func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	written, rowErrs, err := h.repo.BulkUpsertAssetSnapshots(r.Context(), repo.BulkUpsertAssetSnapshotsParams{
+	res, rowErrs, err := h.repo.BulkUpsertAssetSnapshots(r.Context(), repo.BulkUpsertAssetSnapshotsParams{
 		YearMonth: ym,
 		AsOfDate:  asOf,
 		Rows:      rows,
@@ -179,5 +181,5 @@ func (h *Handlers) handleBulkCreateSnapshots(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusUnprocessableEntity, resp)
 		return
 	}
-	writeJSON(w, http.StatusOK, bulkSnapshotResp{Written: written})
+	writeJSON(w, http.StatusOK, bulkSnapshotResp{Written: res.Written, Replaced: res.Replaced, Unchanged: res.Unchanged})
 }

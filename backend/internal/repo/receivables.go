@@ -421,30 +421,47 @@ func (r *ReceivableRepo) ListReceivableSnapshots(ctx context.Context, receivable
 	})
 }
 
-func (r *ReceivableRepo) UpdateReceivableSnapshot(ctx context.Context, p UpdateReceivableSnapshotParams) (*db.ReceivableSnapshot, error) {
+// UpdateReceivableSnapshot replaces the live snapshot with the edited values
+// (ADR-0058 §1): the old row is archived and a new one inserted in one
+// transaction, so the snapshot's id changes and the response carries the
+// displaced id. An edit that changes nothing writes nothing and returns the
+// live row with a nil ReplacedID.
+func (r *ReceivableRepo) UpdateReceivableSnapshot(ctx context.Context, p UpdateReceivableSnapshotParams) (*ReceivableSnapshotWrite, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return nil, err
 	}
-	snap, err := r.q.UpdateReceivableSnapshot(ctx, db.UpdateReceivableSnapshotParams{
-		ID:          p.SnapshotID,
-		HouseholdID: hid,
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("update receivable snapshot: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	cur, err := qtx.GetReceivableSnapshotByID(ctx, db.GetReceivableSnapshotByIDParams{ID: p.SnapshotID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("update receivable snapshot: load: %w", err)
+	}
+	snap, replacedID, _, err := replaceReceivableSnapshot(ctx, qtx, user, db.CreateReceivableSnapshotParams{
+		ID:          cur.ReceivableID,
+		YearMonth:   cur.YearMonth,
 		Amount:      p.Amount,
 		Currency:    p.Currency,
 		AsOfDate:    p.AsOfDate,
 		Description: p.Description,
-		UpdatedBy:   &user,
+		CreatedBy:   &user,
+		HouseholdID: hid,
 	})
 	if err != nil {
-		if asOfMonthViolation(err) {
-			return nil, ErrSnapshotDateOutsideMonth
-		}
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, fmt.Errorf("update receivable snapshot: %w", err)
+		return nil, err
 	}
-	return &snap, nil
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("update receivable snapshot: commit: %w", err)
+	}
+	return &ReceivableSnapshotWrite{ReceivableSnapshot: snap, ReplacedID: replacedID}, nil
 }
 
 func (r *ReceivableRepo) DeleteReceivableSnapshot(ctx context.Context, snapshotID uuid.UUID) error {
