@@ -15,6 +15,7 @@ import {
   roundToCurrency,
   numberSeparators,
   groupCanonical,
+  formatQuantity,
   parseLocaleNumber,
   currencyDecimals,
 } from "@/lib/format";
@@ -326,5 +327,19 @@ describe("currencyDecimals", () => {
     expect(currencyDecimals("USD")).toBe(2);
     expect(currencyDecimals("IDR")).toBe(2);
     expect(currencyDecimals("JPY")).toBe(0);
+  });
+});
+
+// covers: INV-PRESENTATION-01
+describe("formatQuantity", () => {
+  it("groups the integer part and keeps every significant decimal (#801)", () => {
+    expect(formatQuantity("1500.12345678", "en-GB")).toBe("1,500.12345678");
+    expect(formatQuantity("1500.12345678", "id-ID")).toBe("1.500,12345678");
+  });
+  it("drops padded zeros without rounding", () => {
+    expect(formatQuantity("10.00000000", "en-GB")).toBe("10");
+    expect(formatQuantity("2.50000000", "en-GB")).toBe("2.5");
+    expect(formatQuantity("1234567", "en-GB")).toBe("1,234,567");
+    expect(formatQuantity("0.00000001", "en-GB")).toBe("0.00000001");
   });
 });

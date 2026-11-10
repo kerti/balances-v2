@@ -231,6 +231,15 @@ export function groupCanonical(canonical: string, locale?: Locale): string {
   return dot === -1 ? grouped : grouped + decimal + canonical.slice(dot + 1);
 }
 
+// A stored quantity (NUMERIC(20,8), e.g. "1500.12345678" or "10.00000000") as
+// the app shows it: grouped in the locale, trailing zeros past the last
+// significant place dropped, never rounded ("1,500.12345678", "10"). String
+// work only, so no place is lost to Number (#801).
+export function formatQuantity(stored: string, locale?: Locale): string {
+  const trimmed = stored.includes(".") ? stored.replace(/\.?0+$/, "") : stored;
+  return groupCanonical(trimmed, locale);
+}
+
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
