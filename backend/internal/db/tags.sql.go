@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
@@ -43,6 +44,37 @@ func (q *Queries) AssignAssetTag(ctx context.Context, arg AssignAssetTagParams) 
 	return result.RowsAffected(), nil
 }
 
+const assignAssetsTag = `-- name: AssignAssetsTag :execrows
+
+UPDATE assets
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL
+`
+
+type AssignAssetsTagParams struct {
+	TagID       *uuid.UUID  `json:"tag_id"`
+	Column2     []uuid.UUID `json:"column_2"`
+	HouseholdID uuid.UUID   `json:"household_id"`
+	UpdatedBy   *uuid.UUID  `json:"updated_by"`
+}
+
+// ----- batch assignment (Tags page, #853) ----------------------------------
+// Same guards as the single-item queries above, over a set of ids. The repo
+// runs all four in one transaction and compares each group's row count with
+// the ids it sent, so a foreign or deleted id rolls the whole batch back.
+func (q *Queries) AssignAssetsTag(ctx context.Context, arg AssignAssetsTagParams) (int64, error) {
+	result, err := q.db.Exec(ctx, assignAssetsTag,
+		arg.TagID,
+		arg.Column2,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const assignInvestmentTag = `-- name: AssignInvestmentTag :execrows
 UPDATE investments
 SET tag_id = $1, updated_by = $4, updated_at = now()
@@ -60,6 +92,58 @@ func (q *Queries) AssignInvestmentTag(ctx context.Context, arg AssignInvestmentT
 	result, err := q.db.Exec(ctx, assignInvestmentTag,
 		arg.TagID,
 		arg.ID,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const assignInvestmentsTag = `-- name: AssignInvestmentsTag :execrows
+UPDATE investments
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL
+`
+
+type AssignInvestmentsTagParams struct {
+	TagID       *uuid.UUID  `json:"tag_id"`
+	Column2     []uuid.UUID `json:"column_2"`
+	HouseholdID uuid.UUID   `json:"household_id"`
+	UpdatedBy   *uuid.UUID  `json:"updated_by"`
+}
+
+func (q *Queries) AssignInvestmentsTag(ctx context.Context, arg AssignInvestmentsTagParams) (int64, error) {
+	result, err := q.db.Exec(ctx, assignInvestmentsTag,
+		arg.TagID,
+		arg.Column2,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const assignLiabilitiesTag = `-- name: AssignLiabilitiesTag :execrows
+UPDATE liabilities
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL
+`
+
+type AssignLiabilitiesTagParams struct {
+	TagID       *uuid.UUID  `json:"tag_id"`
+	Column2     []uuid.UUID `json:"column_2"`
+	HouseholdID uuid.UUID   `json:"household_id"`
+	UpdatedBy   *uuid.UUID  `json:"updated_by"`
+}
+
+func (q *Queries) AssignLiabilitiesTag(ctx context.Context, arg AssignLiabilitiesTagParams) (int64, error) {
+	result, err := q.db.Exec(ctx, assignLiabilitiesTag,
+		arg.TagID,
+		arg.Column2,
 		arg.HouseholdID,
 		arg.UpdatedBy,
 	)
@@ -112,6 +196,32 @@ func (q *Queries) AssignReceivableTag(ctx context.Context, arg AssignReceivableT
 	result, err := q.db.Exec(ctx, assignReceivableTag,
 		arg.TagID,
 		arg.ID,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const assignReceivablesTag = `-- name: AssignReceivablesTag :execrows
+UPDATE receivables
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL
+`
+
+type AssignReceivablesTagParams struct {
+	TagID       *uuid.UUID  `json:"tag_id"`
+	Column2     []uuid.UUID `json:"column_2"`
+	HouseholdID uuid.UUID   `json:"household_id"`
+	UpdatedBy   *uuid.UUID  `json:"updated_by"`
+}
+
+func (q *Queries) AssignReceivablesTag(ctx context.Context, arg AssignReceivablesTagParams) (int64, error) {
+	result, err := q.db.Exec(ctx, assignReceivablesTag,
+		arg.TagID,
+		arg.Column2,
 		arg.HouseholdID,
 		arg.UpdatedBy,
 	)
@@ -245,6 +355,116 @@ func (q *Queries) GetTagByID(ctx context.Context, arg GetTagByIDParams) (Tag, er
 		&i.DeletedAt,
 	)
 	return i, err
+}
+
+const listTaggableItemsByHousehold = `-- name: ListTaggableItemsByHousehold :many
+
+SELECT grp, id, subtype, display_name, tag_id, currency, amount, has_value, terminated_at FROM (
+    SELECT 'asset'::text AS grp, a.id AS id, a.subtype AS subtype, a.display_name AS display_name,
+           a.tag_id AS tag_id, COALESCE(ls.currency, '')::text AS currency, COALESCE(ls.amount, 0)::numeric AS amount, (ls.currency IS NOT NULL)::boolean AS has_value,
+           a.terminated_at AS terminated_at
+    FROM assets a
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM asset_snapshots
+        WHERE asset_id = a.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE a.household_id = $1 AND a.deleted_at IS NULL
+      AND (a.terminated_at IS NULL OR a.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'liability'::text, l.id, l.subtype, l.display_name,
+           l.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, l.terminated_at
+    FROM liabilities l
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM liability_snapshots
+        WHERE liability_id = l.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE l.household_id = $1 AND l.deleted_at IS NULL
+      AND (l.terminated_at IS NULL OR l.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'receivable'::text, r.id, 'receivable'::text, r.display_name,
+           r.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, r.terminated_at
+    FROM receivables r
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM receivable_snapshots
+        WHERE receivable_id = r.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE r.household_id = $1 AND r.deleted_at IS NULL
+      AND (r.terminated_at IS NULL OR r.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'investment'::text, i.id, i.subtype, i.display_name,
+           i.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, i.terminated_at
+    FROM investments i
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM investment_snapshots
+        WHERE investment_id = i.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE i.household_id = $1 AND i.deleted_at IS NULL
+      AND (i.terminated_at IS NULL OR i.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+) items
+ORDER BY lower(display_name), id
+`
+
+type ListTaggableItemsByHouseholdRow struct {
+	Grp          string          `json:"grp"`
+	ID           uuid.UUID       `json:"id"`
+	Subtype      string          `json:"subtype"`
+	DisplayName  string          `json:"display_name"`
+	TagID        *uuid.UUID      `json:"tag_id"`
+	Currency     string          `json:"currency"`
+	Amount       decimal.Decimal `json:"amount"`
+	HasValue     bool            `json:"has_value"`
+	TerminatedAt *time.Time      `json:"terminated_at"`
+}
+
+// ----- taggable items (Tags page expand + picker) ---------------------------
+// Every Position the breakdown could count (same active-or-terminated-this-
+// month rule), tagged or not, with its latest snapshot value when it has one.
+// A Position with no snapshot yet still lists (has_value false; the repo turns
+// currency/amount into nulls, since sqlc cannot see a LEFT JOIN null through a
+// UNION) so it can
+// be tagged before its first month is recorded.
+func (q *Queries) ListTaggableItemsByHousehold(ctx context.Context, householdID uuid.UUID) ([]ListTaggableItemsByHouseholdRow, error) {
+	rows, err := q.db.Query(ctx, listTaggableItemsByHousehold, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTaggableItemsByHouseholdRow
+	for rows.Next() {
+		var i ListTaggableItemsByHouseholdRow
+		if err := rows.Scan(
+			&i.Grp,
+			&i.ID,
+			&i.Subtype,
+			&i.DisplayName,
+			&i.TagID,
+			&i.Currency,
+			&i.Amount,
+			&i.HasValue,
+			&i.TerminatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listTagsByHousehold = `-- name: ListTagsByHousehold :many

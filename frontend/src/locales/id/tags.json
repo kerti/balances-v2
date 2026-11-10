@@ -33,6 +33,46 @@
       "liabilities": "Liabilitas",
       "net": "Bersih"
     },
-    "total": "Total"
+    "total": "Total",
+    "expand": "Tampilkan item di {{name}}",
+    "collapse": "Sembunyikan item di {{name}}"
+  },
+  "itemType": {
+    "bank_account": "Rekening Bank",
+    "property": "Properti",
+    "vehicle": "Kendaraan",
+    "stock": "Saham",
+    "mutual_fund": "Reksa Dana",
+    "bond": "Obligasi",
+    "gold": "Emas",
+    "time_deposit": "Deposito",
+    "receivable": "Piutang",
+    "personal": "Liabilitas Pribadi",
+    "institutional": "Liabilitas Institusional"
+  },
+  "items": {
+    "empty": "Belum ada item dengan tag ini.",
+    "emptyUntagged": "Semua item sudah bertag. Tidak ada yang tersisa.",
+    "add": "Tambah item…",
+    "addUntagged": "Tambahkan ke tag",
+    "remove": "Hapus {{name}} dari tag ini",
+    "picker": {
+      "title": "Tambah item ke {{tag}}",
+      "titleUntagged": "Tambah item ke tag",
+      "description": "Pilih item yang ingin ditambahkan. Item yang sudah punya tag lain akan dipindahkan ke sini: satu item hanya punya satu tag.",
+      "targetLabel": "Tag",
+      "targetPlaceholder": "Pilih tag",
+      "search": "Cari item",
+      "empty": "Tidak ada item yang cocok.",
+      "currently": "saat ini: {{tag}}",
+      "noTag": "Pilih tag.",
+      "noneSelected": "Pilih setidaknya satu item.",
+      "save_other": "Tambah {{count}} item"
+    },
+    "toast": {
+      "added_other": "{{count}} item ditambahkan ke {{tag}}",
+      "addedMoved_other": "{{count}} item ditambahkan ke {{tag}} · {{moved}} dipindahkan dari tag lain",
+      "removed": "{{name}} dihapus dari {{tag}}"
+    }
   }
 }

@@ -97,3 +97,45 @@ it("New tag opens a dialog; Edit renames in a dialog with no inline form", async
   fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
   await waitFor(() => expect(patched).toMatchObject({ name: "Pension" }));
 });
+
+it("a tag's row menu offers Add items…, opening the picker preset to that tag", async () => {
+  let put: unknown = null;
+  server.use(
+    http.get("/api/tags", () => HttpResponse.json(tags)),
+    http.get("/api/tags/items", () =>
+      HttpResponse.json([
+        {
+          group: "receivable",
+          id: "r1",
+          subtype: "receivable",
+          name: "Owed Loan",
+          tag_id: null,
+          currency: null,
+          amount: null,
+          terminated: false,
+        },
+      ]),
+    ),
+    http.put("/api/tags/assignments/bulk", async ({ request }) => {
+      put = await request.json();
+      return new HttpResponse(null, { status: 204 });
+    }),
+  );
+  renderWithProviders(<TagsCard />);
+
+  const trigger = await screen.findByRole("button", { name: "Tag actions" });
+  // Phone tap floor: the ⋯ trigger is 44px below the md breakpoint.
+  expect(trigger).toHaveClass("max-md:size-11");
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole("menuitem", { name: "Add items…" }));
+
+  const dialog = await screen.findByRole("dialog");
+  expect(within(dialog).getByText("Add items to Retirement")).toBeInTheDocument();
+  // Preset: no tag chooser.
+  expect(within(dialog).queryByTestId("add-items-target")).not.toBeInTheDocument();
+  fireEvent.click(await within(dialog).findByTestId("add-items-option-r1"));
+  fireEvent.click(within(dialog).getByTestId("add-items-save"));
+  await waitFor(() =>
+    expect(put).toEqual({ tag_id: "t1", items: [{ group: "receivable", position_id: "r1" }] }),
+  );
+});
