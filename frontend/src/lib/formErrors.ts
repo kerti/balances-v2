@@ -23,6 +23,7 @@ export const FIELD_FOR_CODE: Record<string, string> = {
   INFLATION_RATE_EXISTS: "month",
   INVALID_RATE: "rate",
   TAG_NAME_EXISTS: "name",
+  CANNOT_INVITE_SELF: "email",
 };
 
 export function fieldForError(err: unknown): string | undefined {

@@ -19,7 +19,7 @@ import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
 import { routes } from "@/lib/routes";
 import { InviteForm } from "@/components/common/InviteForm";
-import { ReactivationCard } from "@/components/common/ReactivationCard";
+import { MembersCard } from "@/components/common/MembersCard";
 import { BackupPanel } from "@/components/common/BackupPanel";
 import { RestorePanel } from "@/components/common/RestorePanel";
 import { ErasePanel } from "@/components/common/ErasePanel";
@@ -89,7 +89,7 @@ export function SettingsScreen() {
 
       <SectionHeading>{t("sections.membership")}</SectionHeading>
       <InviteForm />
-      <ReactivationCard />
+      <MembersCard />
 
       <SectionHeading>{t("sections.data")}</SectionHeading>
       <SettingsPanelGroup>

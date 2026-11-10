@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 // rows of one `SettingsTable` each — thirteen separate cards made thirteen
 // scroll stops out of what is mostly a preferences list, and gave each scalar a
 // card title that its field `Label` then repeated verbatim ("Household name" /
-// "Household name"). Membership and Data are flows: Invite renders a copyable
-// URL result state, Reactivation a member list, Restore is file-pick → preview
+// "Household name"). Membership and Data are flows: Invite renders a copy-link
+// result state, Members a table of people and pending invites, Restore is file-pick → preview
 // → acknowledge → type ERASE → commit, and Erase has its own confirm gate.
 // None of those survives being squeezed into a row, so each is a
 // `SettingsPanel` — stacked prose and controls, with its own heading.

@@ -8,8 +8,9 @@ test.use({ permissions: ["clipboard-read", "clipboard-write"] });
 // Founder-assisted in-app member reactivation (ADR-0039/#283): the no-mail
 // recovery affordance. The seeded Carol is DORMANT — a local user with no
 // google_sub and no credential, the post-restore state — so the founder Alice
-// sees her in the reactivation card and mints a one-time set-password link,
-// surfaced on screen to relay out-of-band (the same copy-link shape as invites).
+// sees her flagged in the members table and, from her row's ⋯ menu, mints a
+// one-time set-password link to relay out-of-band. The link rides the clipboard
+// and is never printed (#847).
 //
 // This spec owns the SPA wiring. Minting the link is non-destructive (Carol stays
 // dormant until she actually sets a password), so the spec is idempotent across
@@ -22,25 +23,28 @@ test(
   async ({ page }) => {
     await page.goto("/settings");
 
-    // The card lists the dormant member Carol; active members (Alice, Bob) don't
-    // appear — they are reachable, not awaiting a first credential.
-    const carol = page.getByTestId("dormant-member-carol@example.com");
+    // The table lists the dormant member Carol with a status; active members
+    // (Alice, Bob) are not flagged — they are reachable.
+    const carol = page.getByTestId("member-row-carol@example.com");
     await expect(carol).toBeVisible();
+    await expect(carol.getByTestId("member-dormant-tag")).toBeVisible();
+    await expect(
+      page.getByTestId("member-row-alice@example.com").getByTestId("member-dormant-tag"),
+    ).toHaveCount(0);
 
+    await page.getByTestId("member-actions-carol@example.com").click();
     await page.getByTestId("reactivate-carol@example.com").click();
 
-    // The one-time link is surfaced for manual relay — a /reset set-password link.
-    const link = page.getByTestId("reactivation-link");
-    await expect(link).toBeVisible();
-    const url = await link.innerText();
-    expect(url).toContain("/reset?token=");
+    // The one-time link is offered for manual relay — copied, never displayed.
+    const dialog = page.getByTestId("reactivation-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).not.toContainText("/reset?token=");
 
     const copyButton = page.getByTestId("copy-reactivation-link");
-    await expect(copyButton).toBeVisible();
     await copyButton.click();
     await expect(copyButton).toHaveText("Copied!");
 
     const clipboard = await page.evaluate(() => navigator.clipboard.readText());
-    expect(clipboard).toBe(url);
+    expect(clipboard).toContain("/reset?token=");
   },
 );

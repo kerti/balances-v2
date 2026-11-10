@@ -86,7 +86,13 @@ test(
       }),
       // Text link out to the inflation-rates subpage.
       "manage inflation rates link": page.locator('a[href="/settings/inflation-rates"]'),
+      // The members table stacks into cards on a phone (#847); the seeded dormant
+      // member's ⋯ menu is the founder's Reactivate entry point.
+      "member row menu trigger": page.getByTestId("member-actions-carol@example.com"),
     };
+
+    await expect(page.getByTestId("member-cards")).toBeVisible();
+    await expect(page.getByTestId("member-table")).toHaveCount(0);
 
     for (const [name, locator] of Object.entries(samples)) {
       const target = locator.first();

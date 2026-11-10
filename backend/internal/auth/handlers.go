@@ -232,7 +232,9 @@ func (h *Handlers) Mount(r chi.Router) {
 	r.With(RequireAuth).Patch("/me", h.handleUpdateMe)
 	r.With(RequireAuth).Get("/household/members", h.handleListHouseholdMembers)
 	r.With(RequireAuth).Patch("/household/settings", h.handleUpdateHouseholdSettings)
+	r.With(RequireAuth).Get("/household/membership", h.handleGetMembership)
 	r.With(RequireAuth).Post("/invitations", h.handleCreateInvitation)
+	r.With(RequireAuth).Delete("/invitations/{id}", h.handleRevokeInvitation)
 }
 
 func (h *Handlers) handleStart(w http.ResponseWriter, r *http.Request) {

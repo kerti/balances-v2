@@ -96,3 +96,17 @@ SET theme      = $2,
     updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
 RETURNING *;
+
+-- name: ListHouseholdRoster :many
+-- Settings → Members table (#847): every live member of the household with the
+-- one derived fact the table needs, `dormant` — no google_sub AND no
+-- local_credentials row, the same test as ListDormantMembersByHousehold
+-- (INV-AUTH-15). Soft-deleted users are skipped. Oldest member first so the
+-- founder leads the table.
+SELECT u.id, u.display_name, u.nickname, u.email, u.created_at, u.created_by,
+       (u.google_sub IS NULL AND lc.user_id IS NULL)::boolean AS dormant
+FROM users u
+LEFT JOIN local_credentials lc ON lc.user_id = u.id
+WHERE u.household_id = $1
+  AND u.deleted_at IS NULL
+ORDER BY u.created_at ASC, u.id;

@@ -116,6 +116,10 @@ the choice is non-obvious.
 | Sole (ownership) | Tunggal | "Pemilik Tunggal" in full. _Avoid_: Pribadi (overloads with the "Personal" liability subtype). |
 | Invite (noun) | Undangan | — |
 | Invite (verb) | Undang | — |
+| Revoke (an invite) | Batalkan | "Batalkan undangan". The invite is withdrawn before it is accepted; _Avoid_: Cabut (reads as stripping a right from someone who already has it). |
+| Pending (invite) | Tertunda | "Undangan tertunda": sent, not yet accepted or expired. |
+| Dormant (member) | Belum bisa masuk | User-facing status "Can't sign in yet" → "Belum bisa masuk". The domain term stays _dormant_ ([[adr-0039]]); the screen says what it means for the person. |
+| Reactivate (a member) | Aktifkan kembali | — |
 | Sign in | Masuk | — |
 | Sign out | Keluar | — |
 | Erasure (whole-household hard delete, ADR-0040) | Hapus (rumah tangga) | Rendered as a plain verb phrase ("Hapus rumah tangga ini"), not a noun loanword — matches Restore's existing informal treatment ("Pulihkan"/"cadangan" have no dedicated glossary row either). _Avoid_: Penghapusan (correct but reads bureaucratic for a destructive-action button). |

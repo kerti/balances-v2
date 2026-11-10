@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createLocalUser = `-- name: CreateLocalUser :one
@@ -215,6 +216,59 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Theme,
 	)
 	return i, err
+}
+
+const listHouseholdRoster = `-- name: ListHouseholdRoster :many
+SELECT u.id, u.display_name, u.nickname, u.email, u.created_at, u.created_by,
+       (u.google_sub IS NULL AND lc.user_id IS NULL)::boolean AS dormant
+FROM users u
+LEFT JOIN local_credentials lc ON lc.user_id = u.id
+WHERE u.household_id = $1
+  AND u.deleted_at IS NULL
+ORDER BY u.created_at ASC, u.id
+`
+
+type ListHouseholdRosterRow struct {
+	ID          uuid.UUID          `json:"id"`
+	DisplayName string             `json:"display_name"`
+	Nickname    *string            `json:"nickname"`
+	Email       string             `json:"email"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	CreatedBy   *uuid.UUID         `json:"created_by"`
+	Dormant     bool               `json:"dormant"`
+}
+
+// Settings → Members table (#847): every live member of the household with the
+// one derived fact the table needs, `dormant` — no google_sub AND no
+// local_credentials row, the same test as ListDormantMembersByHousehold
+// (INV-AUTH-15). Soft-deleted users are skipped. Oldest member first so the
+// founder leads the table.
+func (q *Queries) ListHouseholdRoster(ctx context.Context, householdID uuid.UUID) ([]ListHouseholdRosterRow, error) {
+	rows, err := q.db.Query(ctx, listHouseholdRoster, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListHouseholdRosterRow
+	for rows.Next() {
+		var i ListHouseholdRosterRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.Nickname,
+			&i.Email,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.Dormant,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listUsersByHousehold = `-- name: ListUsersByHousehold :many

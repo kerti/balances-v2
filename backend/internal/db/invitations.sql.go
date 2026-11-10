@@ -165,6 +165,52 @@ func (q *Queries) GetValidInvitationForEmail(ctx context.Context, arg GetValidIn
 	return i, err
 }
 
+const listPendingInvitationsByHousehold = `-- name: ListPendingInvitationsByHousehold :many
+SELECT id, invited_email, created_at, expires_at
+FROM household_invitations
+WHERE household_id = $1
+  AND used_at IS NULL
+  AND expires_at > now()
+ORDER BY created_at DESC, id
+`
+
+type ListPendingInvitationsByHouseholdRow struct {
+	ID           uuid.UUID          `json:"id"`
+	InvitedEmail string             `json:"invited_email"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+}
+
+// Settings → Members: the household's invitations that can still be accepted —
+// unused AND unexpired (an expired one is dead weight, not a pending invite, so it
+// is not listed). household_id is filtered in SQL like every tenant query; the
+// token hash is deliberately not selected, so the plaintext can never be rebuilt
+// from a list response. Most-recently-sent first.
+func (q *Queries) ListPendingInvitationsByHousehold(ctx context.Context, householdID uuid.UUID) ([]ListPendingInvitationsByHouseholdRow, error) {
+	rows, err := q.db.Query(ctx, listPendingInvitationsByHousehold, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListPendingInvitationsByHouseholdRow
+	for rows.Next() {
+		var i ListPendingInvitationsByHouseholdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.InvitedEmail,
+			&i.CreatedAt,
+			&i.ExpiresAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPendingInvitationsForEmail = `-- name: ListPendingInvitationsForEmail :many
 SELECT invitation_id, household_id, household_name, inviter_name
 FROM (
@@ -231,4 +277,29 @@ WHERE id = $1
 func (q *Queries) MarkInvitationUsed(ctx context.Context, id uuid.UUID) error {
 	_, err := q.db.Exec(ctx, markInvitationUsed, id)
 	return err
+}
+
+const revokeInvitation = `-- name: RevokeInvitation :execrows
+DELETE FROM household_invitations
+WHERE id = $1
+  AND household_id = $2
+  AND used_at IS NULL
+`
+
+type RevokeInvitationParams struct {
+	ID          uuid.UUID `json:"id"`
+	HouseholdID uuid.UUID `json:"household_id"`
+}
+
+// Revoke = delete the unused row (#847). The link's token hash dies with it, so
+// the preview/accept paths answer exactly as for an unknown link (409
+// INVITATION_NO_LONGER_VALID). Scoped by household_id in SQL (a cross-household
+// id matches zero rows) and by used_at IS NULL (an accepted invitation is history,
+// not revocable). Zero rows affected → the caller answers 404.
+func (q *Queries) RevokeInvitation(ctx context.Context, arg RevokeInvitationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, revokeInvitation, arg.ID, arg.HouseholdID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
