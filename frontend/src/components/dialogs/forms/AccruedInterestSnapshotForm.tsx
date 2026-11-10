@@ -29,6 +29,8 @@ type Props = {
   onMonthChange?: (yearMonth: string) => void;
   replacing?: string;
   lastRecorded?: LastRecorded;
+  // Edit only: opens the Move dialog beside the locked month (#791).
+  onMove?: () => void;
 };
 
 export function AccruedInterestSnapshotFormBody({
@@ -41,6 +43,7 @@ export function AccruedInterestSnapshotFormBody({
   onMonthChange,
   replacing,
   lastRecorded,
+  onMove,
 }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   return (
@@ -53,6 +56,7 @@ export function AccruedInterestSnapshotFormBody({
         asOfDate={form.as_of_date}
         onAsOfDateChange={(v) => setForm({ ...form, as_of_date: v })}
         replacing={replacing}
+        onMove={onMove}
       />
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">

@@ -65,6 +65,8 @@
     "CROSS_SITE_REQUEST_BLOCKED": "This request was blocked for your safety. Reload the page and try again.",
     "INFLATION_RATE_EXISTS": "An inflation rate already exists for that month.",
     "UNDO_SLOT_TAKEN": "Can't undo: something else now fills that spot (the same month or rate). Remove or edit it first.",
-    "UNDO_REPLACEMENT_CHANGED": "Can't undo: this value was changed again after it was replaced."
+    "UNDO_REPLACEMENT_CHANGED": "Can't undo: this value was changed again after it was replaced.",
+    "SNAPSHOT_CLOSE_NOT_MOVABLE": "This is the closing snapshot written when the position was closed, so it can't be moved. Reopen the position to remove it.",
+    "SNAPSHOT_MOVE_SAME_MONTH": "That snapshot is already in this month."
   }
 }

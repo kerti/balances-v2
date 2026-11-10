@@ -14,6 +14,7 @@ import { formatDate } from "@/lib/format";
 // form-level message.
 export const FIELD_FOR_CODE: Record<string, string> = {
   SNAPSHOT_MONTH_EXISTS: "year_month",
+  SNAPSHOT_MOVE_SAME_MONTH: "year_month",
   FUTURE_YEAR_MONTH: "year_month",
   SNAPSHOT_FUTURE_DATE: "as_of_date",
   SNAPSHOT_DATE_OUTSIDE_MONTH: "as_of_date",

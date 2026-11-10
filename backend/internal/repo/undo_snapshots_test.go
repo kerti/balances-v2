@@ -408,3 +408,39 @@ func TestUndoDeleteSnapshot_NotUnderDeletedPosition(t *testing.T) {
 		}
 	})
 }
+
+// TestUndoReplaceSnapshot_RestoredRowMustBeTheOneArchived: the row to restore
+// must be the one this very replacement archived (its deleted_at equals the
+// replacement's created_at), not an older archived row of the same slot. Naming
+// an older one is refused with ErrUndoReplacementChanged and changes nothing,
+// while the genuine pair still undoes.
+//
+// covers: INV-SOFT-DELETE-09, INV-SOFT-DELETE-10
+func TestUndoReplaceSnapshot_RestoredRowMustBeTheOneArchived(t *testing.T) {
+	forEachUndoSnapGroup(t, func(t *testing.T, e undoSnapEnv) {
+		a := e.g.create(t, e.alice, e.position, replSep, rd("100"))
+		b, _, err := e.g.edit(e.alice, a, rd("200"), "IDR", nil)
+		if err != nil {
+			t.Fatalf("edit 1: %v", err)
+		}
+		c, replaced, err := e.g.edit(e.alice, b, rd("300"), "IDR", nil)
+		if err != nil || replaced == nil || *replaced != b {
+			t.Fatalf("edit 2: live=%s replaced=%v err=%v", c, replaced, err)
+		}
+
+		// a was archived by the first edit, c is live: same slot, but not one write.
+		if err := e.ops.undoReplace(e.alice, a, c); !errors.Is(err, repo.ErrUndoReplacementChanged) {
+			t.Fatalf("older archived row: err = %v, want ErrUndoReplacementChanged", err)
+		}
+		requireOneLive(t, e.pool, e.g, e.position, replSep, &c, "300", 2)
+		if !e.archived(t, a) || !e.archived(t, b) {
+			t.Fatal("a refused undo restored a row")
+		}
+
+		// The pair one write produced still undoes.
+		if err := e.ops.undoReplace(e.alice, b, c); err != nil {
+			t.Fatalf("genuine undo: %v", err)
+		}
+		requireOneLive(t, e.pool, e.g, e.position, replSep, &b, "200", 2)
+	})
+}

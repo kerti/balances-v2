@@ -2,6 +2,8 @@ import { useState } from "react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { MoveSnapshotDialog } from "@/components/dialogs/MoveSnapshotDialog";
+import { snapshotGroupOf } from "@/lib/snapshotMove";
 import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
@@ -43,10 +45,9 @@ type Props<TResult> = {
   mutation: UseMutationResult<TResult, unknown, UpdateSnapshotMutationVariables>;
 };
 
-// year_month is shown read-only, not editable: changing it would mean creating
-// a different month's snapshot, which conflicts with the (position_id,
-// year_month) unique constraint. To "move" a snapshot to a different month, the
-// user deletes it (row menu) and records a new one — see snapshot.wrongMonthHint.
+// year_month is shown read-only, not editable (it is immutable, #76). Moving a
+// snapshot to another month is its own atomic act, Move… (#791), which archives
+// it and records the same values in the target month.
 export function EditSnapshotDialog<TResult>({
   open,
   onOpenChange,
@@ -54,6 +55,8 @@ export function EditSnapshotDialog<TResult>({
   mutation,
 }: Props<TResult>) {
   const { t } = useTranslation("common");
+  const [moveOpen, setMoveOpen] = useState(false);
+  const movable = snapshotGroupOf(snapshot) !== null;
   const [form, setForm] = useState({
     year_month: snapshot.year_month,
     amount: snapshot.amount,
@@ -78,32 +81,41 @@ export function EditSnapshotDialog<TResult>({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("snapshot.editTitle")}</DialogTitle>
-          <DialogDescription>{t("snapshot.editDescription")}</DialogDescription>
-        </DialogHeader>
-        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
-          <SnapshotFormBody
-            mode="edit"
-            currency={snapshot.currency}
-            form={form}
-            setForm={setForm}
-          />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("snapshot.editTitle")}</DialogTitle>
+            <DialogDescription>{t("snapshot.editDescription")}</DialogDescription>
+          </DialogHeader>
+          <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
+            <SnapshotFormBody
+              mode="edit"
+              onMove={movable ? () => setMoveOpen(true) : undefined}
+              currency={snapshot.currency}
+              form={form}
+              setForm={setForm}
+            />
 
-          <FormError />
+            <FormError />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("cancel")}
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? t("actions.saving") : t("actions.saveChanges")}
-            </Button>
-          </DialogFooter>
-        </ValidatedForm>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t("cancel")}
+              </Button>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? t("actions.saving") : t("actions.saveChanges")}
+              </Button>
+            </DialogFooter>
+          </ValidatedForm>
+        </DialogContent>
+      </Dialog>
+      <MoveSnapshotDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        snapshot={snapshot}
+        onMoved={() => onOpenChange(false)}
+      />
+    </>
   );
 }

@@ -50,6 +50,29 @@ export function toastSnapshotEdit(
   });
 }
 
+// A snapshot move (#791): always one Undo toast. The undo route hangs off the
+// original (the archived row to bring back) and names the moved row plus the
+// target month's displaced row, if the move replaced one.
+export function toastSnapshotMove(
+  qc: QueryClient,
+  snapshotsPath: string,
+  originalId: string,
+  moved: { id: string; replaced_id: string | null },
+  month: string,
+  onUndone: () => void,
+) {
+  toastUndoable({
+    message: i18n.t(moved.replaced_id ? "common:toast.movedReplaced" : "common:toast.moved", {
+      month,
+    }),
+    undoPath: `${snapshotsPath}/${originalId}/undo-move`,
+    undoBody: { moved_id: moved.id, displaced_id: moved.replaced_id },
+    testId: "toast-moved",
+    qc,
+    onUndone,
+  });
+}
+
 type UndoableOptions = {
   message: string;
   // POST that reverses the write; the body is JSON when given.

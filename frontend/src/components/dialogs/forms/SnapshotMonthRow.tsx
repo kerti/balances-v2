@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Callout } from "@/components/common/Callout";
@@ -19,12 +20,13 @@ type Props = {
   /** Create only: the existing snapshot's total, formatted, when the picked
    *  month already has one. Shows the replace notice under the picker. */
   replacing?: string;
+  /** Edit only: opens the Move dialog (#791). Omitted when the row cannot be moved. */
+  onMove?: () => void;
 };
 
 // The month + statement-date row every snapshot form opens with. Create picks
-// the month; Edit shows it locked in the same slot (a snapshot cannot move
-// months — it would collide with the (position, month) unique key — so the
-// hint points at delete + re-record).
+// the month; Edit shows it locked in the same slot — `year_month` is immutable
+// (#76) — and offers Move… beside it, one atomic act (#791).
 export function SnapshotMonthRow({
   mode,
   idPrefix,
@@ -33,6 +35,7 @@ export function SnapshotMonthRow({
   asOfDate,
   onAsOfDateChange,
   replacing,
+  onMove,
 }: Props) {
   const { t } = useTranslation("common");
   const monthId = `${idPrefix}year_month`;
@@ -52,12 +55,25 @@ export function SnapshotMonthRow({
             onSelect={onYearMonthChange}
           />
         ) : (
-          <Input
-            id={monthId}
-            data-testid="snapshot-month-locked"
-            disabled
-            value={formatYearMonth(yearMonth)}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              id={monthId}
+              data-testid="snapshot-month-locked"
+              disabled
+              value={formatYearMonth(yearMonth)}
+            />
+            {onMove && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 shrink-0 md:h-9"
+                data-testid="snapshot-move-open"
+                onClick={onMove}
+              >
+                {t("snapshot.moveTrigger")}
+              </Button>
+            )}
+          </div>
         )}
         {mode === "create" && replacing !== undefined && (
           <Callout data-testid="snapshot-replace-notice">
@@ -76,9 +92,6 @@ export function SnapshotMonthRow({
           onChange={(e) => onAsOfDateChange(e.target.value)}
         />
       </div>
-      {mode === "edit" && (
-        <p className="text-xs text-muted-foreground">{t("snapshot.wrongMonthHint")}</p>
-      )}
     </>
   );
 }

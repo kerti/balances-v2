@@ -138,4 +138,14 @@ var (
 	// it would discard a later change, so nothing is touched. Mapped to 409
 	// (ADR-0058 §2).
 	ErrUndoReplacementChanged = errors.New("repo: undo target's replacement has changed")
+
+	// ErrSnapshotCloseNotMovable is returned when a move names a Position's close
+	// snapshot, the 0-value reading its terminal flip wrote at the termination
+	// month (ADR-0052 §2). Moving it would leave the Position terminated with no
+	// close row. Mapped to 409.
+	ErrSnapshotCloseNotMovable = errors.New("repo: a close snapshot can't be moved")
+
+	// ErrSnapshotMoveSameMonth is returned when a move's target month is the
+	// snapshot's own month, which would be a no-op. Mapped to 400.
+	ErrSnapshotMoveSameMonth = errors.New("repo: snapshot is already in that month")
 )

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**226 / 226** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
+**229 / 229** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
 | Zone | Per-PR | Coverage |
 |----|----|----|
@@ -12,14 +12,14 @@
 | FINANCE | 38 / 38 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 9 / 9 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 32 / 32 | [AUTH](04-auth.md) |
-| SNAPSHOTS | 14 / 14 | [SNAPSHOTS](05-snapshots.md) |
+| SNAPSHOTS | 15 / 15 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 7 / 7 | [IMPORT](07-import.md) |
 | BONDS | 4 / 4 | [BONDS](08-bonds.md) |
 | TAGS | 6 / 6 | [TAGS](09-tags.md) |
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
 | FX | 5 / 5 | [FX](11-fx.md) |
-| SOFT-DELETE | 12 / 12 | [SOFT-DELETE](12-soft-delete.md) |
+| SOFT-DELETE | 13 / 13 | [SOFT-DELETE](12-soft-delete.md) |
 | STALENESS | 4 / 4 | [STALENESS](13-staleness.md) |
 | ATTRIBUTION | 4 / 4 | [ATTRIBUTION](14-attribution.md) |
 | INTEGRITY | 3 / 3 | [INTEGRITY](15-integrity.md) |

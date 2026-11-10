@@ -18,6 +18,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpmove"
 	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -161,6 +162,8 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Delete("/{snapshotID}", h.handleDeleteSnapshot)
 			r.Post("/{snapshotID}/undo-delete", httpundo.Delete("undo delete investment snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.InvestmentRepo).UndoDeleteInvestmentSnapshot))
 			r.Post("/{snapshotID}/undo-replace", httpundo.Replace("undo replace investment snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.InvestmentRepo).UndoReplaceInvestmentSnapshot))
+			r.Post("/{snapshotID}/move", httpmove.Move("move investment snapshot", "snapshotID", "snapshot_id", h.repository, h.clock, (*repo.InvestmentRepo).MoveInvestmentSnapshot))
+			r.Post("/{snapshotID}/undo-move", httpmove.Undo("undo move investment snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.InvestmentRepo).UndoMoveInvestmentSnapshot))
 			// Bulk import (M6 side item): download a subtype-shaped .xlsx
 			// template, then upload a filled one. Static segments, so no
 			// clash with the /{snapshotID} routes above.
@@ -225,3 +228,6 @@ func parseIDParam(r *http.Request, name string) (uuid.UUID, error) {
 // repository hands httpundo the repo lazily: Mount must stay safe on a nil
 // *Handlers, so no field is read until a request arrives.
 func (h *Handlers) repository() *repo.InvestmentRepo { return h.repo }
+
+// clock is the same laziness for httpmove's future-month guard.
+func (h *Handlers) clock() time.Time { return h.now() }

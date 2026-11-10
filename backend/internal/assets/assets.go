@@ -20,6 +20,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpmove"
 	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
@@ -140,6 +141,8 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Delete("/{snapshotID}", h.handleDeleteSnapshot)
 		r.Post("/{snapshotID}/undo-delete", httpundo.Delete("undo delete asset snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.AssetRepo).UndoDeleteAssetSnapshot))
 		r.Post("/{snapshotID}/undo-replace", httpundo.Replace("undo replace asset snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.AssetRepo).UndoReplaceAssetSnapshot))
+		r.Post("/{snapshotID}/move", httpmove.Move("move asset snapshot", "snapshotID", "snapshot_id", h.repository, h.clock, (*repo.AssetRepo).MoveAssetSnapshot))
+		r.Post("/{snapshotID}/undo-move", httpmove.Undo("undo move asset snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.AssetRepo).UndoMoveAssetSnapshot))
 		// Bulk import (M6 side item): download a scoped .xlsx template, then
 		// upload a filled one. ?mode=preview (default) validates + counts;
 		// ?mode=commit upserts all-or-nothing. Static segments, so no clash
@@ -250,3 +253,6 @@ func assetSnapshotsToExport(snaps []db.AssetSnapshot) []snapshotimport.ExportSna
 // repository hands httpundo the repo lazily: Mount must stay safe on a nil
 // *Handlers, so no field is read until a request arrives.
 func (h *Handlers) repository() *repo.AssetRepo { return h.repo }
+
+// clock is the same laziness for httpmove's future-month guard.
+func (h *Handlers) clock() time.Time { return h.now() }
