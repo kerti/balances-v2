@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { errorMessage } from "@/lib/errorMessage";
 import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type AccruedInterestSnapshotLike = {
@@ -90,7 +90,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
             {t("investments:accruedInterestSnapshot.editDescription")}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <AccruedInterestSnapshotFormBody
             mode="edit"
             currency={snapshot.currency}
@@ -99,9 +99,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
             derivedPrincipal={derivedPrincipal}
           />
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
@@ -111,7 +109,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
               {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

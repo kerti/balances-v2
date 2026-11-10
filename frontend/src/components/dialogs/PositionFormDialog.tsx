@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { errorMessage } from "@/lib/errorMessage";
+import { FormError, ValidatedForm, type FieldMessages } from "@/components/common/ValidatedForm";
 
 type Props = {
   title: string;
@@ -21,13 +21,13 @@ type Props = {
   pendingLabel: string;
   isPending: boolean;
   /**
-   * Extra disable condition for the submit button (e.g. an inline validation
-   * like time-deposit's term check). ORs with `isPending` for the disabled
-   * state only — the button label still tracks `isPending`, so a merely-invalid
-   * form keeps its rest label rather than flipping to the pending label.
+   * Rules the fields' own `required`/`min`/`max` can't express (e.g. the
+   * time-deposit term check), keyed by field id. The submit button is never
+   * disabled for an invalid form: clicking it shows these beside their fields
+   * (#824, ADR-0058 §5).
    */
-  submitDisabled?: boolean;
-  /** The mutation error, if any; rendered via the shared error envelope. */
+  validate?: () => FieldMessages;
+  /** The mutation error, if any: beside its field when the code maps to one, else a form-level message. */
   error: unknown;
   /**
    * Called on form submit with a `close` callback. The caller maps its form
@@ -66,7 +66,7 @@ export function PositionFormDialog({
   submitLabel,
   pendingLabel,
   isPending,
-  submitDisabled = false,
+  validate,
   error,
   onSubmit,
   children,
@@ -109,26 +109,25 @@ export function PositionFormDialog({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit(close);
-          }}
+        <ValidatedForm
+          onSubmit={() => onSubmit(close)}
+          validate={validate}
+          error={error}
           className={formClassName}
         >
           {children}
 
-          {error != null && <p className="text-sm text-destructive">{errorMessage(error)}</p>}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={isPending || submitDisabled}>
+            <Button type="submit" disabled={isPending}>
               {isPending ? pendingLabel : submitLabel}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

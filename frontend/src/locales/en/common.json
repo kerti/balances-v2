@@ -302,6 +302,14 @@
     "reload": "Reload"
   },
   "offline": "You're offline — Balances needs a connection.",
+  "validation": {
+    "required": "This field is required.",
+    "invalid": "Enter a valid value.",
+    "dateMin": "Pick a date on or after {{value}}.",
+    "dateMax": "Pick a date on or before {{value}}.",
+    "numMin": "Must be at least {{value}}.",
+    "numMax": "Must be at most {{value}}."
+  },
   "numericInput": {
     "invalidPaste": "That isn't a number this field can read.",
     "tooLong": "That number is too long for this field."

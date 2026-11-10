@@ -302,6 +302,14 @@
     "reload": "Muat ulang"
   },
   "offline": "Anda sedang offline — Balances memerlukan koneksi internet.",
+  "validation": {
+    "required": "Wajib diisi.",
+    "invalid": "Isi dengan nilai yang valid.",
+    "dateMin": "Pilih tanggal pada atau setelah {{value}}.",
+    "dateMax": "Pilih tanggal pada atau sebelum {{value}}.",
+    "numMin": "Minimal {{value}}.",
+    "numMax": "Maksimal {{value}}."
+  },
   "numericInput": {
     "invalidPaste": "Isian ini tidak bisa dibaca sebagai angka.",
     "tooLong": "Angka ini terlalu panjang untuk kolom ini."

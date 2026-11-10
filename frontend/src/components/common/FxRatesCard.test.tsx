@@ -151,7 +151,10 @@ it("the dialog hint and the Add rate button read the same figure, phone comma in
   await waitFor(() =>
     expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR"),
   );
-  expect(add).toBeDisabled();
+  // The empty rate is refused on click, with the reason beside it (#824).
+  expect(add).toBeEnabled();
+  await userEvent.click(add);
+  expect(dialog.getByTestId("field-error-fx-rate")).toBeInTheDocument();
 
   await userEvent.type(rate, "12000,5");
   expect(rate).toHaveValue("12,000.5");
@@ -194,8 +197,13 @@ it("desktop: Save changes is blocked for a non-positive rate", async () => {
   const dialog = within(await screen.findByRole("dialog"));
   fireEvent.change(dialog.getByLabelText("Rate"), { target: { value: "0" } });
 
-  // A rate must be > 0 (ADR-0002): Save stays disabled.
-  expect(dialog.getByRole("button", { name: "Save changes" })).toBeDisabled();
+  // A rate must be > 0 (ADR-0002): Save stays clickable and says why (#824).
+  const save = dialog.getByRole("button", { name: "Save changes" });
+  expect(save).toBeEnabled();
+  fireEvent.click(save);
+  expect(dialog.getByTestId("field-error-fx-rate")).toHaveTextContent(
+    "Rate must be greater than zero.",
+  );
 });
 
 it("desktop: paginates at 12 rows per page", async () => {

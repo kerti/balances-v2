@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
-import { errorMessage } from "@/lib/errorMessage";
 import {
   formatCurrency,
   PRICE_DECIMALS,
@@ -96,7 +96,7 @@ export function EditTradeTransactionDialog<TResult>({
           </DialogTitle>
           <DialogDescription>{t("investments:trade.editDescription")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="edit_trade_date">{t("investments:trade.tradeDateLabel")}</Label>
             <Input
@@ -157,19 +157,17 @@ export function EditTradeTransactionDialog<TResult>({
             />
           </div>
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common:cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending || derivedAmount === null}>
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

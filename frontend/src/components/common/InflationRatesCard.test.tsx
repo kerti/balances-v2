@@ -144,7 +144,11 @@ it("New inflation rate opens a dialog that POSTs the month and rate", async () =
 
   const dialog = within(await screen.findByRole("dialog"));
   const add = dialog.getByRole("button", { name: "Add rate" });
-  expect(add).toBeDisabled();
+  // Never disabled for an invalid form: clicking it names the missing fields (#824).
+  expect(add).toBeEnabled();
+  fireEvent.click(add);
+  expect(dialog.getByTestId("field-error-inflation-month")).toBeInTheDocument();
+  expect(dialog.getByTestId("field-error-inflation-rate")).toBeInTheDocument();
   await userEvent.click(dialog.getByLabelText("Month"));
   await userEvent.click(await screen.findByTestId("month-picker-cell-2026-02"));
   fireEvent.change(dialog.getByLabelText("Annual %"), { target: { value: "-1.5" } });

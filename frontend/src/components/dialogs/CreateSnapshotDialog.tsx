@@ -3,6 +3,7 @@ import { CopyPlus, Plus } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { errorMessage } from "@/lib/errorMessage";
 import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
@@ -139,7 +139,7 @@ export function CreateSnapshotDialog<TResult>({
           <DialogTitle>{t("snapshot.createTitle")}</DialogTitle>
           <DialogDescription>{t("snapshot.createDescription", { currency })}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <SnapshotFormBody
             mode="create"
             currency={currency}
@@ -148,9 +148,7 @@ export function CreateSnapshotDialog<TResult>({
             suggest={suggest}
           />
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
@@ -160,7 +158,7 @@ export function CreateSnapshotDialog<TResult>({
               {mutation.isPending ? t("actions.saving") : t("snapshot.save")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

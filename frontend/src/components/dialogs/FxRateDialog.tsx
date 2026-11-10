@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
+import type { FieldMessages } from "@/components/common/ValidatedForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -41,6 +42,7 @@ function FxRateFormBody({
         <Label htmlFor="fx-month">{t("fx.month")}</Label>
         {mode === "create" ? (
           <MonthPickerPopover
+            fullWidth
             id="fx-month"
             testId="fx-month"
             months={yearMonthsUpToNow()}
@@ -103,10 +105,19 @@ export function FxRateDialog(props: Props) {
       : empty,
   );
 
-  const valid =
-    form.rate !== "" &&
-    Number(form.rate) > 0 &&
-    (props.mode === "edit" || (form.year_month !== "" && form.currency.length === 3));
+  // Month and currency are the row's identity: only Create asks for them.
+  function validate() {
+    const messages: FieldMessages = {};
+    const required = t("common:validation.required");
+    if (props.mode === "create") {
+      if (form.year_month === "") messages["fx-month"] = required;
+      if (form.currency === "") messages["fx-currency"] = required;
+      else if (form.currency.length !== 3) messages["fx-currency"] = t("common:validation.invalid");
+    }
+    if (form.rate === "") messages["fx-rate"] = required;
+    else if (!(Number(form.rate) > 0)) messages["fx-rate"] = t("errors:code.INVALID_RATE");
+    return messages;
+  }
 
   function submit(close: () => void) {
     if (props.mode === "edit") {
@@ -131,7 +142,7 @@ export function FxRateDialog(props: Props) {
         submitLabel={t("common:actions.saveChanges")}
         pendingLabel={t("common:actions.saving")}
         isPending={updateRate.isPending}
-        submitDisabled={!valid}
+        validate={validate}
         error={updateRate.error}
         onSubmit={submit}
       >
@@ -153,7 +164,7 @@ export function FxRateDialog(props: Props) {
       submitLabel={t("settings:fx.addRate")}
       pendingLabel={t("common:actions.creating")}
       isPending={createRate.isPending}
-      submitDisabled={!valid}
+      validate={validate}
       error={createRate.error}
       onSubmit={submit}
       onClosed={() => {

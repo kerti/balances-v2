@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -16,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { errorMessage } from "@/lib/errorMessage";
 import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
 import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
@@ -147,7 +147,7 @@ export function CreateMaturityTransactionDialog<TResult>({
           <DialogTitle>{t("investments:maturityTxn.createTitle")}</DialogTitle>
           <DialogDescription>{t("investments:maturityTxn.createDescription")}</DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
             <Label htmlFor="mat_date">{t("investments:maturityTxn.maturityDateLabel")}</Label>
             <Input
@@ -254,24 +254,19 @@ export function CreateMaturityTransactionDialog<TResult>({
             />
           </div>
 
-          {mutation.isError && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={mutation.isPending || !form.principal_amount || !form.interest_amount}
-            >
+            <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending
                 ? t("common:actions.saving")
                 : t("investments:maturityTxn.recordMaturity")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );

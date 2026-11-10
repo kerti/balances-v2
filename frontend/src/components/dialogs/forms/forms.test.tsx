@@ -347,13 +347,7 @@ describe("position form bodies: Create and Edit render the same field order", ()
     };
     expect(
       expectSameLayout((mode) => (
-        <TimeDepositFormBody
-          mode={mode}
-          form={form}
-          setForm={noop}
-          soleOwnerID={null}
-          termInvalid={false}
-        />
+        <TimeDepositFormBody mode={mode} form={form} setForm={noop} soleOwnerID={null} />
       )),
     ).toMatchInlineSnapshot(`
       [

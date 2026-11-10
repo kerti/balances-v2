@@ -32,37 +32,38 @@ export function SnapshotMonthRow({
   const monthId = `${idPrefix}year_month`;
   return (
     <>
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor={monthId}>{t("fields.month")}</Label>
-          {mode === "create" ? (
-            <MonthPickerPopover
-              id={monthId}
-              testId={monthId}
-              months={yearMonthsUpToNow()}
-              selected={yearMonth}
-              onSelect={onYearMonthChange}
-            />
-          ) : (
-            <Input
-              id={monthId}
-              data-testid="snapshot-month-locked"
-              disabled
-              value={formatYearMonth(yearMonth)}
-            />
-          )}
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor={`${idPrefix}as_of_date`}>{t("fields.statementDate")}</Label>
-          <Input
-            id={`${idPrefix}as_of_date`}
-            type="date"
-            min={monthStartDate(yearMonth)}
-            max={monthEndDateCapped(yearMonth)}
-            value={asOfDate}
-            onChange={(e) => onAsOfDateChange(e.target.value)}
+      {/* Always stacked, never side by side (#865): the picker group is
+          wider than half a dialog at every width and ran over the date. */}
+      <div className="grid gap-2">
+        <Label htmlFor={monthId}>{t("fields.month")}</Label>
+        {mode === "create" ? (
+          <MonthPickerPopover
+            fullWidth
+            id={monthId}
+            testId={monthId}
+            months={yearMonthsUpToNow()}
+            selected={yearMonth}
+            onSelect={onYearMonthChange}
           />
-        </div>
+        ) : (
+          <Input
+            id={monthId}
+            data-testid="snapshot-month-locked"
+            disabled
+            value={formatYearMonth(yearMonth)}
+          />
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor={`${idPrefix}as_of_date`}>{t("fields.statementDate")}</Label>
+        <Input
+          id={`${idPrefix}as_of_date`}
+          type="date"
+          min={monthStartDate(yearMonth)}
+          max={monthEndDateCapped(yearMonth)}
+          value={asOfDate}
+          onChange={(e) => onAsOfDateChange(e.target.value)}
+        />
       </div>
       {mode === "edit" && (
         <p className="text-xs text-muted-foreground">{t("snapshot.wrongMonthHint")}</p>

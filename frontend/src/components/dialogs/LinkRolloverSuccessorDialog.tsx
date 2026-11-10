@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useTimeDeposits, useLinkRolloverSuccessor } from "@/hooks/useInvestments";
-import { errorMessage } from "@/lib/errorMessage";
 
 type Props = {
   // The matured source deposit whose funds rolled over. The picked successor
@@ -67,7 +67,14 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
             {t("investments:timeDeposit.rollover.linkDescription")}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} className="space-y-4">
+        <ValidatedForm
+          onSubmit={submit}
+          error={mutation.error}
+          validate={() =>
+            selectedId ? {} : { rollover_successor_select: t("common:validation.required") }
+          }
+          className="space-y-4"
+        >
           <div className="grid gap-2">
             <Label htmlFor="rollover_successor_select">
               {t("investments:timeDeposit.rollover.linkLabel")}
@@ -95,25 +102,19 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
             )}
           </div>
 
-          {mutation.error && (
-            <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
-          )}
+          <FormError />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>
               {t("common:cancel")}
             </Button>
-            <Button
-              type="submit"
-              disabled={!selectedId || mutation.isPending}
-              data-testid="rollover-link-submit"
-            >
+            <Button type="submit" disabled={mutation.isPending} data-testid="rollover-link-submit">
               {mutation.isPending
                 ? t("common:actions.saving")
                 : t("investments:timeDeposit.rollover.linkSubmit")}
             </Button>
           </DialogFooter>
-        </form>
+        </ValidatedForm>
       </DialogContent>
     </Dialog>
   );
