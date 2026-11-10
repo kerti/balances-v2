@@ -97,7 +97,7 @@ export function EntryRowDesktop({
         {shape.fields.map((f) => (
           <NumericInput
             key={f.key}
-            className={`${f.widthClass} text-right${dirty ? " border-amber-500 ring-1 ring-amber-500" : ""}`}
+            className={`${f.widthClass} text-right${dirty ? " border-primary ring-1 ring-primary" : ""}`}
             decimals={f.decimals(view.currency)}
             maxIntegerDigits={f.maxIntegerDigits}
             aria-label={f.labelKey ? t(f.labelKey) : undefined}

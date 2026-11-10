@@ -53,8 +53,8 @@ describe("maturityInfo", () => {
 });
 
 describe("maturityClass", () => {
-  it("maps imminent to amber + bold", () => {
-    expect(maturityClass("imminent")).toContain("amber");
+  it("maps imminent to warning + bold", () => {
+    expect(maturityClass("imminent")).toContain("text-warning");
     expect(maturityClass("imminent")).toContain("font-semibold");
   });
 

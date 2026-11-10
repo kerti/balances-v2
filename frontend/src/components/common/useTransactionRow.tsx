@@ -50,8 +50,8 @@ function impactAmount(t: InvestmentTransaction): string | null {
 }
 
 function impactColor(dir: Direction): string {
-  if (dir === "in") return "text-emerald-600";
-  if (dir === "out") return "text-destructive";
+  if (dir === "in") return "text-positive";
+  if (dir === "out") return "text-negative";
   return "text-muted-foreground";
 }
 

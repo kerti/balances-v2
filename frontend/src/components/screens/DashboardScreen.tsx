@@ -330,7 +330,7 @@ function StalePositions({ selected }: { selected: MonthlyReport }) {
   const enriched = stale.every((p) => typeof (p as unknown) === "object" && p !== null);
   if (!enriched) {
     return (
-      <p data-testid="dashboard-stale" className="text-sm text-amber-600">
+      <p data-testid="dashboard-stale" className="text-sm text-warning">
         {t("headline.stalePositions", {
           count: stale.length,
           when: formatYearMonth(selected.year_month),
@@ -340,7 +340,7 @@ function StalePositions({ selected }: { selected: MonthlyReport }) {
   }
   const entryRoute = staleEntryRoute(stale);
   return (
-    <div data-testid="dashboard-stale" className="text-sm text-amber-600">
+    <div data-testid="dashboard-stale" className="text-sm text-warning">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-5">
         <button
           type="button"
@@ -424,7 +424,7 @@ function UnsettledTerminations({ selected }: { selected: MonthlyReport }) {
   const unsettled = selected.unsettled_terminations ?? [];
   if (unsettled.length === 0) return null;
   return (
-    <div data-testid="dashboard-unsettled" className="text-sm text-amber-600">
+    <div data-testid="dashboard-unsettled" className="text-sm text-warning">
       <p>{t("headline.unsettledTerminations", { count: unsettled.length })}</p>
       <ul className="mt-1 space-y-1 pl-5">
         {unsettled.map((p) => {
@@ -498,7 +498,7 @@ function SecondaryAmount({
       {"≈ "}
       {formatCurrency(String(amount), currency)}
       {carried && (
-        <span className="ml-1 text-amber-600">
+        <span className="ml-1 text-warning">
           {"· "}
           {t("secondary.carriedForward", {
             currency,
@@ -537,7 +537,7 @@ function Trend({
     const yoyPct = yoyPrevAbs > 0 ? (yoyDelta / yoyPrevAbs) * 100 : null;
     const yoyUp = yoyDelta >= 0;
     yoySpan = (
-      <span className={`text-sm font-medium ${yoyUp ? "text-emerald-600" : "text-destructive"}`}>
+      <span className={`text-sm font-medium ${yoyUp ? "text-positive" : "text-negative"}`}>
         {yoyUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(yoyDelta)), currency)}
         {yoyPct !== null && ` (${yoyUp ? "+" : "−"}${Math.abs(yoyPct).toFixed(1)}%)`}{" "}
         <span className="font-normal text-muted-foreground">
@@ -551,7 +551,7 @@ function Trend({
 
   return (
     <div className="flex flex-col gap-0.5">
-      <span className={`text-sm font-medium ${momUp ? "text-emerald-600" : "text-destructive"}`}>
+      <span className={`text-sm font-medium ${momUp ? "text-positive" : "text-negative"}`}>
         {momUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(momDelta)), currency)}
         {momPct !== null && ` (${momUp ? "+" : "−"}${Math.abs(momPct).toFixed(1)}%)`}{" "}
         <span className="font-normal text-muted-foreground">
@@ -833,8 +833,8 @@ function StatementRow({
   const amountClass = muted
     ? "text-muted-foreground"
     : positive
-      ? "text-emerald-600"
-      : "text-destructive";
+      ? "text-positive"
+      : "text-negative";
   return (
     <div className="flex items-center justify-between gap-4">
       <span className={muted ? "text-muted-foreground" : ""}>

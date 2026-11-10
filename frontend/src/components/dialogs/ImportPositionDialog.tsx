@@ -212,7 +212,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
           )}
 
           {committed && (
-            <p className="text-sm text-emerald-600" data-testid="import-done">
+            <p className="text-sm text-positive" data-testid="import-done">
               {t("importCreate.committed", { noun, count: result.to_insert })}
             </p>
           )}

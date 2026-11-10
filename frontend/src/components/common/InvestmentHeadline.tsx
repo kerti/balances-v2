@@ -117,8 +117,8 @@ export function InvestmentHeadline({
 }
 
 function plColor(pl: number): string {
-  if (pl > 0) return "text-emerald-600";
-  if (pl < 0) return "text-destructive";
+  if (pl > 0) return "text-positive";
+  if (pl < 0) return "text-negative";
   return "text-muted-foreground";
 }
 

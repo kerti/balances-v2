@@ -54,7 +54,7 @@ export function TagBreakdownCards({ bd, isChecked, toggle }: Props) {
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">{t("report.col.liabilities")}</dt>
-                <dd className="text-destructive">
+                <dd>
                   {c.liabilities > 0
                     ? `−${formatCurrency(String(c.liabilities), bd.currency)}`
                     : "—"}
@@ -80,7 +80,7 @@ export function TagBreakdownCards({ bd, isChecked, toggle }: Props) {
           </div>
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">{t("report.col.liabilities")}</dt>
-            <dd className="text-destructive">
+            <dd>
               {bd.totalLiabilities > 0
                 ? `−${formatCurrency(String(bd.totalLiabilities), bd.currency)}`
                 : "—"}
