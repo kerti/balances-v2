@@ -51,7 +51,7 @@ Per-milestone history — what each tag contained — is in the GitHub Releases,
 epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction rather than picking the
 next item off the backlog — they pause between items to direct.
 
-**Active line: the 2026-11-04 UI/UX audit of the demo.** Decided in themed grill rounds; each round
+**Active line: building the 2026-11-04 UI/UX audit of the demo.** Decided in themed grill rounds; each round
 files its own `ready-for-agent` issues. Quick wins #779–#784; round (a), money entry and the monthly
 flow (ADR-0056, ADR-0046 amendment), is #785–#792. Round (c), feedback and safety (ADR-0058: replaces
 archive, single-item Undo toasts, confirm tiers, one toast per write), is #820–#825; it unblocks
@@ -60,8 +60,11 @@ archive, single-item Undo toasts, confirm tiers, one toast per write), is #820�
 `CONTEXT.md`), is #832 copy sweep + #833 counts/months; it renamed ADR-0058's "Record month" button
 to **Record snapshot**. Round (e), colour (ADR-0054 amendment), is #835 tokens + #836 palettes and
 badges. Round (f), layout and shell (ADR-0050 amendment), is #837–#842. Round (g), scope calls (ADR-0022
-amendment), is #843–#847, with member removal deferred to an ADR issue (#848). Next: the 390px
-real-device issue, then the final pass mapping every audit finding ID to an outcome. `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
+amendment), is #843–#847, with member removal deferred to an ADR issue (#848). Phone width is
+#849 fixes + #850 real-device check (`ready-for-human`, after #849 and #841). The final pass mapped
+every finding ID to an outcome (#851–#853 closed the gaps; table in a comment on #834). **Decisions
+are complete; #779–#853 is the build backlog.** Build in dependency order: #820 and #822 first (they
+unblock #788, #791, #805; #788 then unblocks #790 and #843). `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
 under repo **Settings → Social preview**.
 
 Standing carry-forwards:
