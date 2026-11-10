@@ -12,7 +12,7 @@
 | FINANCE | 38 / 38 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 9 / 9 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 32 / 32 | [AUTH](04-auth.md) |
-| SNAPSHOTS | 13 / 13 | [SNAPSHOTS](05-snapshots.md) |
+| SNAPSHOTS | 14 / 14 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 7 / 7 | [IMPORT](07-import.md) |
 | BONDS | 4 / 4 | [BONDS](08-bonds.md) |

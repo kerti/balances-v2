@@ -52,10 +52,10 @@ test(
     await expect(page.getByTestId("assets-home")).toBeVisible();
 
     // --- Re-open the same month: the write persisted, so the row now carries
-    //     forward this month's own value and warns the next save overwrites it. ---
+    //     forward this month's own value and shows its muted "Current" value. ---
     await page.getByTestId("assets-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: account });
-    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByText(/Current:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("12,500,000");
 
     // --- Cleanup: delete the parent account (returns to the empty list) ---
@@ -111,7 +111,7 @@ test(
 
     await page.getByTestId("liabilities-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByText(/Current:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("250,000,000");
 
     // Cleanup: delete via the list row actions menu.
@@ -161,7 +161,7 @@ test(
 
     await page.getByTestId("receivables-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByText(/Current:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("4,500,000");
 
     // Cleanup: delete via the list row actions menu.
@@ -178,7 +178,7 @@ test(
 // extends past the amount-only groups to Stock/MutualFund/Gold, where a row has
 // two tab-stops (quantity, price per unit) and the value is computed. Launched
 // from the Investments Home header. Proves the two-field row goes dirty, saves,
-// and re-opens carrying the same factors forward with the overwrite warning.
+// and re-opens carrying the same factors forward with its muted Current value.
 // covers: INV-JOURNEYS-05
 test(
   "investment qty×price bulk monthly-entry: list → save → re-open shows overwrite",
@@ -223,10 +223,10 @@ test(
     await expect(page.getByTestId("investments-home")).toBeVisible();
 
     // Re-open the same month: the write persisted, so the row carries forward its
-    // own quantity + price and warns the next save overwrites it.
+    // own quantity + price and shows its muted "Current" value.
     await page.getByTestId("investments-enter-prices").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByText(/Current:/)).toBeVisible();
     await expect(savedRow.getByLabel("Quantity")).toHaveValue("100");
     await expect(savedRow.getByLabel("Price per unit")).toHaveValue("8,500");
 
@@ -287,10 +287,10 @@ test(
     await expect(page.getByTestId("investments-home")).toBeVisible();
 
     // Re-open the same month: the write persisted, so the row carries forward its
-    // own total value + accrued and warns the next save overwrites it.
+    // own total value + accrued and shows its muted "Current" value.
     await page.getByTestId("investments-enter-accrued").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText("Will overwrite")).toBeVisible();
+    await expect(savedRow.getByText(/Current:/)).toBeVisible();
     await expect(savedRow.getByLabel("Total value")).toHaveValue("1,010,000");
     await expect(savedRow.getByLabel("Accrued")).toHaveValue("0");
 

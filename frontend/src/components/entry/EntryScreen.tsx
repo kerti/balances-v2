@@ -15,14 +15,19 @@ import {
   monthStartDate,
   pastYearMonthOrNull,
 } from "@/lib/dateLimits";
-import { formatYearMonth, formatCurrencyParts } from "@/lib/format";
+import { formatYearMonth, formatCurrency, formatCurrencyParts } from "@/lib/format";
 import { errorMessage } from "@/lib/errorMessage";
 import { ownershipLabel } from "@/lib/ownership";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEntryList, useBulkSaveSnapshots, type EntryRow } from "@/hooks/useBulkEntry";
-import { EntryRowDesktop, EntryRowDesktopHeader } from "@/components/entry/EntryRowDesktop";
+import {
+  EntryRowDesktop,
+  EntryRowDesktopHeader,
+  type TickAll,
+} from "@/components/entry/EntryRowDesktop";
+import { SameCheckbox } from "@/components/entry/entryRow";
 import { EntryRowMobile } from "@/components/entry/EntryRowMobile";
 import type { EntryGroupConfig } from "@/components/entry/groups";
 import { minorUnitsShown, type EntryField, type EntryFieldValues } from "@/components/entry/shapes";
@@ -61,6 +66,10 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // field falls back to the row's shape prefill (see valueFor). Keyed by
   // position id, then by shape field key ("amount"; or "quantity"/"price…").
   const [edits, setEdits] = useState<Record<string, EntryFieldValues>>({});
+  // Carried rows the user marked "Unchanged" (#789): each saves its prefill as
+  // this month's Snapshot. Typing into a marked row unmarks it (it is then a
+  // plain edit); Undo unmarks it too.
+  const [unchangedIds, setUnchangedIds] = useState<ReadonlySet<string>>(new Set());
   const [prevYearMonth, setPrevYearMonth] = useState(yearMonth);
 
   const list = useEntryList(config, yearMonth);
@@ -79,6 +88,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     setPrevYearMonth(yearMonth);
     setAsOfDate("");
     setEdits({});
+    setUnchangedIds(new Set());
     save.reset();
   }
 
@@ -126,7 +136,45 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     return shape.fields.some((f) => values[f.key] !== (pf[f.key] ?? "").trim());
   }
 
-  const dirtyRows = rows.filter(isDirty).map((r) => ({
+  // A row offering the "same" checkbox: carried from an earlier month (none yet
+  // this month), complete, and not edited. A marked row stays markable so it can
+  // be unticked.
+  function isMarkable(row: EntryRow): boolean {
+    return (
+      Boolean(row.carried_from) &&
+      row.carried_from !== yearMonth &&
+      shape.complete(mergedValues(row)) &&
+      !isDirty(row)
+    );
+  }
+  // The tick-all checkbox over a set of rows: hidden with nothing markable,
+  // checked when all are marked, indeterminate when only some are.
+  function tickAllFor(scope: EntryRow[], testId: string): TickAll {
+    const markable = scope.filter(isMarkable);
+    const marked = markable.filter((r) => unchangedIds.has(r.position_id)).length;
+    return {
+      visible: markable.length > 0,
+      checked: markable.length > 0 && marked === markable.length,
+      indeterminate: marked > 0 && marked < markable.length,
+      onChange: (checked) =>
+        setMarked(
+          markable.map((r) => r.position_id),
+          checked,
+        ),
+      testId,
+    };
+  }
+  // A marked row is saved even though its values equal the prefill. Changed rows
+  // are only the ones that differ (the dot, ring, and "N changed").
+  function isSaved(row: EntryRow): boolean {
+    return isDirty(row) || (unchangedIds.has(row.position_id) && shape.complete(mergedValues(row)));
+  }
+  const changedCount = rows.filter(isDirty).length;
+  const markedCount = rows.filter((r) => !isDirty(r) && isSaved(r)).length;
+
+  const mobileTick = tickAllFor(rows, `${tid}-entry-same-all`);
+
+  const dirtyRows = rows.filter(isSaved).map((r) => ({
     position_id: r.position_id,
     currency: r.currency,
     fields: mergedValues(r),
@@ -149,9 +197,25 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // resetRow drops the user's override so the field falls back to its
   // carried-forward prefill (empty for a position with no history).
   function resetRow(id: string) {
+    setUnchangedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setEdits((prev) => {
       const next = { ...prev };
       delete next[id];
+      return next;
+    });
+  }
+
+  function setMarked(ids: string[], marked: boolean) {
+    setUnchangedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (marked) next.add(id);
+        else next.delete(id);
+      }
       return next;
     });
   }
@@ -179,7 +243,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     if (row.carried_from === yearMonth) {
       // A snapshot already exists for the chosen month — the prefill IS this
       // month's value, so editing it overwrites (upsert).
-      when = { kind: "overwrite" };
+      const pf = shape.prefill(row);
+      const current = shape.derived ? shape.derived(pf).amount : (pf.amount ?? "");
+      when = { kind: "overwrite", current: formatCurrency(current, row.currency) };
     } else if (row.carried_from) {
       when = { kind: "carried", month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`) };
     } else {
@@ -191,6 +257,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       displayName: row.display_name,
       currency: row.currency,
       dirty: isDirty(row),
+      unchanged: unchangedIds.has(row.position_id) && !isDirty(row),
       ownership: ownershipLabel(row.ownership_type, row.sole_owner_user_id, members, me),
       when,
       error: Boolean(rowErrors[row.position_id]),
@@ -207,12 +274,19 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
         shape={shape}
         tid={tid}
         copy={copy}
-        onFieldChange={(fieldKey, value) =>
+        onUnchanged={(checked) => setMarked([row.position_id], checked)}
+        onFieldChange={(fieldKey, value) => {
+          setUnchangedIds((prev) => {
+            if (!prev.has(row.position_id)) return prev;
+            const next = new Set(prev);
+            next.delete(row.position_id);
+            return next;
+          });
           setEdits((prev) => ({
             ...prev,
             [row.position_id]: { ...(prev[row.position_id] ?? {}), [fieldKey]: value },
-          }))
-        }
+          }));
+        }}
         onReset={() => resetRow(row.position_id)}
       />
     );
@@ -244,7 +318,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
           <form onSubmit={submit} className="space-y-4">
             {/* items-end keeps both inputs on one line even when a label wraps
                 to two rows on a narrow phone ("Statement date" vs "Month"). */}
-            <div className="grid grid-cols-2 items-end gap-3">
+            <div className="grid items-end gap-3 md:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="bulk-year-month">{t("fields.month")}</Label>
                 <MonthPickerPopover
@@ -252,6 +326,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                   months={yearMonthsUpToNow()}
                   selected={yearMonth}
                   onSelect={setYearMonth}
+                  fullWidth
                   testId={`${tid}-entry-month`}
                 />
               </div>
@@ -269,6 +344,20 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
               </div>
             </div>
 
+            {isMobile && mobileTick.visible && (
+              <label className="flex min-h-11 items-center justify-end gap-2 text-sm text-muted-foreground">
+                <SameCheckbox
+                  checked={mobileTick.checked}
+                  indeterminate={mobileTick.indeterminate}
+                  onChange={mobileTick.onChange}
+                  label={t("bulkEntry.sameAll")}
+                  testId={mobileTick.testId}
+                  className="size-5"
+                />
+                {t("bulkEntry.allSame")}
+              </label>
+            )}
+
             {list.isPending ? (
               <p className="text-sm text-muted-foreground">{t("loading")}</p>
             ) : rows.length === 0 ? (
@@ -276,7 +365,17 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                 {t(`${copy}.empty`)}
               </p>
             ) : flat ? (
-              <ul className="divide-y">{rows.map(renderRow)}</ul>
+              <div>
+                {!isMobile && (
+                  <div className="mb-1 flex justify-end">
+                    <EntryRowDesktopHeader
+                      shape={shape}
+                      tickAll={tickAllFor(rows, `${tid}-entry-same-all`)}
+                    />
+                  </div>
+                )}
+                <ul className="divide-y">{rows.map(renderRow)}</ul>
+              </div>
             ) : (
               <div className="space-y-4">
                 {orderedSubtypes.map((subtype) => {
@@ -286,8 +385,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                     <div key={subtype} data-testid={`${tid}-entry-group-${subtype}`}>
                       {/* The group title shares its line with the desktop column
                           headers (once per investment type; mobile labels each
-                          field inline). EntryRowDesktopHeader is null for
-                          amount-only, leaving the plain title. */}
+                          field inline). Its right edge holds the "Same" column. */}
                       <div className="mb-1 flex items-center gap-3 text-sm font-medium text-muted-foreground">
                         <div className="flex min-w-0 flex-1 items-center gap-2">
                           <Icon className="size-4 shrink-0" />
@@ -297,7 +395,15 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                               : subtype}
                           </span>
                         </div>
-                        {!isMobile && <EntryRowDesktopHeader shape={shape} />}
+                        {!isMobile && (
+                          <EntryRowDesktopHeader
+                            shape={shape}
+                            tickAll={tickAllFor(
+                              grouped.get(subtype)!,
+                              `${tid}-entry-same-all-${subtype}`,
+                            )}
+                          />
+                        )}
                       </div>
                       <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
                     </div>
@@ -311,13 +417,23 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
             )}
 
             <div className="flex items-center justify-between">
-              <span
-                className="text-sm text-muted-foreground"
-                data-testid={`${tid}-entry-dirty-count`}
-              >
-                {t("bulkEntry.changedCount", { count: dirtyRows.length })}
-              </span>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-x-2">
+                <span
+                  className="text-sm text-muted-foreground"
+                  data-testid={`${tid}-entry-dirty-count`}
+                >
+                  {t("bulkEntry.changedCount", { count: changedCount })}
+                </span>
+                {markedCount > 0 && (
+                  <span
+                    className="text-sm text-muted-foreground"
+                    data-testid={`${tid}-entry-unchanged-count`}
+                  >
+                    {t("bulkEntry.unchangedCount", { count: markedCount })}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-wrap justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => navigate(config.backRoute)}>
                   {t("cancel")}
                 </Button>
