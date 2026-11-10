@@ -8,6 +8,7 @@ import { it, expect, afterEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { toast } from "sonner";
+import userEvent from "@testing-library/user-event";
 import { server } from "@/test/server";
 import { raisedToasts } from "@/test/sonnerMock";
 import { renderWithProviders } from "@/test/renderWithProviders";
@@ -40,6 +41,12 @@ afterEach(() => {
   setViewport(originalWidth);
 });
 
+// Open a row's ⋯ menu and pick an item (the only way to Edit or Delete a row).
+function pickRowAction(scope: ReturnType<typeof within>, item: "Edit" | "Delete") {
+  fireEvent.click(scope.getByRole("button", { name: "Inflation rate actions" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: item }));
+}
+
 function renderCard() {
   server.use(http.get("/api/inflation-rates", () => HttpResponse.json(rates)));
   return renderWithProviders(<InflationRatesCard />);
@@ -58,8 +65,8 @@ it("mobile: mounts the card renderer, promotes the rate, meets the 44px tap floo
   // Rate (primary figure) reads, with the unit made explicit on the card.
   expect(screen.getByTestId("inflation-rate-value")).toHaveTextContent("3.50%");
 
-  // A11y floor: the delete control is a ≥44px (size-11) tap target.
-  expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("size-11");
+  // A11y floor: the ⋯ menu trigger is a ≥44px (size-11) tap target.
+  expect(screen.getByRole("button", { name: "Inflation rate actions" })).toHaveClass("size-11");
 });
 
 it("desktop: mounts the table renderer under the same primary-figure testid", async () => {
@@ -72,7 +79,7 @@ it("desktop: mounts the table renderer under the same primary-figure testid", as
   expect(screen.getByTestId("inflation-rate-value")).toHaveTextContent("3.50%");
 });
 
-it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", async () => {
+it("desktop: Edit opens the dialog with the month locked and Save PATCHes the new rate", async () => {
   setViewport(1280);
   let patched: { id: string; body: unknown } | null = null;
   server.use(
@@ -84,21 +91,20 @@ it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", 
   renderCard();
 
   await screen.findByTestId("inflation-rate-table");
-  const row = within(screen.getByTestId("inflation-rate-row"));
-  fireEvent.click(row.getByRole("button", { name: "Edit" }));
+  pickRowAction(within(screen.getByTestId("inflation-rate-row")), "Edit");
 
-  // Rate becomes an editable input pre-filled with the current value (scoped to
-  // the row — the add form shares the "Annual %" label).
-  const input = row.getByLabelText("Annual %");
+  const dialog = within(await screen.findByRole("dialog"));
+  expect(dialog.getByLabelText("Month")).toBeDisabled();
+  const input = dialog.getByLabelText("Annual %");
   expect(input).toHaveValue("3.5");
   fireEvent.change(input, { target: { value: "4.2" } });
-  fireEvent.click(row.getByRole("button", { name: "Save" }));
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
 
   await waitFor(() => expect(patched).not.toBeNull());
   expect(patched).toEqual({ id: "inf-1", body: { rate: "4.2" } });
 });
 
-it("desktop: Cancel leaves the row unedited and fires no request", async () => {
+it("desktop: Cancel closes the edit dialog and fires no request", async () => {
   setViewport(1280);
   let patchCalls = 0;
   server.use(
@@ -110,14 +116,43 @@ it("desktop: Cancel leaves the row unedited and fires no request", async () => {
   renderCard();
 
   await screen.findByTestId("inflation-rate-table");
-  const row = within(screen.getByTestId("inflation-rate-row"));
-  fireEvent.click(row.getByRole("button", { name: "Edit" }));
-  fireEvent.change(row.getByLabelText("Annual %"), { target: { value: "9.9" } });
-  fireEvent.click(row.getByRole("button", { name: "Cancel" }));
+  pickRowAction(within(screen.getByTestId("inflation-rate-row")), "Edit");
+  const dialog = within(await screen.findByRole("dialog"));
+  fireEvent.change(dialog.getByLabelText("Annual %"), { target: { value: "9.9" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Cancel" }));
 
-  // Back to the read-only value; no PATCH went out.
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   expect(screen.getByTestId("inflation-rate-value")).toHaveTextContent("3.50%");
   expect(patchCalls).toBe(0);
+});
+
+it("New inflation rate opens a dialog that POSTs the month and rate", async () => {
+  setViewport(1280);
+  let posted: unknown = null;
+  server.use(
+    http.post("/api/inflation-rates", async ({ request }) => {
+      posted = await request.json();
+      return HttpResponse.json(rates[0]);
+    }),
+  );
+  renderCard();
+  await screen.findByTestId("inflation-rate-table");
+
+  // The old inline form is gone: nothing to type into until the dialog opens.
+  expect(screen.queryByLabelText("Annual %")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "New inflation rate" }));
+
+  const dialog = within(await screen.findByRole("dialog"));
+  const add = dialog.getByRole("button", { name: "Add rate" });
+  expect(add).toBeDisabled();
+  await userEvent.click(dialog.getByLabelText("Month"));
+  await userEvent.click(await screen.findByTestId("month-picker-cell-2026-02"));
+  fireEvent.change(dialog.getByLabelText("Annual %"), { target: { value: "-1.5" } });
+  expect(add).toBeEnabled();
+  fireEvent.click(add);
+
+  await waitFor(() => expect(posted).not.toBeNull());
+  expect(posted).toEqual({ year_month: "2026-02", rate: "-1.5" });
 });
 
 it("desktop: paginates at 12 rows per page", async () => {
@@ -146,7 +181,7 @@ it("shows no pagination control for a single page", async () => {
   expect(screen.queryByTestId("pagination-next")).not.toBeInTheDocument();
 });
 
-it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => {
+it("mobile: Edit from the card menu opens the dialog and Save PATCHes", async () => {
   setViewport(500);
   let patched: { id: string; body: unknown } | null = null;
   server.use(
@@ -158,12 +193,11 @@ it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => 
   renderCard();
 
   await screen.findByTestId("inflation-rate-cards");
-  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  pickRowAction(within(screen.getByTestId("inflation-rate-row")), "Edit");
 
-  // The promoted headline swaps for the edit input (labelled "Edit").
-  const input = screen.getByLabelText("Edit");
-  fireEvent.change(input, { target: { value: "4.2" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  const dialog = within(await screen.findByRole("dialog"));
+  fireEvent.change(dialog.getByLabelText("Annual %"), { target: { value: "4.2" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
 
   await waitFor(() => expect(patched).not.toBeNull());
   expect(patched).toEqual({ id: "inf-1", body: { rate: "4.2" } });
@@ -187,9 +221,7 @@ it("desktop: trash deletes at once with no dialog, raising one Undo toast", asyn
   renderCard();
   await screen.findByTestId("inflation-rate-table");
 
-  fireEvent.click(
-    within(screen.getByTestId("inflation-rate-row")).getByRole("button", { name: "Delete" }),
-  );
+  pickRowAction(within(screen.getByTestId("inflation-rate-row")), "Delete");
   await waitFor(() => expect(deletes).toBe(1));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
 
@@ -215,7 +247,7 @@ it("mobile: the card's trash also deletes at once with no dialog", async () => {
   renderCard();
   await screen.findByTestId("inflation-rate-cards");
 
-  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  pickRowAction(within(screen.getByTestId("inflation-rate-row")), "Delete");
   await waitFor(() => expect(deletes).toBe(1));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   expect(raisedToasts(mockedToast)).toHaveLength(1);

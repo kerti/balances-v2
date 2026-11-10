@@ -57,7 +57,13 @@
     "addRate": "Tambah kurs",
     "empty": "Belum ada kurs.",
     "disabledHint": "Kurs hanya berlaku jika pelacakan multi-mata-uang aktif.",
-    "disabledLink": "Buka pengaturan mata uang"
+    "disabledLink": "Buka pengaturan mata uang",
+    "newRate": "Kurs baru",
+    "createTitle": "Kurs baru",
+    "createDescription": "Masukkan kurs akhir bulan untuk satu mata uang. Bulan berikutnya memakainya hingga Anda memasukkan yang baru.",
+    "editTitle": "Ubah kurs",
+    "editDescription": "Hanya kurs yang dapat diubah. Bulan dan mata uang menandai barisnya.",
+    "rowActions": "Tindakan kurs"
   },
   "inflation": {
     "title": "Inflasi",
@@ -68,7 +74,13 @@
     "rate": "% Tahunan",
     "addRate": "Tambah laju",
     "empty": "Belum ada angka bulanan — asumsi laju yang dipakai.",
-    "manageRates": "Kelola laju bulanan"
+    "manageRates": "Kelola laju bulanan",
+    "newRate": "Laju inflasi baru",
+    "createTitle": "Laju inflasi baru",
+    "createDescription": "Masukkan angka inflasi tahunan (year-on-year) untuk satu bulan.",
+    "editTitle": "Ubah laju inflasi",
+    "editDescription": "Hanya laju yang dapat diubah. Bulan menandai barisnya.",
+    "rowActions": "Tindakan laju inflasi"
   },
   "inflationRatesPage": {
     "title": "Laju inflasi",

@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/common/NumericInput";
-import { RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
-import { Label } from "@/components/ui/label";
 import { useUpdateVehicle } from "@/hooks/useVehicles";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
+import { VehicleFormBody, type VehicleFormState } from "@/components/dialogs/forms/VehicleForm";
 import type { Vehicle } from "@/api/types";
 
 type Props = {
@@ -23,12 +17,13 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
   const mutation = useUpdateVehicle(vehicle.asset.id);
   const { data: user } = useSession();
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<VehicleFormState>({
     display_name: vehicle.asset.display_name,
     description: vehicle.asset.description ?? "",
     ownership_type: vehicle.asset.ownership_type,
     entry_type: vehicle.asset.entry_type,
     sole_owner_user_id: vehicle.asset.sole_owner_user_id,
+    native_currency: vehicle.asset.native_currency,
     vehicle_type: vehicle.details.vehicle_type,
     make: vehicle.details.make ?? "",
     model: vehicle.details.model ?? "",
@@ -70,112 +65,12 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="ev_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="ev_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="ev_type">{t("assets:vehicle.fields.type")}</Label>
-        <Select
-          id="ev_type"
-          value={form.vehicle_type}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              vehicle_type: e.target.value as typeof form.vehicle_type,
-            })
-          }
-        >
-          <option value="car">{t("assets:vehicle.vehicleTypes.car")}</option>
-          <option value="motorcycle">{t("assets:vehicle.vehicleTypes.motorcycle")}</option>
-          <option value="other">{t("assets:vehicle.vehicleTypes.other")}</option>
-        </Select>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="ev_make">{t("assets:vehicle.fields.makeEdit")}</Label>
-          <Input
-            id="ev_make"
-            value={form.make}
-            onChange={(e) => setForm({ ...form, make: e.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="ev_model">{t("assets:vehicle.fields.modelEdit")}</Label>
-          <Input
-            id="ev_model"
-            value={form.model}
-            onChange={(e) => setForm({ ...form, model: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="ev_year">{t("assets:vehicle.fields.yearEdit")}</Label>
-          <Input
-            id="ev_year"
-            type="number"
-            value={form.year}
-            onChange={(e) => setForm({ ...form, year: e.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="ev_plate">{t("assets:vehicle.fields.plateNumberEdit")}</Label>
-          <Input
-            id="ev_plate"
-            value={form.plate_number}
-            onChange={(e) => setForm({ ...form, plate_number: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="ev_depr">{t("assets:vehicle.fields.depreciationRateEdit")}</Label>
-        <NumericInput
-          id="ev_depr"
-          decimals={RATE_DECIMALS}
-          maxIntegerDigits={RATE_INTEGER_DIGITS}
-          value={form.annual_depreciation_rate}
-          onChange={(v) =>
-            setForm({
-              ...form,
-              annual_depreciation_rate: v,
-            })
-          }
-        />
-      </div>
-
-      <OwnershipField
-        idPrefix="vehicle_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <VehicleFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
       />
-
-      <EntryTypeField
-        idPrefix="vehicle_edit"
-        group="asset"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="ev_description">{t("common:fields.description")}</Label>
-        <Input
-          id="ev_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
     </PositionFormDialog>
   );
 }

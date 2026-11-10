@@ -97,13 +97,9 @@
     "fields": {
       "type": "Jenis",
       "address": "Alamat (opsional)",
-      "addressEdit": "Alamat (opsional)",
       "acquisitionDate": "Tanggal akuisisi (opsional)",
-      "acquisitionDateEdit": "Tanggal akuisisi",
       "acquisitionCost": "Biaya akuisisi (opsional)",
-      "acquisitionCostEdit": "Biaya akuisisi",
       "appreciationRate": "Laju apresiasi tahunan (% /thn, opsional)",
-      "appreciationRateEdit": "Laju apresiasi tahunan (% /thn)",
       "addressDisplay": "Alamat"
     },
     "propertyTypes": {
@@ -158,15 +154,10 @@
     "fields": {
       "type": "Jenis",
       "make": "Merek (opsional)",
-      "makeEdit": "Merek",
       "model": "Model (opsional)",
-      "modelEdit": "Model",
       "year": "Tahun (opsional)",
-      "yearEdit": "Tahun",
       "plateNumber": "Nomor pelat (opsional)",
-      "plateNumberEdit": "Nomor pelat",
       "depreciationRate": "Laju penyusutan tahunan (%, opsional)",
-      "depreciationRateEdit": "Laju penyusutan tahunan (%)",
       "makeModel": "Merek & model"
     },
     "vehicleTypes": {

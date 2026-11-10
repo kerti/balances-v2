@@ -49,10 +49,12 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
   await page.getByRole("link", { name: "Manage exchange rates" }).click();
   const fxCard = page.getByTestId("fx-rates-card");
-  await pickMonth(page, fxCard.getByTestId("fx-month"), month);
-  await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
-  await fxCard.getByLabel("Rate").fill("16000");
-  await fxCard.getByRole("button", { name: "Add rate" }).click();
+  await fxCard.getByTestId("fx-new-rate").click();
+  const fxDialog = page.getByRole("dialog");
+  await pickMonth(page, fxDialog.getByTestId("fx-month"), month);
+  await fxDialog.getByLabel("Currency", { exact: true }).fill("USD");
+  await fxDialog.getByLabel("Rate").fill("16000");
+  await fxDialog.getByRole("button", { name: "Add rate" }).click();
   await expect(page.getByRole("cell", { name: "USD" })).toBeVisible();
 
   // --- Dashboard: pick "Also in: USD" → headline gains the ≈ approximation ---
@@ -82,7 +84,11 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
 
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByRole("link", { name: "Manage exchange rates" }).click();
-  await page.getByRole("row", { name: /USD/ }).getByRole("button", { name: "Delete" }).click();
+  await page
+    .getByRole("row", { name: /USD/ })
+    .getByRole("button", { name: "Exchange rate actions" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings", exact: true }).click();

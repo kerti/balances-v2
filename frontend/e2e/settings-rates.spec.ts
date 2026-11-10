@@ -1,12 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
 
 // Desktop write-flow coverage for the Settings ▸ Inflation Rates and ▸ Exchange
-// Rates subpages: inline rate editing and the 12-per-page pagination. The mobile
+// Rates subpages: editing a rate through the row menu's dialog and the 12-per-page
+// pagination. The mobile
 // renderer + a11y floor is the per-PR @smoke concern (settings-rates-mobile.spec)
 // — these deeper flows live in the full/nightly suite, matching tags.spec.ts.
 //
 // Rows are seeded and torn down through the shared founder session (page.request
-// carries Alice's cookie), so the tests don't drive the add-form 13× and leave
+// carries Alice's cookie), so the tests don't drive the New-rate dialog 13× and leave
 // the inflation_rates / fx_rates tables empty again afterwards. The e2e seed
 // creates no rates, so the row counts these assert on are exact.
 
@@ -54,7 +55,7 @@ async function setMultiCurrency(page: Page, on: boolean): Promise<void> {
   await expect(toggle).toBeChecked({ checked: on });
 }
 
-test("inflation rates: edit a row in place, display formats to 2dp", async ({ page }) => {
+test("inflation rates: edit a row from its menu, display formats to 2dp", async ({ page }) => {
   const id = await seedInflation(page, "2026-05", "3.5");
   try {
     await page.goto("/settings/inflation-rates");
@@ -62,11 +63,12 @@ test("inflation rates: edit a row in place, display formats to 2dp", async ({ pa
     await expect(page.getByTestId("inflation-rate-value")).toHaveText("3.50%");
 
     const row = page.getByTestId("inflation-rate-row");
-    await row.getByRole("button", { name: "Edit", exact: true }).click();
+    await row.getByRole("button", { name: "Inflation rate actions" }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
 
-    // The rate swaps to an input pre-filled with the raw value (scoped to the
-    // row — the add form shares the "Annual %" label).
-    const input = row.getByLabel("Annual %");
+    // The edit dialog opens pre-filled with the raw value.
+    const dialog = page.getByRole("dialog");
+    const input = dialog.getByLabel("Annual %");
     await expect(input).toHaveValue("3.5");
     await input.fill("4.25");
 
@@ -74,7 +76,7 @@ test("inflation rates: edit a row in place, display formats to 2dp", async ({ pa
       (r) =>
         r.url().includes("/api/inflation-rates/") && r.request().method() === "PATCH" && r.ok(),
     );
-    await row.getByRole("button", { name: "Save", exact: true }).click();
+    await dialog.getByRole("button", { name: "Save changes" }).click();
     await saved;
 
     // Back to the read display, now showing the edited figure at 2dp.
@@ -99,7 +101,7 @@ test("inflation rates: paginate at 12 rows per page", async ({ page }) => {
   }
 });
 
-test("exchange rates: edit a row in place", async ({ page }) => {
+test("exchange rates: edit a row from its menu", async ({ page }) => {
   await setMultiCurrency(page, true);
   const id = await seedFx(page, "2026-05", "USD", "16250");
   try {
@@ -107,17 +109,18 @@ test("exchange rates: edit a row in place", async ({ page }) => {
     await expect(page.getByTestId("fx-rate-value")).toHaveText("16,250");
 
     const row = page.getByTestId("fx-rate-row");
-    await row.getByRole("button", { name: "Edit", exact: true }).click();
+    await row.getByRole("button", { name: "Exchange rate actions" }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
 
-    // Scoped to the row — the add form shares the "Rate" label.
-    const input = row.getByLabel("Rate");
+    const dialog = page.getByRole("dialog");
+    const input = dialog.getByLabel("Rate");
     await expect(input).toHaveValue("16,250");
     await input.fill("16400");
 
     const saved = page.waitForResponse(
       (r) => r.url().includes("/api/fx-rates/") && r.request().method() === "PATCH" && r.ok(),
     );
-    await row.getByRole("button", { name: "Save", exact: true }).click();
+    await dialog.getByRole("button", { name: "Save changes" }).click();
     await saved;
 
     await expect(page.getByTestId("fx-rate-value")).toHaveText("16,400");

@@ -8,13 +8,18 @@
     "title": "Manage tags",
     "description": "Group positions however you like — the breakdown above reflects any changes.",
     "empty": "No tags yet. Add one below.",
-    "newLabel": "New tag",
     "namePlaceholder": "e.g. BCA, Retirement",
     "add": "Add",
-    "edit": "Edit tag",
-    "delete": "Delete tag",
     "deleteTitle": "Delete tag {{name}}?",
-    "deleteDescription": "It's removed from every item that has it."
+    "deleteDescription": "It's removed from every item that has it.",
+    "newTag": "New tag",
+    "createTitle": "New tag",
+    "createDescription": "Name a tag and pick a colour.",
+    "editTitle": "Edit tag",
+    "editDescription": "Rename the tag or change its colour.",
+    "nameLabel": "Name",
+    "colorLabel": "Colour",
+    "rowActions": "Tag actions"
   },
   "report": {
     "title": "Tags",

@@ -8,13 +8,18 @@
     "title": "Kelola tag",
     "description": "Kelompokkan posisi sesuka Anda — rincian di atas mengikuti setiap perubahan.",
     "empty": "Belum ada tag. Tambahkan di bawah.",
-    "newLabel": "Tag baru",
     "namePlaceholder": "mis. BCA, Dana Pensiun",
     "add": "Tambah",
-    "edit": "Ubah tag",
-    "delete": "Hapus tag",
     "deleteTitle": "Hapus tag {{name}}?",
-    "deleteDescription": "Tag ini dilepas dari semua item yang memakainya."
+    "deleteDescription": "Tag ini dilepas dari semua item yang memakainya.",
+    "newTag": "Tag baru",
+    "createTitle": "Tag baru",
+    "createDescription": "Beri nama tag dan pilih warna.",
+    "editTitle": "Ubah tag",
+    "editDescription": "Ganti nama tag atau ubah warnanya.",
+    "nameLabel": "Nama",
+    "colorLabel": "Warna",
+    "rowActions": "Tindakan tag"
   },
   "report": {
     "title": "Tag",

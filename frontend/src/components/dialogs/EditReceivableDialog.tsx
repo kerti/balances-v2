@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useUpdateReceivable } from "@/hooks/useReceivables";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
+import {
+  ReceivableFormBody,
+  type ReceivableFormState,
+} from "@/components/dialogs/forms/ReceivableForm";
 import type { Receivable } from "@/api/types";
 
 type Props = {
@@ -15,13 +15,14 @@ type Props = {
   receivable: Receivable;
 };
 
-function toForm(r: Receivable) {
+function toForm(r: Receivable): ReceivableFormState {
   return {
     display_name: r.display_name,
     description: r.description ?? "",
     ownership_type: r.ownership_type,
     entry_type: r.entry_type,
     sole_owner_user_id: r.sole_owner_user_id,
+    native_currency: r.native_currency,
     counterparty_name: r.counterparty_name,
     due_date: r.due_date ? r.due_date.slice(0, 10) : "",
   };
@@ -62,60 +63,12 @@ export function EditReceivableDialog({ open, onOpenChange, receivable }: Props) 
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="edit_r_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="edit_r_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_r_counterparty">{t("receivables:fields.counterparty")}</Label>
-        <Input
-          id="edit_r_counterparty"
-          required
-          value={form.counterparty_name}
-          onChange={(e) => setForm({ ...form, counterparty_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_r_due_date">{t("receivables:fields.dueDate")}</Label>
-        <Input
-          id="edit_r_due_date"
-          type="date"
-          max="9999-12-31"
-          value={form.due_date}
-          onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-        />
-      </div>
-
-      <OwnershipField
-        idPrefix="receivable_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <ReceivableFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
       />
-
-      <EntryTypeField
-        idPrefix="receivable_edit"
-        group="receivable"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_r_description">{t("common:fields.description")}</Label>
-        <Input
-          id="edit_r_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
     </PositionFormDialog>
   );
 }

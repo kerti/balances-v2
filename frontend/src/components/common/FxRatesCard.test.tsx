@@ -61,6 +61,18 @@ afterEach(() => {
   setViewport(originalWidth);
 });
 
+// Open a row's ⋯ menu and pick an item (the only way to Edit or Delete a row).
+function pickRowAction(scope: ReturnType<typeof within>, item: "Edit" | "Delete") {
+  fireEvent.click(scope.getByRole("button", { name: "Exchange rate actions" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: item }));
+}
+
+// The add form lives in a dialog now: open it from the card toolbar.
+async function openNewRate() {
+  fireEvent.click(screen.getByRole("button", { name: "New exchange rate" }));
+  return within(await screen.findByRole("dialog"));
+}
+
 function renderCard() {
   server.use(
     http.get("/api/fx-rates", () => HttpResponse.json(rates)),
@@ -84,8 +96,8 @@ it("mobile: mounts the card renderer, promotes the rate, meets the 44px tap floo
   expect(await screen.findByText("1 USD = 16,250 IDR")).toBeInTheDocument();
   expect(screen.getByTestId("fx-rate-value")).toHaveTextContent("16,250");
 
-  // A11y floor: the delete control is a ≥44px (size-11) tap target.
-  expect(screen.getByRole("button", { name: "Delete" })).toHaveClass("size-11");
+  // A11y floor: the ⋯ menu trigger is a ≥44px (size-11) tap target.
+  expect(screen.getByRole("button", { name: "Exchange rate actions" })).toHaveClass("size-11");
 });
 
 it("desktop: mounts the table renderer under the same primary-figure testid", async () => {
@@ -99,41 +111,46 @@ it("desktop: mounts the table renderer under the same primary-figure testid", as
   expect(await screen.findByText("USD → IDR")).toBeInTheDocument();
 });
 
-it("add form: shows a live direction hint once a currency code is entered", async () => {
+it("new-rate dialog: shows a live direction hint once a currency code is entered", async () => {
   setViewport(1280);
   renderCard();
 
   // Wait for the session so the reporting currency (the counterpart) is known.
   await screen.findByTestId("fx-rate-table");
+  const dialog = await openNewRate();
 
   // No code yet → no hint.
   expect(screen.queryByTestId("fx-rate-hint")).not.toBeInTheDocument();
 
   // Typing a 3-letter code spells out the direction + counterpart, with "?" for
   // the not-yet-entered rate.
-  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
-  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR");
+  fireEvent.change(dialog.getByLabelText("Currency"), { target: { value: "SGD" } });
+  await waitFor(() =>
+    expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR"),
+  );
 
   // Typing the rate fills it into the equation, grouped as the field shows it.
-  fireEvent.change(screen.getByLabelText("Rate"), { target: { value: "12000" } });
+  fireEvent.change(dialog.getByLabelText("Rate"), { target: { value: "12000" } });
   expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12,000 IDR");
 });
 
-// covers: INV-PRESENTATION-13
-it("the add hint and the Add button read the same figure, phone comma included", async () => {
+it("the dialog hint and the Add rate button read the same figure, phone comma included", async () => {
   setViewport(1280);
   renderCard();
   await screen.findByTestId("fx-rate-table");
-  await userEvent.click(screen.getByLabelText("Month"));
+  const dialog = await openNewRate();
+  await userEvent.click(dialog.getByLabelText("Month"));
   await userEvent.click(await screen.findByTestId("month-picker-cell-2026-02"));
-  fireEvent.change(screen.getByLabelText("Currency"), { target: { value: "SGD" } });
-  const rate = screen.getByLabelText("Rate");
-  const add = screen.getByRole("button", { name: "Add rate" });
+  fireEvent.change(dialog.getByLabelText("Currency"), { target: { value: "SGD" } });
+  const rate = dialog.getByLabelText("Rate");
+  const add = dialog.getByRole("button", { name: "Add rate" });
 
   // A letter never reaches the field, so the hint can't show what Add refuses.
   await userEvent.type(rate, "x");
   expect(rate).toHaveValue("");
-  expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR");
+  await waitFor(() =>
+    expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR"),
+  );
   expect(add).toBeDisabled();
 
   await userEvent.type(rate, "12000,5");
@@ -142,7 +159,7 @@ it("the add hint and the Add button read the same figure, phone comma included",
   expect(add).toBeEnabled();
 });
 
-it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", async () => {
+it("desktop: Edit opens the dialog with month and currency locked and Save PATCHes the rate", async () => {
   setViewport(1280);
   let patched: { id: string; body: unknown } | null = null;
   server.use(
@@ -154,30 +171,31 @@ it("desktop: Edit swaps the rate into an input and Save PATCHes the new value", 
   renderCard();
 
   await screen.findByTestId("fx-rate-table");
-  // Scope to the row — the add form shares the "Rate" label.
-  const row = within(screen.getByTestId("fx-rate-row"));
-  fireEvent.click(row.getByRole("button", { name: "Edit" }));
+  pickRowAction(within(screen.getByTestId("fx-rate-row")), "Edit");
 
-  const input = row.getByLabelText("Rate");
+  const dialog = within(await screen.findByRole("dialog"));
+  expect(dialog.getByLabelText("Month")).toBeDisabled();
+  expect(dialog.getByLabelText("Currency")).toBeDisabled();
+  const input = dialog.getByLabelText("Rate");
   expect(input).toHaveValue("16,250");
   fireEvent.change(input, { target: { value: "16400" } });
-  fireEvent.click(row.getByRole("button", { name: "Save" }));
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
 
   await waitFor(() => expect(patched).not.toBeNull());
   expect(patched).toEqual({ id: "fx-1", body: { rate: "16400" } });
 });
 
-it("desktop: Save is blocked for a non-positive rate", async () => {
+it("desktop: Save changes is blocked for a non-positive rate", async () => {
   setViewport(1280);
   renderCard();
 
   await screen.findByTestId("fx-rate-table");
-  const row = within(screen.getByTestId("fx-rate-row"));
-  fireEvent.click(row.getByRole("button", { name: "Edit" }));
-  fireEvent.change(row.getByLabelText("Rate"), { target: { value: "0" } });
+  pickRowAction(within(screen.getByTestId("fx-rate-row")), "Edit");
+  const dialog = within(await screen.findByRole("dialog"));
+  fireEvent.change(dialog.getByLabelText("Rate"), { target: { value: "0" } });
 
   // A rate must be > 0 (ADR-0002): Save stays disabled.
-  expect(row.getByRole("button", { name: "Save" })).toBeDisabled();
+  expect(dialog.getByRole("button", { name: "Save changes" })).toBeDisabled();
 });
 
 it("desktop: paginates at 12 rows per page", async () => {
@@ -208,7 +226,7 @@ it("shows no pagination control for a single page", async () => {
   expect(screen.queryByTestId("pagination-next")).not.toBeInTheDocument();
 });
 
-it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => {
+it("mobile: Edit from the card menu opens the dialog and Save PATCHes", async () => {
   setViewport(500);
   let patched: { id: string; body: unknown } | null = null;
   server.use(
@@ -220,11 +238,11 @@ it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => 
   renderCard();
 
   await screen.findByTestId("fx-rate-cards");
-  fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+  pickRowAction(within(screen.getByTestId("fx-rate-row")), "Edit");
 
-  const input = screen.getByLabelText("Edit");
-  fireEvent.change(input, { target: { value: "16400" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save" }));
+  const dialog = within(await screen.findByRole("dialog"));
+  fireEvent.change(dialog.getByLabelText("Rate"), { target: { value: "16400" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
 
   await waitFor(() => expect(patched).not.toBeNull());
   expect(patched).toEqual({ id: "fx-1", body: { rate: "16400" } });
@@ -248,9 +266,7 @@ it("desktop: trash deletes at once with no dialog, raising one Undo toast", asyn
   renderCard();
   await screen.findByTestId("fx-rate-table");
 
-  fireEvent.click(
-    within(screen.getByTestId("fx-rate-row")).getByRole("button", { name: "Delete" }),
-  );
+  pickRowAction(within(screen.getByTestId("fx-rate-row")), "Delete");
   await waitFor(() => expect(deletes).toBe(1));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
 
@@ -276,7 +292,7 @@ it("mobile: the card's trash also deletes at once with no dialog", async () => {
   renderCard();
   await screen.findByTestId("fx-rate-cards");
 
-  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  pickRowAction(within(screen.getByTestId("fx-rate-row")), "Delete");
   await waitFor(() => expect(deletes).toBe(1));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   expect(raisedToasts(mockedToast)).toHaveLength(1);

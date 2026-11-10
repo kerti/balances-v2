@@ -97,13 +97,9 @@
     "fields": {
       "type": "Type",
       "address": "Address (optional)",
-      "addressEdit": "Address (optional)",
       "acquisitionDate": "Acquisition date (optional)",
-      "acquisitionDateEdit": "Acquisition date",
       "acquisitionCost": "Acquisition cost (optional)",
-      "acquisitionCostEdit": "Acquisition cost",
       "appreciationRate": "Annual appreciation rate (% /yr, optional)",
-      "appreciationRateEdit": "Annual appreciation rate (% /yr)",
       "addressDisplay": "Address"
     },
     "propertyTypes": {
@@ -158,15 +154,10 @@
     "fields": {
       "type": "Type",
       "make": "Make (optional)",
-      "makeEdit": "Make",
       "model": "Model (optional)",
-      "modelEdit": "Model",
       "year": "Year (optional)",
-      "yearEdit": "Year",
       "plateNumber": "Plate number (optional)",
-      "plateNumberEdit": "Plate number",
       "depreciationRate": "Annual depreciation rate (%, optional)",
-      "depreciationRateEdit": "Annual depreciation rate (%)",
       "makeModel": "Make & model"
     },
     "vehicleTypes": {

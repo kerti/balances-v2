@@ -1,17 +1,10 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/common/NumericInput";
-import { RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
-import { Label } from "@/components/ui/label";
 import { useUpdateBond } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
-import type { Bond, BondListItem, BondType, CouponFrequency, CouponDisposition } from "@/api/types";
+import { BondFormBody, type BondFormState } from "@/components/dialogs/forms/BondForm";
+import type { Bond, BondListItem } from "@/api/types";
 
 type Props = {
   open: boolean;
@@ -19,7 +12,7 @@ type Props = {
   bond: Bond | BondListItem;
 };
 
-function toForm(bond: Bond | BondListItem) {
+function toForm(bond: Bond | BondListItem): BondFormState {
   const i = bond.investment;
   const d = bond.details;
   return {
@@ -29,9 +22,12 @@ function toForm(bond: Bond | BondListItem) {
     entry_type: i.entry_type,
     sole_owner_user_id: i.sole_owner_user_id,
     risk_profile: bond.investment.risk_profile,
+    native_currency: i.native_currency,
     bond_type: d.bond_type,
     series_code: d.series_code ?? "",
     issuer: d.issuer,
+    face_value: "",
+    placement_date: "",
     coupon_rate: d.coupon_rate,
     coupon_frequency: d.coupon_frequency,
     coupon_disposition: d.coupon_disposition,
@@ -48,6 +44,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
+    if (!form.risk_profile) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -81,155 +78,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="space-y-3">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_bond_display_name">{t("common:fields.displayName")}</Label>
-          <Input
-            id="edit_bond_display_name"
-            required
-            value={form.display_name}
-            onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_bond_series_code">{t("investments:bond.fields.seriesCode")}</Label>
-            <Input
-              id="edit_bond_series_code"
-              value={form.series_code}
-              onChange={(e) => setForm({ ...form, series_code: e.target.value })}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edit_bond_issuer">{t("investments:bond.fields.issuer")}</Label>
-            <Input
-              id="edit_bond_issuer"
-              required
-              value={form.issuer}
-              onChange={(e) => setForm({ ...form, issuer: e.target.value })}
-            />
-          </div>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_bond_description">{t("common:fields.description")}</Label>
-          <Input
-            id="edit_bond_description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_bond_type">{t("investments:bond.fields.bondType")}</Label>
-          <Select
-            id="edit_bond_type"
-            value={form.bond_type}
-            onChange={(e) => setForm({ ...form, bond_type: e.target.value as BondType })}
-          >
-            <option value="govt_primary">{t("investments:bond.bondType.govt_primary")}</option>
-            <option value="secondary_market">
-              {t("investments:bond.bondType.secondary_market")}
-            </option>
-          </Select>
-        </div>
-        {/* Outstanding nominal is derived from the Buy/Sell ledger (issue
-            #27); edit it by adding/editing transactions, not here. */}
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
-            <NumericInput
-              id="edit_bond_coupon_rate"
-              required
-              decimals={RATE_DECIMALS}
-              maxIntegerDigits={RATE_INTEGER_DIGITS}
-              value={form.coupon_rate}
-              onChange={(v) => setForm({ ...form, coupon_rate: v })}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edit_bond_coupon_frequency">
-              {t("investments:bond.fields.couponFrequency")}
-            </Label>
-            <Select
-              id="edit_bond_coupon_frequency"
-              value={form.coupon_frequency}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  coupon_frequency: e.target.value as CouponFrequency,
-                })
-              }
-            >
-              <option value="monthly">{t("investments:bond.couponFrequency.monthly")}</option>
-              <option value="quarterly">{t("investments:bond.couponFrequency.quarterly")}</option>
-              <option value="semi_annual">
-                {t("investments:bond.couponFrequency.semi_annual")}
-              </option>
-              <option value="annual">{t("investments:bond.couponFrequency.annual")}</option>
-            </Select>
-          </div>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_bond_coupon_disposition">
-            {t("investments:bond.fields.couponDisposition")}
-          </Label>
-          <Select
-            id="edit_bond_coupon_disposition"
-            value={form.coupon_disposition}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                coupon_disposition: e.target.value as CouponDisposition,
-              })
-            }
-          >
-            <option value="pays_out">{t("investments:bond.couponDisposition.pays_out")}</option>
-            <option value="accrues">{t("investments:bond.couponDisposition.accrues")}</option>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            {t("investments:bond.couponDisposition.hint")}
-          </p>
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_bond_maturity">{t("investments:bond.fields.maturityDate")}</Label>
-          <Input
-            id="edit_bond_maturity"
-            required
-            type="date"
-            max="9999-12-31"
-            value={form.maturity_date}
-            onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <OwnershipField
-          idPrefix="bond_edit"
-          value={form.ownership_type}
-          onChange={(v) => setForm({ ...form, ownership_type: v })}
-          soleOwnerID={effectiveSoleOwnerID}
-          onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-        />
-
-        <EntryTypeField
-          idPrefix="bond_edit"
-          group="investment"
-          value={form.entry_type}
-          onChange={(v) => setForm({ ...form, entry_type: v })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="bond_edit"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
-      />
+      <BondFormBody mode="edit" form={form} setForm={setForm} soleOwnerID={effectiveSoleOwnerID} />
     </PositionFormDialog>
   );
 }

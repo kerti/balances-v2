@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -51,8 +51,12 @@ export function RowActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenuItem onClick={onEdit}>{t("actions.edit")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil />
+          {t("actions.edit")}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onDelete} variant="destructive">
+          <Trash2 />
           {t("delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -12,27 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import {
-  formatCurrency,
-  PRICE_DECIMALS,
-  QUANTITY_DECIMALS,
-  QUANTITY_INTEGER_DIGITS,
-} from "@/lib/format";
-import {
-  thisYearMonth,
-  yearMonthsUpToNow,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
+import { QuantityPriceSnapshotFormBody } from "@/components/dialogs/forms/QuantityPriceSnapshotForm";
 
 type Props<TResult> = {
   currency: string;
@@ -168,82 +153,14 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="inv_year_month">{t("common:fields.month")}</Label>
-              <MonthPickerPopover
-                id="inv_year_month"
-                testId="inv_year_month"
-                months={yearMonthsUpToNow()}
-                selected={form.year_month}
-                onSelect={(ym) => setForm({ ...form, year_month: ym })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="inv_as_of_date">{t("common:fields.statementDate")}</Label>
-              <Input
-                id="inv_as_of_date"
-                type="date"
-                min={monthStartDate(form.year_month)}
-                max={monthEndDateCapped(form.year_month)}
-                value={form.as_of_date}
-                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="inv_quantity">
-                {t("investments:quantityPriceSnapshot.quantityLabel")}
-              </Label>
-              <NumericInput
-                id="inv_quantity"
-                required
-                decimals={QUANTITY_DECIMALS}
-                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
-                value={form.quantity}
-                onChange={(v) => setForm({ ...form, quantity: v })}
-                placeholder={t("investments:quantityPriceSnapshot.quantityPlaceholder")}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="inv_price_per_unit">
-                {t("investments:quantityPriceSnapshot.pricePerUnitLabel", {
-                  currency,
-                })}
-              </Label>
-              <NumericInput
-                id="inv_price_per_unit"
-                required
-                decimals={PRICE_DECIMALS}
-                value={form.price_per_unit}
-                onChange={(v) => setForm({ ...form, price_per_unit: v })}
-                placeholder={t("investments:quantityPriceSnapshot.pricePerUnitPlaceholder")}
-              />
-            </div>
-          </div>
-
-          {priceHint && <p className="text-xs text-muted-foreground">{priceHint}</p>}
-
-          <div className="rounded-md bg-muted px-3 py-2 text-sm">
-            <span className="text-muted-foreground">
-              {t("investments:quantityPriceSnapshot.totalValueLabel")}
-            </span>{" "}
-            <span className="font-medium">
-              {derivedAmount !== null ? formatCurrency(derivedAmount, currency) : "—"}
-            </span>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="inv_snap_description">{t("common:fields.description")}</Label>
-            <Input
-              id="inv_snap_description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder={t("investments:quantityPriceSnapshot.descriptionPlaceholder")}
-            />
-          </div>
+          <QuantityPriceSnapshotFormBody
+            mode="create"
+            currency={currency}
+            form={form}
+            setForm={setForm}
+            derivedAmount={derivedAmount}
+            priceHint={priceHint}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>

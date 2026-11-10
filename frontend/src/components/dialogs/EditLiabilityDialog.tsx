@@ -1,19 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/common/NumericInput";
-import {
-  RATE_DECIMALS,
-  RATE_INTEGER_DIGITS,
-  TERM_MONTHS_DIGITS,
-  currencyDecimals,
-} from "@/lib/format";
-import { Label } from "@/components/ui/label";
 import { useUpdateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
+import {
+  LiabilityFormBody,
+  type LiabilityFormState,
+} from "@/components/dialogs/forms/LiabilityForm";
 import type { Liability } from "@/api/types";
 
 type Props = {
@@ -22,13 +15,15 @@ type Props = {
   liability: Liability;
 };
 
-function toForm(l: Liability) {
+function toForm(l: Liability): LiabilityFormState {
   return {
     display_name: l.display_name,
     description: l.description ?? "",
+    subtype: l.subtype,
     ownership_type: l.ownership_type,
     entry_type: l.entry_type,
     sole_owner_user_id: l.sole_owner_user_id,
+    native_currency: l.native_currency,
     counterparty_name: l.counterparty_name,
     principal: l.principal ?? "",
     interest_rate: l.interest_rate ?? "",
@@ -77,105 +72,12 @@ export function EditLiabilityDialog({ open, onOpenChange, liability }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="edit_l_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="edit_l_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_l_counterparty">{t("liabilities:fields.counterparty")}</Label>
-        <Input
-          id="edit_l_counterparty"
-          required
-          value={form.counterparty_name}
-          onChange={(e) => setForm({ ...form, counterparty_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_l_principal">{t("liabilities:fields.principalEdit")}</Label>
-          <NumericInput
-            id="edit_l_principal"
-            decimals={currencyDecimals(liability.native_currency)}
-            value={form.principal}
-            onChange={(v) => setForm({ ...form, principal: v })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_l_interest_rate">{t("liabilities:fields.interestRateEdit")}</Label>
-          <NumericInput
-            id="edit_l_interest_rate"
-            decimals={RATE_DECIMALS}
-            maxIntegerDigits={RATE_INTEGER_DIGITS}
-            value={form.interest_rate}
-            onChange={(v) => setForm({ ...form, interest_rate: v })}
-          />
-        </div>
-      </div>
-
-      {/* Stacks on phones for the same reason as the create dialog's row. */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_l_term">{t("liabilities:fields.termEdit")}</Label>
-          <NumericInput
-            id="edit_l_term"
-            decimals={0}
-            maxIntegerDigits={TERM_MONTHS_DIGITS}
-            value={form.term_months}
-            onChange={(v) => setForm({ ...form, term_months: v })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_l_start">{t("liabilities:fields.startDateEdit")}</Label>
-          <Input
-            id="edit_l_start"
-            type="date"
-            max="9999-12-31"
-            value={form.start_date}
-            onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_l_maturity">{t("liabilities:fields.maturityDateEdit")}</Label>
-          <Input
-            id="edit_l_maturity"
-            type="date"
-            max="9999-12-31"
-            value={form.maturity_date}
-            onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <OwnershipField
-        idPrefix="liability_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <LiabilityFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
       />
-
-      <EntryTypeField
-        idPrefix="liability_edit"
-        group="liability"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_l_description">{t("common:fields.description")}</Label>
-        <Input
-          id="edit_l_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
     </PositionFormDialog>
   );
 }

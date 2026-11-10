@@ -62,15 +62,10 @@
     "subtype": "Subtype",
     "counterparty": "Counterparty",
     "principal": "Principal (optional)",
-    "principalEdit": "Principal (optional)",
     "interestRate": "Interest rate (% per year, optional)",
-    "interestRateEdit": "Interest rate (% per year, optional)",
     "term": "Term (months, opt.)",
-    "termEdit": "Term (months)",
     "startDate": "Start (optional)",
-    "startDateEdit": "Start",
-    "maturityDate": "Maturity (optional)",
-    "maturityDateEdit": "Maturity"
+    "maturityDate": "Maturity (optional)"
   },
   "placeholders": {
     "displayName": "BCA KPR",

@@ -10,12 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency, currencyDecimals } from "@/lib/format";
-import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type AccruedInterestSnapshotLike = {
@@ -27,6 +22,7 @@ type AccruedInterestSnapshotLike = {
   as_of_date: string | null;
   description: string | null;
 };
+import { AccruedInterestSnapshotFormBody } from "@/components/dialogs/forms/AccruedInterestSnapshotForm";
 
 export type UpdateAccruedInterestSnapshotMutationVariables = {
   snapshotId: string;
@@ -57,6 +53,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
 }: Props<TResult>) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState({
+    year_month: snapshot.year_month,
     amount: snapshot.amount,
     accrued_interest: snapshot.accrued_interest ?? "",
     as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : "",
@@ -94,68 +91,13 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="edit_ai_amount">
-                {t("investments:accruedInterestSnapshot.totalValueLabel", {
-                  currency: snapshot.currency,
-                })}
-              </Label>
-              <NumericInput
-                id="edit_ai_amount"
-                required
-                decimals={currencyDecimals(snapshot.currency)}
-                value={form.amount}
-                onChange={(v) => setForm({ ...form, amount: v })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_ai_accrued">
-                {t("investments:accruedInterestSnapshot.accruedLabel", {
-                  currency: snapshot.currency,
-                })}
-              </Label>
-              <NumericInput
-                id="edit_ai_accrued"
-                required
-                decimals={currencyDecimals(snapshot.currency)}
-                value={form.accrued_interest}
-                onChange={(v) => setForm({ ...form, accrued_interest: v })}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-md bg-muted px-3 py-2 text-sm">
-            <span className="text-muted-foreground">
-              {t("investments:accruedInterestSnapshot.ofWhichPrincipalLabel")}
-            </span>{" "}
-            <span className="font-medium">
-              {derivedPrincipal !== null
-                ? formatCurrency(derivedPrincipal, snapshot.currency)
-                : "—"}
-            </span>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_ai_as_of_date">{t("common:fields.statementDate")}</Label>
-            <Input
-              id="edit_ai_as_of_date"
-              type="date"
-              min={monthStartDate(snapshot.year_month)}
-              max={monthEndDateCapped(snapshot.year_month)}
-              value={form.as_of_date}
-              onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_ai_description">{t("common:fields.description")}</Label>
-            <Input
-              id="edit_ai_description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
+          <AccruedInterestSnapshotFormBody
+            mode="edit"
+            currency={snapshot.currency}
+            form={form}
+            setForm={setForm}
+            derivedPrincipal={derivedPrincipal}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>

@@ -1,13 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useUpdateStock } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
+import { StockFormBody, type StockFormState } from "@/components/dialogs/forms/StockForm";
 import type { Stock, StockListItem } from "@/api/types";
 
 type Props = {
@@ -18,13 +14,14 @@ type Props = {
   stock: Stock | StockListItem;
 };
 
-function toForm(s: Stock | StockListItem) {
+function toForm(s: Stock | StockListItem): StockFormState {
   return {
     display_name: s.investment.display_name,
     description: s.investment.description ?? "",
     ownership_type: s.investment.ownership_type,
     entry_type: s.investment.entry_type,
     sole_owner_user_id: s.investment.sole_owner_user_id,
+    native_currency: s.investment.native_currency,
     risk_profile: s.investment.risk_profile,
     ticker: s.details.ticker,
     exchange: s.details.exchange,
@@ -40,6 +37,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
+    if (!form.risk_profile) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -67,66 +65,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="edit_stock_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="edit_stock_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_stock_ticker">{t("investments:stock.fields.ticker")}</Label>
-          <Input
-            id="edit_stock_ticker"
-            required
-            value={form.ticker}
-            onChange={(e) => setForm({ ...form, ticker: e.target.value.toUpperCase() })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_stock_exchange">{t("investments:stock.fields.exchange")}</Label>
-          <Input
-            id="edit_stock_exchange"
-            required
-            value={form.exchange}
-            onChange={(e) => setForm({ ...form, exchange: e.target.value.toUpperCase() })}
-          />
-        </div>
-      </div>
-
-      <OwnershipField
-        idPrefix="stock_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
-        soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-      />
-
-      <EntryTypeField
-        idPrefix="stock_edit"
-        group="investment"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_stock_description">{t("common:fields.description")}</Label>
-        <Input
-          id="edit_stock_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="stock_edit"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
-      />
+      <StockFormBody mode="edit" form={form} setForm={setForm} soleOwnerID={effectiveSoleOwnerID} />
     </PositionFormDialog>
   );
 }

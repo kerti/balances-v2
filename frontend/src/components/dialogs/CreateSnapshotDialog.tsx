@@ -12,22 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import {
-  thisYearMonth,
-  yearMonthsUpToNow,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
-import { formatCurrency, formatYearMonth, roundToCurrency, currencyDecimals } from "@/lib/format";
+import { SnapshotFormBody } from "@/components/dialogs/forms/SnapshotForm";
 
 export type CreateSnapshotPayload = {
   year_month: string;
@@ -150,98 +140,13 @@ export function CreateSnapshotDialog<TResult>({
           <DialogDescription>{t("snapshot.createDescription", { currency })}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="year_month">{t("fields.month")}</Label>
-              <MonthPickerPopover
-                id="year_month"
-                testId="year_month"
-                months={yearMonthsUpToNow()}
-                selected={form.year_month}
-                onSelect={(ym) => setForm({ ...form, year_month: ym })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="as_of_date">{t("fields.statementDate")}</Label>
-              <Input
-                id="as_of_date"
-                type="date"
-                min={monthStartDate(form.year_month)}
-                max={monthEndDateCapped(form.year_month)}
-                value={form.as_of_date}
-                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="amount">{t("fields.amountIn", { currency })}</Label>
-            <NumericInput
-              id="amount"
-              required
-              decimals={currencyDecimals(currency)}
-              value={form.amount}
-              onChange={(v) => setForm({ ...form, amount: v })}
-              placeholder={t("snapshot.amountPlaceholder")}
-            />
-            {(() => {
-              const s = suggest?.(form.year_month);
-              if (!s) return null;
-              // Sign-aware copy: positive rate reads as "appreciation" (real
-              // "+" prefix in EN, "apresiasi" verb in ID); negative rate
-              // reads as "depreciation" (real minus "−" U+2212 in EN,
-              // "penyusutan" verb in ID). Two keys keep the verb-form
-              // localisable rather than dropping a raw glyph into ID copy.
-              const magnitude = Math.abs(s.annualRatePct);
-              const hintKey =
-                s.annualRatePct > 0
-                  ? "snapshot.revaluationHintAppreciate"
-                  : "snapshot.revaluationHintDepreciate";
-              return (
-                <div
-                  className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"
-                  data-testid="revaluation-hint"
-                >
-                  <span>
-                    {t(hintKey, {
-                      amount: formatCurrency(s.amount, currency),
-                      magnitude,
-                      months: s.monthsElapsed,
-                      anchor: formatYearMonth(s.anchorYearMonth + "-01T00:00:00Z"),
-                    })}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        // Round to the currency's display precision (0 dp for
-                        // IDR/JPY/KRW/VND, 2 dp elsewhere) so the input shows
-                        // a clean figure rather than the helper's raw 4dp.
-                        amount: roundToCurrency(s.amount, currency),
-                      })
-                    }
-                    data-testid="revaluation-apply"
-                  >
-                    {t("snapshot.revaluationApply")}
-                  </Button>
-                </div>
-              );
-            })()}
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="description">{t("fields.description")}</Label>
-            <Input
-              id="description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder={t("snapshot.descriptionPlaceholder")}
-            />
-          </div>
+          <SnapshotFormBody
+            mode="create"
+            currency={currency}
+            form={form}
+            setForm={setForm}
+            suggest={suggest}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>
