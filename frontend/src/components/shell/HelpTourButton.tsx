@@ -46,7 +46,7 @@ export function HelpTourButton({ steps }: Props) {
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={start} data-testid="help-tour">
+    <Button variant="outline" onClick={start} data-testid="help-tour">
       <CircleHelp className="mr-1 size-4" />
       {t("tour.help")}
     </Button>

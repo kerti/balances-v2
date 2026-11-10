@@ -76,7 +76,7 @@ function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
 function ReceivableEnterButton() {
   const { t } = useTranslation("common");
   return (
-    <Button asChild size="sm" data-testid="receivables-enter-month">
+    <Button asChild variant="outline" data-testid="receivables-enter-month">
       <Link to={routes.receivablesEnter}>
         <CalendarPlus className="mr-1 size-4" />
         {t("bulkEntry.trigger")}

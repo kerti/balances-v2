@@ -112,7 +112,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" data-testid="import-position-trigger">
+        <Button variant="outline" data-testid="import-position-trigger">
           <Upload className="mr-1 size-4" />
           {t("importCreate.trigger")}
         </Button>

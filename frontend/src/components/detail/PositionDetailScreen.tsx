@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { Download, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -189,49 +190,47 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 mb-1">
-            {t("common:actions.back")}
-          </Button>
-          <h1 data-testid="tour-overview" className="text-2xl font-semibold tracking-tight">
-            {asset.display_name}
-          </h1>
-          {headerSecondary && <p className="text-sm text-muted-foreground">{headerSecondary}</p>}
-        </div>
-        {/* Two rows on phones (#542): Help + Edit above, Close/Status + Delete
-            below, each pair splitting the full width evenly
-            (`max-md:[&>*]:flex-1`). From 768px up they collapse back to natural,
-            inline widths. */}
-        <div
-          data-testid="tour-actions"
-          className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap"
-        >
-          <div className="flex gap-2 max-md:[&>*]:flex-1">
-            <HelpTourButton steps={tourSteps} />
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Pencil className="mr-1 size-4" />
-              {t("common:actions.edit")}
-            </Button>
+      <PageHeader
+        variant="sub-page"
+        back={{ label: t("common:actions.back"), onClick: onBack }}
+        title={asset.display_name}
+        titleTestId="tour-overview"
+        subtitle={headerSecondary}
+        // Two rows on phones (#542): Help + Edit above, Close/Status + Delete
+        // below, each pair splitting the full width evenly
+        // (`max-md:[&>*]:flex-1`). From 768px up they collapse back to natural,
+        // inline widths.
+        actions={
+          <div
+            data-testid="tour-actions"
+            className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap"
+          >
+            <div className="flex gap-2 max-md:[&>*]:flex-1">
+              <HelpTourButton steps={tourSteps} />
+              <Button variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="mr-1 size-4" />
+                {t("common:actions.edit")}
+              </Button>
+            </div>
+            <div className="flex gap-2 max-md:[&>*]:flex-1">
+              <TerminatePositionDialog
+                group={descriptor.group}
+                id={asset.id}
+                listKey={descriptor.listKey}
+                currentStatus={asset.status}
+                currentTerminatedAt={asset.terminated_at}
+                currentNote={asset.termination_note}
+                investmentSubtype={descriptor.investmentSubtype}
+                currency={asset.native_currency}
+              />
+              <Button variant="outline" onClick={() => setDeleteOpen(true)}>
+                <Trash2 className="mr-1 size-4" />
+                {t("common:delete")}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 max-md:[&>*]:flex-1">
-            <TerminatePositionDialog
-              group={descriptor.group}
-              id={asset.id}
-              listKey={descriptor.listKey}
-              currentStatus={asset.status}
-              currentTerminatedAt={asset.terminated_at}
-              currentNote={asset.termination_note}
-              investmentSubtype={descriptor.investmentSubtype}
-              currency={asset.native_currency}
-            />
-            <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="mr-1 size-4" />
-              {t("common:delete")}
-            </Button>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {beforeDetails}
 

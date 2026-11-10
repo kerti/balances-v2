@@ -276,7 +276,7 @@ export function TerminatePositionDialog({
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" data-testid="terminate-position-trigger">
+        <Button variant="outline" data-testid="terminate-position-trigger">
           <Archive className="mr-1 size-4" />
           {wasActive ? t("terminate.closeTrigger") : t("terminate.editTrigger")}
         </Button>

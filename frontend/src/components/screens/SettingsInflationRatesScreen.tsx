@@ -1,4 +1,6 @@
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/common/PageHeader";
+import { routes } from "@/lib/routes";
 import { InflationRatesCard } from "@/components/common/InflationRatesCard";
 
 // Settings ▸ Inflation Rates (routes.settingsInflationRates). h1 + subtitle
@@ -12,10 +14,12 @@ export function SettingsInflationRatesScreen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("inflationRatesPage.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("inflationRatesPage.subtitle")}</p>
-      </div>
+      <PageHeader
+        variant="sub-page"
+        back={{ label: t("backToSettings"), to: routes.settings }}
+        title={t("inflationRatesPage.title")}
+        subtitle={t("inflationRatesPage.subtitle")}
+      />
 
       <InflationRatesCard />
     </div>

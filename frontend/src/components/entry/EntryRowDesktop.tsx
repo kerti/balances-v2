@@ -27,7 +27,7 @@ const TOTAL_COL = "w-32 shrink-0 text-right";
 // is units and which is price. It renders as the right-hand cluster of the group
 // title line (sharing that vertical space) and mirrors the row's right cluster —
 // one right-aligned label per field at its own widthClass, then a money-cluster
-// spacer (symbol + total) and an action spacer — so the labels sit over their
+// spacer (symbol + total), with an action spacer leading — so the labels sit over their
 // inputs. Amount-only shapes (a single unlabelled field) render nothing.
 // Decorative (aria-hidden): the inputs keep their own aria-labels.
 export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
@@ -35,6 +35,7 @@ export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
   if (!shape.fields.some((f) => f.labelKey)) return null;
   return (
     <div className="flex items-center gap-3 text-xs" aria-hidden>
+      <span className="size-8 shrink-0" />
       <div className="flex items-center gap-2">
         {shape.fields.map((f) => (
           <span key={f.key} className={`${f.widthClass} truncate text-right`}>
@@ -51,14 +52,14 @@ export function EntryRowDesktopHeader({ shape }: { shape: EntryShape }) {
           <span className={TOTAL_COL}>{shape.derivedLabelKey ? t(shape.derivedLabelKey) : ""}</span>
         </div>
       )}
-      <span className="size-8 shrink-0" />
     </div>
   );
 }
 
 // Desktop bulk-entry row (ADR-0046 original layout, ADR-0050 desktop renderer):
 // name block on the left, the shape's field inputs + computed value in a cramped
-// horizontal group on the right, the reset action trailing. Picked by
+// horizontal group on the right, the reset action leading the inputs so inputs,
+// totals and Save share one right edge. Picked by
 // EntryScreen when useIsMobile() is false; EntryRowMobile is its ≥stacked twin.
 export function EntryRowDesktop({
   view,
@@ -75,6 +76,19 @@ export function EntryRowDesktop({
       <div className="min-w-0 flex-1">
         <EntryRowMeta view={view} tid={tid} copy={copy} />
       </div>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className={`size-8 shrink-0${dirty ? "" : " invisible"}`}
+        onClick={onReset}
+        aria-label={t("bulkEntry.undo")}
+        title={t("bulkEntry.undo")}
+        disabled={!dirty}
+        data-testid={`${tid}-entry-undo-${positionId}`}
+      >
+        <RotateCcw className="size-4" />
+      </Button>
       {/* Currency only where there's no total to carry it (amount-only). */}
       {!shape.derived && (
         <span className={`${CURRENCY_COL} text-xs text-muted-foreground`}>{view.currency}</span>
@@ -102,19 +116,6 @@ export function EntryRowDesktop({
           </span>
         </div>
       )}
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={`size-8 shrink-0${dirty ? "" : " invisible"}`}
-        onClick={onReset}
-        aria-label={t("bulkEntry.undo")}
-        title={t("bulkEntry.undo")}
-        disabled={!dirty}
-        data-testid={`${tid}-entry-undo-${positionId}`}
-      >
-        <RotateCcw className="size-4" />
-      </Button>
     </li>
   );
 }

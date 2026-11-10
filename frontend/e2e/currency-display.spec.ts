@@ -40,14 +40,14 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
 
   // --- Settings: enable multi-currency, then enter a USD rate on the
   // Exchange Rates subpage for this month ---
-  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   // Controlled checkbox: the toggle is async (mutation → session refetch), so
   // click and let the "Manage exchange rates" link's appearance confirm the
-  // flip stuck (the Exchange Rates subpage stays reachable from the sidebar
-  // either way, but only shows the CRUD form once multi-currency is on).
+  // flip stuck (the Exchange Rates subpage is only linked from Settings once
+  // multi-currency is on).
   await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
-  await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
+  await page.getByRole("link", { name: "Manage exchange rates" }).click();
   const fxCard = page.getByTestId("fx-rates-card");
   await pickMonth(page, fxCard.getByTestId("fx-month"), month);
   await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
@@ -80,11 +80,12 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 
-  await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
+  await page.getByRole("link", { name: "Manage exchange rates" }).click();
   await page.getByRole("row", { name: /USD/ }).getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
-  await page.getByRole("link", { name: "Settings" }).click();
+  await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toHaveCount(0);
 });

@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent, type ReactNode } from "react";
+import { PageHeader } from "@/components/common/PageHeader";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Link } from "react-router";
@@ -70,10 +71,7 @@ export function SettingsScreen() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-      </div>
+      <PageHeader variant="list" title={t("title")} subtitle={t("subtitle")} />
 
       <SectionHeading>{t("sections.profile")}</SectionHeading>
       <SettingsTable>
@@ -462,12 +460,9 @@ function MultiCurrencyRow() {
       {updateSettings.isError && <RowError error={updateSettings.error} />}
 
       {me.multi_currency_enabled && (
-        <Link
-          to={routes.settingsFxRates}
-          className="inline-flex max-md:min-h-11 items-center text-sm underline"
-        >
-          {t("currency.manageFx")}
-        </Link>
+        <Button asChild variant="outline">
+          <Link to={routes.settingsFxRates}>{t("currency.manageFx")}</Link>
+        </Button>
       )}
     </SettingsRow>
   );
@@ -529,12 +524,9 @@ function AssumedInflationRow() {
 
       {updateSettings.isError && <RowError error={updateSettings.error} />}
 
-      <Link
-        to={routes.settingsInflationRates}
-        className="inline-flex max-md:min-h-11 items-center text-sm underline"
-      >
-        {t("inflation.manageRates")}
-      </Link>
+      <Button asChild variant="outline">
+        <Link to={routes.settingsInflationRates}>{t("inflation.manageRates")}</Link>
+      </Button>
     </SettingsRow>
   );
 }

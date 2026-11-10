@@ -18,6 +18,7 @@
 // per-month value + cost series for the charts come from one household-scoped
 // fetch (`useInvestmentTimeSeries`, #22) — no per-position fan-out.
 
+import { PageHeader } from "@/components/common/PageHeader";
 import { useMemo } from "react";
 import { Link } from "react-router";
 import { CalendarPlus } from "lucide-react";
@@ -134,42 +135,30 @@ export function InvestmentsHome() {
 
   return (
     <div className="space-y-6" data-testid="investments-home">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("common:home.investments.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground">{t("investments:home.subtitle")}</p>
-        </div>
-        {/* Two bulk monthly-entry actions (ADR-0046): qty×price prices for
-            Stock/MutualFund/Gold (#423) and accrued values for Bond/TimeDeposit
-            (#424) — one per snapshot shape, matching how statements arrive. */}
-        <div className="flex gap-2 md:flex-wrap md:justify-end">
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="h-11 flex-1 md:h-8 md:flex-none"
-            data-testid="investments-enter-accrued"
-          >
-            <Link to={routes.investmentsEnterAccrued}>
-              <CalendarPlus className="mr-1 size-4" />
-              {t("common:bulkEntry.investmentsAccrued.trigger")}
-            </Link>
-          </Button>
-          <Button
-            asChild
-            size="sm"
-            className="h-11 flex-1 md:h-8 md:flex-none"
-            data-testid="investments-enter-prices"
-          >
-            <Link to={routes.investmentsEnterPrices}>
-              <CalendarPlus className="mr-1 size-4" />
-              {t("common:bulkEntry.investments.trigger")}
-            </Link>
-          </Button>
-        </div>
-      </div>
+      {/* Two bulk monthly-entry actions (ADR-0046): qty×price prices for
+          Stock/MutualFund/Gold (#423) and accrued values for Bond/TimeDeposit
+          (#424) — one per snapshot shape, matching how statements arrive. */}
+      <PageHeader
+        variant="hub"
+        title={t("common:home.investments.title")}
+        subtitle={t("investments:home.subtitle")}
+        actions={
+          <>
+            <Button asChild variant="outline" data-testid="investments-enter-accrued">
+              <Link to={routes.investmentsEnterAccrued}>
+                <CalendarPlus className="mr-1 size-4" />
+                {t("common:bulkEntry.investmentsAccrued.trigger")}
+              </Link>
+            </Button>
+            <Button asChild data-testid="investments-enter-prices">
+              <Link to={routes.investmentsEnterPrices}>
+                <CalendarPlus className="mr-1 size-4" />
+                {t("common:bulkEntry.investments.trigger")}
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
       {anyPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
