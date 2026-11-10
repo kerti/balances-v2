@@ -42,7 +42,6 @@ const me: Me = {
   picture_url: null,
   locale: "en-GB",
   theme: "light",
-  carryover_date_mode: "today",
   time_zone: "UTC",
   reporting_currency: "IDR",
   multi_currency_enabled: false,
@@ -88,7 +87,6 @@ it("groups the scalar preferences into one Profile card and one Household card",
     "Your name",
     "Language",
     "Appearance",
-    "Carry-over date",
   ]);
   expect(rows(household)).toHaveLength(4);
   expect(within(household).getByLabelText("Household name")).toHaveAttribute(
@@ -136,7 +134,6 @@ it("gives every control an accessible name with no row-name / field-label duplic
   expect(screen.getByLabelText("Your name")).toHaveAttribute("id", "nickname");
   expect(screen.getByLabelText("Language")).toHaveAttribute("id", "language");
   expect(screen.getByLabelText("Appearance")).toHaveAttribute("id", "theme");
-  expect(screen.getByLabelText("Carry-over date")).toHaveAttribute("id", "carryover-date-mode");
   // The two rows that keep a visible field label keep it for the extra it
   // carries — "Reporting" and the unit — so the row name is not the label.
   expect(screen.getByLabelText("Reporting currency")).toHaveAttribute("id", "reporting-currency");

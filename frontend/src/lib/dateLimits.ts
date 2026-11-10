@@ -43,24 +43,6 @@ export function todayDate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// SUPPORTED_CARRYOVER_DATE_MODES mirrors the users.carryover_date_mode CHECK
-// (migration 00002) and the handler's supportedCarryoverDateModes map. It is
-// the per-user preference (issue #105) that Copy carryover used to seed its
-// as-of date from. Record snapshot (#788) never pre-fills a statement date, so
-// nothing reads the preference now; it stays only until ADR-0046's
-// `carryover_date_mode` drop removes the column, the API field and the Settings
-// row together. Add a mode by extending all three.
-export const SUPPORTED_CARRYOVER_DATE_MODES = [
-  "today",
-  "end_of_last_month",
-  "end_of_month_after_last_snapshot",
-] as const;
-export type CarryoverDateMode = (typeof SUPPORTED_CARRYOVER_DATE_MODES)[number];
-
-export function isSupportedCarryoverDateMode(value: string): value is CarryoverDateMode {
-  return (SUPPORTED_CARRYOVER_DATE_MODES as readonly string[]).includes(value);
-}
-
 // monthStartDate returns the first day of a "YYYY-MM" month as "YYYY-MM-DD",
 // suitable for the `min` of a snapshot's statement-date input — the statement
 // date must fall within the snapshot's month (backend CHECK

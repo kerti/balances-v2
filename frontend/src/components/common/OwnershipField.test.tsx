@@ -28,7 +28,6 @@ const me = {
   picture_url: null,
   locale: "en-GB",
   theme: "system",
-  carryover_date_mode: "month_end",
   time_zone: "UTC",
   reporting_currency: "IDR",
   multi_currency_enabled: false,

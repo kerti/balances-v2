@@ -89,7 +89,7 @@ export function SettingsRow({
 // dirty rather than appearing on first keystroke: appearing beside a `flex-1`
 // input would reflow that input mid-type, and the permanently-visible button is
 // also the answer to "does this row autosave?" — adjacent rows now mix both
-// behaviours (language, theme and carry-over are buttonless per ADR-0032).
+// behaviours (language and theme are buttonless per ADR-0032).
 export function SettingsControlRow({
   children,
   action,

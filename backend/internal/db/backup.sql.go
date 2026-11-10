@@ -931,7 +931,7 @@ func (q *Queries) ListTimeDepositsForExport(ctx context.Context, arg ListTimeDep
 }
 
 const listUsersForExport = `-- name: ListUsersForExport :many
-SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode FROM users
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme FROM users
 WHERE household_id = $1
   AND (deleted_at IS NULL OR $2::bool)
 ORDER BY created_at, id
@@ -967,7 +967,6 @@ func (q *Queries) ListUsersForExport(ctx context.Context, arg ListUsersForExport
 			&i.Nickname,
 			&i.PictureUrl,
 			&i.Theme,
-			&i.CarryoverDateMode,
 		); err != nil {
 			return nil, err
 		}

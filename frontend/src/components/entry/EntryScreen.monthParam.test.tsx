@@ -27,10 +27,10 @@ function renderAt(search: string) {
   );
 }
 
-it("seeds the month and the statement date from ?month=", async () => {
+it("seeds the month from ?month= but leaves the statement date blank (#790)", async () => {
   renderAt("?month=2026-03");
   expect(await screen.findByTestId("asset-entry-month")).toHaveTextContent(monthLabel("2026-03"));
-  expect(screen.getByLabelText(/statement date/i)).toHaveValue("2026-03-31");
+  expect(screen.getByLabelText(/statement date/i)).toHaveValue("");
 });
 
 it.each(["?month=2026-13", "?month=garbage", "?month=2999-01", ""])(

@@ -70,6 +70,11 @@ type transformFunc func(*Envelope) error
 // would leave every termination in the file with no fallback, so its undo would
 // silently hand back an earlier month's value. The link is reconstructed from
 // the rule the column replaced; see linkDisplacedSnapshots.
+//
+// transforms[5] (v5→v6, #790) is a deliberate no-op: v6 dropped the users
+// section's carryover_date_mode, and a v5 file's extra key is ignored on load
+// (it decodes into db.User, which no longer has the field). It is registered
+// because migrate() requires a transform for every step.
 var transforms = map[int]transformFunc{
 	1: func(e *Envelope) error {
 		for i := range e.Household.Bonds {
@@ -123,6 +128,7 @@ var transforms = map[int]transformFunc{
 			func(s *db.InvestmentSnapshot, id uuid.UUID) { s.Supersedes = &id })
 		return nil
 	},
+	5: func(_ *Envelope) error { return nil },
 }
 
 // closeLinkView is the group-agnostic slice of a snapshot row transforms[4]

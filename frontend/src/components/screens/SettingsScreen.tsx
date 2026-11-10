@@ -17,7 +17,6 @@ import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
-import { SUPPORTED_CARRYOVER_DATE_MODES, type CarryoverDateMode } from "@/lib/dateLimits";
 import { routes } from "@/lib/routes";
 import { InviteForm } from "@/components/common/InviteForm";
 import { ReactivationCard } from "@/components/common/ReactivationCard";
@@ -78,7 +77,6 @@ export function SettingsScreen() {
         <NicknameRow />
         <LanguageRow />
         <ThemeRow />
-        <CarryoverDateRow />
       </SettingsTable>
 
       <SectionHeading>{t("sections.household")}</SectionHeading>
@@ -257,55 +255,6 @@ function ThemeRow() {
         {SUPPORTED_THEMES.map((th) => (
           <option key={th} value={th}>
             {t(`theme.${th}`)}
-          </option>
-        ))}
-      </Select>
-    </SettingsRow>
-  );
-}
-
-// CarryoverDateRow mirrors LanguageRow: a select bound to the user's carryover
-// date-mode preference (issue #105), governing the as-of date the snapshot
-// carryover dialogs pre-fill. Unlike theme/locale there is no local UI effect to
-// apply optimistically — the value only feeds those dialogs — so the select
-// reads straight from the session and the PATCH (autosave, toast confirmation,
-// ADR-0032) refreshes it. Labels come from the catalog so they render in the
-// current UI language.
-function CarryoverDateRow() {
-  const { t } = useTranslation("settings");
-  const { data: me } = useSession();
-  const updateMe = useUpdateMe();
-
-  if (!me) return null;
-
-  const onChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value as CarryoverDateMode;
-    updateMe.mutate(
-      { carryover_date_mode: next },
-      {
-        onSuccess: () => toast.success(t("carryoverDate.saved")),
-        onError: (err) => toast.error(errorMessage(err)),
-      },
-    );
-  };
-
-  return (
-    <SettingsRow
-      name={t("carryoverDate.title")}
-      description={t("carryoverDate.description")}
-      htmlFor="carryover-date-mode"
-    >
-      <Select
-        id="carryover-date-mode"
-        data-testid="settings-carryover-date-select"
-        className={CONTROL_WIDTH.full}
-        value={me.carryover_date_mode}
-        onChange={onChange}
-        disabled={updateMe.isPending}
-      >
-        {SUPPORTED_CARRYOVER_DATE_MODES.map((m) => (
-          <option key={m} value={m}>
-            {t(`carryoverDate.modes.${m}`)}
           </option>
         ))}
       </Select>
