@@ -58,7 +58,6 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
         <Label htmlFor="account_number">{t("assets:bankAccount.fields.accountNumber")}</Label>
         <Input
           id="account_number"
-          required
           value={form.account_number}
           onChange={(e) => setForm({ ...form, account_number: e.target.value })}
         />

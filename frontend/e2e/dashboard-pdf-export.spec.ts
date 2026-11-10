@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 import { expectNoA11yViolations } from "./axe";
 
 // Dashboard → "Download PDF" (#187, ADR-0044). Seeded Alice is
@@ -24,6 +25,7 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   await page
     .getByRole("row", { name: new RegExp(account) })

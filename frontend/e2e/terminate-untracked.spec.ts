@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // The exit side of a Tracking Change through the real UI + backend (ADR-0053
 // §5, #595): a Position can be terminated as `untracked` — it left the
@@ -38,6 +39,7 @@ test(
     await createDialog.getByLabel("Exchange").fill("IDX");
     await createDialog.getByLabel("Risk profile").selectOption("medium");
     await createDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     await page
       .getByRole("row", { name: new RegExp(name) })

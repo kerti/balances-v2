@@ -13,7 +13,7 @@ import {
 const empty: BankAccountFormState = {
   display_name: "",
   description: "",
-  ownership_type: "joint",
+  ownership_type: "sole",
   entry_type: "acquired",
   sole_owner_user_id: null,
   native_currency: "IDR",
@@ -22,7 +22,13 @@ const empty: BankAccountFormState = {
   account_type: "savings",
 };
 
-export function CreateBankAccountDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreateBankAccountDialog({ onCreated }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
@@ -44,7 +50,12 @@ export function CreateBankAccountDialog() {
         account_number: form.account_number,
         account_type: form.account_type,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.asset.id);
+        },
+      },
     );
   }
 

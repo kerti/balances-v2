@@ -32,6 +32,7 @@
     "editTitle": "Edit bank account",
     "editDescription": "Update the account's display name, bank details, description, or ownership. Currency is not editable yet.",
     "detailHeaderLine": "{{bankName}} · {{accountNumber}} · {{accountType}}",
+    "detailHeaderLineNoNumber": "{{bankName}} · {{accountType}}",
     "detailsCardTitle": "Account details",
     "detailsCardLine": "Ownership: {{ownership}} · Currency: {{currency}} · Status:",
     "chartTitle": "Balance over time",

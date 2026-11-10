@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Group-hub mobile a11y floor (#510, ADR-0050 B3a). The three hubs — AssetsHome,
 // InvestmentsHome, LiabilitiesHome — are already single-column chart stacks
@@ -25,6 +26,7 @@ test("group hubs hold the mobile a11y floor at 390px", { tag: "@smoke" }, async 
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   await page
     .getByRole("row", { name: new RegExp(account) })

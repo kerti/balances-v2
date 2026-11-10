@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Detail-page mobile divergence for the accrued snapshot shape (#537, ADR-0051
 // Phase B / ADR-0050 "wide table → stacked cards"). Sibling to the qty×price
@@ -31,6 +32,7 @@ test(
     await createDialog.getByLabel("Placement date").fill("2024-01-01");
     await createDialog.getByLabel("Risk profile").selectOption("medium");
     await createDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     await page
       .getByRole("row", { name: new RegExp(name) })

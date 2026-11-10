@@ -10,7 +10,7 @@ import { VehicleFormBody, type VehicleFormState } from "@/components/dialogs/for
 const empty: VehicleFormState = {
   display_name: "",
   description: "",
-  ownership_type: "joint",
+  ownership_type: "sole",
   entry_type: "acquired",
   sole_owner_user_id: null,
   native_currency: "IDR",
@@ -22,7 +22,13 @@ const empty: VehicleFormState = {
   annual_depreciation_rate: "",
 };
 
-export function CreateVehicleDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreateVehicleDialog({ onCreated }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
@@ -47,7 +53,12 @@ export function CreateVehicleDialog() {
         plate_number: form.plate_number || null,
         annual_depreciation_rate: form.annual_depreciation_rate || null,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.asset.id);
+        },
+      },
     );
   }
 

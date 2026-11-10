@@ -78,7 +78,7 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
     },
   ],
   headlineTestId: "bonds-total",
-  renderCreateDialog: () => <CreateBondDialog />,
+  renderCreateDialog: (onCreated) => <CreateBondDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditBondDialog key={item.investment.id} bond={item} {...props} />
   ),

@@ -10,7 +10,7 @@ import { PropertyFormBody, type PropertyFormState } from "@/components/dialogs/f
 const empty: PropertyFormState = {
   display_name: "",
   description: "",
-  ownership_type: "joint",
+  ownership_type: "sole",
   entry_type: "acquired",
   sole_owner_user_id: null,
   native_currency: "IDR",
@@ -21,7 +21,13 @@ const empty: PropertyFormState = {
   annual_appreciation_rate: "",
 };
 
-export function CreatePropertyDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreatePropertyDialog({ onCreated }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
@@ -45,7 +51,12 @@ export function CreatePropertyDialog() {
         acquisition_cost: form.acquisition_cost || null,
         annual_appreciation_rate: form.annual_appreciation_rate || null,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.asset.id);
+        },
+      },
     );
   }
 

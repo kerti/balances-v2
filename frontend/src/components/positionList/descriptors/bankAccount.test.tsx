@@ -123,4 +123,21 @@ describe("bankAccountDescriptor (conformance)", () => {
     expect(screen.getByRole("columnheader", { name: /Latest balance/ })).toBeInTheDocument();
     expect(screen.getByTestId("bank-accounts-total")).toBeInTheDocument();
   });
+
+  // covers: INV-PRESENTATION-20
+  it("shows no account number, dash or empty separator when it is blank (#843)", async () => {
+    server.use(
+      http.get("/api/bank-accounts", () =>
+        HttpResponse.json([{ ...listItem, details: { ...details, account_number: "" } }]),
+      ),
+      http.get("/api/household/members", () => HttpResponse.json([owner])),
+      http.get("/api/me", () => HttpResponse.json(me)),
+    );
+    renderWithProviders(
+      <PositionListScreen descriptor={bankAccountDescriptor} onSelect={vi.fn()} />,
+    );
+
+    const row = await screen.findByTestId("bank-account-row");
+    expect(within(row).getByText("Test Bank · Savings")).toBeInTheDocument();
+  });
 });

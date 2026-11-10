@@ -62,7 +62,7 @@ export type InvestmentConfig<T> = {
   // fund-type chip).
   titleAccessory?: (item: T) => ReactNode;
   headlineTestId: string;
-  renderCreateDialog: () => ReactNode;
+  renderCreateDialog: (onCreated: (id: string) => void) => ReactNode;
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
 };
 

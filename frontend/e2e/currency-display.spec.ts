@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 import { pickMonth } from "./monthPicker";
 
 // Side-by-side currency display through the real UI + backend (Q15c, ADR-0010,
@@ -24,6 +25,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   await page
     .getByRole("row", { name: new RegExp(account) })

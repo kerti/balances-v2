@@ -29,17 +29,14 @@ test(
     const acctDialog = page.getByRole("dialog");
     await acctDialog.getByLabel("Display name").fill(account);
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
-    await acctDialog.getByLabel("Account number").fill("1234567890");
+    // Account number is optional (#843): left blank here.
     await acctDialog.getByRole("button", { name: "Create" }).click();
 
-    await page
-      .getByRole("row", { name: new RegExp(account) })
-      .getByText(account)
-      .click();
-    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
-
-    // --- Record a snapshot for last month (the first one opens on this month) ---
-    await page.getByRole("button", { name: "Record snapshot" }).click();
+    // --- Creating lands on the new account with Record snapshot already open
+    //     (#843); record a snapshot for last month (it opens on this month) ---
+    // The open modal hides the page from the a11y tree, so the landing is
+    // asserted by URL here; the heading is checked once the dialog closes.
+    await expect(page).toHaveURL(/\/assets\/bank-accounts\/[0-9a-f-]{36}$/);
     const createDialog = page.getByRole("dialog");
     await expect(createDialog.getByText("Record monthly snapshot")).toBeVisible();
     await expect(createDialog.getByTestId("snapshot-replace-notice")).toHaveCount(0);
@@ -50,6 +47,7 @@ test(
 
     const row = page.getByRole("row", { name: new RegExp(desc) });
     await expect(row).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
 
     // --- Record snapshot again: it defaults to the month after the latest (this
     //     month, empty), starts with an empty amount, and "Same as last month"

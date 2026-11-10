@@ -11,7 +11,7 @@ import type { EntryType } from "@/api/types";
 const empty = {
   display_name: "",
   description: "",
-  ownership_type: "joint" as "sole" | "joint",
+  ownership_type: "sole" as "sole" | "joint",
   entry_type: "acquired" as EntryType,
   sole_owner_user_id: null as string | null,
   native_currency: "IDR",
@@ -19,7 +19,13 @@ const empty = {
   due_date: "",
 };
 
-export function CreateReceivableDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreateReceivableDialog({ onCreated }: Props) {
   const { t } = useTranslation(["receivables", "common"]);
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
@@ -40,7 +46,12 @@ export function CreateReceivableDialog() {
         counterparty_name: form.counterparty_name,
         due_date: form.due_date || null,
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.id);
+        },
+      },
     );
   }
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRecordOnArrival } from "@/lib/recordOnArrival";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -76,7 +77,8 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
   couponDisposition,
 }: Props<TCreated, TUpdated>) {
   const { t } = useTranslation(["investments", "common"]);
-  const [open, setOpen] = useState(false);
+  // Open straight away when a create flow just landed on this item (#843).
+  const [open, setOpen] = useState(useRecordOnArrival());
 
   // accrued defaults to 0 for the common pays-out case (coupons land in the bank
   // account, no in-instrument accrual). An 'accrues' bond (#66) instead starts

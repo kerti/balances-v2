@@ -33,7 +33,7 @@ export const propertyDescriptor = nonInvestmentDescriptor<PropertyListItem>({
   },
   headlineLabelKey: "assets:property.totalValue",
   headlineTestId: "properties-total",
-  renderCreateDialog: () => <CreatePropertyDialog />,
+  renderCreateDialog: (onCreated) => <CreatePropertyDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditPropertyDialog
       key={item.asset.id}

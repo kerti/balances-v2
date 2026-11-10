@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 import { pickMonth } from "./monthPicker";
 
 // Built-in instruction-manual tours through the real UI (issue #23, #26). The
@@ -41,6 +42,7 @@ async function createBankAccount(page: Page, name: string) {
   await dialog.getByLabel("Bank name").fill("E2E Bank");
   await dialog.getByLabel("Account number").fill("1234567890");
   await dialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
   await page
     .getByRole("row", { name: new RegExp(name) })
     .getByText(name)
@@ -61,6 +63,7 @@ async function createBond(page: Page, name: string) {
   await dialog.getByLabel("Placement date").fill("2024-01-01");
   await dialog.getByLabel("Risk profile").selectOption("medium");
   await dialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
   await page
     .getByRole("row", { name: new RegExp(name) })
     .getByText(name)

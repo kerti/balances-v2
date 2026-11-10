@@ -32,6 +32,7 @@
     "editTitle": "Ubah rekening bank",
     "editDescription": "Perbarui nama tampilan, detail bank, deskripsi, atau kepemilikan rekening. Mata uang belum bisa diubah.",
     "detailHeaderLine": "{{bankName}} · {{accountNumber}} · {{accountType}}",
+    "detailHeaderLineNoNumber": "{{bankName}} · {{accountType}}",
     "detailsCardTitle": "Detail rekening",
     "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
     "chartTitle": "Saldo dari waktu ke waktu",

@@ -4,11 +4,12 @@ import {
   createBrowserRouter,
   RouterProvider,
   useNavigate,
-  useParams,
   type NavigateFunction,
 } from "react-router";
 import { useSession } from "@/hooks/useSession";
 import { routes } from "@/lib/routes";
+import { arrivalOptions } from "@/lib/recordOnArrival";
+import { DetailRoute } from "@/components/shell/DetailRoute";
 import { SignInScreen } from "@/components/screens/SignInScreen";
 import { OnboardingScreen } from "@/components/screens/OnboardingScreen";
 import { InviteAcceptScreen } from "@/components/screens/InviteAcceptScreen";
@@ -70,11 +71,6 @@ function ListRoute({ render }: { render: (nav: NavigateFunction) => ReactNode })
   return <>{render(useNavigate())}</>;
 }
 
-function DetailRoute({ render }: { render: (id: string, nav: NavigateFunction) => ReactNode }) {
-  const { id } = useParams();
-  return <>{render(id!, useNavigate())}</>;
-}
-
 const router = createBrowserRouter([
   {
     element: <AppShell />,
@@ -96,7 +92,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={bankAccountDescriptor.entityKey}
                 descriptor={bankAccountDescriptor}
-                onSelect={(id) => nav(routes.bankAccount(id))}
+                onSelect={(id, opts) => nav(routes.bankAccount(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -120,7 +116,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={propertyDescriptor.entityKey}
                 descriptor={propertyDescriptor}
-                onSelect={(id) => nav(routes.property(id))}
+                onSelect={(id, opts) => nav(routes.property(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -144,7 +140,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={vehicleDescriptor.entityKey}
                 descriptor={vehicleDescriptor}
-                onSelect={(id) => nav(routes.vehicle(id))}
+                onSelect={(id, opts) => nav(routes.vehicle(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -170,7 +166,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={liabilityPersonalDescriptor.entityKey}
                 descriptor={liabilityPersonalDescriptor}
-                onSelect={(id) => nav(routes.liability("personal", id))}
+                onSelect={(id, opts) => nav(routes.liability("personal", id), arrivalOptions(opts))}
               />
             )}
           />
@@ -194,7 +190,9 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={liabilityInstitutionalDescriptor.entityKey}
                 descriptor={liabilityInstitutionalDescriptor}
-                onSelect={(id) => nav(routes.liability("institutional", id))}
+                onSelect={(id, opts) =>
+                  nav(routes.liability("institutional", id), arrivalOptions(opts))
+                }
               />
             )}
           />
@@ -224,7 +222,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={receivableDescriptor.entityKey}
                 descriptor={receivableDescriptor}
-                onSelect={(id) => nav(routes.receivable(id))}
+                onSelect={(id, opts) => nav(routes.receivable(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -256,7 +254,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={stockDescriptor.entityKey}
                 descriptor={stockDescriptor}
-                onSelect={(id) => nav(routes.stock(id))}
+                onSelect={(id, opts) => nav(routes.stock(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -280,7 +278,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={mutualFundDescriptor.entityKey}
                 descriptor={mutualFundDescriptor}
-                onSelect={(id) => nav(routes.mutualFund(id))}
+                onSelect={(id, opts) => nav(routes.mutualFund(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -304,7 +302,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={bondDescriptor.entityKey}
                 descriptor={bondDescriptor}
-                onSelect={(id) => nav(routes.bond(id))}
+                onSelect={(id, opts) => nav(routes.bond(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -326,7 +324,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={timeDepositDescriptor.entityKey}
                 descriptor={timeDepositDescriptor}
-                onSelect={(id) => nav(routes.timeDeposit(id))}
+                onSelect={(id, opts) => nav(routes.timeDeposit(id), arrivalOptions(opts))}
               />
             )}
           />
@@ -350,7 +348,7 @@ const router = createBrowserRouter([
               <PositionListScreen
                 key={goldDescriptor.entityKey}
                 descriptor={goldDescriptor}
-                onSelect={(id) => nav(routes.goldItem(id))}
+                onSelect={(id, opts) => nav(routes.goldItem(id), arrivalOptions(opts))}
               />
             )}
           />

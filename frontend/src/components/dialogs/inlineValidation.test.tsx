@@ -50,9 +50,11 @@ describe("inline validation", () => {
 
     await userEvent.click(create);
 
-    for (const id of ["display_name", "bank_name", "account_number"]) {
+    for (const id of ["display_name", "bank_name"]) {
       expect(screen.getByTestId(`field-error-${id}`)).toHaveTextContent(required);
     }
+    // The account number is optional (#843), so a blank one is not flagged.
+    expect(screen.queryByTestId("field-error-account_number")).not.toBeInTheDocument();
     // Currency is pre-filled, so it is not flagged.
     expect(screen.queryByTestId("field-error-native_currency")).not.toBeInTheDocument();
   });

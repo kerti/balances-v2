@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 import { expectNoA11yViolations } from "./axe";
 
 // Position lifecycle through the real UI + backend (M4.6, ADR-0009): create a
@@ -26,6 +27,7 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   await createDialog.getByLabel("Bank name").fill("E2E Bank");
   await createDialog.getByLabel("Account number").fill("1234567890");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Navigate to the detail page ---
   const row = page.getByRole("row", { name: new RegExp(name) });

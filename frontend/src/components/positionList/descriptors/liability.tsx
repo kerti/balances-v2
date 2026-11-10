@@ -47,7 +47,9 @@ export function liabilityDescriptor(
     getSecondary: (item) => item.liability.counterparty_name,
     headlineLabelKey: "liabilities:totalOwed",
     headlineTestId: "liabilities-total",
-    renderCreateDialog: () => <CreateLiabilityDialog defaultSubtype={subtype} />,
+    renderCreateDialog: (onCreated) => (
+      <CreateLiabilityDialog defaultSubtype={subtype} onCreated={onCreated} />
+    ),
     renderEditDialog: (item, props) => (
       <EditLiabilityDialog key={item.liability.id} liability={item.liability} {...props} />
     ),

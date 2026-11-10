@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Dashboard mobile a11y floor (#507, ADR-0050 B2a). The dashboard is already a
 // single-column stack, so the doctrine's "grid → single-column stack" transform
@@ -24,6 +25,7 @@ test("dashboard holds the mobile a11y floor at 390px", { tag: "@smoke" }, async 
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   await page
     .getByRole("row", { name: new RegExp(account) })
