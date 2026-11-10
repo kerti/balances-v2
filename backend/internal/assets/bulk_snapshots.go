@@ -68,7 +68,7 @@ type entryListResp struct {
 
 // handleAssetEntryList returns the bulk monthly-entry list for a target month:
 // eligible assets with carry-forward prefill (ADR-0046). The when-control
-// defaults (target month, as-of date from carryover_date_mode) are composed
+// defaults (the target month; the statement date starts blank) are composed
 // client-side, which already owns that date machinery.
 func (h *Handlers) handleAssetEntryList(w http.ResponseWriter, r *http.Request) {
 	ym, err := parseYearMonth(r.URL.Query().Get("year_month"))

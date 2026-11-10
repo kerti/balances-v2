@@ -140,7 +140,7 @@ export function useBulkSaveSnapshots(cfg: EntryDataConfig) {
     mutationFn: async (args: BulkSaveArgs): Promise<BulkSaveResult> => {
       const body = {
         year_month: args.year_month,
-        as_of_date: args.as_of_date,
+        as_of_date: args.as_of_date || null,
         rows: args.rows.map((r) => ({
           [cfg.idField]: r.position_id,
           currency: r.currency,

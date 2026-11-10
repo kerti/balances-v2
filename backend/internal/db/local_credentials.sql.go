@@ -30,7 +30,7 @@ func (q *Queries) GetLocalCredentialByUserID(ctx context.Context, userID uuid.UU
 }
 
 const listDormantMembersByHousehold = `-- name: ListDormantMembersByHousehold :many
-SELECT u.id, u.household_id, u.display_name, u.email, u.google_sub, u.locale, u.time_zone, u.created_by, u.created_at, u.updated_by, u.updated_at, u.deleted_at, u.nickname, u.picture_url, u.theme, u.carryover_date_mode
+SELECT u.id, u.household_id, u.display_name, u.email, u.google_sub, u.locale, u.time_zone, u.created_by, u.created_at, u.updated_by, u.updated_at, u.deleted_at, u.nickname, u.picture_url, u.theme
 FROM users u
 LEFT JOIN local_credentials lc ON lc.user_id = u.id
 WHERE u.household_id = $1
@@ -72,7 +72,6 @@ func (q *Queries) ListDormantMembersByHousehold(ctx context.Context, householdID
 			&i.Nickname,
 			&i.PictureUrl,
 			&i.Theme,
-			&i.CarryoverDateMode,
 		); err != nil {
 			return nil, err
 		}

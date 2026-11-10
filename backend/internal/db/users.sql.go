@@ -17,7 +17,7 @@ INSERT INTO users (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $7
 )
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type CreateLocalUserParams struct {
@@ -61,7 +61,6 @@ func (q *Queries) CreateLocalUser(ctx context.Context, arg CreateLocalUserParams
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
@@ -73,7 +72,7 @@ INSERT INTO users (
     $1, $2, $3, $4::text,
     $5, $6, $7, $8, $8
 )
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type CreateUserParams struct {
@@ -119,13 +118,12 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 FROM users
 WHERE email = $1 AND deleted_at IS NULL
 `
@@ -153,13 +151,12 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
 
 const getUserByGoogleSub = `-- name: GetUserByGoogleSub :one
-SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 FROM users
 WHERE google_sub = $1::text AND deleted_at IS NULL
 `
@@ -187,13 +184,12 @@ func (q *Queries) GetUserByGoogleSub(ctx context.Context, dollar_1 string) (User
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 FROM users
 WHERE id = $1 AND deleted_at IS NULL
 `
@@ -217,13 +213,12 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
 
 const listUsersByHousehold = `-- name: ListUsersByHousehold :many
-SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+SELECT id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 FROM users
 WHERE household_id = $1
   AND deleted_at IS NULL
@@ -255,7 +250,6 @@ func (q *Queries) ListUsersByHousehold(ctx context.Context, householdID uuid.UUI
 			&i.Nickname,
 			&i.PictureUrl,
 			&i.Theme,
-			&i.CarryoverDateMode,
 		); err != nil {
 			return nil, err
 		}
@@ -272,7 +266,7 @@ UPDATE users
 SET picture_url = $2,
     updated_at  = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type SetUserPictureParams struct {
@@ -304,49 +298,6 @@ func (q *Queries) SetUserPicture(ctx context.Context, arg SetUserPictureParams) 
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
-	)
-	return i, err
-}
-
-const updateUserCarryoverDateMode = `-- name: UpdateUserCarryoverDateMode :one
-UPDATE users
-SET carryover_date_mode = $2,
-    updated_by          = $1,
-    updated_at          = now()
-WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
-`
-
-type UpdateUserCarryoverDateModeParams struct {
-	UpdatedBy         *uuid.UUID `json:"updated_by"`
-	CarryoverDateMode string     `json:"carryover_date_mode"`
-}
-
-// Self-attributed: the user sets how the carryover dialog seeds its as-of date
-// (issue #105). The DB CHECK (migration 00002) enforces the allowed set; the
-// handler additionally validates before issuing this query so the client gets a
-// 400 rather than a 500 on a bad value.
-func (q *Queries) UpdateUserCarryoverDateMode(ctx context.Context, arg UpdateUserCarryoverDateModeParams) (User, error) {
-	row := q.db.QueryRow(ctx, updateUserCarryoverDateMode, arg.UpdatedBy, arg.CarryoverDateMode)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.HouseholdID,
-		&i.DisplayName,
-		&i.Email,
-		&i.GoogleSub,
-		&i.Locale,
-		&i.TimeZone,
-		&i.CreatedBy,
-		&i.CreatedAt,
-		&i.UpdatedBy,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.Nickname,
-		&i.PictureUrl,
-		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
@@ -357,7 +308,7 @@ SET locale     = $2,
     updated_by = $1,
     updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type UpdateUserLocaleParams struct {
@@ -387,7 +338,6 @@ func (q *Queries) UpdateUserLocale(ctx context.Context, arg UpdateUserLocalePara
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
@@ -398,7 +348,7 @@ SET nickname   = $2,
     updated_by = $1,
     updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type UpdateUserNicknameParams struct {
@@ -427,7 +377,6 @@ func (q *Queries) UpdateUserNickname(ctx context.Context, arg UpdateUserNickname
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }
@@ -438,7 +387,7 @@ SET theme      = $2,
     updated_by = $1,
     updated_at = now()
 WHERE id = $1 AND deleted_at IS NULL
-RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme, carryover_date_mode
+RETURNING id, household_id, display_name, email, google_sub, locale, time_zone, created_by, created_at, updated_by, updated_at, deleted_at, nickname, picture_url, theme
 `
 
 type UpdateUserThemeParams struct {
@@ -468,7 +417,6 @@ func (q *Queries) UpdateUserTheme(ctx context.Context, arg UpdateUserThemeParams
 		&i.Nickname,
 		&i.PictureUrl,
 		&i.Theme,
-		&i.CarryoverDateMode,
 	)
 	return i, err
 }

@@ -1,4 +1,4 @@
-import { test, expect, type Locator, type Page } from "@playwright/test";
+import { test, expect, type Locator } from "@playwright/test";
 
 // Settings-home mobile a11y floor (ADR-0050 / INV-PRESENTATION-08). Unlike the
 // rate subpages (#511) this surface has no renderer split — it is a stack of
@@ -28,38 +28,6 @@ import { test, expect, type Locator, type Page } from "@playwright/test";
 
 const FLOOR = 44;
 
-// Chromium draws the native <select> dropdown arrow inside the control's
-// content box, so the text run gets less room than `width - padding - border`.
-// 20px is a deliberately generous allowance for it — the point of the
-// truncation assertion is the width token, not arrow metrology.
-const SELECT_ARROW = 20;
-
-// The longest carry-over option in each shipped locale, as rendered at 390px.
-// Hardcoded rather than read from `src/locales/*/settings.json`: the e2e specs
-// don't import app source, and driving the language select to reach the id-ID
-// copy would make this read-only spec mutate the session user (it PATCHes
-// `locale`). The `toContain` check below is the drift tripwire — reword the
-// en-GB option and this fails, which is the prompt to re-measure the id-ID
-// sibling alongside it.
-//
-// #562 assumed full width alone would clear the truncation and that no copy
-// change was needed. Measured, it did not: the old en-GB "End of the month
-// after the last snapshot" renders 291.5px against 284px of text box, and the
-// old id-ID string 268.6px locally but 301px on the CI runner. Both were
-// shortened until they fit with margin — the margin matters, see below.
-//
-// These strings need *headroom*, not just a fit. The 268.6 / 301 spread above
-// is one string on two machines (~12%), from back when the control painted in
-// `system-ui` rather than the bundled Geist — #565 has since fixed that, so the
-// *app* font is now identical on every platform. The headroom stays anyway,
-// because the bound below is the wider of Geist and the generic fallback, and
-// that fallback is still whatever the reader's platform supplies (see
-// `renderedTextWidth`). Held well under the limit rather than tuned to it.
-const LONGEST_CARRYOVER_OPTION: Record<string, string> = {
-  "en-GB": "End of month after last snapshot",
-  "id-ID": "Akhir bln setelah snapshot terkini",
-};
-
 // Geometry of one control relative to the content box of the settings row it
 // sits in. Measured against the row rather than a pixel constant so these
 // assertions survive a change to the shell, the card, or the row padding —
@@ -70,7 +38,6 @@ async function controlMetrics(control: Locator) {
     if (!content) throw new Error("control is not inside a settings row");
     const cardStyle = getComputedStyle(content);
     const cardBox = content.getBoundingClientRect();
-    const style = getComputedStyle(el);
     const box = el.getBoundingClientRect();
     return {
       width: box.width,
@@ -78,49 +45,8 @@ async function controlMetrics(control: Locator) {
       rowInnerWidth:
         cardBox.width - parseFloat(cardStyle.paddingLeft) - parseFloat(cardStyle.paddingRight),
       rowInnerRight: cardBox.right - parseFloat(cardStyle.paddingRight),
-      // Room left for text once padding, borders and the arrow are removed.
-      textWidth:
-        box.width -
-        parseFloat(style.paddingLeft) -
-        parseFloat(style.paddingRight) -
-        parseFloat(style.borderLeftWidth) -
-        parseFloat(style.borderRightWidth),
-      font: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
-      // Same size and weight, but forced onto the generic family — what the
-      // control paints with before the webfont arrives, or if it never does.
-      fallbackFont: `${style.fontStyle} ${style.fontWeight} ${style.fontSize} sans-serif`,
     };
   });
-}
-
-// Widest that `text` could paint in this control: measured in the control's own
-// computed font and in the generic fallback, whichever is larger.
-//
-// Both are measured because neither alone is the whole story. Since #565 the
-// control's stack starts with the bundled `"Geist Variable"`, so the two
-// diverge: the max holds the copy to the wider of Geist and whatever a reader
-// sees during FOUT or a failed font fetch. A clipped option is just as clipped
-// then, which is why this is not tightened to Geist alone.
-//
-// Note `document.fonts.check()` is not a usable guard for "is the webfont
-// painting": it returns true both when the face is loaded and when no matching
-// `@font-face` exists at all, because an absent family resolves to a system font
-// that needs no loading. It reported `true` for Geist here while the element was
-// rendering in `system-ui` — which is precisely the #565 bug.
-async function renderedTextWidth(page: Page, font: string, fallbackFont: string, text: string) {
-  return page.evaluate(
-    async ({ font, fallbackFont, text }) => {
-      await document.fonts.ready;
-      const ctx = document.createElement("canvas").getContext("2d")!;
-      return Math.max(
-        ...[font, fallbackFont].map((f) => {
-          ctx.font = f;
-          return ctx.measureText(text).width;
-        }),
-      );
-    },
-    { font, fallbackFont, text },
-  );
 }
 
 // covers: INV-PRESENTATION-08
@@ -154,7 +80,6 @@ test(
       // Primitive-sourced select. These were hand-rolled and floored at the
       // callsite until #541 added `ui/select.tsx`; they now inherit the floor.
       "language select": page.getByTestId("settings-language-select"),
-      "carryover date select": page.getByTestId("settings-carryover-date-select"),
       // Checkbox row: the 16px box is the affordance, the label is the hit area.
       "multi-currency toggle row": page.locator("label").filter({
         has: page.locator("input[type=checkbox]"),
@@ -177,8 +102,7 @@ test(
 
 // Width tokens (#562). The floor test above guards how tall a control is; this
 // guards how wide. Both symptoms the tokens fix are horizontal: the old
-// per-callsite `w-28` / `w-56` / `w-72` left up to 138px of a 326px card dead,
-// and clipped the longest carry-over option.
+// per-callsite `w-28` / `w-56` / `w-72` left up to 138px of a 326px card dead.
 // covers: INV-PRESENTATION-08
 test(
   "settings home controls follow the two semantic width tokens at 390px",
@@ -194,7 +118,6 @@ test(
     for (const [name, testId] of [
       ["language select", "settings-language-select"],
       ["theme select", "settings-theme-select"],
-      ["carryover date select", "settings-carryover-date-select"],
     ] as const) {
       const control = page.getByTestId(testId);
       await control.scrollIntoViewIfNeeded();
@@ -242,35 +165,6 @@ test(
         m.rowInnerRight - 1,
       );
     }
-
-    // No clipped option. `w-72` (288px) left ~248px of text box; full width
-    // gives 304px, less the arrow. Both are measured against the 16px
-    // `text-base` the Select primitive forces below 768px (iOS Safari zooms on a
-    // smaller focused control), which is what made the old copy overflow.
-    // Per-locale rather than a single max so a failure names the locale that
-    // needs the shorter string.
-    const carryover = page.getByTestId("settings-carryover-date-select");
-    await carryover.scrollIntoViewIfNeeded();
-    const carryoverMetrics = await controlMetrics(carryover);
-
-    const options = await carryover.locator("option").allTextContents();
-    expect(options, "en-GB carry-over copy changed — re-measure the id-ID sibling").toContain(
-      LONGEST_CARRYOVER_OPTION["en-GB"],
-    );
-
-    const available = carryoverMetrics.textWidth - SELECT_ARROW;
-    for (const [locale, longest] of Object.entries(LONGEST_CARRYOVER_OPTION)) {
-      const rendered = await renderedTextWidth(
-        page,
-        carryoverMetrics.font,
-        carryoverMetrics.fallbackFont,
-        longest,
-      );
-      expect(
-        rendered,
-        `longest ${locale} carry-over option must fit the select`,
-      ).toBeLessThanOrEqual(available);
-    }
   },
 );
 
@@ -317,9 +211,9 @@ test(
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
     const rows = page.locator("[data-slot=settings-row]");
-    // Profile (name / language / theme / carry-over) + Household (name /
-    // currency / multi-currency / inflation).
-    await expect(rows).toHaveCount(8);
+    // Profile (name / language / theme) + Household (name / currency /
+    // multi-currency / inflation).
+    await expect(rows).toHaveCount(7);
 
     const geometry = await rows.evaluateAll((els) =>
       els.map((el) => {

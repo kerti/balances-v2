@@ -54,7 +54,17 @@ import (
 // v4 *full* file has everything needed for. A v4 **compacted** file is
 // unrepairable — it never carried the displaced rows in the first place, which
 // is the defect #602 fixes going forward.
-const FormatVersion = 5
+//
+// v5 → v6 (#790, ADR-0046 amendment): the users section lost carryover_date_mode,
+// the per-user Carry-over date preference, when the column was dropped (migration
+// 00018). A v5 file's users still carry the key; the loader (json_populate_recordset
+// into a table without the column) ignores it, so v5 files restore unchanged and
+// transforms[5] has nothing to rewrite. The bump is for the other direction: a v6
+// file has no such key, which an older build would restore as NULL into that
+// build's NOT NULL column. ADR-0036 treats a change that can no longer represent
+// something an older version could as destructive — it always bumps — so an older
+// build refuses a v6 file (ErrFormatTooNew) instead of failing mid-restore.
+const FormatVersion = 6
 
 // Fidelity selects what a backup carries (ADR-0036).
 type Fidelity string

@@ -52,11 +52,11 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     () => pastYearMonthOrNull(searchParams.get("month")) ?? thisYearMonth(),
   );
   const [yearMonth, setYearMonth] = useState(seedMonth);
-  // as_of_date must fall within the target month (backend CHECK), so it seeds
-  // to the end of that month (capped at today) rather than the single-snapshot
-  // carryover_date_mode date, which does not generalise to an arbitrarily
-  // chosen target month.
-  const [asOfDate, setAsOfDate] = useState(monthEndDateCapped(seedMonth));
+  // The statement date starts blank and stays the user's to fill (ADR-0046
+  // amendment, #790): a date they never stated is not a fact, and nothing
+  // computes from it. A blank saves as NULL. When one is picked it must fall
+  // within the target month (backend CHECK), which the input's min/max enforce.
+  const [asOfDate, setAsOfDate] = useState("");
   // Per-position edits: only the fields the user actually typed. An untouched
   // field falls back to the row's shape prefill (see valueFor). Keyed by
   // position id, then by shape field key ("amount"; or "quantity"/"price…").
@@ -72,11 +72,12 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   const isMobile = useIsMobile();
 
   // Guarded setState-during-render (no useEffect — lint bans setState-in-effect,
-  // ADR-0041 follow-up): when the month changes, re-seed the as-of default,
-  // clear edits, and drop any stale save error.
+  // ADR-0041 follow-up): when the month changes, clear the statement date (a
+  // date picked for the old month would fall outside the new one), clear edits,
+  // and drop any stale save error.
   if (prevYearMonth !== yearMonth) {
     setPrevYearMonth(yearMonth);
-    setAsOfDate(monthEndDateCapped(yearMonth));
+    setAsOfDate("");
     setEdits({});
     save.reset();
   }

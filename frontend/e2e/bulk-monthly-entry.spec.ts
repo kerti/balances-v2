@@ -40,9 +40,9 @@ test(
     await row.getByRole("textbox").fill("12500000");
     await expect(page.getByTestId("asset-entry-dirty-count")).toHaveText("1 changed");
 
-    // The statement date is left as the screen's seeded browser-local "today":
-    // the backend future-date guard tolerates the max forward timezone offset,
-    // so a UTC+ tester running pre-dawn no longer 400s (#426).
+    // The statement date starts blank and is left that way: the batch saves
+    // with as_of_date NULL, nothing is stamped the user never chose (#790).
+    await expect(page.getByTestId("asset-entry-asof")).toHaveValue("");
 
     // --- Save all: a successful batch redirects back to Assets home ---
     await page.getByTestId("asset-entry-save").click();
@@ -100,7 +100,7 @@ test(
 
     await row.getByRole("textbox").fill("250000000");
     await expect(page.getByTestId("liability-entry-dirty-count")).toHaveText("1 changed");
-    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
+    // The statement date is left blank and submits as NULL (#790).
 
     await page.getByTestId("liability-entry-save").click();
     await expect(page).toHaveURL(/\/liabilities$/);
@@ -149,7 +149,7 @@ test(
 
     await row.getByRole("textbox").fill("4500000");
     await expect(page.getByTestId("receivable-entry-dirty-count")).toHaveText("1 changed");
-    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
+    // The statement date is left blank and submits as NULL (#790).
 
     await page.getByTestId("receivable-entry-save").click();
     await expect(page).toHaveURL(/\/receivables$/);
@@ -211,7 +211,7 @@ test(
     await row.getByLabel("Price per unit").fill("8500");
     await expect(page.getByTestId("investment-entry-dirty-count")).toHaveText("1 changed");
 
-    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
+    // The statement date is left blank and submits as NULL (#790).
 
     await page.getByTestId("investment-entry-save").click();
     await expect(page).toHaveURL(/\/investments$/);
@@ -274,7 +274,7 @@ test(
     await row.getByLabel("Total value").fill("1010000");
     await expect(page.getByTestId("investment-accrued-entry-dirty-count")).toHaveText("1 changed");
 
-    // Seeded browser-local statement date submits as-is (tz-tolerant, #426).
+    // The statement date is left blank and submits as NULL (#790).
 
     await page.getByTestId("investment-accrued-entry-save").click();
     await expect(page).toHaveURL(/\/investments$/);

@@ -521,7 +521,6 @@ type meResponse struct {
 	PictureURL             *string         `json:"picture_url"`
 	Locale                 string          `json:"locale"`
 	Theme                  string          `json:"theme"`
-	CarryoverDateMode      string          `json:"carryover_date_mode"`
 	TimeZone               string          `json:"time_zone"`
 	ReportingCurrency      string          `json:"reporting_currency"`
 	MultiCurrencyEnabled   bool            `json:"multi_currency_enabled"`
@@ -546,7 +545,6 @@ func meResponseFor(user db.User, hh db.Household) meResponse {
 		Locale:                 user.Locale,
 		Theme:                  user.Theme,
 		IsFounder:              user.CreatedBy == nil,
-		CarryoverDateMode:      user.CarryoverDateMode,
 		TimeZone:               user.TimeZone,
 		ReportingCurrency:      hh.ReportingCurrency,
 		MultiCurrencyEnabled:   hh.MultiCurrencyEnabled,
@@ -590,17 +588,6 @@ var supportedThemes = map[string]struct{}{
 	"dark":  {},
 }
 
-// supportedCarryoverDateModes mirrors the allowed set in the
-// users.carryover_date_mode CHECK (migration 00002) and the frontend's
-// SUPPORTED_CARRYOVER_DATE_MODES constant. Add a mode by extending all three.
-// Validated here so a bad value is a 400 with a friendly message rather than a
-// 500 from the CHECK violation.
-var supportedCarryoverDateModes = map[string]struct{}{
-	"today":                            {},
-	"end_of_last_month":                {},
-	"end_of_month_after_last_snapshot": {},
-}
-
 // handleUpdateMe updates the current user's own profile. Editable today: the
 // self-set `nickname` (the compact owner label, falling back to display_name
 // on read) and the UI `locale` (ADR-0026). `display_name` stays Google-sourced
@@ -620,10 +607,6 @@ var supportedCarryoverDateModes = map[string]struct{}{
 //	          absent           → unchanged
 //	theme:    present + string → set (must be in supportedThemes, else 400)
 //	          present + null   → 400 (no clear semantics; theme always set)
-//	          absent           → unchanged
-//	carryover_date_mode: present + string → set (must be in
-//	          supportedCarryoverDateModes, else 400)
-//	          present + null   → 400 (no clear semantics; mode always set)
 //	          absent           → unchanged
 func (h *Handlers) handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 	user, ok := identity.UserFromContext(r.Context())
@@ -726,34 +709,6 @@ func (h *Handlers) handleUpdateMe(w http.ResponseWriter, r *http.Request) {
 		})
 		if err != nil {
 			slog.Error("update user theme", "err", err)
-			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
-			return
-		}
-		updated = next
-	}
-
-	if modeRaw, present := raw["carryover_date_mode"]; present {
-		var mode *string
-		if err := json.Unmarshal(modeRaw, &mode); err != nil || mode == nil {
-			httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
-				"field": "carryover_date_mode",
-				"rule":  "required",
-			})
-			return
-		}
-		if _, ok := supportedCarryoverDateModes[*mode]; !ok {
-			httperr.Write(w, http.StatusBadRequest, httperr.CodeValidation, map[string]any{
-				"field": "carryover_date_mode",
-				"rule":  "oneof",
-			})
-			return
-		}
-		next, err := h.q.UpdateUserCarryoverDateMode(r.Context(), db.UpdateUserCarryoverDateModeParams{
-			UpdatedBy:         &user.ID,
-			CarryoverDateMode: *mode,
-		})
-		if err != nil {
-			slog.Error("update user carryover date mode", "err", err)
 			httperr.Write(w, http.StatusInternalServerError, httperr.CodeInternal, nil)
 			return
 		}
