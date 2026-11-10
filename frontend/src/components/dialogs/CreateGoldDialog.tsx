@@ -2,16 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useCreateGold, type GoldForm } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
-import { GoldPuritySelect } from "@/components/common/GoldPuritySelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
+import { GoldFormBody } from "@/components/dialogs/forms/GoldForm";
 import type { RiskProfile, EntryType } from "@/api/types";
 
 function emptyForm() {
@@ -75,83 +69,11 @@ export function CreateGoldDialog() {
         mutation.reset();
       }}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="gold_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="gold_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          placeholder={t("investments:gold.placeholders.displayName")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="gold_form">{t("investments:gold.fields.form")}</Label>
-          <Select
-            id="gold_form"
-            value={form.form}
-            onChange={(e) => setForm({ ...form, form: e.target.value as GoldForm })}
-          >
-            <option value="bar">{t("investments:gold.goldForms.bar")}</option>
-            <option value="coin">{t("investments:gold.goldForms.coin")}</option>
-            <option value="digital">{t("investments:gold.goldForms.digital")}</option>
-            <option value="jewelry">{t("investments:gold.goldForms.jewelry")}</option>
-          </Select>
-        </div>
-        <GoldPuritySelect
-          idPrefix="gold_create"
-          value={form.purity}
-          onChange={(v) => setForm({ ...form, purity: v })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="gold_currency">{t("common:fields.currency")}</Label>
-        <Input
-          id="gold_currency"
-          required
-          value={form.native_currency}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              native_currency: e.target.value.toUpperCase(),
-            })
-          }
-          placeholder={t("investments:gold.placeholders.currency")}
-          maxLength={3}
-        />
-      </div>
-
-      <OwnershipField
-        idPrefix="gold_create"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <GoldFormBody
+        mode="create"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-      />
-
-      <EntryTypeField
-        idPrefix="gold_create"
-        group="investment"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="gold_description">{t("common:fields.description")}</Label>
-        <Input
-          id="gold_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="gold_create"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
       />
     </PositionFormDialog>
   );

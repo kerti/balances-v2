@@ -40,7 +40,8 @@ it("asks first in red with the count-free copy, then toasts Deleted with no Undo
   );
   renderWithProviders(<TagsCard />);
 
-  fireEvent.click(await screen.findByTestId("delete-tag"));
+  fireEvent.click(await screen.findByRole("button", { name: "Tag actions" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
   const dialog = await screen.findByRole("alertdialog");
   expect(within(dialog).getByText("Delete tag Retirement?")).toBeInTheDocument();
   expect(within(dialog).getByText("It's removed from every item that has it.")).toBeInTheDocument();
@@ -55,4 +56,42 @@ it("asks first in red with the count-free copy, then toasts Deleted with no Undo
   const [only] = raisedToasts(mockedToast);
   expect(only.message).toBe("Tag deleted");
   expect(only.options.action).toBeUndefined();
+});
+
+it("New tag opens a dialog; Edit renames in a dialog with no inline form", async () => {
+  let created: unknown = null;
+  let patched: unknown = null;
+  server.use(
+    http.get("/api/tags", () => HttpResponse.json(tags)),
+    http.post("/api/tags", async ({ request }) => {
+      created = await request.json();
+      return HttpResponse.json(tags[0]);
+    }),
+    http.patch("/api/tags/:id", async ({ request }) => {
+      patched = await request.json();
+      return HttpResponse.json(tags[0]);
+    }),
+  );
+  renderWithProviders(<TagsCard />);
+
+  // No inline name field or ✓/× controls: the name only exists inside a dialog.
+  await screen.findByTestId("tag-list");
+  expect(screen.queryByTestId("new-tag-name")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "New tag" }));
+  let dialog = within(await screen.findByRole("dialog"));
+  const add = dialog.getByRole("button", { name: "Add" });
+  expect(add).toBeDisabled();
+  fireEvent.change(dialog.getByLabelText("Name"), { target: { value: "  Travel " } });
+  fireEvent.click(add);
+  await waitFor(() => expect(created).toMatchObject({ name: "Travel" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+
+  fireEvent.click(await screen.findByRole("button", { name: "Tag actions" }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Edit" }));
+  dialog = within(await screen.findByRole("dialog"));
+  expect(dialog.getByLabelText("Name")).toHaveValue("Retirement");
+  fireEvent.change(dialog.getByLabelText("Name"), { target: { value: "Pension" } });
+  fireEvent.click(dialog.getByRole("button", { name: "Save changes" }));
+  await waitFor(() => expect(patched).toMatchObject({ name: "Pension" }));
 });

@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useUpdateGold, type GoldForm } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
-import { GoldPuritySelect } from "@/components/common/GoldPuritySelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
+import { GoldFormBody, type GoldFormState } from "@/components/dialogs/forms/GoldForm";
 import type { Gold, GoldListItem } from "@/api/types";
 
 type Props = {
@@ -18,7 +12,7 @@ type Props = {
   gold: Gold | GoldListItem;
 };
 
-function toForm(g: Gold | GoldListItem) {
+function toForm(g: Gold | GoldListItem): GoldFormState {
   return {
     display_name: g.investment.display_name,
     description: g.investment.description ?? "",
@@ -26,6 +20,7 @@ function toForm(g: Gold | GoldListItem) {
     entry_type: g.investment.entry_type,
     sole_owner_user_id: g.investment.sole_owner_user_id,
     risk_profile: g.investment.risk_profile,
+    native_currency: g.investment.native_currency,
     form: g.details.form as GoldForm,
     purity: g.details.purity,
   };
@@ -40,6 +35,7 @@ export function EditGoldDialog({ open, onOpenChange, gold }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
+    if (!form.risk_profile) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -67,66 +63,7 @@ export function EditGoldDialog({ open, onOpenChange, gold }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="edit_gold_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="edit_gold_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_gold_form">{t("investments:gold.fields.form")}</Label>
-          <Select
-            id="edit_gold_form"
-            value={form.form}
-            onChange={(e) => setForm({ ...form, form: e.target.value as GoldForm })}
-          >
-            <option value="bar">{t("investments:gold.goldForms.bar")}</option>
-            <option value="coin">{t("investments:gold.goldForms.coin")}</option>
-            <option value="digital">{t("investments:gold.goldForms.digital")}</option>
-            <option value="jewelry">{t("investments:gold.goldForms.jewelry")}</option>
-          </Select>
-        </div>
-        <GoldPuritySelect
-          idPrefix="gold_edit"
-          value={form.purity}
-          onChange={(v) => setForm({ ...form, purity: v })}
-        />
-      </div>
-
-      <OwnershipField
-        idPrefix="gold_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
-        soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-      />
-
-      <EntryTypeField
-        idPrefix="gold_edit"
-        group="investment"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_gold_description">{t("common:fields.description")}</Label>
-        <Input
-          id="edit_gold_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="gold_edit"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
-      />
+      <GoldFormBody mode="edit" form={form} setForm={setForm} soleOwnerID={effectiveSoleOwnerID} />
     </PositionFormDialog>
   );
 }

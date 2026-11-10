@@ -24,8 +24,10 @@ test(
 
     // --- Create the tag on /tags ---
     await page.goto("/tags");
-    await page.getByTestId("new-tag-name").fill(tagName);
-    await page.getByTestId("add-tag").click();
+    await page.getByTestId("new-tag").click();
+    const tagDialog = page.getByRole("dialog");
+    await tagDialog.getByLabel("Name").fill(tagName);
+    await tagDialog.getByRole("button", { name: "Add" }).click();
     await expect(page.getByTestId("tag-list").getByText(tagName)).toBeVisible();
 
     // --- Create a bank account and give it a balance (holdings) ---
@@ -101,7 +103,8 @@ test(
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
 
     await page.goto("/tags");
-    await page.getByTestId("delete-tag").click();
+    await page.getByRole("button", { name: "Tag actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page
       .getByRole("alertdialog")
       .getByRole("button", { name: /delete/i })

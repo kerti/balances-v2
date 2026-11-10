@@ -12,23 +12,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { formatCurrency, currencyDecimals } from "@/lib/format";
-import {
-  thisYearMonth,
-  yearMonthsUpToNow,
-  carryoverSeed,
-  monthStartDate,
-  monthEndDateCapped,
-} from "@/lib/dateLimits";
+import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 import type { CouponDisposition } from "@/api/types";
+import { AccruedInterestSnapshotFormBody } from "@/components/dialogs/forms/AccruedInterestSnapshotForm";
 
 type Props<TResult> = {
   currency: string;
@@ -176,87 +166,14 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="ai_year_month">{t("common:fields.month")}</Label>
-              <MonthPickerPopover
-                id="ai_year_month"
-                testId="ai_year_month"
-                months={yearMonthsUpToNow()}
-                selected={form.year_month}
-                onSelect={(ym) => setForm({ ...form, year_month: ym })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="ai_as_of_date">{t("common:fields.statementDate")}</Label>
-              <Input
-                id="ai_as_of_date"
-                type="date"
-                min={monthStartDate(form.year_month)}
-                max={monthEndDateCapped(form.year_month)}
-                value={form.as_of_date}
-                onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="ai_amount">
-                {t("investments:accruedInterestSnapshot.totalValueLabel", {
-                  currency,
-                })}
-              </Label>
-              <NumericInput
-                id="ai_amount"
-                required
-                decimals={currencyDecimals(currency)}
-                value={form.amount}
-                onChange={(v) => setForm({ ...form, amount: v })}
-                placeholder={t("investments:accruedInterestSnapshot.totalValuePlaceholder")}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="ai_accrued">
-                {t("investments:accruedInterestSnapshot.accruedLabel", {
-                  currency,
-                })}
-              </Label>
-              <NumericInput
-                id="ai_accrued"
-                required
-                decimals={currencyDecimals(currency)}
-                value={form.accrued_interest}
-                onChange={(v) => setForm({ ...form, accrued_interest: v })}
-                placeholder={t("investments:accruedInterestSnapshot.accruedPlaceholder")}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-md bg-muted px-3 py-2 text-sm">
-            <span className="text-muted-foreground">
-              {t("investments:accruedInterestSnapshot.ofWhichPrincipalLabel")}
-            </span>{" "}
-            <span className="font-medium">
-              {derivedPrincipal !== null ? formatCurrency(derivedPrincipal, currency) : "—"}
-            </span>
-          </div>
-
-          <p className="text-xs text-muted-foreground">
-            {couponDisposition === "accrues"
-              ? t("investments:accruedInterestSnapshot.accruedHintAccrues")
-              : t("investments:accruedInterestSnapshot.accruedHint")}
-          </p>
-
-          <div className="grid gap-2">
-            <Label htmlFor="ai_description">{t("common:fields.description")}</Label>
-            <Input
-              id="ai_description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder={t("investments:accruedInterestSnapshot.descriptionPlaceholder")}
-            />
-          </div>
+          <AccruedInterestSnapshotFormBody
+            mode="create"
+            currency={currency}
+            form={form}
+            setForm={setForm}
+            derivedPrincipal={derivedPrincipal}
+            couponDisposition={couponDisposition}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>

@@ -19,9 +19,11 @@ test(
   async ({ page }) => {
     // --- Seed one monthly inflation figure (desktop width) ---
     await page.goto("/settings/inflation-rates");
-    await pickMonth(page, page.getByTestId("inflation-month"), "2026-05");
-    await page.getByLabel("Annual %").fill("3.5");
-    await page.getByRole("button", { name: "Add rate" }).click();
+    await page.getByTestId("inflation-new-rate").click();
+    const inflationDialog = page.getByRole("dialog");
+    await pickMonth(page, inflationDialog.getByTestId("inflation-month"), "2026-05");
+    await inflationDialog.getByLabel("Annual %").fill("3.5");
+    await inflationDialog.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("inflation-rate-table")).toBeVisible();
     await expect(page.getByTestId("inflation-rate-value")).toHaveText("3.50%");
 
@@ -43,14 +45,17 @@ test(
     });
     expect(overflow).toBeLessThanOrEqual(1);
 
-    // Tap-target floor: the card's delete control clears 44px.
-    const del = page.getByTestId("inflation-rate-row").getByRole("button", { name: "Delete" });
-    const box = await del.boundingBox();
+    // Tap-target floor: the card's ⋯ menu trigger clears 44px.
+    const actions = page
+      .getByTestId("inflation-rate-row")
+      .getByRole("button", { name: "Inflation rate actions" });
+    const box = await actions.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.height).toBeGreaterThanOrEqual(44);
 
-    // --- Cleanup: delete the seeded figure via the mobile card control ---
-    await del.click();
+    // --- Cleanup: delete the seeded figure via the mobile card menu ---
+    await actions.click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await expect(page.getByTestId("inflation-rate-row")).toHaveCount(0);
   },
 );
@@ -78,14 +83,16 @@ test(
 
     // --- Seed one monthly FX rate (desktop width) ---
     await page.goto("/settings/fx-rates");
-    await pickMonth(page, page.getByTestId("fx-month"), "2026-05");
-    await page.getByLabel("Currency").fill("USD");
+    await page.getByTestId("fx-new-rate").click();
+    const fxDialog = page.getByRole("dialog");
+    await pickMonth(page, fxDialog.getByTestId("fx-month"), "2026-05");
+    await fxDialog.getByLabel("Currency").fill("USD");
     // The add form's live hint spells the direction + counterpart as the code is
     // typed, so the foreign-only field isn't a clueless single input.
     await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = \? /);
-    await page.getByLabel("Rate").fill("16250");
+    await fxDialog.getByLabel("Rate").fill("16250");
     await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = 16,250 /);
-    await page.getByRole("button", { name: "Add rate" }).click();
+    await fxDialog.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("fx-rate-table")).toBeVisible();
     await expect(page.getByTestId("fx-rate-value")).toHaveText("16,250");
     // The currency column names the pair + direction, not just the foreign code.
@@ -111,14 +118,17 @@ test(
     });
     expect(overflow).toBeLessThanOrEqual(1);
 
-    // Tap-target floor: the card's delete control clears 44px.
-    const del = page.getByTestId("fx-rate-row").getByRole("button", { name: "Delete" });
-    const box = await del.boundingBox();
+    // Tap-target floor: the card's ⋯ menu trigger clears 44px.
+    const actions = page
+      .getByTestId("fx-rate-row")
+      .getByRole("button", { name: "Exchange rate actions" });
+    const box = await actions.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.height).toBeGreaterThanOrEqual(44);
 
     // --- Cleanup: delete the seeded rate, then turn multi-currency back off ---
-    await del.click();
+    await actions.click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await expect(page.getByTestId("fx-rate-row")).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/settings");

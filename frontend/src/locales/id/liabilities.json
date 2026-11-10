@@ -62,15 +62,10 @@
     "subtype": "Subtipe",
     "counterparty": "Pihak lawan",
     "principal": "Pokok (opsional)",
-    "principalEdit": "Pokok (opsional)",
     "interestRate": "Suku bunga (% per tahun, opsional)",
-    "interestRateEdit": "Suku bunga (% per tahun, opsional)",
     "term": "Tenor (bulan, ops.)",
-    "termEdit": "Tenor (bulan)",
     "startDate": "Mulai (opsional)",
-    "startDateEdit": "Mulai",
-    "maturityDate": "Jatuh tempo (opsional)",
-    "maturityDateEdit": "Jatuh tempo"
+    "maturityDate": "Jatuh tempo (opsional)"
   },
   "placeholders": {
     "displayName": "BCA KPR",

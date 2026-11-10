@@ -2,15 +2,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useCreateMutualFund } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
-import { MutualFundTypeSelect } from "@/components/common/MutualFundTypeSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
+import { MutualFundFormBody } from "@/components/dialogs/forms/MutualFundForm";
 import type { RiskProfile, MutualFundType, EntryType } from "@/api/types";
 
 function emptyForm() {
@@ -77,90 +72,11 @@ export function CreateMutualFundDialog() {
         mutation.reset();
       }}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="mf_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="mf_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          placeholder={t("investments:mutualFund.placeholders.displayName")}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-        <div className="grid gap-2">
-          <Label htmlFor="mf_fund_code">{t("investments:mutualFund.fields.fundCode")}</Label>
-          <Input
-            id="mf_fund_code"
-            required
-            value={form.fund_code}
-            onChange={(e) => setForm({ ...form, fund_code: e.target.value })}
-            placeholder={t("investments:mutualFund.placeholders.fundCode")}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="mf_fund_manager">{t("investments:mutualFund.fields.fundManager")}</Label>
-          <Input
-            id="mf_fund_manager"
-            value={form.fund_manager}
-            onChange={(e) => setForm({ ...form, fund_manager: e.target.value })}
-            placeholder={t("investments:mutualFund.placeholders.fundManager")}
-          />
-        </div>
-      </div>
-
-      <MutualFundTypeSelect
-        idPrefix="mf_create"
-        value={form.fund_type}
-        onChange={(v) => setForm({ ...form, fund_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="mf_currency">{t("common:fields.currency")}</Label>
-        <Input
-          id="mf_currency"
-          required
-          value={form.native_currency}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              native_currency: e.target.value.toUpperCase(),
-            })
-          }
-          placeholder={t("investments:mutualFund.placeholders.currency")}
-          maxLength={3}
-        />
-      </div>
-
-      <OwnershipField
-        idPrefix="mf_create"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <MutualFundFormBody
+        mode="create"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-      />
-
-      <EntryTypeField
-        idPrefix="mf_create"
-        group="investment"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="mf_description">{t("common:fields.description")}</Label>
-        <Input
-          id="mf_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="mf_create"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
       />
     </PositionFormDialog>
   );

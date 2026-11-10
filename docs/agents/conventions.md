@@ -135,6 +135,14 @@ Not ADRs because they're tactical, but load-bearing:
   Math.min(page, totalPages)`. Use `effectivePage` for slicing and the `PaginationControls page`
   prop; keep raw `setPage` for click handlers. Don't reintroduce `useEffect(() => if (page >
   totalPages) setPage(totalPages))`.
+- **Create and Edit share one form body per entity** (#840): `components/dialogs/forms/<Entity>Form.tsx`
+  exports `<Entity>FormBody` taking `mode: "create" | "edit"`; the `Create*`/`Edit*` dialogs own only
+  state, mutation and payload. Fields that can't change after creation (currency, liability subtype,
+  snapshot month) stay in their slot, disabled in Edit; Create-only inputs (a bond's opening face value
+  and placement date) are the sole layout difference. Rate/tag dialogs (`FxRateDialog`,
+  `InflationRateDialog`, `TagDialog`) take `mode` the same way. Every row gets a `⋯` menu with icon items
+  (`RowActionsMenu` and its snapshot/transaction/income siblings) — no icon-only pencil/trash and no
+  inline create/edit forms.
 - **Edit dialogs do not reset form state via `useEffect`.** Initial form state comes from the entity
   prop in `useState(() => toForm(entity))` or inline initializer. Parents pass `key={entity.id}` so
   React remounts on entity switch. Within the same entity, form state persists across

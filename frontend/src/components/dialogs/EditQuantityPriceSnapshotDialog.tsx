@@ -10,17 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import {
-  formatCurrency,
-  PRICE_DECIMALS,
-  QUANTITY_DECIMALS,
-  QUANTITY_INTEGER_DIGITS,
-} from "@/lib/format";
-import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
 import type { UpdateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 
 type InvestmentSnapshotLike = {
@@ -33,6 +23,7 @@ type InvestmentSnapshotLike = {
   as_of_date: string | null;
   description: string | null;
 };
+import { QuantityPriceSnapshotFormBody } from "@/components/dialogs/forms/QuantityPriceSnapshotForm";
 
 export type UpdateQuantityPriceSnapshotMutationVariables = {
   snapshotId: string;
@@ -67,6 +58,7 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
 }: Props<TResult>) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState({
+    year_month: snapshot.year_month,
     quantity: snapshot.quantity ?? "",
     price_per_unit: snapshot.price_per_unit ?? "",
     as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : "",
@@ -105,65 +97,13 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-            <div className="grid gap-2">
-              <Label htmlFor="edit_inv_quantity">
-                {t("investments:quantityPriceSnapshot.quantityLabel")}
-              </Label>
-              <NumericInput
-                id="edit_inv_quantity"
-                required
-                decimals={QUANTITY_DECIMALS}
-                maxIntegerDigits={QUANTITY_INTEGER_DIGITS}
-                value={form.quantity}
-                onChange={(v) => setForm({ ...form, quantity: v })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="edit_inv_price_per_unit">
-                {t("investments:quantityPriceSnapshot.pricePerUnitLabel", {
-                  currency: snapshot.currency,
-                })}
-              </Label>
-              <NumericInput
-                id="edit_inv_price_per_unit"
-                required
-                decimals={PRICE_DECIMALS}
-                value={form.price_per_unit}
-                onChange={(v) => setForm({ ...form, price_per_unit: v })}
-              />
-            </div>
-          </div>
-
-          <div className="rounded-md bg-muted px-3 py-2 text-sm">
-            <span className="text-muted-foreground">
-              {t("investments:quantityPriceSnapshot.totalValueLabel")}
-            </span>{" "}
-            <span className="font-medium">
-              {derivedAmount !== null ? formatCurrency(derivedAmount, snapshot.currency) : "—"}
-            </span>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_inv_as_of_date">{t("common:fields.statementDate")}</Label>
-            <Input
-              id="edit_inv_as_of_date"
-              type="date"
-              min={monthStartDate(snapshot.year_month)}
-              max={monthEndDateCapped(snapshot.year_month)}
-              value={form.as_of_date}
-              onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_inv_snap_description">{t("common:fields.description")}</Label>
-            <Input
-              id="edit_inv_snap_description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
+          <QuantityPriceSnapshotFormBody
+            mode="edit"
+            currency={snapshot.currency}
+            form={form}
+            setForm={setForm}
+            derivedAmount={derivedAmount}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>

@@ -10,12 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
-import { monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
-import { formatYearMonth, currencyDecimals } from "@/lib/format";
 
 // Generic snapshot shape — only the fields the edit form needs.
 type SnapshotLike = {
@@ -26,6 +21,7 @@ type SnapshotLike = {
   as_of_date: string | null;
   description: string | null;
 };
+import { SnapshotFormBody } from "@/components/dialogs/forms/SnapshotForm";
 
 export type UpdateSnapshotPayload = {
   amount: string;
@@ -59,6 +55,7 @@ export function EditSnapshotDialog<TResult>({
 }: Props<TResult>) {
   const { t } = useTranslation("common");
   const [form, setForm] = useState({
+    year_month: snapshot.year_month,
     amount: snapshot.amount,
     as_of_date: snapshot.as_of_date ? snapshot.as_of_date.slice(0, 10) : "",
     description: snapshot.description ?? "",
@@ -88,50 +85,12 @@ export function EditSnapshotDialog<TResult>({
           <DialogDescription>{t("snapshot.editDescription")}</DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-3">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_year_month">{t("fields.month")}</Label>
-            <Input
-              id="edit_year_month"
-              data-testid="snapshot-month-locked"
-              disabled
-              value={formatYearMonth(snapshot.year_month)}
-            />
-            <p className="text-xs text-muted-foreground">{t("snapshot.wrongMonthHint")}</p>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_amount">
-              {t("fields.amountIn", { currency: snapshot.currency })}
-            </Label>
-            <NumericInput
-              id="edit_amount"
-              required
-              decimals={currencyDecimals(snapshot.currency)}
-              value={form.amount}
-              onChange={(v) => setForm({ ...form, amount: v })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_as_of_date">{t("fields.statementDate")}</Label>
-            <Input
-              id="edit_as_of_date"
-              type="date"
-              min={monthStartDate(snapshot.year_month)}
-              max={monthEndDateCapped(snapshot.year_month)}
-              value={form.as_of_date}
-              onChange={(e) => setForm({ ...form, as_of_date: e.target.value })}
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="edit_snap_description">{t("fields.description")}</Label>
-            <Input
-              id="edit_snap_description"
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-            />
-          </div>
+          <SnapshotFormBody
+            mode="edit"
+            currency={snapshot.currency}
+            form={form}
+            setForm={setForm}
+          />
 
           {mutation.isError && (
             <p className="text-sm text-destructive">{errorMessage(mutation.error)}</p>

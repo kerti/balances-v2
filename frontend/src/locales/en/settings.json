@@ -57,7 +57,13 @@
     "addRate": "Add rate",
     "empty": "No rates entered yet.",
     "disabledHint": "Exchange rates only apply once multi-currency tracking is on.",
-    "disabledLink": "Go to currency settings"
+    "disabledLink": "Go to currency settings",
+    "newRate": "New exchange rate",
+    "createTitle": "New exchange rate",
+    "createDescription": "Enter the month-end rate for one currency. Later months reuse it until you enter a new one.",
+    "editTitle": "Edit exchange rate",
+    "editDescription": "Only the rate can change. Month and currency identify the row.",
+    "rowActions": "Exchange rate actions"
   },
   "inflation": {
     "title": "Inflation",
@@ -68,7 +74,13 @@
     "rate": "Annual %",
     "addRate": "Add rate",
     "empty": "No monthly figures entered — the assumed rate is used.",
-    "manageRates": "Manage monthly rates"
+    "manageRates": "Manage monthly rates",
+    "newRate": "New inflation rate",
+    "createTitle": "New inflation rate",
+    "createDescription": "Enter the annualised (year-on-year) inflation figure for one month.",
+    "editTitle": "Edit inflation rate",
+    "editDescription": "Only the rate can change. The month identifies the row.",
+    "rowActions": "Inflation rate actions"
   },
   "inflationRatesPage": {
     "title": "Inflation rates",

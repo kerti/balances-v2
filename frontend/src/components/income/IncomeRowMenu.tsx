@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -48,9 +48,16 @@ export function IncomeRowMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={onEdit}>{t("common:actions.edit")}</DropdownMenuItem>
-        <DropdownMenuItem onClick={onDuplicate}>{t("income:actions.duplicate")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil />
+          {t("common:actions.edit")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={onDuplicate}>
+          <Copy />
+          {t("income:actions.duplicate")}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onDelete} variant="destructive">
+          <Trash2 />
           {t("common:delete")}
         </DropdownMenuItem>
       </DropdownMenuContent>

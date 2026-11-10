@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useUpdateBankAccount } from "@/hooks/useBankAccounts";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
+import {
+  BankAccountFormBody,
+  type BankAccountFormState,
+} from "@/components/dialogs/forms/BankAccountForm";
 import type { BankAccount } from "@/api/types";
 
 type Props = {
@@ -16,23 +15,27 @@ type Props = {
   account: BankAccount;
 };
 
+function toForm(account: BankAccount): BankAccountFormState {
+  return {
+    display_name: account.asset.display_name,
+    description: account.asset.description ?? "",
+    ownership_type: account.asset.ownership_type,
+    entry_type: account.asset.entry_type,
+    sole_owner_user_id: account.asset.sole_owner_user_id,
+    native_currency: account.asset.native_currency,
+    bank_name: account.details.bank_name,
+    account_number: account.details.account_number,
+    account_type: account.details.account_type,
+  };
+}
+
 // EditBankAccountDialog is controlled by the caller (no trigger). The parent
 // passes open/onOpenChange and the account row to pre-fill from.
 export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const mutation = useUpdateBankAccount(account.asset.id);
   const { data: user } = useSession();
-
-  const [form, setForm] = useState({
-    display_name: account.asset.display_name,
-    description: account.asset.description ?? "",
-    ownership_type: account.asset.ownership_type,
-    entry_type: account.asset.entry_type,
-    sole_owner_user_id: account.asset.sole_owner_user_id,
-    bank_name: account.details.bank_name,
-    account_number: account.details.account_number,
-    account_type: account.details.account_type,
-  });
+  const [form, setForm] = useState(() => toForm(account));
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -64,77 +67,12 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="grid gap-2">
-        <Label htmlFor="edit_display_name">{t("common:fields.displayName")}</Label>
-        <Input
-          id="edit_display_name"
-          required
-          value={form.display_name}
-          onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_bank_name">{t("assets:bankAccount.fields.bankName")}</Label>
-        <Input
-          id="edit_bank_name"
-          required
-          value={form.bank_name}
-          onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_account_number">{t("assets:bankAccount.fields.accountNumber")}</Label>
-        <Input
-          id="edit_account_number"
-          required
-          value={form.account_number}
-          onChange={(e) => setForm({ ...form, account_number: e.target.value })}
-        />
-      </div>
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_account_type">{t("assets:bankAccount.fields.accountType")}</Label>
-        <Select
-          id="edit_account_type"
-          value={form.account_type}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              account_type: e.target.value as typeof form.account_type,
-            })
-          }
-        >
-          <option value="savings">{t("assets:bankAccount.accountTypes.savings")}</option>
-          <option value="current">{t("assets:bankAccount.accountTypes.current")}</option>
-          <option value="other">{t("assets:bankAccount.accountTypes.other")}</option>
-        </Select>
-      </div>
-
-      <OwnershipField
-        idPrefix="ba_edit"
-        value={form.ownership_type}
-        onChange={(v) => setForm({ ...form, ownership_type: v })}
+      <BankAccountFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
         soleOwnerID={effectiveSoleOwnerID}
-        onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
       />
-
-      <EntryTypeField
-        idPrefix="ba_edit"
-        group="asset"
-        value={form.entry_type}
-        onChange={(v) => setForm({ ...form, entry_type: v })}
-      />
-
-      <div className="grid gap-2">
-        <Label htmlFor="edit_description">{t("common:fields.description")}</Label>
-        <Input
-          id="edit_description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-        />
-      </div>
     </PositionFormDialog>
   );
 }

@@ -1,22 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
-import { NumericInput } from "@/components/common/NumericInput";
-import {
-  RATE_DECIMALS,
-  RATE_INTEGER_DIGITS,
-  TERM_MONTHS_DIGITS,
-  currencyDecimals,
-} from "@/lib/format";
-import { Label } from "@/components/ui/label";
 import { useUpdateTimeDeposit } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
-import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { OwnershipField } from "@/components/common/OwnershipField";
-import { EntryTypeField } from "@/components/common/EntryTypeField";
-import { Select } from "@/components/ui/select";
-import type { RolloverPolicy, TimeDeposit, TimeDepositListItem } from "@/api/types";
+import {
+  TimeDepositFormBody,
+  type TimeDepositFormState,
+} from "@/components/dialogs/forms/TimeDepositForm";
+import type { TimeDeposit, TimeDepositListItem } from "@/api/types";
 
 type Props = {
   open: boolean;
@@ -24,7 +15,7 @@ type Props = {
   timeDeposit: TimeDeposit | TimeDepositListItem;
 };
 
-function toForm(td: TimeDeposit | TimeDepositListItem) {
+function toForm(td: TimeDeposit | TimeDepositListItem): TimeDepositFormState {
   const i = td.investment;
   const d = td.details;
   return {
@@ -34,6 +25,7 @@ function toForm(td: TimeDeposit | TimeDepositListItem) {
     entry_type: i.entry_type,
     sole_owner_user_id: i.sole_owner_user_id,
     risk_profile: td.investment.risk_profile,
+    native_currency: i.native_currency,
     bank_name: d.bank_name,
     principal: d.principal,
     interest_rate: d.interest_rate,
@@ -59,6 +51,7 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
     !!form.placement_date && !!form.maturity_date && form.maturity_date <= form.placement_date;
 
   function submit(close: () => void) {
+    if (!form.risk_profile) return;
     if (termInvalid) return;
     mutation.mutate(
       {
@@ -94,162 +87,12 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
       error={mutation.error}
       onSubmit={submit}
     >
-      <div className="space-y-3">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_td_display_name">{t("common:fields.displayName")}</Label>
-          <Input
-            id="edit_td_display_name"
-            required
-            value={form.display_name}
-            onChange={(e) => setForm({ ...form, display_name: e.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_td_description">{t("common:fields.description")}</Label>
-          <Input
-            id="edit_td_description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_td_bank_name">{t("investments:timeDeposit.fields.bankName")}</Label>
-          <Input
-            id="edit_td_bank_name"
-            required
-            value={form.bank_name}
-            onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="edit_td_principal">{t("investments:timeDeposit.fields.principal")}</Label>
-          <NumericInput
-            id="edit_td_principal"
-            required
-            decimals={currencyDecimals(timeDeposit.investment.native_currency)}
-            value={form.principal}
-            onChange={(v) => setForm({ ...form, principal: v })}
-          />
-        </div>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_td_interest_rate">
-              {t("investments:timeDeposit.fields.interestRate")}
-            </Label>
-            <NumericInput
-              id="edit_td_interest_rate"
-              required
-              decimals={RATE_DECIMALS}
-              maxIntegerDigits={RATE_INTEGER_DIGITS}
-              value={form.interest_rate}
-              onChange={(v) => setForm({ ...form, interest_rate: v })}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edit_td_term_months">
-              {t("investments:timeDeposit.fields.termMonths")}
-            </Label>
-            <NumericInput
-              id="edit_td_term_months"
-              required
-              decimals={0}
-              maxIntegerDigits={TERM_MONTHS_DIGITS}
-              value={form.term_months}
-              onChange={(v) => setForm({ ...form, term_months: v })}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
-          <div className="grid gap-2">
-            <Label htmlFor="edit_td_placement_date">
-              {t("investments:timeDeposit.fields.placementDate")}
-            </Label>
-            <Input
-              id="edit_td_placement_date"
-              required
-              type="date"
-              max="9999-12-31"
-              value={form.placement_date}
-              onChange={(e) => setForm({ ...form, placement_date: e.target.value })}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="edit_td_maturity_date">
-              {t("investments:timeDeposit.fields.maturityDate")}
-            </Label>
-            <Input
-              id="edit_td_maturity_date"
-              required
-              type="date"
-              min={form.placement_date || undefined}
-              max="9999-12-31"
-              value={form.maturity_date}
-              onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
-            />
-          </div>
-        </div>
-        {termInvalid && (
-          <p data-testid="edit-td-term-error" className="text-sm text-destructive">
-            {t("investments:timeDeposit.maturityAfterPlacement")}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <div className="grid gap-2">
-          <Label htmlFor="edit_td_rollover_policy">
-            {t("investments:timeDeposit.fields.rolloverPolicy")}
-          </Label>
-          <Select
-            id="edit_td_rollover_policy"
-            value={form.rollover_policy}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                rollover_policy: e.target.value as RolloverPolicy,
-              })
-            }
-          >
-            <option value="auto_renew_principal">
-              {t("investments:timeDeposit.rolloverPolicy.auto_renew_principal")}
-            </option>
-            <option value="auto_renew_with_interest">
-              {t("investments:timeDeposit.rolloverPolicy.auto_renew_with_interest")}
-            </option>
-            <option value="no_rollover">
-              {t("investments:timeDeposit.rolloverPolicy.no_rollover")}
-            </option>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <OwnershipField
-          idPrefix="td_edit"
-          value={form.ownership_type}
-          onChange={(v) => setForm({ ...form, ownership_type: v })}
-          soleOwnerID={effectiveSoleOwnerID}
-          onSoleOwnerChange={(v) => setForm({ ...form, sole_owner_user_id: v })}
-        />
-
-        <EntryTypeField
-          idPrefix="td_edit"
-          group="investment"
-          value={form.entry_type}
-          onChange={(v) => setForm({ ...form, entry_type: v })}
-        />
-      </div>
-
-      <RiskProfileSelect
-        idPrefix="td_edit"
-        value={form.risk_profile}
-        onChange={(v) => setForm({ ...form, risk_profile: v })}
+      <TimeDepositFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
+        soleOwnerID={effectiveSoleOwnerID}
+        termInvalid={termInvalid}
       />
     </PositionFormDialog>
   );
