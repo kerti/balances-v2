@@ -38,7 +38,7 @@ test(
       .click();
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
-    await page.getByRole("button", { name: "New" }).click();
+    await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await snapDialog.getByLabel("Total value (IDR)").fill("1010000");
     await snapDialog.getByLabel("Accrued (IDR)").fill("10000");

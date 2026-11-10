@@ -35,7 +35,7 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   // Active position: badge muted-active, snapshot entry available.
   await expect(statusBadge).toHaveText("Active");
-  await expect(page.getByRole("button", { name: "New" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record snapshot" })).toBeVisible();
 
   // a11y smoke on a position detail screen — status badge, action buttons, and
   // the snapshots table represent the app's core CRUD surface (#368).
@@ -51,7 +51,7 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
 
   // Badge flips to Closed; snapshot entry is gated off on a terminated position.
   await expect(statusBadge).toHaveText("Closed");
-  await expect(page.getByRole("button", { name: "New" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Record snapshot" })).toHaveCount(0);
 
   // --- Reopen (closed → active correction; biconditional clears the date) ---
   await page.getByRole("button", { name: "Status", exact: true }).click();
@@ -61,7 +61,7 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   await reopenDialog.getByRole("button", { name: "Save" }).click();
 
   await expect(statusBadge).toHaveText("Active");
-  await expect(page.getByRole("button", { name: "New" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record snapshot" })).toBeVisible();
 
   // --- Delete (cleanup — returns to the list, leaving it empty) ---
   await page.getByRole("button", { name: "Delete" }).click();

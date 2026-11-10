@@ -78,11 +78,24 @@ type InvestmentSnapshotWrite struct {
 	ReplacedID *uuid.UUID `json:"replaced_id"`
 }
 
-func sameOptDecimal(a, b *decimal.Decimal) bool {
+// Column scales: quantity is numeric(20,8); every other snapshot decimal is
+// numeric(20,4). The incoming value is rounded to its column's scale first,
+// because Postgres rounds on write: a client-derived amount (quantity × price
+// carries up to 12 places) must not read as a change against its stored self.
+const (
+	amountScale   = 4
+	quantityScale = 8
+)
+
+func sameDecimal(stored, incoming decimal.Decimal, scale int32) bool {
+	return stored.Equal(incoming.Round(scale))
+}
+
+func sameOptDecimal(a, b *decimal.Decimal, scale int32) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Equal(*b)
+	return sameDecimal(*a, *b, scale)
 }
 
 func sameOptString(a, b *string) bool {
@@ -106,25 +119,25 @@ func sameOptDate(a, b *time.Time) bool {
 // returns its stored scale, the request carries whatever the client typed.
 
 func assetSnapshotUnchanged(cur db.AssetSnapshot, p db.CreateAssetSnapshotParams) bool {
-	return cur.Amount.Equal(p.Amount) && cur.Currency == p.Currency &&
+	return sameDecimal(cur.Amount, p.Amount, amountScale) && cur.Currency == p.Currency &&
 		sameOptDate(cur.AsOfDate, p.AsOfDate) && sameOptString(cur.Description, p.Description)
 }
 
 func liabilitySnapshotUnchanged(cur db.LiabilitySnapshot, p db.CreateLiabilitySnapshotParams) bool {
-	return cur.Amount.Equal(p.Amount) && cur.Currency == p.Currency &&
+	return sameDecimal(cur.Amount, p.Amount, amountScale) && cur.Currency == p.Currency &&
 		sameOptDate(cur.AsOfDate, p.AsOfDate) && sameOptString(cur.Description, p.Description)
 }
 
 func receivableSnapshotUnchanged(cur db.ReceivableSnapshot, p db.CreateReceivableSnapshotParams) bool {
-	return cur.Amount.Equal(p.Amount) && cur.Currency == p.Currency &&
+	return sameDecimal(cur.Amount, p.Amount, amountScale) && cur.Currency == p.Currency &&
 		sameOptDate(cur.AsOfDate, p.AsOfDate) && sameOptString(cur.Description, p.Description)
 }
 
 func investmentSnapshotUnchanged(cur db.InvestmentSnapshot, p db.CreateInvestmentSnapshotParams) bool {
-	return cur.Amount.Equal(p.Amount) && cur.Currency == p.Currency &&
-		sameOptDecimal(cur.Quantity, p.Quantity) &&
-		sameOptDecimal(cur.PricePerUnit, p.PricePerUnit) &&
-		sameOptDecimal(cur.AccruedInterest, p.AccruedInterest) &&
+	return sameDecimal(cur.Amount, p.Amount, amountScale) && cur.Currency == p.Currency &&
+		sameOptDecimal(cur.Quantity, p.Quantity, quantityScale) &&
+		sameOptDecimal(cur.PricePerUnit, p.PricePerUnit, amountScale) &&
+		sameOptDecimal(cur.AccruedInterest, p.AccruedInterest, amountScale) &&
 		sameOptDate(cur.AsOfDate, p.AsOfDate) && sameOptString(cur.Description, p.Description)
 }
 

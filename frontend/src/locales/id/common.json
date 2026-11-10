@@ -158,8 +158,10 @@
     "noActive_other": "Tidak ada {{nounPlural}} aktif. {{count}} {{noun}} non-aktif tersembunyi — centang \"Tampilkan {{nounPlural}} non-aktif\" untuk melihatnya."
   },
   "snapshot": {
-    "trigger": "Baru",
-    "carryoverTrigger": "Salin terakhir",
+    "recordTrigger": "Catat snapshot",
+    "replaceNotice": "{{month}} sudah memiliki {{value}}, menyimpan akan menggantinya.",
+    "lastRecorded": "Terakhir dicatat: {{value}} ({{month}})",
+    "sameAsLast": "Sama seperti bulan lalu",
     "createTitle": "Catat snapshot bulanan",
     "createDescription": "Masukkan nilai akhir bulan. Mata uang dikunci ke mata uang asal posisi ({{currency}}).",
     "editTitle": "Ubah snapshot",

@@ -45,7 +45,7 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   await expect(page.getByRole("row", { name: /Buy/ })).toBeVisible();
 
   // --- Record one quantity-price snapshot (month defaults to current) ---
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Quantity", { exact: true }).fill("100");

@@ -5,6 +5,7 @@ import { NumericInput } from "@/components/common/NumericInput";
 import { formatCurrency, currencyDecimals } from "@/lib/format";
 import type { CouponDisposition } from "@/api/types";
 import { SnapshotMonthRow } from "./SnapshotMonthRow";
+import { LastRecordedHint, type LastRecorded } from "./LastRecordedHint";
 import type { FormMode } from "./mode";
 
 export type AccruedInterestSnapshotFormState = {
@@ -24,6 +25,10 @@ type Props = {
   derivedPrincipal: string | null;
   // Bond coupon disposition (#66): picks the accrued-interest hint.
   couponDisposition?: CouponDisposition;
+  // Create only (Record snapshot, #788); see SnapshotFormBody.
+  onMonthChange?: (yearMonth: string) => void;
+  replacing?: string;
+  lastRecorded?: LastRecorded;
 };
 
 export function AccruedInterestSnapshotFormBody({
@@ -33,6 +38,9 @@ export function AccruedInterestSnapshotFormBody({
   setForm,
   derivedPrincipal,
   couponDisposition,
+  onMonthChange,
+  replacing,
+  lastRecorded,
 }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   return (
@@ -41,9 +49,10 @@ export function AccruedInterestSnapshotFormBody({
         mode={mode}
         idPrefix="ai_"
         yearMonth={form.year_month}
-        onYearMonthChange={(ym) => setForm({ ...form, year_month: ym })}
+        onYearMonthChange={onMonthChange ?? ((ym) => setForm({ ...form, year_month: ym }))}
         asOfDate={form.as_of_date}
         onAsOfDateChange={(v) => setForm({ ...form, as_of_date: v })}
+        replacing={replacing}
       />
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
@@ -74,6 +83,8 @@ export function AccruedInterestSnapshotFormBody({
           />
         </div>
       </div>
+
+      {lastRecorded && <LastRecordedHint {...lastRecorded} />}
 
       <div className="rounded-md bg-muted px-3 py-2 text-sm">
         <span className="text-muted-foreground">

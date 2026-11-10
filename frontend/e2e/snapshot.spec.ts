@@ -1,90 +1,119 @@
 import { test, expect } from "@playwright/test";
+import { pickMonth } from "./monthPicker";
 
-// Amount-only snapshot CRUD through the real UI + backend (ADR-0022): on a bank
-// account detail page, record a monthly snapshot, edit it, then delete it. The
-// month defaults to the current month (no future-date guard yet — that's a
-// deferred item) so the create needs only an amount. Assertions key off a
+// Amount-only snapshot journey through the real UI + backend (ADR-0022): on a
+// bank account detail page, Record snapshot for last month, see that the next
+// open defaults to this month with a "Same as last month" helper, replace the
+// recorded month with an Undo, then edit and delete it. Assertions key off a
 // unique description; the amount renders IDR-formatted and is a poor anchor.
 // Self-cleaning: deletes the snapshot and then the parent account, leaving the
 // seed's empty bank-account list. See ADR-0024.
-// The delete leg also proves the no-dialog + Undo journey.
+// The Record snapshot legs prove INV-JOURNEYS-02 (ADR-0046 amendment, #788); the
+// delete leg also proves the no-dialog + Undo journey.
 // covers: INV-JOURNEYS-02, INV-JOURNEYS-06
-test("bank account snapshot create → edit → delete", { tag: "@smoke" }, async ({ page }) => {
-  const account = `E2E snap account ${Date.now()}`;
-  const desc = `E2E snapshot ${Date.now()}`;
-  const editedDesc = `${desc} edited`;
+test(
+  "bank account snapshot record → replace → edit → delete",
+  { tag: "@smoke" },
+  async ({ page }) => {
+    const account = `E2E snap account ${Date.now()}`;
+    const desc = `E2E snapshot ${Date.now()}`;
+    const editedDesc = `${desc} edited`;
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastYm = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, "0")}`;
 
-  await page.goto("/assets/bank-accounts");
+    await page.goto("/assets/bank-accounts");
 
-  // --- Create the parent bank account ---
-  await page.getByRole("button", { name: "New bank account" }).first().click();
-  const acctDialog = page.getByRole("dialog");
-  await acctDialog.getByLabel("Display name").fill(account);
-  await acctDialog.getByLabel("Bank name").fill("E2E Bank");
-  await acctDialog.getByLabel("Account number").fill("1234567890");
-  await acctDialog.getByRole("button", { name: "Create" }).click();
+    // --- Create the parent bank account ---
+    await page.getByRole("button", { name: "New bank account" }).first().click();
+    const acctDialog = page.getByRole("dialog");
+    await acctDialog.getByLabel("Display name").fill(account);
+    await acctDialog.getByLabel("Bank name").fill("E2E Bank");
+    await acctDialog.getByLabel("Account number").fill("1234567890");
+    await acctDialog.getByRole("button", { name: "Create" }).click();
 
-  await page
-    .getByRole("row", { name: new RegExp(account) })
-    .getByText(account)
-    .click();
-  await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
+    await page
+      .getByRole("row", { name: new RegExp(account) })
+      .getByText(account)
+      .click();
+    await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
 
-  // --- Create a snapshot (month defaults to the current month) ---
-  await page.getByRole("button", { name: "New" }).click();
-  const createDialog = page.getByRole("dialog");
-  await expect(createDialog.getByText("Record monthly snapshot")).toBeVisible();
-  await createDialog.getByLabel("Amount (IDR)").fill("12,500,000");
-  await createDialog.getByLabel("Description (optional)").fill(desc);
-  await createDialog.getByRole("button", { name: "Save snapshot" }).click();
+    // --- Record a snapshot for last month (the first one opens on this month) ---
+    await page.getByRole("button", { name: "Record snapshot" }).click();
+    const createDialog = page.getByRole("dialog");
+    await expect(createDialog.getByText("Record monthly snapshot")).toBeVisible();
+    await expect(createDialog.getByTestId("snapshot-replace-notice")).toHaveCount(0);
+    await pickMonth(page, createDialog.getByTestId("year_month"), lastYm);
+    await createDialog.getByLabel("Amount (IDR)").fill("12,500,000");
+    await createDialog.getByLabel("Description (optional)").fill(desc);
+    await createDialog.getByRole("button", { name: "Save snapshot" }).click();
 
-  const row = page.getByRole("row", { name: new RegExp(desc) });
-  await expect(row).toBeVisible();
+    const row = page.getByRole("row", { name: new RegExp(desc) });
+    await expect(row).toBeVisible();
 
-  // --- Copy carryover (issue #60): prefills the amount from the last
-  //     snapshot and defaults the statement date to today. Open it, assert the
-  //     prefill, then cancel without writing. ---
-  await page.getByTestId("snapshot-carryover").click();
-  const carryDialog = page.getByRole("dialog");
-  await expect(carryDialog.getByLabel("Amount (IDR)")).toHaveValue("12,500,000");
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  await expect(carryDialog.getByLabel("Statement date (optional)")).toHaveValue(todayStr);
-  await carryDialog.getByRole("button", { name: "Cancel" }).click();
+    // --- Record snapshot again: it defaults to the month after the latest (this
+    //     month, empty), starts with an empty amount, and "Same as last month"
+    //     fills it while the statement date stays blank. Cancel without writing. ---
+    await page.getByRole("button", { name: "Record snapshot" }).click();
+    const nextDialog = page.getByRole("dialog");
+    await expect(nextDialog.getByTestId("snapshot-replace-notice")).toHaveCount(0);
+    await expect(nextDialog.getByLabel("Amount (IDR)")).toHaveValue("");
+    await expect(nextDialog.getByTestId("snapshot-last-recorded")).toBeVisible();
+    await nextDialog.getByTestId("snapshot-same-as-last").click();
+    await expect(nextDialog.getByLabel("Amount (IDR)")).toHaveValue("12,500,000");
+    await expect(nextDialog.getByLabel("Statement date (optional)")).toHaveValue("");
+    await nextDialog.getByRole("button", { name: "Cancel" }).click();
 
-  // --- Edit the snapshot (change the description) ---
-  await row.getByRole("button", { name: "Snapshot actions" }).click();
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  const editDialog = page.getByRole("dialog");
-  await expect(editDialog.getByText("Edit snapshot")).toBeVisible();
-  await editDialog.getByLabel("Description (optional)").fill(editedDesc);
-  await editDialog.getByRole("button", { name: "Save changes" }).click();
+    // --- Pick the already-recorded month: the dialog switches to replacing it,
+    //     with a notice before saving and the value prefilled. Saving replaces
+    //     (one row, not two) and the toast offers Undo. ---
+    await page.getByRole("button", { name: "Record snapshot" }).click();
+    const replaceDialog = page.getByRole("dialog");
+    await pickMonth(page, replaceDialog.getByTestId("year_month"), lastYm);
+    await expect(replaceDialog.getByTestId("snapshot-replace-notice")).toBeVisible();
+    await expect(replaceDialog.getByLabel("Amount (IDR)")).toHaveValue("12,500,000");
+    await replaceDialog.getByLabel("Amount (IDR)").fill("13,000,000");
+    await replaceDialog.getByRole("button", { name: "Save snapshot" }).click();
 
-  const editedRow = page.getByRole("row", { name: new RegExp(editedDesc) });
-  await expect(editedRow).toBeVisible();
+    await expect(page.getByRole("row", { name: new RegExp(desc) })).toHaveCount(1);
+    await expect(row).toContainText("13,000,000");
+    await page.getByTestId("toast-replaced").getByRole("button", { name: "Undo" }).click();
+    await expect(row).toContainText("12,500,000");
 
-  // --- Delete the snapshot (table returns to its empty state) ---
-  await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
+    // --- Edit the snapshot (change the description) ---
+    await row.getByRole("button", { name: "Snapshot actions" }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    const editDialog = page.getByRole("dialog");
+    await expect(editDialog.getByText("Edit snapshot")).toBeVisible();
+    await editDialog.getByLabel("Description (optional)").fill(editedDesc);
+    await editDialog.getByRole("button", { name: "Save changes" }).click();
 
-  // No confirm dialog (ADR-0058 §3): the row goes at once and the toast offers
-  // Undo, which brings the very row back.
-  await expect(page.getByRole("alertdialog")).toHaveCount(0);
-  await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
-  await expect(page.getByText("No snapshots yet.")).toBeVisible();
-  await page.getByTestId("toast-deleted").getByRole("button", { name: "Undo" }).click();
-  await expect(editedRow).toBeVisible();
+    const editedRow = page.getByRole("row", { name: new RegExp(editedDesc) });
+    await expect(editedRow).toBeVisible();
 
-  // --- Delete it again for good (cleanup) ---
-  await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
-  await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
-  await expect(page.getByText("No snapshots yet.")).toBeVisible();
+    // --- Delete the snapshot (table returns to its empty state) ---
+    await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
 
-  // --- Delete the parent account (cleanup — returns to the empty list) ---
-  await page.getByRole("button", { name: "Delete" }).click();
-  const acctConfirm = page.getByRole("alertdialog");
-  await acctConfirm.getByRole("button", { name: "Delete" }).click();
+    // No confirm dialog (ADR-0058 §3): the row goes at once and the toast offers
+    // Undo, which brings the very row back.
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
+    await expect(page.getByText("No snapshots yet.")).toBeVisible();
+    await page.getByTestId("toast-deleted").getByRole("button", { name: "Undo" }).click();
+    await expect(editedRow).toBeVisible();
 
-  await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
-});
+    // --- Delete it again for good (cleanup) ---
+    await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
+    await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
+    await expect(page.getByText("No snapshots yet.")).toBeVisible();
+
+    // --- Delete the parent account (cleanup — returns to the empty list) ---
+    await page.getByRole("button", { name: "Delete" }).click();
+    const acctConfirm = page.getByRole("alertdialog");
+    await acctConfirm.getByRole("button", { name: "Delete" }).click();
+
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
+  },
+);

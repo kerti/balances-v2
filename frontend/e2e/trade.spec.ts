@@ -43,7 +43,7 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   await expect(page.getByText(/match ledger total/)).toHaveCount(0);
 
   // --- Add a snapshot whose quantity (90) disagrees with the ledger (100) ---
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Quantity", { exact: true }).fill("90");

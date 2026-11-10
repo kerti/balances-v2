@@ -96,8 +96,18 @@ describe("inline validation", () => {
   it("SNAPSHOT_MONTH_EXISTS renders beside the month field, not as a form message", async () => {
     const error = new ApiError(409, "conflict", { code: "SNAPSHOT_MONTH_EXISTS" });
     const { mutation } = stub(error);
-    renderWithProviders(<CreateSnapshotDialog currency="IDR" mutation={mutation as never} />);
-    await userEvent.click(screen.getByRole("button", { name: i18n.t("common:snapshot.trigger") }));
+    // The guard path only: a stale tab posts a month that was recorded meanwhile.
+    renderWithProviders(
+      <CreateSnapshotDialog
+        currency="IDR"
+        snapshots={[]}
+        createMutation={mutation as never}
+        updateMutation={stub().mutation as never}
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: i18n.t("common:snapshot.recordTrigger") }),
+    );
 
     expect(await screen.findByTestId("field-error-year_month")).toHaveTextContent(
       i18n.t("errors:code.SNAPSHOT_MONTH_EXISTS"),
@@ -107,8 +117,17 @@ describe("inline validation", () => {
 
   it("the month picker fills its row above the statement date (#865)", async () => {
     const { mutation } = stub();
-    renderWithProviders(<CreateSnapshotDialog currency="IDR" mutation={mutation as never} />);
-    await userEvent.click(screen.getByRole("button", { name: i18n.t("common:snapshot.trigger") }));
+    renderWithProviders(
+      <CreateSnapshotDialog
+        currency="IDR"
+        snapshots={[]}
+        createMutation={mutation as never}
+        updateMutation={stub().mutation as never}
+      />,
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: i18n.t("common:snapshot.recordTrigger") }),
+    );
 
     const trigger = await screen.findByTestId("year_month");
     const group = trigger.parentElement as HTMLElement;

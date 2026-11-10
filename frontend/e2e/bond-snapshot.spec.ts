@@ -34,7 +34,7 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- Record an accrued-interest snapshot (total value + accrued) ---
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Total value (IDR)").fill("1010000");

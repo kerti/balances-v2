@@ -1,9 +1,11 @@
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Callout } from "@/components/common/Callout";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { monthEndDateCapped, monthStartDate, yearMonthsUpToNow } from "@/lib/dateLimits";
 import { formatYearMonth } from "@/lib/format";
+import { formatRecordMonth } from "@/lib/recordSnapshot";
 import type { FormMode } from "./mode";
 
 type Props = {
@@ -14,6 +16,9 @@ type Props = {
   onYearMonthChange: (next: string) => void;
   asOfDate: string;
   onAsOfDateChange: (next: string) => void;
+  /** Create only: the existing snapshot's total, formatted, when the picked
+   *  month already has one. Shows the replace notice under the picker. */
+  replacing?: string;
 };
 
 // The month + statement-date row every snapshot form opens with. Create picks
@@ -27,6 +32,7 @@ export function SnapshotMonthRow({
   onYearMonthChange,
   asOfDate,
   onAsOfDateChange,
+  replacing,
 }: Props) {
   const { t } = useTranslation("common");
   const monthId = `${idPrefix}year_month`;
@@ -52,6 +58,11 @@ export function SnapshotMonthRow({
             disabled
             value={formatYearMonth(yearMonth)}
           />
+        )}
+        {mode === "create" && replacing !== undefined && (
+          <Callout data-testid="snapshot-replace-notice">
+            {t("snapshot.replaceNotice", { month: formatRecordMonth(yearMonth), value: replacing })}
+          </Callout>
         )}
       </div>
       <div className="grid gap-2">

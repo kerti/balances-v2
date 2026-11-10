@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CopyPlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
-import { useSession } from "@/hooks/useSession";
-import type { CarryoverDateMode } from "@/lib/dateLimits";
+import { formatCurrency } from "@/lib/format";
+import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
-import { SnapshotFormBody } from "@/components/dialogs/forms/SnapshotForm";
+import { SnapshotFormBody, type SnapshotFormState } from "@/components/dialogs/forms/SnapshotForm";
+import type { UpdateSnapshotMutationVariables } from "@/components/dialogs/EditSnapshotDialog";
 
 export type CreateSnapshotPayload = {
   year_month: string;
@@ -27,111 +28,107 @@ export type CreateSnapshotPayload = {
   description: string | null;
 };
 
-type Props<TResult> = {
+// The live snapshots the dialog needs: to find the next missing month, to spot a
+// month that already has a value, and to offer "Same as last month".
+type SnapshotLike = {
+  id: string;
+  year_month: string;
+  amount: string;
+  as_of_date: string | null;
+  description: string | null;
+};
+
+type Props<TCreated, TUpdated> = {
   currency: string;
-  // Mutation is owned by the parent so the same dialog can drive snapshot
-  // creation for any position group (asset/liability/receivable).
-  mutation: UseMutationResult<TResult, unknown, CreateSnapshotPayload>;
+  // Live snapshots of this position, newest first.
+  snapshots: SnapshotLike[] | undefined;
+  // Mutations are owned by the parent so the same dialog can drive snapshot
+  // recording for any amount-only group (asset/liability/receivable). Create
+  // writes an empty month; update replaces a month that already has a value
+  // (ADR-0058: the earlier value is archived, the toast offers Undo).
+  createMutation: UseMutationResult<TCreated, unknown, CreateSnapshotPayload>;
+  updateMutation: UseMutationResult<TUpdated, unknown, UpdateSnapshotMutationVariables>;
   // Optional revaluation helper (property + vehicle, Q8a / ADR-0008). The
   // parent encapsulates the signed annual rate + snapshot history and hands
   // the dialog a function it calls each render with the picked month; returns
   // null when no suggestion applies. The Apply button is the only writer —
   // typing the amount manually is never overridden.
   suggest?: (yearMonth: string) => RevaluationSuggestion | null;
-  // Latest snapshot's amount + period, when one exists. Drives the "Copy
-  // carryover" helper (issue #60): formalises an unchanged month by pre-filling
-  // the amount and seeding the as-of date per the user's carryover_date_mode
-  // preference (issue #105). lastSnapshotMonth (the latest snapshot's
-  // year_month) anchors the end_of_month_after_last_snapshot mode. Null hides
-  // the helper.
-  carryover?: { amount: string; lastSnapshotMonth: string } | null;
 };
 
-export function CreateSnapshotDialog<TResult>({
-  currency,
-  mutation,
-  suggest,
-  carryover,
-}: Props<TResult>) {
-  const { t } = useTranslation("common");
-  const { data: me } = useSession();
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({
-    year_month: thisYearMonth(),
-    amount: "",
-    as_of_date: "",
-    description: "",
-  });
+const emptyForm = (yearMonth: string): SnapshotFormState => ({
+  year_month: yearMonth,
+  amount: "",
+  as_of_date: "",
+  description: "",
+});
 
-  // Seed the form from the last snapshot and open the dialog. The month resets
-  // to the current month; the statement date is seeded per the user's
-  // carryover_date_mode preference (issue #105, default 'today'). The user
-  // edits the month if the carryover belongs to an earlier period.
-  function startCarryover() {
-    if (!carryover) return;
-    const mode = (me?.carryover_date_mode ?? "today") as CarryoverDateMode;
-    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth);
-    setForm({
-      year_month: seed.yearMonth,
-      amount: carryover.amount,
-      as_of_date: seed.asOfDate,
-      description: "",
-    });
+const formFrom = (s: SnapshotLike, yearMonth: string): SnapshotFormState => ({
+  year_month: yearMonth,
+  amount: s.amount,
+  as_of_date: asOfInputValue(s.as_of_date),
+  description: s.description ?? "",
+});
+
+// "Record snapshot" for the amount-only shape (ADR-0046 amendment, #788). One
+// button, opening on the month after the latest snapshot. A month that already
+// has a value switches the dialog to replacing it, with a notice, instead of
+// failing with SNAPSHOT_MONTH_EXISTS.
+export function CreateSnapshotDialog<TCreated, TUpdated>({
+  currency,
+  snapshots,
+  createMutation,
+  updateMutation,
+  suggest,
+}: Props<TCreated, TUpdated>) {
+  const { t } = useTranslation("common");
+  const [open, setOpen] = useState(false);
+  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+    snapshots,
+    emptyForm,
+    formFrom,
+  });
+  const mutation = existing ? updateMutation : createMutation;
+
+  function begin() {
+    reset();
     setOpen(true);
   }
 
   function close() {
     setOpen(false);
-    setForm({
-      year_month: thisYearMonth(),
-      amount: "",
-      as_of_date: "",
-      description: "",
-    });
-    mutation.reset();
+    createMutation.reset();
+    updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    mutation.mutate(
-      {
-        year_month: form.year_month,
-        amount: form.amount,
-        currency,
-        as_of_date: form.as_of_date || null,
-        description: form.description || null,
-      },
+    const common = {
+      currency,
+      as_of_date: form.as_of_date || null,
+      description: form.description || null,
+    };
+    if (existing) {
+      updateMutation.mutate(
+        { snapshotId: existing.id, payload: { amount: form.amount, ...common } },
+        { onSuccess: close },
+      );
+      return;
+    }
+    createMutation.mutate(
+      { year_month: form.year_month, amount: form.amount, ...common },
       { onSuccess: close },
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
-      {/* Copy carryover is the promoted primary of the create row (#542): the
-          common month-close is "same as last month", so it leads with the solid
-          variant and the large mobile tap target (`h-11 md:h-8`). New drops to a
-          secondary outline — except on the first-ever snapshot, when there's no
-          carryover and New stands alone as the primary. */}
-      {carryover && (
-        <Button
-          type="button"
-          size="sm"
-          onClick={startCarryover}
-          className="h-11 md:h-8"
-          data-testid="snapshot-carryover"
-        >
-          <CopyPlus className="mr-1 size-4" />
-          {t("snapshot.carryoverTrigger")}
-        </Button>
-      )}
+    <Dialog open={open} onOpenChange={(o) => (o ? begin() : close())}>
+      {/* The single entry point to recording a value (#788): the primary of the
+          create row, with the large mobile tap target (`h-11 md:h-8`). */}
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant={carryover ? "outline" : "default"}
-          className={carryover ? undefined : "h-11 md:h-8"}
-        >
+        <Button size="sm" className="h-11 md:h-8" data-testid="snapshot-record">
           <Plus className="mr-1 size-4" />
-          {t("snapshot.trigger")}
+          {t("snapshot.recordTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -146,6 +143,17 @@ export function CreateSnapshotDialog<TResult>({
             form={form}
             setForm={setForm}
             suggest={suggest}
+            onMonthChange={pickMonth}
+            replacing={existing ? formatCurrency(existing.amount, currency) : undefined}
+            lastRecorded={
+              last
+                ? {
+                    value: formatCurrency(last.amount, currency),
+                    month: formatRecordMonth(last.year_month),
+                    onApply: () => setForm({ ...form, amount: last.amount }),
+                  }
+                : undefined
+            }
           />
 
           <FormError />

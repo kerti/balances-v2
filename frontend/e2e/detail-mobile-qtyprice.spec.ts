@@ -35,7 +35,7 @@ test(
       .click();
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
-    await page.getByRole("button", { name: "New" }).click();
+    await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await snapDialog.getByLabel("Quantity", { exact: true }).fill("100");
     await snapDialog.getByLabel("Price per unit (IDR)").fill("8500");

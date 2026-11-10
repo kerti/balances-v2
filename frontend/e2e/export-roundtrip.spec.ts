@@ -31,7 +31,7 @@ test("property export re-imports flawlessly", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- Record one snapshot (month defaults to the current month) ---
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Amount (IDR)").fill("2500000000");

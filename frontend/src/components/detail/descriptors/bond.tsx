@@ -261,17 +261,10 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
         renderCreateControls: (currency) => (
           <CreateAccruedInterestSnapshotDialog
             currency={currency}
-            mutation={createMutation}
+            snapshots={snapshots}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
             couponDisposition={bond?.details.coupon_disposition}
-            carryover={
-              snapshots?.[0]
-                ? {
-                    amount: snapshots[0].amount,
-                    accrued_interest: snapshots[0].accrued_interest,
-                    lastSnapshotMonth: snapshots[0].year_month,
-                  }
-                : null
-            }
           />
         ),
         renderImportControl: (currency) => (

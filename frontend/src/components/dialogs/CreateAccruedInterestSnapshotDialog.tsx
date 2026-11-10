@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CopyPlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,44 +13,45 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
-import type { CarryoverDateMode } from "@/lib/dateLimits";
-import { useSession } from "@/hooks/useSession";
+import { formatCurrency } from "@/lib/format";
+import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 import type { CouponDisposition } from "@/api/types";
-import { AccruedInterestSnapshotFormBody } from "@/components/dialogs/forms/AccruedInterestSnapshotForm";
+import {
+  AccruedInterestSnapshotFormBody,
+  type AccruedInterestSnapshotFormState,
+} from "@/components/dialogs/forms/AccruedInterestSnapshotForm";
+import type { UpdateAccruedInterestSnapshotMutationVariables } from "@/components/dialogs/EditAccruedInterestSnapshotDialog";
 
-type Props<TResult> = {
+// The live snapshots the dialog needs (see CreateSnapshotDialog).
+type SnapshotLike = {
+  id: string;
+  year_month: string;
+  amount: string;
+  accrued_interest: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
+
+type Props<TCreated, TUpdated> = {
   currency: string;
-  mutation: UseMutationResult<TResult, unknown, CreateInvestmentSnapshotPayload>;
-  // Latest snapshot's total value + accrued + period, when one exists. Drives
-  // the "Copy carryover" helper (issue #60); lastSnapshotMonth (the latest
-  // snapshot's year_month) anchors the end_of_month_after_last_snapshot date
-  // mode (issue #105). Null hides the helper.
-  carryover?: {
-    amount: string;
-    accrued_interest: string | null;
-    lastSnapshotMonth: string;
-  } | null;
+  // Live snapshots of this position, newest first.
+  snapshots: SnapshotLike[] | undefined;
+  // Create writes an empty month; update replaces a month that already has a
+  // value (ADR-0058: archived, Undo in the toast).
+  createMutation: UseMutationResult<TCreated, unknown, CreateInvestmentSnapshotPayload>;
+  updateMutation: UseMutationResult<
+    TUpdated,
+    unknown,
+    UpdateAccruedInterestSnapshotMutationVariables
+  >;
   // The bond's coupon disposition (#66). 'accrues' bonds carry coupon inside the
   // instrument, so the form starts the accrued field empty (force a real entry)
   // and swaps to the accrue-oriented hint; 'pays_out' (and time deposits, which
   // pass nothing) keep the historical accrued=0 default. Undefined ⇒ pays_out.
   couponDisposition?: CouponDisposition;
 };
-
-function emptyForm(couponDisposition?: CouponDisposition) {
-  // accrued defaults to 0 for the common pays-out case (coupons land in the bank
-  // account, no in-instrument accrual). An 'accrues' bond (#66) instead starts
-  // empty so the user enters the real accrued figure rather than skipping the 0.
-  return {
-    year_month: thisYearMonth(),
-    amount: "",
-    accrued_interest: couponDisposition === "accrues" ? "" : "0",
-    as_of_date: "",
-    description: "",
-  };
-}
 
 // `amount` is the dirty total value (already includes accrued); the user
 // types it as it appears on the statement. The derived "of which principal"
@@ -65,95 +66,84 @@ function derivePrincipal(amount: string, accrued: string): string | null {
   return (a - i).toString();
 }
 
-export function CreateAccruedInterestSnapshotDialog<TResult>({
+// "Record snapshot" for the accrued-interest shape (bond, time deposit). See
+// CreateSnapshotDialog for the replace-mode behaviour (#788).
+export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
   currency,
-  mutation,
-  carryover,
+  snapshots,
+  createMutation,
+  updateMutation,
   couponDisposition,
-}: Props<TResult>) {
+}: Props<TCreated, TUpdated>) {
   const { t } = useTranslation(["investments", "common"]);
-  const { data: me } = useSession();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(() => emptyForm(couponDisposition));
+
+  // accrued defaults to 0 for the common pays-out case (coupons land in the bank
+  // account, no in-instrument accrual). An 'accrues' bond (#66) instead starts
+  // empty so the user enters the real accrued figure rather than skipping the 0.
+  // Read from the *current* couponDisposition each time the dialog opens, since
+  // the dialog stays mounted while the bond's disposition may be edited.
+  const emptyForm = (yearMonth: string): AccruedInterestSnapshotFormState => ({
+    year_month: yearMonth,
+    amount: "",
+    accrued_interest: couponDisposition === "accrues" ? "" : "0",
+    as_of_date: "",
+    description: "",
+  });
+  const formFrom = (s: SnapshotLike, yearMonth: string): AccruedInterestSnapshotFormState => ({
+    year_month: yearMonth,
+    amount: s.amount,
+    accrued_interest: s.accrued_interest ?? "",
+    as_of_date: asOfInputValue(s.as_of_date),
+    description: s.description ?? "",
+  });
+
+  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+    snapshots,
+    emptyForm,
+    formFrom,
+  });
+  const mutation = existing ? updateMutation : createMutation;
 
   const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest);
 
-  // Seed the form from the last snapshot and open the dialog. Month resets to
-  // the current month; the statement date is seeded per the user's
-  // carryover_date_mode preference (issue #105, default 'today').
-  function startCarryover() {
-    if (!carryover) return;
-    const mode = (me?.carryover_date_mode ?? "today") as CarryoverDateMode;
-    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth);
-    setForm({
-      year_month: seed.yearMonth,
-      amount: carryover.amount,
-      accrued_interest: carryover.accrued_interest ?? "0",
-      as_of_date: seed.asOfDate,
-      description: "",
-    });
+  function begin() {
+    reset();
     setOpen(true);
   }
 
   function close() {
     setOpen(false);
-    setForm(emptyForm(couponDisposition));
-    mutation.reset();
-  }
-
-  // Re-seed the form from the *current* couponDisposition on each open. The
-  // dialog stays mounted, so the lazy useState initializer can't reflect a
-  // disposition the user changed after mount (e.g. editing the bond's
-  // disposition on the detail screen); seeding here keeps the accrued default
-  // (#66 pivot) in sync. The carryover path seeds its own form and bypasses this.
-  function openFresh() {
-    setForm(emptyForm(couponDisposition));
-    setOpen(true);
+    createMutation.reset();
+    updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    mutation.mutate(
-      {
-        year_month: form.year_month,
-        amount: form.amount,
-        currency,
-        quantity: null,
-        price_per_unit: null,
-        accrued_interest: form.accrued_interest,
-        as_of_date: form.as_of_date || null,
-        description: form.description || null,
-      },
-      { onSuccess: close },
-    );
+    const common = {
+      amount: form.amount,
+      currency,
+      quantity: null,
+      price_per_unit: null,
+      accrued_interest: form.accrued_interest,
+      as_of_date: form.as_of_date || null,
+      description: form.description || null,
+    };
+    if (existing) {
+      updateMutation.mutate({ snapshotId: existing.id, payload: common }, { onSuccess: close });
+      return;
+    }
+    createMutation.mutate({ year_month: form.year_month, ...common }, { onSuccess: close });
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? openFresh() : close())}>
-      {/* Copy carryover leads the create row as the promoted primary (#542):
-          solid variant + large mobile tap target. New drops to a secondary
-          outline unless there's no prior snapshot to copy, when it stands alone
-          as the primary. Mirrors the amount-only `CreateSnapshotDialog`. */}
-      {carryover && (
-        <Button
-          type="button"
-          size="sm"
-          onClick={startCarryover}
-          className="h-11 md:h-8"
-          data-testid="snapshot-carryover"
-        >
-          <CopyPlus className="mr-1 size-4" />
-          {t("investments:accruedInterestSnapshot.carryoverTrigger")}
-        </Button>
-      )}
+    <Dialog open={open} onOpenChange={(o) => (o ? begin() : close())}>
+      {/* The single entry point to recording a value (#788); mirrors the
+          amount-only `CreateSnapshotDialog`. */}
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant={carryover ? "outline" : "default"}
-          className={carryover ? undefined : "h-11 md:h-8"}
-        >
+        <Button size="sm" className="h-11 md:h-8" data-testid="snapshot-record">
           <Plus className="mr-1 size-4" />
-          {t("investments:accruedInterestSnapshot.trigger")}
+          {t("common:snapshot.recordTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -173,6 +163,22 @@ export function CreateAccruedInterestSnapshotDialog<TResult>({
             setForm={setForm}
             derivedPrincipal={derivedPrincipal}
             couponDisposition={couponDisposition}
+            onMonthChange={pickMonth}
+            replacing={existing ? formatCurrency(existing.amount, currency) : undefined}
+            lastRecorded={
+              last
+                ? {
+                    value: formatCurrency(last.amount, currency),
+                    month: formatRecordMonth(last.year_month),
+                    onApply: () =>
+                      setForm({
+                        ...form,
+                        amount: last.amount,
+                        accrued_interest: last.accrued_interest ?? form.accrued_interest,
+                      }),
+                  }
+                : undefined
+            }
           />
 
           <FormError />

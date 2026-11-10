@@ -33,7 +33,7 @@ test(
       .click();
     await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
 
-    await page.getByRole("button", { name: "New" }).click();
+    await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await snapDialog.getByLabel("Amount (IDR)").fill("12500000");
     await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
@@ -67,7 +67,7 @@ test(
 
     // #542: the section's *secondary* controls clear 44px too, not only the
     // promoted primary action. The Export trigger stands in for the header /
-    // actions-row secondary sweep (Import / carryover / Help / Edit / Terminate /
+    // actions-row secondary sweep (Import / Help / Edit / Terminate /
     // Delete), all raised from `size-sm` to `min-h-11 md:min-h-0` on phones.
     const exportBox = await page.getByTestId("bank-account-export").boundingBox();
     expect(exportBox).not.toBeNull();

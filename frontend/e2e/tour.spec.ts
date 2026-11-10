@@ -71,7 +71,7 @@ async function createBond(page: Page, name: string) {
 // Amount-only snapshot (bank account). Two distinct months are needed to clear
 // the chart's `snapshots.length >= 2` gate; the month is keyed per position.
 async function addBankSnapshot(page: Page, month: string, amount: string) {
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Record monthly snapshot")).toBeVisible();
   await pickMonth(page, dialog.getByTestId("year_month"), month);
@@ -82,7 +82,7 @@ async function addBankSnapshot(page: Page, month: string, amount: string) {
 
 // Accrued-interest snapshot (bond).
 async function addBondSnapshot(page: Page, month: string, total: string) {
-  await page.getByRole("button", { name: "New" }).click();
+  await page.getByRole("button", { name: "Record snapshot" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Record monthly snapshot")).toBeVisible();
   await pickMonth(page, dialog.getByTestId("ai_year_month"), month);

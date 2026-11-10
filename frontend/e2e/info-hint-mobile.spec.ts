@@ -94,7 +94,7 @@ test(
 
       // --- Month picker replaces the native month input in the snapshot dialog ---
       await page.goto(`/assets/properties/${propertyId}`);
-      await page.getByRole("button", { name: "New" }).click();
+      await page.getByRole("button", { name: "Record snapshot" }).click();
       const dialog = page.getByRole("dialog");
       await pickMonth(page, dialog.getByTestId("year_month"), monthsAgo(3));
       await expect(page.getByTestId("month-picker-content")).toHaveCount(0);
