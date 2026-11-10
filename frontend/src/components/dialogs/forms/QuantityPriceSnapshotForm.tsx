@@ -9,6 +9,7 @@ import {
   QUANTITY_INTEGER_DIGITS,
 } from "@/lib/format";
 import { SnapshotMonthRow } from "./SnapshotMonthRow";
+import { LastRecordedHint, type LastRecorded } from "./LastRecordedHint";
 import type { FormMode } from "./mode";
 
 export type QuantityPriceSnapshotFormState = {
@@ -28,6 +29,10 @@ type Props = {
   derivedAmount: string | null;
   // Gold's "use the buyback price" guidance under the price input (issue #19).
   priceHint?: string;
+  // Create only (Record snapshot, #788); see SnapshotFormBody.
+  onMonthChange?: (yearMonth: string) => void;
+  replacing?: string;
+  lastRecorded?: LastRecorded;
 };
 
 export function QuantityPriceSnapshotFormBody({
@@ -37,6 +42,9 @@ export function QuantityPriceSnapshotFormBody({
   setForm,
   derivedAmount,
   priceHint,
+  onMonthChange,
+  replacing,
+  lastRecorded,
 }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   return (
@@ -45,9 +53,10 @@ export function QuantityPriceSnapshotFormBody({
         mode={mode}
         idPrefix="inv_"
         yearMonth={form.year_month}
-        onYearMonthChange={(ym) => setForm({ ...form, year_month: ym })}
+        onYearMonthChange={onMonthChange ?? ((ym) => setForm({ ...form, year_month: ym }))}
         asOfDate={form.as_of_date}
         onAsOfDateChange={(v) => setForm({ ...form, as_of_date: v })}
+        replacing={replacing}
       />
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
@@ -79,6 +88,8 @@ export function QuantityPriceSnapshotFormBody({
           />
         </div>
       </div>
+
+      {lastRecorded && <LastRecordedHint {...lastRecorded} />}
 
       {priceHint && <p className="text-xs text-muted-foreground">{priceHint}</p>}
 

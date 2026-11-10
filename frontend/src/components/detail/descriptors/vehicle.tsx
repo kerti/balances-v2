@@ -114,7 +114,9 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
         renderCreateControls: (currency) => (
           <CreateSnapshotDialog
             currency={currency}
-            mutation={createMutation}
+            snapshots={snapshots}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
             suggest={(yearMonth) =>
               suggestRevalued({
                 newYearMonth: yearMonth,
@@ -125,11 +127,6 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
                   : null,
                 snapshots,
               })
-            }
-            carryover={
-              snapshots?.[0]
-                ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-                : null
             }
           />
         ),

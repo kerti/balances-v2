@@ -6,6 +6,7 @@ import { NumericInput } from "@/components/common/NumericInput";
 import { formatCurrency, formatYearMonth, roundToCurrency, currencyDecimals } from "@/lib/format";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
 import { SnapshotMonthRow } from "./SnapshotMonthRow";
+import { LastRecordedHint, type LastRecorded } from "./LastRecordedHint";
 import type { FormMode } from "./mode";
 
 export type SnapshotFormState = {
@@ -23,10 +24,26 @@ type Props = {
   // Create only (property + vehicle, ADR-0008): the revaluation helper offered
   // under the amount. The Apply button is its only writer.
   suggest?: (yearMonth: string) => RevaluationSuggestion | null;
+  // Create only (Record snapshot, #788). The dialog owns month switching so it
+  // can prefill a replace; without it the month is a plain field.
+  onMonthChange?: (yearMonth: string) => void;
+  // The existing snapshot's formatted total when the picked month has one.
+  replacing?: string;
+  // The previous snapshot, for an empty month: the "Same as last month" line.
+  lastRecorded?: LastRecorded;
 };
 
 // Amount-only snapshot form body, shared by Record snapshot and Edit snapshot.
-export function SnapshotFormBody({ mode, currency, form, setForm, suggest }: Props) {
+export function SnapshotFormBody({
+  mode,
+  currency,
+  form,
+  setForm,
+  suggest,
+  onMonthChange,
+  replacing,
+  lastRecorded,
+}: Props) {
   const { t } = useTranslation("common");
   const s = mode === "create" ? suggest?.(form.year_month) : null;
   return (
@@ -35,9 +52,10 @@ export function SnapshotFormBody({ mode, currency, form, setForm, suggest }: Pro
         mode={mode}
         idPrefix=""
         yearMonth={form.year_month}
-        onYearMonthChange={(ym) => setForm({ ...form, year_month: ym })}
+        onYearMonthChange={onMonthChange ?? ((ym) => setForm({ ...form, year_month: ym }))}
         asOfDate={form.as_of_date}
         onAsOfDateChange={(v) => setForm({ ...form, as_of_date: v })}
+        replacing={replacing}
       />
 
       <div className="grid gap-2">
@@ -50,6 +68,7 @@ export function SnapshotFormBody({ mode, currency, form, setForm, suggest }: Pro
           onChange={(v) => setForm({ ...form, amount: v })}
           placeholder={t("snapshot.amountPlaceholder")}
         />
+        {lastRecorded && <LastRecordedHint {...lastRecorded} />}
         {s && (
           <div
             className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"

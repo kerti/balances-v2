@@ -153,13 +153,13 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
     }),
     pageSize: PAGE_SIZE,
     // Two deliberate rows (#542), stacked on phones and inline from 768px up:
-    // row 1 = the snapshot *create* actions (Copy carryover + New), row 2 = the
-    // workbook *I/O* pair (Export + Import). Copy carryover leads row 1 as the
-    // promoted primary (see the snapshot dialogs). Export is always present so a
-    // terminated position can still be backed up; the create row and Import hide
-    // when the position is closed. On phones the header goes full width and each
-    // row's buttons split it evenly (`max-md:[&>*]:flex-1`); from 768px up they
-    // fall back to natural, inline widths.
+    // row 1 = the single Record snapshot button (#788), the promoted primary,
+    // row 2 = the workbook *I/O* pair (Export + Import). Export is always
+    // present so a terminated position can still be backed up; the create row
+    // and Import hide when the position is closed. On phones the header goes
+    // full width and each row's buttons split it evenly (`max-md:[&>*]:flex-1`,
+    // so Record snapshot fills row 1); from 768px up they fall back to natural,
+    // inline widths.
     headerActions: (
       <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center">
         {active && (

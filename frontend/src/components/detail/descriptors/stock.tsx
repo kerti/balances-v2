@@ -220,16 +220,9 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
         renderCreateControls: (currency) => (
           <CreateQuantityPriceSnapshotDialog
             currency={currency}
-            mutation={createMutation}
-            carryover={
-              snapshots?.[0]
-                ? {
-                    quantity: snapshots[0].quantity,
-                    price_per_unit: snapshots[0].price_per_unit,
-                    lastSnapshotMonth: snapshots[0].year_month,
-                  }
-                : null
-            }
+            snapshots={snapshots}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
           />
         ),
         renderImportControl: (currency) => (

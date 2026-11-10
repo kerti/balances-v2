@@ -147,6 +147,9 @@ the choice is non-obvious.
 | English | Indonesian | Notes |
 | --- | --- | --- |
 | Create / Add | Tambah | Used on primary action buttons ("Tambah Aset", "Tambah Snapshot"). |
+| Record snapshot | Catat snapshot | The one per-position button for entering a month's value (#788). "Catat" = record; _Avoid_: "Baru" / "Tambah Snapshot" for it. |
+| Replace (a month's value) | Ganti | "{{month}} sudah memiliki {{value}}, menyimpan akan menggantinya." The earlier value is archived and can be undone ("Urungkan"). |
+| Same as last month | Sama seperti bulan lalu | Fills the value fields from the previous snapshot; never the statement date. |
 | Edit | Ubah | _Avoid_: Edit (English loanword) for buttons. |
 | Delete | Hapus | — |
 | Save | Simpan | — |

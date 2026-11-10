@@ -380,16 +380,9 @@ export const timeDepositDescriptor: DetailDescriptor<
         renderCreateControls: (currency) => (
           <CreateAccruedInterestSnapshotDialog
             currency={currency}
-            mutation={createMutation}
-            carryover={
-              snapshots?.[0]
-                ? {
-                    amount: snapshots[0].amount,
-                    accrued_interest: snapshots[0].accrued_interest,
-                    lastSnapshotMonth: snapshots[0].year_month,
-                  }
-                : null
-            }
+            snapshots={snapshots}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
           />
         ),
         renderImportControl: (currency) => (

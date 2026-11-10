@@ -34,6 +34,12 @@ Not ADRs because they're tactical, but load-bearing:
   time_deposit) → `Create/EditAccruedInterestSnapshotDialog` + `AccruedInterestSnapshotRow`. Each
   fork's `useMutation` is owned by the parent detail page and passed in as props. Convention: **name
   by shape, not by group** — new subtype sharing a shape reuses its dialog set; new shape forks.
+  The `Create*SnapshotDialog` is the one **Record snapshot** button (#788): the parent passes the live
+  `snapshots` plus **both** the create and the update mutation. An empty month writes through create;
+  a month that already has a value is a replace and writes through the *update* mutation (the Edit
+  `PATCH`, so ADR-0058's archive + Undo toast come for free), never a second POST. Month switching,
+  prefill and "Same as last month" live in `useRecordSnapshotForm` + `lib/recordSnapshot.ts`; a new
+  shape reuses them and the `LastRecordedHint` / replace notice in the form body.
 - **Transaction UI is split by shape (four forks).** Trade (Buy/Sell) →
   `Create/EditTradeTransactionDialog`; CashIncome (Coupon/Dividend/Distribution) →
   `Create/EditCashIncomeTransactionDialog`; Fee → `Create/EditFeeTransactionDialog`; Maturity →

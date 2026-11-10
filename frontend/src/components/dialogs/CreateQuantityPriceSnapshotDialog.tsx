@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CopyPlus, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,40 +13,60 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { thisYearMonth, carryoverSeed } from "@/lib/dateLimits";
-import { useSession } from "@/hooks/useSession";
-import type { CarryoverDateMode } from "@/lib/dateLimits";
+import { formatCurrency } from "@/lib/format";
+import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
-import { QuantityPriceSnapshotFormBody } from "@/components/dialogs/forms/QuantityPriceSnapshotForm";
+import {
+  QuantityPriceSnapshotFormBody,
+  type QuantityPriceSnapshotFormState,
+} from "@/components/dialogs/forms/QuantityPriceSnapshotForm";
+import type { UpdateQuantityPriceSnapshotMutationVariables } from "@/components/dialogs/EditQuantityPriceSnapshotDialog";
 
-type Props<TResult> = {
+// The live snapshots the dialog needs (see CreateSnapshotDialog).
+type SnapshotLike = {
+  id: string;
+  year_month: string;
+  amount: string;
+  quantity: string | null;
+  price_per_unit: string | null;
+  as_of_date: string | null;
+  description: string | null;
+};
+
+type Props<TCreated, TUpdated> = {
   currency: string;
   // Optional sub-field guidance under the price input. Gold passes a
   // "use the buyback price" hint (issue #19); stock/mutual-fund omit it.
   priceHint?: string;
-  // Mutation is owned by the parent so the same dialog drives stocks,
-  // mutual funds, and gold — each subtype's detail page wires its own
-  // useCreateInvestmentSnapshot result in.
-  mutation: UseMutationResult<TResult, unknown, CreateInvestmentSnapshotPayload>;
-  // Latest snapshot's quantity + price, when one exists. Drives the "Copy
-  // carryover" helper (issue #60): an unchanged month keeps the same factors,
-  // so the derived total carries over too. Null hides the helper.
-  carryover?: {
-    quantity: string | null;
-    price_per_unit: string | null;
-    lastSnapshotMonth: string;
-  } | null;
+  // Live snapshots of this position, newest first.
+  snapshots: SnapshotLike[] | undefined;
+  // Mutations are owned by the parent so the same dialog drives stocks,
+  // mutual funds, and gold. Create writes an empty month; update replaces a
+  // month that already has a value (ADR-0058: archived, Undo in the toast).
+  createMutation: UseMutationResult<TCreated, unknown, CreateInvestmentSnapshotPayload>;
+  updateMutation: UseMutationResult<
+    TUpdated,
+    unknown,
+    UpdateQuantityPriceSnapshotMutationVariables
+  >;
 };
 
-function emptyForm() {
-  return {
-    year_month: thisYearMonth(),
-    quantity: "",
-    price_per_unit: "",
-    as_of_date: "",
-    description: "",
-  };
-}
+const emptyForm = (yearMonth: string): QuantityPriceSnapshotFormState => ({
+  year_month: yearMonth,
+  quantity: "",
+  price_per_unit: "",
+  as_of_date: "",
+  description: "",
+});
+
+const formFrom = (s: SnapshotLike, yearMonth: string): QuantityPriceSnapshotFormState => ({
+  year_month: yearMonth,
+  quantity: s.quantity ?? "",
+  price_per_unit: s.price_per_unit ?? "",
+  as_of_date: asOfInputValue(s.as_of_date),
+  description: s.description ?? "",
+});
 
 // amount = quantity × price_per_unit. The backend re-validates and stores
 // amount alongside the two factors, so the UI sends both. Computed in
@@ -61,86 +81,64 @@ function deriveAmount(quantity: string, pricePerUnit: string): string | null {
   return (q * p).toString();
 }
 
-export function CreateQuantityPriceSnapshotDialog<TResult>({
+// "Record snapshot" for the quantity × price shape (stock, mutual fund, gold).
+// See CreateSnapshotDialog for the replace-mode behaviour (#788).
+export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   currency,
   priceHint,
-  mutation,
-  carryover,
-}: Props<TResult>) {
+  snapshots,
+  createMutation,
+  updateMutation,
+}: Props<TCreated, TUpdated>) {
   const { t } = useTranslation(["investments", "common"]);
-  const { data: me } = useSession();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+    snapshots,
+    emptyForm,
+    formFrom,
+  });
+  const mutation = existing ? updateMutation : createMutation;
 
   const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
 
-  // Seed the form from the last snapshot's factors and open the dialog. Month
-  // resets to the current month; the statement date is seeded per the user's
-  // carryover_date_mode preference (issue #105, default 'today').
-  function startCarryover() {
-    if (!carryover) return;
-    const mode = (me?.carryover_date_mode ?? "today") as CarryoverDateMode;
-    const seed = carryoverSeed(mode, carryover.lastSnapshotMonth);
-    setForm({
-      year_month: seed.yearMonth,
-      quantity: carryover.quantity ?? "",
-      price_per_unit: carryover.price_per_unit ?? "",
-      as_of_date: seed.asOfDate,
-      description: "",
-    });
+  function begin() {
+    reset();
     setOpen(true);
   }
 
   function close() {
     setOpen(false);
-    setForm(emptyForm());
-    mutation.reset();
+    createMutation.reset();
+    updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (derivedAmount === null) return;
-    mutation.mutate(
-      {
-        year_month: form.year_month,
-        amount: derivedAmount,
-        currency,
-        quantity: form.quantity,
-        price_per_unit: form.price_per_unit,
-        accrued_interest: null,
-        as_of_date: form.as_of_date || null,
-        description: form.description || null,
-      },
-      { onSuccess: close },
-    );
+    const common = {
+      amount: derivedAmount,
+      currency,
+      quantity: form.quantity,
+      price_per_unit: form.price_per_unit,
+      accrued_interest: null,
+      as_of_date: form.as_of_date || null,
+      description: form.description || null,
+    };
+    if (existing) {
+      updateMutation.mutate({ snapshotId: existing.id, payload: common }, { onSuccess: close });
+      return;
+    }
+    createMutation.mutate({ year_month: form.year_month, ...common }, { onSuccess: close });
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
-      {/* Copy carryover leads the create row as the promoted primary (#542):
-          solid variant + large mobile tap target. New drops to a secondary
-          outline unless there's no prior snapshot to copy, when it stands alone
-          as the primary. Mirrors the amount-only `CreateSnapshotDialog`. */}
-      {carryover && (
-        <Button
-          type="button"
-          size="sm"
-          onClick={startCarryover}
-          className="h-11 md:h-8"
-          data-testid="snapshot-carryover"
-        >
-          <CopyPlus className="mr-1 size-4" />
-          {t("investments:quantityPriceSnapshot.carryoverTrigger")}
-        </Button>
-      )}
+    <Dialog open={open} onOpenChange={(o) => (o ? begin() : close())}>
+      {/* The single entry point to recording a value (#788); mirrors the
+          amount-only `CreateSnapshotDialog`. */}
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant={carryover ? "outline" : "default"}
-          className={carryover ? undefined : "h-11 md:h-8"}
-        >
+        <Button size="sm" className="h-11 md:h-8" data-testid="snapshot-record">
           <Plus className="mr-1 size-4" />
-          {t("investments:quantityPriceSnapshot.trigger")}
+          {t("common:snapshot.recordTrigger")}
         </Button>
       </DialogTrigger>
       <DialogContent>
@@ -160,6 +158,22 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
             setForm={setForm}
             derivedAmount={derivedAmount}
             priceHint={priceHint}
+            onMonthChange={pickMonth}
+            replacing={existing ? formatCurrency(existing.amount, currency) : undefined}
+            lastRecorded={
+              last
+                ? {
+                    value: formatCurrency(last.amount, currency),
+                    month: formatRecordMonth(last.year_month),
+                    onApply: () =>
+                      setForm({
+                        ...form,
+                        quantity: last.quantity ?? "",
+                        price_per_unit: last.price_per_unit ?? "",
+                      }),
+                  }
+                : undefined
+            }
           />
 
           <FormError />

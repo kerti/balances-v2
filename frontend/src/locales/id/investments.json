@@ -75,8 +75,6 @@
     "actions": "Aksi snapshot"
   },
   "quantityPriceSnapshot": {
-    "trigger": "Baru",
-    "carryoverTrigger": "Salin terakhir",
     "createTitle": "Catat snapshot bulanan",
     "createDescription": "Masukkan jumlah dan harga per unit akhir bulan. Total nilai dihitung otomatis ({{currency}}).",
     "editTitle": "Ubah snapshot",
@@ -90,8 +88,6 @@
     "descriptionPlaceholder": "dari laporan broker"
   },
   "accruedInterestSnapshot": {
-    "trigger": "Baru",
-    "carryoverTrigger": "Salin terakhir",
     "createTitle": "Catat snapshot bulanan",
     "createDescription": "Masukkan total nilai akhir bulan dan komponen bunga berjalan ({{currency}}). Total sudah termasuk bunga berjalan.",
     "editTitle": "Ubah snapshot",

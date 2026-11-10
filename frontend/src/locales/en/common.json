@@ -158,8 +158,10 @@
     "noActive_other": "No active {{nounPlural}}. {{count}} inactive {{noun}} hidden — tick \"Show inactive {{nounPlural}}\" to see them."
   },
   "snapshot": {
-    "trigger": "New",
-    "carryoverTrigger": "Copy carryover",
+    "recordTrigger": "Record snapshot",
+    "replaceNotice": "{{month}} already has {{value}}, saving replaces it.",
+    "lastRecorded": "Last recorded: {{value}} ({{month}})",
+    "sameAsLast": "Same as last month",
     "createTitle": "Record monthly snapshot",
     "createDescription": "Enter the month-end value. Currency is locked to the position's native currency ({{currency}}).",
     "editTitle": "Edit snapshot",

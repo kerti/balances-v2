@@ -140,19 +140,19 @@ describe("detail mobile a11y floor (amount-only)", () => {
     }
   });
 
-  it("lays the snapshot header out as two rows, Copy carryover promoted primary (#542)", async () => {
+  it("lays the snapshot header out as two rows, Record snapshot the lone primary (#542, #788)", async () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
     );
 
-    // Row 1 — create: Copy carryover leads as the promoted primary (large tap
-    // target), New drops to the secondary outline floor.
+    // Row 1 — create: the single Record snapshot button, the promoted primary
+    // (large tap target). Copy carryover and New are gone.
     const createRow = await screen.findByTestId("snapshot-create-row");
-    const carryover = within(createRow).getByTestId("snapshot-carryover");
-    expect(carryover).toHaveClass("h-11", "md:h-8");
-    const create = within(createRow).getByRole("button", { name: /new/i });
-    expect(create).toHaveClass("max-md:min-h-11");
+    const record = within(createRow).getByRole("button", { name: "Record snapshot" });
+    expect(record).toHaveClass("h-11", "md:h-8", "max-md:min-h-11");
+    expect(within(createRow).getAllByRole("button")).toHaveLength(1);
+    expect(within(createRow).queryByTestId("snapshot-carryover")).not.toBeInTheDocument();
 
     // Row 2 — I/O: Export + Import ride the second row.
     const ioRow = screen.getByTestId("snapshot-io-row");

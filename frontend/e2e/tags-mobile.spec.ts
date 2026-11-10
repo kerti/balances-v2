@@ -44,7 +44,7 @@ test(
       .getByText(account)
       .click();
     await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
-    await page.getByRole("button", { name: "New" }).click();
+    await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await snapDialog.getByLabel("Amount (IDR)").fill("50000000");
     await snapDialog.getByLabel("Description (optional)").fill(desc);

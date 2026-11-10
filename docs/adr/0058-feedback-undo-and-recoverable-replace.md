@@ -5,13 +5,13 @@ a user sees after a write, and no way back from one. Some writes said nothing, t
 told a non-technical household to "undo via the database", and replacing a month's value destroyed
 the old one in some flows (bulk entry, import, Edit, which upsert or `PATCH` in place) but archived it in
 another (close, [[adr-0052]] §2). This ADR sets one rule for recoverability and one for feedback.
-It amends [[adr-0046]]'s "one overwrite rule": the Record month replace path is no longer a `PATCH`
+It amends [[adr-0046]]'s "one overwrite rule": the Record snapshot replace path is no longer a `PATCH`
 in place.
 
 ## Decisions
 
 1. **Replacing a Snapshot archives, never overwrites.** Every flow that changes an existing
-   Snapshot's values (Edit, a Record month replace, Move, bulk entry, import) soft-deletes the live
+   Snapshot's values (Edit, a Record snapshot replace, Move, bulk entry, import) soft-deletes the live
    row and inserts the new values in one transaction. This is [[adr-0052]] §2's close mechanism,
    generalised, **except for the link**: `supersedes` keeps its one meaning, "a close row displaced
    this", and an ordinary replace leaves it null. The write's response returns the displaced row's

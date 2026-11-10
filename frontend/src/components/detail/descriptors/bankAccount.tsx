@@ -97,12 +97,9 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
         renderCreateControls: (currency) => (
           <CreateSnapshotDialog
             currency={currency}
-            mutation={createMutation}
-            carryover={
-              snapshots?.[0]
-                ? { amount: snapshots[0].amount, lastSnapshotMonth: snapshots[0].year_month }
-                : null
-            }
+            snapshots={snapshots}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
           />
         ),
         renderImportControl: (currency) => (

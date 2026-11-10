@@ -46,7 +46,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
     // --- Mark it at 100 @ 9,500, so there is a real value to leave the books ---
-    await page.getByRole("button", { name: "New" }).click();
+    await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
     await snapDialog.getByLabel("Quantity", { exact: true }).fill("100");
