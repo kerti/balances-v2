@@ -126,6 +126,53 @@ func (q *Queries) ListFxRatesByHousehold(ctx context.Context, householdID uuid.U
 	return items, nil
 }
 
+const listUsedForeignCurrencies = `-- name: ListUsedForeignCurrencies :many
+SELECT currency::text AS currency FROM (
+    SELECT s.currency FROM asset_snapshots s
+        JOIN assets a ON a.id = s.asset_id
+        WHERE a.household_id = $1 AND a.deleted_at IS NULL AND s.deleted_at IS NULL
+    UNION
+    SELECT s.currency FROM liability_snapshots s
+        JOIN liabilities l ON l.id = s.liability_id
+        WHERE l.household_id = $1 AND l.deleted_at IS NULL AND s.deleted_at IS NULL
+    UNION
+    SELECT s.currency FROM receivable_snapshots s
+        JOIN receivables rc ON rc.id = s.receivable_id
+        WHERE rc.household_id = $1 AND rc.deleted_at IS NULL AND s.deleted_at IS NULL
+    UNION
+    SELECT s.currency FROM investment_snapshots s
+        JOIN investments i ON i.id = s.investment_id
+        WHERE i.household_id = $1 AND i.deleted_at IS NULL AND s.deleted_at IS NULL
+) used
+WHERE currency <> (SELECT h.reporting_currency FROM households h WHERE h.id = $1)
+ORDER BY currency
+`
+
+// ListUsedForeignCurrencies: every currency a live position's non-deleted
+// snapshot is recorded in, minus the household's reporting currency. The same
+// inputs the report engine converts (ListXSnapshotsForReport), so this is the
+// full set a rate can apply to - not only those currently missing one
+// (a user adds a rate for another month). Feeds the New-rate currency select.
+func (q *Queries) ListUsedForeignCurrencies(ctx context.Context, householdID uuid.UUID) ([]string, error) {
+	rows, err := q.db.Query(ctx, listUsedForeignCurrencies, householdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var currency string
+		if err := rows.Scan(&currency); err != nil {
+			return nil, err
+		}
+		items = append(items, currency)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const restoreFxRate = `-- name: RestoreFxRate :execrows
 UPDATE fx_rates
 SET deleted_at = NULL,

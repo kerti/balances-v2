@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
 import { pickMonth } from "./monthPicker";
+import { deleteFxSeedAccount, seedUsdAccount } from "./fxSeed";
 
 // Side-by-side currency display through the real UI + backend (Q15c, ADR-0010,
 // M5 slice 4). The monthly report is stored in the reporting currency; the
@@ -40,6 +41,10 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
 
+  // The rate form offers only currencies the household's items use (#860), so
+  // give it a USD item; removed again before multi-currency goes back off.
+  const usdAccountId = await seedUsdAccount(page);
+
   // --- Settings: enable multi-currency, then enter a USD rate on the
   // Exchange Rates subpage for this month ---
   await page.getByRole("link", { name: "Settings", exact: true }).click();
@@ -54,7 +59,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await fxCard.getByTestId("fx-new-rate").click();
   const fxDialog = page.getByRole("dialog");
   await pickMonth(page, fxDialog.getByTestId("fx-month"), month);
-  await fxDialog.getByLabel("Currency", { exact: true }).fill("USD");
+  await fxDialog.getByLabel("Currency", { exact: true }).selectOption("USD");
   await fxDialog.getByLabel("Rate").fill("16000");
   await fxDialog.getByRole("button", { name: "Add rate" }).click();
   await expect(page.getByRole("cell", { name: "USD" })).toBeVisible();
@@ -93,6 +98,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
+  await deleteFxSeedAccount(page, usdAccountId);
   await page.getByRole("link", { name: "Settings", exact: true }).click();
   await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toHaveCount(0);

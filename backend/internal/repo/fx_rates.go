@@ -101,3 +101,21 @@ func (r *FxRateRepo) DeleteFxRate(ctx context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
+// ListUsedForeignCurrencies returns the foreign currencies the household's live
+// positions are recorded in (reporting currency excluded), sorted. It feeds the
+// New-rate currency select; it is not limited to currencies missing a rate.
+func (r *FxRateRepo) ListUsedForeignCurrencies(ctx context.Context) ([]string, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.q.ListUsedForeignCurrencies(ctx, hid)
+	if err != nil {
+		return nil, fmt.Errorf("list used foreign currencies: %w", err)
+	}
+	if rows == nil {
+		return []string{}, nil
+	}
+	return rows, nil
+}

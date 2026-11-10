@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**225 / 225** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
+**226 / 226** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
 | Zone | Per-PR | Coverage |
 |----|----|----|
@@ -18,7 +18,7 @@
 | BONDS | 4 / 4 | [BONDS](08-bonds.md) |
 | TAGS | 6 / 6 | [TAGS](09-tags.md) |
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
-| FX | 4 / 4 | [FX](11-fx.md) |
+| FX | 5 / 5 | [FX](11-fx.md) |
 | SOFT-DELETE | 12 / 12 | [SOFT-DELETE](12-soft-delete.md) |
 | STALENESS | 4 / 4 | [STALENESS](13-staleness.md) |
 | ATTRIBUTION | 4 / 4 | [ATTRIBUTION](14-attribution.md) |

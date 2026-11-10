@@ -20,6 +20,7 @@ vi.mock("@/hooks/useBankAccounts", () => ({
   useCreateBankAccount: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }),
 }));
 vi.mock("@/hooks/useFxRates", () => ({
+  useFxCurrencies: () => ({ data: ["USD"], isPending: false }),
   useCreateFxRate: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }),
   useUpdateFxRate: () => ({ mutate: vi.fn(), reset: vi.fn(), isPending: false, error: null }),
 }));

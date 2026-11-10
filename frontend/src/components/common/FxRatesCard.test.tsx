@@ -72,9 +72,10 @@ async function openNewRate() {
   return within(await screen.findByRole("dialog"));
 }
 
-function renderCard() {
+function renderCard(currencies: string[] = ["SGD", "USD"]) {
   server.use(
     http.get("/api/fx-rates", () => HttpResponse.json(rates)),
+    http.get("/api/fx-rates/currencies", () => HttpResponse.json(currencies)),
     http.get("/api/me", () => HttpResponse.json(me)),
   );
   return renderWithProviders(<FxRatesCard />);
@@ -123,7 +124,8 @@ it("new-rate dialog: shows a live direction hint once a currency code is entered
 
   // Typing a 3-letter code spells out the direction + counterpart, with "?" for
   // the not-yet-entered rate.
-  fireEvent.change(dialog.getByLabelText("Currency"), { target: { value: "SGD" } });
+  await dialog.findByRole("option", { name: "SGD" });
+  await userEvent.selectOptions(dialog.getByLabelText("Currency"), "SGD");
   await waitFor(() =>
     expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = ? IDR"),
   );
@@ -133,6 +135,39 @@ it("new-rate dialog: shows a live direction hint once a currency code is entered
   expect(screen.getByTestId("fx-rate-hint")).toHaveTextContent("1 SGD = 12,000 IDR");
 });
 
+// covers: INV-FX-05
+it("new-rate dialog: the currency select offers the household's foreign currencies, nothing else", async () => {
+  setViewport(1280);
+  renderCard(["SGD", "USD"]);
+  await screen.findByTestId("fx-rate-table");
+  const dialog = await openNewRate();
+
+  await dialog.findByRole("option", { name: "SGD" });
+  const select = dialog.getByLabelText("Currency");
+  expect(select.tagName).toBe("SELECT");
+  expect(select).toBeEnabled();
+  const offered = within(select)
+    .getAllByRole("option")
+    .map((o) => o.textContent);
+  expect(offered).toEqual(["— select —", "SGD", "USD"]);
+  expect(dialog.queryByTestId("fx-currency-none")).not.toBeInTheDocument();
+});
+
+// covers: INV-FX-05
+it("new-rate dialog: a reporting-currency-only household gets an empty disabled select and the reason", async () => {
+  setViewport(1280);
+  renderCard([]);
+  await screen.findByTestId("fx-rate-table");
+  const dialog = await openNewRate();
+
+  const hint = await dialog.findByTestId("fx-currency-none");
+  expect(hint).toHaveTextContent("Your items only use IDR");
+  const select = dialog.getByLabelText("Currency");
+  expect(select).toBeDisabled();
+  expect(within(select).getAllByRole("option")).toHaveLength(1);
+  expect(select).toHaveAccessibleDescription(/Your items only use IDR/);
+});
+
 it("the dialog hint and the Add rate button read the same figure, phone comma included", async () => {
   setViewport(1280);
   renderCard();
@@ -140,7 +175,8 @@ it("the dialog hint and the Add rate button read the same figure, phone comma in
   const dialog = await openNewRate();
   await userEvent.click(dialog.getByLabelText("Month"));
   await userEvent.click(await screen.findByTestId("month-picker-cell-2026-02"));
-  fireEvent.change(dialog.getByLabelText("Currency"), { target: { value: "SGD" } });
+  await dialog.findByRole("option", { name: "SGD" });
+  await userEvent.selectOptions(dialog.getByLabelText("Currency"), "SGD");
   const rate = dialog.getByLabelText("Rate");
   const add = dialog.getByRole("button", { name: "Add rate" });
 

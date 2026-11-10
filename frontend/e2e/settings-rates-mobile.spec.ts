@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { pickMonth } from "./monthPicker";
+import { deleteFxSeedAccount, seedUsdAccount } from "./fxSeed";
 
 // Settings rate-table mobile divergence (#511, ADR-0050 B3b "wide table →
 // stacked cards"). The Exchange-rates and Inflation-rates subpages each split at
@@ -81,12 +82,15 @@ test(
       await expect(multi).toBeChecked();
     }
 
-    // --- Seed one monthly FX rate (desktop width) ---
+    // --- Seed one monthly FX rate (desktop width). The currency select offers
+    // only currencies the household's items use (#860), so seed a USD item
+    // first and remove it before multi-currency goes back off. ---
+    const usdAccountId = await seedUsdAccount(page);
     await page.goto("/settings/fx-rates");
     await page.getByTestId("fx-new-rate").click();
     const fxDialog = page.getByRole("dialog");
     await pickMonth(page, fxDialog.getByTestId("fx-month"), "2026-05");
-    await fxDialog.getByLabel("Currency").fill("USD");
+    await fxDialog.getByLabel("Currency").selectOption("USD");
     // The add form's live hint spells the direction + counterpart as the code is
     // typed, so the foreign-only field isn't a clueless single input.
     await expect(page.getByTestId("fx-rate-hint")).toHaveText(/^1 USD = \? /);
@@ -131,6 +135,7 @@ test(
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await expect(page.getByTestId("fx-rate-row")).toHaveCount(0);
     await page.setViewportSize({ width: 1280, height: 900 });
+    await deleteFxSeedAccount(page, usdAccountId);
     await page.goto("/settings");
     const multiOff = page.getByTestId("multi-currency-toggle");
     const restored = page.waitForResponse(
