@@ -81,6 +81,10 @@ func WriteRepo(w http.ResponseWriter, op string, err error) {
 		Write(w, http.StatusConflict, CodeUndoSlotTaken, nil)
 	case errors.Is(err, errs.ErrUndoReplacementChanged):
 		Write(w, http.StatusConflict, CodeUndoReplacementChanged, nil)
+	case errors.Is(err, errs.ErrSnapshotCloseNotMovable):
+		Write(w, http.StatusConflict, CodeSnapshotCloseNotMovable, nil)
+	case errors.Is(err, errs.ErrSnapshotMoveSameMonth):
+		Write(w, http.StatusBadRequest, CodeSnapshotMoveSameMonth, nil)
 	default:
 		slog.Error(op, "err", err)
 		Write(w, http.StatusInternalServerError, CodeInternal, nil)

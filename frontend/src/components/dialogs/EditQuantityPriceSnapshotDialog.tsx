@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { MoveSnapshotDialog } from "@/components/dialogs/MoveSnapshotDialog";
+import { snapshotGroupOf } from "@/lib/snapshotMove";
 import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
@@ -48,8 +50,8 @@ function deriveAmount(quantity: string, pricePerUnit: string): string | null {
   return (q * p).toString();
 }
 
-// year_month is not editable here (same constraint as the amount-shape edit
-// dialog — would break the (investment_id, year_month) unique index).
+// year_month is not editable here (same as the amount-shape edit dialog); Move…
+// is the way to another month (#791).
 export function EditQuantityPriceSnapshotDialog<TResult>({
   open,
   onOpenChange,
@@ -57,6 +59,8 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
   mutation,
 }: Props<TResult>) {
   const { t } = useTranslation(["investments", "common"]);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const movable = snapshotGroupOf(snapshot) !== null;
   const [form, setForm] = useState({
     year_month: snapshot.year_month,
     quantity: snapshot.quantity ?? "",
@@ -88,35 +92,44 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("investments:quantityPriceSnapshot.editTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("investments:quantityPriceSnapshot.editDescription")}
-          </DialogDescription>
-        </DialogHeader>
-        <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
-          <QuantityPriceSnapshotFormBody
-            mode="edit"
-            currency={snapshot.currency}
-            form={form}
-            setForm={setForm}
-            derivedAmount={derivedAmount}
-          />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("investments:quantityPriceSnapshot.editTitle")}</DialogTitle>
+            <DialogDescription>
+              {t("investments:quantityPriceSnapshot.editDescription")}
+            </DialogDescription>
+          </DialogHeader>
+          <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
+            <QuantityPriceSnapshotFormBody
+              mode="edit"
+              onMove={movable ? () => setMoveOpen(true) : undefined}
+              currency={snapshot.currency}
+              form={form}
+              setForm={setForm}
+              derivedAmount={derivedAmount}
+            />
 
-          <FormError />
+            <FormError />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("common:cancel")}
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
-            </Button>
-          </DialogFooter>
-        </ValidatedForm>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                {t("common:cancel")}
+              </Button>
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? t("common:actions.saving") : t("common:actions.saveChanges")}
+              </Button>
+            </DialogFooter>
+          </ValidatedForm>
+        </DialogContent>
+      </Dialog>
+      <MoveSnapshotDialog
+        open={moveOpen}
+        onOpenChange={setMoveOpen}
+        snapshot={snapshot}
+        onMoved={() => onOpenChange(false)}
+      />
+    </>
   );
 }

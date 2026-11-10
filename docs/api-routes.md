@@ -6,7 +6,7 @@ Every HTTP route the backend serves, walked from the live chi router so it canno
 
 Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and session semantics are ADR-0038/0039. See [architecture.md](architecture.md) for the request flow these routes sit in.
 
-194 routes.
+202 routes.
 
 | Method | Path |
 | ------ | ---- |
@@ -20,7 +20,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/assets/{id}/snapshots/import-template` |
 | PATCH | `/api/assets/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/assets/{id}/snapshots/{snapshotID}` |
+| POST | `/api/assets/{id}/snapshots/{snapshotID}/move` |
 | POST | `/api/assets/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/assets/{id}/snapshots/{snapshotID}/undo-move` |
 | POST | `/api/assets/{id}/snapshots/{snapshotID}/undo-replace` |
 | GET | `/api/auth/google/callback` |
 | GET | `/api/auth/google/start` |
@@ -121,7 +123,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/investments/{id}/snapshots/import-template` |
 | PATCH | `/api/investments/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/investments/{id}/snapshots/{snapshotID}` |
+| POST | `/api/investments/{id}/snapshots/{snapshotID}/move` |
 | POST | `/api/investments/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/investments/{id}/snapshots/{snapshotID}/undo-move` |
 | POST | `/api/investments/{id}/snapshots/{snapshotID}/undo-replace` |
 | GET | `/api/investments/{id}/transactions/` |
 | POST | `/api/investments/{id}/transactions/` |
@@ -147,7 +151,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/liabilities/{id}/snapshots/import-template` |
 | PATCH | `/api/liabilities/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/liabilities/{id}/snapshots/{snapshotID}` |
+| POST | `/api/liabilities/{id}/snapshots/{snapshotID}/move` |
 | POST | `/api/liabilities/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/liabilities/{id}/snapshots/{snapshotID}/undo-move` |
 | POST | `/api/liabilities/{id}/snapshots/{snapshotID}/undo-replace` |
 | POST | `/api/liabilities/{id}/undo-delete` |
 | GET | `/api/me` |
@@ -179,7 +185,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/receivables/{id}/snapshots/import-template` |
 | PATCH | `/api/receivables/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/receivables/{id}/snapshots/{snapshotID}` |
+| POST | `/api/receivables/{id}/snapshots/{snapshotID}/move` |
 | POST | `/api/receivables/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/receivables/{id}/snapshots/{snapshotID}/undo-move` |
 | POST | `/api/receivables/{id}/snapshots/{snapshotID}/undo-replace` |
 | POST | `/api/receivables/{id}/undo-delete` |
 | GET | `/api/reports/` |

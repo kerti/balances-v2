@@ -81,3 +81,19 @@ building an Undo would mean storing every cleared assignment for a toast's lifet
 keeps a red `ConfirmDialog` ("Delete tag {name}? It's removed from every item that has it.") and
 then a plain "Tag deleted" toast with no action. The tier table's Undo-only row loses "tag" and the
 Confirm-then-Undo row gains a sibling, Confirm-then-plain-toast, holding the tag.
+
+## Amendment (2026-11-10): Move to another month, and the exact undo link
+
+A move (#791) is a single-item write that crosses two months: in one transaction it archives the
+original, archives a live snapshot already in the target month if there is one, and inserts the
+same values in the target month, with the statement date cleared. Its Undo cannot use
+`undo-replace`, which assumes both rows share one month, so it has its own `undo-move` route. That
+route archives the moved row, restores the displaced target row if there was one, and restores the
+original in its own month, with the same stale guards (`UNDO_SLOT_TAKEN`,
+`UNDO_REPLACEMENT_CHANGED`). A close snapshot cannot be moved.
+
+Both undo routes check that the row they restore is the one the write archived, without a stored
+link: the archive sets `deleted_at = now()` and the insert defaults `created_at` to `now()`, and
+`now()` is fixed for a transaction, so the archived row's `deleted_at` equals the new row's
+`created_at` exactly. A restore whose timestamps don't match is refused. Every archive-and-insert
+path must therefore keep taking both timestamps from the database inside one transaction.

@@ -65,6 +65,8 @@
     "CROSS_SITE_REQUEST_BLOCKED": "Permintaan ini diblokir demi keamanan Anda. Muat ulang halaman lalu coba lagi.",
     "INFLATION_RATE_EXISTS": "Tingkat inflasi untuk bulan tersebut sudah ada.",
     "UNDO_SLOT_TAKEN": "Tidak bisa diurungkan: sudah ada data lain di tempat itu (bulan atau kurs yang sama). Hapus atau ubah dulu data tersebut.",
+    "SNAPSHOT_CLOSE_NOT_MOVABLE": "Ini adalah snapshot penutup yang dicatat saat posisi ditutup, jadi tidak bisa dipindahkan. Buka kembali posisi untuk menghapusnya.",
+    "SNAPSHOT_MOVE_SAME_MONTH": "Snapshot itu sudah berada di bulan ini.",
     "UNDO_REPLACEMENT_CHANGED": "Tidak bisa diurungkan: nilai ini sudah diubah lagi setelah diganti."
   }
 }

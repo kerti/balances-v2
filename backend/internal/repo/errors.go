@@ -32,4 +32,6 @@ var (
 	ErrSnapshotMonthExists      = errs.ErrSnapshotMonthExists
 	ErrUndoSlotTaken            = errs.ErrUndoSlotTaken
 	ErrUndoReplacementChanged   = errs.ErrUndoReplacementChanged
+	ErrSnapshotCloseNotMovable  = errs.ErrSnapshotCloseNotMovable
+	ErrSnapshotMoveSameMonth    = errs.ErrSnapshotMoveSameMonth
 )

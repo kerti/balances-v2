@@ -31,6 +31,8 @@ type Props = {
   replacing?: string;
   // The previous snapshot, for an empty month: the "Same as last month" line.
   lastRecorded?: LastRecorded;
+  // Edit only: opens the Move dialog beside the locked month (#791).
+  onMove?: () => void;
 };
 
 // Amount-only snapshot form body, shared by Record snapshot and Edit snapshot.
@@ -43,6 +45,7 @@ export function SnapshotFormBody({
   onMonthChange,
   replacing,
   lastRecorded,
+  onMove,
 }: Props) {
   const { t } = useTranslation("common");
   const s = mode === "create" ? suggest?.(form.year_month) : null;
@@ -56,6 +59,7 @@ export function SnapshotFormBody({
         asOfDate={form.as_of_date}
         onAsOfDateChange={(v) => setForm({ ...form, as_of_date: v })}
         replacing={replacing}
+        onMove={onMove}
       />
 
       <div className="grid gap-2">

@@ -103,6 +103,14 @@ const (
 	// that slot (ADR-0058 §2).
 	CodeUndoReplacementChanged Code = "UNDO_REPLACEMENT_CHANGED"
 
+	// CodeSnapshotCloseNotMovable maps repo.ErrSnapshotCloseNotMovable -> 409 — a
+	// move of a Position's close snapshot (ADR-0052 §2, ADR-0046 amendment).
+	CodeSnapshotCloseNotMovable Code = "SNAPSHOT_CLOSE_NOT_MOVABLE"
+
+	// CodeSnapshotMoveSameMonth maps repo.ErrSnapshotMoveSameMonth -> 400 — the
+	// move's target month is the snapshot's own.
+	CodeSnapshotMoveSameMonth Code = "SNAPSHOT_MOVE_SAME_MONTH"
+
 	// CodeInvalidRate is a 400 for an FX-rate input <= 0.
 	CodeInvalidRate Code = "INVALID_RATE"
 

@@ -120,7 +120,12 @@ Not ADRs because they're tactical, but load-bearing:
   every Position's `tag_id` with no record, so it keeps its confirm dialog and has no undo): `POST …/{id}/undo-delete`
   clears `deleted_at` on that one row, and each snapshot group adds `POST …/snapshots/{snapshotID}/undo-replace`
   (body `{"replacement_id"}`). Both are mounted with `httpundo.Delete` / `httpundo.Replace` beside the
-  DELETE route and answer 204. A new deletable entity needs a restore query that carries the same
+  DELETE route and answer 204. Moving a snapshot to another month (#791) is a replace across two slots,
+  so it has its own pair, mounted with `httpmove.Move` / `httpmove.Undo`: `POST …/snapshots/{id}/move`
+  (body `{"year_month"}`, 200 with the new row and `replaced_id` for the displaced target) and
+  `POST …/snapshots/{originalId}/undo-move` (body `{"moved_id","displaced_id"?}`, 204). The client
+  derives the group's routes and query keys from the row's parent id (`lib/snapshotMove.ts`), so the
+  Edit dialogs of all three shapes mount one `MoveSnapshotDialog` without a fourth mutation prop. A new deletable entity needs a restore query that carries the same
   household filter and bumps `updated_at` (the report watermark's only trigger), a repo method that maps
   `unique_violation` to `ErrUndoSlotTaken`, and the route. A position undo un-cascades children by the
   parent's own `deleted_at`, never "all archived children". Mount must stay safe on a nil `*Handlers`
