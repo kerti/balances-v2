@@ -36,6 +36,7 @@ func (h *Handlers) Mount(r chi.Router) {
 	r.Route("/income", func(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreate)
+		r.Post("/bulk", h.handleBulkCreate)
 		r.Get("/", h.handleList)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Get("/", h.handleGet)
@@ -62,6 +63,13 @@ type createReq struct {
 	OwnershipType   string           `json:"ownership_type"     validate:"required,oneof=sole joint"`
 	SoleOwnerUserID *uuid.UUID       `json:"sole_owner_user_id" validate:"required_if=OwnershipType sole"`
 	Regularity      string           `json:"regularity"         validate:"required,oneof=routine incidental"`
+}
+
+// bulkCreateReq is the copy-forward save (#846): the reviewed rows, written in
+// one transaction. The cap is a sanity bound, well above any household's
+// regular-income list.
+type bulkCreateReq struct {
+	Rows []createReq `json:"rows" validate:"required,min=1,max=100,dive"`
 }
 
 type updateReq struct {
@@ -112,6 +120,46 @@ func (h *Handlers) handleCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, row)
+}
+
+func (h *Handlers) handleBulkCreate(w http.ResponseWriter, r *http.Request) {
+	var req bulkCreateReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
+		return
+	}
+	if err := h.validate.Struct(&req); err != nil {
+		httperr.WriteValidation(w, err)
+		return
+	}
+	params := make([]repo.CreateIncomeParams, 0, len(req.Rows))
+	for _, row := range req.Rows {
+		date, ok := parseDate(row.Date)
+		if !ok {
+			writeInvalidDate(w, "date")
+			return
+		}
+		if !row.Amount.IsPositive() {
+			writeAmountMustBePositive(w)
+			return
+		}
+		params = append(params, repo.CreateIncomeParams{
+			Date:            date,
+			Amount:          *row.Amount,
+			Currency:        row.Currency,
+			Category:        row.Category,
+			Description:     row.Description,
+			OwnershipType:   row.OwnershipType,
+			SoleOwnerUserID: row.SoleOwnerUserID,
+			Regularity:      row.Regularity,
+		})
+	}
+	rows, err := h.repo.CreateIncomeBulk(r.Context(), params)
+	if err != nil {
+		httperr.WriteRepo(w, "bulk create income", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, rows)
 }
 
 func (h *Handlers) handleList(w http.ResponseWriter, r *http.Request) {

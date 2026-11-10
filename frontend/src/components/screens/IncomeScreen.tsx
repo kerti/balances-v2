@@ -7,6 +7,7 @@ import { useIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { CreateIncomeDialog } from "@/components/dialogs/CreateIncomeDialog";
+import { CopyRegularIncomeDialog } from "@/components/dialogs/CopyRegularIncomeDialog";
 import { IncomeList } from "@/components/income/IncomeList";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -158,6 +159,9 @@ export function IncomeScreen() {
             {/* Desktop: the primary action lives top-right. On mobile it moves onto
                 the filter toolbar as a compact "New" (see below) to reclaim the
                 vertical space under the page copy. */}
+            {!isMobile && data && effectiveMonth && (
+              <CopyRegularIncomeDialog income={data} month={effectiveMonth} />
+            )}
             {!isMobile && <CreateIncomeDialog />}
           </>
         }
@@ -207,7 +211,10 @@ export function IncomeScreen() {
                 the right edge; the `+` icon + primary fill keep it reading as an
                 action rather than another filter pill. */}
             {isMobile && (
-              <div className="ml-auto">
+              <div className="ml-auto flex gap-2">
+                {effectiveMonth && (
+                  <CopyRegularIncomeDialog income={data} month={effectiveMonth} compactTrigger />
+                )}
                 <CreateIncomeDialog compactTrigger />
               </div>
             )}

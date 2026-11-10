@@ -88,5 +88,16 @@
   "submit": {
     "saving": "Saving…",
     "create": "Create"
+  },
+  "copy": {
+    "trigger": "Copy last month's routine income",
+    "triggerShort": "Copy last month",
+    "title": "Copy last month's routine income",
+    "description": "Routine income from {{from}}, dated into {{to}}. Untick what you do not want and adjust any amount before saving.",
+    "alreadyThere": "Already has a routine entry like this in {{month}}. Unticked so it is not duplicated.",
+    "noneTicked": "Tick at least one row to copy.",
+    "save_zero": "Copy",
+    "save_one": "Copy {{count}} entry",
+    "save_other": "Copy {{count}} entries"
   }
 }

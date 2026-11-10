@@ -88,5 +88,15 @@
   "submit": {
     "saving": "Menyimpan…",
     "create": "Tambah"
+  },
+  "copy": {
+    "trigger": "Salin pemasukan rutin bulan lalu",
+    "triggerShort": "Salin bulan lalu",
+    "title": "Salin pemasukan rutin bulan lalu",
+    "description": "Pemasukan rutin dari {{from}}, bertanggal di {{to}}. Hilangkan centang yang tidak diinginkan dan ubah jumlah sebelum menyimpan.",
+    "alreadyThere": "Sudah ada pemasukan rutin serupa di {{month}}. Tidak dicentang agar tidak ganda.",
+    "noneTicked": "Centang setidaknya satu baris untuk disalin.",
+    "save_zero": "Salin",
+    "save_other": "Salin {{count}} entri"
   }
 }

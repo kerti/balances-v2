@@ -71,6 +71,45 @@ func (r *IncomeRepo) CreateIncome(ctx context.Context, p CreateIncomeParams) (*d
 	return &row, nil
 }
 
+// CreateIncomeBulk inserts every row in one transaction, all under the caller's
+// household: a failing row rolls the whole batch back, so a copy-forward save
+// is all-or-nothing (#846). Rows come back in input order.
+func (r *IncomeRepo) CreateIncomeBulk(ctx context.Context, ps []CreateIncomeParams) ([]db.Income, error) {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create income bulk: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+	out := make([]db.Income, 0, len(ps))
+	for _, p := range ps {
+		row, err := qtx.CreateIncome(ctx, db.CreateIncomeParams{
+			HouseholdID:     hid,
+			Date:            p.Date,
+			Amount:          p.Amount,
+			Currency:        p.Currency,
+			Category:        p.Category,
+			Description:     p.Description,
+			OwnershipType:   p.OwnershipType,
+			SoleOwnerUserID: p.SoleOwnerUserID,
+			Regularity:      p.Regularity,
+			CreatedBy:       &user,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("create income bulk: %w", err)
+		}
+		out = append(out, row)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("create income bulk: commit: %w", err)
+	}
+	return out, nil
+}
+
 func (r *IncomeRepo) GetIncome(ctx context.Context, id uuid.UUID) (*db.Income, error) {
 	_, hid, err := currentUser(ctx)
 	if err != nil {
