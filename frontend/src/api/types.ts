@@ -368,6 +368,31 @@ export type HouseholdMember = {
   email: string;
 };
 
+// GET /api/household/membership (#847) — the Settings members table. Ad hoc in
+// backend/internal/auth/membership.go like HouseholdMember above (no backing Go
+// struct to generate from). `dormant` = no Google identity and no local
+// credential: a member who can't sign in yet (ADR-0039).
+export type MembershipMember = {
+  id: string;
+  display_name: string;
+  nickname: string | null;
+  email: string;
+  joined_at: string;
+  dormant: boolean;
+};
+
+export type MembershipInvitation = {
+  id: string;
+  invited_email: string;
+  sent_at: string;
+  expires_at: string;
+};
+
+export type Membership = {
+  members: MembershipMember[];
+  invitations: MembershipInvitation[];
+};
+
 // ----- income (M4.5) ----------------------------------------------------
 
 export type IncomeCategory =

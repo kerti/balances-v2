@@ -16,7 +16,7 @@
 // Data's three flows group into one card of `SettingsPanel`s, with Erase — the
 // one irreversible action — carrying the destructive tone.
 //
-// Only `ReactivationCard` is stubbed: it fetches its dormant-member list on
+// Only `MembersCard` is stubbed: it fetches the members table on
 // mount and MSW is set to fail unhandled requests loudly. Everything else
 // renders for real.
 import { it, expect, vi } from "vitest";
@@ -30,7 +30,7 @@ import { ThemeProvider } from "@/theme/ThemeProvider";
 import { SettingsScreen } from "@/components/screens/SettingsScreen";
 import type { Me } from "@/hooks/useSession";
 
-vi.mock("@/components/common/ReactivationCard", () => ({ ReactivationCard: () => <div /> }));
+vi.mock("@/components/common/MembersCard", () => ({ MembersCard: () => <div /> }));
 
 const me: Me = {
   id: "u1",

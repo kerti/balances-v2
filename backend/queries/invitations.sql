@@ -75,3 +75,27 @@ WHERE id = $1
   AND invited_email = $2
   AND used_at IS NULL
   AND expires_at > now();
+
+-- name: ListPendingInvitationsByHousehold :many
+-- Settings → Members: the household's invitations that can still be accepted —
+-- unused AND unexpired (an expired one is dead weight, not a pending invite, so it
+-- is not listed). household_id is filtered in SQL like every tenant query; the
+-- token hash is deliberately not selected, so the plaintext can never be rebuilt
+-- from a list response. Most-recently-sent first.
+SELECT id, invited_email, created_at, expires_at
+FROM household_invitations
+WHERE household_id = $1
+  AND used_at IS NULL
+  AND expires_at > now()
+ORDER BY created_at DESC, id;
+
+-- name: RevokeInvitation :execrows
+-- Revoke = delete the unused row (#847). The link's token hash dies with it, so
+-- the preview/accept paths answer exactly as for an unknown link (409
+-- INVITATION_NO_LONGER_VALID). Scoped by household_id in SQL (a cross-household
+-- id matches zero rows) and by used_at IS NULL (an accepted invitation is history,
+-- not revocable). Zero rows affected → the caller answers 404.
+DELETE FROM household_invitations
+WHERE id = $1
+  AND household_id = $2
+  AND used_at IS NULL;
