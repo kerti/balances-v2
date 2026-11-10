@@ -3,7 +3,7 @@ import { api } from "@/api/client";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { PLAIN_TOAST_MS, toastSaved, toastWriteError } from "@/lib/writeToast";
-import type { Tag, TagBreakdownRow, TagGroup } from "@/api/types";
+import type { Tag, TagBreakdownRow, TagGroup, TaggableItem } from "@/api/types";
 
 export type TagWritePayload = { name: string; color: string };
 
@@ -26,6 +26,33 @@ export function useTagBreakdown() {
     queryKey: ["tags", "breakdown"],
     queryFn: () => api<TagBreakdownRow[]>("/api/tags/breakdown"),
     staleTime: 10_000,
+  });
+}
+
+export function useTaggableItems() {
+  return useQuery({
+    queryKey: ["tags", "items"],
+    queryFn: () => api<TaggableItem[]>("/api/tags/items"),
+    staleTime: 10_000,
+  });
+}
+
+export type AssignTagsBulkPayload = {
+  tag_id: string | null; // null clears
+  items: { group: TagGroup; position_id: string }[];
+};
+
+// useAssignTagsBulk sets (or clears) the Tag on many items in one transaction
+// (#853). The caller raises the single toast: Saved for an add, Undo for a
+// remove. Invalidates every query: a Tag shows on every list and detail page.
+export function useAssignTagsBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AssignTagsBulkPayload) =>
+      api("/api/tags/assignments/bulk", { method: "PUT", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      qc.invalidateQueries();
+    },
   });
 }
 

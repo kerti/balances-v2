@@ -32,6 +32,21 @@ export type TagBreakdownRow = {
   total: string;
 };
 
+// One Position on the Tags page's expand lists and Add-items picker
+// (GET /api/tags/items). Hand-written: it is a repo wrapper (repo.TaggableItem),
+// not a table row. currency/amount are null until the Position has a snapshot;
+// amount is a decimal string. `terminated` marks one that ended this month.
+export type TaggableItem = {
+  group: TagGroup;
+  id: string;
+  subtype: string;
+  name: string;
+  tag_id: string | null;
+  currency: string | null;
+  amount: string | null;
+  terminated: boolean;
+};
+
 export type Asset = Omit<
   Generated.Asset,
   "subtype" | "ownership_type" | "status" | "entry_type"

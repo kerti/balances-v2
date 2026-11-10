@@ -16,7 +16,7 @@
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 7 / 7 | [IMPORT](07-import.md) |
 | BONDS | 4 / 4 | [BONDS](08-bonds.md) |
-| TAGS | 5 / 5 | [TAGS](09-tags.md) |
+| TAGS | 6 / 6 | [TAGS](09-tags.md) |
 | EXPORT | 4 / 4 | [EXPORT](10-export.md) |
 | FX | 4 / 4 | [FX](11-fx.md) |
 | SOFT-DELETE | 12 / 12 | [SOFT-DELETE](12-soft-delete.md) |

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { InvestmentPieChart, type PieSlice } from "@/components/charts/InvestmentPieChart";
@@ -24,6 +25,17 @@ type Props = {
 export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
   const { t } = useTranslation(["tags"]);
   const isMobile = useIsMobile();
+  // Which rows are expanded to list their items (#853). Kept here, above the
+  // table/cards split, so resizing across 768px keeps a row open.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const toggleExpanded = (key: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  const expansion = { isExpanded: (key: string) => expanded.has(key), toggleExpanded };
 
   const slices: PieSlice[] = bd.cells
     .filter((c) => c.holdings > 0 && isChecked(cellKey(c)))
@@ -49,9 +61,9 @@ export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
         />
 
         {isMobile ? (
-          <TagBreakdownCards bd={bd} isChecked={isChecked} toggle={toggle} />
+          <TagBreakdownCards bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
         ) : (
-          <TagBreakdownTable bd={bd} isChecked={isChecked} toggle={toggle} />
+          <TagBreakdownTable bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
         )}
       </CardContent>
     </Card>

@@ -33,6 +33,49 @@
       "liabilities": "Liabilities",
       "net": "Net"
     },
-    "total": "Total"
+    "total": "Total",
+    "expand": "Show items in {{name}}",
+    "collapse": "Hide items in {{name}}"
+  },
+  "itemType": {
+    "bank_account": "Bank account",
+    "property": "Property",
+    "vehicle": "Vehicle",
+    "stock": "Stock",
+    "mutual_fund": "Mutual fund",
+    "bond": "Bond",
+    "gold": "Gold",
+    "time_deposit": "Time deposit",
+    "receivable": "Receivable",
+    "personal": "Personal liability",
+    "institutional": "Institutional liability"
+  },
+  "items": {
+    "empty": "No items carry this tag yet.",
+    "emptyUntagged": "Every item has a tag. Nothing left to sort.",
+    "add": "Add items…",
+    "addUntagged": "Add to a tag",
+    "remove": "Remove {{name}} from this tag",
+    "picker": {
+      "title": "Add items to {{tag}}",
+      "titleUntagged": "Add items to a tag",
+      "description": "Pick the items to add. An item that already has another tag moves here: an item carries one tag.",
+      "targetLabel": "Tag",
+      "targetPlaceholder": "Choose a tag",
+      "search": "Search items",
+      "empty": "No matching items.",
+      "currently": "currently: {{tag}}",
+      "noTag": "Choose a tag.",
+      "noneSelected": "Select at least one item.",
+      "save_one": "Add {{count}} item",
+      "save_other": "Add {{count}} items"
+    },
+    "toast": {
+      "added_one": "Added {{count}} item to {{tag}}",
+      "added_other": "Added {{count}} items to {{tag}}",
+      "addedMoved_one": "Added {{count}} item to {{tag}} · moved from another tag",
+      "addedMoved_other": "Added {{count}} items to {{tag}} · {{moved}} moved from another tag",
+      "removed": "Removed {{name}} from {{tag}}"
+    }
   }
 }

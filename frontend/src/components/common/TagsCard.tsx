@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Plus } from "lucide-react";
+import { AddTagItemsDialog } from "@/components/tags/AddTagItemsDialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { TagDialog } from "@/components/dialogs/TagDialog";
@@ -44,15 +46,30 @@ function TagRow({ tag }: { tag: Tag }) {
   const deleteTag = useDeleteTag();
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   return (
     <div className="flex items-center justify-between gap-2">
       <TagBadge name={tag.name} color={tag.color} />
       <RowActionsMenu
         label={t("manage.rowActions")}
+        triggerClassName="max-md:size-11"
         onEdit={() => setEditOpen(true)}
         onDelete={() => setConfirmOpen(true)}
+        extraAction={{
+          label: t("items.add"),
+          icon: <Plus />,
+          onSelect: () => setAddOpen(true),
+        }}
       />
+      {addOpen && (
+        <AddTagItemsDialog
+          tagId={tag.id}
+          tagName={tag.name}
+          open={addOpen}
+          onOpenChange={setAddOpen}
+        />
+      )}
       {editOpen && <TagDialog mode="edit" tag={tag} open={editOpen} onOpenChange={setEditOpen} />}
       <ConfirmDialog
         open={confirmOpen}

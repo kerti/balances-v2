@@ -34,7 +34,9 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Post("/", h.handleCreate)
 		r.Get("/", h.handleList)
 		r.Get("/breakdown", h.handleBreakdown)
+		r.Get("/items", h.handleItems)
 		r.Put("/assignments", h.handleAssign)
+		r.Put("/assignments/bulk", h.handleAssignBulk)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
@@ -53,6 +55,18 @@ type assignReq struct {
 	Group      string     `json:"group"       validate:"required,oneof=asset liability receivable investment"`
 	PositionID uuid.UUID  `json:"position_id" validate:"required"`
 	TagID      *uuid.UUID `json:"tag_id"` // nil unassigns
+}
+
+// assignBulkReq moves (or, with a nil tag_id, clears) many Positions in one
+// write. The cap is a sanity bound well above a household's position count.
+type assignBulkReq struct {
+	TagID *uuid.UUID         `json:"tag_id"` // nil unassigns
+	Items []assignBulkItemRq `json:"items" validate:"required,min=1,max=500,dive"`
+}
+
+type assignBulkItemRq struct {
+	Group      string    `json:"group"       validate:"required,oneof=asset liability receivable investment"`
+	PositionID uuid.UUID `json:"position_id" validate:"required"`
 }
 
 // ----- handlers -----------------------------------------------------------
@@ -135,6 +149,36 @@ func (h *Handlers) handleAssign(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handlers) handleAssignBulk(w http.ResponseWriter, r *http.Request) {
+	var req assignBulkReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
+		return
+	}
+	if err := h.validate.Struct(&req); err != nil {
+		httperr.WriteValidation(w, err)
+		return
+	}
+	items := make([]repo.TagItemRef, len(req.Items))
+	for i, it := range req.Items {
+		items[i] = repo.TagItemRef{Group: repo.TagGroup(it.Group), PositionID: it.PositionID}
+	}
+	if err := h.repo.AssignTagBatch(r.Context(), req.TagID, items); err != nil {
+		httperr.WriteRepo(w, "assign tags", err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handlers) handleItems(w http.ResponseWriter, r *http.Request) {
+	items, err := h.repo.ListTaggableItems(r.Context())
+	if err != nil {
+		httperr.WriteRepo(w, "list taggable items", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
 }
 
 // breakdownRow renames the generated row's `grp` to the wire-friendly `group`.

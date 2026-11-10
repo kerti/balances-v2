@@ -55,6 +55,8 @@ type UndoableOptions = {
   // POST that reverses the write; the body is JSON when given.
   undoPath: string;
   undoBody?: unknown;
+  // POST unless the reversing write is a PUT (a tag re-assignment, #853).
+  undoMethod?: "POST" | "PUT";
   // data-testid on the toast: "toast-deleted" or "toast-replaced", so a spec
   // can tell a delete's Undo from an edit's when both are on screen.
   testId: string;
@@ -72,6 +74,7 @@ export function toastUndoable({
   message,
   undoPath,
   undoBody,
+  undoMethod = "POST",
   testId,
   qc,
   onUndone,
@@ -83,7 +86,7 @@ export function toastUndoable({
       label: i18n.t("common:toast.undo"),
       onClick: () => {
         api(undoPath, {
-          method: "POST",
+          method: undoMethod,
           ...(undoBody === undefined ? {} : { body: JSON.stringify(undoBody) }),
         })
           .then(() => {

@@ -58,6 +58,98 @@ UPDATE investments
 SET tag_id = $1, updated_by = $4, updated_at = now()
 WHERE id = $2 AND household_id = $3 AND deleted_at IS NULL;
 
+-- ----- batch assignment (Tags page, #853) ----------------------------------
+-- Same guards as the single-item queries above, over a set of ids. The repo
+-- runs all four in one transaction and compares each group's row count with
+-- the ids it sent, so a foreign or deleted id rolls the whole batch back.
+
+-- name: AssignAssetsTag :execrows
+UPDATE assets
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL;
+
+-- name: AssignLiabilitiesTag :execrows
+UPDATE liabilities
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL;
+
+-- name: AssignReceivablesTag :execrows
+UPDATE receivables
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL;
+
+-- name: AssignInvestmentsTag :execrows
+UPDATE investments
+SET tag_id = $1, updated_by = $4, updated_at = now()
+WHERE id = ANY($2::uuid[]) AND household_id = $3 AND deleted_at IS NULL;
+
+-- ----- taggable items (Tags page expand + picker) ---------------------------
+-- Every Position the breakdown could count (same active-or-terminated-this-
+-- month rule), tagged or not, with its latest snapshot value when it has one.
+-- A Position with no snapshot yet still lists (has_value false; the repo turns
+-- currency/amount into nulls, since sqlc cannot see a LEFT JOIN null through a
+-- UNION) so it can
+-- be tagged before its first month is recorded.
+
+-- name: ListTaggableItemsByHousehold :many
+SELECT grp, id, subtype, display_name, tag_id, currency, amount, has_value, terminated_at FROM (
+    SELECT 'asset'::text AS grp, a.id AS id, a.subtype AS subtype, a.display_name AS display_name,
+           a.tag_id AS tag_id, COALESCE(ls.currency, '')::text AS currency, COALESCE(ls.amount, 0)::numeric AS amount, (ls.currency IS NOT NULL)::boolean AS has_value,
+           a.terminated_at AS terminated_at
+    FROM assets a
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM asset_snapshots
+        WHERE asset_id = a.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE a.household_id = $1 AND a.deleted_at IS NULL
+      AND (a.terminated_at IS NULL OR a.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'liability'::text, l.id, l.subtype, l.display_name,
+           l.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, l.terminated_at
+    FROM liabilities l
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM liability_snapshots
+        WHERE liability_id = l.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE l.household_id = $1 AND l.deleted_at IS NULL
+      AND (l.terminated_at IS NULL OR l.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'receivable'::text, r.id, 'receivable'::text, r.display_name,
+           r.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, r.terminated_at
+    FROM receivables r
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM receivable_snapshots
+        WHERE receivable_id = r.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE r.household_id = $1 AND r.deleted_at IS NULL
+      AND (r.terminated_at IS NULL OR r.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+
+    UNION ALL
+
+    SELECT 'investment'::text, i.id, i.subtype, i.display_name,
+           i.tag_id, COALESCE(ls.currency, '')::text, COALESCE(ls.amount, 0)::numeric, (ls.currency IS NOT NULL)::boolean, i.terminated_at
+    FROM investments i
+    LEFT JOIN LATERAL (
+        SELECT amount, currency FROM investment_snapshots
+        WHERE investment_id = i.id AND deleted_at IS NULL
+          AND year_month <= date_trunc('month', CURRENT_DATE)::date
+        ORDER BY year_month DESC LIMIT 1
+    ) ls ON true
+    WHERE i.household_id = $1 AND i.deleted_at IS NULL
+      AND (i.terminated_at IS NULL OR i.terminated_at >= date_trunc('month', CURRENT_DATE)::date)
+) items
+ORDER BY lower(display_name), id;
+
 -- ----- unassign-on-delete (clear references so the Position reads Untagged) -
 -- Soft-deleting a Tag clears it everywhere in the same transaction, so no
 -- Position is left pointing at a dead Tag (ADR-0028).

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ type Props = {
   label: string;
   onEdit: () => void;
   onDelete: () => void;
+  /** An extra first item (e.g. a tag's "Add items…"); both must be given. */
+  extraAction?: { label: string; icon: ReactNode; onSelect: () => void };
   /** Trigger button style. The desktop table row uses the bare "ghost" dots;
    *  the mobile card uses "outline" + `size-11` so the action reads as a real
    *  menu button at the tap-target floor — matching `IncomeRowMenu`. */
@@ -31,6 +34,7 @@ export function RowActionsMenu({
   label,
   onEdit,
   onDelete,
+  extraAction,
   variant = "ghost",
   triggerClassName,
 }: Props) {
@@ -51,6 +55,12 @@ export function RowActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        {extraAction && (
+          <DropdownMenuItem onClick={extraAction.onSelect} data-testid="row-extra-action">
+            {extraAction.icon}
+            {extraAction.label}
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onClick={onEdit}>
           <Pencil />
           {t("actions.edit")}

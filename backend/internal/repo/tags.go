@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
 )
@@ -218,6 +219,119 @@ func (r *TagRepo) TagBreakdown(ctx context.Context) ([]db.TagBreakdownByHousehol
 		rows = []db.TagBreakdownByHouseholdRow{}
 	}
 	return rows, nil
+}
+
+// TagItemRef names one Position in a batch assignment.
+type TagItemRef struct {
+	Group      TagGroup
+	PositionID uuid.UUID
+}
+
+// AssignTagBatch sets (or, with a nil tagID, clears) the Tag on every listed
+// Position in ONE transaction (#853). It enforces the same two-sided tenancy as
+// AssignTag: a non-nil Tag must be this household's, and each group's UPDATE
+// filters by household_id, so the affected-row count must equal the distinct ids
+// sent for that group. Any shortfall (unknown, deleted or cross-household id)
+// rolls the whole batch back as ErrNotFound: a batch is all-or-nothing.
+func (r *TagRepo) AssignTagBatch(ctx context.Context, tagID *uuid.UUID, items []TagItemRef) error {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return err
+	}
+	if tagID != nil {
+		if _, err := r.GetTag(ctx, *tagID); err != nil {
+			return err
+		}
+	}
+
+	byGroup := map[TagGroup][]uuid.UUID{}
+	seen := map[uuid.UUID]bool{}
+	for _, it := range items {
+		if !it.Group.valid() {
+			return ErrNotFound
+		}
+		if seen[it.PositionID] {
+			continue
+		}
+		seen[it.PositionID] = true
+		byGroup[it.Group] = append(byGroup[it.Group], it.PositionID)
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	for group, ids := range byGroup {
+		var rows int64
+		switch group {
+		case TagGroupAsset:
+			rows, err = qtx.AssignAssetsTag(ctx, db.AssignAssetsTagParams{TagID: tagID, Column2: ids, HouseholdID: hid, UpdatedBy: &user})
+		case TagGroupLiability:
+			rows, err = qtx.AssignLiabilitiesTag(ctx, db.AssignLiabilitiesTagParams{TagID: tagID, Column2: ids, HouseholdID: hid, UpdatedBy: &user})
+		case TagGroupReceivable:
+			rows, err = qtx.AssignReceivablesTag(ctx, db.AssignReceivablesTagParams{TagID: tagID, Column2: ids, HouseholdID: hid, UpdatedBy: &user})
+		case TagGroupInvestment:
+			rows, err = qtx.AssignInvestmentsTag(ctx, db.AssignInvestmentsTagParams{TagID: tagID, Column2: ids, HouseholdID: hid, UpdatedBy: &user})
+		}
+		if err != nil {
+			return fmt.Errorf("assign %s tags: %w", group, err)
+		}
+		if rows != int64(len(ids)) {
+			return ErrNotFound
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit: %w", err)
+	}
+	return nil
+}
+
+// TaggableItem is one Position on the Tags page's expand lists and picker.
+// Currency/Amount are nil until the Position has a snapshot. Terminated marks a
+// Position that ended this month (still in the breakdown, not "active").
+type TaggableItem struct {
+	Group      TagGroup         `json:"group"`
+	ID         uuid.UUID        `json:"id"`
+	Subtype    string           `json:"subtype"`
+	Name       string           `json:"name"`
+	TagID      *uuid.UUID       `json:"tag_id"`
+	Currency   *string          `json:"currency"`
+	Amount     *decimal.Decimal `json:"amount"`
+	Terminated bool             `json:"terminated"`
+}
+
+// ListTaggableItems returns every household Position the breakdown could count,
+// tagged or not, name-ordered.
+func (r *TagRepo) ListTaggableItems(ctx context.Context) ([]TaggableItem, error) {
+	_, hid, err := currentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.q.ListTaggableItemsByHousehold(ctx, hid)
+	if err != nil {
+		return nil, fmt.Errorf("list taggable items: %w", err)
+	}
+	out := make([]TaggableItem, len(rows))
+	for i, row := range rows {
+		it := TaggableItem{
+			Group:      TagGroup(row.Grp),
+			ID:         row.ID,
+			Subtype:    row.Subtype,
+			Name:       row.DisplayName,
+			TagID:      row.TagID,
+			Terminated: row.TerminatedAt != nil,
+		}
+		if row.HasValue {
+			cur, amt := row.Currency, row.Amount
+			it.Currency, it.Amount = &cur, &amt
+		}
+		out[i] = it
+	}
+	return out, nil
 }
 
 func isUniqueViolation(err error) bool {
