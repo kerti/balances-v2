@@ -88,7 +88,9 @@
     "rebuilding": "Membangun ulang…",
     "rebuildMonth": "Bangun ulang {{when}}",
     "rebuildAll": "Bangun ulang semua bulan",
-    "failed": "Gagal membangun ulang — coba lagi."
+    "failed": "Gagal membangun ulang — coba lagi.",
+    "doneAll": "Semua bulan dibangun ulang",
+    "doneMonth": "Bulan dibangun ulang"
   },
   "monthPicker": {
     "prevYear": "Tahun sebelumnya",

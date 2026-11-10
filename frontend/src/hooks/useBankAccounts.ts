@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { BankAccount, BankAccountListItem, EntryType } from "@/api/types";
 
@@ -52,6 +55,7 @@ export function useCreateBankAccount() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bank-accounts"] });
+      toastSaved("added");
     },
   });
 }
@@ -67,6 +71,7 @@ export function useUpdateBankAccount(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bank-accounts"] });
       qc.invalidateQueries({ queryKey: ["bank-accounts", id] });
+      toastSaved();
     },
   });
 }
@@ -89,10 +94,10 @@ export function useImportCreateBankAccount() {
 }
 
 export function useDeleteBankAccount() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/bank-accounts/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/bank-accounts/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["bank-accounts"] });
     },
   });

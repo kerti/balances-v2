@@ -5,7 +5,6 @@ import {
   EditSnapshotDialog,
   type UpdateSnapshotMutationVariables,
 } from "@/components/dialogs/EditSnapshotDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { formatCurrency, formatYearMonth, formatDate } from "@/lib/format";
 
 export type SnapshotLike = {
@@ -29,13 +28,6 @@ export function useSnapshotRow<TUpdate, TDelete>(
 ) {
   const { t } = useTranslation("common");
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  function handleConfirmDelete() {
-    deleteMutation.mutate(snapshot.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
 
   const monthText = formatYearMonth(snapshot.year_month);
   const amountText = formatCurrency(snapshot.amount, snapshot.currency);
@@ -51,17 +43,7 @@ export function useSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
-      />
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("snapshot.deleteTitle")}
-        description={t("snapshot.deleteDescription", { month: monthText })}
-        confirmLabel={t("delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
+      />{" "}
     </>
   );
 
@@ -71,7 +53,7 @@ export function useSnapshotRow<TUpdate, TDelete>(
     statementText,
     description: snapshot.description,
     onEdit: () => setEditOpen(true),
-    onDelete: () => setDeleteOpen(true),
+    onDelete: () => deleteMutation.mutate(snapshot.id),
     dialogs,
   };
 }

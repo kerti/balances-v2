@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Vehicle, VehicleListItem, EntryType } from "@/api/types";
 
@@ -58,6 +61,7 @@ export function useCreateVehicle() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
+      toastSaved("added");
     },
   });
 }
@@ -73,6 +77,7 @@ export function useUpdateVehicle(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
       qc.invalidateQueries({ queryKey: ["vehicles", id] });
+      toastSaved();
     },
   });
 }
@@ -93,10 +98,10 @@ export function useImportCreateVehicle() {
 }
 
 export function useDeleteVehicle() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/vehicles/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/vehicles/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["vehicles"] });
     },
   });

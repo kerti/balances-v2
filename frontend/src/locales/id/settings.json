@@ -55,8 +55,6 @@
     "addRate": "Tambah kurs",
     "empty": "Belum ada kurs.",
     "disabledHint": "Kurs hanya berlaku jika pelacakan multi-mata-uang aktif.",
-    "deleteTitle": "Hapus kurs {{currency}} untuk {{month}}?",
-    "deleteDescription": "Bulan berikutnya akan memakai kurs terakhir sebelumnya.",
     "disabledLink": "Buka pengaturan mata uang"
   },
   "inflation": {
@@ -67,8 +65,6 @@
     "rate": "% Tahunan",
     "addRate": "Tambah laju",
     "empty": "Belum ada angka bulanan — asumsi laju yang dipakai.",
-    "deleteTitle": "Hapus angka inflasi untuk {{month}}?",
-    "deleteDescription": "Bulan itu akan kembali memakai asumsi laju tahunan.",
     "manageRates": "Kelola laju bulanan →"
   },
   "inflationRatesPage": {

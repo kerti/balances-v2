@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type {
   Bond,
@@ -72,6 +75,7 @@ export function useCreateStock() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
+      toastSaved("added");
     },
   });
 }
@@ -87,15 +91,16 @@ export function useUpdateStock(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
       qc.invalidateQueries({ queryKey: ["stocks", id] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteStock() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/investments/stocks/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/investments/stocks/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
     },
   });
@@ -154,6 +159,7 @@ export function useCreateMutualFund() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
+      toastSaved("added");
     },
   });
 }
@@ -169,15 +175,16 @@ export function useUpdateMutualFund(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
       qc.invalidateQueries({ queryKey: ["mutual-funds", id] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteMutualFund() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/investments/mutual-funds/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/investments/mutual-funds/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
     },
   });
@@ -236,6 +243,7 @@ export function useCreateGold() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["golds"] });
+      toastSaved("added");
     },
   });
 }
@@ -251,15 +259,16 @@ export function useUpdateGold(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["golds"] });
       qc.invalidateQueries({ queryKey: ["golds", id] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteGold() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/investments/golds/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/investments/golds/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["golds"] });
     },
   });
@@ -331,6 +340,7 @@ export function useCreateBond() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
+      toastSaved("added");
     },
   });
 }
@@ -346,15 +356,16 @@ export function useUpdateBond(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
       qc.invalidateQueries({ queryKey: ["bonds", id] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteBond() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/investments/bonds/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/investments/bonds/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
     },
   });
@@ -431,6 +442,7 @@ export function useCreateTimeDeposit() {
           queryKey: ["time-deposits", variables.rolled_from_investment_id],
         });
       }
+      toastSaved("added");
     },
   });
 }
@@ -446,6 +458,7 @@ export function useUpdateTimeDeposit(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
       qc.invalidateQueries({ queryKey: ["time-deposits", id] });
+      toastSaved();
     },
   });
 }
@@ -467,15 +480,16 @@ export function useLinkRolloverSuccessor(sourceId: string) {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
       qc.invalidateQueries({ queryKey: ["time-deposits", sourceId] });
       qc.invalidateQueries({ queryKey: ["time-deposits", successorId] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteTimeDeposit() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/investments/time-deposits/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/investments/time-deposits/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
     },
   });

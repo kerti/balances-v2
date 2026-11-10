@@ -100,7 +100,6 @@ export const receivableDescriptor = {
       nounPlural: "receivables:nounPlural",
       valueLabel: "receivables:sortLatestBalance",
       rowActions: "receivables:rowActions",
-      deleteTitle: "receivables:deleteTitle",
     },
     useList: useReceivables,
     useDelete: useDeleteReceivable,
@@ -114,10 +113,6 @@ export const receivableDescriptor = {
             date: formatDate(item.receivable.due_date),
           })
         : ""),
-    deleteDescription: (item, t) =>
-      t("receivables:deleteRowDescription", {
-        name: item.receivable.display_name,
-      }),
     headlineLabelKey: "receivables:totalOutstanding",
     headlineTestId: "receivables-total",
     renderHeadlineExtra: (items) => <ReceivableCharts items={items} />,

@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**215 / 215** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
+**218 / 218** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
 | Zone | Per-PR | Coverage |
 |----|----|----|
@@ -23,8 +23,8 @@
 | STALENESS | 4 / 4 | [STALENESS](13-staleness.md) |
 | ATTRIBUTION | 4 / 4 | [ATTRIBUTION](14-attribution.md) |
 | INTEGRITY | 3 / 3 | [INTEGRITY](15-integrity.md) |
-| PRESENTATION | 16 / 16 | [PRESENTATION](16-presentation.md) |
-| JOURNEYS | 5 / 5 | [JOURNEYS](17-journeys.md) |
+| PRESENTATION | 18 / 18 | [PRESENTATION](16-presentation.md) |
+| JOURNEYS | 6 / 6 | [JOURNEYS](17-journeys.md) |
 | NOTIFICATIONS | 13 / 13 | [NOTIFICATIONS](18-notifications.md) |
 | CONTRACT | 5 / 5 | [CONTRACT](19-contract.md) |
 | BACKUP | 16 / 16 | [BACKUP](20-backup.md) |

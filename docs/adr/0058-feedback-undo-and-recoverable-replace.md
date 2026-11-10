@@ -72,3 +72,12 @@ in place.
    toast. Typed values (names, reporting currency, inflation) keep an explicit **Save**, enabled
    only when dirty; Enter saves, Esc reverts, and a toast confirms. Autosaving typed text was
    rejected: a half-typed currency code or an inflation typo would silently change every report.
+
+## Amendment (2026-11-10): tags are not Undo-tier
+
+§3 listed the tag in the Undo-only tier, but a tag has no undo. `DeleteTag` clears every item's
+`tag_id`, and soft-deleting the tag could not put those assignments back (INV-SOFT-DELETE-06), so
+building an Undo would mean storing every cleared assignment for a toast's lifetime. A tag delete
+keeps a red `ConfirmDialog` ("Delete tag {name}? It's removed from every item that has it.") and
+then a plain "Tag deleted" toast with no action. The tier table's Undo-only row loses "tag" and the
+Confirm-then-Undo row gains a sibling, Confirm-then-plain-toast, holding the tag.

@@ -77,10 +77,9 @@ test(
     await page.reload();
     await page.getByRole("button", { name: "Transaction actions" }).first().click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
 
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );

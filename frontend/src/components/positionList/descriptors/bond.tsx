@@ -30,7 +30,6 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
     nounPlural: "investments:list.nounPlural",
     valueLabel: "investments:bond.sortLatestValue",
     rowActions: "investments:bond.rowActions",
-    deleteTitle: "investments:bond.deleteTitle",
   },
   useList: useBonds,
   useDelete: useDeleteBond,
@@ -78,10 +77,6 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
       },
     },
   ],
-  deleteDescription: (item, t) =>
-    t("investments:bond.deleteRowDescription", {
-      name: item.investment.display_name,
-    }),
   headlineTestId: "bonds-total",
   renderCreateDialog: () => <CreateBondDialog />,
   renderEditDialog: (item, props) => (

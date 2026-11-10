@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { withLoadingToast } from "@/lib/writeToast";
 import { Button } from "@/components/ui/button";
 import { triggerDownload } from "@/lib/backup";
 import type { MonthlyReport } from "@/api/types";
@@ -24,13 +24,18 @@ export function ReportPdfButton({ selected }: Props) {
     setBusy(true);
     try {
       const ym = selected.year_month.slice(0, 7);
-      const res = await fetch(`/api/reports/${ym}/pdf`);
-      if (!res.ok) throw new Error("pdf export failed");
-      const blob = await res.blob();
-      triggerDownload(blob, `Balances_${ym}.pdf`);
-      toast.success(t("downloadPdf.exported"));
+      await withLoadingToast(
+        t("downloadPdf.preparing"),
+        async () => {
+          const res = await fetch(`/api/reports/${ym}/pdf`);
+          if (!res.ok) throw new Error("pdf export failed");
+          triggerDownload(await res.blob(), `Balances_${ym}.pdf`);
+        },
+        () => t("downloadPdf.exported"),
+        { fallbackError: t("downloadPdf.failed") },
+      );
     } catch {
-      toast.error(t("downloadPdf.failed"));
+      // withLoadingToast already turned the loading toast red.
     } finally {
       setBusy(false);
     }

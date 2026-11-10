@@ -74,15 +74,13 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   const row = page.getByRole("row", { name: new RegExp(desc) });
   await row.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText(account)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 
   await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
   await page.getByRole("row", { name: /USD/ }).getByRole("button", { name: "Delete" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No rates entered yet.")).toBeVisible();
 
   await page.getByRole("link", { name: "Settings" }).click();

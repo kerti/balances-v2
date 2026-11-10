@@ -171,9 +171,10 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
 
   function handleDeleteConfirm() {
     if (!deleteItem) return;
-    deleteMutation.mutate(descriptor.getId(deleteItem), {
-      onSuccess: () => setDeleteItem(null),
-    });
+    deleteMutation.mutate(
+      { id: descriptor.getId(deleteItem), name: descriptor.getName(deleteItem) },
+      { onSuccess: () => setDeleteItem(null) },
+    );
   }
 
   // Both renderers share one signature; the cast picks one without tripping
@@ -282,8 +283,10 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
         onOpenChange={(open) => {
           if (!open) setDeleteItem(null);
         }}
-        title={t(keys.deleteTitle)}
-        description={deleteItem ? descriptor.deleteDescription(deleteItem, t) : undefined}
+        title={t("common:deleteConfirm.positionTitle", {
+          name: deleteItem ? descriptor.getName(deleteItem) : "",
+        })}
+        description={t("common:deleteConfirm.positionDescription")}
         confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}

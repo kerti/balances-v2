@@ -35,7 +35,6 @@ export function liabilityDescriptor(
       nounPlural: "liabilities:nounPlural",
       valueLabel: "liabilities:sortLatestBalance",
       rowActions: "liabilities:rowActions",
-      deleteTitle: "liabilities:deleteTitle",
     },
     copyArgs: (t) => ({
       subtype: t(`liabilities:subtypes.${subtype}`).toLowerCase(),
@@ -46,10 +45,6 @@ export function liabilityDescriptor(
     entity: (item) => item.liability,
     getSnapshot: (item) => item.latest_snapshot,
     getSecondary: (item) => item.liability.counterparty_name,
-    deleteDescription: (item, t) =>
-      t("liabilities:deleteRowDescription", {
-        name: item.liability.display_name,
-      }),
     headlineLabelKey: "liabilities:totalOwed",
     headlineTestId: "liabilities-total",
     renderCreateDialog: () => <CreateLiabilityDialog defaultSubtype={subtype} />,

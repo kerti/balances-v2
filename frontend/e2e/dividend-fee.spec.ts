@@ -53,5 +53,5 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

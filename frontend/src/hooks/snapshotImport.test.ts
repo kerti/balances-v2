@@ -8,6 +8,9 @@ import { postCreateImport, type CreateImportResult } from "@/hooks/snapshotImpor
 // glue over this + react-query; the meaningful logic lives here (and the repo
 // has no jsdom/RTL runner yet, ADR-0021).
 
+// A committed import raises a loading toast; sonner needs a DOM, so stub it.
+vi.mock("sonner", async () => (await import("@/test/sonnerMock")).sonnerMock());
+
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
     status,

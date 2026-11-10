@@ -13,8 +13,8 @@
     "add": "Add",
     "edit": "Edit tag",
     "delete": "Delete tag",
-    "deleteTitle": "Delete \"{{name}}\"?",
-    "deleteDescription": "This removes the tag and unassigns it from every position. The positions themselves are not deleted."
+    "deleteTitle": "Delete tag {{name}}?",
+    "deleteDescription": "It's removed from every item that has it."
   },
   "report": {
     "title": "Tags",

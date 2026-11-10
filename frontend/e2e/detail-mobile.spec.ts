@@ -79,12 +79,11 @@ test(
     await page.getByRole("row", { name: /12,500,000|12500000/ }).first();
     await page.getByRole("button", { name: "Snapshot actions" }).first().click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(account)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
 );
 
@@ -124,6 +123,6 @@ test(
 
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(account)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
 );

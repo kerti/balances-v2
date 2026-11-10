@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toast } from "sonner";
+import i18n from "@/i18n";
+import { PLAIN_TOAST_MS, toastSaved, toastWriteError } from "@/lib/writeToast";
 import type { Tag, TagBreakdownRow, TagGroup } from "@/api/types";
 
 export type TagWritePayload = { name: string; color: string };
@@ -31,7 +34,10 @@ export function useCreateTag() {
   return useMutation({
     mutationFn: (payload: TagWritePayload) =>
       api<Tag>("/api/tags", { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tags"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tags"] });
+      toastSaved("added");
+    },
   });
 }
 
@@ -47,6 +53,7 @@ export function useUpdateTag(id: string) {
       qc.invalidateQueries({ queryKey: ["tags"] });
       // A recolour/rename changes how the breakdown renders.
       qc.invalidateQueries({ queryKey: ["tags", "breakdown"] });
+      toastSaved();
     },
   });
 }
@@ -59,7 +66,11 @@ export function useDeleteTag() {
       // Delete clears the tag off every position server-side, so any list /
       // detail / breakdown that showed it is now stale.
       qc.invalidateQueries();
+      // No Undo: the delete clears every item's assignment irrecoverably, which
+      // is why the card asks first (ADR-0058 §3, amended 2026-11-10).
+      toast.success(i18n.t("common:toast.deleted.tag"), { duration: PLAIN_TOAST_MS });
     },
+    onError: toastWriteError,
   });
 }
 

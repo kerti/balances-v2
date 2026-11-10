@@ -40,8 +40,6 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
     snapshotsTitle: "assets:vehicle.snapshotsTitle",
     snapshotsDescription: "assets:vehicle.snapshotsDescription",
     snapshotsEmpty: "assets:vehicle.snapshotsEmpty",
-    deleteTitle: "assets:vehicle.deleteTitle",
-    deleteDescription: "assets:vehicle.deleteDetailDescription",
   },
   tourKeyPrefix: "assets:vehicle",
 

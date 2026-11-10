@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { AssetSnapshot } from "@/api/types";
+import { toastSaved, toastSnapshotEdit } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
+import type { AssetSnapshot, SnapshotWrite } from "@/api/types";
 import {
   postSnapshotImport,
   snapshotImportTemplateUrl,
@@ -64,6 +67,7 @@ export function useCreateSnapshot(assetId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["snapshots", assetId] });
       invalidateAssetLists(qc);
+      toastSaved("added");
     },
   });
 }
@@ -72,25 +76,26 @@ export function useUpdateSnapshot(assetId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { snapshotId: string; payload: UpdateSnapshotPayload }) =>
-      api<AssetSnapshot>(`/api/assets/${assetId}/snapshots/${args.snapshotId}`, {
+      api<SnapshotWrite<AssetSnapshot>>(`/api/assets/${assetId}/snapshots/${args.snapshotId}`, {
         method: "PATCH",
         body: JSON.stringify(args.payload),
       }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["snapshots", assetId] });
-      invalidateAssetLists(qc);
+    onSuccess: (saved) => {
+      const invalidate = () => {
+        qc.invalidateQueries({ queryKey: ["snapshots", assetId] });
+        invalidateAssetLists(qc);
+      };
+      invalidate();
+      toastSnapshotEdit(qc, `/api/assets/${assetId}/snapshots`, saved, invalidate);
     },
   });
 }
 
 export function useDeleteSnapshot(assetId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (snapshotId: string) =>
-      api(`/api/assets/${assetId}/snapshots/${snapshotId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
+  return useUndoableDelete({
+    path: (snapshotId) => `/api/assets/${assetId}/snapshots/${snapshotId}`,
+    message: () => i18n.t("common:toast.deleted.snapshot"),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["snapshots", assetId] });
       invalidateAssetLists(qc);
     },

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toastBulkSaved } from "@/lib/writeToast";
 import { api, ApiError, isEnvelope, type ErrorEnvelope } from "@/api/client";
 
 // Bulk monthly-entry (ADR-0046) generalised across the amount-only groups
@@ -73,7 +74,8 @@ export type BulkRowError = { position_id: string; code: string };
 
 // A save either commits (ok) or is rejected with per-row errors (a 422 that is
 // data, not a thrown error — mirrors postCreateImport's 422 handling).
-export type BulkSaveResult = { ok: true; written: number } | { ok: false; errors: BulkRowError[] };
+export type BulkSaveResult =
+  { ok: true; written: number; replaced: number } | { ok: false; errors: BulkRowError[] };
 
 // The raw per-group wire row — the position id lives under a group-specific
 // key, everything else is shared. Read off `Record` so the id key can be
@@ -173,13 +175,14 @@ export function useBulkSaveSnapshots(cfg: EntryDataConfig) {
           errBody,
         );
       }
-      const ok = (await res.json()) as { written: number };
-      return { ok: true, written: ok.written };
+      const ok = (await res.json()) as { written: number; replaced: number };
+      return { ok: true, written: ok.written, replaced: ok.replaced };
     },
     onSuccess: (result) => {
       if (!result.ok) return;
       for (const key of cfg.invalidateKeys) qc.invalidateQueries({ queryKey: [...key] });
       qc.invalidateQueries({ queryKey: ["reports"] });
+      toastBulkSaved(result.written, result.replaced);
     },
   });
 }

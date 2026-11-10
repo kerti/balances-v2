@@ -76,12 +76,17 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
   const snapshots = snapshotRender.snapshots;
 
   function handleConfirmDelete() {
-    deleteMutation.mutate(assetId, {
-      onSuccess: () => {
-        setDeleteOpen(false);
-        onBack();
+    if (!entity) return;
+    const name = descriptor.getAsset(entity).display_name;
+    deleteMutation.mutate(
+      { id: assetId, name },
+      {
+        onSuccess: () => {
+          setDeleteOpen(false);
+          onBack();
+        },
       },
-    });
+    );
   }
 
   if (isPending) {
@@ -332,8 +337,8 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title={t(keys.deleteTitle)}
-        description={t(keys.deleteDescription)}
+        title={t("common:deleteConfirm.positionTitle", { name: asset.display_name })}
+        description={t("common:deleteConfirm.positionDescription")}
         confirmLabel={t("common:delete")}
         destructive
         pending={deleteMutation.isPending}

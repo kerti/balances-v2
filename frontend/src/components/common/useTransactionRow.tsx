@@ -1,7 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { EditTradeTransactionDialog } from "@/components/dialogs/EditTradeTransactionDialog";
 import { EditCashIncomeTransactionDialog } from "@/components/dialogs/EditCashIncomeTransactionDialog";
 import { EditFeeTransactionDialog } from "@/components/dialogs/EditFeeTransactionDialog";
@@ -71,7 +70,6 @@ export function useTransactionRow<TUpdate, TDelete>(
 ) {
   const { t } = useTranslation(["investments", "common"]);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const dir = impactDirection(transaction);
   const impact = impactAmount(transaction);
@@ -140,12 +138,6 @@ export function useTransactionRow<TUpdate, TDelete>(
     return `${sign}${formatCurrency(impact, transaction.currency)}`;
   }
 
-  function handleConfirmDelete() {
-    deleteMutation.mutate(transaction.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
-
   const dialogs: ReactNode = (
     <>
       {/* Edit dialogs are shape-conditional; one of them is mounted at a
@@ -191,20 +183,6 @@ export function useTransactionRow<TUpdate, TDelete>(
           mutation={updateMutation}
         />
       )}
-
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("investments:transactionRow.deleteTitle")}
-        description={t("investments:transactionRow.deleteDescription", {
-          label: label.toLowerCase(),
-          date: formatDate(transaction.transaction_date),
-        })}
-        confirmLabel={t("common:delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
     </>
   );
 
@@ -216,7 +194,7 @@ export function useTransactionRow<TUpdate, TDelete>(
     impactColorClass: impactColor(dir),
     description: transaction.description,
     onEdit: () => setEditOpen(true),
-    onDelete: () => setDeleteOpen(true),
+    onDelete: () => deleteMutation.mutate(transaction.id),
     dialogs,
   };
 }

@@ -57,7 +57,6 @@ export type NonInvestmentConfig<T> = {
   entity: (item: T) => PositionCore;
   getSnapshot: (item: T) => PositionSnapshotView | null;
   getSecondary: (item: T, t: TFunction) => ReactNode;
-  deleteDescription: (item: T, t: TFunction) => string;
   // Headline copy + an optional extra block rendered beneath it (the
   // receivables value-over-time chart).
   headlineLabelKey: string;
@@ -143,7 +142,6 @@ export function nonInvestmentDescriptor<T>(
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: config.getSecondary,
-    deleteDescription: config.deleteDescription,
     extraColumns: [ownershipColumn(config)],
     renderHeadline: (items) => <NonInvestmentHeadline items={items} config={config} />,
     renderCreateDialog: config.renderCreateDialog,

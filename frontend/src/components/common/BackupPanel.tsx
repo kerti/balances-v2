@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PanelActions, SettingsPanel } from "@/components/common/SettingsSurface";
 import { downloadBackup, type Fidelity } from "@/lib/backup";
+import { withLoadingToast } from "@/lib/writeToast";
 
 // BackupPanel is the export half of Settings → Data (ADR-0036, issue #174). The
 // fidelity toggle chooses a full (lossless, carries deleted items) or compacted
@@ -17,10 +17,14 @@ export function BackupPanel() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      await downloadBackup(fidelity);
-      toast.success(t("data.exported"));
+      await withLoadingToast(
+        t("data.exporting"),
+        () => downloadBackup(fidelity),
+        () => t("data.exported"),
+        { fallbackError: t("data.exportError") },
+      );
     } catch {
-      toast.error(t("data.exportError"));
+      // withLoadingToast already turned the loading toast red.
     } finally {
       setExporting(false);
     }

@@ -72,10 +72,9 @@ test("dashboard rebuild: per-month + rebuild-all", async ({ page }) => {
   const row = page.getByRole("row", { name: new RegExp(desc) });
   await row.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText(account)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 });

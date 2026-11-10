@@ -39,8 +39,6 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
     snapshotsTitle: "assets:bankAccount.snapshotsTitle",
     snapshotsDescription: "assets:bankAccount.snapshotsDescription",
     snapshotsEmpty: "assets:bankAccount.snapshotsEmpty",
-    deleteTitle: "assets:bankAccount.deleteTitle",
-    deleteDescription: "assets:bankAccount.deleteDetailDescription",
   },
   tourKeyPrefix: "assets:bankAccount",
 

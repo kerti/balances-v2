@@ -61,7 +61,6 @@ test(
     const row = page.getByRole("row", { name: new RegExp(desc) });
     await row.getByRole("button", { name: "Income actions" }).click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(desc)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(desc)).toHaveCount(0);
   },
 );

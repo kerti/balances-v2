@@ -21,7 +21,6 @@ export const propertyDescriptor = nonInvestmentDescriptor<PropertyListItem>({
     nounPlural: "assets:property.nounPlural",
     valueLabel: "assets:property.sortLatestValuation",
     rowActions: "assets:property.rowActions",
-    deleteTitle: "assets:property.deleteTitle",
   },
   useList: useProperties,
   useDelete: useDeleteProperty,
@@ -32,10 +31,6 @@ export const propertyDescriptor = nonInvestmentDescriptor<PropertyListItem>({
     const typeLabel = t(`assets:property.propertyTypes.${item.details.property_type}`);
     return [typeLabel, item.details.address].filter(Boolean).join(" · ") || "—";
   },
-  deleteDescription: (item, t) =>
-    t("assets:property.deleteRowDescription", {
-      name: item.asset.display_name,
-    }),
   headlineLabelKey: "assets:property.totalValue",
   headlineTestId: "properties-total",
   renderCreateDialog: () => <CreatePropertyDialog />,

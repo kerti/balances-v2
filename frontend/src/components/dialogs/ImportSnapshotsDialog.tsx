@@ -97,7 +97,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
     mutation.mutate({ file, mode }, { onSuccess: setResult });
   }
 
-  const total = result ? result.to_insert + result.to_update : 0;
+  const total = result ? result.to_insert + result.to_update + (result.unchanged ?? 0) : 0;
   const cleanPreview = result?.mode === "preview" && result.errors.length === 0 && total > 0;
   const emptyPreview = result?.mode === "preview" && result.errors.length === 0 && total === 0;
   const committed = result?.committed === true;
@@ -212,6 +212,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
                   {t("import.preview", {
                     insert: result.to_insert,
                     update: result.to_update,
+                    unchanged: result.unchanged ?? 0,
                   })}
                 </p>
               )}

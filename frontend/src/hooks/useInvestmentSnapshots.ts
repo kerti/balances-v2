@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { InvestmentSnapshot } from "@/api/types";
+import { toastSaved, toastSnapshotEdit } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
+import type { InvestmentSnapshot, SnapshotWrite } from "@/api/types";
 import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Investment snapshots live under /api/investments/{id}/snapshots — one
@@ -57,6 +60,7 @@ export function useCreateInvestmentSnapshot(investmentId: string, listKey: Inves
         queryKey: ["investment-snapshots", investmentId],
       });
       qc.invalidateQueries({ queryKey: [listKey] });
+      toastSaved("added");
     },
   });
 }
@@ -65,30 +69,32 @@ export function useUpdateInvestmentSnapshot(investmentId: string, listKey: Inves
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { snapshotId: string; payload: UpdateInvestmentSnapshotPayload }) =>
-      api<InvestmentSnapshot>(`/api/investments/${investmentId}/snapshots/${args.snapshotId}`, {
-        method: "PATCH",
-        body: JSON.stringify(args.payload),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["investment-snapshots", investmentId],
-      });
-      qc.invalidateQueries({ queryKey: [listKey] });
+      api<SnapshotWrite<InvestmentSnapshot>>(
+        `/api/investments/${investmentId}/snapshots/${args.snapshotId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(args.payload),
+        },
+      ),
+    onSuccess: (saved) => {
+      const invalidate = () => {
+        qc.invalidateQueries({
+          queryKey: ["investment-snapshots", investmentId],
+        });
+        qc.invalidateQueries({ queryKey: [listKey] });
+      };
+      invalidate();
+      toastSnapshotEdit(qc, `/api/investments/${investmentId}/snapshots`, saved, invalidate);
     },
   });
 }
 
 export function useDeleteInvestmentSnapshot(investmentId: string, listKey: InvestmentListKey) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (snapshotId: string) =>
-      api(`/api/investments/${investmentId}/snapshots/${snapshotId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["investment-snapshots", investmentId],
-      });
+  return useUndoableDelete({
+    path: (snapshotId) => `/api/investments/${investmentId}/snapshots/${snapshotId}`,
+    message: () => i18n.t("common:toast.deleted.snapshot"),
+    invalidate: (qc) => {
+      qc.invalidateQueries({ queryKey: ["investment-snapshots", investmentId] });
       qc.invalidateQueries({ queryKey: [listKey] });
     },
   });

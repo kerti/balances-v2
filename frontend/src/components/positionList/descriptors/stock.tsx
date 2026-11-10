@@ -19,7 +19,6 @@ export const stockDescriptor = investmentDescriptor<StockListItem>({
     nounPlural: "investments:list.nounPlural",
     valueLabel: "investments:stock.sortLatestValue",
     rowActions: "investments:stock.rowActions",
-    deleteTitle: "investments:stock.deleteTitle",
   },
   useList: useStocks,
   useDelete: useDeleteStock,
@@ -44,10 +43,6 @@ export const stockDescriptor = investmentDescriptor<StockListItem>({
       ),
     },
   ],
-  deleteDescription: (item, t) =>
-    t("investments:stock.deleteRowDescription", {
-      name: item.investment.display_name,
-    }),
   headlineTestId: "stocks-total",
   renderCreateDialog: () => <CreateStockDialog />,
   renderEditDialog: (item, props) => (

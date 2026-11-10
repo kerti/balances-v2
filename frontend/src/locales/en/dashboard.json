@@ -88,7 +88,9 @@
     "rebuilding": "Rebuilding…",
     "rebuildMonth": "Rebuild {{when}}",
     "rebuildAll": "Rebuild all months",
-    "failed": "Rebuild failed — try again."
+    "failed": "Rebuild failed — try again.",
+    "doneAll": "All months rebuilt",
+    "doneMonth": "Month rebuilt"
   },
   "monthPicker": {
     "prevYear": "Previous year",

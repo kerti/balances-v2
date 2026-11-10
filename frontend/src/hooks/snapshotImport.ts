@@ -1,4 +1,6 @@
 import { ApiError, isEnvelope, type ErrorEnvelope } from "@/api/client";
+import i18n from "@/i18n";
+import { withLoadingToast } from "@/lib/writeToast";
 
 // Shared core for the bulk snapshot importer, group-agnostic. Every amount-shape
 // position group (assets, liabilities, receivables) exposes the same backend
@@ -13,6 +15,7 @@ export type ImportResult = {
   committed: boolean;
   to_insert: number;
   to_update: number;
+  unchanged?: number;
   errors: ImportRowError[];
 };
 
@@ -34,6 +37,7 @@ export type CreateImportResult = {
   would_create: boolean;
   position_id?: string;
   to_insert: number;
+  unchanged?: number;
   ledger_to_insert?: number;
   field_errors: ImportFieldError[];
   errors: ImportRowError[];
@@ -45,7 +49,7 @@ export type CreateImportArgs = { file: File; mode: "preview" | "commit" };
 // endpoint (e.g. `/api/bank-accounts`). Like postSnapshotImport it bypasses the
 // JSON `api` wrapper for multipart, and treats a 422 as the "workbook had bad
 // fields/rows" outcome whose body is a valid CreateImportResult.
-export async function postCreateImport(
+async function sendCreateImport(
   base: string,
   file: File,
   mode: "preview" | "commit",
@@ -81,7 +85,7 @@ export function snapshotImportTemplateUrl(base: string): string {
 // (which would force a Content-Type and clobber the multipart boundary). A 422
 // is the "file had bad rows" outcome — its body is a valid ImportResult, so we
 // return it rather than throwing, letting the dialog render the per-row errors.
-export async function postSnapshotImport(
+async function sendSnapshotImport(
   base: string,
   file: File,
   mode: "preview" | "commit",
@@ -104,4 +108,42 @@ export async function postSnapshotImport(
     throw new ApiError(res.status, res.statusText || `import failed (${res.status})`, errBody);
   }
   return (await res.json()) as ImportResult;
+}
+
+// A committed import is long-running work: one loading toast that resolves to
+// the outcome (ADR-0058 §4). A preview is a dry-run shown in the dialog, and a
+// rejected file (422) renders its row errors there too, so both stay silent.
+export function postCreateImport(
+  base: string,
+  file: File,
+  mode: "preview" | "commit",
+): Promise<CreateImportResult> {
+  if (mode === "preview") return sendCreateImport(base, file, mode);
+  return withLoadingToast(
+    i18n.t("common:toast.importing"),
+    () => sendCreateImport(base, file, mode),
+    (r) => (r.committed ? i18n.t("common:toast.imported", { count: r.to_insert }) : null),
+    { inlineError: true },
+  );
+}
+
+export function postSnapshotImport(
+  base: string,
+  file: File,
+  mode: "preview" | "commit",
+): Promise<ImportResult> {
+  if (mode === "preview") return sendSnapshotImport(base, file, mode);
+  return withLoadingToast(
+    i18n.t("common:toast.importing"),
+    () => sendSnapshotImport(base, file, mode),
+    (r) =>
+      r.committed
+        ? i18n.t("common:toast.importedSnapshots", {
+            added: r.to_insert,
+            replaced: r.to_update,
+            unchanged: r.unchanged ?? 0,
+          })
+        : null,
+    { inlineError: true },
+  );
 }

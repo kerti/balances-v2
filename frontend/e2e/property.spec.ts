@@ -38,5 +38,5 @@ test("property create → edit → delete round-trip", async ({ page }) => {
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(editedName)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(editedName)).toHaveCount(0);
 });

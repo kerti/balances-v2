@@ -47,8 +47,6 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
     snapshotsTitle: "liabilities:snapshotsTitle",
     snapshotsDescription: "liabilities:snapshotsDescription",
     snapshotsEmpty: "liabilities:snapshotsEmpty",
-    deleteTitle: "liabilities:deleteTitle",
-    deleteDescription: "liabilities:deleteDetailDescription",
   },
   tourKeyPrefix: "liabilities",
   tourSteps: (t) =>

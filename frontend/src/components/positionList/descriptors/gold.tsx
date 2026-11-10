@@ -22,7 +22,6 @@ export const goldDescriptor = investmentDescriptor<GoldListItem>({
     nounPlural: "investments:list.nounPlural",
     valueLabel: "investments:gold.sortLatestValue",
     rowActions: "investments:gold.rowActions",
-    deleteTitle: "investments:gold.deleteTitle",
   },
   useList: useGolds,
   useDelete: useDeleteGold,
@@ -51,10 +50,6 @@ export const goldDescriptor = investmentDescriptor<GoldListItem>({
       ),
     },
   ],
-  deleteDescription: (item, t) =>
-    t("investments:gold.deleteRowDescription", {
-      name: item.investment.display_name,
-    }),
   headlineTestId: "gold-total",
   renderCreateDialog: () => <CreateGoldDialog />,
   renderEditDialog: (item, props) => (

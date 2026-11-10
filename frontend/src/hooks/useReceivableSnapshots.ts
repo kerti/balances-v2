@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { ReceivableSnapshot } from "@/api/types";
+import { toastSaved, toastSnapshotEdit } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
+import type { ReceivableSnapshot, SnapshotWrite } from "@/api/types";
 import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Receivable snapshots live under /api/receivables/{id}/snapshots — per-group
@@ -42,6 +45,7 @@ export function useCreateReceivableSnapshot(receivableId: string) {
         queryKey: ["receivable-snapshots", receivableId],
       });
       qc.invalidateQueries({ queryKey: ["receivables"] });
+      toastSaved("added");
     },
   });
 }
@@ -50,30 +54,32 @@ export function useUpdateReceivableSnapshot(receivableId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { snapshotId: string; payload: UpdateReceivableSnapshotPayload }) =>
-      api<ReceivableSnapshot>(`/api/receivables/${receivableId}/snapshots/${args.snapshotId}`, {
-        method: "PATCH",
-        body: JSON.stringify(args.payload),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["receivable-snapshots", receivableId],
-      });
-      qc.invalidateQueries({ queryKey: ["receivables"] });
+      api<SnapshotWrite<ReceivableSnapshot>>(
+        `/api/receivables/${receivableId}/snapshots/${args.snapshotId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(args.payload),
+        },
+      ),
+    onSuccess: (saved) => {
+      const invalidate = () => {
+        qc.invalidateQueries({
+          queryKey: ["receivable-snapshots", receivableId],
+        });
+        qc.invalidateQueries({ queryKey: ["receivables"] });
+      };
+      invalidate();
+      toastSnapshotEdit(qc, `/api/receivables/${receivableId}/snapshots`, saved, invalidate);
     },
   });
 }
 
 export function useDeleteReceivableSnapshot(receivableId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (snapshotId: string) =>
-      api(`/api/receivables/${receivableId}/snapshots/${snapshotId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["receivable-snapshots", receivableId],
-      });
+  return useUndoableDelete({
+    path: (snapshotId) => `/api/receivables/${receivableId}/snapshots/${snapshotId}`,
+    message: () => i18n.t("common:toast.deleted.snapshot"),
+    invalidate: (qc) => {
+      qc.invalidateQueries({ queryKey: ["receivable-snapshots", receivableId] });
       qc.invalidateQueries({ queryKey: ["receivables"] });
     },
   });

@@ -59,5 +59,5 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

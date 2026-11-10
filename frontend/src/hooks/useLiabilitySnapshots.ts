@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { LiabilitySnapshot } from "@/api/types";
+import { toastSaved, toastSnapshotEdit } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
+import type { LiabilitySnapshot, SnapshotWrite } from "@/api/types";
 import { postSnapshotImport, snapshotImportTemplateUrl, type ImportArgs } from "./snapshotImport";
 
 // Liability snapshots live under /api/liabilities/{id}/snapshots — per-group
@@ -41,6 +44,7 @@ export function useCreateLiabilitySnapshot(liabilityId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liability-snapshots", liabilityId] });
       qc.invalidateQueries({ queryKey: ["liabilities"] });
+      toastSaved("added");
     },
   });
 }
@@ -49,25 +53,29 @@ export function useUpdateLiabilitySnapshot(liabilityId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { snapshotId: string; payload: UpdateLiabilitySnapshotPayload }) =>
-      api<LiabilitySnapshot>(`/api/liabilities/${liabilityId}/snapshots/${args.snapshotId}`, {
-        method: "PATCH",
-        body: JSON.stringify(args.payload),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["liability-snapshots", liabilityId] });
-      qc.invalidateQueries({ queryKey: ["liabilities"] });
+      api<SnapshotWrite<LiabilitySnapshot>>(
+        `/api/liabilities/${liabilityId}/snapshots/${args.snapshotId}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(args.payload),
+        },
+      ),
+    onSuccess: (saved) => {
+      const invalidate = () => {
+        qc.invalidateQueries({ queryKey: ["liability-snapshots", liabilityId] });
+        qc.invalidateQueries({ queryKey: ["liabilities"] });
+      };
+      invalidate();
+      toastSnapshotEdit(qc, `/api/liabilities/${liabilityId}/snapshots`, saved, invalidate);
     },
   });
 }
 
 export function useDeleteLiabilitySnapshot(liabilityId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (snapshotId: string) =>
-      api(`/api/liabilities/${liabilityId}/snapshots/${snapshotId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
+  return useUndoableDelete({
+    path: (snapshotId) => `/api/liabilities/${liabilityId}/snapshots/${snapshotId}`,
+    message: () => i18n.t("common:toast.deleted.snapshot"),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["liability-snapshots", liabilityId] });
       qc.invalidateQueries({ queryKey: ["liabilities"] });
     },

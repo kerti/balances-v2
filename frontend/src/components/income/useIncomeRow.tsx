@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Repeat, Sparkles } from "lucide-react";
 import { EditIncomeDialog } from "@/components/dialogs/EditIncomeDialog";
 import { CreateIncomeDialog, type DuplicateSeed } from "@/components/dialogs/CreateIncomeDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { useDeleteIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
@@ -37,7 +36,6 @@ export function useIncomeRow(income: Income): IncomeRowView {
   const { t } = useTranslation(["income", "common"]);
   const [editOpen, setEditOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const deleteMutation = useDeleteIncome();
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
@@ -48,12 +46,6 @@ export function useIncomeRow(income: Income): IncomeRowView {
     members,
     currentUser,
   );
-
-  function handleConfirmDelete() {
-    deleteMutation.mutate(income.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
 
   const seed: DuplicateSeed = {
     amount: income.amount,
@@ -92,21 +84,6 @@ export function useIncomeRow(income: Income): IncomeRowView {
           hideTrigger
         />
       )}
-
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("income:deleteTitle")}
-        description={t("income:deleteDescription", {
-          category: categoryChip,
-          amount: formatCurrency(income.amount, income.currency),
-          date: formatDate(income.date),
-        })}
-        confirmLabel={t("common:delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
     </>
   );
 
@@ -121,7 +98,7 @@ export function useIncomeRow(income: Income): IncomeRowView {
     RegularityIcon: isRoutine ? Repeat : Sparkles,
     onEdit: () => setEditOpen(true),
     onDuplicate: () => setDuplicateOpen(true),
-    onDelete: () => setDeleteOpen(true),
+    onDelete: () => deleteMutation.mutate(income.id),
     dialogs,
   };
 }
