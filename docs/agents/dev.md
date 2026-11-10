@@ -115,7 +115,8 @@ application code; `react-refresh/only-export-components` is off for `components/
 `react-hooks/set-state-in-effect` is enforced everywhere else.
 
 `make check` is the pre-push gate, printing one pass/fail line per step (full output in
-`/tmp/balances-check-*.log`, read only on a ✗); e2e is excluded. Ten steps, not just the lints:
+`/tmp/balances-check/<checkout-dir>/*.log`, one dir per checkout so parallel worktrees don't clash;
+read only on a ✗); e2e is excluded. Ten steps, not just the lints:
 golangci-lint · eslint · prettier · tsc · go test · vitest · qa-matrix (advisory) · gen-ts-types ·
 api-routes · licenses. The generated-artifact steps are the ones that bite — a stale
 `docs/api-routes.md` or `generated.types.ts` blocks the push even when every lint and test passes.
