@@ -32,15 +32,21 @@ export const bankAccountDescriptor = nonInvestmentDescriptor<BankAccountListItem
   useImport: useImportCreateBankAccount,
   entity: (item) => item.asset,
   getSnapshot: (item) => item.latest_snapshot,
+  // A blank account number (#843) drops out with its separator, not a dash.
   getSecondary: (item, t) =>
-    t("assets:bankAccount.detailHeaderLine", {
-      bankName: item.details.bank_name,
-      accountNumber: item.details.account_number,
-      accountType: t(`assets:bankAccount.accountTypes.${item.details.account_type}`),
-    }),
+    t(
+      item.details.account_number
+        ? "assets:bankAccount.detailHeaderLine"
+        : "assets:bankAccount.detailHeaderLineNoNumber",
+      {
+        bankName: item.details.bank_name,
+        accountNumber: item.details.account_number,
+        accountType: t(`assets:bankAccount.accountTypes.${item.details.account_type}`),
+      },
+    ),
   headlineLabelKey: "assets:bankAccount.totalBalance",
   headlineTestId: "bank-accounts-total",
-  renderCreateDialog: () => <CreateBankAccountDialog />,
+  renderCreateDialog: (onCreated) => <CreateBankAccountDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditBankAccountDialog
       key={item.asset.id}

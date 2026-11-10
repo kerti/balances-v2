@@ -26,7 +26,7 @@ used.
 
 | Table | Fields |
 |---|---|
-| `bank_account_details` | `bank_name` (req), `account_number` (req), `account_type` (`'savings' \| 'current' \| 'other'`) |
+| `bank_account_details` | `bank_name` (req), `account_number` (opt), `account_type` (`'savings' \| 'current' \| 'other'`) |
 | `property_details` | `property_type` (`'house' \| 'apartment' \| 'land' \| 'commercial'`), `address` (opt), `acquisition_date` (opt), `acquisition_cost` (opt), `annual_appreciation_rate` (opt, signed % /yr — positive grows, negative declines; powers the frontend revaluation helper, M6 / Q8a — renamed from `annual_amortization_rate` in migration 00019) |
 | `vehicle_details` | `vehicle_type` (`'car' \| 'motorcycle' \| 'other'`), `make` (opt), `model` (opt), `year` (opt), `plate_number` (opt), `annual_depreciation_rate` (opt) |
 

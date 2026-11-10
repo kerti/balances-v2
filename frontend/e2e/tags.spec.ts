@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // User-defined Tags smoke (ADR-0028, slice 2). Covers the three surfaces:
 // the /tags page's management card (create + delete — merged onto the report
@@ -27,6 +28,7 @@ test("tags: create on /tags, assign on a position, report renders, cleanup", asy
   await createDialog.getByLabel("Bank name").fill("E2E Bank");
   await createDialog.getByLabel("Account number").fill("1234567890");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // Open its detail.
   await page

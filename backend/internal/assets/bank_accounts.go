@@ -21,7 +21,7 @@ type createBankAccountReq struct {
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id" validate:"required_if=OwnershipType sole"`
 	NativeCurrency  string     `json:"native_currency"   validate:"required,iso4217"`
 	BankName        string     `json:"bank_name"         validate:"required"`
-	AccountNumber   string     `json:"account_number"    validate:"required"`
+	AccountNumber   string     `json:"account_number"`
 	AccountType     string     `json:"account_type"      validate:"required,oneof=savings current other"`
 	// EntryType declares where the Position came from (ADR-0053 §3). Optional on
 	// the wire: absent means `acquired`, the column DEFAULT and the pre-ADR-0053
@@ -36,7 +36,7 @@ type updateBankAccountReq struct {
 	OwnershipType   string     `json:"ownership_type"     validate:"required,oneof=sole joint"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id" validate:"required_if=OwnershipType sole"`
 	BankName        string     `json:"bank_name"          validate:"required"`
-	AccountNumber   string     `json:"account_number"     validate:"required"`
+	AccountNumber   string     `json:"account_number"`
 	AccountType     string     `json:"account_type"       validate:"required,oneof=savings current other"`
 	// EntryType re-declares where the Position came from. Absent (null) leaves the
 	// existing declaration alone rather than resetting it to `acquired` — silently

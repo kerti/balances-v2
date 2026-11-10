@@ -18,7 +18,9 @@ import type { ColumnView, PositionListDescriptor, RowView } from "@/components/p
 
 type Props<T, Ctx> = {
   descriptor: PositionListDescriptor<T, Ctx>;
-  onSelect: (id: string) => void;
+  // `recordSnapshot` is set by the Create dialogs: land on the new item with
+  // the Record snapshot dialog open (#843). A row click passes nothing.
+  onSelect: (id: string, opts?: { recordSnapshot?: boolean }) => void;
 };
 
 // The generic Position list screen (ADR-0043). It owns every shared-surface
@@ -33,6 +35,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
   const { data, isPending, error } = descriptor.useList();
   const deleteMutation = descriptor.useDelete();
   const importMutation = descriptor.useImport?.();
+  const onCreated = (id: string) => onSelect(id, { recordSnapshot: true });
   const ctx = (descriptor.useExtraContext?.() ?? undefined) as Ctx;
   const rowFilter = descriptor.useRowFilter?.();
   const isMobile = useIsMobile();
@@ -192,7 +195,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
           <>
             {descriptor.renderHeaderAction?.()}
             {importMutation && <ImportPositionDialog noun={noun} mutation={importMutation} />}
-            {descriptor.renderCreateDialog()}
+            {descriptor.renderCreateDialog(onCreated)}
           </>
         }
       />
@@ -213,7 +216,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
             <CardTitle>{t(keys.emptyTitle, copyArgs)}</CardTitle>
             <CardDescription>{t(keys.emptyBody, copyArgs)}</CardDescription>
           </CardHeader>
-          <CardContent>{descriptor.renderCreateDialog()}</CardContent>
+          <CardContent>{descriptor.renderCreateDialog(onCreated)}</CardContent>
         </Card>
       )}
 

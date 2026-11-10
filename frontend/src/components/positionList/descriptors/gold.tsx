@@ -51,7 +51,7 @@ export const goldDescriptor = investmentDescriptor<GoldListItem>({
     },
   ],
   headlineTestId: "gold-total",
-  renderCreateDialog: () => <CreateGoldDialog />,
+  renderCreateDialog: (onCreated) => <CreateGoldDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditGoldDialog key={item.investment.id} gold={item} {...props} />
   ),

@@ -12,7 +12,7 @@ function emptyForm() {
   return {
     display_name: "",
     description: "",
-    ownership_type: "joint" as "sole" | "joint",
+    ownership_type: "sole" as "sole" | "joint",
     entry_type: "acquired" as EntryType,
     sole_owner_user_id: null as string | null,
     native_currency: "IDR",
@@ -22,7 +22,13 @@ function emptyForm() {
   };
 }
 
-export function CreateStockDialog() {
+type Props = {
+  // Called with the new position's id after a successful create, so the list
+  // can land on its detail page (#843).
+  onCreated?: (id: string) => void;
+};
+
+export function CreateStockDialog({ onCreated }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(emptyForm);
   const { data: user } = useSession();
@@ -45,7 +51,12 @@ export function CreateStockDialog() {
         ticker: form.ticker.toUpperCase(),
         exchange: form.exchange.toUpperCase(),
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.investment.id);
+        },
+      },
     );
   }
 

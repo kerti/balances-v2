@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Manually linking a hand-created rollover successor (issue #65). When a TD
 // matures with a rolled-over disposition, the source shows a "create rollover
@@ -27,6 +28,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await dialog.getByLabel("Maturity date").fill("2027-01-01");
   await dialog.getByLabel("Risk profile").selectOption("medium");
   await dialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
   await expect(page.getByRole("row", { name: new RegExp(successorName) })).toBeVisible();
 
   // --- Create the source TD that will roll over (auto_renew_with_interest so
@@ -43,6 +45,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await dialog.getByLabel("At maturity").selectOption("auto_renew_with_interest");
   await dialog.getByLabel("Risk profile").selectOption("medium");
   await dialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Open the source detail and record Maturity (rolled over) ---
   const sourceRow = page.getByRole("row", { name: new RegExp(sourceName) });

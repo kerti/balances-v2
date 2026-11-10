@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Manual report rebuild through the real UI + backend (ADR-0006, M5 slice 4).
 // The dashboard's rebuild footer only renders once there's a net worth to show,
@@ -19,6 +20,7 @@ test("dashboard rebuild: per-month + rebuild-all", async ({ page }) => {
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   await page
     .getByRole("row", { name: new RegExp(account) })

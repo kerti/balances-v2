@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -22,6 +23,7 @@ test("property export re-imports flawlessly", async ({ page }) => {
   await expect(createDialog.getByText("New property")).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Open the detail page ---
   await page

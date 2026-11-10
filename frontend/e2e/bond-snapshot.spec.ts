@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Accrued-interest snapshot shape through the real UI + backend (ADR-0022, the
 // third snapshot family): on a bond detail page, record a snapshot carrying
@@ -25,6 +26,7 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   await createDialog.getByLabel("Placement date").fill("2024-01-01");
   await createDialog.getByLabel("Risk profile").selectOption("medium");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Navigate to the detail page ---
   await page

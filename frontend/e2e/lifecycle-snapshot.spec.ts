@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Terminal-flip close snapshot surfaces without a reload (issue #56, the UI face
 // of INV-LIFECYCLE-03). A manual Sell on an investment routes through
@@ -29,6 +30,7 @@ test(
     await createDialog.getByLabel("Exchange").fill("IDX");
     await createDialog.getByLabel("Risk profile").selectOption("medium");
     await createDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     // --- Navigate to the detail page ---
     await page

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Capture-at-source through the real UI + backend (ADR-0052 §6, #587): closing
 // an Investment books the Sell that says where its value went, on the same
@@ -27,6 +28,7 @@ test(
     await createDialog.getByLabel("Exchange").fill("IDX");
     await createDialog.getByLabel("Risk profile").selectOption("medium");
     await createDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     await page
       .getByRole("row", { name: new RegExp(name) })

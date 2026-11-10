@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -27,6 +28,7 @@ test(
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     // --- Open the detail page and record one snapshot ---
     await page

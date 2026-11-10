@@ -12,7 +12,7 @@ function emptyForm(): TimeDepositForm {
   return {
     display_name: "",
     description: "",
-    ownership_type: "joint",
+    ownership_type: "sole",
     entry_type: "acquired",
     sole_owner_user_id: null,
     risk_profile: "",
@@ -41,6 +41,8 @@ type Props = {
   triggerLabel?: string;
   triggerVariant?: "default" | "outline";
   triggerSize?: "default" | "sm";
+  // Called with the new deposit's id after a successful create (#843).
+  onCreated?: (id: string) => void;
 };
 
 export function CreateTimeDepositDialog({
@@ -49,6 +51,7 @@ export function CreateTimeDepositDialog({
   triggerLabel,
   triggerVariant = "default",
   triggerSize = "default",
+  onCreated,
 }: Props = {}) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState<TimeDepositForm>(() => ({
@@ -88,7 +91,12 @@ export function CreateTimeDepositDialog({
         rollover_policy: form.rollover_policy,
         ...(rolledFromInvestmentId ? { rolled_from_investment_id: rolledFromInvestmentId } : {}),
       },
-      { onSuccess: close },
+      {
+        onSuccess: (created) => {
+          close();
+          onCreated?.(created.investment.id);
+        },
+      },
     );
   }
 

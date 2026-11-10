@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Tag breakdown mobile divergence (#509, ADR-0050 B2c "wide table → stacked
 // cards"). The /tags report splits at the renderer: useIsMobile (768px) mounts
@@ -38,6 +39,7 @@ test(
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
 
     await page
       .getByRole("row", { name: new RegExp(account) })

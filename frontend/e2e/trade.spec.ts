@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Investment trade + soft reconciliation through the real UI + backend (M4.4,
 // ADR-0003): create a stock, record a Buy (quantity-price transaction shape),
@@ -22,6 +23,7 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   await createDialog.getByLabel("Exchange").fill("IDX");
   await createDialog.getByLabel("Risk profile").selectOption("medium");
   await createDialog.getByRole("button", { name: "Create" }).click();
+  await backToListAfterCreate(page);
 
   // --- Navigate to the detail page ---
   await page

@@ -140,4 +140,24 @@ describe("bankAccountDescriptor detail (conformance)", () => {
     const exportLink = screen.getByTestId("bank-account-export");
     expect(exportLink).toHaveAttribute("href", expect.stringContaining("/a1/"));
   });
+
+  // covers: INV-PRESENTATION-20
+  it("renders only the bank and type when the account number is blank (#843)", async () => {
+    server.use(
+      http.get("/api/bank-accounts/a1", () =>
+        HttpResponse.json({ asset, details: { ...details, account_number: "" } }),
+      ),
+      http.get("/api/assets/a1/snapshots", () => HttpResponse.json(snapshots)),
+      http.get("/api/household/members", () => HttpResponse.json([owner])),
+      http.get("/api/me", () => HttpResponse.json(me)),
+    );
+    renderWithProviders(
+      <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+    );
+
+    const detailsCard = await screen.findByTestId("tour-details");
+    expect(within(detailsCard).getByText("Test Bank")).toBeInTheDocument();
+    expect(within(detailsCard).getByText("Savings")).toBeInTheDocument();
+    expect(within(detailsCard).queryByText("—")).not.toBeInTheDocument();
+  });
 });

@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { backToListAfterCreate } from "./landing";
 
 // Position-list mobile a11y floor (#510, ADR-0050). The ten descriptor-driven
 // list screens (ADR-0043) already diverge table→cards via PositionListScreen →
@@ -24,6 +25,7 @@ test(
     await dialog.getByLabel("Bank name").fill("E2E Bank");
     await dialog.getByLabel("Account number").fill("1234567890");
     await dialog.getByRole("button", { name: "Create" }).click();
+    await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(account) })).toBeVisible();
 
     // --- Phone width: the list renders as cards (PositionListCards) ---

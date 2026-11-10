@@ -111,7 +111,7 @@ export type PositionListDescriptor<T, Ctx = void> = {
   // (the investment risk-profile badge). Absent for types without one.
   renderTitleAccessory?: (item: T, ctx: Ctx) => ReactNode;
   renderHeadline: (items: T[]) => ReactNode;
-  renderCreateDialog: () => ReactNode;
+  renderCreateDialog: (onCreated: (id: string) => void) => ReactNode;
   // An optional action rendered in the list toolbar beside Create — used by a
   // flat group with no Home screen (Receivables) to surface its bulk
   // monthly-entry launch (ADR-0046); grouped lists launch entry from their

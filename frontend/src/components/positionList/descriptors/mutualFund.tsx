@@ -59,7 +59,7 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
     </span>
   ),
   headlineTestId: "mutual-funds-total",
-  renderCreateDialog: () => <CreateMutualFundDialog />,
+  renderCreateDialog: (onCreated) => <CreateMutualFundDialog onCreated={onCreated} />,
   renderEditDialog: (item, props) => (
     <EditMutualFundDialog key={item.investment.id} mutualFund={item} {...props} />
   ),
