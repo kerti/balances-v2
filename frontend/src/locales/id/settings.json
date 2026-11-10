@@ -43,6 +43,8 @@
     "month": "Bulan",
     "pickMonth": "Pilih bulan",
     "currency": "Mata uang",
+    "selectCurrency": "— pilih —",
+    "noForeignCurrencies": "Semua item Anda memakai {{currency}}, jadi belum ada mata uang asing yang perlu kurs. Tambahkan dulu item dalam mata uang lain.",
     "rate": "Kurs",
     "addRate": "Tambah kurs",
     "empty": "Belum ada kurs.",

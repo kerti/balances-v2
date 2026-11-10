@@ -5,10 +5,11 @@ import type { FieldMessages } from "@/components/common/ValidatedForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { NumericInput } from "@/components/common/NumericInput";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
-import { useCreateFxRate, useUpdateFxRate } from "@/hooks/useFxRates";
+import { useCreateFxRate, useFxCurrencies, useUpdateFxRate } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
 import { yearMonthsUpToNow } from "@/lib/dateLimits";
 import { fxEquation } from "@/lib/fxPair";
@@ -23,6 +24,50 @@ type Props =
 type FxRateFormState = { year_month: string; currency: string; rate: string };
 
 const empty: FxRateFormState = { year_month: "", currency: "", rate: "" };
+
+// New-rate currency: only the foreign currencies the household's items use. A
+// household on its reporting currency alone gets an empty, disabled select with
+// the reason beside it (#824: never disable silently); no free-text fallback.
+function FxCurrencySelect({
+  value,
+  onChange,
+  base,
+}: {
+  value: string;
+  onChange: (currency: string) => void;
+  base: string | undefined;
+}) {
+  const { t } = useTranslation("settings");
+  const { data: currencies, isPending } = useFxCurrencies();
+  const none = !isPending && (currencies ?? []).length === 0;
+  return (
+    <>
+      <Select
+        id="fx-currency"
+        value={value}
+        disabled={isPending || none}
+        aria-describedby={none ? "fx-currency-none" : undefined}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">{t("fx.selectCurrency")}</option>
+        {(currencies ?? []).map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+      </Select>
+      {none && (
+        <p
+          id="fx-currency-none"
+          className="text-sm text-muted-foreground"
+          data-testid="fx-currency-none"
+        >
+          {t("fx.noForeignCurrencies", { currency: base ?? "" })}
+        </p>
+      )}
+    </>
+  );
+}
 
 function FxRateFormBody({
   mode,
@@ -56,16 +101,15 @@ function FxRateFormBody({
       </div>
       <div className="grid gap-2">
         <Label htmlFor="fx-currency">{t("fx.currency")}</Label>
-        <Input
-          id="fx-currency"
-          className="uppercase"
-          maxLength={3}
-          disabled={mode === "edit"}
-          // ISO currency code — a data token, not translatable copy.
-          placeholder={"USD"}
-          value={form.currency}
-          onChange={(e) => setForm({ ...form, currency: e.target.value })}
-        />
+        {mode === "create" ? (
+          <FxCurrencySelect
+            value={form.currency}
+            onChange={(currency) => setForm({ ...form, currency })}
+            base={base}
+          />
+        ) : (
+          <Input id="fx-currency" disabled value={form.currency} />
+        )}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="fx-rate">{t("fx.rate")}</Label>

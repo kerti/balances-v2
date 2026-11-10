@@ -15,6 +15,16 @@ export function useFxRates() {
   });
 }
 
+// Foreign currencies the household's items are recorded in (reporting currency
+// excluded): the options of the New-rate currency select. Always refetched on
+// open so an item added a moment ago is offered.
+export function useFxCurrencies() {
+  return useQuery({
+    queryKey: ["fx-rates", "currencies"],
+    queryFn: () => api<string[]>("/api/fx-rates/currencies"),
+  });
+}
+
 function invalidate(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ["fx-rates"] });
 }

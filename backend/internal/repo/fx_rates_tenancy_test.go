@@ -3,9 +3,11 @@ package repo_test
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
@@ -79,4 +81,72 @@ func TestFxRateRepo_Tenancy(t *testing.T) {
 			t.Errorf("alice rates after delete: got %d, want 0", len(list))
 		}
 	})
+}
+
+// The New-rate currency select offers every foreign currency a live position
+// is recorded in (not only those missing a rate), never the reporting
+// currency, never a deleted position's, and never another household's.
+// covers: INV-FX-05, INV-TENANCY-11
+func TestFxRateRepo_ListUsedForeignCurrencies(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+
+	alice := testutil.CreateHouseholdWithUser(t, q, "AliceCur")
+	bob := testutil.CreateHouseholdWithUser(t, q, "BobCur")
+	aliceCtx := identity.WithUser(context.Background(), alice)
+	bobCtx := identity.WithUser(context.Background(), bob)
+
+	assets := repo.NewAssetRepo(tdb.Pool)
+	fx := repo.NewFxRateRepo(tdb.Pool)
+	month := ymUTC(2026, time.May)
+
+	add := func(ctx context.Context, name, cur string) uuid.UUID {
+		t.Helper()
+		acct, err := assets.CreateBankAccount(ctx, repo.CreateBankAccountParams{
+			DisplayName: name, OwnershipType: "joint", NativeCurrency: cur,
+			BankName: "Bank", AccountNumber: "1", AccountType: "savings",
+		})
+		if err != nil {
+			t.Fatalf("CreateBankAccount %s: %v", name, err)
+		}
+		if _, err := assets.CreateAssetSnapshot(ctx, repo.CreateAssetSnapshotParams{
+			AssetID: acct.Asset.ID, YearMonth: month, Amount: decimal.NewFromInt(100), Currency: cur,
+		}); err != nil {
+			t.Fatalf("CreateAssetSnapshot %s: %v", name, err)
+		}
+		return acct.Asset.ID
+	}
+
+	add(aliceCtx, "A idr", "IDR")
+	add(aliceCtx, "A usd", "USD")
+	add(aliceCtx, "A usd 2", "USD")
+	add(aliceCtx, "A sgd", "SGD")
+	gone := add(aliceCtx, "A jpy", "JPY")
+	if err := assets.DeleteBankAccount(aliceCtx, gone); err != nil {
+		t.Fatalf("DeleteBankAccount: %v", err)
+	}
+	add(bobCtx, "B eur", "EUR")
+
+	// A rate already existing for USD must not hide it: other months still need one.
+	if _, err := fx.CreateFxRate(aliceCtx, repo.CreateFxRateParams{
+		YearMonth: month, Currency: "USD", Rate: decimal.NewFromInt(16000),
+	}); err != nil {
+		t.Fatalf("CreateFxRate: %v", err)
+	}
+
+	got, err := fx.ListUsedForeignCurrencies(aliceCtx)
+	if err != nil {
+		t.Fatalf("alice: %v", err)
+	}
+	if want := []string{"SGD", "USD"}; !slices.Equal(got, want) {
+		t.Errorf("alice currencies: got %v, want %v", got, want)
+	}
+
+	gotBob, err := fx.ListUsedForeignCurrencies(bobCtx)
+	if err != nil {
+		t.Fatalf("bob: %v", err)
+	}
+	if want := []string{"EUR"}; !slices.Equal(gotBob, want) {
+		t.Errorf("bob currencies: got %v, want %v", gotBob, want)
+	}
 }

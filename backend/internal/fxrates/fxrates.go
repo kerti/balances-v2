@@ -33,6 +33,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Post("/", h.handleCreate)
 		r.Get("/", h.handleList)
+		r.Get("/currencies", h.handleCurrencies)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
@@ -84,6 +85,17 @@ func (h *Handlers) handleList(w http.ResponseWriter, r *http.Request) {
 	list, err := h.repo.ListFxRates(r.Context())
 	if err != nil {
 		httperr.WriteRepo(w, "list fx rates", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, list)
+}
+
+// handleCurrencies lists the foreign currencies the household's items use, for
+// the New-rate currency select.
+func (h *Handlers) handleCurrencies(w http.ResponseWriter, r *http.Request) {
+	list, err := h.repo.ListUsedForeignCurrencies(r.Context())
+	if err != nil {
+		httperr.WriteRepo(w, "list used foreign currencies", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, list)

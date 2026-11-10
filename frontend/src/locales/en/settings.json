@@ -43,6 +43,8 @@
     "month": "Month",
     "pickMonth": "Select month",
     "currency": "Currency",
+    "selectCurrency": "— select —",
+    "noForeignCurrencies": "Your items only use {{currency}}, so there is no foreign currency to set a rate for yet. Add an item in another currency first.",
     "rate": "Rate",
     "addRate": "Add rate",
     "empty": "No rates entered yet.",
