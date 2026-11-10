@@ -1,5 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import i18n from "@/i18n";
+import { withLoadingToast } from "@/lib/writeToast";
 import type { MonthlyReport } from "@/api/types";
 
 // The dashboard's net-worth series. The backend regenerates stale months on
@@ -20,13 +22,24 @@ export function useReports() {
 // in main.tsx (fires on every mutation success).
 export function useRebuildReports() {
   const rebuildAll = useMutation({
-    mutationFn: () => api("/api/reports/rebuild", { method: "POST" }),
+    mutationFn: () =>
+      withLoadingToast(
+        i18n.t("dashboard:rebuild.rebuilding"),
+        () => api("/api/reports/rebuild", { method: "POST" }),
+        () => i18n.t("dashboard:rebuild.doneAll"),
+        { fallbackError: i18n.t("dashboard:rebuild.failed") },
+      ),
   });
 
   const rebuildMonth = useMutation({
     // yearMonth is the report's full ISO date; the endpoint accepts YYYY-MM.
     mutationFn: (yearMonth: string) =>
-      api(`/api/reports/${yearMonth.slice(0, 7)}/rebuild`, { method: "POST" }),
+      withLoadingToast(
+        i18n.t("dashboard:rebuild.rebuilding"),
+        () => api(`/api/reports/${yearMonth.slice(0, 7)}/rebuild`, { method: "POST" }),
+        () => i18n.t("dashboard:rebuild.doneMonth"),
+        { fallbackError: i18n.t("dashboard:rebuild.failed") },
+      ),
   });
 
   return { rebuildAll, rebuildMonth };

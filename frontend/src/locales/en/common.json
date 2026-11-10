@@ -168,8 +168,6 @@
     "save": "Save snapshot",
     "statementPrefix": "statement: {{date}}",
     "rowActions": "Snapshot actions",
-    "deleteTitle": "Delete this snapshot?",
-    "deleteDescription": "The {{month}} reading will be hidden from reports. To fix a wrong month, record a new snapshot in the correct month after deleting this one.",
     "revaluationHintAppreciate": "💡 Suggested {{amount}} — based on +{{magnitude}}% appreciation /yr × {{months}} mo from {{anchor}}.",
     "revaluationHintDepreciate": "💡 Suggested {{amount}} — based on −{{magnitude}}% depreciation /yr × {{months}} mo from {{anchor}}.",
     "revaluationApply": "Apply",
@@ -216,7 +214,7 @@
     "moreErrors_one": "…and {{count}} more error in the file.",
     "moreErrors_other": "…and {{count}} more errors in the file.",
     "emptyPreview": "No rows found in the file. Add some balances and re-upload.",
-    "preview": "Ready: {{insert}} new, {{update}} updated. Nothing saved yet — press Import to confirm.",
+    "preview": "Ready: {{insert}} new, {{update}} updated, {{unchanged}} unchanged. Nothing saved yet — press Import to confirm.",
     "committed_one": "Imported {{insert}} new + {{update}} updated month.",
     "committed_other": "Imported {{insert}} new + {{update}} updated months.",
     "checkFile": "Check file",
@@ -312,5 +310,32 @@
     "title": "Page not found",
     "body": "There's nothing at this address. It may have moved, or the link may be mistyped.",
     "backToDashboard": "Back to the dashboard"
+  },
+  "toast": {
+    "saved": "Saved",
+    "added": "Added",
+    "undo": "Undo",
+    "undone": "Undone",
+    "replaced": "Saved · earlier value replaced",
+    "bulkSaved": "Saved {{count}}",
+    "bulkSavedReplaced_one": "Saved {{written}} · {{count}} replaced an earlier value",
+    "bulkSavedReplaced_other": "Saved {{written}} · {{count}} replaced earlier values",
+    "deletedNamed": "Deleted {{name}}",
+    "deleted": {
+      "snapshot": "Snapshot deleted",
+      "transaction": "Transaction deleted",
+      "income": "Income entry deleted",
+      "fxRate": "Exchange rate deleted",
+      "inflationRate": "Inflation figure deleted",
+      "tag": "Tag deleted"
+    },
+    "importing": "Importing…",
+    "imported_one": "Imported {{count}} snapshot",
+    "imported_other": "Imported {{count}} snapshots",
+    "importedSnapshots": "Imported {{added}} new · {{replaced}} replaced earlier values · {{unchanged}} unchanged"
+  },
+  "deleteConfirm": {
+    "positionTitle": "Delete {{name}}?",
+    "positionDescription": "It disappears from lists and reports."
   }
 }

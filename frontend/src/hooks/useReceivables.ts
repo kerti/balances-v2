@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Receivable, ReceivableListItem, EntryType } from "@/api/types";
 
@@ -50,6 +53,7 @@ export function useCreateReceivable() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["receivables"] });
+      toastSaved("added");
     },
   });
 }
@@ -65,6 +69,7 @@ export function useUpdateReceivable(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["receivables"] });
       qc.invalidateQueries({ queryKey: ["receivables", id] });
+      toastSaved();
     },
   });
 }
@@ -86,10 +91,10 @@ export function useImportCreateReceivable() {
 }
 
 export function useDeleteReceivable() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/receivables/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/receivables/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["receivables"] });
     },
   });

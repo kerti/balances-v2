@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { withLoadingToast } from "@/lib/writeToast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PanelActions, SettingsPanel } from "@/components/common/SettingsSurface";
@@ -64,14 +65,17 @@ export function RestorePanel() {
     if (!file || !confirmed) return;
     setCommitting(true);
     try {
-      await postRestoreCommit(file);
-      toast.success(t("data.restore.done"));
+      await withLoadingToast(
+        t("data.restore.restoring"),
+        () => postRestoreCommit(file),
+        () => t("data.restore.done"),
+        { fallbackError: t("data.restore.failed") },
+      );
       // The server re-issued our session, so we stay signed in. A full load of the
       // dashboard is the cleanest way to surface the wholly-replaced data set.
       setTimeout(() => window.location.assign("/"), 1200);
-    } catch (err) {
+    } catch {
       setCommitting(false);
-      toast.error(errorMessage(err, t("data.restore.failed")));
     }
   };
 

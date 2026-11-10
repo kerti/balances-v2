@@ -66,7 +66,7 @@ test(
     await page.getByRole("button", { name: "Delete" }).click();
     const acctConfirm = page.getByRole("alertdialog");
     await acctConfirm.getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(account)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
 );
 
@@ -117,7 +117,7 @@ test(
     await listRow.getByRole("button", { name: "Liability actions" }).click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );
 
@@ -166,7 +166,7 @@ test(
     await listRow.getByRole("button", { name: "Receivable actions" }).click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );
 
@@ -234,7 +234,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );
 
@@ -297,7 +297,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );
 
@@ -354,7 +354,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(account)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
 );
 
@@ -424,7 +424,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );
 
@@ -498,6 +498,6 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
     await page.getByRole("button", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(name)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },
 );

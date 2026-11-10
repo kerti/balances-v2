@@ -5,7 +5,6 @@ import {
   EditQuantityPriceSnapshotDialog,
   type UpdateQuantityPriceSnapshotMutationVariables,
 } from "@/components/dialogs/EditQuantityPriceSnapshotDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { formatCurrency, formatYearMonth, formatDate } from "@/lib/format";
 
 export type QuantityPriceSnapshotLike = {
@@ -34,13 +33,6 @@ export function useQuantityPriceSnapshotRow<TUpdate, TDelete>(
 ) {
   const { t } = useTranslation(["investments", "common"]);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  function handleConfirmDelete() {
-    deleteMutation.mutate(snapshot.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
 
   const monthText = formatYearMonth(snapshot.year_month);
   const amountText = formatCurrency(snapshot.amount, snapshot.currency);
@@ -60,17 +52,7 @@ export function useQuantityPriceSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
-      />
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("investments:snapshotRow.deleteTitle")}
-        description={t("investments:snapshotRow.deleteDescription", { month: monthText })}
-        confirmLabel={t("common:delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
+      />{" "}
     </>
   );
 
@@ -82,7 +64,7 @@ export function useQuantityPriceSnapshotRow<TUpdate, TDelete>(
     statementText,
     description: snapshot.description,
     onEdit: () => setEditOpen(true),
-    onDelete: () => setDeleteOpen(true),
+    onDelete: () => deleteMutation.mutate(snapshot.id),
     dialogs,
   };
 }

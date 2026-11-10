@@ -178,9 +178,6 @@ function RebuildFooter({ selected }: { selected: MonthlyReport }) {
           {rebuildAll.isPending ? t("rebuild.rebuilding") : t("rebuild.rebuildAll")}
         </button>
       </div>
-      {(rebuildAll.isError || rebuildMonth.isError) && (
-        <span className="text-destructive">{t("rebuild.failed")}</span>
-      )}
     </div>
   );
 }

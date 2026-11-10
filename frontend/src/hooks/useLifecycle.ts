@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
 import type { LifecycleGroup } from "@/lib/lifecycle";
 
 // PATCH /api/{group}/{id}/lifecycle. The backend operates on the parent table
@@ -71,6 +72,7 @@ export function useUpdateLifecycle(group: LifecycleGroup, id: string, listKey: s
       for (const queryKey of lifecycleInvalidationKeys(group, id, listKey)) {
         qc.invalidateQueries({ queryKey });
       }
+      toastSaved();
     },
   });
 }

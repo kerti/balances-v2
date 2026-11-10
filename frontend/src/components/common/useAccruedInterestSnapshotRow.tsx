@@ -5,7 +5,6 @@ import {
   EditAccruedInterestSnapshotDialog,
   type UpdateAccruedInterestSnapshotMutationVariables,
 } from "@/components/dialogs/EditAccruedInterestSnapshotDialog";
-import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { formatCurrency, formatYearMonth, formatDate } from "@/lib/format";
 
 export type AccruedInterestSnapshotLike = {
@@ -47,13 +46,6 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
 ) {
   const { t } = useTranslation(["investments", "common"]);
   const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  function handleConfirmDelete() {
-    deleteMutation.mutate(snapshot.id, {
-      onSuccess: () => setDeleteOpen(false),
-    });
-  }
 
   const p = principal(snapshot);
 
@@ -75,17 +67,7 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
-      />
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t("investments:snapshotRow.deleteTitle")}
-        description={t("investments:snapshotRow.deleteDescription", { month: monthText })}
-        confirmLabel={t("common:delete")}
-        destructive
-        pending={deleteMutation.isPending}
-        onConfirm={handleConfirmDelete}
-      />
+      />{" "}
     </>
   );
 
@@ -97,7 +79,7 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
     statementText,
     description: snapshot.description,
     onEdit: () => setEditOpen(true),
-    onDelete: () => setDeleteOpen(true),
+    onDelete: () => deleteMutation.mutate(snapshot.id),
     dialogs,
   };
 }

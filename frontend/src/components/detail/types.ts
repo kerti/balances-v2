@@ -1,3 +1,4 @@
+import type { PositionDelete } from "@/hooks/useUndoableDelete";
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -46,7 +47,7 @@ export type DetailQuery<T> = {
   error: unknown;
 };
 
-export type PositionDeleteMutation = UseMutationResult<unknown, unknown, string>;
+export type PositionDeleteMutation = UseMutationResult<unknown, unknown, PositionDelete>;
 
 // The minimal snapshot shape the *core* touches — the two fields it forwards to
 // the `SnapshotChart` and the ≥2 guard. A descriptor's `TSnap` is its concrete
@@ -169,8 +170,6 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
     snapshotsTitle: string;
     snapshotsDescription: string;
     snapshotsEmpty: string;
-    deleteTitle: string;
-    deleteDescription: string;
   };
   tourKeyPrefix: string;
   // Optional full override of the guided-tour steps, for types whose regions

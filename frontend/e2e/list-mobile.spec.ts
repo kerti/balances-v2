@@ -70,6 +70,6 @@ test(
     await row.getByRole("button", { name: "Bank account actions" }).click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-    await expect(page.getByText(account)).toHaveCount(0);
+    await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
 );

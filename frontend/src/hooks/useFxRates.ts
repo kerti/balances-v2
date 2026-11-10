@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import type { FxRate } from "@/api/types";
 
 // Manual monthly FX rates (ADR-0002). ['reports'] refresh is handled globally
@@ -21,7 +24,10 @@ export function useCreateFxRate() {
   return useMutation({
     mutationFn: (p: { year_month: string; currency: string; rate: string }) =>
       api<FxRate>("/api/fx-rates", { method: "POST", body: JSON.stringify(p) }),
-    onSuccess: () => invalidate(qc),
+    onSuccess: () => {
+      invalidate(qc);
+      toastSaved("added");
+    },
   });
 }
 
@@ -33,14 +39,17 @@ export function useUpdateFxRate() {
         method: "PATCH",
         body: JSON.stringify({ rate }),
       }),
-    onSuccess: () => invalidate(qc),
+    onSuccess: () => {
+      invalidate(qc);
+      toastSaved();
+    },
   });
 }
 
 export function useDeleteFxRate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/fx-rates/${id}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(qc),
+  return useUndoableDelete({
+    path: (id) => `/api/fx-rates/${id}`,
+    message: () => i18n.t("common:toast.deleted.fxRate"),
+    invalidate: invalidate,
   });
 }

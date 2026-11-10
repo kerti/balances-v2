@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import type { InvestmentTransaction, TransactionType, Disposition } from "@/api/types";
 
 // Transactions live under /api/investments/{id}/transactions. One shared
@@ -76,6 +79,7 @@ export function useCreateInvestmentTransaction(investmentId: string, detailKey?:
         });
         qc.invalidateQueries({ queryKey: [detailKey] });
       }
+      toastSaved("added");
     },
   });
 }
@@ -95,21 +99,17 @@ export function useUpdateInvestmentTransaction(investmentId: string) {
       qc.invalidateQueries({
         queryKey: ["investment-transactions", investmentId],
       });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteInvestmentTransaction(investmentId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (transactionId: string) =>
-      api(`/api/investments/${investmentId}/transactions/${transactionId}`, {
-        method: "DELETE",
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["investment-transactions", investmentId],
-      });
+  return useUndoableDelete({
+    path: (transactionId) => `/api/investments/${investmentId}/transactions/${transactionId}`,
+    message: () => i18n.t("common:toast.deleted.transaction"),
+    invalidate: (qc) => {
+      qc.invalidateQueries({ queryKey: ["investment-transactions", investmentId] });
     },
   });
 }

@@ -7,8 +7,6 @@
   "actions": {
     "duplicate": "Duplicate"
   },
-  "deleteTitle": "Delete this income entry?",
-  "deleteDescription": "{{category}} · {{amount}} on {{date}} will be hidden from lists and reports. This can be undone via the database, not yet via the UI.",
   "headline": {
     "total": "Total",
     "byPerson": "By person",

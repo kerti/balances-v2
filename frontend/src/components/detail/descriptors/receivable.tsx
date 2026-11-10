@@ -45,8 +45,6 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
     snapshotsTitle: "receivables:snapshotsTitle",
     snapshotsDescription: "receivables:snapshotsDescription",
     snapshotsEmpty: "receivables:snapshotsEmpty",
-    deleteTitle: "receivables:deleteTitle",
-    deleteDescription: "receivables:deleteDetailDescription",
   },
   tourKeyPrefix: "receivables",
   tourSteps: (t) =>

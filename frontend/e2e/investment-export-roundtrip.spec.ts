@@ -97,5 +97,5 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   await page.getByRole("button", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

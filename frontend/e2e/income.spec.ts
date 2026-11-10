@@ -38,8 +38,6 @@ test("income create → edit → delete round-trip", async ({ page }) => {
   // --- Delete ---
   await editedRow.getByRole("button", { name: "Income actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  const confirm = page.getByRole("alertdialog");
-  await confirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(editedDesc)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
 });

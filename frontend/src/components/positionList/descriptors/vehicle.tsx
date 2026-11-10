@@ -21,7 +21,6 @@ export const vehicleDescriptor = nonInvestmentDescriptor<VehicleListItem>({
     nounPlural: "assets:vehicle.nounPlural",
     valueLabel: "assets:vehicle.sortLatestValuation",
     rowActions: "assets:vehicle.rowActions",
-    deleteTitle: "assets:vehicle.deleteTitle",
   },
   useList: useVehicles,
   useDelete: useDeleteVehicle,
@@ -42,10 +41,6 @@ export const vehicleDescriptor = nonInvestmentDescriptor<VehicleListItem>({
         .join(" · ") || "—"
     );
   },
-  deleteDescription: (item, t) =>
-    t("assets:vehicle.deleteRowDescription", {
-      name: item.asset.display_name,
-    }),
   headlineLabelKey: "assets:vehicle.totalValue",
   headlineTestId: "vehicles-total",
   renderCreateDialog: () => <CreateVehicleDialog />,

@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import type { Income, IncomeCategory, Regularity } from "@/api/types";
 
 export type IncomePayload = {
@@ -31,6 +34,7 @@ export function useCreateIncome() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["income"] });
+      toastSaved("added");
     },
   });
 }
@@ -45,15 +49,16 @@ export function useUpdateIncome(id: string) {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["income"] });
+      toastSaved();
     },
   });
 }
 
 export function useDeleteIncome() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/income/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete({
+    path: (id) => `/api/income/${id}`,
+    message: () => i18n.t("common:toast.deleted.income"),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["income"] });
     },
   });

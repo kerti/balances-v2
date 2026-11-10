@@ -77,7 +77,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   // --- Cleanup: delete the source, then the successor ---
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText(sourceName)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(sourceName)).toHaveCount(0);
 
   await page
     .getByRole("row", { name: new RegExp(successorName) })
@@ -86,5 +86,5 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await expect(page.getByRole("heading", { level: 1, name: successorName })).toBeVisible();
   await page.getByRole("button", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByText(successorName)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(successorName)).toHaveCount(0);
 });

@@ -52,7 +52,6 @@ function makeDescriptor(
       nounPlural: "widgets",
       valueLabel: "Value",
       rowActions: "Widget actions",
-      deleteTitle: "Delete widget",
     },
     useList: () => query,
     useDelete: () =>
@@ -72,7 +71,6 @@ function makeDescriptor(
           }
         : null,
     getSecondary: (w) => w.sub,
-    deleteDescription: (w) => `Really delete ${w.label}?`,
     extraColumns: [
       {
         id: "kind",
@@ -170,7 +168,8 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     expect(await screen.findByText("Editing Alpha")).toBeInTheDocument();
   });
 
-  it("runs the delete flow through the confirm dialog", async () => {
+  // covers: INV-PRESENTATION-16
+  it("runs the delete flow through the red confirm dialog", async () => {
     const user = userEvent.setup();
     const deleteMutate = vi.fn();
     renderList(loaded(widgets), deleteMutate);
@@ -179,10 +178,13 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Delete" }));
 
     const confirm = await screen.findByRole("alertdialog");
-    expect(within(confirm).getByText("Really delete Alpha?")).toBeInTheDocument();
-    await user.click(within(confirm).getByRole("button", { name: "Delete" }));
+    expect(within(confirm).getByText("Delete Alpha?")).toBeInTheDocument();
+    expect(within(confirm).getByText("It disappears from lists and reports.")).toBeInTheDocument();
+    const deleteButton = within(confirm).getByRole("button", { name: "Delete" });
+    expect(deleteButton).toHaveAttribute("data-variant", "destructive");
+    await user.click(deleteButton);
 
-    expect(deleteMutate).toHaveBeenCalledWith("w1", expect.anything());
+    expect(deleteMutate).toHaveBeenCalledWith({ id: "w1", name: "Alpha" }, expect.anything());
   });
 
   it("drops group extras on the mobile card but keeps the shared surface", () => {

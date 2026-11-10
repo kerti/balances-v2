@@ -97,8 +97,6 @@ export const timeDepositDescriptor: DetailDescriptor<
     snapshotsTitle: "investments:snapshotsCard.title",
     snapshotsDescription: "investments:timeDeposit.snapshotsDescription",
     snapshotsEmpty: "investments:timeDeposit.snapshotsEmpty",
-    deleteTitle: "investments:timeDeposit.deleteTitle",
-    deleteDescription: "investments:timeDeposit.deleteDetailDescription",
   },
   tourKeyPrefix: "investments:timeDeposit",
   // TimeDeposit's regions exceed the five standard anchors — investment headline +

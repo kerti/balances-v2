@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Property, PropertyListItem, EntryType } from "@/api/types";
 
@@ -56,6 +59,7 @@ export function useCreateProperty() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
+      toastSaved("added");
     },
   });
 }
@@ -71,6 +75,7 @@ export function useUpdateProperty(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
       qc.invalidateQueries({ queryKey: ["properties", id] });
+      toastSaved();
     },
   });
 }
@@ -92,10 +97,10 @@ export function useImportCreateProperty() {
 }
 
 export function useDeleteProperty() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/properties/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/properties/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["properties"] });
     },
   });

@@ -80,8 +80,6 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
     snapshotsTitle: "investments:snapshotsCard.title",
     snapshotsDescription: "investments:stock.snapshotsDescription",
     snapshotsEmpty: "investments:stock.snapshotsEmpty",
-    deleteTitle: "investments:stock.deleteTitle",
-    deleteDescription: "investments:stock.deleteDetailDescription",
   },
   tourKeyPrefix: "investments:stock",
   // Stock's regions exceed the five standard anchors — it adds the investment

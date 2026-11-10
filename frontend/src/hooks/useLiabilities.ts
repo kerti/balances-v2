@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete, type PositionDelete } from "@/hooks/useUndoableDelete";
 import { postCreateImport, type CreateImportArgs } from "@/hooks/snapshotImport";
 import type { Liability, LiabilityListItem, EntryType } from "@/api/types";
 
@@ -62,6 +65,7 @@ export function useCreateLiability() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
+      toastSaved("added");
     },
   });
 }
@@ -77,6 +81,7 @@ export function useUpdateLiability(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
       qc.invalidateQueries({ queryKey: ["liabilities", id] });
+      toastSaved();
     },
   });
 }
@@ -99,10 +104,10 @@ export function useImportCreateLiability() {
 }
 
 export function useDeleteLiability() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/liabilities/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+  return useUndoableDelete<PositionDelete>({
+    path: ({ id }) => `/api/liabilities/${id}`,
+    message: ({ name }) => i18n.t("common:toast.deletedNamed", { name }),
+    invalidate: (qc) => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
     },
   });

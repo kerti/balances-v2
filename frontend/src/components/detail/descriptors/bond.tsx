@@ -83,8 +83,6 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     snapshotsTitle: "investments:snapshotsCard.title",
     snapshotsDescription: "investments:bond.snapshotsDescription",
     snapshotsEmpty: "investments:bond.snapshotsEmpty",
-    deleteTitle: "investments:bond.deleteTitle",
-    deleteDescription: "investments:bond.deleteDetailDescription",
   },
   tourKeyPrefix: "investments:bond",
   // Bond's regions exceed the five standard anchors — investment headline +

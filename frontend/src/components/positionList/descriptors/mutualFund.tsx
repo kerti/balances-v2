@@ -24,7 +24,6 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
     nounPlural: "investments:list.nounPlural",
     valueLabel: "investments:mutualFund.sortLatestValue",
     rowActions: "investments:mutualFund.rowActions",
-    deleteTitle: "investments:mutualFund.deleteTitle",
   },
   useList: useMutualFunds,
   useDelete: useDeleteMutualFund,
@@ -59,10 +58,6 @@ export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
       {i18n.t(`investments:mutualFund.fundType.short.${item.details.fund_type}`)}
     </span>
   ),
-  deleteDescription: (item, t) =>
-    t("investments:mutualFund.deleteRowDescription", {
-      name: item.investment.display_name,
-    }),
   headlineTestId: "mutual-funds-total",
   renderCreateDialog: () => <CreateMutualFundDialog />,
   renderEditDialog: (item, props) => (

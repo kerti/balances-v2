@@ -26,7 +26,6 @@ export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
     nounPlural: "investments:list.nounPlural",
     valueLabel: "investments:timeDeposit.sortLatestValue",
     rowActions: "investments:timeDeposit.rowActions",
-    deleteTitle: "investments:timeDeposit.deleteTitle",
   },
   useList: useTimeDeposits,
   useDelete: useDeleteTimeDeposit,
@@ -63,10 +62,6 @@ export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
       },
     },
   ],
-  deleteDescription: (item, t) =>
-    t("investments:timeDeposit.deleteRowDescription", {
-      name: item.investment.display_name,
-    }),
   headlineTestId: "time-deposits-total",
   renderCreateDialog: () => <CreateTimeDepositDialog />,
   renderEditDialog: (item, props) => (

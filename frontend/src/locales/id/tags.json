@@ -13,8 +13,8 @@
     "add": "Tambah",
     "edit": "Ubah tag",
     "delete": "Hapus tag",
-    "deleteTitle": "Hapus \"{{name}}\"?",
-    "deleteDescription": "Ini menghapus tag dan melepasnya dari semua posisi. Posisinya sendiri tidak ikut terhapus."
+    "deleteTitle": "Hapus tag {{name}}?",
+    "deleteDescription": "Tag ini dilepas dari semua item yang memakainya."
   },
   "report": {
     "title": "Tag",

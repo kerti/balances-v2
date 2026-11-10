@@ -48,10 +48,8 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   // --- Delete the snapshot (table returns to its empty state) ---
   await row.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  const snapConfirm = page.getByRole("alertdialog");
-  await snapConfirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(desc)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(desc)).toHaveCount(0);
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
   // --- Delete the parent bond (cleanup — returns to the empty list) ---
@@ -59,5 +57,5 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   const bondConfirm = page.getByRole("alertdialog");
   await bondConfirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

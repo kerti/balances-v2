@@ -9,7 +9,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { InvestmentListHeadline } from "@/components/common/InvestmentListHeadline";
 import { ListTimeGraph } from "@/components/charts/ListTimeGraph";
@@ -62,7 +61,6 @@ export type InvestmentConfig<T> = {
   // An extra badge beside the name after the risk pill (the mutual-fund
   // fund-type chip).
   titleAccessory?: (item: T) => ReactNode;
-  deleteDescription: (item: T, t: TFunction) => string;
   headlineTestId: string;
   renderCreateDialog: () => ReactNode;
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
@@ -156,7 +154,6 @@ export function investmentDescriptor<T>(
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: (item) => config.entity(item).description ?? "",
-    deleteDescription: config.deleteDescription,
     extraColumns: [...(config.mainColumns ?? []), activityColumn],
     renderTitleAccessory: (item) => (
       <>

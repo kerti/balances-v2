@@ -43,8 +43,6 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
     snapshotsTitle: "assets:property.snapshotsTitle",
     snapshotsDescription: "assets:property.snapshotsDescription",
     snapshotsEmpty: "assets:property.snapshotsEmpty",
-    deleteTitle: "assets:property.deleteTitle",
-    deleteDescription: "assets:property.deleteDetailDescription",
   },
   tourKeyPrefix: "assets:property",
 

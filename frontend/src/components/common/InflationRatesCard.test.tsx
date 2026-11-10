@@ -4,10 +4,12 @@
 // the divergence contract: only one tree mounts, the rate (the primary figure)
 // reads under the shared `inflation-rate-value` testid in each, and the mobile
 // card's delete control clears the ≥44px tap floor.
-import { it, expect, afterEach } from "vitest";
+import { it, expect, afterEach, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { toast } from "sonner";
 import { server } from "@/test/server";
+import { raisedToasts } from "@/test/sonnerMock";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { InflationRatesCard } from "@/components/common/InflationRatesCard";
 import type { InflationRate } from "@/api/types";
@@ -24,6 +26,9 @@ const rates: InflationRate[] = [
     updated_at: "2026-05-31T00:00:00Z",
   },
 ];
+
+vi.mock("sonner", async () => (await import("@/test/sonnerMock")).sonnerMock());
+const mockedToast = toast as unknown as Parameters<typeof raisedToasts>[0];
 
 const originalWidth = window.innerWidth;
 
@@ -164,13 +169,18 @@ it("mobile: Edit swaps the headline for an input and Save PATCHes", async () => 
   expect(patched).toEqual({ id: "inf-1", body: { rate: "4.2" } });
 });
 
-// covers: INV-PRESENTATION-16
-it("desktop: trash opens a destructive confirm; Cancel sends nothing, Confirm deletes once", async () => {
+// covers: INV-PRESENTATION-17
+it("desktop: trash deletes at once with no dialog, raising one Undo toast", async () => {
   setViewport(1280);
   let deletes = 0;
+  let undos = 0;
   server.use(
     http.delete("/api/inflation-rates/:id", () => {
       deletes += 1;
+      return new HttpResponse(null, { status: 204 });
+    }),
+    http.post("/api/inflation-rates/:id/undo-delete", () => {
+      undos += 1;
       return new HttpResponse(null, { status: 204 });
     }),
   );
@@ -180,32 +190,20 @@ it("desktop: trash opens a destructive confirm; Cancel sends nothing, Confirm de
   fireEvent.click(
     within(screen.getByTestId("inflation-rate-row")).getByRole("button", { name: "Delete" }),
   );
-  const dialog = await screen.findByRole("alertdialog");
-  expect(within(dialog).getByText("Delete the inflation figure for May 2026?")).toBeInTheDocument();
-  expect(deletes).toBe(0);
-
-  // Cancel: no request, the row stays.
-  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-  expect(deletes).toBe(0);
-  expect(screen.getByTestId("inflation-rate-row")).toBeInTheDocument();
-
-  // Confirm: red button, one DELETE.
-  fireEvent.click(
-    within(screen.getByTestId("inflation-rate-row")).getByRole("button", { name: "Delete" }),
-  );
-  const confirm = within(await screen.findByRole("alertdialog")).getByRole("button", {
-    name: "Delete",
-  });
-  // The variant, and no leftover bg-primary: a className override used to lose to it (#779).
-  expect(confirm).toHaveAttribute("data-variant", "destructive");
-  expect(confirm).not.toHaveClass("bg-primary");
-  fireEvent.click(confirm);
   await waitFor(() => expect(deletes).toBe(1));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+
+  const raised = raisedToasts(mockedToast);
+  expect(raised).toHaveLength(1);
+  expect(raised[0].options.duration).toBe(8000);
+  expect(raised[0].options.action?.label).toBe("Undo");
+
+  raised[0].options.action?.onClick();
+  await waitFor(() => expect(undos).toBe(1));
 });
 
-// covers: INV-PRESENTATION-16
-it("mobile: the card's trash also asks first", async () => {
+// covers: INV-PRESENTATION-17
+it("mobile: the card's trash also deletes at once with no dialog", async () => {
   setViewport(500);
   let deletes = 0;
   server.use(
@@ -218,9 +216,7 @@ it("mobile: the card's trash also asks first", async () => {
   await screen.findByTestId("inflation-rate-cards");
 
   fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-  const dialog = await screen.findByRole("alertdialog");
-  expect(deletes).toBe(0);
-  fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
-  await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-  expect(deletes).toBe(0);
+  await waitFor(() => expect(deletes).toBe(1));
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  expect(raisedToasts(mockedToast)).toHaveLength(1);
 });

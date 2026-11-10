@@ -142,7 +142,7 @@ test("non-investment tour: launch, navigate forward/back, done (5 steps)", async
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await deletePosition(page);
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });
 
 test("investment tour: 7 steps incl. headline + transactions", async ({ page }) => {
@@ -164,7 +164,7 @@ test("investment tour: 7 steps incl. headline + transactions", async ({ page }) 
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await deletePosition(page);
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });
 
 test("chart step is pruned when the position has fewer than two snapshots", async ({ page }) => {
@@ -195,7 +195,7 @@ test("chart step is pruned when the position has fewer than two snapshots", asyn
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await deletePosition(page);
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });
 
 test("closed position: the actions step still anchors to the header group", async ({ page }) => {
@@ -222,7 +222,7 @@ test("closed position: the actions step still anchors to the header group", asyn
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await deletePosition(page);
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });
 
 test("tour copy follows the Settings language (EN default → ID)", async ({ page }) => {
@@ -284,5 +284,5 @@ test("tour copy follows the Settings language (EN default → ID)", async ({ pag
     .click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
   await deletePosition(page);
-  await expect(page.getByText(name)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

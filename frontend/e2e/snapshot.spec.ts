@@ -7,7 +7,8 @@ import { test, expect } from "@playwright/test";
 // unique description; the amount renders IDR-formatted and is a poor anchor.
 // Self-cleaning: deletes the snapshot and then the parent account, leaving the
 // seed's empty bank-account list. See ADR-0024.
-// covers: INV-JOURNEYS-02
+// The delete leg also proves the no-dialog + Undo journey.
+// covers: INV-JOURNEYS-02, INV-JOURNEYS-06
 test("bank account snapshot create → edit → delete", { tag: "@smoke" }, async ({ page }) => {
   const account = `E2E snap account ${Date.now()}`;
   const desc = `E2E snapshot ${Date.now()}`;
@@ -65,10 +66,19 @@ test("bank account snapshot create → edit → delete", { tag: "@smoke" }, asyn
   // --- Delete the snapshot (table returns to its empty state) ---
   await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  const snapConfirm = page.getByRole("alertdialog");
-  await snapConfirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(editedDesc)).toHaveCount(0);
+  // No confirm dialog (ADR-0058 §3): the row goes at once and the toast offers
+  // Undo, which brings the very row back.
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
+  await expect(page.getByText("No snapshots yet.")).toBeVisible();
+  await page.getByTestId("toast-deleted").getByRole("button", { name: "Undo" }).click();
+  await expect(editedRow).toBeVisible();
+
+  // --- Delete it again for good (cleanup) ---
+  await editedRow.getByRole("button", { name: "Snapshot actions" }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await expect(page.getByRole("main").getByText(editedDesc)).toHaveCount(0);
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
   // --- Delete the parent account (cleanup — returns to the empty list) ---
@@ -76,5 +86,5 @@ test("bank account snapshot create → edit → delete", { tag: "@smoke" }, asyn
   const acctConfirm = page.getByRole("alertdialog");
   await acctConfirm.getByRole("button", { name: "Delete" }).click();
 
-  await expect(page.getByText(account)).toHaveCount(0);
+  await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 });

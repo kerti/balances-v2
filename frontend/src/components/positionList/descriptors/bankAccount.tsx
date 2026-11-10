@@ -26,7 +26,6 @@ export const bankAccountDescriptor = nonInvestmentDescriptor<BankAccountListItem
     nounPlural: "assets:bankAccount.nounPlural",
     valueLabel: "assets:bankAccount.sortLatestBalance",
     rowActions: "assets:bankAccount.rowActions",
-    deleteTitle: "assets:bankAccount.deleteTitle",
   },
   useList: useBankAccounts,
   useDelete: useDeleteBankAccount,
@@ -38,10 +37,6 @@ export const bankAccountDescriptor = nonInvestmentDescriptor<BankAccountListItem
       bankName: item.details.bank_name,
       accountNumber: item.details.account_number,
       accountType: t(`assets:bankAccount.accountTypes.${item.details.account_type}`),
-    }),
-  deleteDescription: (item, t) =>
-    t("assets:bankAccount.deleteRowDescription", {
-      name: item.asset.display_name,
     }),
   headlineLabelKey: "assets:bankAccount.totalBalance",
   headlineTestId: "bank-accounts-total",

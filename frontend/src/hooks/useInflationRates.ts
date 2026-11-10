@@ -1,5 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
+import { toastSaved } from "@/lib/writeToast";
+import i18n from "@/i18n";
+import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import type { InflationRate } from "@/api/types";
 
 // Manual monthly inflation rates (ADR-0048). Each rate is an annualized (YoY)
@@ -26,7 +29,10 @@ export function useCreateInflationRate() {
         method: "POST",
         body: JSON.stringify(p),
       }),
-    onSuccess: () => invalidate(qc),
+    onSuccess: () => {
+      invalidate(qc);
+      toastSaved("added");
+    },
   });
 }
 
@@ -38,14 +44,17 @@ export function useUpdateInflationRate() {
         method: "PATCH",
         body: JSON.stringify({ rate }),
       }),
-    onSuccess: () => invalidate(qc),
+    onSuccess: () => {
+      invalidate(qc);
+      toastSaved();
+    },
   });
 }
 
 export function useDeleteInflationRate() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => api(`/api/inflation-rates/${id}`, { method: "DELETE" }),
-    onSuccess: () => invalidate(qc),
+  return useUndoableDelete({
+    path: (id) => `/api/inflation-rates/${id}`,
+    message: () => i18n.t("common:toast.deleted.inflationRate"),
+    invalidate: invalidate,
   });
 }

@@ -1,3 +1,4 @@
+import type { PositionDelete } from "@/hooks/useUndoableDelete";
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -21,7 +22,7 @@ export type PositionListQuery<T> = {
   error: unknown;
 };
 
-export type PositionDeleteMutation = UseMutationResult<unknown, unknown, string>;
+export type PositionDeleteMutation = UseMutationResult<unknown, unknown, PositionDelete>;
 export type PositionImportMutation = UseMutationResult<
   CreateImportResult,
   unknown,
@@ -81,7 +82,6 @@ export type PositionListDescriptor<T, Ctx = void> = {
     nounPlural: string;
     valueLabel: string; // header for the shared value column
     rowActions: string; // aria-label on the ⋮ trigger
-    deleteTitle: string;
   };
   // Optional interpolation values merged into the title/subtitle/empty-state
   // `t()` calls, for copy that varies by a runtime parameter (e.g. a liability
@@ -103,7 +103,6 @@ export type PositionListDescriptor<T, Ctx = void> = {
   getStatus: (item: T) => string;
   getSnapshot: (item: T) => PositionSnapshotView | null;
   getSecondary: (item: T, t: TFunction) => ReactNode;
-  deleteDescription: (item: T, t: TFunction) => string;
 
   extraColumns: PositionExtraColumn<T, Ctx>[];
 

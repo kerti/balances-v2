@@ -79,8 +79,6 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
       snapshotsTitle: "investments:snapshotsCard.title",
       snapshotsDescription: "investments:mutualFund.snapshotsDescription",
       snapshotsEmpty: "investments:mutualFund.snapshotsEmpty",
-      deleteTitle: "investments:mutualFund.deleteTitle",
-      deleteDescription: "investments:mutualFund.deleteDetailDescription",
     },
     tourKeyPrefix: "investments:mutualFund",
     // MutualFund's regions exceed the five standard anchors — investment headline

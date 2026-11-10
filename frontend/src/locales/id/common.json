@@ -168,8 +168,6 @@
     "save": "Simpan snapshot",
     "statementPrefix": "laporan: {{date}}",
     "rowActions": "Aksi snapshot",
-    "deleteTitle": "Hapus snapshot ini?",
-    "deleteDescription": "Bacaan {{month}} akan disembunyikan dari laporan. Untuk memperbaiki bulan yang salah, catat snapshot baru di bulan yang benar setelah menghapus yang ini.",
     "revaluationHintAppreciate": "💡 Saran {{amount}} — berdasarkan apresiasi {{magnitude}}% /thn × {{months}} bln dari {{anchor}}.",
     "revaluationHintDepreciate": "💡 Saran {{amount}} — berdasarkan penyusutan {{magnitude}}% /thn × {{months}} bln dari {{anchor}}.",
     "revaluationApply": "Terapkan",
@@ -216,7 +214,7 @@
     "moreErrors_one": "…dan {{count}} error lagi dalam file.",
     "moreErrors_other": "…dan {{count}} error lagi dalam file.",
     "emptyPreview": "Tidak ada baris ditemukan dalam file. Tambahkan saldo lalu unggah ulang.",
-    "preview": "Siap: {{insert}} baru, {{update}} diperbarui. Belum disimpan — tekan Impor untuk konfirmasi.",
+    "preview": "Siap: {{insert}} baru, {{update}} diperbarui, {{unchanged}} tidak berubah. Belum disimpan — tekan Impor untuk konfirmasi.",
     "committed_one": "Diimpor {{insert}} baru + {{update}} diperbarui bulan.",
     "committed_other": "Diimpor {{insert}} baru + {{update}} diperbarui bulan.",
     "checkFile": "Periksa file",
@@ -312,5 +310,30 @@
     "title": "Halaman tidak ditemukan",
     "body": "Tidak ada apa pun di alamat ini. Halamannya mungkin telah dipindahkan, atau tautannya salah ketik.",
     "backToDashboard": "Kembali ke Dashboard"
+  },
+  "toast": {
+    "saved": "Tersimpan",
+    "added": "Ditambahkan",
+    "undo": "Urungkan",
+    "undone": "Diurungkan",
+    "replaced": "Tersimpan · nilai sebelumnya diganti",
+    "bulkSaved": "{{count}} tersimpan",
+    "bulkSavedReplaced_other": "{{written}} tersimpan · {{count}} menggantikan nilai sebelumnya",
+    "deletedNamed": "{{name}} dihapus",
+    "deleted": {
+      "snapshot": "Snapshot dihapus",
+      "transaction": "Transaksi dihapus",
+      "income": "Catatan pemasukan dihapus",
+      "fxRate": "Kurs dihapus",
+      "inflationRate": "Angka inflasi dihapus",
+      "tag": "Tag dihapus"
+    },
+    "importing": "Mengimpor…",
+    "imported_other": "{{count}} snapshot diimpor",
+    "importedSnapshots": "Diimpor: {{added}} baru · {{replaced}} menggantikan nilai sebelumnya · {{unchanged}} tidak berubah"
+  },
+  "deleteConfirm": {
+    "positionTitle": "Hapus {{name}}?",
+    "positionDescription": "Item ini akan hilang dari daftar dan laporan."
   }
 }

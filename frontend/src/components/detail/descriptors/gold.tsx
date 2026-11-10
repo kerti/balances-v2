@@ -77,8 +77,6 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
     snapshotsTitle: "investments:snapshotsCard.title",
     snapshotsDescription: "investments:gold.snapshotsDescription",
     snapshotsEmpty: "investments:gold.snapshotsEmpty",
-    deleteTitle: "investments:gold.deleteTitle",
-    deleteDescription: "investments:gold.deleteDetailDescription",
   },
   tourKeyPrefix: "investments:gold",
   // Gold's regions exceed the five standard anchors — investment headline +
