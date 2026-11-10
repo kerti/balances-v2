@@ -125,3 +125,19 @@ components are unchanged. The reflow closes the two squeeze failures a <768px au
 Every chart is already `h-64 w-full`, so charts read within the viewport with no horizontal scroll.
 This a11y floor is catalogued as INV-PRESENTATION-08 ([[adr-0034]] / [[adr-0050]]) and smoke-tested at
 390px.
+
+## Amendment (2026-11-10): overview hubs convert to the reporting currency
+
+Round (g) of the 2026-11-04 UI audit (SIM-12). The per-currency card sets on `AssetsHome`,
+`InvestmentsHome` and `LiabilitiesHome` gave a small foreign holding the same visual weight as the
+household's main currency, and a single-category currency drew a 100% area and a full-circle pie that
+said nothing. The "no FX, mirroring the list-screen convention" line above is replaced:
+
+- Each hub renders **one card set in the reporting currency**, converted with the monthly FX rate and
+  the same missing-rate rule as the dashboard ([[adr-0002]]: exclude and warn, never 1:1).
+- The headline keeps native subtotals as a secondary line when more than one currency is held, so
+  native values stay visible without their own charts.
+- A composition chart (category share area, category or risk pie) with a single category is not
+  rendered.
+
+List screens and detail pages stay in native currency; this changes the hubs only.

@@ -177,3 +177,27 @@ places any more.
   transform in CSS `em` units). Rejected: it reintroduces the #565 webfont-race class of bug — with
   the face unloaded, the `scaleY` and the offsets land on fallback metrics and the logo visibly
   breaks — for a face the app otherwise never loads.
+
+## Amendment (2026-11-09): colour roles after the UI audit
+
+Round (e) of the 2026-11-04 UI audit. §2 left the categorical sets alone; this amendment narrows
+which hues they may use, without moving them onto the brand ramp.
+
+- **Red and green mean direction, nothing else.** `--positive` / `--negative` tokens carry gain and
+  loss. System category colours (asset, liability and investment subtypes) never use either hue,
+  since "bank accounts green" next to "+5% green" reads as a verdict. Each set is validated all-pairs
+  against its own siblings, both themes, the same way as §2.
+- **User-chosen colour is exempt.** Tag swatches (ADR-0028) keep every hue: a tag's colour is the
+  household's meaning, not ours, and stored values are not remapped.
+- **Nothing is coloured by whether it is good to own** — extended from position types to risk: the
+  risk badge is monochrome (shape and letter carry the level), and Active is a neutral pill, shown
+  only where status is the subject (the detail header), not on every list row.
+- **Warning is its own token**, pushed away from brass so a warning never reads as the primary
+  action; "you changed this field" uses the brand accent, not warning.
+- **Single-series charts stay brass** (the page's headline, per §2). Brick liabilities stay on the
+  dashboard comparison chart only — painting debt red on its own pages is the verdict §2 rejects.
+- **The hero is a brass-tinted surface with no shadow**, one rule for both themes.
+
+Implementation: #835, #836. Rejected: liabilities red everywhere (verdict colour);
+remapping tag colours (household's choice, needs a migration for no domain gain); a traffic-light
+risk badge (rated risk as bad, collided with direction).

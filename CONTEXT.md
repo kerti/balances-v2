@@ -14,6 +14,10 @@ balances; Balances tracks your net worth."*
 
 ### Top-level groups
 
+**Position**: One tracked thing in any of the four groups — a bank account, a property, a loan, a
+stock, a receivable. The domain, code and docs word only: the UI never shows it. Copy names the
+subtype ("bank account", "bond") and falls back to **item** where it must stay generic.
+
 **Asset**: A position with positive value that is not an investment instrument — bank account,
 property, vehicle. _Avoid_: holding, account (reserved for the auth user identity).
 
@@ -70,7 +74,7 @@ All snapshot values are entered manually from statements; the system does not au
 or market value. A Snapshot belongs to exactly one month: its `year_month` is immutable after
 creation. **Moving** a reading to another month is one atomic act that archives (soft-deletes) the
 original and records a new Snapshot in the target month; a close Snapshot can't be moved.
-**Replacing** a month's value from any flow (editing it, bulk entry, import, Record month) works the same way:
+**Replacing** a month's value from any flow (editing it, bulk entry, import, Record snapshot) works the same way:
 the earlier Snapshot is archived, never overwritten. A
 single-item replace or delete can be undone from its confirmation toast; a bulk save cannot, but
 its displaced values are still archived. Its
@@ -263,6 +267,11 @@ Investment Return). `description` provides sub-categorisation within a category 
 travel per-diem are both `Salary`, distinguished by description in drill-downs but rolled up at the
 category level for top-line reporting.
 
+**Regularity**: A stored per-event flag on Income — **Regular** (can be counted on: pay, pension,
+rent) or **One-off** (bonus, severance, gift). Chosen by the Household per event, independent of
+category. Stored as `routine | incidental`; the UI says Regular / One-off (Bahasa: Rutin / Sekali
+waktu). _Avoid_: Routine, Incidental (in copy).
+
 **Active vs Passive income**: A **category-derived** partition over Income, used by the financial
 statistics ([[adr-0048]]) — it is *not* a stored per-event attribute. **Active income** (earned by
 labour): `Salary` + `BusinessIncome`. **Passive income** (received without ongoing labour):
@@ -449,7 +458,17 @@ loosely elsewhere for soft-delete), Deactivate (implies reversible).
   aliases to avoid in code and UI.
 - **"Deposit"** was ambiguous between cash in a bank account and a fixed-term locked product.
   Resolved: TimeDeposit for the locked product; cash savings live under Asset → bank account.
-- **"Holding" / "Position"** as an umbrella across all four groups was considered and rejected — the
-  four groups are treated independently because their data shapes and lifecycles differ.
+- **"Holding" / "Position"** as a *shared data model* across all four groups was considered and
+  rejected — the four groups are stored independently because their data shapes and lifecycles
+  differ. **Position** survives as the umbrella *word* in domain prose and code, never in the UI.
+- **"Description" vs "Notes"** named the same optional free text on snapshots, transactions and
+  Income. Resolved: the UI says **Note** (Bahasa: Catatan); a Position's own description of itself
+  stays **Description**. The stored field is `description` throughout.
+- **UI vocabulary** (2026-11 audit round (d)): **Snapshot** *is* shown to users — it is the
+  product's core idea, taught once in empty states, and the snapshot section is titled "Snapshots"
+  everywhere. **Terminate** / **lifecycle** are not: the UI verb is **Close** ("Close {noun}",
+  "Change status" once closed). Amounts are named by kind: **Balance** (bank accounts; snapshot
+  tables of debts), **Owed** (liability and receivable totals and charts), **Value** (property,
+  vehicles, investments, every overview total), **Amount** (only a single typed figure or a flow).
 - **"Ownership"** means the Household's *intent* for attributing a Position in breakdowns, not the
   legal deed or registered account holder.

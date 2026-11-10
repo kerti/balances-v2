@@ -55,9 +55,13 @@ next item off the backlog — they pause between items to direct.
 files its own `ready-for-agent` issues. Quick wins #779–#784; round (a), money entry and the monthly
 flow (ADR-0056, ADR-0046 amendment), is #785–#792. Round (c), feedback and safety (ADR-0058: replaces
 archive, single-item Undo toasts, confirm tiers, one toast per write), is #820–#825; it unblocks
-#788 (after #820 + #822), #791 (after #820) and #805 (after #822); #790 still waits on #788. Next:
-grill (b) close/import/transactions, then rounds (d)–(g). Phone-width (390px) findings wait for a
-real-device pass. `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
+#788 (after #820 + #822), #791 (after #820) and #805 (after #822); #790 still waits on #788. Round
+(b), close/import/trades (no ADR), is #827–#830. Round (d), wording (no ADR; vocabulary in
+`CONTEXT.md`), is #832 copy sweep + #833 counts/months; it renamed ADR-0058's "Record month" button
+to **Record snapshot**. Round (e), colour (ADR-0054 amendment), is #835 tokens + #836 palettes and
+badges. Round (f), layout and shell (ADR-0050 amendment), is #837–#842. Round (g), scope calls (ADR-0022
+amendment), is #843–#847, with member removal deferred to an ADR issue (#848). Next: the 390px
+real-device issue, then the final pass mapping every audit finding ID to an outcome. `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
 under repo **Settings → Social preview**.
 
 Standing carry-forwards:
