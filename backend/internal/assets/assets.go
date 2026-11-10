@@ -20,6 +20,7 @@ import (
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 	"github.com/kerti/balances-v2/backend/internal/snapshotimport"
 )
@@ -74,6 +75,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetBankAccount)
 			r.Patch("/", h.handleUpdateBankAccount)
 			r.Delete("/", h.handleDeleteBankAccount)
+			r.Post("/undo-delete", httpundo.Delete("undo delete bank account", "id", "id", h.repository, (*repo.AssetRepo).UndoDeleteBankAccount))
 			// Export the full position workbook (Detail + Snapshots) in the
 			// importer's format, so it round-trips back through the snapshot
 			// import on the detail page.
@@ -94,6 +96,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetProperty)
 			r.Patch("/", h.handleUpdateProperty)
 			r.Delete("/", h.handleDeleteProperty)
+			r.Post("/undo-delete", httpundo.Delete("undo delete property", "id", "id", h.repository, (*repo.AssetRepo).UndoDeleteProperty))
 			r.Get("/export", h.handleExportProperty)
 		})
 	})
@@ -111,6 +114,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGetVehicle)
 			r.Patch("/", h.handleUpdateVehicle)
 			r.Delete("/", h.handleDeleteVehicle)
+			r.Post("/undo-delete", httpundo.Delete("undo delete vehicle", "id", "id", h.repository, (*repo.AssetRepo).UndoDeleteVehicle))
 			r.Get("/export", h.handleExportVehicle)
 		})
 	})
@@ -134,6 +138,8 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Get("/", h.handleListSnapshots)
 		r.Patch("/{snapshotID}", h.handleUpdateSnapshot)
 		r.Delete("/{snapshotID}", h.handleDeleteSnapshot)
+		r.Post("/{snapshotID}/undo-delete", httpundo.Delete("undo delete asset snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.AssetRepo).UndoDeleteAssetSnapshot))
+		r.Post("/{snapshotID}/undo-replace", httpundo.Replace("undo replace asset snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.AssetRepo).UndoReplaceAssetSnapshot))
 		// Bulk import (M6 side item): download a scoped .xlsx template, then
 		// upload a filled one. ?mode=preview (default) validates + counts;
 		// ?mode=commit upserts all-or-nothing. Static segments, so no clash
@@ -240,3 +246,7 @@ func assetSnapshotsToExport(snaps []db.AssetSnapshot) []snapshotimport.ExportSna
 	}
 	return out
 }
+
+// repository hands httpundo the repo lazily: Mount must stay safe on a nil
+// *Handlers, so no field is read until a request arrives.
+func (h *Handlers) repository() *repo.AssetRepo { return h.repo }

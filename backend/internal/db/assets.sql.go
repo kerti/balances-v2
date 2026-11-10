@@ -161,6 +161,38 @@ func (q *Queries) ListAssetsByHousehold(ctx context.Context, arg ListAssetsByHou
 	return items, nil
 }
 
+const restoreAsset = `-- name: RestoreAsset :execrows
+UPDATE assets
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND subtype = $4 AND deleted_at IS NOT NULL
+`
+
+type RestoreAssetParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+	Subtype     string     `json:"subtype"`
+}
+
+// RestoreAsset undoes a position delete (ADR-0058 §2). The subtype is part of
+// the match so a route for one subtype can never resurrect another's row (the
+// restore twin of the Delete{Subtype} guard). The cascaded snapshots are
+// restored first, by CascadeRestoreAssetSnapshots, in the same transaction.
+func (q *Queries) RestoreAsset(ctx context.Context, arg RestoreAssetParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreAsset,
+		arg.ID,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+		arg.Subtype,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const softDeleteAsset = `-- name: SoftDeleteAsset :execrows
 UPDATE assets
 SET deleted_at = now(),

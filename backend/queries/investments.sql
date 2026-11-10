@@ -77,3 +77,14 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreInvestment undoes a position delete (ADR-0058 §2). The subtype is part
+-- of the match so a route for one subtype can never resurrect another's row.
+-- The cascaded snapshots and transactions are restored first, in the same
+-- transaction.
+-- name: RestoreInvestment :execrows
+UPDATE investments
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND subtype = $4 AND deleted_at IS NOT NULL;

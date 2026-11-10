@@ -93,6 +93,16 @@ const (
 	// (e.g. after a Maturity row flipped it).
 	CodePositionNotActive Code = "POSITION_NOT_ACTIVE"
 
+	// CodeUndoSlotTaken maps repo.ErrUndoSlotTaken -> 409 — an Undo would
+	// restore a deleted row into a slot (snapshot month, FX-rate or
+	// inflation-rate month) that has been filled since (ADR-0058 §2).
+	CodeUndoSlotTaken Code = "UNDO_SLOT_TAKEN"
+
+	// CodeUndoReplacementChanged maps repo.ErrUndoReplacementChanged -> 409 — a
+	// snapshot undo-replace whose replacing row is no longer the live row for
+	// that slot (ADR-0058 §2).
+	CodeUndoReplacementChanged Code = "UNDO_REPLACEMENT_CHANGED"
+
 	// CodeInvalidRate is a 400 for an FX-rate input <= 0.
 	CodeInvalidRate Code = "INVALID_RATE"
 

@@ -41,3 +41,12 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreIncome undoes a single-row delete (ADR-0058 §2). `updated_at` moves so
+-- the report watermark picks the restore up.
+-- name: RestoreIncome :execrows
+UPDATE income
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL;

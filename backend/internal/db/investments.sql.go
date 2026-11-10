@@ -201,6 +201,38 @@ func (q *Queries) ListInvestmentsByHousehold(ctx context.Context, arg ListInvest
 	return items, nil
 }
 
+const restoreInvestment = `-- name: RestoreInvestment :execrows
+UPDATE investments
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND subtype = $4 AND deleted_at IS NOT NULL
+`
+
+type RestoreInvestmentParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+	Subtype     string     `json:"subtype"`
+}
+
+// RestoreInvestment undoes a position delete (ADR-0058 §2). The subtype is part
+// of the match so a route for one subtype can never resurrect another's row.
+// The cascaded snapshots and transactions are restored first, in the same
+// transaction.
+func (q *Queries) RestoreInvestment(ctx context.Context, arg RestoreInvestmentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreInvestment,
+		arg.ID,
+		arg.HouseholdID,
+		arg.UpdatedBy,
+		arg.Subtype,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const setRolloverSource = `-- name: SetRolloverSource :one
 UPDATE investments
 SET rolled_from_investment_id = $3,

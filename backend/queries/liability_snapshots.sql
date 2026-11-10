@@ -195,3 +195,31 @@ WHERE s.id = sqlc.arg('id')
   AND l.household_id = sqlc.arg('household_id')::uuid
   AND l.deleted_at IS NULL
   AND s.deleted_at IS NOT NULL;
+
+-- GetLiabilitySnapshotAnyState reads one snapshot, live or archived, household-scoped
+-- through its parent. The undo-replace path needs it to tell "no such row in this
+-- household" (not found) from "exists but is no longer live" (conflict).
+-- name: GetLiabilitySnapshotAnyState :one
+SELECT s.*
+FROM liability_snapshots s
+JOIN liabilities p ON p.id = s.liability_id
+WHERE s.id = $1
+  AND p.household_id = $2;
+
+-- CascadeRestoreLiabilitySnapshots is the child half of a position undo-delete. It
+-- restores exactly the snapshots the position delete cascaded: those whose
+-- `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+-- snapshot the user deleted or replaced earlier carries a different timestamp
+-- and stays archived. Runs *before* the parent UPDATE, while the parent is still
+-- deleted: the mirror of CascadeSoftDeleteLiabilitySnapshots.
+-- name: CascadeRestoreLiabilitySnapshots :execrows
+UPDATE liability_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM liabilities p
+WHERE s.liability_id = $1
+  AND s.liability_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at;

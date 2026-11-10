@@ -126,6 +126,30 @@ func (q *Queries) ListFxRatesByHousehold(ctx context.Context, householdID uuid.U
 	return items, nil
 }
 
+const restoreFxRate = `-- name: RestoreFxRate :execrows
+UPDATE fx_rates
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL
+`
+
+type RestoreFxRateParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// RestoreFxRate undoes a delete (ADR-0058 §2). A unique_violation on the live
+// (household, year_month, currency) index means the rate was re-entered meanwhile.
+func (q *Queries) RestoreFxRate(ctx context.Context, arg RestoreFxRateParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreFxRate, arg.ID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const softDeleteFxRate = `-- name: SoftDeleteFxRate :execrows
 UPDATE fx_rates
 SET deleted_at = now(),

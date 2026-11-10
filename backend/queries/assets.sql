@@ -56,3 +56,14 @@ SET deleted_at = now(),
     updated_by = $3,
     updated_at = now()
 WHERE id = $1 AND household_id = $2 AND deleted_at IS NULL;
+
+-- RestoreAsset undoes a position delete (ADR-0058 §2). The subtype is part of
+-- the match so a route for one subtype can never resurrect another's row (the
+-- restore twin of the Delete{Subtype} guard). The cascaded snapshots are
+-- restored first, by CascadeRestoreAssetSnapshots, in the same transaction.
+-- name: RestoreAsset :execrows
+UPDATE assets
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND subtype = $4 AND deleted_at IS NOT NULL;

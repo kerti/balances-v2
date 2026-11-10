@@ -194,6 +194,30 @@ func (q *Queries) ListLiabilitiesByHousehold(ctx context.Context, arg ListLiabil
 	return items, nil
 }
 
+const restoreLiability = `-- name: RestoreLiability :execrows
+UPDATE liabilities
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL
+`
+
+type RestoreLiabilityParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// RestoreLiability undoes a position delete (ADR-0058 §2); its cascaded
+// snapshots are restored first, in the same transaction.
+func (q *Queries) RestoreLiability(ctx context.Context, arg RestoreLiabilityParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreLiability, arg.ID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const softDeleteLiability = `-- name: SoftDeleteLiability :execrows
 UPDATE liabilities
 SET deleted_at = now(),

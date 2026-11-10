@@ -13,6 +13,39 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeRestoreReceivableSnapshots = `-- name: CascadeRestoreReceivableSnapshots :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM receivables p
+WHERE s.receivable_id = $1
+  AND s.receivable_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at
+`
+
+type CascadeRestoreReceivableSnapshotsParams struct {
+	ReceivableID uuid.UUID  `json:"receivable_id"`
+	HouseholdID  uuid.UUID  `json:"household_id"`
+	UpdatedBy    *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeRestoreReceivableSnapshots is the child half of a position undo-delete. It
+// restores exactly the snapshots the position delete cascaded: those whose
+// `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+// snapshot the user deleted or replaced earlier carries a different timestamp
+// and stays archived. Runs *before* the parent UPDATE, while the parent is still
+// deleted: the mirror of CascadeSoftDeleteReceivableSnapshots.
+func (q *Queries) CascadeRestoreReceivableSnapshots(ctx context.Context, arg CascadeRestoreReceivableSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeRestoreReceivableSnapshots, arg.ReceivableID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const cascadeSoftDeleteReceivableSnapshots = `-- name: CascadeSoftDeleteReceivableSnapshots :execrows
 UPDATE receivable_snapshots s
 SET deleted_at = now(),
@@ -130,6 +163,43 @@ func (q *Queries) GetReceivableForImport(ctx context.Context, arg GetReceivableF
 	row := q.db.QueryRow(ctx, getReceivableForImport, arg.ID, arg.HouseholdID)
 	var i GetReceivableForImportRow
 	err := row.Scan(&i.DisplayName, &i.NativeCurrency)
+	return i, err
+}
+
+const getReceivableSnapshotAnyState = `-- name: GetReceivableSnapshotAnyState :one
+SELECT s.id, s.receivable_id, s.year_month, s.amount, s.currency, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
+FROM receivable_snapshots s
+JOIN receivables p ON p.id = s.receivable_id
+WHERE s.id = $1
+  AND p.household_id = $2
+`
+
+type GetReceivableSnapshotAnyStateParams struct {
+	ID          uuid.UUID `json:"id"`
+	HouseholdID uuid.UUID `json:"household_id"`
+}
+
+// GetReceivableSnapshotAnyState reads one snapshot, live or archived, household-scoped
+// through its parent. The undo-replace path needs it to tell "no such row in this
+// household" (not found) from "exists but is no longer live" (conflict).
+func (q *Queries) GetReceivableSnapshotAnyState(ctx context.Context, arg GetReceivableSnapshotAnyStateParams) (ReceivableSnapshot, error) {
+	row := q.db.QueryRow(ctx, getReceivableSnapshotAnyState, arg.ID, arg.HouseholdID)
+	var i ReceivableSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.ReceivableID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Supersedes,
+	)
 	return i, err
 }
 

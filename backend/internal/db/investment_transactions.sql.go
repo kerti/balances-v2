@@ -13,6 +13,37 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeRestoreInvestmentTransactions = `-- name: CascadeRestoreInvestmentTransactions :execrows
+UPDATE investment_transactions t
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE t.investment_id = $1
+  AND t.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NOT NULL
+  AND t.deleted_at = i.deleted_at
+`
+
+type CascadeRestoreInvestmentTransactionsParams struct {
+	InvestmentID uuid.UUID  `json:"investment_id"`
+	HouseholdID  uuid.UUID  `json:"household_id"`
+	UpdatedBy    *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeRestoreInvestmentTransactions is the transaction half of an investment
+// undo-delete: it restores the transactions the delete cascaded (same
+// `deleted_at` as the still-deleted parent) and leaves ones deleted earlier by
+// hand. See CascadeRestoreInvestmentSnapshots.
+func (q *Queries) CascadeRestoreInvestmentTransactions(ctx context.Context, arg CascadeRestoreInvestmentTransactionsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeRestoreInvestmentTransactions, arg.InvestmentID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const cascadeSoftDeleteInvestmentTransactions = `-- name: CascadeSoftDeleteInvestmentTransactions :execrows
 UPDATE investment_transactions t
 SET deleted_at = now(),
@@ -274,6 +305,36 @@ func (q *Queries) ListInvestmentTransactionsForInvestment(ctx context.Context, a
 		return nil, err
 	}
 	return items, nil
+}
+
+const restoreInvestmentTransaction = `-- name: RestoreInvestmentTransaction :execrows
+UPDATE investment_transactions t
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE t.id = $1
+  AND t.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NULL
+  AND t.deleted_at IS NOT NULL
+`
+
+type RestoreInvestmentTransactionParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// RestoreInvestmentTransaction undoes a single-transaction delete (ADR-0058 §2).
+// The investment must still be live in the caller's household. `updated_at`
+// moves so the report watermark picks the restore up.
+func (q *Queries) RestoreInvestmentTransaction(ctx context.Context, arg RestoreInvestmentTransactionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreInvestmentTransaction, arg.ID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const softDeleteInvestmentTransaction = `-- name: SoftDeleteInvestmentTransaction :execrows

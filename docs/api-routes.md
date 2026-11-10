@@ -6,7 +6,7 @@ Every HTTP route the backend serves, walked from the live chi router so it canno
 
 Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and session semantics are ADR-0038/0039. See [architecture.md](architecture.md) for the request flow these routes sit in.
 
-166 routes.
+188 routes.
 
 | Method | Path |
 | ------ | ---- |
@@ -20,6 +20,8 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/assets/{id}/snapshots/import-template` |
 | PATCH | `/api/assets/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/assets/{id}/snapshots/{snapshotID}` |
+| POST | `/api/assets/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/assets/{id}/snapshots/{snapshotID}/undo-replace` |
 | GET | `/api/auth/google/callback` |
 | GET | `/api/auth/google/start` |
 | GET | `/api/auth/local/invite` |
@@ -44,10 +46,12 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/bank-accounts/{id}/` |
 | DELETE | `/api/bank-accounts/{id}/` |
 | GET | `/api/bank-accounts/{id}/export` |
+| POST | `/api/bank-accounts/{id}/undo-delete` |
 | GET | `/api/fx-rates/` |
 | POST | `/api/fx-rates/` |
 | PATCH | `/api/fx-rates/{id}/` |
 | DELETE | `/api/fx-rates/{id}/` |
+| POST | `/api/fx-rates/{id}/undo-delete` |
 | GET | `/api/household/members` |
 | PATCH | `/api/household/settings` |
 | GET | `/api/income/` |
@@ -55,10 +59,12 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/income/{id}/` |
 | PATCH | `/api/income/{id}/` |
 | DELETE | `/api/income/{id}/` |
+| POST | `/api/income/{id}/undo-delete` |
 | GET | `/api/inflation-rates/` |
 | POST | `/api/inflation-rates/` |
 | PATCH | `/api/inflation-rates/{id}/` |
 | DELETE | `/api/inflation-rates/{id}/` |
+| POST | `/api/inflation-rates/{id}/undo-delete` |
 | GET | `/api/investments/bonds/` |
 | POST | `/api/investments/bonds/` |
 | POST | `/api/investments/bonds/import` |
@@ -66,6 +72,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/investments/bonds/{id}/` |
 | DELETE | `/api/investments/bonds/{id}/` |
 | GET | `/api/investments/bonds/{id}/export` |
+| POST | `/api/investments/bonds/{id}/undo-delete` |
 | GET | `/api/investments/golds/` |
 | POST | `/api/investments/golds/` |
 | POST | `/api/investments/golds/import` |
@@ -73,6 +80,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/investments/golds/{id}/` |
 | DELETE | `/api/investments/golds/{id}/` |
 | GET | `/api/investments/golds/{id}/export` |
+| POST | `/api/investments/golds/{id}/undo-delete` |
 | GET | `/api/investments/mutual-funds/` |
 | POST | `/api/investments/mutual-funds/` |
 | POST | `/api/investments/mutual-funds/import` |
@@ -80,6 +88,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/investments/mutual-funds/{id}/` |
 | DELETE | `/api/investments/mutual-funds/{id}/` |
 | GET | `/api/investments/mutual-funds/{id}/export` |
+| POST | `/api/investments/mutual-funds/{id}/undo-delete` |
 | POST | `/api/investments/snapshots/accrued/bulk` |
 | GET | `/api/investments/snapshots/accrued/entry` |
 | POST | `/api/investments/snapshots/bulk` |
@@ -91,6 +100,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/investments/stocks/{id}/` |
 | DELETE | `/api/investments/stocks/{id}/` |
 | GET | `/api/investments/stocks/{id}/export` |
+| POST | `/api/investments/stocks/{id}/undo-delete` |
 | GET | `/api/investments/time-deposits/` |
 | POST | `/api/investments/time-deposits/` |
 | POST | `/api/investments/time-deposits/import` |
@@ -99,6 +109,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | DELETE | `/api/investments/time-deposits/{id}/` |
 | GET | `/api/investments/time-deposits/{id}/export` |
 | POST | `/api/investments/time-deposits/{id}/rollover-successor` |
+| POST | `/api/investments/time-deposits/{id}/undo-delete` |
 | GET | `/api/investments/time-series` |
 | PATCH | `/api/investments/{id}/lifecycle/` |
 | GET | `/api/investments/{id}/snapshots/` |
@@ -107,10 +118,13 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/investments/{id}/snapshots/import-template` |
 | PATCH | `/api/investments/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/investments/{id}/snapshots/{snapshotID}` |
+| POST | `/api/investments/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/investments/{id}/snapshots/{snapshotID}/undo-replace` |
 | GET | `/api/investments/{id}/transactions/` |
 | POST | `/api/investments/{id}/transactions/` |
 | PATCH | `/api/investments/{id}/transactions/{transactionID}` |
 | DELETE | `/api/investments/{id}/transactions/{transactionID}` |
+| POST | `/api/investments/{id}/transactions/{transactionID}/undo-delete` |
 | POST | `/api/invitations` |
 | GET | `/api/liabilities/` |
 | POST | `/api/liabilities/` |
@@ -129,6 +143,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/liabilities/{id}/snapshots/import-template` |
 | PATCH | `/api/liabilities/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/liabilities/{id}/snapshots/{snapshotID}` |
+| POST | `/api/liabilities/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/liabilities/{id}/snapshots/{snapshotID}/undo-replace` |
+| POST | `/api/liabilities/{id}/undo-delete` |
 | GET | `/api/me` |
 | PATCH | `/api/me` |
 | POST | `/api/onboarding/choice` |
@@ -140,6 +157,7 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/properties/{id}/` |
 | DELETE | `/api/properties/{id}/` |
 | GET | `/api/properties/{id}/export` |
+| POST | `/api/properties/{id}/undo-delete` |
 | GET | `/api/receivables/` |
 | POST | `/api/receivables/` |
 | POST | `/api/receivables/import` |
@@ -157,6 +175,9 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | GET | `/api/receivables/{id}/snapshots/import-template` |
 | PATCH | `/api/receivables/{id}/snapshots/{snapshotID}` |
 | DELETE | `/api/receivables/{id}/snapshots/{snapshotID}` |
+| POST | `/api/receivables/{id}/snapshots/{snapshotID}/undo-delete` |
+| POST | `/api/receivables/{id}/snapshots/{snapshotID}/undo-replace` |
+| POST | `/api/receivables/{id}/undo-delete` |
 | GET | `/api/reports/` |
 | POST | `/api/reports/rebuild` |
 | GET | `/api/reports/{yearMonth}` |
@@ -175,4 +196,5 @@ Response envelope and error shapes are the ADR-0027 `httperr` contract; auth and
 | PATCH | `/api/vehicles/{id}/` |
 | DELETE | `/api/vehicles/{id}/` |
 | GET | `/api/vehicles/{id}/export` |
+| POST | `/api/vehicles/{id}/undo-delete` |
 | GET | `/healthz` |

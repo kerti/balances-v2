@@ -110,6 +110,16 @@ Not ADRs because they're tactical, but load-bearing:
   logic inline.
 - **Soft-delete everything**, including snapshots (ADR-0007). Hard-delete is not a UI feature — "can
   be undone via the database" is the line in confirm dialogs.
+- **Every single-item DELETE route has an Undo twin, except tag delete** (ADR-0058 §2; a tag delete clears
+  every Position's `tag_id` with no record, so it keeps its confirm dialog and has no undo): `POST …/{id}/undo-delete`
+  clears `deleted_at` on that one row, and each snapshot group adds `POST …/snapshots/{snapshotID}/undo-replace`
+  (body `{"replacement_id"}`). Both are mounted with `httpundo.Delete` / `httpundo.Replace` beside the
+  DELETE route and answer 204. A new deletable entity needs a restore query that carries the same
+  household filter and bumps `updated_at` (the report watermark's only trigger), a repo method that maps
+  `unique_violation` to `ErrUndoSlotTaken`, and the route. A position undo un-cascades children by the
+  parent's own `deleted_at`, never "all archived children". Mount must stay safe on a nil `*Handlers`
+  (the httpserver test mounts without a repo), so pass `h.repository` plus a method expression, not
+  `h.repo.Method`.
 - **Backend lint is enforced.** `golangci-lint run` from `backend/` must be clean. Config at repo
   root in `.golangci.yml`. `revive`'s `exported` and `package-comments` rules are deliberately
   disabled — don't reintroduce godoc-on-every-export expectations for application code. New shared

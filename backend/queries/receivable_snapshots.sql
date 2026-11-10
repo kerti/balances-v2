@@ -195,3 +195,31 @@ WHERE s.id = sqlc.arg('id')
   AND rc.household_id = sqlc.arg('household_id')::uuid
   AND rc.deleted_at IS NULL
   AND s.deleted_at IS NOT NULL;
+
+-- GetReceivableSnapshotAnyState reads one snapshot, live or archived, household-scoped
+-- through its parent. The undo-replace path needs it to tell "no such row in this
+-- household" (not found) from "exists but is no longer live" (conflict).
+-- name: GetReceivableSnapshotAnyState :one
+SELECT s.*
+FROM receivable_snapshots s
+JOIN receivables p ON p.id = s.receivable_id
+WHERE s.id = $1
+  AND p.household_id = $2;
+
+-- CascadeRestoreReceivableSnapshots is the child half of a position undo-delete. It
+-- restores exactly the snapshots the position delete cascaded: those whose
+-- `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+-- snapshot the user deleted or replaced earlier carries a different timestamp
+-- and stays archived. Runs *before* the parent UPDATE, while the parent is still
+-- deleted: the mirror of CascadeSoftDeleteReceivableSnapshots.
+-- name: CascadeRestoreReceivableSnapshots :execrows
+UPDATE receivable_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM receivables p
+WHERE s.receivable_id = $1
+  AND s.receivable_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at;

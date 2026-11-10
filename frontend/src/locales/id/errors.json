@@ -63,6 +63,8 @@
     "HOUSEHOLD_NAME_MISMATCH": "Itu tidak cocok dengan nama rumah tangga Anda. Ketik persis untuk konfirmasi.",
     "ERASURE_DISABLED_DEMO": "Penghapusan rumah tangga dinonaktifkan pada demo publik.",
     "CROSS_SITE_REQUEST_BLOCKED": "Permintaan ini diblokir demi keamanan Anda. Muat ulang halaman lalu coba lagi.",
-    "INFLATION_RATE_EXISTS": "Tingkat inflasi untuk bulan tersebut sudah ada."
+    "INFLATION_RATE_EXISTS": "Tingkat inflasi untuk bulan tersebut sudah ada.",
+    "UNDO_SLOT_TAKEN": "Tidak bisa diurungkan: sudah ada data lain di tempat itu (bulan atau kurs yang sama). Hapus atau ubah dulu data tersebut.",
+    "UNDO_REPLACEMENT_CHANGED": "Tidak bisa diurungkan: nilai ini sudah diubah lagi setelah diganti."
   }
 }

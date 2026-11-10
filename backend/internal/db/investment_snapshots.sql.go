@@ -13,6 +13,39 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+const cascadeRestoreInvestmentSnapshots = `-- name: CascadeRestoreInvestmentSnapshots :execrows
+UPDATE investment_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments p
+WHERE s.investment_id = $1
+  AND s.investment_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at
+`
+
+type CascadeRestoreInvestmentSnapshotsParams struct {
+	InvestmentID uuid.UUID  `json:"investment_id"`
+	HouseholdID  uuid.UUID  `json:"household_id"`
+	UpdatedBy    *uuid.UUID `json:"updated_by"`
+}
+
+// CascadeRestoreInvestmentSnapshots is the child half of a position undo-delete. It
+// restores exactly the snapshots the position delete cascaded: those whose
+// `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+// snapshot the user deleted or replaced earlier carries a different timestamp
+// and stays archived. Runs *before* the parent UPDATE, while the parent is still
+// deleted: the mirror of CascadeSoftDeleteInvestmentSnapshots.
+func (q *Queries) CascadeRestoreInvestmentSnapshots(ctx context.Context, arg CascadeRestoreInvestmentSnapshotsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, cascadeRestoreInvestmentSnapshots, arg.InvestmentID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const cascadeSoftDeleteInvestmentSnapshots = `-- name: CascadeSoftDeleteInvestmentSnapshots :execrows
 UPDATE investment_snapshots s
 SET deleted_at = now(),
@@ -100,6 +133,46 @@ func (q *Queries) CreateInvestmentSnapshot(ctx context.Context, arg CreateInvest
 		arg.Supersedes,
 		arg.HouseholdID,
 	)
+	var i InvestmentSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.InvestmentID,
+		&i.YearMonth,
+		&i.Amount,
+		&i.Currency,
+		&i.Quantity,
+		&i.PricePerUnit,
+		&i.AccruedInterest,
+		&i.AsOfDate,
+		&i.Description,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedBy,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Supersedes,
+	)
+	return i, err
+}
+
+const getInvestmentSnapshotAnyState = `-- name: GetInvestmentSnapshotAnyState :one
+SELECT s.id, s.investment_id, s.year_month, s.amount, s.currency, s.quantity, s.price_per_unit, s.accrued_interest, s.as_of_date, s.description, s.created_by, s.created_at, s.updated_by, s.updated_at, s.deleted_at, s.supersedes
+FROM investment_snapshots s
+JOIN investments p ON p.id = s.investment_id
+WHERE s.id = $1
+  AND p.household_id = $2
+`
+
+type GetInvestmentSnapshotAnyStateParams struct {
+	ID          uuid.UUID `json:"id"`
+	HouseholdID uuid.UUID `json:"household_id"`
+}
+
+// GetInvestmentSnapshotAnyState reads one snapshot, live or archived, household-scoped
+// through its parent. The undo-replace path needs it to tell "no such row in this
+// household" (not found) from "exists but is no longer live" (conflict).
+func (q *Queries) GetInvestmentSnapshotAnyState(ctx context.Context, arg GetInvestmentSnapshotAnyStateParams) (InvestmentSnapshot, error) {
+	row := q.db.QueryRow(ctx, getInvestmentSnapshotAnyState, arg.ID, arg.HouseholdID)
 	var i InvestmentSnapshot
 	err := row.Scan(
 		&i.ID,

@@ -91,9 +91,10 @@ WHERE s.id = $1
 -- is still live here and this keeps the same `a.deleted_at IS NULL` +
 -- household guard as the single-snapshot delete above. `AND s.deleted_at IS
 -- NULL` means a snapshot the user already deleted keeps its original timestamp
--- rather than being re-stamped (INV-SOFT-DELETE-01). If an undelete path is
--- ever added it must un-cascade using the parent's `deleted_at` as the
--- discriminator, or it will resurrect children the user deleted by hand.
+-- rather than being re-stamped (INV-SOFT-DELETE-01). The position undo
+-- un-cascades with CascadeRestoreAssetSnapshots, using the parent's
+-- `deleted_at` as the discriminator so it cannot resurrect children the user
+-- deleted by hand (INV-SOFT-DELETE-12).
 -- name: CascadeSoftDeleteAssetSnapshots :execrows
 UPDATE asset_snapshots s
 SET deleted_at = now(),
@@ -219,10 +220,13 @@ WHERE s.asset_id = sqlc.arg('asset_id')
   AND a.deleted_at IS NULL
   AND s.deleted_at IS NULL;
 
--- RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Only ever
--- called on the row a close row's `supersedes` names, in the same transaction
--- that soft-deleted that close row — so the partial unique index cannot be
--- violated.
+-- RestoreAssetSnapshot lifts the tombstone off an archived snapshot. Two callers
+-- share it, for all four groups (the other three have no comment, same query):
+-- the close machinery restores the row a close row's `supersedes` names in the
+-- transaction that soft-deleted that close row, so the partial unique index
+-- cannot be violated there; the Undo endpoints (ADR-0058 §2) call it on a row
+-- the user deleted or replaced, where a violation is the "slot was re-filled"
+-- answer and the repo maps it to ErrUndoSlotTaken.
 -- name: RestoreAssetSnapshot :execrows
 UPDATE asset_snapshots s
 SET deleted_at = NULL,
@@ -234,3 +238,31 @@ WHERE s.id = sqlc.arg('id')
   AND a.household_id = sqlc.arg('household_id')::uuid
   AND a.deleted_at IS NULL
   AND s.deleted_at IS NOT NULL;
+
+-- GetAssetSnapshotAnyState reads one snapshot, live or archived, household-scoped
+-- through its parent. The undo-replace path needs it to tell "no such row in this
+-- household" (not found) from "exists but is no longer live" (conflict).
+-- name: GetAssetSnapshotAnyState :one
+SELECT s.*
+FROM asset_snapshots s
+JOIN assets p ON p.id = s.asset_id
+WHERE s.id = $1
+  AND p.household_id = $2;
+
+-- CascadeRestoreAssetSnapshots is the child half of a position undo-delete. It
+-- restores exactly the snapshots the position delete cascaded: those whose
+-- `deleted_at` equals the parent's (both stamped by one transaction's now()). A
+-- snapshot the user deleted or replaced earlier carries a different timestamp
+-- and stays archived. Runs *before* the parent UPDATE, while the parent is still
+-- deleted: the mirror of CascadeSoftDeleteAssetSnapshots.
+-- name: CascadeRestoreAssetSnapshots :execrows
+UPDATE asset_snapshots s
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM assets p
+WHERE s.asset_id = $1
+  AND s.asset_id = p.id
+  AND p.household_id = $2
+  AND p.deleted_at IS NOT NULL
+  AND s.deleted_at = p.deleted_at;

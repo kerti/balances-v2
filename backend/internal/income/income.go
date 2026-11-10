@@ -16,6 +16,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
@@ -40,6 +41,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleGet)
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
+			r.Post("/undo-delete", httpundo.Delete("undo delete income", "id", "id", h.repository, (*repo.IncomeRepo).UndoDeleteIncome))
 		})
 	})
 }
@@ -232,3 +234,7 @@ func parseDate(s string) (time.Time, bool) {
 	}
 	return t, true
 }
+
+// repository hands httpundo the repo lazily: Mount must stay safe on a nil
+// *Handlers, so no field is read until a request arrives.
+func (h *Handlers) repository() *repo.IncomeRepo { return h.repo }

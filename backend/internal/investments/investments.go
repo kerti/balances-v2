@@ -18,6 +18,7 @@ import (
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
+	"github.com/kerti/balances-v2/backend/internal/httpundo"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
 
@@ -72,6 +73,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetStock)
 				r.Patch("/", h.handleUpdateStock)
 				r.Delete("/", h.handleDeleteStock)
+				r.Post("/undo-delete", httpundo.Delete("undo delete stock", "id", "id", h.repository, (*repo.InvestmentRepo).UndoDeleteStock))
 				// Export the full position workbook (Detail + Snapshots +
 				// Transactions) in the importer's format; round-trips back in
 				// through the snapshot-import flow on the detail page.
@@ -87,6 +89,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetMutualFund)
 				r.Patch("/", h.handleUpdateMutualFund)
 				r.Delete("/", h.handleDeleteMutualFund)
+				r.Post("/undo-delete", httpundo.Delete("undo delete mutual fund", "id", "id", h.repository, (*repo.InvestmentRepo).UndoDeleteMutualFund))
 				r.Get("/export", h.handleExportMutualFund)
 			})
 		})
@@ -99,6 +102,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetGold)
 				r.Patch("/", h.handleUpdateGold)
 				r.Delete("/", h.handleDeleteGold)
+				r.Post("/undo-delete", httpundo.Delete("undo delete gold", "id", "id", h.repository, (*repo.InvestmentRepo).UndoDeleteGold))
 				r.Get("/export", h.handleExportGold)
 			})
 		})
@@ -111,6 +115,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetBond)
 				r.Patch("/", h.handleUpdateBond)
 				r.Delete("/", h.handleDeleteBond)
+				r.Post("/undo-delete", httpundo.Delete("undo delete bond", "id", "id", h.repository, (*repo.InvestmentRepo).UndoDeleteBond))
 				r.Get("/export", h.handleExportBond)
 			})
 		})
@@ -123,6 +128,7 @@ func (h *Handlers) Mount(r chi.Router) {
 				r.Get("/", h.handleGetTimeDeposit)
 				r.Patch("/", h.handleUpdateTimeDeposit)
 				r.Delete("/", h.handleDeleteTimeDeposit)
+				r.Post("/undo-delete", httpundo.Delete("undo delete time deposit", "id", "id", h.repository, (*repo.InvestmentRepo).UndoDeleteTimeDeposit))
 				r.Get("/export", h.handleExportTimeDeposit)
 				// Manually link a hand-created successor so the matured source's
 				// rollover callout clears (issue #65). {id} is the source.
@@ -153,6 +159,8 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleListSnapshots)
 			r.Patch("/{snapshotID}", h.handleUpdateSnapshot)
 			r.Delete("/{snapshotID}", h.handleDeleteSnapshot)
+			r.Post("/{snapshotID}/undo-delete", httpundo.Delete("undo delete investment snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.InvestmentRepo).UndoDeleteInvestmentSnapshot))
+			r.Post("/{snapshotID}/undo-replace", httpundo.Replace("undo replace investment snapshot", "snapshotID", "snapshot_id", h.repository, (*repo.InvestmentRepo).UndoReplaceInvestmentSnapshot))
 			// Bulk import (M6 side item): download a subtype-shaped .xlsx
 			// template, then upload a filled one. Static segments, so no
 			// clash with the /{snapshotID} routes above.
@@ -165,6 +173,7 @@ func (h *Handlers) Mount(r chi.Router) {
 			r.Get("/", h.handleListTransactions)
 			r.Patch("/{transactionID}", h.handleUpdateTransaction)
 			r.Delete("/{transactionID}", h.handleDeleteTransaction)
+			r.Post("/{transactionID}/undo-delete", httpundo.Delete("undo delete investment transaction", "transactionID", "transaction_id", h.repository, (*repo.InvestmentRepo).UndoDeleteInvestmentTransaction))
 		})
 
 		// Lifecycle operates on the shared `investments` table (ADR-0009), so
@@ -212,3 +221,7 @@ func writeInvalidDate(w http.ResponseWriter, field string) {
 func parseIDParam(r *http.Request, name string) (uuid.UUID, error) {
 	return uuid.Parse(chi.URLParam(r, name))
 }
+
+// repository hands httpundo the repo lazily: Mount must stay safe on a nil
+// *Handlers, so no field is read until a request arrives.
+func (h *Handlers) repository() *repo.InvestmentRepo { return h.repo }

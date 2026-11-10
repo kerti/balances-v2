@@ -103,3 +103,34 @@ WHERE t.investment_id = $1
   AND i.household_id = $2
   AND i.deleted_at IS NULL
   AND t.deleted_at IS NULL;
+
+-- RestoreInvestmentTransaction undoes a single-transaction delete (ADR-0058 §2).
+-- The investment must still be live in the caller's household. `updated_at`
+-- moves so the report watermark picks the restore up.
+-- name: RestoreInvestmentTransaction :execrows
+UPDATE investment_transactions t
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE t.id = $1
+  AND t.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NULL
+  AND t.deleted_at IS NOT NULL;
+
+-- CascadeRestoreInvestmentTransactions is the transaction half of an investment
+-- undo-delete: it restores the transactions the delete cascaded (same
+-- `deleted_at` as the still-deleted parent) and leaves ones deleted earlier by
+-- hand. See CascadeRestoreInvestmentSnapshots.
+-- name: CascadeRestoreInvestmentTransactions :execrows
+UPDATE investment_transactions t
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+FROM investments i
+WHERE t.investment_id = $1
+  AND t.investment_id = i.id
+  AND i.household_id = $2
+  AND i.deleted_at IS NOT NULL
+  AND t.deleted_at = i.deleted_at;

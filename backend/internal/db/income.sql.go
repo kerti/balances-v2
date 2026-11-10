@@ -149,6 +149,30 @@ func (q *Queries) ListIncomeByHousehold(ctx context.Context, householdID uuid.UU
 	return items, nil
 }
 
+const restoreIncome = `-- name: RestoreIncome :execrows
+UPDATE income
+SET deleted_at = NULL,
+    updated_by = $3,
+    updated_at = now()
+WHERE id = $1 AND household_id = $2 AND deleted_at IS NOT NULL
+`
+
+type RestoreIncomeParams struct {
+	ID          uuid.UUID  `json:"id"`
+	HouseholdID uuid.UUID  `json:"household_id"`
+	UpdatedBy   *uuid.UUID `json:"updated_by"`
+}
+
+// RestoreIncome undoes a single-row delete (ADR-0058 §2). `updated_at` moves so
+// the report watermark picks the restore up.
+func (q *Queries) RestoreIncome(ctx context.Context, arg RestoreIncomeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, restoreIncome, arg.ID, arg.HouseholdID, arg.UpdatedBy)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const softDeleteIncome = `-- name: SoftDeleteIncome :execrows
 UPDATE income
 SET deleted_at = now(),
