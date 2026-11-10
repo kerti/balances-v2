@@ -411,23 +411,26 @@ start-task:
 	@echo "✓ on main, up to date @ $$(git rev-parse --short HEAD)"
 
 # Pre-push gate: backend + frontend lint and tests. Each step's full output is
-# redirected to /tmp/balances-check-*.log; stdout gets only a pass/fail line.
+# redirected to $(CHECK_LOGS)/*.log (one dir per checkout, so parallel worktrees
+# don't overwrite each other's logs); stdout gets only a pass/fail line.
 # e2e is excluded — run `make e2e` separately (it's slow and verbose).
+CHECK_LOGS := /tmp/balances-check/$(notdir $(CURDIR))
+
 check:
-	@fail=0; \
-	printf '%-14s' 'golangci-lint'; (cd backend && golangci-lint run) >/tmp/balances-check-be-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-lint.log'; fail=1; }; \
-	printf '%-14s' 'eslint';        (cd frontend && npm run -s lint)   >/tmp/balances-check-fe-lint.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-lint.log'; fail=1; }; \
-	printf '%-14s' 'prettier';      (cd frontend && npm run -s format:check) >/tmp/balances-check-fe-fmt.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-fmt.log'; fail=1; }; \
-	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >/tmp/balances-check-fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-tsc.log';  fail=1; }; \
-	printf '%-14s' 'go test';       (cd backend && go test ./...)      >/tmp/balances-check-be-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-be-test.log'; fail=1; }; \
-	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >/tmp/balances-check-fe-test.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-fe-test.log'; fail=1; }; \
-	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report -strict) >/tmp/balances-check-qa.log 2>&1; qa=$$?; \
-	  sed -n '1s/^qa-matrix: /  /p' /tmp/balances-check-qa.log; \
-	  [ $$qa -eq 0 ] || { echo '              ✗ → /tmp/balances-check-qa.log'; fail=1; }; \
-	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >/tmp/balances-check-ts-types.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-ts-types.log'; fail=1; }; \
-	printf '%-14s' 'sqlc';         $(MAKE) -s backend-sqlc-check                      >/tmp/balances-check-sqlc.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-sqlc.log'; fail=1; }; \
-	printf '%-14s' 'api-routes';   (cd backend && go run ./tools/gen-routes -check)   >/tmp/balances-check-api-routes.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-api-routes.log'; fail=1; }; \
-	printf '%-14s' 'licenses';     $(MAKE) -s licenses-check                          >/tmp/balances-check-licenses.log 2>&1 && echo '✓' || { echo '✗ → /tmp/balances-check-licenses.log'; fail=1; }; \
+	@mkdir -p $(CHECK_LOGS); fail=0; \
+	printf '%-14s' 'golangci-lint'; (cd backend && golangci-lint run) >$(CHECK_LOGS)/be-lint.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/be-lint.log'; fail=1; }; \
+	printf '%-14s' 'eslint';        (cd frontend && npm run -s lint)   >$(CHECK_LOGS)/fe-lint.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/fe-lint.log'; fail=1; }; \
+	printf '%-14s' 'prettier';      (cd frontend && npm run -s format:check) >$(CHECK_LOGS)/fe-fmt.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/fe-fmt.log'; fail=1; }; \
+	printf '%-14s' 'tsc';           (cd frontend && npx tsc -b)        >$(CHECK_LOGS)/fe-tsc.log  2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/fe-tsc.log';  fail=1; }; \
+	printf '%-14s' 'go test';       (cd backend && go test ./...)      >$(CHECK_LOGS)/be-test.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/be-test.log'; fail=1; }; \
+	printf '%-14s' 'vitest';        (cd frontend && npm run -s test)   >$(CHECK_LOGS)/fe-test.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/fe-test.log'; fail=1; }; \
+	printf '%-14s' 'qa-matrix';     (cd backend && go run ./tools/qa-matrix -report -strict) >$(CHECK_LOGS)/qa.log 2>&1; qa=$$?; \
+	  sed -n '1s/^qa-matrix: /  /p' $(CHECK_LOGS)/qa.log; \
+	  [ $$qa -eq 0 ] || { echo '              ✗ → $(CHECK_LOGS)/qa.log'; fail=1; }; \
+	printf '%-14s' 'gen-ts-types'; (cd backend && go run ./tools/gen-ts-types -check) >$(CHECK_LOGS)/ts-types.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/ts-types.log'; fail=1; }; \
+	printf '%-14s' 'sqlc';         $(MAKE) -s backend-sqlc-check                      >$(CHECK_LOGS)/sqlc.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/sqlc.log'; fail=1; }; \
+	printf '%-14s' 'api-routes';   (cd backend && go run ./tools/gen-routes -check)   >$(CHECK_LOGS)/api-routes.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/api-routes.log'; fail=1; }; \
+	printf '%-14s' 'licenses';     $(MAKE) -s licenses-check                          >$(CHECK_LOGS)/licenses.log 2>&1 && echo '✓' || { echo '✗ → $(CHECK_LOGS)/licenses.log'; fail=1; }; \
 	if [ $$fail -eq 0 ]; then echo 'all green'; else echo 'FAILED — read the ✗ log(s) above'; exit 1; fi
 
 # Regenerate docs/qa/coverage/ from the `// covers: INV-...` annotations in the
