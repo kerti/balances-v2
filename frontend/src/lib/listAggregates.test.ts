@@ -56,7 +56,17 @@ describe("aggregateListPositions — byCurrency totals", () => {
       pos({ id: "a", currency: "IDR", latestValue: null, cost: 500 }),
     ]);
     expect(r.byCurrency).toEqual([{ currency: "IDR", value: 0, cost: 500, pl: -500 }]);
-    expect(r.count).toBe(0);
+    expect(r.count).toBe(1);
+  });
+
+  it("counts an empty active row but not a closed one; sums unchanged", () => {
+    const r = aggregateListPositions([
+      pos({ id: "a", latestValue: 1000, cost: 0 }),
+      pos({ id: "b", latestValue: null, cost: 0 }),
+      pos({ id: "c", status: "closed", latestValue: 7, cost: 0 }),
+    ]);
+    expect(r.count).toBe(2);
+    expect(r.byCurrency).toEqual([{ currency: "IDR", value: 1000, cost: 0, pl: 1000 }]);
   });
 
   it("orders byCurrency by value desc, then currency code", () => {

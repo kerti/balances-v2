@@ -2,8 +2,8 @@
   "home": {
     "subtitle": "Composition and trend across personal and institutional debts.",
     "totalOwedTitle": "Total owed",
-    "totalOwedCount_one": "{{count}} liability",
-    "totalOwedCount_other": "{{count}} liabilities",
+    "totalOwedCount_one": "{{count}} active liability",
+    "totalOwedCount_other": "{{count}} active liabilities",
     "valueChartTitle": "Total owed over time",
     "valueChartDescription": "Sum across all active liabilities ({{currency}}).",
     "categoryStackTitle": "Category share over time",

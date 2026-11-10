@@ -2,8 +2,8 @@
   "home": {
     "subtitle": "Komposisi dan tren mencakup utang pribadi dan institusional.",
     "totalOwedTitle": "Total utang",
-    "totalOwedCount_one": "{{count}} liabilitas",
-    "totalOwedCount_other": "{{count}} liabilitas",
+    "totalOwedCount_one": "{{count}} liabilitas aktif",
+    "totalOwedCount_other": "{{count}} liabilitas aktif",
     "valueChartTitle": "Total utang dari waktu ke waktu",
     "valueChartDescription": "Jumlah seluruh liabilitas aktif ({{currency}}).",
     "categoryStackTitle": "Porsi kategori dari waktu ke waktu",
