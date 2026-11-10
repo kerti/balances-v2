@@ -10,7 +10,7 @@ import type { EntryFieldValues, EntryShape } from "@/components/entry/shapes";
 
 // The carry-forward surfacing state for a row's "when" line.
 export type EntryWhen =
-  | { kind: "overwrite" } // a snapshot already exists for the chosen month
+  | { kind: "overwrite"; current: string } // a snapshot already exists for the chosen month (formatted value)
   | { kind: "carried"; month: string } // value carried from an earlier month (formatted)
   | { kind: "none" }; // no history yet
 
@@ -18,7 +18,12 @@ export type EntryRowView = {
   positionId: string;
   displayName: string;
   currency: string;
+  // True when a value differs from the prefill: the only state that keeps the
+  // dot and ring.
   dirty: boolean;
+  // True when the user ticked "same as" on a carried row (#789): it saves its
+  // prefill as this month's Snapshot without being a change.
+  unchanged: boolean;
   ownership: string;
   when: EntryWhen;
   error: boolean;
@@ -40,7 +45,66 @@ export type EntryRowRendererProps = {
   copy: string;
   onFieldChange: (fieldKey: string, value: string) => void;
   onReset: () => void;
+  onUnchanged: (checked: boolean) => void;
 };
+
+// A native checkbox (the brand accent themes it, #780) that can show the
+// indeterminate state a "tick all" header needs. The DOM property is set from a
+// ref callback, not an effect.
+export function SameCheckbox({
+  checked,
+  indeterminate = false,
+  onChange,
+  label,
+  testId,
+  className = "size-4",
+}: {
+  checked: boolean;
+  indeterminate?: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+  testId: string;
+  className?: string;
+}) {
+  return (
+    <input
+      type="checkbox"
+      className={`${className} shrink-0 cursor-pointer accent-primary`}
+      checked={checked}
+      ref={(el) => {
+        if (el) el.indeterminate = indeterminate;
+      }}
+      onChange={(e) => onChange(e.target.checked)}
+      aria-label={label}
+      data-testid={testId}
+    />
+  );
+}
+
+// The per-row "same as {month}" checkbox. Checking it is "mark Unchanged".
+export function RowSameCheckbox({
+  view,
+  tid,
+  className,
+  onUnchanged,
+}: {
+  view: EntryRowView;
+  tid: string;
+  className?: string;
+  onUnchanged: (checked: boolean) => void;
+}) {
+  const { t } = useTranslation("common");
+  if (view.when.kind !== "carried" || view.dirty) return null;
+  return (
+    <SameCheckbox
+      checked={view.unchanged}
+      onChange={onUnchanged}
+      label={t("bulkEntry.sameAriaLabel", { name: view.displayName, month: view.when.month })}
+      testId={`${tid}-entry-same-${view.positionId}`}
+      className={className}
+    />
+  );
+}
 
 // The name / ownership / "when" / per-row-error block. Identical in both
 // renderers (same testids), so shared here; only its placement diverges — a
@@ -71,11 +135,17 @@ export function EntryRowMeta({
         {view.ownership}
         {" · "}
         {view.when.kind === "overwrite" ? (
-          <span className="text-warning" data-testid={`${tid}-entry-overwrite-${view.positionId}`}>
-            {t("bulkEntry.overwritesThisMonth")}
+          <span data-testid={`${tid}-entry-current-${view.positionId}`}>
+            {t("bulkEntry.current", { value: view.when.current })}
           </span>
         ) : view.when.kind === "carried" ? (
-          t("bulkEntry.carriedFrom", { month: view.when.month })
+          view.unchanged ? (
+            <span data-testid={`${tid}-entry-unchanged-${view.positionId}`}>
+              {t("bulkEntry.sameAs", { month: view.when.month })}
+            </span>
+          ) : (
+            t("bulkEntry.carriedFrom", { month: view.when.month })
+          )
         ) : (
           t("bulkEntry.noHistory")
         )}

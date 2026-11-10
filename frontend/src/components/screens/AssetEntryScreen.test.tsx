@@ -94,7 +94,7 @@ it("renders eligible assets grouped by type, with owner + carry-forward prefill"
 });
 
 // covers: INV-SNAPSHOTS-06
-it("warns that editing overwrites when a snapshot already exists for the month", async () => {
+it("shows a muted Current value when a snapshot already exists for the month", async () => {
   const ym = thisYearMonth(); // the screen's default target month
   server.use(
     http.get("/api/assets/snapshots/entry", () =>
@@ -118,8 +118,8 @@ it("warns that editing overwrites when a snapshot already exists for the month",
   );
   renderScreen();
 
-  expect(await screen.findByTestId("asset-entry-overwrite-x1")).toBeInTheDocument();
-  // A genuinely carried-forward row does not carry the overwrite warning.
+  expect(await screen.findByTestId("asset-entry-current-x1")).toHaveTextContent(/^Current: .*999/);
+  // A row with this month's own value is not "carried", and has no Unchanged action.
   expect(screen.queryByText(/carried from/i)).not.toBeInTheDocument();
 });
 
