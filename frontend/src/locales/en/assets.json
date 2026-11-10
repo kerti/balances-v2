@@ -2,8 +2,8 @@
   "home": {
     "subtitle": "Composition and trend across bank accounts, properties, and vehicles.",
     "totalValueTitle": "Total value",
-    "totalValueCount_one": "{{count}} asset",
-    "totalValueCount_other": "{{count}} assets",
+    "totalValueCount_one": "{{count}} active asset",
+    "totalValueCount_other": "{{count}} active assets",
     "valueChartTitle": "Total value over time",
     "valueChartDescription": "Sum across all active assets ({{currency}}).",
     "categoryStackTitle": "Category share over time",

@@ -56,8 +56,8 @@ export type TimePoint = {
 export type ListAggregates = {
   byCurrency: CurrencyAggregate[]; // value desc; currency code breaks ties
   timeSeriesByCurrency: Map<string, TimePoint[]>;
-  // Active positions that contributed a balance — for the "N stocks"
-  // count under the headline.
+  // Every active position, including ones with no value yet — for the
+  // "N stocks" count under the headline.
   count: number;
 };
 
@@ -115,8 +115,8 @@ export function aggregateListPositions(positions: Position[]): ListAggregates {
     }
   }
 
-  // Active positions with a value — for the headline subline count.
-  const count = active.filter((p) => p.latestValue !== null).length;
+  // Every active position, valued or not — for the headline subline count.
+  const count = active.length;
 
   return { byCurrency, timeSeriesByCurrency, count };
 }

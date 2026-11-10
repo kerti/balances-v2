@@ -5,8 +5,8 @@
     "unrealizedPL": "P/L:",
     "chartTitle": "Aggregated value over time",
     "chartDescription": "Sum of value and cost across active positions ({{currency}}).",
-    "noun": "position",
-    "nounPlural": "positions"
+    "noun": "investment",
+    "nounPlural": "investments"
   },
   "home": {
     "subtitle": "Composition and trend across all five subtypes.",

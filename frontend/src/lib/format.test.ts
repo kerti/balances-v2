@@ -6,6 +6,7 @@ import {
   formatDate,
   formatDateTime,
   formatChartMonth,
+  formatShortMonth,
   formatShortYearMonth,
   formatNumber,
   formatCompactNumber,
@@ -126,6 +127,18 @@ describe("formatShortYearMonth", () => {
   });
   it("id renders the Indonesian short month + full year", () => {
     expect(formatShortYearMonth(new Date("2024-05-15T12:00:00Z"), "id-ID")).toBe("Mei 2024");
+  });
+});
+
+describe("formatShortMonth", () => {
+  it("renders September as Sep in en, never Sept", () => {
+    const d = new Date("2024-09-15T12:00:00Z");
+    expect(formatShortMonth(d, "en-GB")).toBe("Sep");
+    expect(formatShortMonth(d, "en-GB", "numeric")).toBe("Sep 2024");
+    expect(formatChartMonth(d, "en-GB")).toBe("Sep 24");
+  });
+  it("leaves Bahasa to Intl", () => {
+    expect(formatShortMonth(new Date("2024-05-15T12:00:00Z"), "id-ID")).toBe("Mei");
   });
 });
 

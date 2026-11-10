@@ -5,7 +5,7 @@ import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { formatYearMonth } from "@/lib/format";
+import { formatShortMonth, formatYearMonth } from "@/lib/format";
 
 // MonthPickerPopover replaces a flat 120+-option <select> for a month picker
 // (dashboard net-worth report, income filter). Trigger shows the current
@@ -15,22 +15,7 @@ import { formatYearMonth } from "@/lib/format";
 // in `months` — the caller keeps whatever key shape it uses (full ISO
 // `year_month` for the dashboard, `"YYYY-MM"` for income).
 
-// Month-label keys index into common.months.{jan…dec}. Order is fixed Jan→Dec
-// (calendar order), independent of locale.
-const MONTH_KEYS = [
-  "jan",
-  "feb",
-  "mar",
-  "apr",
-  "may",
-  "jun",
-  "jul",
-  "aug",
-  "sep",
-  "oct",
-  "nov",
-  "dec",
-] as const;
+const MONTH_INDEXES = Array.from({ length: 12 }, (_, i) => i);
 
 // year_month is stored as "YYYY-MM-01T00:00:00Z" — UTC midnight. Use UTC
 // getters so local-timezone rollover never shifts the displayed month.
@@ -149,7 +134,7 @@ export function MonthPickerPopover({
             </Button>
           </div>
           <div className="grid grid-cols-4 gap-1">
-            {MONTH_KEYS.map((monthKey, idx) => {
+            {MONTH_INDEXES.map((idx) => {
               const key = `${viewYear}-${String(idx + 1).padStart(2, "0")}`;
               const iso = isoByKey.get(key);
               const disabled = !iso;
@@ -168,7 +153,7 @@ export function MonthPickerPopover({
                   }}
                   className={cn("h-8", disabled && "opacity-40")}
                 >
-                  {t(`common:months.${monthKey}`)}
+                  {formatShortMonth(new Date(viewYear, idx, 1))}
                 </Button>
               );
             })}

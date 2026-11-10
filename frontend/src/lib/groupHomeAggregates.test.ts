@@ -23,6 +23,18 @@ describe("aggregateGroupHome", () => {
     expect(r.count).toBe(0);
   });
 
+  it("counts an empty active item for the hub count but not a closed one", () => {
+    const r = aggregateGroupHome(
+      [
+        pos({ id: "a", latestValue: 100 }),
+        pos({ id: "b", latestValue: null }),
+        pos({ id: "c", status: "closed", latestValue: 50 }),
+      ],
+      CATS,
+    );
+    expect(r.count).toBe(2);
+  });
+
   it("produces a value-only headline + total-over-time (cost always 0)", () => {
     const r = aggregateGroupHome(
       [

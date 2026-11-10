@@ -5,8 +5,8 @@
     "unrealizedPL": "Untung/rugi:",
     "chartTitle": "Nilai agregat dari waktu ke waktu",
     "chartDescription": "Total nilai dan modal seluruh posisi aktif ({{currency}}).",
-    "noun": "posisi",
-    "nounPlural": "posisi"
+    "noun": "investasi",
+    "nounPlural": "investasi"
   },
   "home": {
     "subtitle": "Komposisi dan tren seluruh lima subtipe.",

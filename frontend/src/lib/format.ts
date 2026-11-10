@@ -99,42 +99,49 @@ export function formatYearMonth(iso: string, locale?: Locale): string {
 
 // "2024-05-15T00:00:00Z" → en: "15 May 2024", id: "15 Mei 2024"
 export function formatDate(iso: string, locale?: Locale): string {
-  return new Date(iso).toLocaleDateString(resolve(locale), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return new Date(iso)
+    .toLocaleDateString(resolve(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+    .replace(/\bSept\b/, "Sep");
 }
 
 // "2024-05-15T14:30:00Z" → en: "15 May 2024, 14:30", id: "15 Mei 2024, 14.30"
 export function formatDateTime(iso: string, locale?: Locale): string {
-  return new Date(iso).toLocaleString(resolve(locale), {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(iso)
+    .toLocaleString(resolve(locale), {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    .replace(/\bSept\b/, "Sep");
+}
+
+// Short month label. Intl's en-GB renders September as "Sept"; every en short
+// month is three letters here, so that one spelling is overridden. Bahasa is
+// left to Intl. `year` picks the suffix: "2-digit" -> "Sep 24", "numeric" ->
+// "Sep 2024", omitted -> bare "Sep". Every short-month label goes through this.
+export function formatShortMonth(d: Date, locale?: Locale, year?: "2-digit" | "numeric"): string {
+  const opts: Intl.DateTimeFormatOptions = year ? { month: "short", year } : { month: "short" };
+  return d.toLocaleDateString(resolve(locale), opts).replace(/\bSept\b/, "Sep");
 }
 
 // Compact month + 2-digit year for chart axis ticks. en: "May 24",
 // id: "Mei 24". Optimised for narrow ticks — use formatYearMonth for body
 // copy and formatDate where the day matters.
 export function formatChartMonth(d: Date, locale?: Locale): string {
-  return d.toLocaleDateString(resolve(locale), {
-    month: "short",
-    year: "2-digit",
-  });
+  return formatShortMonth(d, locale, "2-digit");
 }
 
 // Short month + numeric year. en: "May 2024", id: "Mei 2024". Used by the
 // maturity helper for "Matures May 2024" copy where the long month name of
 // formatYearMonth would crowd the row.
 export function formatShortYearMonth(d: Date, locale?: Locale): string {
-  return d.toLocaleDateString(resolve(locale), {
-    month: "short",
-    year: "numeric",
-  });
+  return formatShortMonth(d, locale, "numeric");
 }
 
 // Locale-aware decimal number, no currency. en: "12,345.67"; id: "12.345,67".

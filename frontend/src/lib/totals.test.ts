@@ -23,13 +23,13 @@ describe("activeCurrencyTotals", () => {
     expect(r.count).toBe(1);
   });
 
-  it("ignores positions with no snapshot", () => {
+  it("counts an empty active position but adds nothing to the sums", () => {
     const r = activeCurrencyTotals([
       { status: "active", snapshot: null },
       { status: "active", snapshot: snap("700") },
     ]);
     expect(r.totals).toEqual([{ currency: "IDR", amount: 700 }]);
-    expect(r.count).toBe(1);
+    expect(r.count).toBe(2);
   });
 
   it("keeps currencies separate, largest first", () => {
@@ -53,12 +53,12 @@ describe("activeCurrencyTotals", () => {
     expect(r.totals.map((t) => t.currency)).toEqual(["EUR", "USD"]);
   });
 
-  it("returns empty totals and zero count when nothing qualifies", () => {
+  it("returns empty totals when nothing is valued; counts only active rows", () => {
     const r = activeCurrencyTotals([
       { status: "closed", snapshot: snap("100") },
       { status: "active", snapshot: null },
     ]);
     expect(r.totals).toEqual([]);
-    expect(r.count).toBe(0);
+    expect(r.count).toBe(1);
   });
 });
