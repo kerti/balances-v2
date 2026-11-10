@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { toastSaved } from "@/lib/writeToast";
+import { toastBulkSaved, toastSaved } from "@/lib/writeToast";
 import i18n from "@/i18n";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
 import type { Income, IncomeCategory, Regularity } from "@/api/types";
@@ -35,6 +35,22 @@ export function useCreateIncome() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["income"] });
       toastSaved("added");
+    },
+  });
+}
+
+// The copy-forward save (#846): every reviewed row in one request, so one toast.
+export function useCreateIncomeBulk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: IncomePayload[]) =>
+      api<Income[]>("/api/income/bulk", {
+        method: "POST",
+        body: JSON.stringify({ rows }),
+      }),
+    onSuccess: (written) => {
+      qc.invalidateQueries({ queryKey: ["income"] });
+      toastBulkSaved(written.length, 0);
     },
   });
 }
