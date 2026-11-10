@@ -15,6 +15,19 @@ export function thisYearMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+// yearMonthsUpToNow lists every "YYYY-MM" from `fromYear`-01 through the current
+// month — the `months` a MonthPickerPopover needs to act as a form field with
+// the same ceiling the native `max={thisYearMonth()}` gave.
+export function yearMonthsUpToNow(fromYear = 1990): string[] {
+  const [endYear, endMonth] = thisYearMonth().split("-").map(Number);
+  const out: string[] = [];
+  for (let y = fromYear; y <= endYear; y++) {
+    const last = y === endYear ? endMonth : 12;
+    for (let m = 1; m <= last; m++) out.push(`${y}-${String(m).padStart(2, "0")}`);
+  }
+  return out;
+}
+
 // pastYearMonthOrNull returns `value` when it is a well-formed "YYYY-MM" that is
 // not after the current month, else null — for seeding a month input from a URL
 // param without trusting it.

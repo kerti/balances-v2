@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pickMonth } from "./monthPicker";
 
 // Side-by-side currency display through the real UI + backend (Q15c, ADR-0010,
 // M5 slice 4). The monthly report is stored in the reporting currency; the
@@ -48,7 +49,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
   await page.getByRole("link", { name: "Exchange rates", exact: true }).click();
   const fxCard = page.getByTestId("fx-rates-card");
-  await fxCard.locator("#fx-month").fill(month);
+  await pickMonth(page, fxCard.getByTestId("fx-month"), month);
   await fxCard.getByLabel("Currency", { exact: true }).fill("USD");
   await fxCard.getByLabel("Rate").fill("16000");
   await fxCard.getByRole("button", { name: "Add rate" }).click();

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Shield, ShieldAlert, ShieldHalf } from "lucide-react";
 import type { RiskProfile } from "@/api/types";
+import { InfoHint } from "@/components/common/InfoHint";
 
 // RiskProfileBadge — icon + single-letter pip rendered next to a position's
 // display name on every investment list screen.
@@ -52,14 +53,20 @@ export function RiskProfileBadge({ profile, compact = false }: Props) {
   const label = t(labelKey);
   const letter = t(letterKey);
   return (
-    <span
-      className={`inline-flex items-center gap-1 ${colour}`}
-      data-testid={`risk-profile-${profile}`}
-      aria-label={label}
-      title={label}
-    >
-      <Icon className="size-3.5" aria-hidden="true" />
-      {!compact && <span className="text-xs font-semibold">{letter}</span>}
+    <span className={`inline-flex items-center ${colour}`} data-testid={`risk-profile-${profile}`}>
+      <InfoHint
+        label={label}
+        testId={`risk-profile-hint-${profile}`}
+        className={`${colour} gap-1 rounded-sm px-1`}
+        trigger={
+          <>
+            <Icon className="size-3.5" aria-hidden="true" />
+            {!compact && <span className="text-xs font-semibold">{letter}</span>}
+          </>
+        }
+      >
+        {label}
+      </InfoHint>
     </span>
   );
 }

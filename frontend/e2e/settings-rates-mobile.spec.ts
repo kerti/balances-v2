@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { pickMonth } from "./monthPicker";
 
 // Settings rate-table mobile divergence (#511, ADR-0050 B3b "wide table →
 // stacked cards"). The Exchange-rates and Inflation-rates subpages each split at
@@ -18,7 +19,7 @@ test(
   async ({ page }) => {
     // --- Seed one monthly inflation figure (desktop width) ---
     await page.goto("/settings/inflation-rates");
-    await page.getByLabel("Month").fill("2026-05");
+    await pickMonth(page, page.getByTestId("inflation-month"), "2026-05");
     await page.getByLabel("Annual %").fill("3.5");
     await page.getByRole("button", { name: "Add rate" }).click();
     await expect(page.getByTestId("inflation-rate-table")).toBeVisible();
@@ -77,7 +78,7 @@ test(
 
     // --- Seed one monthly FX rate (desktop width) ---
     await page.goto("/settings/fx-rates");
-    await page.getByLabel("Month").fill("2026-05");
+    await pickMonth(page, page.getByTestId("fx-month"), "2026-05");
     await page.getByLabel("Currency").fill("USD");
     // The add form's live hint spells the direction + counterpart as the code is
     // typed, so the foreign-only field isn't a clueless single input.

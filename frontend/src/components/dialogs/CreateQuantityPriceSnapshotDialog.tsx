@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { NumericInput } from "@/components/common/NumericInput";
 import { errorMessage } from "@/lib/errorMessage";
 import {
@@ -22,7 +23,13 @@ import {
   QUANTITY_DECIMALS,
   QUANTITY_INTEGER_DIGITS,
 } from "@/lib/format";
-import { thisYearMonth, carryoverSeed, monthStartDate, monthEndDateCapped } from "@/lib/dateLimits";
+import {
+  thisYearMonth,
+  yearMonthsUpToNow,
+  carryoverSeed,
+  monthStartDate,
+  monthEndDateCapped,
+} from "@/lib/dateLimits";
 import { useSession } from "@/hooks/useSession";
 import type { CarryoverDateMode } from "@/lib/dateLimits";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
@@ -164,13 +171,12 @@ export function CreateQuantityPriceSnapshotDialog<TResult>({
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
               <Label htmlFor="inv_year_month">{t("common:fields.month")}</Label>
-              <Input
+              <MonthPickerPopover
                 id="inv_year_month"
-                type="month"
-                required
-                max={thisYearMonth()}
-                value={form.year_month}
-                onChange={(e) => setForm({ ...form, year_month: e.target.value })}
+                testId="inv_year_month"
+                months={yearMonthsUpToNow()}
+                selected={form.year_month}
+                onSelect={(ym) => setForm({ ...form, year_month: ym })}
               />
             </div>
             <div className="grid gap-2">

@@ -16,6 +16,7 @@ import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
+import { InfoHint } from "@/components/common/InfoHint";
 import { positionDetail, positionEntry, routes } from "@/lib/routes";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
@@ -741,6 +742,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           currency={currency}
           muted
           hint={t("statement.assetValueChangeHint")}
+          hintId="non-cash"
         />
       )}
       {writeOffPositions.length > 0 && (
@@ -751,6 +753,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
             currency={currency}
             muted
             hint={t("statement.writeOffsHint")}
+            hintId="write-offs"
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-write-offs">
             {writeOffPositions.map((p) => (
@@ -772,6 +775,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
             currency={currency}
             muted
             hint={t("statement.trackingChangesHint")}
+            hintId="tracking-changes"
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-tracking-changes">
             {trackingChangePositions.map((p) => (
@@ -791,6 +795,7 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
         label={expensePositive ? t("statement.livingExpenses") : t("statement.unexplainedIncrease")}
         value={-exp}
         currency={currency}
+        hintId="residual"
         hint={
           expensePositive
             ? t("statement.livingExpensesHint")
@@ -811,6 +816,7 @@ function StatementRow({
   muted,
   bold,
   hint,
+  hintId,
 }: {
   label: string;
   value: number;
@@ -818,6 +824,7 @@ function StatementRow({
   muted?: boolean;
   bold?: boolean;
   hint?: string;
+  hintId?: string;
 }) {
   const positive = value >= 0;
   const amountClass = muted
@@ -827,9 +834,13 @@ function StatementRow({
       : "text-destructive";
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className={muted ? "text-muted-foreground" : ""} title={hint}>
+      <span className={muted ? "text-muted-foreground" : ""}>
         {label}
-        {hint && <span className="ml-1 cursor-help text-muted-foreground">{"ⓘ"}</span>}
+        {hint && (
+          <InfoHint label={label} testId={`dashboard-hint-${hintId}`} className="-my-3 ml-1">
+            {hint}
+          </InfoHint>
+        )}
       </span>
       <span className={`${bold ? "font-semibold" : ""} ${amountClass}`}>
         {positive ? "+" : "−"}

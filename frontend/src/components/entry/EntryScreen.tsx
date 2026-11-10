@@ -4,10 +4,12 @@ import { useTranslation } from "react-i18next";
 import { Wallet } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
   thisYearMonth,
+  yearMonthsUpToNow,
   monthEndDateCapped,
   monthStartDate,
   pastYearMonthOrNull,
@@ -246,13 +248,12 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
             <div className="grid grid-cols-2 items-end gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="bulk-year-month">{t("fields.month")}</Label>
-                <Input
+                <MonthPickerPopover
                   id="bulk-year-month"
-                  type="month"
-                  max={thisYearMonth()}
-                  value={yearMonth}
-                  onChange={(e) => setYearMonth(e.target.value)}
-                  data-testid={`${tid}-entry-month`}
+                  months={yearMonthsUpToNow()}
+                  selected={yearMonth}
+                  onSelect={setYearMonth}
+                  testId={`${tid}-entry-month`}
                 />
               </div>
               <div className="grid gap-2">

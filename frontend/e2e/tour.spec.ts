@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { pickMonth } from "./monthPicker";
 
 // Built-in instruction-manual tours through the real UI (issue #23, #26). The
 // `help-tour` button on every position detail screen launches a driver.js
@@ -73,7 +74,7 @@ async function addBankSnapshot(page: Page, month: string, amount: string) {
   await page.getByRole("button", { name: "New" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Record monthly snapshot")).toBeVisible();
-  await dialog.getByLabel("Month").fill(month);
+  await pickMonth(page, dialog.getByTestId("year_month"), month);
   await dialog.getByLabel("Amount (IDR)").fill(amount);
   await dialog.getByRole("button", { name: "Save snapshot" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -84,7 +85,7 @@ async function addBondSnapshot(page: Page, month: string, total: string) {
   await page.getByRole("button", { name: "New" }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("Record monthly snapshot")).toBeVisible();
-  await dialog.getByLabel("Month").fill(month);
+  await pickMonth(page, dialog.getByTestId("ai_year_month"), month);
   await dialog.getByLabel("Total value (IDR)").fill(total);
   await dialog.getByLabel("Accrued (IDR)").fill("10000");
   await dialog.getByRole("button", { name: "Save snapshot" }).click();

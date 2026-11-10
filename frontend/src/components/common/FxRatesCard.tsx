@@ -4,6 +4,8 @@ import { Check, Pencil, Trash2, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { yearMonthsUpToNow } from "@/lib/dateLimits";
+import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -117,12 +119,13 @@ export function FxRatesCard() {
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
             <Label htmlFor="fx-month">{t("fx.month")}</Label>
-            <Input
+            <MonthPickerPopover
               id="fx-month"
-              type="month"
-              className="w-40"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
+              testId="fx-month"
+              months={yearMonthsUpToNow()}
+              selected={month}
+              onSelect={setMonth}
+              placeholder={t("fx.pickMonth")}
             />
           </div>
           <div className="space-y-1">
