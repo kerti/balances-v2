@@ -65,6 +65,9 @@
   "sending": "Mengirim…",
   "somethingWentWrong": "Terjadi kesalahan",
   "unknownError": "kesalahan tidak diketahui",
+  "hub": {
+    "nativeSubtotals": "termasuk {{amounts}} · dikonversi dengan kurs tiap bulan"
+  },
   "home": {
     "assets": {
       "title": "Aset",

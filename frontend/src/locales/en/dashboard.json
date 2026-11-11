@@ -37,7 +37,8 @@
     "someAmounts": "some amounts",
     "addRate_one": "a rate",
     "addRate_other": "rates",
-    "line": "⚠ Net worth excludes {{subject}} — no {{when}} exchange rate for {{currencies}}. Add {{addRate}} in Settings."
+    "line": "⚠ Net worth excludes {{subject}} — no {{when}} exchange rate for {{currencies}}. Add {{addRate}} in Settings.",
+    "lineGroup": "⚠ This total excludes {{subject}} — no {{when}} exchange rate for {{currencies}}. Add {{addRate}} in Settings."
   },
   "chart": {
     "title": "Net worth over time",

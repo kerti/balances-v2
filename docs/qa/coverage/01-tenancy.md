@@ -16,7 +16,7 @@
 | INV-TENANCY-06 | Investment reads & mutations never cross households | `backend/internal/repo/investments_tenancy_test.go` |
 | INV-TENANCY-07 | Investment-transaction reads & mutations never cross households | `backend/internal/repo/investment_transactions_tenancy_test.go` |
 | INV-TENANCY-08 | Position-lifecycle mutations never cross households | `backend/internal/repo/lifecycle_tenancy_test.go` |
-| INV-TENANCY-09 | Monthly-report reads never expose another household's positions | `backend/internal/repo/monthly_reports_tenancy_test.go` |
+| INV-TENANCY-09 | Monthly-report reads never expose another household's positions | `backend/internal/repo/group_breakdown_tenancy_test.go`<br>`backend/internal/repo/monthly_reports_tenancy_test.go` |
 | INV-TENANCY-10 | Income reads & mutations never cross households | `backend/internal/repo/income_bulk_tenancy_test.go`<br>`backend/internal/repo/income_tenancy_test.go` |
 | INV-TENANCY-11 | FX-rate reads & mutations never cross households | `backend/internal/repo/fx_rates_tenancy_test.go` |
 | INV-TENANCY-12 | Tag reads, assignment & breakdown never cross households | `backend/internal/repo/tags_batch_test.go`<br>`backend/internal/repo/tags_tenancy_test.go` |

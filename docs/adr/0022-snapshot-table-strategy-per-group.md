@@ -141,3 +141,12 @@ said nothing. The "no FX, mirroring the list-screen convention" line above is re
   rendered.
 
 List screens and detail pages stay in native currency; this changes the hubs only.
+
+Implementation (#845): the converted figures are not computed in the client. `GET
+/api/reports/groups/{asset|liability|investment}` projects, per month, the group's total, its
+per-subtype (and investments' per-risk) split and its `missing_fx` entries from the same engine pass
+that writes the dashboard's `nw_*` columns, so a hub total is the dashboard's group total by
+construction (INV-FINANCE-39). It is computed per read and persisted nowhere — no migration, no
+`engine_version` bump. A hub converts only when the household has multi-currency on **and** holds a
+currency other than the reporting one; otherwise it renders its native set unchanged. The converted
+set is value-only: cost basis and unrealized P/L stay native, on the list screens.

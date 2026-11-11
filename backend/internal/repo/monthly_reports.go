@@ -61,7 +61,7 @@ func (r *MonthlyReportRepo) ListReports(ctx context.Context) ([]db.MonthlyReport
 	if err != nil {
 		return nil, err
 	}
-	if err := r.refresh(ctx, uid, hid); err != nil {
+	if _, err := r.refresh(ctx, uid, hid); err != nil {
 		return nil, err
 	}
 	rows, err := r.q.ListMonthlyReports(ctx, hid)
@@ -95,7 +95,7 @@ func (r *MonthlyReportRepo) GetReport(ctx context.Context, yearMonth time.Time) 
 	if err != nil {
 		return nil, err
 	}
-	if err := r.refresh(ctx, uid, hid); err != nil {
+	if _, err := r.refresh(ctx, uid, hid); err != nil {
 		return nil, err
 	}
 	row, err := r.q.GetMonthlyReport(ctx, db.GetMonthlyReportParams{
@@ -153,7 +153,7 @@ func (r *MonthlyReportRepo) GetPositionDetail(ctx context.Context, yearMonth tim
 	if err != nil {
 		return nil, err
 	}
-	if err := r.refresh(ctx, uid, hid); err != nil {
+	if _, err := r.refresh(ctx, uid, hid); err != nil {
 		return nil, err
 	}
 	target := monthFromIndex(monthIndex(yearMonth))
@@ -176,18 +176,22 @@ func (r *MonthlyReportRepo) GetPositionDetail(ctx context.Context, yearMonth tim
 
 // refresh regenerates and upserts the household's reports when the materialized
 // rows are stale or the month range changed.
-func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) error {
+//
+// It returns the freshly generated months (the same ones it materializes), so a
+// caller that wants an in-memory view of the engine's output reads the very pass
+// that produced the stored rows rather than running the engine a second time.
+func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) ([]monthlyReportData, error) {
 	currentMonth, err := r.currentMonth(ctx, uid)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	in, err := r.loadEngineInput(ctx, hid, currentMonth)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	reports := generateMonthlyReports(in)
 	if len(reports) == 0 {
-		return nil // no snapshot data — nothing to materialize
+		return nil, nil // no snapshot data — nothing to materialize
 	}
 	first := reports[0].yearMonth
 	last := reports[len(reports)-1].yearMonth
@@ -197,16 +201,16 @@ func (r *MonthlyReportRepo) refresh(ctx context.Context, uid, hid uuid.UUID) err
 		YearMonth:   last,
 	})
 	if err != nil {
-		return fmt.Errorf("report staleness watermark: %w", err)
+		return nil, fmt.Errorf("report staleness watermark: %w", err)
 	}
 	existing, err := r.q.ListMonthlyReports(ctx, hid)
 	if err != nil {
-		return fmt.Errorf("list monthly reports: %w", err)
+		return nil, fmt.Errorf("list monthly reports: %w", err)
 	}
 	if !needsRegen(reports, existing, watermark) {
-		return nil
+		return reports, nil
 	}
-	return r.writeReports(ctx, hid, first, last, reports)
+	return reports, r.writeReports(ctx, hid, first, last, reports)
 }
 
 // needsRegen is the coarse-but-correct slice-1 staleness check: regenerate the

@@ -10,6 +10,8 @@
   },
   "home": {
     "subtitle": "Komposisi dan tren seluruh lima subtipe.",
+    "valueChartTitle": "Total nilai dari waktu ke waktu",
+    "valueChartDescription": "Total seluruh investasi aktif ({{currency}}).",
     "valueCostChartTitle": "Total nilai dan modal dari waktu ke waktu",
     "valueCostChartDescription": "Total seluruh investasi aktif ({{currency}}).",
     "categoryStackTitle": "Proporsi kategori dari waktu ke waktu",

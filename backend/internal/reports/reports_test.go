@@ -237,6 +237,63 @@ func TestReportsHandlers_PDF(t *testing.T) {
 	})
 }
 
+// The hub breakdown endpoint: decimals ride as strings, the total is the same
+// figure /reports/{month} serves for that group, and an unknown group is 404.
+// covers: INV-FINANCE-39
+func TestReportsHandlers_GroupBreakdown(t *testing.T) {
+	router, user := newHarness(t)
+
+	t.Run("200 serves the group's months", func(t *testing.T) {
+		rec := do(t, router, "/reports/groups/asset", &user)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status: got %d (%s)", rec.Code, rec.Body.String())
+		}
+		var out struct {
+			Group             string `json:"group"`
+			ReportingCurrency string `json:"reporting_currency"`
+			Months            []struct {
+				YearMonth string            `json:"year_month"`
+				Total     string            `json:"total"`
+				BySubtype map[string]string `json:"by_subtype"`
+				MissingFx []any             `json:"missing_fx"`
+			} `json:"months"`
+		}
+		if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if out.Group != "asset" || out.ReportingCurrency != "IDR" {
+			t.Errorf("header: %+v", out)
+		}
+		if len(out.Months) == 0 || out.Months[0].YearMonth[:7] != "2026-01" {
+			t.Fatalf("months: %+v", out.Months)
+		}
+		if got := out.Months[0]; got.Total != "100" || got.BySubtype["bank_account"] != "100" || got.MissingFx == nil {
+			t.Errorf("2026-01: %+v, want total 100 / bank_account 100 / missing_fx []", got)
+		}
+
+		// Same figure the dashboard's month report carries for the group.
+		var nw struct {
+			NWAssets string `json:"nw_assets"`
+		}
+		_ = json.NewDecoder(do(t, router, "/reports/2026-01", &user).Body).Decode(&nw)
+		if nw.NWAssets != out.Months[0].Total {
+			t.Errorf("hub total %q != dashboard nw_assets %q", out.Months[0].Total, nw.NWAssets)
+		}
+	})
+
+	t.Run("404 unknown group", func(t *testing.T) {
+		if rec := do(t, router, "/reports/groups/bogus", &user); rec.Code != http.StatusNotFound {
+			t.Errorf("status: got %d, want 404", rec.Code)
+		}
+	})
+
+	t.Run("401 without a session", func(t *testing.T) {
+		if rec := do(t, router, "/reports/groups/asset", nil); rec.Code != http.StatusUnauthorized {
+			t.Errorf("status: got %d, want 401", rec.Code)
+		}
+	})
+}
+
 func TestReportsHandlers_RequiresAuth(t *testing.T) {
 	router, _ := newHarness(t)
 	rec := do(t, router, "/reports", nil)

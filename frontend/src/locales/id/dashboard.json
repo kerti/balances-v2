@@ -37,7 +37,8 @@
     "someAmounts": "sebagian nominal",
     "addRate_one": "kurs",
     "addRate_other": "kurs",
-    "line": "⚠ Kekayaan bersih tidak menyertakan {{subject}} — tidak ada kurs {{when}} untuk {{currencies}}. Tambahkan {{addRate}} di Pengaturan."
+    "line": "⚠ Kekayaan bersih tidak menyertakan {{subject}} — tidak ada kurs {{when}} untuk {{currencies}}. Tambahkan {{addRate}} di Pengaturan.",
+    "lineGroup": "⚠ Total ini tidak menyertakan {{subject}} — tidak ada kurs {{when}} untuk {{currencies}}. Tambahkan {{addRate}} di Pengaturan."
   },
   "chart": {
     "title": "Kekayaan bersih dari waktu ke waktu",

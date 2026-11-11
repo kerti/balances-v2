@@ -6,6 +6,7 @@ import type { TFunction } from "i18next";
 import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomableNetWorthChart } from "@/components/charts/ZoomableNetWorthChart";
+import { MissingFxWarning } from "@/components/common/MissingFxWarning";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
 import { Select } from "@/components/ui/select";
@@ -297,7 +298,7 @@ function HeadlineCard({
         )}
         <StalePositions selected={selected} />
         <UnsettledTerminations selected={selected} />
-        <MissingFxWarning selected={selected} />
+        <MissingFxWarning missingFx={selected.missing_fx} yearMonth={selected.year_month} />
       </CardContent>
     </Card>
   );
@@ -440,25 +441,6 @@ function UnsettledTerminations({ selected }: { selected: MonthlyReport }) {
         })}
       </ul>
     </div>
-  );
-}
-
-function MissingFxWarning({ selected }: { selected: MonthlyReport }) {
-  const { t } = useTranslation("dashboard");
-  if (selected.missing_fx.length === 0) return null;
-  const currencies = [...new Set(selected.missing_fx.map((m) => m.currency))];
-  const count = selected.missing_fx.filter((m) => m.position_id !== null).length;
-  const subject = count > 0 ? t("missingFx.positions", { count }) : t("missingFx.someAmounts");
-  const addRate = t("missingFx.addRate", { count: currencies.length });
-  return (
-    <p className="text-sm text-destructive">
-      {t("missingFx.line", {
-        subject,
-        when: formatYearMonth(selected.year_month),
-        currencies: currencies.join(", "),
-        addRate,
-      })}
-    </p>
   );
 }
 

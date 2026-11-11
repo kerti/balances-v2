@@ -271,6 +271,19 @@ func addRisk(low, medium, high *decimal.Decimal, risk string, v decimal.Decimal)
 	}
 }
 
+// groupValueAmounts is one group's contribution to a month's net worth: how many
+// Positions contributed a value (carry-forward + FX applied) and their sum by
+// subtype. Receivables carry no subtype, so they land under "".
+type groupValueAmounts struct {
+	count     int
+	bySubtype map[string]decimal.Decimal
+}
+
+func (g *groupValueAmounts) add(subtype string, v decimal.Decimal) {
+	g.count++
+	g.bySubtype[subtype] = g.bySubtype[subtype].Add(v)
+}
+
 // missingFxEntry names a position (or, for a flow, nil) and the currency that
 // could not be converted because no rate existed at or before its month.
 type missingFxEntry struct {
@@ -359,6 +372,14 @@ type monthlyReportData struct {
 	// opening rate base), unlike the flow-derived investmentReturn (ADR-0048
 	// amendment). Total closing value is nwInvestments.
 	investmentValue investmentValueAmounts
+	// groupValue is the month's converted closing value per position group, split
+	// by subtype, recorded in the same net-worth-pass branch that feeds the nw_*
+	// totals — so a group's subtypes sum to its nw_* by construction. In-memory
+	// only (never persisted): it backs the overview hubs' per-group breakdown
+	// (INV-FINANCE-39). groupMissingFx is the slice of missingFx whose Position
+	// belongs to the group, for the same hubs' exclude-and-warn.
+	groupValue     map[positionGroup]*groupValueAmounts
+	groupMissingFx map[positionGroup][]missingFxEntry
 	// passiveCouponCash is the month's paid-out bond coupon cash (pays_out
 	// disposition), materialised for the statistics passive-cash scope. It is a
 	// slice of investmentReturn.bond (the domain keeps coupon yield inside
@@ -716,6 +737,8 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			missingFx:               []missingFxEntry{},
 			fxRatesUsed:             make(map[string]decimal.Decimal),
 			missingSeen:             make(map[string]bool),
+			groupValue:              make(map[positionGroup]*groupValueAmounts),
+			groupMissingFx:          make(map[positionGroup][]missingFxEntry),
 		}
 		for _, u := range in.members {
 			m.userBreakdowns[u.String()] = userBreakdown{}
@@ -757,9 +780,16 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			v, rate, cok := fx.convert(carried.amount, carried.currency, idx)
 			if !cok {
 				m.addMissingFx(&p.id, carried.currency)
+				m.groupMissingFx[p.group] = append(m.groupMissingFx[p.group], missingFxEntry{PositionID: &p.id, Currency: carried.currency})
 				continue
 			}
 			m.recordRate(fx, carried.currency, rate)
+			gv := m.groupValue[p.group]
+			if gv == nil {
+				gv = &groupValueAmounts{bySubtype: make(map[string]decimal.Decimal)}
+				m.groupValue[p.group] = gv
+			}
+			gv.add(p.subtype, v)
 			if carried.idx < idx {
 				m.stalePositions = append(m.stalePositions, stalePosition{
 					ID:        p.id,

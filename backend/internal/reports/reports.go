@@ -39,6 +39,7 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Use(auth.RequireAuth)
 		r.Get("/", h.handleList)
 		r.Post("/rebuild", h.handleRebuildAll)
+		r.Get("/groups/{group}", h.handleGroupBreakdown)
 		r.Get("/{yearMonth}", h.handleGet)
 		r.Post("/{yearMonth}/rebuild", h.handleRebuildMonth)
 		r.Get("/{yearMonth}/pdf", h.handlePDF)
@@ -243,6 +244,19 @@ func (h *Handlers) handleGet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, toResponse(*row, currency))
+}
+
+// handleGroupBreakdown serves one Position group's converted month-by-month
+// value for the overview hubs. It comes from the same engine pass as the
+// dashboard's reports, so a hub's total is the dashboard's group total
+// (INV-FINANCE-39). An unknown group is a 404.
+func (h *Handlers) handleGroupBreakdown(w http.ResponseWriter, r *http.Request) {
+	out, err := h.repo.GroupBreakdown(r.Context(), chi.URLParam(r, "group"))
+	if err != nil {
+		httperr.WriteRepo(w, "group breakdown", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleRebuildAll forces a full regeneration ignoring staleness (ADR-0006

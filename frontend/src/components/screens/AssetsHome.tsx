@@ -2,17 +2,20 @@
 // InvestmentsHome.
 //
 // Aggregates across the three asset subtypes (bank account / property /
-// vehicle — ADR-0022 shared snapshot table) into one set of per-currency
-// cards:
+// vehicle — ADR-0022 shared snapshot table) into one card set:
 //   1. Total value headline (no cost basis — assets have no ledger).
-//   2. Total value over time (one line per currency).
-//   3. 100%-stacked category share over time (one card per currency).
-//   4. Current category-mix pie (one per currency).
+//   2. Total value over time.
+//   3. 100%-stacked category share over time.
+//   4. Current category-mix pie.
+// A composition chart with a single category is not drawn.
 //
-// **No FX.** Mirrors the 14c list-screen convention: each currency renders its
-// own card-set. Headline + pie are active-only; the time + stack series
-// include terminated positions historically (capped at terminated_at), via
-// the shared `aggregateGroupHome` helper.
+// A multi-currency household holding a foreign currency gets **one set in the
+// reporting currency**, from the dashboard's own engine pass (`useHubConversion`
+// → /api/reports/groups/asset; ADR-0002 exclude-and-warn, ADR-0022 amendment,
+// #845), with native subtotals as a muted line. Otherwise each currency renders
+// its own card-set from the native lists, via the shared `aggregateGroupHome`
+// helper (headline + pie active-only; time + stack series include terminated
+// positions historically, capped at terminated_at).
 
 import { PageHeader } from "@/components/common/PageHeader";
 import { useMemo } from "react";
@@ -32,7 +35,22 @@ import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useProperties } from "@/hooks/useProperties";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useAssetTimeSeries } from "@/hooks/useAssetTimeSeries";
-import { aggregateGroupHome, type GroupPosition } from "@/lib/groupHomeAggregates";
+import { useHubConversion } from "@/hooks/useGroupBreakdown";
+import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
+import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import {
+  aggregateGroupHome,
+  type GroupCategoryTimePoint,
+  type GroupPosition,
+} from "@/lib/groupHomeAggregates";
+import {
+  breakdownCategorySeries,
+  breakdownCategorySlices,
+  breakdownValueSeries,
+  categoriesHeld,
+  latestMonth,
+  slicesHeld,
+} from "@/lib/groupBreakdown";
 import { formatCurrency } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { cn } from "@/lib/utils";
@@ -94,10 +112,38 @@ export function AssetsHome() {
 
   const aggregates = useMemo(() => aggregateGroupHome(positions, ASSET_CATEGORIES), [positions]);
 
-  const anyPending = bankAccounts.isPending || properties.isPending || vehicles.isPending;
-  const firstError = bankAccounts.error ?? properties.error ?? vehicles.error;
-
   const currencies = aggregates.byCurrency.map((c) => c.currency);
+  const { converted, reporting, breakdown } = useHubConversion("asset", currencies);
+
+  const anyPending =
+    bankAccounts.isPending ||
+    properties.isPending ||
+    vehicles.isPending ||
+    (converted && breakdown.isPending);
+  const firstError = bankAccounts.error ?? properties.error ?? vehicles.error ?? breakdown.error;
+
+  const cardSets: CardSet[] =
+    converted && breakdown.data
+      ? [
+          {
+            currency: reporting,
+            value: breakdownValueSeries(breakdown.data),
+            stack: breakdownCategorySeries(breakdown.data, ASSET_CATEGORIES),
+            slices: buildCategorySlices(
+              breakdownCategorySlices(breakdown.data, ASSET_CATEGORIES),
+              t,
+            ),
+          },
+        ]
+      : converted
+        ? []
+        : currencies.map((currency) => ({
+            currency,
+            value: aggregates.timeSeriesByCurrency.get(currency) ?? [],
+            stack: aggregates.categorySeriesByCurrency.get(currency) ?? [],
+            slices: buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t),
+          }));
+  const latest = latestMonth(breakdown.data);
 
   const stackCategories: GroupStackCategory[] = ASSET_CATEGORIES.map((c) => ({
     key: c,
@@ -131,28 +177,46 @@ export function AssetsHome() {
         </p>
       )}
 
-      <TotalValueCard aggregates={aggregates.byCurrency} count={aggregates.count} />
+      {converted ? (
+        latest && (
+          <ConvertedHeadline
+            label={t("assets:home.totalValueTitle")}
+            total={latest.total}
+            currency={reporting}
+            nativeSubtotals={aggregates.byCurrency.filter((c) => c.currency !== reporting)}
+            countText={t("assets:home.totalValueCount", { count: aggregates.count })}
+            testId="home-total"
+          >
+            <MissingFxWarning
+              missingFx={latest.missing_fx}
+              yearMonth={latest.year_month}
+              scope="groupTotal"
+            />
+          </ConvertedHeadline>
+        )
+      ) : (
+        <TotalValueCard aggregates={aggregates.byCurrency} count={aggregates.count} />
+      )}
 
-      {currencies.map((currency) => (
+      {cardSets.map(({ currency, value, stack, slices }) => (
         <div key={currency} className="space-y-4">
-          <ValueCard
-            currency={currency}
-            series={aggregates.timeSeriesByCurrency.get(currency) ?? []}
-          />
-          <CategoryStackCard
-            currency={currency}
-            series={aggregates.categorySeriesByCurrency.get(currency) ?? []}
-            categories={stackCategories}
-          />
-          <CategoryPieCard
-            currency={currency}
-            slices={buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t)}
-          />
+          <ValueCard currency={currency} series={value} />
+          <CategoryStackCard currency={currency} series={stack} categories={stackCategories} />
+          <CategoryPieCard currency={currency} slices={slices} />
         </div>
       ))}
     </div>
   );
 }
+
+// One chart set: a single currency's cards from the native lists, or the
+// reporting-currency set converted by the backend.
+type CardSet = {
+  currency: string;
+  value: { year_month: string; value: number }[];
+  stack: GroupCategoryTimePoint[];
+  slices: PieSlice[];
+};
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -237,7 +301,7 @@ function CategoryStackCard({
   categories: GroupStackCategory[];
 }) {
   const { t } = useTranslation("assets");
-  if (series.length < 2) return null;
+  if (series.length < 2 || categoriesHeld(series) < 2) return null;
   return (
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
@@ -253,7 +317,7 @@ function CategoryStackCard({
 
 function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("assets");
-  if (slices.every((s) => s.value <= 0)) return null;
+  if (slicesHeld(slices) < 2) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>

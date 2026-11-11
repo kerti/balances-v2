@@ -1,17 +1,22 @@
 // Investments landing page (issue #14 slice 14d).
 //
 // Aggregates across all 5 subtypes (stock / mutual fund / bond / time
-// deposit / gold) into one set of per-currency cards:
+// deposit / gold) into one card set:
 //   1. Cross-subtype Value / Cost / P/L headline.
-//   2. Value + cost over time (one card per currency).
-//   3. 100% stacked category share over time (one card per currency).
-//   4. Two pies side-by-side per currency — category share + risk
-//      profile share.
+//   2. Value + cost over time.
+//   3. 100% stacked category share over time.
+//   4. Two pies side-by-side — category share + risk profile share.
+// A composition chart with a single category is not drawn.
 //
-// **No FX.** Mirrors the 14c list-screen convention: each currency
-// renders its own set of charts.
+// A multi-currency household holding a foreign currency gets **one set in the
+// reporting currency**, from the dashboard's own engine pass (`useHubConversion`
+// → /api/reports/groups/investment; ADR-0002 exclude-and-warn, ADR-0022
+// amendment, #845), with native subtotals as a muted line. That set is
+// value-only: cost basis and P/L stay native, on the per-subtype list screens.
+// Otherwise each currency renders its own set from the native lists (14c
+// convention), with cost and P/L.
 //
-// **Active-only.** Terminated positions drop out of every output, same
+// **Active-only (native sets).** Terminated positions drop out of every output, same
 // as `aggregateListPositions`.
 //
 // Headline cost basis rides on each list payload (item.cost_basis, #18); the
@@ -38,10 +43,23 @@ import {
   useTimeDeposits,
 } from "@/hooks/useInvestments";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
+import { useHubConversion } from "@/hooks/useGroupBreakdown";
+import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
+import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import {
+  breakdownCategorySeries,
+  breakdownCategorySlices,
+  breakdownRiskSlices,
+  breakdownValueSeries,
+  categoriesHeld,
+  latestMonth,
+  slicesHeld,
+} from "@/lib/groupBreakdown";
 import {
   aggregateHomePositions,
   INVESTMENT_CATEGORIES,
   INVESTMENT_RISK_PROFILES,
+  type CategoryTimePoint,
   type HomePosition,
   type InvestmentCategory,
   type InvestmentRiskProfile,
@@ -122,16 +140,54 @@ export function InvestmentsHome() {
 
   const aggregates = useMemo(() => aggregateHomePositions(positions), [positions]);
 
+  const currencies = aggregates.byCurrency.map((c) => c.currency);
+  const { converted, reporting, breakdown } = useHubConversion("investment", currencies);
+
   const anyPending =
     stocks.isPending ||
     mutualFunds.isPending ||
     bonds.isPending ||
     timeDeposits.isPending ||
-    golds.isPending;
+    golds.isPending ||
+    (converted && breakdown.isPending);
   const firstError =
-    stocks.error ?? mutualFunds.error ?? bonds.error ?? timeDeposits.error ?? golds.error;
+    stocks.error ??
+    mutualFunds.error ??
+    bonds.error ??
+    timeDeposits.error ??
+    golds.error ??
+    breakdown.error;
 
-  const currencies = aggregates.byCurrency.map((c) => c.currency);
+  const cardSets: CardSet[] =
+    converted && breakdown.data
+      ? [
+          {
+            currency: reporting,
+            value: breakdownValueSeries(breakdown.data),
+            stack: breakdownCategorySeries(breakdown.data, INVESTMENT_CATEGORIES),
+            categorySlices: buildCategorySlices(
+              breakdownCategorySlices(breakdown.data, INVESTMENT_CATEGORIES),
+              t,
+            ),
+            riskSlices: buildRiskSlices(
+              breakdownRiskSlices(breakdown.data, INVESTMENT_RISK_PROFILES),
+              t,
+            ),
+          },
+        ]
+      : converted
+        ? []
+        : currencies.map((currency) => ({
+            currency,
+            value: aggregates.timeSeriesByCurrency.get(currency) ?? [],
+            stack: aggregates.categorySeriesByCurrency.get(currency) ?? [],
+            categorySlices: buildCategorySlices(
+              aggregates.categoryPieByCurrency.get(currency) ?? [],
+              t,
+            ),
+            riskSlices: buildRiskSlices(aggregates.riskPieByCurrency.get(currency) ?? [], t),
+          }));
+  const latest = latestMonth(breakdown.data);
 
   return (
     <div className="space-y-6" data-testid="investments-home">
@@ -170,39 +226,59 @@ export function InvestmentsHome() {
         </p>
       )}
 
-      <InvestmentListHeadline
-        aggregates={aggregates.byCurrency}
-        count={aggregates.count}
-        noun={noun}
-        nounPlural={nounPlural}
-        testId="home-total"
-      />
+      {converted ? (
+        latest && (
+          <ConvertedHeadline
+            label={t("investments:list.totalValue")}
+            total={latest.total}
+            currency={reporting}
+            nativeSubtotals={aggregates.byCurrency.filter((c) => c.currency !== reporting)}
+            countText={t("common:list.activeCount", {
+              count: aggregates.count,
+              noun: aggregates.count === 1 ? noun : nounPlural,
+            })}
+            testId="home-total"
+          >
+            <MissingFxWarning
+              missingFx={latest.missing_fx}
+              yearMonth={latest.year_month}
+              scope="groupTotal"
+            />
+          </ConvertedHeadline>
+        )
+      ) : (
+        <InvestmentListHeadline
+          aggregates={aggregates.byCurrency}
+          count={aggregates.count}
+          noun={noun}
+          nounPlural={nounPlural}
+          testId="home-total"
+        />
+      )}
 
-      {currencies.map((currency) => (
+      {cardSets.map(({ currency, value, stack, categorySlices, riskSlices }) => (
         <div key={currency} className="space-y-4">
-          <ValueCostCard
-            currency={currency}
-            series={aggregates.timeSeriesByCurrency.get(currency) ?? []}
-          />
-          <CategoryStackCard
-            currency={currency}
-            series={aggregates.categorySeriesByCurrency.get(currency) ?? []}
-          />
+          <ValueCostCard currency={currency} series={value} />
+          <CategoryStackCard currency={currency} series={stack} />
           <div className="grid gap-4 md:grid-cols-2">
-            <CategoryPieCard
-              currency={currency}
-              slices={buildCategorySlices(aggregates.categoryPieByCurrency.get(currency) ?? [], t)}
-            />
-            <RiskPieCard
-              currency={currency}
-              slices={buildRiskSlices(aggregates.riskPieByCurrency.get(currency) ?? [], t)}
-            />
+            <CategoryPieCard currency={currency} slices={categorySlices} />
+            <RiskPieCard currency={currency} slices={riskSlices} />
           </div>
         </div>
       ))}
     </div>
   );
 }
+
+// One chart set: a single currency's cards from the native lists (with cost), or
+// the reporting-currency set converted by the backend (value only).
+type CardSet = {
+  currency: string;
+  value: { year_month: string; value: number; cost?: number }[];
+  stack: CategoryTimePoint[];
+  categorySlices: PieSlice[];
+  riskSlices: PieSlice[];
+};
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -242,15 +318,20 @@ function ValueCostCard({
   series,
 }: {
   currency: string;
-  series: { year_month: string; value: number; cost: number }[];
+  series: { year_month: string; value: number; cost?: number }[];
 }) {
   const { t } = useTranslation("investments");
   if (series.length < 2) return null;
+  const withCost = series.every((p) => p.cost !== undefined);
   return (
     <Card data-testid={`home-value-cost-${currency}`}>
       <CardHeader>
-        <CardTitle>{t("home.valueCostChartTitle")}</CardTitle>
-        <CardDescription>{t("home.valueCostChartDescription", { currency })}</CardDescription>
+        <CardTitle>{t(withCost ? "home.valueCostChartTitle" : "home.valueChartTitle")}</CardTitle>
+        <CardDescription>
+          {t(withCost ? "home.valueCostChartDescription" : "home.valueChartDescription", {
+            currency,
+          })}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <SnapshotChart
@@ -258,10 +339,11 @@ function ValueCostCard({
             year_month: p.year_month,
             amount: String(p.value),
           }))}
-          costSeries={series.map((p) => ({
-            year_month: p.year_month,
-            cost: p.cost,
-          }))}
+          costSeries={
+            withCost
+              ? series.map((p) => ({ year_month: p.year_month, cost: p.cost ?? 0 }))
+              : undefined
+          }
           currency={currency}
         />
       </CardContent>
@@ -277,7 +359,7 @@ function CategoryStackCard({
   series: Parameters<typeof CategoryStackChart>[0]["series"];
 }) {
   const { t } = useTranslation("investments");
-  if (series.length < 2) return null;
+  if (series.length < 2 || categoriesHeld(series) < 2) return null;
   return (
     <Card data-testid={`home-category-stack-${currency}`}>
       <CardHeader>
@@ -293,7 +375,7 @@ function CategoryStackCard({
 
 function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("investments");
-  if (slices.every((s) => s.value <= 0)) return null;
+  if (slicesHeld(slices) < 2) return null;
   return (
     <Card data-testid={`home-category-pie-${currency}`}>
       <CardHeader>
@@ -309,7 +391,7 @@ function CategoryPieCard({ currency, slices }: { currency: string; slices: PieSl
 
 function RiskPieCard({ currency, slices }: { currency: string; slices: PieSlice[] }) {
   const { t } = useTranslation("investments");
-  if (slices.every((s) => s.value <= 0)) return null;
+  if (slicesHeld(slices) < 2) return null;
   return (
     <Card data-testid={`home-risk-pie-${currency}`}>
       <CardHeader>
