@@ -65,6 +65,9 @@
   "sending": "Sending…",
   "somethingWentWrong": "Something went wrong",
   "unknownError": "unknown error",
+  "hub": {
+    "nativeSubtotals": "incl. {{amounts}} · converted at each month's rate"
+  },
   "home": {
     "assets": {
       "title": "Assets",

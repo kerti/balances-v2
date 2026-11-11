@@ -10,6 +10,8 @@
   },
   "home": {
     "subtitle": "Composition and trend across all five subtypes.",
+    "valueChartTitle": "Total value over time",
+    "valueChartDescription": "Sum across all active investments ({{currency}}).",
     "valueCostChartTitle": "Total value and cost over time",
     "valueCostChartDescription": "Sum across all active investments ({{currency}}).",
     "categoryStackTitle": "Category share over time",

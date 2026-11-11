@@ -9,7 +9,7 @@
 | Zone | Per-PR | Coverage |
 |----|----|----|
 | TENANCY | 13 / 13 | [TENANCY](01-tenancy.md) |
-| FINANCE | 38 / 38 | [FINANCE](02-finance.md) |
+| FINANCE | 39 / 39 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 9 / 9 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 32 / 32 | [AUTH](04-auth.md) |
 | SNAPSHOTS | 17 / 17 | [SNAPSHOTS](05-snapshots.md) |

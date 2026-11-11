@@ -528,6 +528,25 @@ export type MissingFx = {
   currency: string;
 };
 
+// One Position group's converted month-by-month value for the overview hubs
+// (GET /api/reports/groups/{group}, #845). Hand-typed for the same reason as
+// MonthlyReport above: `repo.GroupBreakdown` is not part of the generated
+// mirror. `total` is the dashboard's nw_assets / nw_liabilities / nw_investments
+// for that month; `by_subtype` (and `by_risk` for investments) partition it.
+export type GroupBreakdownMonth = {
+  year_month: string; // ISO datetime, day always = 01
+  total: string;
+  by_subtype: Record<string, string>;
+  by_risk?: Record<string, string>;
+  missing_fx: MissingFx[];
+};
+
+export type GroupBreakdown = {
+  group: "asset" | "liability" | "investment";
+  reporting_currency: string;
+  months: GroupBreakdownMonth[];
+};
+
 // ----- FX rates (M5 slice 3) --------------------------------------------
 
 export type FxRate = Generated.FxRate;
