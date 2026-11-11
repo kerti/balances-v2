@@ -98,11 +98,18 @@ func sameOptDecimal(a, b *decimal.Decimal, scale int32) bool {
 	return sameDecimal(*a, *b, scale)
 }
 
+// sameOptString compares notes. An absent note and an empty one both mean "no
+// note": a workbook cell is blank either way, so one must not read as a change
+// against the other.
 func sameOptString(a, b *string) bool {
-	if a == nil || b == nil {
-		return a == b
+	return deref(a) == deref(b)
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
 	}
-	return *a == *b
+	return *s
 }
 
 // sameOptDate compares calendar dates; as_of_date is a DATE column.

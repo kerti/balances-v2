@@ -15,13 +15,13 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ImportDropZone } from "@/components/dialogs/ImportDropZone";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { maskIdentifier } from "@/lib/maskIdentifier";
 import { positionDetail } from "@/lib/routes";
-import { cn } from "@/lib/utils";
 import type { CreateImportArgs, CreateImportResult } from "@/hooks/snapshotImport";
 
 // Past this many rows, the list scrolls in its own boundary and the rest
@@ -37,26 +37,27 @@ type Props = {
 };
 
 // Create a brand-new position from a workbook: its Detail sheet becomes the
-// position, its Snapshots sheet seeds the history. "Check file" runs a
-// server-side dry-run (validates Detail fields + snapshot rows, writes nothing);
-// "Create" only lights up once the file is clean. The format is a position
-// export — the dialog tells the user to export an existing one to get it.
+// position, its Snapshots sheet seeds the history. Picking or dropping a file
+// runs a server-side dry-run straight away (validates Detail fields + snapshot
+// rows, writes nothing); "Create" is the only action and lights up once the
+// file is clean. The format is a position export — the dialog tells the user to
+// export an existing one to get it.
 export function ImportPositionDialog({ noun, mutation }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<CreateImportResult | null>(null);
-  const [dragActive, setDragActive] = useState(false);
   const [invalid, setInvalid] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Bumped on every pick and on close so a slow preview for a file the user has
+  // since replaced can't land on the newer one.
+  const pickRef = useRef(0);
 
   function reset() {
+    pickRef.current++;
     setFile(null);
     setResult(null);
-    setDragActive(false);
     setInvalid(false);
     mutation.reset();
-    if (fileRef.current) fileRef.current.value = "";
   }
   function close() {
     setOpen(false);
@@ -64,43 +65,34 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   }
 
   // Single funnel for both the picker and the drop zone so a non-.xlsx is
-  // rejected identically either way. An `empty` drop leaves the selection as-is.
+  // rejected identically either way, and a good file is checked at once. An
+  // `empty` drop leaves the selection as-is.
   function selectFiles(files: FileList | File[] | null) {
     const outcome = fileFromDrop(files);
     if (!outcome.ok && outcome.reason === "empty") return;
+    const pick = ++pickRef.current;
     setResult(null);
     mutation.reset();
     if (!outcome.ok) {
       setFile(null);
       setInvalid(true);
-      if (fileRef.current) fileRef.current.value = "";
       return;
     }
     setInvalid(false);
     setFile(outcome.file);
+    mutation.mutate(
+      { file: outcome.file, mode: "preview" },
+      {
+        onSuccess: (r) => {
+          if (pick === pickRef.current) setResult(r);
+        },
+      },
+    );
   }
 
-  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    selectFiles(e.target.files);
-  }
-
-  function onDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(true);
-  }
-  function onDragLeave(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(false);
-  }
-  function onDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(false);
-    selectFiles(e.dataTransfer.files);
-  }
-
-  function run(mode: "preview" | "commit") {
+  function commit() {
     if (!file) return;
-    mutation.mutate({ file, mode }, { onSuccess: setResult });
+    mutation.mutate({ file, mode: "commit" }, { onSuccess: setResult });
   }
 
   const fieldErrors = result?.field_errors ?? [];
@@ -114,6 +106,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   );
   const cleanPreview = result?.mode === "preview" && result.would_create;
   const committed = result?.committed === true;
+  const checking = mutation.isPending && mutation.variables?.mode === "preview";
   // Existing positions this workbook would duplicate (#828). Never blocking: a
   // duplicate can be legitimate, so a match only re-labels Create as secondary.
   const matches = cleanPreview ? (result?.matches ?? []) : [];
@@ -143,30 +136,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
         <div className="space-y-4">
           <div className="grid gap-1.5">
             <Label htmlFor="import-create-file">{t("importCreate.uploadLabel")}</Label>
-            <div
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-              data-testid="import-drop-zone"
-              data-drag-active={dragActive}
-              className={cn(
-                "grid gap-2 rounded-md border-2 border-dashed p-4 transition-colors",
-                dragActive ? "border-primary bg-primary/5" : "border-input bg-muted/30",
-              )}
-            >
-              <p className="text-sm text-muted-foreground">
-                {dragActive ? t("import.dropActive") : t("import.dropHint")}
-              </p>
-              <input
-                id="import-create-file"
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={onPickFile}
-                className="text-sm"
-                data-testid="import-file-input"
-              />
-            </div>
+            <ImportDropZone inputId="import-create-file" onFiles={selectFiles} />
             <p className="text-xs text-muted-foreground">
               {t("importCreate.formatHint", { noun })}
             </p>
@@ -181,6 +151,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
               </p>
             )}
           </div>
+
+          {checking && (
+            <p className="text-sm text-muted-foreground" data-testid="import-checking">
+              {t("actions.checking")}
+            </p>
+          )}
 
           {result && !committed && (
             <div className="text-sm" data-testid="import-result">
@@ -300,18 +276,9 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                disabled={!file || mutation.isPending}
-                onClick={() => run("preview")}
-                data-testid="import-check-btn"
-              >
-                {mutation.isPending && !committed ? t("actions.checking") : t("import.checkFile")}
-              </Button>
-              <Button
-                type="button"
                 variant={hasMatch ? "secondary" : "default"}
                 disabled={!cleanPreview || mutation.isPending}
-                onClick={() => run("commit")}
+                onClick={commit}
                 data-testid="import-commit-btn"
               >
                 {createLabel}
