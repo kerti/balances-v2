@@ -4,7 +4,7 @@ import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AssetSnapshot } from "@/api/types";
 import type { TagGroup } from "@/api/types";
-import type { InvestmentSubtype, LifecycleGroup } from "@/lib/lifecycle";
+import type { AssetSubtype, InvestmentSubtype, LifecycleGroup } from "@/lib/lifecycle";
 import type { TourStep } from "@/components/shell/HelpTourButton";
 
 // The **Position shared surface** the core operates on (ADR-0051, restated from
@@ -154,6 +154,9 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // forwards it verbatim — it never branches on the value, so this stays wiring
   // rather than the `{ kind }` flag ADR-0051 bans.
   investmentSubtype?: InvestmentSubtype;
+  // Set by the three asset descriptors. Narrows the Close dialog's statuses
+  // (an account is closed, a property sold) and names the noun in its copy.
+  assetSubtype?: AssetSubtype;
   i18nNamespaces: string[];
 
   // Copy the core resolves with its own `t`. Fully-qualified keys, mirroring the

@@ -46,9 +46,9 @@ test(
     await expect(snapshotCard.locator("tbody tr")).toHaveCount(0);
 
     // --- Sell (active → sold; date auto-fills today → close snapshot month) ---
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("button", { name: "Close…", exact: true }).click();
     const sellDialog = page.getByRole("dialog");
-    await expect(sellDialog.getByText("Close position")).toBeVisible();
+    await expect(sellDialog.getByRole("heading", { name: "Close investment" })).toBeVisible();
     await sellDialog.getByLabel("Status").selectOption("sold");
     await sellDialog.getByRole("button", { name: "Save" }).click();
 

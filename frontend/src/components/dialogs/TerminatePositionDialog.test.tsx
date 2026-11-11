@@ -15,7 +15,7 @@ import userEvent from "@testing-library/user-event";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { TerminatePositionDialog } from "@/components/dialogs/TerminatePositionDialog";
-import type { InvestmentSubtype } from "@/lib/lifecycle";
+import type { AssetSubtype, InvestmentSubtype } from "@/lib/lifecycle";
 
 const ID = "inv-1";
 
@@ -71,10 +71,15 @@ function stubInvestment(snapshots: unknown[], transactions: unknown[], captured:
   );
 }
 
-function renderDialog(subtype: InvestmentSubtype | undefined, currentStatus = "active") {
+function renderDialog(
+  subtype: InvestmentSubtype | undefined,
+  currentStatus = "active",
+  assetSubtype?: AssetSubtype,
+) {
   return renderWithProviders(
     <TerminatePositionDialog
       group={subtype ? "investments" : "assets"}
+      assetSubtype={assetSubtype}
       id={ID}
       listKey="stocks"
       currentStatus={currentStatus}
@@ -84,6 +89,11 @@ function renderDialog(subtype: InvestmentSubtype | undefined, currentStatus = "a
       currency="IDR"
     />,
   );
+}
+
+// The values a person can pick: the disabled "What happened?" placeholder is not one.
+function pickable(select: HTMLSelectElement): string[] {
+  return [...select.options].filter((o) => !o.disabled).map((o) => o.value);
 }
 
 async function openDialog(user: ReturnType<typeof userEvent.setup>) {
@@ -160,11 +170,7 @@ describe("TerminatePositionDialog settlement capture", () => {
     // `matured`, because Maturity is the only Transaction it accepts. It still
     // offers `untracked`, which settles nothing and so sits outside the matrix.
     const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
-    expect([...statusSelect.options].map((o) => o.value)).toEqual([
-      "active",
-      "matured",
-      "untracked",
-    ]);
+    expect(pickable(statusSelect)).toEqual(["matured", "untracked"]);
 
     await user.selectOptions(statusSelect, "matured");
     await screen.findByTestId("terminate-settlement");
@@ -249,8 +255,8 @@ describe("TerminatePositionDialog settlement capture", () => {
 
     await openDialog(user);
     await user.selectOptions(screen.getByLabelText(/status/i), "sold");
-    await user.clear(screen.getByLabelText(/terminated on/i));
-    await user.type(screen.getByLabelText(/terminated on/i), "2026-03-10");
+    await user.clear(screen.getByLabelText(/sold on/i));
+    await user.type(screen.getByLabelText(/sold on/i), "2026-03-10");
 
     await screen.findByTestId("terminate-already-settled");
     expect(screen.queryByTestId("terminate-settlement")).not.toBeInTheDocument();
@@ -262,7 +268,7 @@ describe("TerminatePositionDialog settlement capture", () => {
   });
 
   // covers: INV-LIFECYCLE-08
-  it("leaves the other three groups untouched — no settlement, full status list", async () => {
+  it("leaves the other groups untouched — no settlement, the group's full status list", async () => {
     const user = userEvent.setup();
     const captured: Captured = { body: undefined };
     server.use(
@@ -275,13 +281,7 @@ describe("TerminatePositionDialog settlement capture", () => {
 
     await openDialog(user);
     const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
-    expect([...statusSelect.options].map((o) => o.value)).toEqual([
-      "active",
-      "closed",
-      "sold",
-      "disposed",
-      "untracked",
-    ]);
+    expect(pickable(statusSelect)).toEqual(["closed", "sold", "disposed", "untracked"]);
 
     await user.selectOptions(statusSelect, "sold");
     expect(screen.queryByTestId("terminate-settlement")).not.toBeInTheDocument();
@@ -308,11 +308,7 @@ describe("TerminatePositionDialog untracked termination", () => {
 
     await openDialog(user);
     const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
-    expect([...statusSelect.options].map((o) => o.value)).toEqual([
-      "active",
-      "matured",
-      "untracked",
-    ]);
+    expect(pickable(statusSelect)).toEqual(["matured", "untracked"]);
 
     await user.selectOptions(statusSelect, "untracked");
     // No settlement block, and no write-off escape either — both assert a cash
@@ -340,7 +336,7 @@ describe("TerminatePositionDialog untracked termination", () => {
 
     await openDialog(user);
     const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
-    expect([...statusSelect.options].map((o) => o.value)).toContain("untracked");
+    expect(pickable(statusSelect)).toContain("untracked");
 
     await user.selectOptions(statusSelect, "untracked");
     expect(screen.getByTestId("terminate-untracked-hint")).toBeInTheDocument();
@@ -365,5 +361,120 @@ describe("TerminatePositionDialog untracked termination", () => {
     await screen.findByTestId("terminate-settlement");
     await waitFor(() => expect(screen.getByTestId("settlement-quantity")).toHaveValue("100"));
     expect(screen.getByTestId("settlement-price")).toHaveValue("9,500");
+  });
+});
+
+// The Close dialog's honesty rules (#827): no default status, statuses that fit
+// the subtype, and a line saying which month the position starts counting as 0.
+describe("TerminatePositionDialog close flow", () => {
+  // covers: INV-LIFECYCLE-10
+  it("opens with no status picked and Save disabled until one is", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined, "active", "bank_account");
+
+    await openDialog(user);
+    const statusSelect = screen.getByLabelText(/status/i) as HTMLSelectElement;
+    expect(statusSelect).toHaveValue("");
+    expect(screen.getByRole("option", { name: "What happened?" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /save/i })).toBeDisabled();
+    // Before a status is picked the date has no verb to follow.
+    expect(screen.getByLabelText("Date")).toBeDisabled();
+    expect(screen.queryByTestId("terminate-consequence")).not.toBeInTheDocument();
+
+    await user.selectOptions(statusSelect, "closed");
+    expect(screen.getByRole("button", { name: /save/i })).toBeEnabled();
+    expect(screen.getByLabelText(/closed on/i)).toHaveValue(new Date().toLocaleDateString("en-CA"));
+  });
+
+  // covers: INV-LIFECYCLE-10
+  it("offers a bank account only Closed and Untracked", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined, "active", "bank_account");
+
+    await openDialog(user);
+    expect(pickable(screen.getByLabelText(/status/i) as HTMLSelectElement)).toEqual([
+      "closed",
+      "untracked",
+    ]);
+  });
+
+  // covers: INV-LIFECYCLE-10
+  it.each<AssetSubtype>(["property", "vehicle"])(
+    "offers a %s Sold, Disposed and Untracked",
+    async (subtype) => {
+      const user = userEvent.setup();
+      renderDialog(undefined, "active", subtype);
+
+      await openDialog(user);
+      expect(pickable(screen.getByLabelText(/status/i) as HTMLSelectElement)).toEqual([
+        "sold",
+        "disposed",
+        "untracked",
+      ]);
+    },
+  );
+
+  it("shows the termination month and follows the date field", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined, "active", "bank_account");
+
+    await openDialog(user);
+    await user.selectOptions(screen.getByLabelText(/status/i), "closed");
+    const date = screen.getByLabelText(/closed on/i);
+    await user.clear(date);
+    await user.type(date, "2026-03-10");
+
+    expect(screen.getByTestId("terminate-consequence")).toHaveTextContent(
+      "From Mar 2026 this bank account counts as 0. If the money moved to another account, record that account's balance there.",
+    );
+
+    await user.clear(date);
+    await user.type(date, "2026-07-02");
+    expect(screen.getByTestId("terminate-consequence")).toHaveTextContent("From Jul 2026");
+  });
+
+  it("words the consequence for a liability as a debt, not an account", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TerminatePositionDialog
+        group="liabilities"
+        id={ID}
+        listKey="personal"
+        currentStatus="active"
+        currentTerminatedAt={null}
+        currentNote={null}
+      />,
+    );
+
+    await openDialog(user);
+    await user.selectOptions(screen.getByLabelText(/status/i), "paid_off");
+    expect(screen.getByLabelText(/paid off on/i)).toBeInTheDocument();
+    const line = screen.getByTestId("terminate-consequence");
+    expect(line).toHaveTextContent("this liability counts as 0");
+    expect(line).not.toHaveTextContent("another account");
+  });
+
+  it("makes the note placeholder follow the status", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined, "active", "bank_account");
+
+    await openDialog(user);
+    expect(screen.getByLabelText(/note/i)).toHaveAttribute("placeholder", "Add a note");
+    await user.selectOptions(screen.getByLabelText(/status/i), "closed");
+    expect(screen.getByLabelText(/note/i)).toHaveAttribute(
+      "placeholder",
+      "Moved to a different bank",
+    );
+  });
+
+  it("opens an already-closed position on its current status, with Active to reopen", async () => {
+    const user = userEvent.setup();
+    renderDialog(undefined, "closed", "bank_account");
+
+    await openDialog(user);
+    const statusSelect = screen.getByLabelText("Status") as HTMLSelectElement;
+    expect(statusSelect).toHaveValue("closed");
+    expect(pickable(statusSelect)).toEqual(["active", "closed", "untracked"]);
+    expect(screen.getByRole("button", { name: /save/i })).toBeEnabled();
   });
 });

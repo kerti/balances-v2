@@ -221,6 +221,7 @@ export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>
                 currentTerminatedAt={asset.terminated_at}
                 currentNote={asset.termination_note}
                 investmentSubtype={descriptor.investmentSubtype}
+                assetSubtype={descriptor.assetSubtype}
                 currency={asset.native_currency}
               />
               <Button variant="outline" onClick={() => setDeleteOpen(true)}>

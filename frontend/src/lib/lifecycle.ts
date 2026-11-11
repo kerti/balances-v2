@@ -73,19 +73,36 @@ export function settlementKind(
   return status === "matured" ? "maturity" : "sell";
 }
 
-// `subtype` narrows an investment's terminal statuses per the table above.
+export type AssetSubtype = "bank_account" | "property" | "vehicle";
+
+// Mirror of the backend's assetTerminalStatuses (repo/lifecycle.go): an account
+// is closed, never sold; a property or vehicle is sold or disposed, never
+// closed. `untracked` is open to all (ADR-0053 §5). The backend rejects any
+// other pairing with INVALID_LIFECYCLE.
+const ASSET_TERMINAL_STATUSES: Record<AssetSubtype, string[]> = {
+  bank_account: ["closed"],
+  property: ["sold", "disposed"],
+  vehicle: ["sold", "disposed"],
+};
+
+export type PositionSubtype = InvestmentSubtype | AssetSubtype;
+
+// `subtype` narrows an asset's or investment's terminal statuses per the tables above.
 // `currentStatus` is always kept in the list even when the narrowing drops it —
 // a position may already sit on a status its subtype no longer offers (recorded
 // before the narrowing, or written by import/restore), and a dropdown that
 // silently blanks out its own current value would read as data loss.
 export function statusOptions(
   group: LifecycleGroup,
-  subtype?: InvestmentSubtype,
+  subtype?: PositionSubtype,
   currentStatus?: string,
 ): StatusOption[] {
   let values = STATUS_VALUES[group];
-  if (group === "investments" && subtype) {
-    const settleable = INVESTMENT_TERMINAL_STATUSES[subtype];
+  if (group === "assets" && subtype) {
+    const offered = ASSET_TERMINAL_STATUSES[subtype as AssetSubtype];
+    values = values.filter((v) => v === "active" || v === STATUS_UNTRACKED || offered.includes(v));
+  } else if (group === "investments" && subtype) {
+    const settleable = INVESTMENT_TERMINAL_STATUSES[subtype as InvestmentSubtype];
     // `untracked` is exempt from the narrowing rather than listed in the matrix:
     // the matrix answers "which Transaction settles this?", and this status's
     // whole point is that none does (ADR-0053 §5).

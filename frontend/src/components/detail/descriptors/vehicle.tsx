@@ -29,6 +29,7 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
   entityKey: "vehicle",
   testIdPrefix: "vehicle",
   group: "assets",
+  assetSubtype: "vehicle",
   tagGroup: "asset",
   listKey: "vehicles",
   i18nNamespaces: ["assets", "common", "errors"],
