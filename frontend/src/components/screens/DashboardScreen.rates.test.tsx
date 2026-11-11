@@ -89,7 +89,9 @@ describe("rates line", () => {
 
   it("is absent when no foreign rate was used", async () => {
     renderDashboard({});
-    await screen.findByTestId("dashboard-headline");
+    // First test in the file pays the screen's cold render; under a loaded
+    // `make check` that ran past findBy's 1 s default.
+    await screen.findByTestId("dashboard-headline", {}, { timeout: 5000 });
     expect(screen.queryByTestId("dashboard-rates")).not.toBeInTheDocument();
   });
 

@@ -49,6 +49,44 @@ type Response struct {
 	LedgerToInsert int                         `json:"ledger_to_insert,omitempty"`
 	FieldErrors    []snapshotimport.FieldError `json:"field_errors"`
 	Errors         []snapshotimport.RowError   `json:"errors"`
+	// Name and Identifier name the position the workbook would create (the
+	// bank account's account number; empty for subtypes with none), and Matches
+	// lists the household's existing positions it would duplicate (issue #828).
+	// Name and Identifier are filled on a clean preview only; Matches is always
+	// an array.
+	Name       string               `json:"name,omitempty"`
+	Identifier string               `json:"identifier,omitempty"`
+	Matches    []repo.PositionMatch `json:"matches"`
+}
+
+// Candidate is what a group's MatchFunc reports about the position a Detail
+// sheet would create: its display name and, where the subtype has one, the
+// identifier the match also keys on.
+type Candidate struct {
+	Name       string
+	Identifier string
+}
+
+// MatchFunc looks up the household's existing positions that the resolved
+// create params would duplicate (issue #828), and names the candidate for the
+// preview. It runs on a clean preview only. A nil MatchFunc skips the lookup.
+type MatchFunc[T any] func(ctx context.Context, params T) (Candidate, []repo.PositionMatch, error)
+
+// applyMatches fills the preview's candidate + matches from a group's MatchFunc.
+func applyMatches[T any](ctx context.Context, resp *Response, match MatchFunc[T], params T) error {
+	if match == nil {
+		return nil
+	}
+	cand, matches, err := match(ctx, params)
+	if err != nil {
+		return err
+	}
+	resp.Name = cand.Name
+	resp.Identifier = cand.Identifier
+	if matches != nil {
+		resp.Matches = matches
+	}
+	return nil
 }
 
 // ResolveFunc maps a parsed Detail sheet onto a group's create params,
@@ -75,6 +113,7 @@ func Run[T any](
 	r *http.Request,
 	validate *validator.Validate,
 	resolve ResolveFunc[T],
+	match MatchFunc[T],
 	commit CommitFunc[T],
 ) {
 	data, mode, ok := readUpload(w, r)
@@ -108,6 +147,7 @@ func Run[T any](
 		Mode:        mode,
 		FieldErrors: fieldErrs,
 		Errors:      rowErrs,
+		Matches:     []repo.PositionMatch{},
 		ToInsert:    len(parsed),
 	}
 	if resp.FieldErrors == nil {
@@ -126,6 +166,12 @@ func Run[T any](
 	}
 
 	if mode == "preview" {
+		if !hasErrors {
+			if err := applyMatches(r.Context(), &resp, match, params); err != nil {
+				httperr.WriteRepo(w, "import create: find matches", err)
+				return
+			}
+		}
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -172,6 +218,7 @@ func RunWithLedger[T any](
 	subtype string,
 	shape snapshotimport.Shape,
 	resolve ResolveFunc[T],
+	match MatchFunc[T],
 	commit LedgerCommitFunc[T],
 ) {
 	data, mode, ok := readUpload(w, r)
@@ -225,6 +272,7 @@ func RunWithLedger[T any](
 		Mode:           mode,
 		FieldErrors:    fieldErrs,
 		Errors:         rowErrs,
+		Matches:        []repo.PositionMatch{},
 		ToInsert:       len(parsed),
 		LedgerToInsert: len(ledger),
 	}
@@ -239,6 +287,12 @@ func RunWithLedger[T any](
 		return
 	}
 	if mode == "preview" {
+		if !hasErrors {
+			if err := applyMatches(r.Context(), &resp, match, params); err != nil {
+				httperr.WriteRepo(w, "import create: find matches", err)
+				return
+			}
+		}
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
@@ -474,5 +528,20 @@ func writeJSON(w http.ResponseWriter, status int, body any) {
 	w.WriteHeader(status)
 	if body != nil {
 		_ = json.NewEncoder(w).Encode(body)
+	}
+}
+
+// MatchByName builds the MatchFunc for a subtype whose duplicates are keyed on
+// the display name alone (every group except a bank account): name pulls the
+// display name off the create params, find runs the group's household-scoped
+// lookup.
+func MatchByName[T any](
+	name func(T) string,
+	find func(ctx context.Context, name string) ([]repo.PositionMatch, error),
+) MatchFunc[T] {
+	return func(ctx context.Context, params T) (Candidate, []repo.PositionMatch, error) {
+		n := name(params)
+		matches, err := find(ctx, n)
+		return Candidate{Name: n}, matches, err
 	}
 }

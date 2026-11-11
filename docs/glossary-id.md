@@ -165,6 +165,7 @@ the choice is non-obvious.
 | Reopen | Buka Kembali | — |
 | Filter | Filter | Loanword acceptable; "Saring" reads stiff. |
 | Import | Impor | — |
+| Create anyway (an import that duplicates an existing position) | Tetap buat | The secondary button beside the duplicate notice (#828); the notice's "(closed)" suffix is the generic "(berakhir)". |
 | Export | Ekspor | — |
 | Search | Cari | — |
 | Settings | Pengaturan | — |

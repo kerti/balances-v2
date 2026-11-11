@@ -25,12 +25,25 @@ export type ImportArgs = { file: File; mode: "preview" | "commit" };
 
 export type ImportFieldError = { field: string; message: string };
 
+// An existing position a create-import would duplicate. group/subtype are the
+// engine wire values `positionDetail` turns into the detail route; subtype is
+// empty for a receivable.
+export type ImportMatch = {
+  id: string;
+  name: string;
+  status: string;
+  group: string;
+  subtype: string;
+};
+
 // CreateImportResult is the create-import counterpart of ImportResult: it adds
 // the Detail-sheet half (field_errors + would_create) and, on a committed
 // write, the new position's id. ToInsert counts the seeded snapshots; a new
 // position has no existing months, so there is no to_update. ledger_to_insert
 // counts the seeded transaction ledger (investment subtypes only, issue #90);
-// absent for the snapshot-only groups.
+// absent for the snapshot-only groups. On a clean preview, name (and
+// identifier, a bank account's number) say what would be created and matches
+// lists the household's existing positions it would duplicate (issue #828).
 export type CreateImportResult = {
   mode: "preview" | "commit";
   committed: boolean;
@@ -41,6 +54,9 @@ export type CreateImportResult = {
   ledger_to_insert?: number;
   field_errors: ImportFieldError[];
   errors: ImportRowError[];
+  name?: string;
+  identifier?: string;
+  matches?: ImportMatch[];
 };
 
 export type CreateImportArgs = { file: File; mode: "preview" | "commit" };

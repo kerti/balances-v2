@@ -91,6 +91,30 @@ type stub struct {
 	commitErr    error
 	commitCalled bool
 	gotRows      int
+
+	// match, when set, is wired in as the group's MatchFunc; matchCalls counts
+	// its invocations so a test can assert it ran (or didn't).
+	match      *matchStub
+	matchCalls int
+}
+
+type matchStub struct {
+	cand    importcreate.Candidate
+	matches []repo.PositionMatch
+	err     error
+}
+
+func (s *stub) matcher() importcreate.MatchFunc[string] {
+	if s.match == nil {
+		return nil
+	}
+	return func(_ context.Context, params string) (importcreate.Candidate, []repo.PositionMatch, error) {
+		s.matchCalls++
+		if params != "params" {
+			return importcreate.Candidate{}, nil, errors.New("match got the wrong params")
+		}
+		return s.match.cand, s.match.matches, s.match.err
+	}
 }
 
 func (s *stub) resolve(_ context.Context, _ map[string]string) (string, *uuid.UUID, []snapshotimport.FieldError, error) {
@@ -127,7 +151,7 @@ func runUpload(t *testing.T, query string, body []byte, withFile bool, s *stub) 
 	req := httptest.NewRequest("POST", "/import"+query, &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	rec := httptest.NewRecorder()
-	importcreate.Run(rec, req, httperr.NewValidator(), s.resolve, s.commit)
+	importcreate.Run(rec, req, httperr.NewValidator(), s.resolve, s.matcher(), s.commit)
 	return rec
 }
 
@@ -244,6 +268,87 @@ func TestRun(t *testing.T) {
 
 	t.Run("commit error is 500", func(t *testing.T) {
 		rec := runUpload(t, "?mode=commit", clean, true, &stub{commitErr: errors.New("boom")})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("want 500, got %d", rec.Code)
+		}
+	})
+}
+
+// covers: INV-IMPORT-08
+func TestRunMatches(t *testing.T) {
+	clean := buildWorkbook(t, detailRows(), twoSnapshotRows())
+	existing := repo.PositionMatch{ID: uuid.New(), Name: "Imported", Status: "closed", Group: "asset", Subtype: "bank_account"}
+	found := func() *matchStub {
+		return &matchStub{
+			cand:    importcreate.Candidate{Name: "Imported", Identifier: "1234567890"},
+			matches: []repo.PositionMatch{existing},
+		}
+	}
+
+	t.Run("clean preview reports the candidate and its matches", func(t *testing.T) {
+		s := &stub{match: found()}
+		rec := runUpload(t, "", clean, true, s)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("want 200, got %d", rec.Code)
+		}
+		resp := decodeResp(t, rec)
+		if resp.Name != "Imported" || resp.Identifier != "1234567890" {
+			t.Errorf("want candidate Imported/1234567890, got %q/%q", resp.Name, resp.Identifier)
+		}
+		if len(resp.Matches) != 1 || resp.Matches[0] != existing {
+			t.Fatalf("want the one existing match, got %+v", resp.Matches)
+		}
+		if !resp.WouldCreate {
+			t.Error("a match must not block would_create — a duplicate can be legitimate")
+		}
+		if s.commitCalled {
+			t.Error("preview must not call commit")
+		}
+	})
+
+	t.Run("no match still ships an empty array", func(t *testing.T) {
+		s := &stub{match: &matchStub{cand: importcreate.Candidate{Name: "Imported"}}}
+		rec := runUpload(t, "", clean, true, s)
+		if !bytes.Contains(rec.Body.Bytes(), []byte(`"matches":[]`)) {
+			t.Fatalf("want matches:[] on the wire, got %s", rec.Body.String())
+		}
+		if resp := decodeResp(t, rec); resp.Identifier != "" {
+			t.Errorf("a subtype with no identifier must omit it, got %q", resp.Identifier)
+		}
+	})
+
+	t.Run("no MatchFunc still ships an empty array", func(t *testing.T) {
+		rec := runUpload(t, "", clean, true, &stub{})
+		if !bytes.Contains(rec.Body.Bytes(), []byte(`"matches":[]`)) {
+			t.Fatalf("want matches:[] on the wire, got %s", rec.Body.String())
+		}
+	})
+
+	t.Run("a preview with errors does not look anything up", func(t *testing.T) {
+		fe := []snapshotimport.FieldError{{Field: "display_name", Message: "is required"}}
+		s := &stub{fieldErrs: fe, match: found()}
+		rec := runUpload(t, "", clean, true, s)
+		if s.matchCalls != 0 {
+			t.Errorf("match ran %d times on a preview with errors", s.matchCalls)
+		}
+		if resp := decodeResp(t, rec); len(resp.Matches) != 0 || resp.Name != "" {
+			t.Errorf("want no candidate on an errored preview, got %+v", resp)
+		}
+	})
+
+	t.Run("commit never looks anything up and is not blocked by a match", func(t *testing.T) {
+		s := &stub{match: found()}
+		rec := runUpload(t, "?mode=commit", clean, true, s)
+		if rec.Code != http.StatusOK || !s.commitCalled {
+			t.Fatalf("Create anyway must commit as today, got %d commit=%v", rec.Code, s.commitCalled)
+		}
+		if s.matchCalls != 0 {
+			t.Errorf("commit ran the match lookup %d times", s.matchCalls)
+		}
+	})
+
+	t.Run("lookup failure is 500", func(t *testing.T) {
+		rec := runUpload(t, "", clean, true, &stub{match: &matchStub{err: errors.New("boom")}})
 		if rec.Code != http.StatusInternalServerError {
 			t.Fatalf("want 500, got %d", rec.Code)
 		}
@@ -448,11 +553,21 @@ func buildLedgerWorkbook(t *testing.T, detail [][]string, snapHeader []string, s
 
 type ledgerStub struct {
 	fieldErrs    []snapshotimport.FieldError
+	match        *matchStub
 	resolveErr   error
 	commitErr    error
 	commitCalled bool
 	gotSnaps     int
 	gotLedger    int
+}
+
+func (s *ledgerStub) matcher() importcreate.MatchFunc[string] {
+	if s.match == nil {
+		return nil
+	}
+	return func(context.Context, string) (importcreate.Candidate, []repo.PositionMatch, error) {
+		return s.match.cand, s.match.matches, s.match.err
+	}
 }
 
 func (s *ledgerStub) resolve(_ context.Context, _ map[string]string) (string, *uuid.UUID, []snapshotimport.FieldError, error) {
@@ -488,7 +603,7 @@ func runLedgerUpload(t *testing.T, query string, body []byte, withFile bool, sub
 	req := httptest.NewRequest("POST", "/import"+query, &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	rec := httptest.NewRecorder()
-	importcreate.RunWithLedger(rec, req, httperr.NewValidator(), subtype, shape, s.resolve, s.commit)
+	importcreate.RunWithLedger(rec, req, httperr.NewValidator(), subtype, shape, s.resolve, s.matcher(), s.commit)
 	return rec
 }
 
@@ -551,6 +666,30 @@ func TestRunWithLedger(t *testing.T) {
 		}
 		if s.commitCalled {
 			t.Error("preview called commit")
+		}
+	})
+
+	t.Run("clean preview reports the candidate and its matches", func(t *testing.T) {
+		existing := repo.PositionMatch{ID: uuid.New(), Name: "Imported", Status: "active", Group: "investment", Subtype: "stock"}
+		s := &ledgerStub{match: &matchStub{
+			cand:    importcreate.Candidate{Name: "Imported"},
+			matches: []repo.PositionMatch{existing},
+		}}
+		rec := runLedgerUpload(t, "", clean(), true, "stock", snapshotimport.ShapeQuantityPrice, s)
+		resp := decodeResp(t, rec)
+		if resp.Name != "Imported" || len(resp.Matches) != 1 || resp.Matches[0] != existing {
+			t.Fatalf("want the candidate and its match, got %+v", resp)
+		}
+		if !resp.WouldCreate {
+			t.Error("a match must not block would_create")
+		}
+	})
+
+	t.Run("lookup failure is 500", func(t *testing.T) {
+		rec := runLedgerUpload(t, "", clean(), true, "stock", snapshotimport.ShapeQuantityPrice,
+			&ledgerStub{match: &matchStub{err: errors.New("boom")}})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("want 500, got %d", rec.Code)
 		}
 	})
 

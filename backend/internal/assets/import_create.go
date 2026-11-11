@@ -23,6 +23,7 @@ import (
 
 func (h *Handlers) handleImportCreateBankAccount(w http.ResponseWriter, r *http.Request) {
 	importcreate.Run(w, r, h.validate, h.resolveBankAccountDetail,
+		h.matchBankAccount,
 		func(ctx context.Context, p repo.CreateBankAccountParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
 			acct, err := h.repo.CreateBankAccountWithSnapshots(ctx, p, tagID, rows)
 			if err != nil {
@@ -75,6 +76,7 @@ func (h *Handlers) resolveBankAccountDetail(ctx context.Context, detail map[stri
 
 func (h *Handlers) handleImportCreateProperty(w http.ResponseWriter, r *http.Request) {
 	importcreate.Run(w, r, h.validate, h.resolvePropertyDetail,
+		matchAsset(h, "property", func(p repo.CreatePropertyParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreatePropertyParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
 			property, err := h.repo.CreatePropertyWithSnapshots(ctx, p, tagID, rows)
 			if err != nil {
@@ -136,6 +138,7 @@ func (h *Handlers) resolvePropertyDetail(ctx context.Context, detail map[string]
 
 func (h *Handlers) handleImportCreateVehicle(w http.ResponseWriter, r *http.Request) {
 	importcreate.Run(w, r, h.validate, h.resolveVehicleDetail,
+		matchAsset(h, "vehicle", func(p repo.CreateVehicleParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateVehicleParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
 			vehicle, err := h.repo.CreateVehicleWithSnapshots(ctx, p, tagID, rows)
 			if err != nil {
@@ -190,6 +193,24 @@ func (h *Handlers) resolveVehicleDetail(ctx context.Context, detail map[string]s
 		AnnualDepreciationRate: depreciationRate,
 	}
 	return params, tagID, fieldErrs, nil
+}
+
+// matchBankAccount names the bank account a workbook would create and finds
+// the household's existing accounts with the same name and account number
+// (issue #828). The number is part of a bank account's identity — two accounts
+// at one bank can share a nickname — so a different number is not a match.
+func (h *Handlers) matchBankAccount(ctx context.Context, p repo.CreateBankAccountParams) (importcreate.Candidate, []repo.PositionMatch, error) {
+	number := p.AccountNumber
+	matches, err := h.repo.FindImportMatches(ctx, "bank_account", p.DisplayName, &number)
+	return importcreate.Candidate{Name: p.DisplayName, Identifier: number}, matches, err
+}
+
+// matchAsset is matchBankAccount's name-only sibling for the subtypes with no
+// identifier (property, vehicle).
+func matchAsset[T any](h *Handlers, subtype string, name func(T) string) importcreate.MatchFunc[T] {
+	return importcreate.MatchByName(name, func(ctx context.Context, n string) ([]repo.PositionMatch, error) {
+		return h.repo.FindImportMatches(ctx, subtype, n, nil)
+	})
 }
 
 // validateStruct runs the go-playground validator over a create-request struct

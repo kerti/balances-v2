@@ -284,7 +284,14 @@
     "preview_other": "Siap: {{noun}} baru dengan {{count}} snapshot. Belum tersimpan — tekan Buat untuk konfirmasi.",
     "committed_one": "{{noun}} baru dibuat dengan {{count}} snapshot.",
     "committed_other": "{{noun}} baru dibuat dengan {{count}} snapshot.",
-    "createBtn": "Buat"
+    "previewNamed_one": "Siap: {{noun}} baru, {{who}}, dengan {{count}} snapshot. Belum tersimpan — tekan {{button}} untuk konfirmasi.",
+    "previewNamed_other": "Siap: {{noun}} baru, {{who}}, dengan {{count}} snapshot. Belum tersimpan — tekan {{button}} untuk konfirmasi.",
+    "matchName": "Anda sudah memiliki {{noun}}{{closed}} dengan nama ini.",
+    "matchNameNumber": "Anda sudah memiliki {{noun}}{{closed}} dengan nama dan nomor ini.",
+    "matchClosed": " (berakhir)",
+    "matchLink": "Buka lalu gunakan Impor snapshot untuk menambahkannya ke sana",
+    "createBtn": "Buat",
+    "createAnywayBtn": "Tetap buat"
   },
   "export": {
     "trigger": "Ekspor"
