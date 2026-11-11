@@ -13,9 +13,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { ImportDropZone } from "@/components/dialogs/ImportDropZone";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
-import { cn } from "@/lib/utils";
 import type { ImportArgs, ImportResult } from "@/hooks/snapshotImport";
 
 // Past this many rows, the list scrolls in its own boundary and the rest
@@ -31,26 +31,28 @@ type Props = {
   currency: string;
 };
 
-// Two-step bulk import: download a scoped template, fill it offline, then
-// upload. "Check file" runs a server-side dry-run (validates + counts, writes
-// nothing); "Import" only lights up once the file is clean. Aimed at a
-// non-technical user backfilling years of statements at once.
+// Bulk import: download a scoped template, fill it offline, then upload.
+// Picking or dropping a file runs a server-side dry-run straight away
+// (validates + counts new / replaced / unchanged months, writes nothing);
+// "Import" is the only action and lights up once the file is clean and has
+// something to write. Aimed at a non-technical user backfilling years of
+// statements at once.
 export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [dragActive, setDragActive] = useState(false);
   const [invalid, setInvalid] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  // Bumped on every pick and on close so a slow preview for a file the user has
+  // since replaced can't land on the newer one.
+  const pickRef = useRef(0);
 
   function reset() {
+    pickRef.current++;
     setFile(null);
     setResult(null);
-    setDragActive(false);
     setInvalid(false);
     mutation.reset();
-    if (fileRef.current) fileRef.current.value = "";
   }
   function close() {
     setOpen(false);
@@ -58,49 +60,54 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
   }
 
   // Single funnel for both the picker and the drop zone so a non-.xlsx is
-  // rejected identically either way. An `empty` drop leaves the selection as-is.
+  // rejected identically either way, and a good file is checked at once. An
+  // `empty` drop leaves the selection as-is.
   function selectFiles(files: FileList | File[] | null) {
     const outcome = fileFromDrop(files);
     if (!outcome.ok && outcome.reason === "empty") return;
+    const pick = ++pickRef.current;
     setResult(null);
     mutation.reset();
     if (!outcome.ok) {
       setFile(null);
       setInvalid(true);
-      if (fileRef.current) fileRef.current.value = "";
       return;
     }
     setInvalid(false);
     setFile(outcome.file);
+    mutation.mutate(
+      { file: outcome.file, mode: "preview" },
+      {
+        onSuccess: (r) => {
+          if (pick === pickRef.current) setResult(r);
+        },
+      },
+    );
   }
 
-  function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
-    selectFiles(e.target.files);
-  }
-
-  function onDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(true);
-  }
-  function onDragLeave(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(false);
-  }
-  function onDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragActive(false);
-    selectFiles(e.dataTransfer.files);
-  }
-
-  function run(mode: "preview" | "commit") {
+  function commit() {
     if (!file) return;
-    mutation.mutate({ file, mode }, { onSuccess: setResult });
+    mutation.mutate({ file, mode: "commit" }, { onSuccess: setResult });
   }
 
-  const total = result ? result.to_insert + result.to_update + (result.unchanged ?? 0) : 0;
-  const cleanPreview = result?.mode === "preview" && result.errors.length === 0 && total > 0;
-  const emptyPreview = result?.mode === "preview" && result.errors.length === 0 && total === 0;
+  const unchanged = result?.unchanged ?? 0;
+  const toWrite = result ? result.to_insert + result.to_update : 0;
+  const cleanFile = result?.mode === "preview" && result.errors.length === 0;
+  const cleanPreview = cleanFile && toWrite > 0;
+  const allUnchanged = cleanFile && toWrite === 0 && unchanged > 0;
+  const emptyPreview = cleanFile && toWrite === 0 && unchanged === 0;
   const committed = result?.committed === true;
+  const checking = mutation.isPending && mutation.variables?.mode === "preview";
+  // Only the non-zero counts: "1 replaced, 26 unchanged", not "0 new months, …".
+  const counts = (r: ImportResult) => ({
+    counts: [
+      r.to_insert > 0 && t("import.countNew", { count: r.to_insert }),
+      r.to_update > 0 && t("import.countReplaced", { count: r.to_update }),
+      (r.unchanged ?? 0) > 0 && t("import.countUnchanged", { count: r.unchanged ?? 0 }),
+    ]
+      .filter(Boolean)
+      .join(", "),
+  });
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
@@ -141,30 +148,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
 
           <div className="grid gap-1.5">
             <Label htmlFor="import-file">{t("import.step2Label")}</Label>
-            <div
-              onDragOver={onDragOver}
-              onDragLeave={onDragLeave}
-              onDrop={onDrop}
-              data-testid="import-drop-zone"
-              data-drag-active={dragActive}
-              className={cn(
-                "grid gap-2 rounded-md border-2 border-dashed p-4 transition-colors",
-                dragActive ? "border-primary bg-primary/5" : "border-input bg-muted/30",
-              )}
-            >
-              <p className="text-sm text-muted-foreground">
-                {dragActive ? t("import.dropActive") : t("import.dropHint")}
-              </p>
-              <input
-                id="import-file"
-                ref={fileRef}
-                type="file"
-                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                onChange={onPickFile}
-                className="text-sm"
-                data-testid="import-file-input"
-              />
-            </div>
+            <ImportDropZone inputId="import-file" onFiles={selectFiles} />
             {invalid && (
               <p className="text-sm text-destructive" data-testid="import-invalid-file">
                 {t("import.invalidFile")}
@@ -176,6 +160,12 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
               </p>
             )}
           </div>
+
+          {checking && (
+            <p className="text-sm text-muted-foreground" data-testid="import-checking">
+              {t("actions.checking")}
+            </p>
+          )}
 
           {result && !committed && (
             <div className="text-sm" data-testid="import-result">
@@ -207,13 +197,13 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
                 </div>
               ) : emptyPreview ? (
                 <p className="text-muted-foreground">{t("import.emptyPreview")}</p>
+              ) : allUnchanged ? (
+                <p className="text-muted-foreground" data-testid="import-all-unchanged">
+                  {t("import.allUnchanged")}
+                </p>
               ) : (
-                <p className="text-muted-foreground">
-                  {t("import.preview", {
-                    insert: result.to_insert,
-                    update: result.to_update,
-                    unchanged: result.unchanged ?? 0,
-                  })}
+                <p className="text-muted-foreground" data-testid="import-preview">
+                  {t("import.preview", counts(result))}
                 </p>
               )}
             </div>
@@ -221,11 +211,7 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
 
           {committed && (
             <p className="text-sm text-positive" data-testid="import-done">
-              {t("import.committed", {
-                count: total,
-                insert: result.to_insert,
-                update: result.to_update,
-              })}
+              {t("import.committed", counts(result))}
             </p>
           )}
 
@@ -246,20 +232,11 @@ export function ImportSnapshotsDialog({ templateUrl, mutation, currency }: Props
               </Button>
               <Button
                 type="button"
-                variant="outline"
-                disabled={!file || mutation.isPending}
-                onClick={() => run("preview")}
-                data-testid="import-check-btn"
-              >
-                {mutation.isPending && !committed ? t("actions.checking") : t("import.checkFile")}
-              </Button>
-              <Button
-                type="button"
                 disabled={!cleanPreview || mutation.isPending}
-                onClick={() => run("commit")}
+                onClick={commit}
                 data-testid="import-commit-btn"
               >
-                {cleanPreview ? t("import.importN", { count: total }) : t("import.importPlain")}
+                {t("import.importBtn")}
               </Button>
             </>
           )}

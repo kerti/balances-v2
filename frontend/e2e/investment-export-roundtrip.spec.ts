@@ -10,8 +10,8 @@ const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.s
 // download the export — which now carries a Detail + Snapshots + Transactions
 // workbook (ADR-0023) — then feed that exact file back through the snapshot-
 // import dialog. The import reads only the Snapshots sheet, so the Detail +
-// Transactions sheets are ignored and the one month re-classifies as an update
-// (not an insert): a true round trip. Anchors on a unique display name +
+// Transactions sheets are ignored and the one month re-classifies as unchanged
+// (not an insert, not a replacement): a true round trip. Anchors on a unique display name +
 // description; self-cleaning. See ADR-0024.
 test("stock export re-imports flawlessly", async ({ page }) => {
   const name = `E2E export stock ${Date.now()}`;
@@ -75,22 +75,21 @@ test("stock export re-imports flawlessly", async ({ page }) => {
     .setInputFiles({ name: filename, mimeType: XLSX_MIME, buffer });
   await expect(page.getByTestId("import-selected-file")).toBeVisible();
 
-  // Dry-run: the file is clean and the one month re-classifies as an update
-  // (the snapshot already exists), proving the Detail + Transactions sheets are
+  // Picking the file runs the dry-run (no Check button, #829). The file is
+  // clean and the one month matches the stored snapshot exactly — quantity,
+  // price, date and note — so it reads "unchanged": nothing to write, Import
+  // stays disabled. That also proves the Detail + Transactions sheets are
   // ignored and only the Snapshots sheet drives the import.
-  await page.getByTestId("import-check-btn").click();
   const result = page.getByTestId("import-result");
   await expect(result).toBeVisible();
-  await expect(result).toContainText("update");
+  await expect(page.getByTestId("import-all-unchanged")).toContainText(
+    "Nothing to import — every month already matches",
+  );
   await expect(page.getByTestId("import-errors")).toHaveCount(0);
+  await expect(page.getByTestId("import-commit-btn")).toBeDisabled();
+  await expect(page.getByTestId("import-check-btn")).toHaveCount(0);
 
-  // Clean preview lights up the commit button; importing succeeds with no errors.
-  const commit = page.getByTestId("import-commit-btn");
-  await expect(commit).toBeEnabled();
-  await commit.click();
-  await expect(page.getByTestId("import-done")).toBeVisible();
-
-  await page.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
 
   // The snapshot survived the round trip unchanged.
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();

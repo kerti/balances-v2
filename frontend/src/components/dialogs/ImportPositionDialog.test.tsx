@@ -86,7 +86,7 @@ async function checkFile() {
     screen.getByTestId("import-file-input"),
     new File([new Uint8Array([1])], "everyday.xlsx", { type: XLSX }),
   );
-  await user.click(screen.getByTestId("import-check-btn"));
+  // Picking the file is the check: no button to press.
   await screen.findByTestId("import-preview");
   return user;
 }
@@ -248,7 +248,6 @@ describe("ImportPositionDialog duplicate notice", () => {
       screen.getByTestId("import-file-input"),
       new File([new Uint8Array([1])], "bad.xlsx", { type: XLSX }),
     );
-    await user.click(screen.getByTestId("import-check-btn"));
     await screen.findByTestId("import-errors");
 
     expect(screen.queryByTestId("import-match-notice")).not.toBeInTheDocument();

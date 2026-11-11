@@ -77,8 +77,8 @@ test("stock export re-imports as a new position with its ledger from the list", 
     .setInputFiles({ name: filename, mimeType: XLSX_MIME, buffer });
   await expect(page.getByTestId("import-selected-file")).toBeVisible();
 
-  // Dry-run check: the workbook is clean (no field/row errors) and would create.
-  await page.getByTestId("import-check-btn").click();
+  // Picking the file runs the dry-run (no Check button, #829): the workbook is
+  // clean (no field/row errors) and would create.
   await expect(page.getByTestId("import-result")).toBeVisible();
   await expect(page.getByTestId("import-errors")).toHaveCount(0);
 
