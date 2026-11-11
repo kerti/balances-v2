@@ -132,6 +132,22 @@ body {
   --chart-3: oklch(0.505 0.023 250.6); /* #5B6672 slate */
   --chart-4: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
   --chart-5: oklch(0.796 0.091 84.3); /* #D8B877 pale brass */
+  /* System category colours (ADR-0054 amendment 2026-11-09): no red or green
+     hue, those mean direction. Sets are validated per group against their own
+     siblings on --card; see lib/categoryColors.ts. */
+  --cat-bank-account: #40a7f9;
+  --cat-property: #b33aa0;
+  --cat-vehicle: #d38301;
+  --cat-personal: #8671fc;
+  --cat-institutional: #e58e13;
+  --cat-stock: #24b3cd;
+  --cat-mutual-fund: #6e41c6;
+  --cat-bond: #187fda;
+  --cat-time-deposit: #bc51af;
+  --cat-gold: #b9a843;
+  --risk-low: #c9a15c;
+  --risk-medium: #a27c3c;
+  --risk-high: #735522;
   /* Dashboard net-worth chart (ADR-0001 Presentation, roles revised by
      ADR-0054). Net worth is the headline and carries the **brand brass**; its
      three components are a CVD-validated categorical triple beneath it, with
@@ -219,6 +235,19 @@ body {
   --chart-3: oklch(0.661 0.026 262.1); /* #8A93A3 light slate */
   --chart-4: oklch(0.505 0.023 250.6); /* #5B6672 slate */
   --chart-5: oklch(0.749 0.09 83.5); /* #C9A96A soft brass */
+  --cat-bank-account: #3a9be7;
+  --cat-property: #b847a6;
+  --cat-vehicle: #c87c08;
+  --cat-personal: #7763e5;
+  --cat-institutional: #d07f00;
+  --cat-stock: #1ea6bf;
+  --cat-mutual-fund: #9d79fa;
+  --cat-bond: #1f7cd2;
+  --cat-time-deposit: #b852aa;
+  --cat-gold: #90811b;
+  --risk-low: #8a6a30;
+  --risk-medium: #c79a4e;
+  --risk-high: #e6cc94;
   /* Net-worth chart, dark variants — stepped for this surface, not flipped;
      see the light block for why each hue is where it is. */
   --chart-networth: #c79a4e;

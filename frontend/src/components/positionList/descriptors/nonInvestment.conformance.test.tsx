@@ -275,7 +275,7 @@ describe("non-investment descriptors (conformance)", () => {
       expect(within(row).getByText(name)).toBeInTheDocument();
       expect(within(row).getByText(secondary)).toBeInTheDocument();
       // Shared surface: status + value.
-      expect(within(row).getByText("Active")).toBeInTheDocument();
+      expect(within(row).queryByText("Active")).not.toBeInTheDocument();
       expect(within(row).getByText(/4,?321/)).toBeInTheDocument();
       // Ownership extra column: privacy-safe sole-owner label.
       expect(within(row).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();

@@ -9,25 +9,12 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { formatChartMonth, formatCurrency } from "@/lib/format";
+import { INVESTMENT_CATEGORY_COLORS } from "@/lib/categoryColors";
 import {
   INVESTMENT_CATEGORIES,
   type CategoryTimePoint,
   type InvestmentCategory,
 } from "@/lib/homeAggregates";
-
-// Per-category fill. The shadcn theme ships --chart-1..5 but all five
-// are cyan-family, so a stacked / pie split would read as one blob.
-// Use distinct hues from the Tailwind 500-level shades instead, sourced
-// from existing app usage where possible (emerald = gain tone, amber =
-// medium-risk tone, violet = neutral accent). Documented here so the
-// choice is auditable.
-const CATEGORY_FILLS: Record<InvestmentCategory, string> = {
-  stock: "#06b6d4", // cyan-500
-  mutualFund: "#8b5cf6", // violet-500
-  bond: "#3b82f6", // blue-500
-  timeDeposit: "#10b981", // emerald-500
-  gold: "#eab308", // yellow-500 (literal gold connotation)
-};
 
 type Props = {
   series: CategoryTimePoint[];
@@ -67,7 +54,7 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
       c,
       {
         label: t(`home.categoryLabel.${c}`),
-        color: CATEGORY_FILLS[c],
+        color: INVESTMENT_CATEGORY_COLORS[c],
       },
     ]),
   );

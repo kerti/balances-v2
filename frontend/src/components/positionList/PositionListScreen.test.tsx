@@ -3,7 +3,7 @@
 // type — so it asserts the generic's contract, not one type's incidentals. One
 // suite here covers list behaviour for all ten real types.
 //
-// covers: INV-PRESENTATION-04, INV-PRESENTATION-05
+// covers: INV-PRESENTATION-04, INV-PRESENTATION-05, INV-PRESENTATION-23
 import { describe, it, expect, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -98,11 +98,14 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     renderList(loaded(widgets));
     const rows = screen.getAllByTestId("widget-row");
     expect(rows).toHaveLength(2); // Charlie is closed → hidden by default
-    // Name + secondary + status + value are the four shared columns.
+    // With inactive rows hidden there is no Status column, so an Active row
+    // carries no status pill.
     const alpha = rows.find((r) => r.textContent?.includes("Alpha"))!;
     expect(within(alpha).getByText("alpha-sub")).toBeInTheDocument();
-    expect(within(alpha).getByText("Active")).toBeInTheDocument();
+    expect(within(alpha).queryByTestId("status-badge")).not.toBeInTheDocument();
+    expect(within(alpha).queryByText("Active")).not.toBeInTheDocument();
     expect(within(alpha).getByText(/100/)).toBeInTheDocument();
+    expect(screen.queryByTestId("sort-status")).not.toBeInTheDocument();
   });
 
   it("renders group extra columns on the web table", () => {
@@ -138,6 +141,16 @@ describe("PositionListScreen (synthetic descriptor)", () => {
 
     await user.click(screen.getByTestId("show-inactive"));
     expect(screen.getByText("Charlie")).toBeInTheDocument();
+    const charlie = screen
+      .getAllByTestId("widget-row")
+      .find((r) => r.textContent?.includes("Charlie"))!;
+    expect(within(charlie).getByTestId("status-badge")).toHaveTextContent("Closed");
+    // Once inactive rows show, every row carries its pill, Active included.
+    expect(screen.getByTestId("sort-status")).toBeInTheDocument();
+    const alpha = screen
+      .getAllByTestId("widget-row")
+      .find((r) => r.textContent?.includes("Alpha"))!;
+    expect(within(alpha).getByTestId("status-badge")).toHaveTextContent("Active");
   });
 
   it("renders the loading state", () => {

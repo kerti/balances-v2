@@ -71,7 +71,7 @@ describe("goldDescriptor (conformance)", () => {
     const row = await screen.findByTestId("gold-row");
     // Shared surface: name, status, value.
     expect(within(row).getByText("Gold Bars")).toBeInTheDocument();
-    expect(within(row).getByText("Active")).toBeInTheDocument();
+    expect(within(row).queryByText("Active")).not.toBeInTheDocument();
     expect(within(row).getByText(/4,?321/)).toBeInTheDocument();
     // Subtype column: form label + purity.
     expect(within(row).getByText("Bar")).toBeInTheDocument();

@@ -14,12 +14,16 @@ type Props = {
   slices: PieSlice[];
   currency: string;
   legendPosition?: "bottom" | "right" | "none";
+  // Ordinal slices (risk low→high): keep the legend in slice order instead of
+  // Recharts' default alphabetical sort.
+  ordered?: boolean;
 };
 
 export default function InvestmentPieChartImpl({
   slices,
   currency,
   legendPosition = "bottom",
+  ordered = false,
 }: Props) {
   // Drop empty slices so the pie's `nameKey`-driven legend stays tight.
   const present = slices.filter((s) => s.value > 0);
@@ -86,10 +90,14 @@ export default function InvestmentPieChartImpl({
             layout="vertical"
             verticalAlign="middle"
             align="right"
+            itemSorter={ordered ? null : undefined}
             content={<ChartLegendContent nameKey="key" className="flex-col items-start" />}
           />
         ) : (
-          <ChartLegend content={<ChartLegendContent nameKey="key" />} />
+          <ChartLegend
+            itemSorter={ordered ? null : undefined}
+            content={<ChartLegendContent nameKey="key" />}
+          />
         )}
       </PieChart>
     </ChartContainer>

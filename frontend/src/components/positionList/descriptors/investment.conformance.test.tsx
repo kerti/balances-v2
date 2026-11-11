@@ -174,7 +174,7 @@ describe("investment descriptors (conformance)", () => {
       expect(within(row).getByText(name)).toBeInTheDocument();
       expect(within(row).getByText(subtype)).toBeInTheDocument();
       // Shared surface + activity column.
-      expect(within(row).getByText("Active")).toBeInTheDocument();
+      expect(within(row).queryByText("Active")).not.toBeInTheDocument();
       expect(within(row).getByText(/4,?321/)).toBeInTheDocument();
       expect(within(row).getByText("3 transactions")).toBeInTheDocument();
       // The investment cost/P-L headline slot.

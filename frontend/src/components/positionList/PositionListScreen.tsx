@@ -133,8 +133,11 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
           cell: (row) => col.render(row.item, ctx),
         }));
 
-    return [nameCol, ...extra("main"), statusCol, valueCol, ...extra("trailing")];
-  }, [descriptor, keys.valueLabel, t, ctx]);
+    // Status is only news once inactive rows are on screen (#836): hidden until
+    // the toggle is ticked, then every row carries its pill, Active included.
+    const status = showInactive ? [statusCol] : [];
+    return [nameCol, ...extra("main"), ...status, valueCol, ...extra("trailing")];
+  }, [descriptor, keys.valueLabel, t, ctx, showInactive]);
 
   const sortColumns = useMemo<Record<string, ColumnSort<RowView<T>>>>(() => {
     const map: Record<string, ColumnSort<RowView<T>>> = {
