@@ -14,7 +14,7 @@ import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
-import { formatCurrency, formatNumber, formatYearMonth } from "@/lib/format";
+import { formatCurrency, formatNumber, formatShortYearMonth, formatYearMonth } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
@@ -30,6 +30,28 @@ import type { Me } from "@/hooks/useSession";
 // group breakdown, then by-person. The income-statement panel arrives in M5
 // slice 2; this slice is net worth only.
 
+// The "Also in" choice is remembered per browser. Storage can be absent or throw
+// (private windows, blocked site data), so every access is guarded and the
+// screen renders the same without it.
+export const SECONDARY_CURRENCY_KEY = "balances.dashboard.secondaryCurrency";
+
+function readSecondaryCurrency(): string {
+  try {
+    return localStorage.getItem(SECONDARY_CURRENCY_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeSecondaryCurrency(currency: string) {
+  try {
+    if (currency) localStorage.setItem(SECONDARY_CURRENCY_KEY, currency);
+    else localStorage.removeItem(SECONDARY_CURRENCY_KEY);
+  } catch {
+    // Not remembered; the in-memory choice still applies.
+  }
+}
+
 export function DashboardScreen() {
   const { t } = useTranslation(["dashboard", "common"]);
   const { data: reports, isPending, error } = useReports();
@@ -39,7 +61,11 @@ export function DashboardScreen() {
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   // Q15c: a second display currency under the headline. Local-only state; off
   // by default. Offered only to multi-currency households that have ≥1 rate.
-  const [secondaryCurrency, setSecondaryCurrency] = useState("");
+  const [secondaryCurrency, setSecondaryCurrency] = useState(readSecondaryCurrency);
+  const chooseSecondaryCurrency = (c: string) => {
+    setSecondaryCurrency(c);
+    writeSecondaryCurrency(c);
+  };
 
   if (isPending) {
     return <p className="text-sm text-muted-foreground">{t("common:loading")}</p>;
@@ -107,7 +133,7 @@ export function DashboardScreen() {
         currency={currency}
         secondary={secondary}
         displayCurrencies={displayCurrencies}
-        onSecondaryChange={setSecondaryCurrency}
+        onSecondaryChange={chooseSecondaryCurrency}
         rates={rates ?? []}
       />
 
@@ -137,8 +163,6 @@ export function DashboardScreen() {
       </Card>
 
       <GroupBreakdown selected={selected} currency={currency} />
-
-      <ExchangeRates selected={selected} currency={currency} />
 
       <ThisMonth selected={selected} currency={currency} />
 
@@ -271,11 +295,9 @@ function HeadlineCard({
             controls it sit together, right under the headline they annotate
             (moved off the top nav toolbar, #507). Multi-currency households
             with ≥1 rate only. */}
+        <RatesLine selected={selected} currency={currency} rates={rates} />
         {displayCurrencies.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {secondary && (
-              <SecondaryAmount selected={selected} currency={secondary} rates={rates} />
-            )}
+          <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <span>{t("secondary.label")}</span>
               {/* Sits inline in a toolbar label, so it keeps its intrinsic
@@ -294,6 +316,9 @@ function HeadlineCard({
                 ))}
               </Select>
             </label>
+            {secondary && (
+              <SecondaryAmount selected={selected} currency={secondary} rates={rates} />
+            )}
           </div>
         )}
         <StalePositions selected={selected} />
@@ -446,8 +471,8 @@ function UnsettledTerminations({ selected }: { selected: MonthlyReport }) {
 
 // SecondaryAmount projects the headline net worth into a second currency
 // (Q15c, ADR-0010) at the selected month's carry-forward rate. Pure rendering;
-// shown as an "≈" approximation since the conversion is display-only. Flags when
-// the rate is carried forward from an earlier month, or absent entirely.
+// shown as an "≈" approximation since the conversion is display-only. Flags a
+// missing rate; a carried-forward rate is flagged on the rates line instead.
 function SecondaryAmount({
   selected,
   currency,
@@ -467,20 +492,10 @@ function SecondaryAmount({
     );
   }
   const amount = convert(selected.nw_total, resolved.rate);
-  const carried = resolved.rateMonth.slice(0, 7) !== selected.year_month.slice(0, 7);
   return (
     <p data-testid="dashboard-secondary-amount" className="text-sm text-muted-foreground">
       {"≈ "}
       {formatCurrency(String(amount), currency)}
-      {carried && (
-        <span className="ml-1 text-warning">
-          {"· "}
-          {t("secondary.carriedForward", {
-            currency,
-            from: formatYearMonth(resolved.rateMonth),
-          })}
-        </span>
-      )}
     </p>
   );
 }
@@ -634,33 +649,46 @@ function ByPerson({
   );
 }
 
-// ExchangeRates shows the rates applied this month (fx_rates_used) — only when
-// the household is multi-currency and a foreign currency was converted.
-function ExchangeRates({ selected, currency }: { selected: MonthlyReport; currency: string }) {
+// RatesLine is the one muted line under the headline: the rates applied this
+// month (fx_rates_used). A rate carried forward from an earlier month says so on
+// the same line, so the rate and its caveat can't disagree.
+function RatesLine({
+  selected,
+  currency,
+  rates,
+}: {
+  selected: MonthlyReport;
+  currency: string;
+  rates: FxRate[];
+}) {
   const { t } = useTranslation("dashboard");
-  const entries = Object.entries(selected.fx_rates_used);
+  const entries = Object.entries(selected.fx_rates_used).sort(([a], [b]) => a.localeCompare(b));
   if (entries.length === 0) return null;
+  const month = selected.year_month.slice(0, 7);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t("fxThisMonth.title")}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
-          {entries
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([cur, rate]) => (
-              <div key={cur}>
-                {t("fxThisMonth.line", {
-                  base: cur,
-                  rate: formatNumber(rate),
-                  quote: currency,
+    <p data-testid="dashboard-rates" className="text-sm text-muted-foreground">
+      {t("rates.prefix")}{" "}
+      {entries.map(([cur, rate], i) => {
+        const from = resolveDisplayRate(rates, cur, selected.year_month)?.rateMonth;
+        const carried = from !== undefined && from.slice(0, 7) !== month;
+        return (
+          <span key={cur} data-testid={`dashboard-rate-${cur}`}>
+            {i > 0 && " · "}
+            {t("rates.line", { base: cur, rate: formatNumber(rate), quote: currency })}
+            {carried && (
+              <span data-testid={`dashboard-rate-carried-${cur}`} className="text-warning">
+                {" · "}
+                {t("rates.carriedForward", {
+                  from: formatShortYearMonth(
+                    new Date(Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1, 1),
+                  ),
                 })}
-              </div>
-            ))}
-        </div>
-      </CardContent>
-    </Card>
+              </span>
+            )}
+          </span>
+        );
+      })}
+    </p>
   );
 }
 
