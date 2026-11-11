@@ -2,7 +2,7 @@ module github.com/kerti/balances-v2/backend
 
 go 1.26.9
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	codeberg.org/go-pdf/fpdf v0.12.0
