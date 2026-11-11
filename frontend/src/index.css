@@ -303,3 +303,9 @@ body {
   border: 0;
   color: var(--muted-foreground);
 }
+
+/* Recharts focuses an inner <g> on mouse click / tap; the browser's default
+   :focus outline then boxes the plot. Keep it for keyboard focus only. */
+.recharts-wrapper :focus:not(:focus-visible) {
+  outline: none;
+}
