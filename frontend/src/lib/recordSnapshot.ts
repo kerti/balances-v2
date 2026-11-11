@@ -3,7 +3,7 @@
 // as bare "YYYY-MM" from the month picker, so every comparison goes through
 // `ymOf`, which keeps just the leading year and month.
 import { thisYearMonth } from "@/lib/dateLimits";
-import { formatShortYearMonth } from "@/lib/format";
+import { formatShortMonth, formatShortYearMonth } from "@/lib/format";
 
 type Dated = { year_month: string };
 
@@ -64,4 +64,45 @@ export function formatRecordMonth(yearMonth: string): string {
 // A statement date from the API ("YYYY-MM-DDT…") as the date input's value.
 export function asOfInputValue(asOf: string | null): string {
   return asOf ? asOf.slice(0, 10) : "";
+}
+
+// ---- "Update {Mon} holding" (#830) --------------------------------------------
+
+// The short month name a trade's toast / the mismatch banner offers to update:
+// the month Record snapshot will open on ("Nov"). Anchored at noon UTC like
+// `formatRecordMonth`.
+export function holdingMonthLabel(snapshots: Dated[] | undefined): string {
+  const ym = defaultRecordMonth(snapshots);
+  return formatShortMonth(new Date(`${ym}-01T12:00:00Z`));
+}
+
+type PricedTxn = {
+  transaction_type: string;
+  transaction_date: string;
+  price_per_unit: string | null;
+};
+
+// The price the shortcut prefills into Record snapshot for a quantity x price
+// position. "Latest price" is the price per unit of the snapshot already in force
+// for the month being opened (replace mode) or else the most recent snapshot
+// before it: a snapshot's price is a month-end valuation, which a trade's
+// execution price is not (gold buys at the dealer's ask but is valued at buyback,
+// issue #19). Only a position with no priced snapshot yet falls back to its most
+// recent Buy/Sell price. Null means "leave the field empty".
+export function latestHoldingPrice(
+  snapshots: Array<Dated & { price_per_unit: string | null }> | undefined,
+  transactions: PricedTxn[] | undefined,
+  yearMonth: string,
+): string | null {
+  const fromSnapshot =
+    snapshotForMonth(snapshots, yearMonth)?.price_per_unit ??
+    lastRecordedBefore(snapshots, yearMonth)?.price_per_unit;
+  if (fromSnapshot) return fromSnapshot;
+  let latest: PricedTxn | undefined;
+  for (const tx of transactions ?? []) {
+    if (tx.transaction_type !== "buy" && tx.transaction_type !== "sell") continue;
+    if (!tx.price_per_unit) continue;
+    if (!latest || tx.transaction_date >= latest.transaction_date) latest = tx;
+  }
+  return latest?.price_per_unit ?? null;
 }

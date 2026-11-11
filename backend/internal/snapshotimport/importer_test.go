@@ -2,6 +2,7 @@ package snapshotimport
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -637,6 +638,7 @@ func TestParseDetail_Errors(t *testing.T) {
 // yields an empty ledger (not an error), blank currency defaults, and bad
 // cells (number/date/missing-required) surface per-row.
 // covers: INV-IMPORT-05
+// covers: INV-INTEGRITY-04
 func TestParseTransactions(t *testing.T) {
 	amt := decimalFromString(t, "5000000")
 	qty := decimalFromString(t, "100")
@@ -648,7 +650,7 @@ func TestParseTransactions(t *testing.T) {
 	txns := []ExportTransaction{
 		{TransactionType: "buy", TransactionDate: *ptrTime(t, "2026-01-05"), Currency: "IDR",
 			Amount: &amt, Quantity: &qty, PricePerUnit: &price, Description: ptrStr("opening lot")},
-		{TransactionType: "maturity", TransactionDate: *ptrTime(t, "2026-03-01"), Currency: "USD",
+		{TransactionType: "maturity", TransactionDate: *ptrTime(t, "2026-03-01"), Currency: "IDR",
 			PrincipalAmount: &principal, InterestAmount: &interest,
 			PrincipalDisposition: &rolled, InterestDisposition: &cashOut},
 	}
@@ -678,7 +680,7 @@ func TestParseTransactions(t *testing.T) {
 		t.Errorf("buy must not carry maturity columns: %+v", buy)
 	}
 	mat := parsed[1]
-	if mat.TransactionType != "maturity" || mat.Currency != "USD" || mat.Amount != nil {
+	if mat.TransactionType != "maturity" || mat.Currency != "IDR" || mat.Amount != nil {
 		t.Errorf("maturity shared cells: %+v", mat)
 	}
 	if mat.PrincipalAmount == nil || mat.InterestAmount == nil ||
@@ -686,6 +688,26 @@ func TestParseTransactions(t *testing.T) {
 		mat.InterestDisposition == nil || *mat.InterestDisposition != "cash_out" {
 		t.Errorf("maturity columns: %+v", mat)
 	}
+
+	t.Run("a currency other than the position's is a row error", func(t *testing.T) {
+		foreign := []ExportTransaction{
+			{TransactionType: "buy", TransactionDate: *ptrTime(t, "2026-01-05"), Currency: "USD",
+				Amount: &amt, Quantity: &qty, PricePerUnit: &price},
+		}
+		x, err := BuildWorkbook(TemplateMeta{
+			PositionName: "Stock", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice, Transactions: foreign,
+		}, nil)
+		if err != nil {
+			t.Fatalf("BuildWorkbook: %v", err)
+		}
+		parsed, rowErrs, err := ParseTransactions(bytes.NewReader(x), Options{DefaultCurrency: "IDR"})
+		if err != nil {
+			t.Fatalf("ParseTransactions: %v", err)
+		}
+		if len(parsed) != 0 || len(rowErrs) != 1 || !strings.Contains(rowErrs[0].Message, "must be IDR") {
+			t.Fatalf("want one currency row error, got parsed=%v rowErrs=%v", parsed, rowErrs)
+		}
+	})
 
 	t.Run("unreadable file errors", func(t *testing.T) {
 		if _, _, err := ParseTransactions(bytes.NewReader([]byte("not an xlsx")), Options{}); err == nil {

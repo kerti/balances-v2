@@ -159,6 +159,7 @@ function stubEndpoints() {
   );
 }
 
+// covers: INV-PRESENTATION-21
 describe("goldDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
     stubEndpoints();
@@ -196,6 +197,10 @@ describe("goldDescriptor detail (conformance)", () => {
     expect(within(txnCard).getByText("Partial sale")).toBeInTheDocument();
     const search = within(txnCard).getByTestId("txn-search");
     expect(search).toBeInTheDocument();
+    // Gold records no income, so its totals line is just fees (#830).
+    const totals = within(txnCard).getByTestId("ledger-totals");
+    expect(within(totals).getByTestId("ledger-total-fee")).toHaveTextContent(/0\.00/);
+    expect(totals.children).toHaveLength(1);
 
     // Search filters the ledger through descriptor wiring (primitive stays neutral).
     await userEvent.type(search, "Partial");

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { reconcileQuantity } from "@/lib/reconciliation";
+import { ledgerQuantity, reconcileQuantity } from "@/lib/reconciliation";
 import type { InvestmentSnapshot, InvestmentTransaction, TransactionType } from "@/api/types";
 
 // reconcileQuantity only reads snapshot.quantity and each transaction's
@@ -52,5 +52,25 @@ describe("reconcileQuantity", () => {
   it("treats sub-1e-6 drift as a match", () => {
     const result = reconcileQuantity(snap("100.0000001"), [txn("buy", "100")]);
     expect(result?.matches).toBe(true);
+  });
+});
+
+describe("ledgerQuantity", () => {
+  it("is null with no ledger", () => {
+    expect(ledgerQuantity(undefined)).toBeNull();
+    expect(ledgerQuantity([])).toBeNull();
+  });
+
+  it("totals buys less sells and fee-deducted units, exactly", () => {
+    expect(ledgerQuantity([txn("buy", "40"), txn("buy", "10")])).toBe("50");
+    expect(ledgerQuantity([txn("buy", "100"), txn("sell", "20"), txn("fee", "10")])).toBe("70");
+    expect(ledgerQuantity([txn("buy", "0.1"), txn("buy", "0.2")])).toBe("0.3");
+    expect(0.1 + 0.2).not.toBe(0.3);
+  });
+
+  it("can reach zero or go negative, and ignores income and null quantities", () => {
+    expect(ledgerQuantity([txn("buy", "5"), txn("sell", "5")])).toBe("0");
+    expect(ledgerQuantity([txn("sell", "2.5")])).toBe("-2.5");
+    expect(ledgerQuantity([txn("buy", null), txn("dividend", null), txn("buy", "3")])).toBe("3");
   });
 });

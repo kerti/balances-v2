@@ -1,9 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { toastSaved } from "@/lib/writeToast";
+import { toastSaved, toastTradeAdded } from "@/lib/writeToast";
+import { holdingMonthLabel } from "@/lib/recordSnapshot";
+import { useRecordSnapshotRequest } from "@/lib/recordSnapshotRequest";
 import i18n from "@/i18n";
 import { useUndoableDelete } from "@/hooks/useUndoableDelete";
-import type { InvestmentTransaction, TransactionType, Disposition } from "@/api/types";
+import type {
+  InvestmentSnapshot,
+  InvestmentTransaction,
+  TransactionType,
+  Disposition,
+} from "@/api/types";
 
 // Transactions live under /api/investments/{id}/transactions. One shared
 // table per migration 00010; the repo's validateInvestmentTransactionType
@@ -59,16 +66,19 @@ export function useInvestmentTransactions(investmentId: string | null) {
 
 export function useCreateInvestmentTransaction(investmentId: string, detailKey?: string) {
   const qc = useQueryClient();
+  const holding = useRecordSnapshotRequest();
   return useMutation({
     mutationFn: (payload: CreateInvestmentTransactionPayload) =>
       api<InvestmentTransaction>(`/api/investments/${investmentId}/transactions`, {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
-      qc.invalidateQueries({
-        queryKey: ["investment-transactions", investmentId],
-      });
+    onSuccess: async (_created, payload) => {
+      const refreshed = [
+        qc.invalidateQueries({
+          queryKey: ["investment-transactions", investmentId],
+        }),
+      ];
       // Maturity may have flipped the parent to 'matured' and upserted a close
       // snapshot — refresh the detail, the snapshot list, and the subtype
       // collection (issues #25 + #56).
@@ -78,6 +88,22 @@ export function useCreateInvestmentTransaction(investmentId: string, detailKey?:
           queryKey: ["investment-snapshots", investmentId],
         });
         qc.invalidateQueries({ queryKey: [detailKey] });
+      }
+      // A Buy or Sell on a position page offers "Update {Mon} holding →" (#830).
+      // The shortcut reads the ledger total when it opens, so wait for the
+      // refetch that includes this trade before showing it; the add itself has
+      // already been written and the toast is still the one toast for the write.
+      if (
+        holding.available &&
+        (payload.transaction_type === "buy" || payload.transaction_type === "sell")
+      ) {
+        await Promise.all(refreshed);
+        const snapshots = qc.getQueryData<InvestmentSnapshot[]>([
+          "investment-snapshots",
+          investmentId,
+        ]);
+        toastTradeAdded(holdingMonthLabel(snapshots), holding.request);
+        return;
       }
       toastSaved("added");
     },

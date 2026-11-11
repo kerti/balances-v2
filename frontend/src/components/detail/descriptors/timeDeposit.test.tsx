@@ -133,6 +133,7 @@ function renderTD(ui: ReactElement) {
   );
 }
 
+// covers: INV-PRESENTATION-21
 describe("timeDepositDescriptor detail (conformance)", () => {
   it("renders every shared region through the generic shell (no rollover)", async () => {
     server.use(
@@ -254,6 +255,17 @@ describe("timeDepositDescriptor detail (conformance)", () => {
     // Transaction section still renders the maturity ledger row.
     const txnCard = screen.getByTestId("tour-transactions");
     expect(within(txnCard).getByText("Matured — rolled over")).toBeInTheDocument();
+    // A time deposit records only Maturity, so it totals the principal returned
+    // and the interest paid (#830), and carries the search box like the rest.
+    const totals = within(txnCard).getByTestId("ledger-totals");
+    expect(within(totals).getByTestId("ledger-total-maturityPrincipal")).toHaveTextContent(
+      /20,000\.00/,
+    );
+    expect(within(totals).getByTestId("ledger-total-maturityInterest")).toHaveTextContent(
+      /1,200\.00/,
+    );
+    expect(totals.children).toHaveLength(2);
+    expect(within(txnCard).getByTestId("txn-search")).toBeInTheDocument();
 
     // Navigation is descriptor wiring (useNavigate); the core never learns the route.
     await userEvent.click(fromLink);

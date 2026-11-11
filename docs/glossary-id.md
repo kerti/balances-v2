@@ -152,6 +152,7 @@ the choice is non-obvious.
 | English | Indonesian | Notes |
 | --- | --- | --- |
 | Create / Add | Tambah | Used on primary action buttons ("Tambah Aset", "Tambah Snapshot"). |
+| Update {Mon} holding → | Perbarui kepemilikan {Mon} → | The trade toast / mismatch-banner action (#830) that opens Record snapshot prefilled. "Kepemilikan" = holding (the units you own); the trade dialog says to update "kepemilikan di snapshot bulan ini". |
 | Record snapshot | Catat snapshot | The one per-position button for entering a month's value (#788). "Catat" = record; _Avoid_: "Baru" / "Tambah Snapshot" for it. |
 | Replace (a month's value) | Ganti | "{{month}} sudah memiliki {{value}}, menyimpan akan menggantinya." The earlier value is archived and can be undone ("Urungkan"). |
 | Move (a snapshot to another month) | Pindahkan | "Pindahkan…" beside the locked month in Edit snapshot (#791). One atomic act: the original is archived and the same values recorded in the target month; the toast offers Undo ("Urungkan"). |

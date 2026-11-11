@@ -166,6 +166,7 @@ function stubEndpoints() {
   );
 }
 
+// covers: INV-PRESENTATION-21
 describe("bondDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
     stubEndpoints();
@@ -213,6 +214,11 @@ describe("bondDescriptor detail (conformance)", () => {
     // in the shared toolbar (312.50 each, a single coupon).
     expect(within(txnCard).getAllByText(/312/).length).toBeGreaterThanOrEqual(2);
     const search = within(txnCard).getByTestId("txn-search");
+    // Bond totals its coupons and fees, not maturity or trades (#830).
+    const totals = within(txnCard).getByTestId("ledger-totals");
+    expect(within(totals).getByTestId("ledger-total-coupon")).toHaveTextContent(/312\.50/);
+    expect(within(totals).getByTestId("ledger-total-fee")).toHaveTextContent(/0\.00/);
+    expect(totals.children).toHaveLength(2);
 
     // Search filters the ledger through descriptor wiring (primitive stays neutral).
     await userEvent.type(search, "Coupon");

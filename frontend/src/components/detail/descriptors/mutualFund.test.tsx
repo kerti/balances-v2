@@ -159,6 +159,7 @@ function stubEndpoints() {
   );
 }
 
+// covers: INV-PRESENTATION-21
 describe("mutualFundDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
     stubEndpoints();
@@ -197,6 +198,11 @@ describe("mutualFundDescriptor detail (conformance)", () => {
     expect(within(txnCard).getByText("Annual distribution")).toBeInTheDocument();
     const search = within(txnCard).getByTestId("txn-search");
     expect(search).toBeInTheDocument();
+    // A mutual fund totals its distributions and fees (#830).
+    const totals = within(txnCard).getByTestId("ledger-totals");
+    expect(within(totals).getByTestId("ledger-total-distribution")).toHaveTextContent(/120\.00/);
+    expect(within(totals).getByTestId("ledger-total-fee")).toHaveTextContent(/0\.00/);
+    expect(totals.children).toHaveLength(2);
 
     // Search filters the ledger through descriptor wiring (primitive stays neutral).
     await userEvent.type(search, "distribution");

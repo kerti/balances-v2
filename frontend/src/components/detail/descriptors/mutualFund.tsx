@@ -1,7 +1,7 @@
-import { Callout } from "@/components/common/Callout";
+import { LedgerToolbar } from "@/components/detail/LedgerToolbar";
+import { ReconcileBanner } from "@/components/detail/ReconcileBanner";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnapshotRow";
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
@@ -184,6 +184,7 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
       useSectionRender: (assetId) => {
         const { t } = useTranslation(["investments"]);
         const { data: snapshots } = useInvestmentSnapshots(assetId);
+        const { data: transactions } = useInvestmentTransactions(assetId);
         const createMutation = useCreateInvestmentSnapshot(assetId, "mutual-funds");
         const updateMutation = useUpdateInvestmentSnapshot(assetId, "mutual-funds");
         const deleteMutation = useDeleteInvestmentSnapshot(assetId, "mutual-funds");
@@ -227,6 +228,7 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
             <CreateQuantityPriceSnapshotDialog
               currency={currency}
               snapshots={snapshots}
+              transactions={transactions}
               createMutation={createMutation}
               updateMutation={updateMutation}
             />
@@ -321,26 +323,25 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
             </div>
           </div>
         ) : undefined,
-        toolbar:
-          allTxns.length > 0 ? (
-            <div className="border-b px-6 py-3">
-              <Input
-                data-testid="txn-search"
-                placeholder={t("investments:transactions.searchPlaceholder")}
-                value={ctx.txnSearch}
-                onChange={(e) => ctx.setTxnSearch(e.target.value)}
-                className="max-w-xs"
-              />
-            </div>
-          ) : undefined,
+        toolbar: (
+          <LedgerToolbar
+            subtype="mutual_fund"
+            transactions={allTxns}
+            currency={currency}
+            search={ctx.txnSearch}
+            onSearchChange={ctx.setTxnSearch}
+          />
+        ),
         banner:
           recon && !recon.matches ? (
-            <Callout variant="warning" className="mx-6 mb-3">
-              {t("investments:mutualFund.reconcileWarning", {
+            <ReconcileBanner
+              message={t("investments:mutualFund.reconcileWarning", {
                 actual: recon.actual,
                 expected: recon.expected,
               })}
-            </Callout>
+              snapshots={snapshots}
+              active={active}
+            />
           ) : undefined,
       };
 

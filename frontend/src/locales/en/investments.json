@@ -116,6 +116,7 @@
     "sellTitle": "Record sell",
     "buyDescription": "Quantity acquired and the price paid per unit. Total cash out is derived ({{currency}}).",
     "sellDescription": "Quantity sold and the price received per unit. Total cash in is derived ({{currency}}).",
+    "separateNote": "This records the trade. Update the holding in this month's snapshot, and the bank balance in that account.",
     "editBuyTitle": "Edit buy",
     "editSellTitle": "Edit sell",
     "editDescription": "Adjust the trade date, quantity, price, or description.",
@@ -205,7 +206,15 @@
     "cashImpactHeader": "Cash impact",
     "notesHeader": "Notes",
     "searchPlaceholder": "Search transactions…",
-    "searchEmpty": "No transactions match your search."
+    "searchEmpty": "No transactions match your search.",
+    "totals": {
+      "coupon": "Total coupons:",
+      "dividend": "Total dividends:",
+      "distribution": "Total distributions:",
+      "fee": "Total fees:",
+      "maturityPrincipal": "Principal returned:",
+      "maturityInterest": "Interest paid:"
+    }
   },
   "headline": {
     "totalCost": "Total cost",
@@ -367,8 +376,6 @@
     "snapshotsEmpty": "No snapshots yet. Click \"New\" to record this month's reading. For held-to-maturity bonds (Indonesian govt-primary where coupons pay out to your bank account), a single initial snapshot at face value is enough — snapshot carry-forward handles every subsequent month until maturity.",
     "transactionsDescription": "Buys / sells (secondary market), coupons, fees, and the terminal maturity event. For Indonesian govt-primary retail bonds, log each coupon as received.",
     "transactionsEmpty": "No transactions yet. Record a Buy or Coupon to start the ledger.",
-    "totalCouponsLabel": "Total coupons:",
-    "totalFeesLabel": "Total fees:",
     "quantityUnit": "lot",
     "secondaryBuyHint": "Secondary-market bonds are entered by recording the actual purchase as a Buy transaction after creating — that captures your real price (discount or premium).",
     "bondType": {

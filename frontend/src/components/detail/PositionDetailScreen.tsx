@@ -17,6 +17,7 @@ import { useSession } from "@/hooks/useSession";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
 import { headlineSurface } from "@/lib/headline";
+import { RecordSnapshotRequestProvider } from "@/components/detail/RecordSnapshotRequestProvider";
 import { cn } from "@/lib/utils";
 import type {
   DetailDescriptor,
@@ -57,7 +58,20 @@ const TOUR_STEPS = ["overview", "actions", "details", "chart", "snapshots"] as c
 // stream + its mutations are the descriptor's own (asset vs investment families
 // diverge), bound into `renderRow`/`renderCreateControls` closures so no mutation
 // type crosses the boundary.
-export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>({
+export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>(
+  props: Props<TEntity, TCtx, TSnap>,
+) {
+  // The provider sits above the body so the descriptor hooks it calls (a trade's
+  // toast) and the Record snapshot dialog it renders share one request channel
+  // (#830).
+  return (
+    <RecordSnapshotRequestProvider>
+      <PositionDetailBody {...props} />
+    </RecordSnapshotRequestProvider>
+  );
+}
+
+function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
   descriptor,
   assetId,
   onBack,
