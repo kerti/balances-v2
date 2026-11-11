@@ -30,6 +30,8 @@ var (
 
 func di(n int64) decimal.Decimal { return decimal.NewFromInt(n) }
 
+func dp(n int64) *decimal.Decimal { d := decimal.NewFromInt(n); return &d }
+
 // written adapts a bulk save to its row count, for tests that only assert how many rows landed.
 func written(res repo.BulkResult, errs []repo.BulkSnapshotRowError, err error) (int, []repo.BulkSnapshotRowError, error) {
 	return res.Written, errs, err
@@ -363,7 +365,7 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 
 	n, rowErrs, err := written(r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 		YearMonth: targetMonth,
-		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: id, Amount: di(10_100_000), AccruedInterest: di(60_000), Currency: "IDR"}},
+		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: id, Amount: di(10_100_000), AccruedInterest: dp(60_000), Currency: "IDR"}},
 	}))
 	if err != nil || len(rowErrs) != 0 || n != 1 {
 		t.Fatalf("bulk upsert: want (1, [], nil), got (%d, %+v, %v)", n, rowErrs, err)
@@ -375,7 +377,7 @@ func TestInvestmentRepo_BulkMonthlyEntry_Accrued(t *testing.T) {
 
 	n, rowErrs, err = written(r.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 		YearMonth: targetMonth,
-		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: di(0), Currency: "IDR"}},
+		Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: dp(0), Currency: "IDR"}},
 	}))
 	if err != nil || n != 0 || len(rowErrs) != 1 || rowErrs[0].Reason != repo.BulkRowIneligible {
 		t.Fatalf("ineligible row: want (0, [ineligible], nil), got (%d, %+v, %v)", n, rowErrs, err)
@@ -437,7 +439,7 @@ func TestBulkRepo_Unauthenticated(t *testing.T) {
 		"BulkUpsertInvestmentAccruedSnapshots": func() error {
 			_, _, e := written(ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 				YearMonth: targetMonth,
-				Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: di(0), Currency: "IDR"}},
+				Rows:      []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: uuid.New(), Amount: di(1), AccruedInterest: dp(0), Currency: "IDR"}},
 			}))
 			return e
 		},

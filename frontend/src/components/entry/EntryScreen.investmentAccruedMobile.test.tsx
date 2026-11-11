@@ -116,10 +116,11 @@ it("mobile: stacks total value + accrued as full-width ≥44px lines with the pr
   expect(principal).toHaveTextContent(/50/);
 
   // The per-row accrued default follows coupon disposition, unchanged by the
-  // renderer swap: an accrues bond forces a real entry (empty), a time deposit
-  // (no disposition ⇒ pays-out) defaults to 0.
+  // renderer swap: an accrues bond forces a real entry (empty). A time deposit
+  // takes one Value and has no accrued field at all (#844).
   expect(screen.getByTestId("investment-accrued-entry-accrued-b2")).toHaveValue("");
-  expect(screen.getByTestId("investment-accrued-entry-accrued-t1")).toHaveValue("0");
+  expect(screen.queryByTestId("investment-accrued-entry-accrued-t1")).not.toBeInTheDocument();
+  expect(screen.getByTestId("investment-accrued-entry-amount-t1")).toHaveClass("h-11");
 });
 
 // covers: INV-SNAPSHOTS-06

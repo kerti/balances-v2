@@ -259,4 +259,55 @@ describe("timeDepositDescriptor detail (conformance)", () => {
     await userEvent.click(fromLink);
     expect(screen.getByTestId("location")).toHaveTextContent("/investments/time-deposits/i0");
   });
+
+  // covers: INV-SNAPSHOTS-17
+  it("Record snapshot takes one Value and derives the interest from the deposit's principal (#844)", async () => {
+    let posted: Record<string, unknown> | null = null;
+    server.use(
+      http.get("/api/investments/time-deposits/i1", () =>
+        HttpResponse.json({
+          investment: baseInvestment,
+          details,
+          rolled_from: null,
+          rolled_to: null,
+        }),
+      ),
+      http.get("/api/investments/i1/snapshots", () => HttpResponse.json(snapshots)),
+      http.post("/api/investments/i1/snapshots", async ({ request }) => {
+        posted = (await request.json()) as Record<string, unknown>;
+        return HttpResponse.json({ ...snapshots[0], id: "s3" }, { status: 201 });
+      }),
+      http.get("/api/investments/i1/transactions", () => HttpResponse.json([])),
+      http.get("/api/household/members", () => HttpResponse.json([owner])),
+      http.get("/api/me", () => HttpResponse.json(me)),
+    );
+
+    renderTD(
+      <PositionDetailScreen descriptor={timeDepositDescriptor} assetId="i1" onBack={vi.fn()} />,
+    );
+    await userEvent.click(await screen.findByTestId("snapshot-record"));
+
+    // One money input; no Total value / Accrued pair.
+    const value = await screen.findByLabelText("Value (USD)");
+    expect(screen.queryByLabelText(/Accrued/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Total value/)).not.toBeInTheDocument();
+
+    // Principal is 20,000.00: a Value of 20,150 is 150 of interest, live.
+    await userEvent.type(value, "20150");
+    expect(screen.getByTestId("snapshot-interest")).toHaveTextContent(
+      "Of which interest: US$150.00",
+    );
+    expect(screen.queryByTestId("snapshot-interest-warning")).not.toBeInTheDocument();
+
+    // Below the principal: a soft warning that does not block the save.
+    await userEvent.clear(value);
+    await userEvent.type(value, "19900");
+    expect(screen.getByTestId("snapshot-interest-warning")).toHaveTextContent(
+      "Value is below the principal",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    await vi.waitFor(() => expect(posted).not.toBeNull());
+    // The server derives accrued_interest; the client sends none.
+    expect(posted).toMatchObject({ amount: "19900", currency: "USD", accrued_interest: null });
+  });
 });

@@ -49,9 +49,13 @@ type Props<TCreated, TUpdated> = {
   >;
   // The bond's coupon disposition (#66). 'accrues' bonds carry coupon inside the
   // instrument, so the form starts the accrued field empty (force a real entry)
-  // and swaps to the accrue-oriented hint; 'pays_out' (and time deposits, which
-  // pass nothing) keep the historical accrued=0 default. Undefined ⇒ pays_out.
+  // and swaps to the accrue-oriented hint; 'pays_out' keeps the historical
+  // accrued=0 default. Undefined ⇒ pays_out. Bonds only — see `principal`.
   couponDisposition?: CouponDisposition;
+  // Time deposits pass their principal in force (#844): the form then takes one
+  // Value, shows "of which interest" live, and sends no accrued_interest — the
+  // server derives it. Bonds pass nothing and keep the two-figure form.
+  principal?: string;
 };
 
 // `amount` is the dirty total value (already includes accrued); the user
@@ -75,6 +79,7 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
   createMutation,
   updateMutation,
   couponDisposition,
+  principal,
 }: Props<TCreated, TUpdated>) {
   const { t } = useTranslation(["investments", "common"]);
   // Open straight away when a create flow just landed on this item (#843).
@@ -127,7 +132,7 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
       currency,
       quantity: null,
       price_per_unit: null,
-      accrued_interest: form.accrued_interest,
+      accrued_interest: principal !== undefined ? null : form.accrued_interest,
       as_of_date: form.as_of_date || null,
       description: form.description || null,
     };
@@ -152,9 +157,12 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
         <DialogHeader>
           <DialogTitle>{t("investments:accruedInterestSnapshot.createTitle")}</DialogTitle>
           <DialogDescription>
-            {t("investments:accruedInterestSnapshot.createDescription", {
-              currency,
-            })}
+            {t(
+              principal !== undefined
+                ? "investments:accruedInterestSnapshot.createDescriptionTimeDeposit"
+                : "investments:accruedInterestSnapshot.createDescription",
+              { currency },
+            )}
           </DialogDescription>
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
@@ -165,6 +173,7 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
             setForm={setForm}
             derivedPrincipal={derivedPrincipal}
             couponDisposition={couponDisposition}
+            principal={principal}
             onMonthChange={pickMonth}
             replacing={existing ? formatCurrency(existing.amount, currency) : undefined}
             lastRecorded={

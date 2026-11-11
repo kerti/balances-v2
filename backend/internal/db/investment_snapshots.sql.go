@@ -341,7 +341,7 @@ func (q *Queries) ListEligibleAccruedInvestmentIDsForMonth(ctx context.Context, 
 
 const listEligibleAccruedInvestmentsForMonth = `-- name: ListEligibleAccruedInvestmentsForMonth :many
 SELECT i.id, i.display_name, i.native_currency, i.subtype, i.ownership_type,
-       i.sole_owner_user_id, bd.coupon_disposition
+       i.sole_owner_user_id, bd.coupon_disposition, td.principal
 FROM investments i
 LEFT JOIN bond_details bd ON bd.investment_id = i.id
 LEFT JOIN time_deposit_details td ON td.investment_id = i.id
@@ -363,13 +363,14 @@ type ListEligibleAccruedInvestmentsForMonthParams struct {
 }
 
 type ListEligibleAccruedInvestmentsForMonthRow struct {
-	ID                uuid.UUID  `json:"id"`
-	DisplayName       string     `json:"display_name"`
-	NativeCurrency    string     `json:"native_currency"`
-	Subtype           string     `json:"subtype"`
-	OwnershipType     string     `json:"ownership_type"`
-	SoleOwnerUserID   *uuid.UUID `json:"sole_owner_user_id"`
-	CouponDisposition *string    `json:"coupon_disposition"`
+	ID                uuid.UUID        `json:"id"`
+	DisplayName       string           `json:"display_name"`
+	NativeCurrency    string           `json:"native_currency"`
+	Subtype           string           `json:"subtype"`
+	OwnershipType     string           `json:"ownership_type"`
+	SoleOwnerUserID   *uuid.UUID       `json:"sole_owner_user_id"`
+	CouponDisposition *string          `json:"coupon_disposition"`
+	Principal         *decimal.Decimal `json:"principal"`
 }
 
 // ListEligibleAccruedInvestmentsForMonth is the ID query plus the display fields
@@ -377,7 +378,9 @@ type ListEligibleAccruedInvestmentsForMonthRow struct {
 // LEFT JOIN on bond_details) so the entry view can seed the accrued default the
 // per-position form uses (accrues → forced entry, pays_out/time-deposit → 0).
 // A time deposit has no bond_details row, so coupon_disposition is NULL — the
-// repo treats NULL as pays_out. Time deposits are also confined to their term
+// repo treats NULL as pays_out. A time deposit's principal rides along (NULL for
+// a bond) so the entry row can show "of which interest" live (#844). Time
+// deposits are also confined to their term
 // window (same predicate as the ID query). Ordered by subtype then name so rows
 // arrive pre-grouped.
 func (q *Queries) ListEligibleAccruedInvestmentsForMonth(ctx context.Context, arg ListEligibleAccruedInvestmentsForMonthParams) ([]ListEligibleAccruedInvestmentsForMonthRow, error) {
@@ -397,6 +400,7 @@ func (q *Queries) ListEligibleAccruedInvestmentsForMonth(ctx context.Context, ar
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.CouponDisposition,
+			&i.Principal,
 		); err != nil {
 			return nil, err
 		}
@@ -744,6 +748,50 @@ func (q *Queries) ListLatestQtyPriceSnapshotsByInvestmentIDsAsOfMonth(ctx contex
 			&i.PricePerUnit,
 			&i.YearMonth,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listTimeDepositPrincipalsByInvestmentIDs = `-- name: ListTimeDepositPrincipalsByInvestmentIDs :many
+SELECT td.investment_id, td.principal
+FROM time_deposit_details td
+JOIN investments i ON i.id = td.investment_id
+WHERE td.investment_id = ANY($1::uuid[])
+  AND i.household_id = $2::uuid
+  AND i.deleted_at IS NULL
+`
+
+type ListTimeDepositPrincipalsByInvestmentIDsParams struct {
+	InvestmentIds []uuid.UUID `json:"investment_ids"`
+	HouseholdID   uuid.UUID   `json:"household_id"`
+}
+
+type ListTimeDepositPrincipalsByInvestmentIDsRow struct {
+	InvestmentID uuid.UUID       `json:"investment_id"`
+	Principal    decimal.Decimal `json:"principal"`
+}
+
+// ListTimeDepositPrincipalsByInvestmentIDs returns the principal in force for
+// each time deposit among the given investments (#844): the figure the server
+// subtracts from a submitted Value to derive accrued_interest. Household-scoped
+// through the parent so a foreign id yields nothing; a bond has no
+// time_deposit_details row and is simply absent from the result.
+func (q *Queries) ListTimeDepositPrincipalsByInvestmentIDs(ctx context.Context, arg ListTimeDepositPrincipalsByInvestmentIDsParams) ([]ListTimeDepositPrincipalsByInvestmentIDsRow, error) {
+	rows, err := q.db.Query(ctx, listTimeDepositPrincipalsByInvestmentIDs, arg.InvestmentIds, arg.HouseholdID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListTimeDepositPrincipalsByInvestmentIDsRow
+	for rows.Next() {
+		var i ListTimeDepositPrincipalsByInvestmentIDsRow
+		if err := rows.Scan(&i.InvestmentID, &i.Principal); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

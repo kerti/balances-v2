@@ -69,9 +69,6 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 		}
 		return nil, fmt.Errorf("get investment for snapshot: %w", err)
 	}
-	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
-		return nil, err
-	}
 	// A time deposit's snapshots are confined to its term window (issue #62);
 	// other subtypes are unbounded, so this is a no-op for them.
 	bounds, err := timeDepositBounds(ctx, r.q, inv)
@@ -79,6 +76,12 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 		return nil, err
 	}
 	if err := bounds.checkSnapshotMonth(p.YearMonth); err != nil {
+		return nil, err
+	}
+	// Derive before validating: a time deposit's accrued_interest is Value −
+	// principal, so a client that omits it is not an invalid shape (#844).
+	p.AccruedInterest = bounds.accruedForSnapshot(p.Amount, p.AccruedInterest)
+	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
 		return nil, err
 	}
 
@@ -149,9 +152,6 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		}
 		return nil, fmt.Errorf("get parent investment: %w", err)
 	}
-	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
-		return nil, err
-	}
 	// year_month is immutable on update, so this can only fire on a row that
 	// already sits outside the term (e.g. legacy data) — we decline to bless it
 	// rather than silently re-save it (issue #62). No-op for non-time-deposits.
@@ -160,6 +160,10 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 		return nil, err
 	}
 	if err := bounds.checkSnapshotMonth(existing.YearMonth); err != nil {
+		return nil, err
+	}
+	p.AccruedInterest = bounds.accruedForSnapshot(p.Amount, p.AccruedInterest)
+	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
 		return nil, err
 	}
 

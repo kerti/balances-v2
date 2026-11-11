@@ -135,6 +135,110 @@ describe("Record snapshot, quantity × price", () => {
   });
 });
 
+describe("Record snapshot, time deposit (one Value, #844)", () => {
+  const history = [
+    base("s1", "2026-09", {
+      amount: "101500000",
+      accrued_interest: "1500000",
+      as_of_date: "2026-09-30",
+    }),
+  ];
+
+  function setup(snapshots: AccruedSnap[]) {
+    const create = stubMutation();
+    const update = stubMutation();
+    renderWithProviders(
+      <CreateAccruedInterestSnapshotDialog
+        currency="IDR"
+        snapshots={snapshots}
+        createMutation={create.mutation}
+        updateMutation={update.mutation}
+        principal="100000000"
+      />,
+    );
+    return { create: create.mutate, update: update.mutate };
+  }
+
+  // covers: INV-SNAPSHOTS-17
+  it("shows one Value input and no Accrued input", async () => {
+    setup(history);
+    await open();
+
+    expect(screen.getByLabelText("Value (IDR)")).toHaveValue("");
+    expect(screen.queryByLabelText(/Accrued/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Total value/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Of which principal/)).not.toBeInTheDocument();
+  });
+
+  // covers: INV-SNAPSHOTS-17
+  it("derives the interest live as Value minus the principal, and warns below it", async () => {
+    setup(history);
+    await open();
+    const interest = screen.getByTestId("snapshot-interest");
+    expect(interest).toHaveTextContent("—");
+
+    await userEvent.type(screen.getByLabelText("Value (IDR)"), "101500000");
+    expect(interest).toHaveTextContent(/Of which interest:.*1,500,000/);
+    expect(screen.queryByTestId("snapshot-interest-warning")).not.toBeInTheDocument();
+
+    // Equal to the principal: zero interest, no warning.
+    await userEvent.clear(screen.getByLabelText("Value (IDR)"));
+    await userEvent.type(screen.getByLabelText("Value (IDR)"), "100000000");
+    expect(interest).toHaveTextContent(/Of which interest:.*0/);
+    expect(screen.queryByTestId("snapshot-interest-warning")).not.toBeInTheDocument();
+
+    // Below it: negative interest, a soft warning.
+    await userEvent.clear(screen.getByLabelText("Value (IDR)"));
+    await userEvent.type(screen.getByLabelText("Value (IDR)"), "99000000");
+    expect(interest).toHaveTextContent(/-.*1,000,000/);
+    expect(screen.getByTestId("snapshot-interest-warning")).toHaveTextContent(
+      "Value is below the principal",
+    );
+  });
+
+  // covers: INV-SNAPSHOTS-17
+  it("saves below the principal, sending no accrued_interest for the server to derive", async () => {
+    const { create } = setup(history);
+    await open();
+
+    await userEvent.type(screen.getByLabelText("Value (IDR)"), "99000000");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        year_month: "2026-10",
+        amount: "99000000",
+        accrued_interest: null,
+        quantity: null,
+        price_per_unit: null,
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("Same as last month fills the Value, and a recorded month replaces through update", async () => {
+    const { create, update } = setup([
+      base("s9", "2026-11", { amount: "102000000", accrued_interest: "2000000" }),
+      ...history,
+    ]);
+    await open();
+
+    // The recorded month opens in replace mode with its Value prefilled.
+    expect(screen.getByLabelText("Value (IDR)")).toHaveValue("102,000,000");
+    expect(screen.getByTestId("snapshot-interest")).toHaveTextContent(/2,000,000/);
+
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    expect(update).toHaveBeenCalledWith(
+      {
+        snapshotId: "s9",
+        payload: expect.objectContaining({ amount: "102000000", accrued_interest: null }),
+      },
+      expect.anything(),
+    );
+    expect(create).not.toHaveBeenCalled();
+  });
+});
+
 describe("Record snapshot, accrued interest", () => {
   const history = [
     base("s1", "2026-09", {

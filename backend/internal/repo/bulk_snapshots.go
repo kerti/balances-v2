@@ -699,12 +699,14 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 
 // BulkInvestmentAccruedSnapshotRow is one investment's accrued value in a bulk
 // monthly-entry batch — dirty-only; the target month and as-of date are
-// batch-level. Both figures are stored as given: Amount is the total value,
-// AccruedInterest the accrued component (quantity/price stay null).
+// batch-level. Amount is the total value; AccruedInterest the accrued component
+// (quantity/price stay null). A bond's AccruedInterest is stored as given and is
+// required; a time deposit's is derived by the server as Amount − principal in
+// force (#844), so for one it is ignored and may be nil.
 type BulkInvestmentAccruedSnapshotRow struct {
 	InvestmentID    uuid.UUID
 	Amount          decimal.Decimal
-	AccruedInterest decimal.Decimal
+	AccruedInterest *decimal.Decimal
 	Currency        string
 }
 
@@ -730,6 +732,7 @@ type InvestmentAccruedEntryRow struct {
 	OwnershipType          string
 	SoleOwnerUserID        *uuid.UUID
 	CouponDisposition      *string
+	Principal              *decimal.Decimal
 	PrefillAmount          *decimal.Decimal
 	PrefillAccruedInterest *decimal.Decimal
 	CarriedFrom            *time.Time
@@ -783,6 +786,7 @@ func (r *InvestmentRepo) ListInvestmentAccruedEntryRows(ctx context.Context, yea
 			OwnershipType:     iv.OwnershipType,
 			SoleOwnerUserID:   iv.SoleOwnerUserID,
 			CouponDisposition: iv.CouponDisposition,
+			Principal:         iv.Principal,
 		}
 		if s, ok := prefill[iv.ID]; ok {
 			amt := s.Amount
@@ -836,6 +840,36 @@ func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Contex
 		return BulkResult{}, rowErrs, nil
 	}
 
+	// A time deposit's accrued_interest is derived from its Value, not taken from
+	// the client (#844); a bond's is required and stored as given. A row with a
+	// principal here is a time deposit — time_deposit_details exists only for one.
+	ids := make([]uuid.UUID, len(p.Rows))
+	for i, row := range p.Rows {
+		ids[i] = row.InvestmentID
+	}
+	principalRows, err := r.q.ListTimeDepositPrincipalsByInvestmentIDs(ctx, db.ListTimeDepositPrincipalsByInvestmentIDsParams{
+		InvestmentIds: ids,
+		HouseholdID:   hid,
+	})
+	if err != nil {
+		return BulkResult{}, nil, fmt.Errorf("bulk accrued snapshots: list principals: %w", err)
+	}
+	principals := make(map[uuid.UUID]decimal.Decimal, len(principalRows))
+	for _, pr := range principalRows {
+		principals[pr.InvestmentID] = pr.Principal
+	}
+	accruedFor := make([]decimal.Decimal, len(p.Rows))
+	for i, row := range p.Rows {
+		if principal, isTD := principals[row.InvestmentID]; isTD {
+			accruedFor[i] = row.Amount.Sub(principal)
+			continue
+		}
+		if err := validateInvestmentSnapshotShape("bond", nil, nil, row.AccruedInterest); err != nil {
+			return BulkResult{}, nil, err
+		}
+		accruedFor[i] = *row.AccruedInterest
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return BulkResult{}, nil, fmt.Errorf("bulk accrued snapshots: begin tx: %w", err)
@@ -844,9 +878,9 @@ func (r *InvestmentRepo) BulkUpsertInvestmentAccruedSnapshots(ctx context.Contex
 	qtx := r.q.WithTx(tx)
 
 	var res BulkResult
-	for _, row := range p.Rows {
+	for i, row := range p.Rows {
 		amount := row.Amount
-		accrued := row.AccruedInterest
+		accrued := accruedFor[i]
 		_, _, outcome, err := replaceInvestmentSnapshot(ctx, qtx, user, db.CreateInvestmentSnapshotParams{
 			ID:              row.InvestmentID,
 			YearMonth:       p.YearMonth,

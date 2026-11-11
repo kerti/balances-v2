@@ -43,6 +43,8 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
     UpdateAccruedInterestSnapshotMutationVariables
   >,
   deleteMutation: UseMutationResult<TDelete, unknown, string>,
+  // A time deposit's principal in force (#844): its Edit dialog takes one Value.
+  principalInForce?: string,
 ) {
   const { t } = useTranslation(["investments", "common"]);
   const [editOpen, setEditOpen] = useState(false);
@@ -67,6 +69,7 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
+        principal={principalInForce}
       />{" "}
     </>
   );

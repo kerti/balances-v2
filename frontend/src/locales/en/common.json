@@ -280,6 +280,8 @@
     "pricePerUnit": "Price per unit",
     "value": "Value",
     "principal": "Principal",
+    "interest": "Interest",
+    "belowPrincipal": "Value is below the principal",
     "totalValue": "Total value",
     "accrued": "Accrued",
     "investments": {
@@ -292,7 +294,7 @@
     "investmentsAccrued": {
       "trigger": "Enter interest",
       "title": "Enter this month's bond & deposit values",
-      "description": "Update the total value and accrued interest for each bond and time deposit for the chosen month. Only the ones you change are saved.",
+      "description": "Update the total value and accrued interest for each bond, and the value for each time deposit, for the chosen month. A deposit's interest is worked out for you. Only the ones you change are saved.",
       "empty": "No bonds or time deposits are eligible for this month yet.",
       "rowError": "This holding can't take a value for this month."
     }

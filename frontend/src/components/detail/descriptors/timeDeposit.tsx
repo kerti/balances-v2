@@ -339,6 +339,11 @@ export const timeDepositDescriptor: DetailDescriptor<
     useSectionRender: (assetId) => {
       const { t } = useTranslation(["investments"]);
       const { data: snapshots } = useInvestmentSnapshots(assetId);
+      // The principal in force (#844): the snapshot forms take one Value and
+      // derive the interest from it. Same query as `useEntity`, so by the time
+      // the core renders a row it is already in the cache.
+      const { data: deposit } = useTimeDeposit(assetId);
+      const principal = deposit?.details.principal;
       const createMutation = useCreateInvestmentSnapshot(assetId, "time-deposits");
       const updateMutation = useUpdateInvestmentSnapshot(assetId, "time-deposits");
       const deleteMutation = useDeleteInvestmentSnapshot(assetId, "time-deposits");
@@ -367,6 +372,7 @@ export const timeDepositDescriptor: DetailDescriptor<
             snapshot={snapshot}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
+            principal={principal}
           />
         ),
         renderCard: (snapshot) => (
@@ -375,6 +381,7 @@ export const timeDepositDescriptor: DetailDescriptor<
             snapshot={snapshot}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
+            principal={principal}
           />
         ),
         renderCreateControls: (currency) => (
@@ -383,6 +390,7 @@ export const timeDepositDescriptor: DetailDescriptor<
             snapshots={snapshots}
             createMutation={createMutation}
             updateMutation={updateMutation}
+            principal={principal}
           />
         ),
         renderImportControl: (currency) => (

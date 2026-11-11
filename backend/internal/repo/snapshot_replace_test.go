@@ -272,7 +272,7 @@ func replaceGroups(pool *pgxpool.Pool) []replaceGroup {
 			bulk: func(ctx context.Context, pos uuid.UUID, month time.Time, amt decimal.Decimal, asOf *time.Time) (repo.BulkResult, []repo.BulkSnapshotRowError, error) {
 				return ir.BulkUpsertInvestmentAccruedSnapshots(ctx, repo.BulkUpsertInvestmentAccruedSnapshotsParams{
 					YearMonth: month, AsOfDate: asOf,
-					Rows: []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: pos, Amount: amt, AccruedInterest: decimal.NewFromInt(1), Currency: "IDR"}},
+					Rows: []repo.BulkInvestmentAccruedSnapshotRow{{InvestmentID: pos, Amount: amt, AccruedInterest: dp(1), Currency: "IDR"}},
 				})
 			},
 			imp: func(ctx context.Context, pos uuid.UUID, rows []replaceImportRow, dry bool) (*repo.ImportResult, error) {
