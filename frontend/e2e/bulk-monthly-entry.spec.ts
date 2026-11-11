@@ -486,7 +486,18 @@ test(
     await mobileTotal.fill("1010000");
     const mobilePrincipal = mobileRow.getByTestId(/investment-accrued-entry-value-/);
     await expect(mobilePrincipal).toContainText("Principal");
+    // Other specs share this DB, so accrued rows created in parallel can push
+    // ours below the fold: scroll vertically, then assert the horizontal claim.
+    await mobilePrincipal.scrollIntoViewIfNeeded();
     await expect(mobilePrincipal).toBeInViewport();
+    const principalBox = await mobilePrincipal.boundingBox();
+    expect(principalBox!.x).toBeGreaterThanOrEqual(0);
+    expect(principalBox!.x + principalBox!.width).toBeLessThanOrEqual(390);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      ),
+    ).toBe(true);
     const totalBox = await mobileTotal.boundingBox();
     expect(totalBox!.height).toBeGreaterThanOrEqual(44);
 
