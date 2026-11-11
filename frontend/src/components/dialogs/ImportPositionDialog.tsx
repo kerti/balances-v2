@@ -17,7 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { maskIdentifier } from "@/lib/maskIdentifier";
 import { positionDetail } from "@/lib/routes";
@@ -118,6 +118,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   // duplicate can be legitimate, so a match only re-labels Create as secondary.
   const matches = cleanPreview ? (result?.matches ?? []) : [];
   const hasMatch = matches.length > 0;
+  // A date alone can't tell apart two copies made the same day; add the time then.
+  const matchDays = matches.map((m) => formatDate(m.created_at));
+  const addedOn = (i: number) =>
+    matchDays.filter((d) => d === matchDays[i]).length > 1
+      ? formatDateTime(matches[i].created_at)
+      : matchDays[i];
   const createLabel = hasMatch ? t("importCreate.createAnywayBtn") : t("importCreate.createBtn");
 
   return (
@@ -239,7 +245,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                         )}
                       </p>
                       <ul className="my-1.5 list-disc space-y-1 pl-5">
-                        {matches.map((m) => {
+                        {matches.map((m, i) => {
                           const href = positionDetail(m.group, m.subtype, m.id);
                           const label = result.identifier
                             ? `${m.name} (${maskIdentifier(result.identifier)})`
@@ -258,7 +264,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                                 <span className="font-medium">{label}</span>
                               )}
                               {isActiveStatus(m.status) ? "" : t("importCreate.matchClosed")}
-                              {t("importCreate.matchAdded", { date: formatDate(m.created_at) })}
+                              {t("importCreate.matchAdded", { date: addedOn(i) })}
                             </li>
                           );
                         })}

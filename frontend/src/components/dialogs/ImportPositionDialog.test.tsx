@@ -220,6 +220,20 @@ describe("ImportPositionDialog duplicate notice", () => {
     );
   });
 
+  it("adds the time when two matches were added the same day", async () => {
+    stubImport({
+      ...cleanPreview,
+      matches: [existing, { ...existing, id: "acct-9", created_at: "2026-11-03T09:30:00Z" }],
+    });
+    renderDialog();
+    await checkFile();
+
+    const [first, second] = screen.getAllByTestId("import-match-item");
+    expect(first).toHaveTextContent(/added 3 Nov 2026, \d{2}[:.]\d{2}$/);
+    expect(second).toHaveTextContent(/added 3 Nov 2026, \d{2}[:.]\d{2}$/);
+    expect(first.textContent).not.toBe(second.textContent);
+  });
+
   it("shows no notice while the file still has errors", async () => {
     stubImport({
       ...cleanPreview,
