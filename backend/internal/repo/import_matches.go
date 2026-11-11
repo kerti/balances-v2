@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -15,13 +16,15 @@ import (
 // receivable, investment) and Subtype the DB subtype column — together they are
 // all the client needs to build the position's detail route. Subtype is empty
 // for a receivable, which has none. Status is the lifecycle status, so the
-// preview can say a match is closed.
+// preview can say a match is closed. CreatedAt tells same-named duplicates
+// apart in the preview.
 type PositionMatch struct {
-	ID      uuid.UUID `json:"id"`
-	Name    string    `json:"name"`
-	Status  string    `json:"status"`
-	Group   string    `json:"group"`
-	Subtype string    `json:"subtype"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	Status    string    `json:"status"`
+	Group     string    `json:"group"`
+	Subtype   string    `json:"subtype"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // FindImportMatches lists the caller's household's assets of subtype that share
@@ -45,7 +48,7 @@ func (r *AssetRepo) FindImportMatches(ctx context.Context, subtype, name string,
 	}
 	out := make([]PositionMatch, len(rows))
 	for i, m := range rows {
-		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "asset", Subtype: m.Subtype}
+		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "asset", Subtype: m.Subtype, CreatedAt: m.CreatedAt.Time}
 	}
 	return out, nil
 }
@@ -67,7 +70,7 @@ func (r *InvestmentRepo) FindImportMatches(ctx context.Context, subtype, name st
 	}
 	out := make([]PositionMatch, len(rows))
 	for i, m := range rows {
-		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "investment", Subtype: m.Subtype}
+		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "investment", Subtype: m.Subtype, CreatedAt: m.CreatedAt.Time}
 	}
 	return out, nil
 }
@@ -89,7 +92,7 @@ func (r *LiabilityRepo) FindImportMatches(ctx context.Context, subtype, name str
 	}
 	out := make([]PositionMatch, len(rows))
 	for i, m := range rows {
-		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "liability", Subtype: m.Subtype}
+		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "liability", Subtype: m.Subtype, CreatedAt: m.CreatedAt.Time}
 	}
 	return out, nil
 }
@@ -110,7 +113,7 @@ func (r *ReceivableRepo) FindImportMatches(ctx context.Context, name string) ([]
 	}
 	out := make([]PositionMatch, len(rows))
 	for i, m := range rows {
-		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "receivable"}
+		out[i] = PositionMatch{ID: m.ID, Name: m.DisplayName, Status: m.Status, Group: "receivable", CreatedAt: m.CreatedAt.Time}
 	}
 	return out, nil
 }

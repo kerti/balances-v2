@@ -91,7 +91,7 @@ func TestFindAssetImportMatches(t *testing.T) {
 		}
 		wantOnly(t, got, salary)
 		m := got[0]
-		if m.Name != "Salary" || m.Status != "active" || m.Group != "asset" || m.Subtype != "bank_account" {
+		if m.Name != "Salary" || m.Status != "active" || m.Group != "asset" || m.Subtype != "bank_account" || m.CreatedAt.IsZero() {
 			t.Errorf("match shape: %+v", m)
 		}
 	})
@@ -240,7 +240,7 @@ func TestFindInvestmentImportMatches(t *testing.T) {
 			t.Fatalf("FindImportMatches: %v", err)
 		}
 		wantOnly(t, got, bbca)
-		if got[0].Group != "investment" || got[0].Subtype != "stock" {
+		if got[0].Group != "investment" || got[0].Subtype != "stock" || got[0].CreatedAt.IsZero() {
 			t.Errorf("match shape: %+v", got[0])
 		}
 	})

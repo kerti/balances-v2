@@ -54,6 +54,7 @@ const existing = {
   status: "active",
   group: "asset",
   subtype: "bank_account",
+  created_at: "2026-11-03T08:00:00Z",
 };
 
 // Stubs the preview and records every commit POST the dialog makes.
@@ -134,12 +135,16 @@ describe("ImportPositionDialog duplicate notice", () => {
 
     const notice = screen.getByTestId("import-match-notice");
     expect(notice).toHaveAttribute("data-variant", "warning");
-    expect(notice).toHaveTextContent("An existing account has the same name and number.");
+    expect(notice).toHaveTextContent("Same name and number as an existing account:");
+    expect(notice).toHaveTextContent("Open it and use Import snapshots");
     expect(notice).not.toHaveTextContent("(closed)");
 
-    const link = within(notice).getByTestId("import-match-link");
+    // The match is named, masked, and dated so a duplicate can be told apart.
+    const item = within(notice).getByTestId("import-match-item");
+    expect(item).toHaveTextContent("Everyday (•••• 7890) — added 3 Nov 2026");
+    const link = within(item).getByTestId("import-match-link");
     expect(link).toHaveAttribute("href", routes.bankAccount("acct-1"));
-    expect(link).toHaveTextContent("Import snapshots");
+    expect(link).toHaveTextContent(/^Everyday \(•••• 7890\)$/);
 
     // Not blocking: still enabled, now the secondary button, labelled for what it does.
     const commit = screen.getByTestId("import-commit-btn");
@@ -167,7 +172,7 @@ describe("ImportPositionDialog duplicate notice", () => {
     await checkFile();
 
     expect(screen.getByTestId("import-match-notice")).toHaveTextContent(
-      "An existing account (closed) has the same name and number.",
+      "Everyday (•••• 7890) (closed) — added 3 Nov 2026",
     );
   });
 
@@ -182,8 +187,9 @@ describe("ImportPositionDialog duplicate notice", () => {
     await checkFile();
 
     const notice = screen.getByTestId("import-match-notice");
-    expect(notice).toHaveTextContent("An existing account has the same name.");
+    expect(notice).toHaveTextContent("Same name as an existing account:");
     expect(notice).not.toHaveTextContent("and number");
+    expect(screen.getByTestId("import-match-link")).toHaveTextContent(/^Everyday$/);
     expect(screen.getByTestId("import-match-link")).toHaveAttribute(
       "href",
       routes.property("acct-1"),
@@ -193,13 +199,21 @@ describe("ImportPositionDialog duplicate notice", () => {
   it("lists every match when there are several", async () => {
     stubImport({
       ...cleanPreview,
-      matches: [existing, { ...existing, id: "acct-9", status: "closed" }],
+      matches: [
+        existing,
+        { ...existing, id: "acct-9", status: "closed", created_at: "2026-11-10T08:00:00Z" },
+      ],
     });
     renderDialog();
     await checkFile();
 
+    const notice = screen.getByTestId("import-match-notice");
+    expect(notice).toHaveTextContent("Same name and number as 2 existing ones:");
+    expect(notice).toHaveTextContent("Open one and use Import snapshots");
     const items = screen.getAllByTestId("import-match-item");
     expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Everyday (•••• 7890) — added 3 Nov 2026");
+    expect(items[1]).toHaveTextContent("Everyday (•••• 7890) (closed) — added 10 Nov 2026");
     expect(within(items[1]).getByTestId("import-match-link")).toHaveAttribute(
       "href",
       routes.bankAccount("acct-9"),

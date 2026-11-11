@@ -9,11 +9,12 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const findAssetImportMatches = `-- name: FindAssetImportMatches :many
 
-SELECT a.id, a.display_name, a.status, a.subtype
+SELECT a.id, a.display_name, a.status, a.subtype, a.created_at
 FROM assets a
 LEFT JOIN bank_account_details b ON b.asset_id = a.id
 WHERE a.household_id = $1
@@ -35,10 +36,11 @@ type FindAssetImportMatchesParams struct {
 }
 
 type FindAssetImportMatchesRow struct {
-	ID          uuid.UUID `json:"id"`
-	DisplayName string    `json:"display_name"`
-	Status      string    `json:"status"`
-	Subtype     string    `json:"subtype"`
+	ID          uuid.UUID          `json:"id"`
+	DisplayName string             `json:"display_name"`
+	Status      string             `json:"status"`
+	Subtype     string             `json:"subtype"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 // Create-from-file import (issue #828): the positions a workbook's Detail sheet
@@ -65,6 +67,7 @@ func (q *Queries) FindAssetImportMatches(ctx context.Context, arg FindAssetImpor
 			&i.DisplayName,
 			&i.Status,
 			&i.Subtype,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -77,7 +80,7 @@ func (q *Queries) FindAssetImportMatches(ctx context.Context, arg FindAssetImpor
 }
 
 const findInvestmentImportMatches = `-- name: FindInvestmentImportMatches :many
-SELECT id, display_name, status, subtype
+SELECT id, display_name, status, subtype, created_at
 FROM investments
 WHERE household_id = $1
   AND subtype = $2::text
@@ -93,10 +96,11 @@ type FindInvestmentImportMatchesParams struct {
 }
 
 type FindInvestmentImportMatchesRow struct {
-	ID          uuid.UUID `json:"id"`
-	DisplayName string    `json:"display_name"`
-	Status      string    `json:"status"`
-	Subtype     string    `json:"subtype"`
+	ID          uuid.UUID          `json:"id"`
+	DisplayName string             `json:"display_name"`
+	Status      string             `json:"status"`
+	Subtype     string             `json:"subtype"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) FindInvestmentImportMatches(ctx context.Context, arg FindInvestmentImportMatchesParams) ([]FindInvestmentImportMatchesRow, error) {
@@ -113,6 +117,7 @@ func (q *Queries) FindInvestmentImportMatches(ctx context.Context, arg FindInves
 			&i.DisplayName,
 			&i.Status,
 			&i.Subtype,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -125,7 +130,7 @@ func (q *Queries) FindInvestmentImportMatches(ctx context.Context, arg FindInves
 }
 
 const findLiabilityImportMatches = `-- name: FindLiabilityImportMatches :many
-SELECT id, display_name, status, subtype
+SELECT id, display_name, status, subtype, created_at
 FROM liabilities
 WHERE household_id = $1
   AND subtype = $2::text
@@ -141,10 +146,11 @@ type FindLiabilityImportMatchesParams struct {
 }
 
 type FindLiabilityImportMatchesRow struct {
-	ID          uuid.UUID `json:"id"`
-	DisplayName string    `json:"display_name"`
-	Status      string    `json:"status"`
-	Subtype     string    `json:"subtype"`
+	ID          uuid.UUID          `json:"id"`
+	DisplayName string             `json:"display_name"`
+	Status      string             `json:"status"`
+	Subtype     string             `json:"subtype"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) FindLiabilityImportMatches(ctx context.Context, arg FindLiabilityImportMatchesParams) ([]FindLiabilityImportMatchesRow, error) {
@@ -161,6 +167,7 @@ func (q *Queries) FindLiabilityImportMatches(ctx context.Context, arg FindLiabil
 			&i.DisplayName,
 			&i.Status,
 			&i.Subtype,
+			&i.CreatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -173,7 +180,7 @@ func (q *Queries) FindLiabilityImportMatches(ctx context.Context, arg FindLiabil
 }
 
 const findReceivableImportMatches = `-- name: FindReceivableImportMatches :many
-SELECT id, display_name, status
+SELECT id, display_name, status, created_at
 FROM receivables
 WHERE household_id = $1
   AND deleted_at IS NULL
@@ -187,9 +194,10 @@ type FindReceivableImportMatchesParams struct {
 }
 
 type FindReceivableImportMatchesRow struct {
-	ID          uuid.UUID `json:"id"`
-	DisplayName string    `json:"display_name"`
-	Status      string    `json:"status"`
+	ID          uuid.UUID          `json:"id"`
+	DisplayName string             `json:"display_name"`
+	Status      string             `json:"status"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) FindReceivableImportMatches(ctx context.Context, arg FindReceivableImportMatchesParams) ([]FindReceivableImportMatchesRow, error) {
@@ -201,7 +209,12 @@ func (q *Queries) FindReceivableImportMatches(ctx context.Context, arg FindRecei
 	var items []FindReceivableImportMatchesRow
 	for rows.Next() {
 		var i FindReceivableImportMatchesRow
-		if err := rows.Scan(&i.ID, &i.DisplayName, &i.Status); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.DisplayName,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

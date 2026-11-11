@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
+import { formatDate } from "@/lib/format";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { maskIdentifier } from "@/lib/maskIdentifier";
 import { positionDetail } from "@/lib/routes";
@@ -229,37 +230,40 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                   </p>
                   {hasMatch && (
                     <Callout variant="warning" data-testid="import-match-notice">
-                      <ul className="space-y-1.5">
+                      <p>
+                        {t(
+                          result.identifier
+                            ? "importCreate.matchNameNumber"
+                            : "importCreate.matchName",
+                          { noun, count: matches.length },
+                        )}
+                      </p>
+                      <ul className="my-1.5 list-disc space-y-1 pl-5">
                         {matches.map((m) => {
                           const href = positionDetail(m.group, m.subtype, m.id);
+                          const label = result.identifier
+                            ? `${m.name} (${maskIdentifier(result.identifier)})`
+                            : m.name;
                           return (
                             <li key={m.id} data-testid="import-match-item">
-                              <p>
-                                {t(
-                                  result.identifier
-                                    ? "importCreate.matchNameNumber"
-                                    : "importCreate.matchName",
-                                  {
-                                    noun,
-                                    closed: isActiveStatus(m.status)
-                                      ? ""
-                                      : t("importCreate.matchClosed"),
-                                  },
-                                )}
-                              </p>
-                              {href && (
+                              {href ? (
                                 <Link
                                   to={href}
                                   className="font-medium underline underline-offset-2"
                                   data-testid="import-match-link"
                                 >
-                                  {t("importCreate.matchLink")}
+                                  {label}
                                 </Link>
+                              ) : (
+                                <span className="font-medium">{label}</span>
                               )}
+                              {isActiveStatus(m.status) ? "" : t("importCreate.matchClosed")}
+                              {t("importCreate.matchAdded", { date: formatDate(m.created_at) })}
                             </li>
                           );
                         })}
                       </ul>
+                      <p>{t("importCreate.matchHint", { count: matches.length })}</p>
                     </Callout>
                   )}
                 </div>

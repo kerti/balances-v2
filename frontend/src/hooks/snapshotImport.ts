@@ -27,13 +27,14 @@ export type ImportFieldError = { field: string; message: string };
 
 // An existing position a create-import would duplicate. group/subtype are the
 // engine wire values `positionDetail` turns into the detail route; subtype is
-// empty for a receivable.
+// empty for a receivable. created_at tells same-named duplicates apart.
 export type ImportMatch = {
   id: string;
   name: string;
   status: string;
   group: string;
   subtype: string;
+  created_at: string;
 };
 
 // CreateImportResult is the create-import counterpart of ImportResult: it adds
