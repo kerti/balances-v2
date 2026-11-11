@@ -346,6 +346,7 @@
     "movedReplaced": "Dipindahkan ke {{month}} · nilai sebelumnya diganti",
     "bulkSaved": "{{count}} tersimpan",
     "bulkSavedReplaced_other": "{{written}} tersimpan · {{count}} menggantikan nilai sebelumnya",
+    "bulkNext": "Berikutnya: {{group}} ({{n}}) →",
     "deletedNamed": "{{name}} dihapus",
     "deleted": {
       "snapshot": "Snapshot dihapus",

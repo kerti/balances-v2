@@ -347,6 +347,7 @@
     "bulkSaved": "Saved {{count}}",
     "bulkSavedReplaced_one": "Saved {{written}} · {{count}} replaced an earlier value",
     "bulkSavedReplaced_other": "Saved {{written}} · {{count}} replaced earlier values",
+    "bulkNext": "Next: {{group}} ({{n}}) →",
     "deletedNamed": "Deleted {{name}}",
     "deleted": {
       "snapshot": "Snapshot deleted",

@@ -37,6 +37,8 @@ export type EntryGroupConfig = EntryDataConfig & {
   // empty / rowError copy. Defaults to "bulkEntry" (account-centric wording);
   // the investment group overrides to "bulkEntry.investments" (holdings wording).
   copyPrefix?: string;
+  // This screen's own route: the next-group toast after a save (#805) skips it.
+  enterRoute: string;
   // Where the screen's Back/Cancel and a committed Save return to.
   backRoute: string;
   // Prefix for every data-testid the screen emits, e.g. "asset" →
@@ -55,6 +57,7 @@ export type EntryGroupConfig = EntryDataConfig & {
 // id field, testid prefix, and invalidation set unchanged.
 export const assetEntryConfig: EntryGroupConfig = {
   group: "assets",
+  enterRoute: routes.assetsEnter,
   shape: amountOnlyShape,
   apiBase: "/api/assets/snapshots",
   idField: "asset_id",
@@ -74,6 +77,7 @@ export const assetEntryConfig: EntryGroupConfig = {
 // Home time-series chart so carried-forward totals refresh after a save.
 export const liabilityEntryConfig: EntryGroupConfig = {
   group: "liabilities",
+  enterRoute: routes.liabilitiesEnter,
   shape: amountOnlyShape,
   apiBase: "/api/liabilities/snapshots",
   idField: "liability_id",
@@ -91,6 +95,7 @@ export const liabilityEntryConfig: EntryGroupConfig = {
 // Receivables — a flat group with no subtype; one ungrouped list.
 export const receivableEntryConfig: EntryGroupConfig = {
   group: "receivables",
+  enterRoute: routes.receivablesEnter,
   shape: amountOnlyShape,
   apiBase: "/api/receivables/snapshots",
   idField: "receivable_id",
@@ -109,6 +114,7 @@ export const receivableEntryConfig: EntryGroupConfig = {
 // Bond/TimeDeposit (accrued shape) are a separate entry view (#424), not here.
 export const investmentEntryConfig: EntryGroupConfig = {
   group: "investments",
+  enterRoute: routes.investmentsEnterPrices,
   shape: qtyPriceShape,
   copyPrefix: "bulkEntry.investments",
   apiBase: "/api/investments/snapshots",
@@ -134,6 +140,7 @@ export const investmentEntryConfig: EntryGroupConfig = {
 // Stock/MutualFund/Gold (qty×price shape) live in investmentEntryConfig above.
 export const investmentAccruedEntryConfig: EntryGroupConfig = {
   group: "investments-accrued",
+  enterRoute: routes.investmentsEnterAccrued,
   shape: accruedShape,
   copyPrefix: "bulkEntry.investmentsAccrued",
   apiBase: "/api/investments/snapshots/accrued",

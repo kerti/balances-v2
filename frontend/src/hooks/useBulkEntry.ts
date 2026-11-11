@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toastBulkSaved } from "@/lib/writeToast";
+import { toastBulkSaved, type BulkNext } from "@/lib/writeToast";
+import { fetchReports, REPORTS_KEY } from "@/hooks/useReports";
+import { nextStaleEntry } from "@/lib/staleEntry";
+import i18n from "@/i18n";
 import { api, ApiError, isEnvelope, type ErrorEnvelope } from "@/api/client";
 
 // Bulk monthly-entry (ADR-0046) generalised across the amount-only groups
@@ -134,8 +137,36 @@ export function useEntryList(cfg: EntryDataConfig, yearMonth: string | null) {
 // `position_id` rows back to the group's wire id field, and the 422 body back
 // to `position_id`. On a committed save it invalidates the group's lists +
 // reports so carried-forward net worth refreshes.
-export function useBulkSaveSnapshots(cfg: EntryDataConfig) {
+//
+// With `goToNext` the saved toast offers the next group still stale that month
+// (ADR-0058 §6, #805), read from the freshly regenerated month report — the
+// same stale_positions the dashboard warns from. A failed report read just
+// means no offer: the save itself already succeeded.
+export function useBulkSaveSnapshots(
+  cfg: EntryDataConfig & { enterRoute?: string },
+  goToNext?: (route: string, yearMonth: string) => void,
+) {
   const qc = useQueryClient();
+  async function nextGroup(yearMonth: string): Promise<BulkNext | undefined> {
+    if (!goToNext || !cfg.enterRoute) return undefined;
+    try {
+      const reports = await qc.fetchQuery({
+        queryKey: REPORTS_KEY,
+        queryFn: fetchReports,
+        staleTime: 0,
+      });
+      const report = reports.find((r) => r.year_month.startsWith(yearMonth));
+      const next = report && nextStaleEntry(report.stale_positions, cfg.enterRoute);
+      if (!next) return undefined;
+      return {
+        group: i18n.t(`nav:${next.navKey}`),
+        count: next.count,
+        onClick: () => goToNext(next.route, yearMonth),
+      };
+    } catch {
+      return undefined;
+    }
+  }
   return useMutation({
     mutationFn: async (args: BulkSaveArgs): Promise<BulkSaveResult> => {
       const body = {
@@ -178,11 +209,11 @@ export function useBulkSaveSnapshots(cfg: EntryDataConfig) {
       const ok = (await res.json()) as { written: number; replaced: number };
       return { ok: true, written: ok.written, replaced: ok.replaced };
     },
-    onSuccess: (result) => {
+    onSuccess: async (result, args) => {
       if (!result.ok) return;
       for (const key of cfg.invalidateKeys) qc.invalidateQueries({ queryKey: [...key] });
-      qc.invalidateQueries({ queryKey: ["reports"] });
-      toastBulkSaved(result.written, result.replaced);
+      qc.invalidateQueries({ queryKey: REPORTS_KEY });
+      toastBulkSaved(result.written, result.replaced, await nextGroup(args.year_month));
     },
   });
 }
