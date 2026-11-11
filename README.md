@@ -9,7 +9,7 @@
 
 Each month you enter your balances; Balances tracks your net worth over time.
 
-[Live demo](https://balances-demo.fly.dev) · [Self-hosting](SELF-HOSTING.md) · [The domain model](CONTEXT.md)
+[Live demo](https://demo.balances.kerti.dev) · [Self-hosting](SELF-HOSTING.md) · [The domain model](CONTEXT.md)
 
 [![CI](https://github.com/kerti/balances-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/kerti/balances-v2/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
@@ -60,7 +60,7 @@ one number that matters.
 
 ## Try it
 
-- **Hosted demo** — [https://balances-demo.fly.dev](https://balances-demo.fly.dev). A shared, resets-nightly instance;
+- **Hosted demo** — [https://demo.balances.kerti.dev](https://demo.balances.kerti.dev). A shared, resets-nightly instance;
   poke at it without signing up for anything.
 - **Self-host it** — one `docker-compose.yml`, a published image, Postgres, done. See
   [Self-hosting](#self-hosting) below.
