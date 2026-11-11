@@ -67,6 +67,19 @@ test("dashboard holds the mobile a11y floor at 390px", { tag: "@smoke" }, async 
   expect(box).not.toBeNull();
   expect(box!.height).toBeGreaterThanOrEqual(44);
 
+  // Range chips (#852): 5Y is the default, each chip clears the tap floor, the
+  // pressed state is exposed, and the choice survives a reload.
+  await expect(page.getByTestId("chart-range-5Y")).toHaveAttribute("aria-pressed", "true");
+  const chipBox = await page.getByTestId("chart-range-1Y").boundingBox();
+  expect(chipBox).not.toBeNull();
+  expect(chipBox!.height).toBeGreaterThanOrEqual(44);
+  await page.getByTestId("chart-range-3Y").click();
+  await expect(page.getByTestId("chart-range-3Y")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("chart-range-5Y")).toHaveAttribute("aria-pressed", "false");
+  await page.reload();
+  await expect(page.getByTestId("chart-range-3Y")).toHaveAttribute("aria-pressed", "true");
+  await page.getByTestId("chart-range-5Y").click();
+
   // --- Cleanup: snapshot, then the account (desktop width for the wide table) ---
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("link", { name: "Bank accounts" }).click();

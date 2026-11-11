@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SnapshotChart } from "@/components/charts/SnapshotChart";
+import { ZoomableNetWorthChart } from "@/components/charts/ZoomableNetWorthChart";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
 import { Select } from "@/components/ui/select";
@@ -114,7 +114,14 @@ export function DashboardScreen() {
           <CardTitle className="text-base">{t("chart.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <SnapshotChart
+          <ZoomableNetWorthChart
+            selectedMonth={selected.year_month.slice(0, 7)}
+            onSelectMonth={(ym) => {
+              // The chart works in bare "YYYY-MM"; reports keep the API's own
+              // year_month string. A filled gap month has no report to show.
+              const report = reports.find((r) => r.year_month.startsWith(ym));
+              if (report) setSelectedMonth(report.year_month);
+            }}
             snapshots={reports.map((r) => ({
               year_month: r.year_month,
               amount: r.nw_total,

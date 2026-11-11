@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
+import type { ChartInteraction } from "./SnapshotChartImpl";
 
 type SnapshotLike = {
   year_month: string;
@@ -12,6 +13,8 @@ type CostPoint = {
 };
 
 type Props = {
+  // Dashboard-only window / marker / click / Brush wiring (#852).
+  interaction?: ChartInteraction;
   snapshots: SnapshotLike[];
   currency: string;
   // Optional parallel cost-basis series (one entry per snapshot, same
@@ -44,6 +47,7 @@ type Props = {
 const SnapshotChartImpl = lazyWithReload(() => import("./SnapshotChartImpl"));
 
 export function SnapshotChart({
+  interaction,
   snapshots,
   currency,
   costSeries,
@@ -56,6 +60,7 @@ export function SnapshotChart({
   return (
     <Suspense fallback={<div className="h-64 w-full" />}>
       <SnapshotChartImpl
+        interaction={interaction}
         snapshots={snapshots}
         currency={currency}
         costSeries={costSeries}

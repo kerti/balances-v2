@@ -1,5 +1,17 @@
+import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Area, AreaChart, CartesianGrid, Line, ReferenceDot, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  Brush,
+  CartesianGrid,
+  Line,
+  ReferenceDot,
+  ReferenceLine,
+  XAxis,
+  YAxis,
+  usePlotArea,
+} from "recharts";
 import {
   ChartContainer,
   ChartLegend,
@@ -9,6 +21,8 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { seriesOrder, seriesRank, sortBySeriesOrder } from "@/lib/chartSeries";
+import { fitYDomain } from "@/lib/chartDomain";
+import type { IndexWindow } from "@/lib/chartRange";
 import { formatChartMonth, formatCompactNumber, formatCurrency } from "@/lib/format";
 import { monthRange } from "@/lib/months";
 
@@ -36,7 +50,21 @@ type ExtraSeries = {
   snapshots: SnapshotLike[];
 };
 
+// Dashboard-only interaction (#852): the visible window over the continuous
+// month list, a marker at the selected month, click-to-select, and (desktop) a
+// Brush strip. Detail and overview charts omit it and get the axis + curve
+// changes only.
+export type ChartInteraction = {
+  window: IndexWindow;
+  showBrush: boolean;
+  onWindowChange: (w: IndexWindow) => void;
+  // Selected month as bare "YYYY-MM".
+  selectedMonth: string;
+  onSelectMonth: (yearMonth: string) => void;
+};
+
 type Props = {
+  interaction?: ChartInteraction;
   snapshots: SnapshotLike[];
   currency: string;
   costSeries?: CostPoint[];
@@ -52,7 +80,10 @@ type Props = {
   primaryColor?: string;
 };
 
-type ChartPoint = { month: string; amount: number; cost?: number } & Record<string, unknown>;
+type ChartPoint = { ym: string; month: string; amount: number; cost?: number } & Record<
+  string,
+  unknown
+>;
 
 function toChartData(
   snapshots: SnapshotLike[],
@@ -93,6 +124,7 @@ function toChartData(
     if (costByMonth.has(ym)) lastCost = costByMonth.get(ym);
     const [y, m] = ym.split("-").map(Number);
     const point: ChartPoint = {
+      ym,
       month: formatChartMonth(new Date(y, m - 1, 1)),
       amount: lastAmount,
     };
@@ -106,6 +138,7 @@ function toChartData(
 }
 
 export default function SnapshotChartImpl({
+  interaction,
   snapshots,
   currency,
   costSeries,
@@ -115,6 +148,12 @@ export default function SnapshotChartImpl({
   primaryColor,
 }: Props) {
   const { t } = useTranslation("dashboard");
+  // Recharts resolves no active point on a tap, so click falls back to the
+  // tap's x within the plot area.
+  const plotArea = useRef<PlotArea | undefined>(undefined);
+  const setPlotArea = useCallback((a: PlotArea | undefined) => {
+    plotArea.current = a;
+  }, []);
   const data = toChartData(snapshots, costSeries, extraSeries);
 
   // A terminated position carries a truthful 0-value close snapshot at its
@@ -166,10 +205,46 @@ export default function SnapshotChartImpl({
     hasCost,
   );
 
+  // The y-axis fits what is on screen: the zoom window when there is one, else
+  // everything. Series values only — `ym` / `month` are labels.
+  const win = interaction?.window;
+  const visible = win ? data.slice(win.start, win.end + 1) : data;
+  const fit = fitYDomain(
+    visible.flatMap((p) =>
+      Object.entries(p)
+        .filter(([k]) => k !== "ym" && k !== "month")
+        .map(([, v]) => Number(v)),
+    ),
+  );
+  const selectedLabel = interaction
+    ? data.find((p) => p.ym === interaction.selectedMonth)?.month
+    : undefined;
+  const showBrush = !!interaction?.showBrush && data.length > 2;
+  // With the Brush the chart keeps every month and the Brush narrows the view;
+  // without it (phones) the chart itself draws only the window.
+  const chartData = showBrush ? data : visible;
+
   return (
-    <ChartContainer config={chartConfig} className="h-64 w-full">
+    <ChartContainer config={chartConfig} className={showBrush ? "h-80 w-full" : "h-64 w-full"}>
       <AreaChart
-        data={data}
+        data={chartData}
+        className={interaction ? "cursor-pointer" : undefined}
+        onClick={
+          interaction
+            ? (state, event) => {
+                let label = state?.activeLabel;
+                const area = plotArea.current;
+                const svg = (event?.target as Element | null)?.closest("svg");
+                if (label == null && area && svg && chartData.length > 0) {
+                  const x = event.clientX - svg.getBoundingClientRect().left;
+                  const f = Math.min(1, Math.max(0, (x - area.x) / area.width));
+                  label = chartData[Math.round(f * (chartData.length - 1))].month;
+                }
+                const hit = chartData.find((p) => p.month === label);
+                if (hit) interaction.onSelectMonth(hit.ym);
+              }
+            : undefined
+        }
         // Extra top headroom when a maturity/sold marker is drawn — its
         // label sits above the dot, which often lands at the line's peak
         // (plot top), so the default 12px margin clips the text vertically.
@@ -183,8 +258,23 @@ export default function SnapshotChartImpl({
           tickMargin={8}
           fontSize={12}
           width={80}
+          domain={fit.domain}
+          ticks={fit.ticks}
+          interval={0}
           tickFormatter={(v: number) => formatCompactNumber(v)}
         />
+        {fit.crossesZero && (
+          <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} />
+        )}
+        {selectedLabel && (
+          <ReferenceLine
+            x={selectedLabel}
+            stroke="var(--foreground)"
+            strokeOpacity={0.55}
+            strokeDasharray="4 3"
+            data-testid="chart-selected-month-marker"
+          />
+        )}
         <ChartTooltip
           content={(props) => (
             <ChartTooltipContent
@@ -274,6 +364,23 @@ export default function SnapshotChartImpl({
             }}
           />
         )}
+        {interaction && <PlotAreaProbe onChange={setPlotArea} />}
+        {showBrush && interaction && win && (
+          <Brush
+            dataKey="month"
+            height={28}
+            travellerWidth={10}
+            stroke="var(--border)"
+            fill="var(--card)"
+            startIndex={win.start}
+            endIndex={win.end}
+            onChange={(r) => {
+              if (r.startIndex === undefined || r.endIndex === undefined) return;
+              if (r.startIndex === win.start && r.endIndex === win.end) return;
+              interaction.onWindowChange({ start: r.startIndex, end: r.endIndex });
+            }}
+          />
+        )}
         {(hasCost || hasExtras) && (
           <ChartLegend
             itemSorter={(item) => seriesRank(order, item.dataKey)}
@@ -283,4 +390,12 @@ export default function SnapshotChartImpl({
       </AreaChart>
     </ChartContainer>
   );
+}
+
+type PlotArea = NonNullable<ReturnType<typeof usePlotArea>>;
+
+function PlotAreaProbe({ onChange }: { onChange: (area: PlotArea | undefined) => void }) {
+  const area = usePlotArea();
+  useEffect(() => onChange(area), [area, onChange]);
+  return null;
 }
