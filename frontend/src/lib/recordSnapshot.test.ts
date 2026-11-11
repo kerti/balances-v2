@@ -3,7 +3,9 @@ import {
   asOfInputValue,
   defaultRecordMonth,
   formatRecordMonth,
+  holdingMonthLabel,
   lastRecordedBefore,
+  latestHoldingPrice,
   snapshotForMonth,
 } from "./recordSnapshot";
 
@@ -66,5 +68,62 @@ describe("formatters", () => {
   it("slices the statement date for the date input", () => {
     expect(asOfInputValue("2026-11-05T00:00:00Z")).toBe("2026-11-05");
     expect(asOfInputValue(null)).toBe("");
+  });
+});
+
+describe("holdingMonthLabel", () => {
+  it("names the month Record snapshot will open on", () => {
+    expect(holdingMonthLabel([at("2026-06")])).toBe("Jul");
+  });
+});
+
+describe("latestHoldingPrice", () => {
+  const snap = (ym: string, price: string | null) => ({ ...at(ym), price_per_unit: price });
+  const trade = (type: string, date: string, price: string | null) => ({
+    transaction_type: type,
+    transaction_date: date,
+    price_per_unit: price,
+  });
+
+  it("uses the latest snapshot's price, not a trade's execution price", () => {
+    const price = latestHoldingPrice(
+      [snap("2026-06", "100"), snap("2026-05", "90")],
+      [trade("buy", "2026-07-02T00:00:00Z", "130")],
+      "2026-07",
+    );
+    expect(price).toBe("100");
+  });
+
+  it("prefers the snapshot already in the opened month (replace mode)", () => {
+    expect(
+      latestHoldingPrice([snap("2026-07", "120"), snap("2026-06", "100")], [], "2026-07"),
+    ).toBe("120");
+  });
+
+  it("ignores snapshots after the opened month", () => {
+    expect(
+      latestHoldingPrice([snap("2026-09", "200"), snap("2026-06", "100")], [], "2026-07"),
+    ).toBe("100");
+  });
+
+  it("falls back to the most recent buy/sell price when no snapshot has a price", () => {
+    const price = latestHoldingPrice(
+      [snap("2026-06", null)],
+      [
+        trade("buy", "2026-05-01T00:00:00Z", "80"),
+        trade("sell", "2026-06-10T00:00:00Z", "95"),
+        trade("dividend", "2026-06-20T00:00:00Z", null),
+        trade("fee", "2026-06-25T00:00:00Z", "1"),
+      ],
+      "2026-07",
+    );
+    expect(price).toBe("95");
+  });
+
+  it("is null with nothing to go on", () => {
+    expect(latestHoldingPrice(undefined, undefined, "2026-07")).toBeNull();
+    expect(
+      latestHoldingPrice([], [trade("buy", "2026-05-01T00:00:00Z", null)], "2026-07"),
+    ).toBeNull();
   });
 });

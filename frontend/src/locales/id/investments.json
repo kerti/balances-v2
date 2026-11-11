@@ -116,6 +116,7 @@
     "sellTitle": "Catat penjualan",
     "buyDescription": "Jumlah yang dibeli dan harga yang dibayar per unit. Total kas keluar dihitung otomatis ({{currency}}).",
     "sellDescription": "Jumlah yang dijual dan harga yang diterima per unit. Total kas masuk dihitung otomatis ({{currency}}).",
+    "separateNote": "Ini mencatat transaksi. Perbarui kepemilikan di snapshot bulan ini, dan saldo di rekening banknya.",
     "editBuyTitle": "Ubah pembelian",
     "editSellTitle": "Ubah penjualan",
     "editDescription": "Sesuaikan tanggal transaksi, jumlah, harga, atau deskripsi.",
@@ -205,7 +206,15 @@
     "cashImpactHeader": "Dampak kas",
     "notesHeader": "Catatan",
     "searchPlaceholder": "Cari transaksi…",
-    "searchEmpty": "Tidak ada transaksi yang cocok dengan pencarian."
+    "searchEmpty": "Tidak ada transaksi yang cocok dengan pencarian.",
+    "totals": {
+      "coupon": "Total kupon:",
+      "dividend": "Total dividen:",
+      "distribution": "Total distribusi:",
+      "fee": "Total biaya:",
+      "maturityPrincipal": "Pokok dikembalikan:",
+      "maturityInterest": "Bunga dibayarkan:"
+    }
   },
   "headline": {
     "totalCost": "Total modal",
@@ -367,8 +376,6 @@
     "snapshotsEmpty": "Belum ada snapshot. Klik \"Baru\" untuk mencatat bacaan bulan ini. Untuk obligasi hingga jatuh tempo (obligasi pemerintah primer Indonesia di mana kupon dibayar ke rekening bank), satu snapshot awal sebesar nilai nominal sudah cukup — carry-forward snapshot menangani setiap bulan berikutnya hingga jatuh tempo.",
     "transactionsDescription": "Beli / jual (pasar sekunder), kupon, biaya, dan peristiwa jatuh tempo terminal. Untuk obligasi ritel pemerintah Indonesia, catat setiap kupon saat diterima.",
     "transactionsEmpty": "Belum ada transaksi. Catat Beli atau Kupon untuk memulai catatan.",
-    "totalCouponsLabel": "Total kupon:",
-    "totalFeesLabel": "Total biaya:",
     "quantityUnit": "lot",
     "secondaryBuyHint": "Obligasi pasar sekunder dicatat dengan menambahkan transaksi Beli sesuai harga beli sebenarnya setelah dibuat — itu menangkap harga riil Anda (diskon atau premium).",
     "bondType": {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { ArrowDown, ArrowUp, Repeat } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { LedgerToolbar } from "@/components/detail/LedgerToolbar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
@@ -465,18 +465,15 @@ export const timeDepositDescriptor: DetailDescriptor<
           />
         </div>
       ) : undefined,
-      toolbar:
-        allTxns.length > 0 ? (
-          <div className="border-b px-6 py-3">
-            <Input
-              data-testid="txn-search"
-              placeholder={t("investments:transactions.searchPlaceholder")}
-              value={ctx.txnSearch}
-              onChange={(e) => ctx.setTxnSearch(e.target.value)}
-              className="max-w-xs"
-            />
-          </div>
-        ) : undefined,
+      toolbar: (
+        <LedgerToolbar
+          subtype="time_deposit"
+          transactions={allTxns}
+          currency={currency}
+          search={ctx.txnSearch}
+          onSearchChange={ctx.setTxnSearch}
+        />
+      ),
     };
 
     return [erasedSection(txnSection)];

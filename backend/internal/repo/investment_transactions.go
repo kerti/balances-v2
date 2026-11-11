@@ -81,6 +81,9 @@ func (r *InvestmentRepo) CreateInvestmentTransaction(ctx context.Context, p Crea
 	if err := validateInvestmentTransactionShape(p); err != nil {
 		return nil, err
 	}
+	if err := checkTransactionCurrency(inv.NativeCurrency, p.Currency); err != nil {
+		return nil, err
+	}
 	// A time deposit's transactions — only the terminal Maturity event — must
 	// fall inside its term window (issue #62). No-op for unbounded subtypes.
 	bounds, err := timeDepositBounds(ctx, r.q, inv)
@@ -216,6 +219,16 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 	}); err != nil {
 		return nil, err
 	}
+	inv, err := r.q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: existing.InvestmentID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, fmt.Errorf("get investment for transaction: %w", err)
+	}
+	if err := checkTransactionCurrency(inv.NativeCurrency, p.Currency); err != nil {
+		return nil, err
+	}
 
 	updateParams := db.UpdateInvestmentTransactionParams{
 		ID:                   p.TransactionID,
@@ -251,14 +264,8 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 	// at the maturity month (see CreateInvestmentTransaction). Editing the date
 	// must drag all three along with it, atomically — otherwise the position's
 	// terminated_at and the close snapshot drift to a stale month (issue #58).
-	// inv supplies the subtype + native currency the close-snapshot shape needs.
-	inv, err := r.q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: existing.InvestmentID, HouseholdID: hid})
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrNotFound
-		}
-		return nil, fmt.Errorf("get investment for maturity edit: %w", err)
-	}
+	// inv (loaded above) supplies the subtype + native currency the
+	// close-snapshot shape needs.
 	// The edited Maturity date must still land inside the term (issue #62). For a
 	// time deposit the maturity month is also where the 0-value close snapshot is
 	// re-asserted below, so keeping the date in-window keeps that snapshot in-window
@@ -391,6 +398,15 @@ func validateInvestmentTransactionType(subtype, txnType string) error {
 // validateInvestmentTransactionShape enforces that the value-column combo
 // matches the declared transaction_type. The DB CHECK enforces this too,
 // but catching here gives a friendlier error.
+// checkTransactionCurrency: a transaction is recorded in its position's native
+// currency (#830), so ledger totals and the cost basis never mix currencies.
+func checkTransactionCurrency(native, currency string) error {
+	if currency != native {
+		return fmt.Errorf("%w: currency %s must match the position's currency %s", ErrInvalidTransactionShape, currency, native)
+	}
+	return nil
+}
+
 func validateInvestmentTransactionShape(p CreateInvestmentTransactionParams) error {
 	switch p.TransactionType {
 	case TxnTypeBuy, TxnTypeSell:

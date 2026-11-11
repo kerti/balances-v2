@@ -35,9 +35,11 @@ export function useRecordSnapshotForm<S extends Dated, F extends Dateable>({
     return found ? formFrom(found, yearMonth) : emptyForm(yearMonth);
   }
 
-  // A fresh form on the default month, for each time the dialog opens.
-  function reset() {
-    setForm(startFor(defaultRecordMonth(snapshots)));
+  // A fresh form on the default month, for each time the dialog opens. `prefill`
+  // overrides individual fields (the "Update holding" shortcut, #830); it is a
+  // starting point the user confirms or edits, never a write.
+  function reset(prefill?: Partial<F>) {
+    setForm({ ...startFor(defaultRecordMonth(snapshots)), ...prefill });
   }
 
   function pickMonth(yearMonth: string) {

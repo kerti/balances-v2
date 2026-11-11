@@ -39,7 +39,10 @@ Not ADRs because they're tactical, but load-bearing:
   a month that already has a value is a replace and writes through the *update* mutation (the Edit
   `PATCH`, so ADR-0058's archive + Undo toast come for free), never a second POST. Month switching,
   prefill and "Same as last month" live in `useRecordSnapshotForm` + `lib/recordSnapshot.ts`; a new
-  shape reuses them and the `LastRecordedHint` / replace notice in the form body. Within the accrued
+  shape reuses them and the `LastRecordedHint` / replace notice in the form body. "Update {Mon}
+  holding →" (a Buy/Sell toast, the quantity-mismatch banner; #830) reaches the dialog through
+  `lib/recordSnapshotRequest` (a per-detail-page context; the dialog calls `useOnRecordRequest`): it only
+  **opens** the dialog prefilled, never saves — a new snapshot shape wires the same hook. Within the accrued
   fork a **time deposit takes one Value** (#844): the parent passes `principal` (from the TD detail
   payload) and the form swaps to one input plus a read-only "of which interest"; the server derives
   `accrued_interest = Value − principal` (INV-SNAPSHOTS-17) and the client sends none. Bonds pass no

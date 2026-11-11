@@ -15,7 +15,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
-import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import {
+  asOfInputValue,
+  defaultRecordMonth,
+  formatRecordMonth,
+  latestHoldingPrice,
+} from "@/lib/recordSnapshot";
+import { ledgerQuantity } from "@/lib/reconciliation";
+import { useOnRecordRequest } from "@/lib/recordSnapshotRequest";
+import type { InvestmentTransaction } from "@/api/types";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 import {
@@ -42,6 +50,10 @@ type Props<TCreated, TUpdated> = {
   priceHint?: string;
   // Live snapshots of this position, newest first.
   snapshots: SnapshotLike[] | undefined;
+  // The position's transaction ledger, for the "Update {Mon} holding" shortcut
+  // (#830): its total quantity and, with no priced snapshot yet, its latest trade
+  // price prefill the form. Optional - without it the shortcut opens unfilled.
+  transactions?: InvestmentTransaction[];
   // Mutations are owned by the parent so the same dialog drives stocks,
   // mutual funds, and gold. Create writes an empty month; update replaces a
   // month that already has a value (ADR-0058: archived, Undo in the toast).
@@ -88,6 +100,7 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   currency,
   priceHint,
   snapshots,
+  transactions,
   createMutation,
   updateMutation,
 }: Props<TCreated, TUpdated>) {
@@ -102,11 +115,25 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   const mutation = existing ? updateMutation : createMutation;
 
   const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
+  const ledgerQty = ledgerQuantity(transactions);
 
   function begin() {
     reset();
     setOpen(true);
   }
+
+  // "Update {Mon} holding →" (#830) from a trade's toast or the mismatch banner:
+  // open on the default month with the ledger quantity and the latest price filled
+  // in. The user confirms or edits and presses Save; nothing is written before.
+  useOnRecordRequest(() => {
+    const month = defaultRecordMonth(snapshots);
+    const price = latestHoldingPrice(snapshots, transactions, month);
+    reset({
+      ...(ledgerQty !== null && { quantity: ledgerQty }),
+      ...(price !== null && { price_per_unit: price }),
+    });
+    setOpen(true);
+  });
 
   function close() {
     setOpen(false);

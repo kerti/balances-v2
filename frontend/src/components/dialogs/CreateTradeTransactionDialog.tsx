@@ -123,6 +123,11 @@ export function CreateTradeTransactionDialog<TResult>({
               currency,
             })}
           </DialogDescription>
+          {/* A trade writes only the trade (#830): the holding's snapshot and the
+              bank balance are the user's to update. */}
+          <p className="text-sm text-muted-foreground" data-testid="trade-separate-note">
+            {t("investments:trade.separateNote")}
+          </p>
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">

@@ -774,8 +774,9 @@ type ParsedTransaction struct {
 // empty slice. A returned error means the file itself is unreadable. Blank rows
 // are skipped. Only cell-level shape is checked here (required type/date/currency,
 // numeric value columns); type-matrix and column-combo validation belong to the
-// repo. opts.DefaultCurrency fills a blank currency cell; opts.ValidCurrency, when
-// set, gates each resolved code.
+// repo. opts.DefaultCurrency is the position's currency: it fills a blank
+// currency cell and any other code is a row error. opts.ValidCurrency, when set,
+// gates each resolved code.
 func ParseTransactions(r io.Reader, opts Options) ([]ParsedTransaction, []RowError, error) {
 	f, err := excelize.OpenReader(r)
 	if err != nil {
@@ -843,6 +844,12 @@ func ParseTransactions(r io.Reader, opts Options) ([]ParsedTransaction, []RowErr
 		}
 		if opts.ValidCurrency != nil && !opts.ValidCurrency(cur) {
 			errs = append(errs, RowError{rowNum, "currency must be a 3-letter ISO code (got " + cur + ")"})
+			continue
+		}
+		// A transaction is in its position's currency (#830); the default is
+		// that currency, so any other code is a mismatch.
+		if want := strings.ToUpper(strings.TrimSpace(opts.DefaultCurrency)); want != "" && cur != want {
+			errs = append(errs, RowError{rowNum, "currency must be " + want + ", the position's currency (got " + cur + ")"})
 			continue
 		}
 		txn.Currency = cur

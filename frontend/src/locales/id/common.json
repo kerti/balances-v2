@@ -402,6 +402,7 @@
     "bulkSaved": "{{count}} tersimpan",
     "bulkSavedReplaced_other": "{{written}} tersimpan · {{count}} menggantikan nilai sebelumnya",
     "bulkNext": "Berikutnya: {{group}} ({{n}}) →",
+    "updateHolding": "Perbarui kepemilikan {{month}} →",
     "deletedNamed": "{{name}} dihapus",
     "deleted": {
       "snapshot": "Snapshot dihapus",

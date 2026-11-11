@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Input } from "@/components/ui/input";
+import { LedgerToolbar } from "@/components/detail/LedgerToolbar";
 import { TableHead, TableRow } from "@/components/ui/table";
 import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestSnapshotRow";
 import { AccruedInterestSnapshotCard } from "@/components/common/AccruedInterestSnapshotCard";
@@ -283,16 +283,6 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     const active = isActiveStatus(entity.investment.status);
     const allTxns = ctx.transactions ?? [];
     const filtered = allTxns.filter((tx) => matchesTxnSearch(tx, ctx.txnSearch));
-    // Lifetime sums of coupon income and trading fees — the "yield-to-date" glance
-    // from #14. Maturity payouts are terminal, not recurring income, so excluded.
-    const txnSum = (kind: "coupon" | "fee"): number =>
-      allTxns.reduce(
-        (acc, tx) => (tx.transaction_type === kind ? acc + Number(tx.amount) : acc),
-        0,
-      );
-    const totalCoupons = txnSum("coupon");
-    const totalFees = txnSum("fee");
-
     const txnSection: HistorySectionSpec<InvestmentTransaction> = {
       testId: "tour-transactions",
       title: t("investments:transactions.cardTitle"),
@@ -370,35 +360,16 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
           </div>
         </div>
       ) : undefined,
-      // The coupon/fee running totals + the search box share one toolbar row,
-      // exactly as the hand-written page laid them out; the primitive renders it
-      // above the table but never reads it.
-      toolbar:
-        allTxns.length > 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b px-6 py-3">
-            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <div>
-                <span className="text-muted-foreground">
-                  {t("investments:bond.totalCouponsLabel")}
-                </span>{" "}
-                <span>{formatCurrency(totalCoupons.toString(), currency)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">
-                  {t("investments:bond.totalFeesLabel")}
-                </span>{" "}
-                <span>{formatCurrency(totalFees.toString(), currency)}</span>
-              </div>
-            </div>
-            <Input
-              data-testid="txn-search"
-              placeholder={t("investments:transactions.searchPlaceholder")}
-              value={ctx.txnSearch}
-              onChange={(e) => ctx.setTxnSearch(e.target.value)}
-              className="max-w-xs"
-            />
-          </div>
-        ) : undefined,
+      // Totals (coupons, fees) + the search box share one toolbar row.
+      toolbar: (
+        <LedgerToolbar
+          subtype="bond"
+          transactions={allTxns}
+          currency={currency}
+          search={ctx.txnSearch}
+          onSearchChange={ctx.setTxnSearch}
+        />
+      ),
     };
 
     return [erasedSection(txnSection)];

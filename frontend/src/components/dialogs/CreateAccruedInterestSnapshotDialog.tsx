@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
 import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import { useOnRecordRequest } from "@/lib/recordSnapshotRequest";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 import type { CouponDisposition } from "@/api/types";
@@ -118,6 +119,10 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
     reset();
     setOpen(true);
   }
+
+  // "Update {Mon} holding →" (#830) after a bond trade: this shape has no
+  // quantity or price to carry over, so it just opens on the default month.
+  useOnRecordRequest(begin);
 
   function close() {
     setOpen(false);

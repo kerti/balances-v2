@@ -44,6 +44,20 @@ export function toastBulkSaved(written: number, replaced: number, next?: BulkNex
   });
 }
 
+// A Buy or Sell was added (#830). Still exactly one toast and still no Undo (a
+// create has none, ADR-0058 §2); its action slot carries the shortcut "Update
+// {Mon} holding →", which only opens Record snapshot prefilled - it writes nothing.
+export function toastTradeAdded(month: string, onUpdateHolding: () => void) {
+  toast.success(i18n.t("common:toast.added"), {
+    testId: "toast-trade-added",
+    duration: UNDO_TOAST_MS,
+    action: {
+      label: i18n.t("common:toast.updateHolding", { month }),
+      onClick: onUpdateHolding,
+    },
+  });
+}
+
 export function toastWriteError(err: unknown) {
   toast.error(errorMessage(err));
 }

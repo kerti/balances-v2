@@ -1,3 +1,4 @@
+import { fromScaled, toScaled } from "@/lib/decimal";
 import type { InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 
 // Reconciliation per CONTEXT.md / ADR-0003:
@@ -41,4 +42,19 @@ export function reconcileQuantity(
   const actual = Number(latestSnapshot.quantity);
   const matches = Math.abs(expected - actual) < 1e-6;
   return { expected, actual, matches };
+}
+
+// The same ledger total as `reconcileQuantity`'s `expected`, but exact: a decimal
+// string safe to prefill a quantity input with ("50", never "50.00000000000001").
+// Null when the ledger has no transactions to total.
+export function ledgerQuantity(transactions: InvestmentTransaction[] | undefined): string | null {
+  if (!transactions || transactions.length === 0) return null;
+  let total = 0n;
+  for (const t of transactions) {
+    const q = t.quantity ? toScaled(t.quantity) : null;
+    if (q === null) continue;
+    if (t.transaction_type === "buy") total += q;
+    else if (t.transaction_type === "sell" || t.transaction_type === "fee") total -= q;
+  }
+  return fromScaled(total);
 }
