@@ -407,6 +407,10 @@ test(
     // The computed value shows in the footer named "Value", and is in the viewport.
     const mobileValue = mobileRow.getByTestId(/investment-entry-value-/);
     await expect(mobileValue).toContainText("Value");
+    // fill() scrolls only to the price box, which can leave the footer below
+    // the fold depending on how many rows sit above it. Scrolling it in still
+    // fails the check on horizontal overflow, which is what this guards.
+    await mobileValue.scrollIntoViewIfNeeded();
     await expect(mobileValue).toBeInViewport();
     const qtyBox = await mobileQty.boundingBox();
     expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
