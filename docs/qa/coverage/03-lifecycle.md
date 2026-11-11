@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/03-lifecycle.md; the Covered-by column is
      computed from `// covers:` annotations in the test suite. -->
 
-**9 / 9** invariants in this zone have at least one covering test (**9** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
+**10 / 10** invariants in this zone have at least one covering test (**10** verified in the per-PR gate; the rest run nightly — _(nightly)_ below).
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
@@ -17,3 +17,4 @@
 | INV-LIFECYCLE-07 | Rollover successor linkage: linking sets `rolled_from_investment_id` / the source resolves `rolled_to`; self-link and unknown source are rejected (the INV-FINANCE-12 read-side assumption) | `backend/internal/investments/time_deposits_test.go` |
 | INV-LIFECYCLE-08 | Terminating an Investment with a settlement writes its terminal Sell/Maturity in the **same** transaction as the flip (neither half survives alone); the Transaction's shape is resolved from the subtype, an unsupported subtype/status pair is rejected, and re-asserting an already-terminal status books no second sale | `backend/internal/repo/investment_settlement_internal_test.go`<br>`backend/internal/repo/investment_settlement_test.go`<br>`frontend/src/components/dialogs/TerminatePositionDialog.test.tsx`<br>`frontend/src/hooks/useLifecycle.test.ts`<br>`frontend/src/lib/lifecycle.test.ts` |
 | INV-LIFECYCLE-09 | `untracked` is a valid terminal status for **every** position group and is **exempt from the ADR-0052 §6 settlement capture**: terminating an Investment as `untracked` needs no Sell/Maturity and is never refused by the subtype/status matrix, because nothing was sold. The biconditional (INV-LIFECYCLE-01) and the 0-value close snapshot (INV-LIFECYCLE-03) apply to it unchanged | `backend/internal/repo/lifecycle_untracked_test.go`<br>`frontend/e2e/terminate-untracked.spec.ts`<br>`frontend/src/components/dialogs/TerminatePositionDialog.test.tsx`<br>`frontend/src/lib/lifecycle.test.ts` |
+| INV-LIFECYCLE-10 | An Asset's terminal status is narrowed by subtype: a bank account takes `closed` / `untracked`, a property or vehicle `sold` / `disposed` / `untracked`; any other pairing is rejected 400 `INVALID_LIFECYCLE` and changes nothing. Reactivation, and re-saving the status the asset already has (a pre-#827 or imported row), are unaffected. The Close dialog offers the same lists | `backend/internal/assets/lifecycle_test.go`<br>`backend/internal/repo/lifecycle_asset_subtype_test.go`<br>`frontend/src/components/dialogs/TerminatePositionDialog.test.tsx` |

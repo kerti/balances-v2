@@ -31,6 +31,7 @@ import (
 
 func (h *Handlers) handleImportCreateStock(w http.ResponseWriter, r *http.Request) {
 	importcreate.RunWithLedger(w, r, h.validate, "stock", shapeForSubtype("stock"), h.resolveStockDetail,
+		matchInvestment(h, "stock", func(p repo.CreateStockParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateStockParams, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
 			s, err := h.repo.CreateStockWithSnapshotsAndLedger(ctx, p, tagID, snaps, ledger)
 			if err != nil {
@@ -82,6 +83,7 @@ func (h *Handlers) resolveStockDetail(ctx context.Context, detail map[string]str
 
 func (h *Handlers) handleImportCreateMutualFund(w http.ResponseWriter, r *http.Request) {
 	importcreate.RunWithLedger(w, r, h.validate, "mutual_fund", shapeForSubtype("mutual_fund"), h.resolveMutualFundDetail,
+		matchInvestment(h, "mutual_fund", func(p repo.CreateMutualFundParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateMutualFundParams, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
 			mf, err := h.repo.CreateMutualFundWithSnapshotsAndLedger(ctx, p, tagID, snaps, ledger)
 			if err != nil {
@@ -135,6 +137,7 @@ func (h *Handlers) resolveMutualFundDetail(ctx context.Context, detail map[strin
 
 func (h *Handlers) handleImportCreateGold(w http.ResponseWriter, r *http.Request) {
 	importcreate.RunWithLedger(w, r, h.validate, "gold", shapeForSubtype("gold"), h.resolveGoldDetail,
+		matchInvestment(h, "gold", func(p repo.CreateGoldParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateGoldParams, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
 			g, err := h.repo.CreateGoldWithSnapshotsAndLedger(ctx, p, tagID, snaps, ledger)
 			if err != nil {
@@ -187,6 +190,7 @@ func (h *Handlers) resolveGoldDetail(ctx context.Context, detail map[string]stri
 
 func (h *Handlers) handleImportCreateBond(w http.ResponseWriter, r *http.Request) {
 	importcreate.RunWithLedger(w, r, h.validate, "bond", shapeForSubtype("bond"), h.resolveBondDetail,
+		matchInvestment(h, "bond", func(p repo.CreateBondParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateBondParams, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
 			b, err := h.repo.CreateBondWithSnapshotsAndLedger(ctx, p, tagID, snaps, ledger)
 			if err != nil {
@@ -257,6 +261,7 @@ func (h *Handlers) resolveBondDetail(ctx context.Context, detail map[string]stri
 
 func (h *Handlers) handleImportCreateTimeDeposit(w http.ResponseWriter, r *http.Request) {
 	importcreate.RunWithLedger(w, r, h.validate, "time_deposit", shapeForSubtype("time_deposit"), h.resolveTimeDepositDetail,
+		matchInvestment(h, "time_deposit", func(p repo.CreateTimeDepositParams) string { return p.DisplayName }),
 		func(ctx context.Context, p repo.CreateTimeDepositParams, tagID *uuid.UUID, snaps []repo.ImportInvestmentSnapshotRow, ledger []repo.ImportTransactionRow) (uuid.UUID, error) {
 			td, err := h.repo.CreateTimeDepositWithSnapshotsAndLedger(ctx, p, tagID, snaps, ledger)
 			if err != nil {
@@ -367,4 +372,12 @@ func int32Val(p *int32) int32 {
 		return 0
 	}
 	return *p
+}
+
+// matchInvestment builds the duplicate-position lookup (issue #828) for one
+// investment subtype: same subtype and display name in the household.
+func matchInvestment[T any](h *Handlers, subtype string, name func(T) string) importcreate.MatchFunc[T] {
+	return importcreate.MatchByName(name, func(ctx context.Context, n string) ([]repo.PositionMatch, error) {
+		return h.repo.FindImportMatches(ctx, subtype, n)
+	})
 }

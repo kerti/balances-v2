@@ -20,6 +20,7 @@ import (
 // account) / #89 (fan-out).
 func (h *Handlers) handleImportCreate(w http.ResponseWriter, r *http.Request) {
 	importcreate.Run(w, r, h.validate, h.resolveDetail,
+		importcreate.MatchByName(func(p repo.CreateReceivableParams) string { return p.DisplayName }, h.repo.FindImportMatches),
 		func(ctx context.Context, p repo.CreateReceivableParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
 			row, err := h.repo.CreateReceivableWithSnapshots(ctx, p, tagID, rows)
 			if err != nil {

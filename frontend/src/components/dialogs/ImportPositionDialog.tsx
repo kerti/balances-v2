@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Upload } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { Callout } from "@/components/common/Callout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +17,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { errorMessage } from "@/lib/errorMessage";
 import { fileFromDrop } from "@/lib/importDrop";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { isActiveStatus } from "@/lib/lifecycle";
+import { maskIdentifier } from "@/lib/maskIdentifier";
+import { positionDetail } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import type { CreateImportArgs, CreateImportResult } from "@/hooks/snapshotImport";
 
@@ -108,6 +114,17 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
   );
   const cleanPreview = result?.mode === "preview" && result.would_create;
   const committed = result?.committed === true;
+  // Existing positions this workbook would duplicate (#828). Never blocking: a
+  // duplicate can be legitimate, so a match only re-labels Create as secondary.
+  const matches = cleanPreview ? (result?.matches ?? []) : [];
+  const hasMatch = matches.length > 0;
+  // A date alone can't tell apart two copies made the same day; add the time then.
+  const matchDays = matches.map((m) => formatDate(m.created_at));
+  const addedOn = (i: number) =>
+    matchDays.filter((d) => d === matchDays[i]).length > 1
+      ? formatDateTime(matches[i].created_at)
+      : matchDays[i];
+  const createLabel = hasMatch ? t("importCreate.createAnywayBtn") : t("importCreate.createBtn");
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
@@ -204,9 +221,58 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
                   )}
                 </div>
               ) : (
-                <p className="text-muted-foreground">
-                  {t("importCreate.preview", { noun, count: result.to_insert })}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-muted-foreground" data-testid="import-preview">
+                    {result.name
+                      ? t("importCreate.previewNamed", {
+                          noun,
+                          count: result.to_insert,
+                          who: result.identifier
+                            ? `${result.name} (${maskIdentifier(result.identifier)})`
+                            : result.name,
+                          button: createLabel,
+                        })
+                      : t("importCreate.preview", { noun, count: result.to_insert })}
+                  </p>
+                  {hasMatch && (
+                    <Callout variant="warning" data-testid="import-match-notice">
+                      <p>
+                        {t(
+                          result.identifier
+                            ? "importCreate.matchNameNumber"
+                            : "importCreate.matchName",
+                          { noun, count: matches.length },
+                        )}
+                      </p>
+                      <ul className="my-1.5 list-disc space-y-1 pl-5">
+                        {matches.map((m, i) => {
+                          const href = positionDetail(m.group, m.subtype, m.id);
+                          const label = result.identifier
+                            ? `${m.name} (${maskIdentifier(result.identifier)})`
+                            : m.name;
+                          return (
+                            <li key={m.id} data-testid="import-match-item">
+                              {href ? (
+                                <Link
+                                  to={href}
+                                  className="font-medium underline underline-offset-2"
+                                  data-testid="import-match-link"
+                                >
+                                  {label}
+                                </Link>
+                              ) : (
+                                <span className="font-medium">{label}</span>
+                              )}
+                              {isActiveStatus(m.status) ? "" : t("importCreate.matchClosed")}
+                              {t("importCreate.matchAdded", { date: addedOn(i) })}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      <p>{t("importCreate.matchHint", { count: matches.length })}</p>
+                    </Callout>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -243,11 +309,12 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
               </Button>
               <Button
                 type="button"
+                variant={hasMatch ? "secondary" : "default"}
                 disabled={!cleanPreview || mutation.isPending}
                 onClick={() => run("commit")}
                 data-testid="import-commit-btn"
               >
-                {t("importCreate.createBtn")}
+                {createLabel}
               </Button>
             </>
           )}

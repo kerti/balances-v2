@@ -284,7 +284,18 @@
     "preview_other": "Siap: {{noun}} baru dengan {{count}} snapshot. Belum tersimpan — tekan Buat untuk konfirmasi.",
     "committed_one": "{{noun}} baru dibuat dengan {{count}} snapshot.",
     "committed_other": "{{noun}} baru dibuat dengan {{count}} snapshot.",
-    "createBtn": "Buat"
+    "previewNamed_one": "Siap: {{noun}} baru, {{who}}, dengan {{count}} snapshot. Belum tersimpan — tekan {{button}} untuk konfirmasi.",
+    "previewNamed_other": "Siap: {{noun}} baru, {{who}}, dengan {{count}} snapshot. Belum tersimpan — tekan {{button}} untuk konfirmasi.",
+    "matchName_one": "Namanya sama dengan {{noun}} yang sudah ada:",
+    "matchName_other": "Namanya sama dengan {{count}} {{noun}} yang sudah ada:",
+    "matchNameNumber_one": "Nama dan nomornya sama dengan {{noun}} yang sudah ada:",
+    "matchNameNumber_other": "Nama dan nomornya sama dengan {{count}} {{noun}} yang sudah ada:",
+    "matchClosed": " (berakhir)",
+    "matchAdded": " — ditambahkan {{date}}",
+    "matchHint_one": "Buka lalu gunakan Impor snapshot untuk menambahkannya ke sana.",
+    "matchHint_other": "Buka salah satunya lalu gunakan Impor snapshot untuk menambahkannya ke sana.",
+    "createBtn": "Buat",
+    "createAnywayBtn": "Tetap buat"
   },
   "export": {
     "trigger": "Ekspor"

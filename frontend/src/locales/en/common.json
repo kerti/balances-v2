@@ -284,7 +284,18 @@
     "preview_other": "Ready: a new {{noun}} with {{count}} snapshots. Nothing saved yet — press Create to confirm.",
     "committed_one": "Created a new {{noun}} with {{count}} snapshot.",
     "committed_other": "Created a new {{noun}} with {{count}} snapshots.",
-    "createBtn": "Create"
+    "previewNamed_one": "Ready: a new {{noun}}, {{who}}, with {{count}} snapshot. Nothing saved yet — press {{button}} to confirm.",
+    "previewNamed_other": "Ready: a new {{noun}}, {{who}}, with {{count}} snapshots. Nothing saved yet — press {{button}} to confirm.",
+    "matchName_one": "Same name as an existing {{noun}}:",
+    "matchName_other": "Same name as {{count}} existing ones:",
+    "matchNameNumber_one": "Same name and number as an existing {{noun}}:",
+    "matchNameNumber_other": "Same name and number as {{count}} existing ones:",
+    "matchClosed": " (closed)",
+    "matchAdded": " — added {{date}}",
+    "matchHint_one": "Open it and use Import snapshots to add to it instead.",
+    "matchHint_other": "Open one and use Import snapshots to add to it instead.",
+    "createBtn": "Create",
+    "createAnywayBtn": "Create anyway"
   },
   "export": {
     "trigger": "Export"

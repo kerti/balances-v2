@@ -20,6 +20,7 @@ import (
 // account) / #89 (fan-out).
 func (h *Handlers) handleImportCreate(w http.ResponseWriter, r *http.Request) {
 	importcreate.Run(w, r, h.validate, h.resolveDetail,
+		h.matchLiability,
 		func(ctx context.Context, p repo.CreateLiabilityParams, tagID *uuid.UUID, rows []repo.ImportSnapshotRow) (uuid.UUID, error) {
 			row, err := h.repo.CreateLiabilityWithSnapshots(ctx, p, tagID, rows)
 			if err != nil {
@@ -90,4 +91,12 @@ func (h *Handlers) resolveDetail(ctx context.Context, detail map[string]string) 
 		MaturityDate:     maturityDate,
 	}
 	return params, tagID, fieldErrs, nil
+}
+
+// matchLiability names the liability a workbook would create and finds the
+// household's existing liabilities of the same subtype and display name
+// (issue #828).
+func (h *Handlers) matchLiability(ctx context.Context, p repo.CreateLiabilityParams) (importcreate.Candidate, []repo.PositionMatch, error) {
+	matches, err := h.repo.FindImportMatches(ctx, p.Subtype, p.DisplayName)
+	return importcreate.Candidate{Name: p.DisplayName}, matches, err
 }
