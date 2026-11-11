@@ -29,6 +29,7 @@ if (!window.ResizeObserver) {
   };
 }
 Element.prototype.scrollIntoView = () => {};
+window.scrollTo = () => {};
 Element.prototype.hasPointerCapture = () => false;
 Element.prototype.setPointerCapture = () => {};
 Element.prototype.releasePointerCapture = () => {};

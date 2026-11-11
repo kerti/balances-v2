@@ -7,10 +7,13 @@ import type { MonthlyReport } from "@/api/types";
 // The dashboard's net-worth series. The backend regenerates stale months on
 // read (ADR-0006), so this is a plain fetch; mutations elsewhere (snapshots,
 // positions) should invalidate ['reports'] to pull a fresh series.
+export const REPORTS_KEY = ["reports"] as const;
+export const fetchReports = () => api<MonthlyReport[]>("/api/reports");
+
 export function useReports() {
   return useQuery({
-    queryKey: ["reports"],
-    queryFn: () => api<MonthlyReport[]>("/api/reports"),
+    queryKey: REPORTS_KEY,
+    queryFn: fetchReports,
     staleTime: 10_000,
   });
 }

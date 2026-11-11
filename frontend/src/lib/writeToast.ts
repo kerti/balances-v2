@@ -7,6 +7,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import i18n from "@/i18n";
 import { api, ApiError } from "@/api/client";
 import { errorMessage } from "@/lib/errorMessage";
+import { formatNumber } from "@/lib/format";
 
 export const PLAIN_TOAST_MS = 4000;
 export const UNDO_TOAST_MS = 8000;
@@ -16,12 +17,30 @@ export function toastSaved(kind: "saved" | "added" = "saved") {
 }
 
 // "Saved 7 · 2 replaced earlier values": a bulk save has no Undo (ADR-0058 §2).
-export function toastBulkSaved(written: number, replaced: number) {
+// With `next` the toast carries the next step (ADR-0058 §6, #805): an action
+// "Next: {group} ({n}) →" and the longer, hover-pausing action duration.
+export type BulkNext = { group: string; count: number; onClick: () => void };
+
+export function toastBulkSaved(written: number, replaced: number, next?: BulkNext) {
   const message =
     replaced > 0
       ? i18n.t("common:toast.bulkSavedReplaced", { written, count: replaced })
       : i18n.t("common:toast.bulkSaved", { count: written });
-  toast.success(message, { duration: PLAIN_TOAST_MS });
+  if (!next) {
+    toast.success(message, { duration: PLAIN_TOAST_MS });
+    return;
+  }
+  toast.success(message, {
+    testId: "toast-bulk-saved",
+    duration: UNDO_TOAST_MS,
+    action: {
+      label: i18n.t("common:toast.bulkNext", {
+        group: next.group,
+        n: formatNumber(next.count),
+      }),
+      onClick: next.onClick,
+    },
+  });
 }
 
 export function toastWriteError(err: unknown) {

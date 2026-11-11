@@ -18,7 +18,8 @@ import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
 import { InfoHint } from "@/components/common/InfoHint";
-import { positionDetail, positionEntry, routes } from "@/lib/routes";
+import { positionDetail } from "@/lib/routes";
+import { staleEntryRoute } from "@/lib/staleEntry";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
 import type { FxRate, HouseholdMember, MonthlyReport } from "@/api/types";
 import type { Me } from "@/hooks/useSession";
@@ -293,21 +294,6 @@ function HeadlineCard({
       </CardContent>
     </Card>
   );
-}
-
-// The bulk-entry screens in the order the stale warning links to them: the
-// first one with a stale position wins, whatever the report's own ordering.
-const STALE_ENTRY_ORDER = [
-  routes.assetsEnter,
-  routes.liabilitiesEnter,
-  routes.receivablesEnter,
-  routes.investmentsEnterPrices,
-  routes.investmentsEnterAccrued,
-];
-
-function staleEntryRoute(stale: MonthlyReport["stale_positions"]): string | null {
-  const present = new Set(stale.map((p) => positionEntry(p.group, p.subtype)));
-  return STALE_ENTRY_ORDER.find((r) => present.has(r)) ?? null;
 }
 
 // StalePositions surfaces the carried-forward warning as an expandable list

@@ -73,7 +73,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   const [prevYearMonth, setPrevYearMonth] = useState(yearMonth);
 
   const list = useEntryList(config, yearMonth);
-  const save = useBulkSaveSnapshots(config);
+  // The saved toast's "Next: …" action (ADR-0058 §6, #805) opens the next stale
+  // group's entry screen on the month just saved.
+  const save = useBulkSaveSnapshots(config, (route, month) => navigate(`${route}?month=${month}`));
   const { data: members } = useHouseholdMembers();
   const { data: me } = useSession();
   // ADR-0050: a single 768px boolean picks which row renderer mounts — one tree
@@ -297,7 +299,14 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     if (dirtyRows.length === 0) return;
     save.mutate(
       { year_month: yearMonth, as_of_date: asOfDate, rows: dirtyRows },
-      { onSuccess: (result) => result.ok && navigate(config.backRoute) },
+      {
+        onSuccess: (result) => {
+          if (!result.ok) return;
+          navigate(config.backRoute);
+          // Back lands at the top, not wherever this long form was scrolled.
+          window.scrollTo(0, 0);
+        },
+      },
     );
   }
 
