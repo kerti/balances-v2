@@ -7,9 +7,8 @@
   },
   "secondary": {
     "label": "Juga dalam",
-    "none": "—",
-    "noRate": "≈ — · belum ada kurs {{currency}} — tambahkan di Pengaturan untuk mengonversi.",
-    "carriedForward": "Kurs {{currency}} dilanjutkan dari {{from}}"
+    "none": "Pilih mata uang",
+    "noRate": "≈ — · belum ada kurs {{currency}} — tambahkan di Pengaturan untuk mengonversi."
   },
   "headline": {
     "inProgress": "berjalan",
@@ -72,10 +71,6 @@
     "unknown": "Tidak diketahui",
     "youSuffix": " (Anda)"
   },
-  "fxThisMonth": {
-    "title": "Kurs bulan ini",
-    "line": "1 {{base}} = {{rate}} {{quote}}"
-  },
   "thisMonth": {
     "title": "Bulan ini",
     "baseline": "Bulan pelacakan pertama — belum ada bulan sebelumnya untuk dibandingkan, jadi angka pemasukan dan pengeluaran mulai dari bulan berikutnya."
@@ -116,5 +111,10 @@
     "preparing": "Menyiapkan…",
     "exported": "PDF berhasil diunduh",
     "failed": "Gagal membuat PDF — coba lagi."
+  },
+  "rates": {
+    "prefix": "Kurs:",
+    "line": "1 {{base}} = {{rate}} {{quote}}",
+    "carriedForward": "dilanjutkan dari {{from}}"
   }
 }

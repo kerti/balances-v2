@@ -7,9 +7,8 @@
   },
   "secondary": {
     "label": "Also in",
-    "none": "—",
-    "noRate": "≈ — · no {{currency}} rate yet — add one in Settings to convert.",
-    "carriedForward": "{{currency}} rate carried forward from {{from}}"
+    "none": "Pick a currency",
+    "noRate": "≈ — · no {{currency}} rate yet — add one in Settings to convert."
   },
   "headline": {
     "inProgress": "in progress",
@@ -72,10 +71,6 @@
     "unknown": "Unknown",
     "youSuffix": " (you)"
   },
-  "fxThisMonth": {
-    "title": "Exchange rates this month",
-    "line": "1 {{base}} = {{rate}} {{quote}}"
-  },
   "thisMonth": {
     "title": "This month",
     "baseline": "First tracked month — there's no earlier month to compare against yet, so income and spending figures start the month after."
@@ -116,5 +111,10 @@
     "preparing": "Preparing…",
     "exported": "PDF downloaded",
     "failed": "Couldn't generate the PDF — try again."
+  },
+  "rates": {
+    "prefix": "Rates:",
+    "line": "1 {{base}} = {{rate}} {{quote}}",
+    "carriedForward": "carried forward from {{from}}"
   }
 }
