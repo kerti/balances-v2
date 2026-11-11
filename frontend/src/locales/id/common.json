@@ -280,6 +280,8 @@
     "pricePerUnit": "Harga per unit",
     "value": "Nilai",
     "principal": "Pokok",
+    "interest": "Bunga",
+    "belowPrincipal": "Nilai di bawah pokok",
     "totalValue": "Nilai total",
     "accrued": "Bunga berjalan",
     "investments": {
@@ -292,7 +294,7 @@
     "investmentsAccrued": {
       "trigger": "Isi bunga",
       "title": "Isi nilai obligasi & deposito bulan ini",
-      "description": "Perbarui nilai total dan bunga berjalan setiap obligasi dan deposito untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
+      "description": "Perbarui nilai total dan bunga berjalan setiap obligasi, serta nilai setiap deposito, untuk bulan yang dipilih. Bunga deposito dihitung otomatis. Hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada obligasi atau deposito yang memenuhi syarat untuk bulan ini.",
       "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
     }

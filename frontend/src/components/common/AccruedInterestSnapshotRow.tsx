@@ -15,6 +15,8 @@ type Props<TUpdate, TDelete> = {
     UpdateAccruedInterestSnapshotMutationVariables
   >;
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
+  // A time deposit's principal in force (#844); bonds pass nothing.
+  principal?: string;
 };
 
 // The desktop table row for an accrued snapshot. Shares its state, dialogs and
@@ -25,6 +27,7 @@ export function AccruedInterestSnapshotRow<TUpdate, TDelete>({
   snapshot,
   updateMutation,
   deleteMutation,
+  principal,
 }: Props<TUpdate, TDelete>) {
   const {
     monthText,
@@ -36,7 +39,7 @@ export function AccruedInterestSnapshotRow<TUpdate, TDelete>({
     onEdit,
     onDelete,
     dialogs,
-  } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation);
+  } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation, principal);
 
   return (
     <>

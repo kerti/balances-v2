@@ -35,6 +35,9 @@ export type EntryRowView = {
   // while the inputs are incomplete (renderer shows "—"); the whole field is
   // null when the shape has no derived column at all (amount-only).
   derived: { symbol: string; value: string | null } | null;
+  // A soft warning on the row (a time deposit's Value below its principal, #844).
+  // Never blocks Save.
+  warning: boolean;
 };
 
 export type EntryRowRendererProps = {
@@ -150,6 +153,15 @@ export function EntryRowMeta({
           t("bulkEntry.noHistory")
         )}
       </div>
+      {view.warning && (
+        <div
+          className="text-xs text-warning"
+          role="status"
+          data-testid={`${tid}-entry-warning-${view.positionId}`}
+        >
+          {t("bulkEntry.belowPrincipal")}
+        </div>
+      )}
       {view.error && (
         <div
           className="text-xs text-destructive"

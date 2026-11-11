@@ -221,12 +221,14 @@ WHERE i.household_id = sqlc.arg('household_id')::uuid
 -- LEFT JOIN on bond_details) so the entry view can seed the accrued default the
 -- per-position form uses (accrues → forced entry, pays_out/time-deposit → 0).
 -- A time deposit has no bond_details row, so coupon_disposition is NULL — the
--- repo treats NULL as pays_out. Time deposits are also confined to their term
+-- repo treats NULL as pays_out. A time deposit's principal rides along (NULL for
+-- a bond) so the entry row can show "of which interest" live (#844). Time
+-- deposits are also confined to their term
 -- window (same predicate as the ID query). Ordered by subtype then name so rows
 -- arrive pre-grouped.
 -- name: ListEligibleAccruedInvestmentsForMonth :many
 SELECT i.id, i.display_name, i.native_currency, i.subtype, i.ownership_type,
-       i.sole_owner_user_id, bd.coupon_disposition
+       i.sole_owner_user_id, bd.coupon_disposition, td.principal
 FROM investments i
 LEFT JOIN bond_details bd ON bd.investment_id = i.id
 LEFT JOIN time_deposit_details td ON td.investment_id = i.id
@@ -240,6 +242,19 @@ WHERE i.household_id = sqlc.arg('household_id')::uuid
         AND date_trunc('month', td.maturity_date)::date >= sqlc.arg('year_month')::date)
   )
 ORDER BY i.subtype, i.display_name;
+
+-- ListTimeDepositPrincipalsByInvestmentIDs returns the principal in force for
+-- each time deposit among the given investments (#844): the figure the server
+-- subtracts from a submitted Value to derive accrued_interest. Household-scoped
+-- through the parent so a foreign id yields nothing; a bond has no
+-- time_deposit_details row and is simply absent from the result.
+-- name: ListTimeDepositPrincipalsByInvestmentIDs :many
+SELECT td.investment_id, td.principal
+FROM time_deposit_details td
+JOIN investments i ON i.id = td.investment_id
+WHERE td.investment_id = ANY(sqlc.arg('investment_ids')::uuid[])
+  AND i.household_id = sqlc.arg('household_id')::uuid
+  AND i.deleted_at IS NULL;
 
 -- ListLatestAccruedSnapshotsByInvestmentIDsAsOfMonth returns, per investment,
 -- the most-recent snapshot at or before the target month — the carry-forward

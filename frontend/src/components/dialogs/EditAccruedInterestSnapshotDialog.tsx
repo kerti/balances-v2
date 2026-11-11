@@ -36,6 +36,9 @@ type Props<TResult> = {
   onOpenChange: (open: boolean) => void;
   snapshot: AccruedInterestSnapshotLike;
   mutation: UseMutationResult<TResult, unknown, UpdateAccruedInterestSnapshotMutationVariables>;
+  // Time deposits pass their principal in force (#844); see
+  // CreateAccruedInterestSnapshotDialog.
+  principal?: string;
 };
 
 function derivePrincipal(amount: string, accrued: string): string | null {
@@ -52,6 +55,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
   onOpenChange,
   snapshot,
   mutation,
+  principal,
 }: Props<TResult>) {
   const { t } = useTranslation(["investments", "common"]);
   const [moveOpen, setMoveOpen] = useState(false);
@@ -76,7 +80,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           currency: snapshot.currency,
           quantity: null,
           price_per_unit: null,
-          accrued_interest: form.accrued_interest,
+          accrued_interest: principal !== undefined ? null : form.accrued_interest,
           as_of_date: form.as_of_date || null,
           description: form.description || null,
         },
@@ -92,7 +96,11 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
           <DialogHeader>
             <DialogTitle>{t("investments:accruedInterestSnapshot.editTitle")}</DialogTitle>
             <DialogDescription>
-              {t("investments:accruedInterestSnapshot.editDescription")}
+              {t(
+                principal !== undefined
+                  ? "investments:accruedInterestSnapshot.editDescriptionTimeDeposit"
+                  : "investments:accruedInterestSnapshot.editDescription",
+              )}
             </DialogDescription>
           </DialogHeader>
           <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
@@ -103,6 +111,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
               form={form}
               setForm={setForm}
               derivedPrincipal={derivedPrincipal}
+              principal={principal}
             />
 
             <FormError />

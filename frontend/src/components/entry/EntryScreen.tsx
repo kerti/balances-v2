@@ -30,7 +30,12 @@ import {
 import { SameCheckbox } from "@/components/entry/entryRow";
 import { EntryRowMobile } from "@/components/entry/EntryRowMobile";
 import type { EntryGroupConfig } from "@/components/entry/groups";
-import { minorUnitsShown, type EntryField, type EntryFieldValues } from "@/components/entry/shapes";
+import {
+  minorUnitsShown,
+  type EntryField,
+  type EntryFieldValues,
+  type EntryShape,
+} from "@/components/entry/shapes";
 import type { EntryRowView, EntryWhen } from "@/components/entry/entryRow";
 
 // EntryScreen is the bulk monthly-entry view for one amount-only group
@@ -45,7 +50,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   const { t } = useTranslation(["common", "assets", "liabilities", "investments"]);
   const navigate = useNavigate();
   const tid = config.testidPrefix;
-  const shape = config.shape;
+  // A group can mix shapes (the accrued group: a bond takes two figures, a time
+  // deposit one, #844), so every row resolves its own.
+  const shapeOf = (row: EntryRow): EntryShape => config.shapeFor?.(row) ?? config.shape;
   // Copy prefix: "bulkEntry" (account wording) unless a group overrides it
   // (investments → holdings wording). Field labels stay under bulkEntry.*.
   const copy = config.copyPrefix ?? "bulkEntry";
@@ -111,7 +118,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   function valueFor(row: EntryRow, fieldKey: string): string {
     const edited = edits[row.position_id]?.[fieldKey];
     if (edited !== undefined) return edited;
-    return shape.prefill(row)[fieldKey] ?? "";
+    return shapeOf(row).prefill(row)[fieldKey] ?? "";
   }
   // shownFor is what the input displays: valueFor, except that a carried-forward
   // money value is rounded to the currency's minor units (ADR-0056). It is for
@@ -125,7 +132,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // The merged field values for a row: prefill overlaid with the user's edits.
   function mergedValues(row: EntryRow): EntryFieldValues {
     const out: EntryFieldValues = {};
-    for (const f of shape.fields) out[f.key] = valueFor(row, f.key).trim();
+    for (const f of shapeOf(row).fields) out[f.key] = valueFor(row, f.key).trim();
     return out;
   }
   // A row is dirty when its values are complete (all required fields present)
@@ -133,9 +140,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // qty×price pair (only one of quantity/price typed) is not yet saveable.
   function isDirty(row: EntryRow): boolean {
     const values = mergedValues(row);
-    if (!shape.complete(values)) return false;
-    const pf = shape.prefill(row);
-    return shape.fields.some((f) => values[f.key] !== (pf[f.key] ?? "").trim());
+    if (!shapeOf(row).complete(values)) return false;
+    const pf = shapeOf(row).prefill(row);
+    return shapeOf(row).fields.some((f) => values[f.key] !== (pf[f.key] ?? "").trim());
   }
 
   // A row offering the "same" checkbox: carried from an earlier month (none yet
@@ -145,7 +152,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     return (
       Boolean(row.carried_from) &&
       row.carried_from !== yearMonth &&
-      shape.complete(mergedValues(row)) &&
+      shapeOf(row).complete(mergedValues(row)) &&
       !isDirty(row)
     );
   }
@@ -169,7 +176,10 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // A marked row is saved even though its values equal the prefill. Changed rows
   // are only the ones that differ (the dot, ring, and "N changed").
   function isSaved(row: EntryRow): boolean {
-    return isDirty(row) || (unchangedIds.has(row.position_id) && shape.complete(mergedValues(row)));
+    return (
+      isDirty(row) ||
+      (unchangedIds.has(row.position_id) && shapeOf(row).complete(mergedValues(row)))
+    );
   }
   const changedCount = rows.filter(isDirty).length;
   const markedCount = rows.filter((r) => !isDirty(r) && isSaved(r)).length;
@@ -230,15 +240,18 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   // renderers consume — resolving the container-only knowledge (edits, members,
   // the chosen month, the shape's derived value) into plain display data.
   function rowView(row: EntryRow): EntryRowView {
+    const shape = shapeOf(row);
     const fieldValues: EntryFieldValues = {};
     for (const f of shape.fields) fieldValues[f.key] = shownFor(row, f);
 
     let derived: { symbol: string; value: string | null } | null = null;
+    let warning = false;
     if (shape.derived) {
       const d = shape.derived(mergedValues(row));
       // Pass "" for an incomplete row so formatCurrencyParts returns value:null
       // (the symbol still resolves) — the renderer shows "—" but keeps the column.
       derived = formatCurrencyParts(d.valid ? d.amount : "", row.currency);
+      warning = d.valid && Boolean(d.below);
     }
 
     let when: EntryWhen;
@@ -246,7 +259,11 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       // A snapshot already exists for the chosen month — the prefill IS this
       // month's value, so editing it overwrites (upsert).
       const pf = shape.prefill(row);
-      const current = shape.derived ? shape.derived(pf).amount : (pf.amount ?? "");
+      const current = shape.current
+        ? shape.current(pf)
+        : shape.derived
+          ? shape.derived(pf).amount
+          : (pf.amount ?? "");
       when = { kind: "overwrite", current: formatCurrency(current, row.currency) };
     } else if (row.carried_from) {
       when = { kind: "carried", month: formatYearMonth(`${row.carried_from}-01T00:00:00Z`) };
@@ -265,6 +282,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       error: Boolean(rowErrors[row.position_id]),
       fieldValues,
       derived,
+      warning,
     };
   }
 
@@ -273,7 +291,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       <RowRenderer
         key={row.position_id}
         view={rowView(row)}
-        shape={shape}
+        shape={shapeOf(row)}
         tid={tid}
         copy={copy}
         onUnchanged={(checked) => setMarked([row.position_id], checked)}
@@ -378,7 +396,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                 {!isMobile && (
                   <div className="mb-1 flex justify-end">
                     <EntryRowDesktopHeader
-                      shape={shape}
+                      shape={shapeOf(rows[0])}
                       tickAll={tickAllFor(rows, `${tid}-entry-same-all`)}
                     />
                   </div>
@@ -406,7 +424,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                         </div>
                         {!isMobile && (
                           <EntryRowDesktopHeader
-                            shape={shape}
+                            shape={shapeOf(grouped.get(subtype)![0])}
                             tickAll={tickAllFor(
                               grouped.get(subtype)!,
                               `${tid}-entry-same-all-${subtype}`,

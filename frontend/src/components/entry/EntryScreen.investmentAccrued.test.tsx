@@ -15,6 +15,7 @@ import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { EntryScreen } from "@/components/entry/EntryScreen";
 import { investmentAccruedEntryConfig } from "@/components/entry/groups";
+import { thisYearMonth } from "@/lib/dateLimits";
 
 const entryList = {
   year_month: "2026-05",
@@ -51,6 +52,7 @@ const entryList = {
       ownership_type: "joint",
       sole_owner_user_id: null,
       coupon_disposition: null,
+      principal: "100000000",
       prefill_amount: null,
       prefill_accrued_interest: null,
       carried_from: null,
@@ -86,9 +88,10 @@ it("renders eligible accrued positions grouped by subtype with prefill + disposi
   expect(screen.getByTestId("investment-accrued-entry-amount-b2")).toHaveValue("");
   expect(screen.getByTestId("investment-accrued-entry-accrued-b2")).toHaveValue("");
 
-  // A fresh time deposit (no disposition ⇒ pays-out) defaults accrued to 0.
+  // A time deposit takes one Value and no accrued field (#844): its interest is
+  // derived, so there is nothing to default.
   expect(screen.getByTestId("investment-accrued-entry-amount-t1")).toHaveValue("");
-  expect(screen.getByTestId("investment-accrued-entry-accrued-t1")).toHaveValue("0");
+  expect(screen.queryByTestId("investment-accrued-entry-accrued-t1")).not.toBeInTheDocument();
 
   // Grouped by subtype: a Bonds section (b1, b2) and a Time deposits section (t1).
   const bonds = screen.getByTestId("investment-accrued-entry-group-bond");
@@ -102,6 +105,11 @@ it("renders eligible accrued positions grouped by subtype with prefill + disposi
   expect(within(bonds).getByText("Total value")).toBeInTheDocument();
   expect(within(bonds).getByText("Accrued")).toBeInTheDocument();
   expect(within(bonds).getByText("Principal")).toBeInTheDocument();
+  // The time-deposit group is headed by its own single Value column and the
+  // derived interest — not the bond's total/accrued/principal trio.
+  expect(within(tds).getByText("Value")).toBeInTheDocument();
+  expect(within(tds).getByText("Interest")).toBeInTheDocument();
+  expect(within(tds).queryByText("Accrued")).not.toBeInTheDocument();
 });
 
 // covers: INV-SNAPSHOTS-06
@@ -181,4 +189,70 @@ it("marks the offending row on a 422 per-row error", async () => {
   await user.click(screen.getByTestId("investment-accrued-entry-save"));
 
   expect(await screen.findByTestId("investment-accrued-entry-error-b1")).toBeInTheDocument();
+});
+
+// covers: INV-SNAPSHOTS-09
+// covers: INV-SNAPSHOTS-17
+it("a time deposit row derives its interest live, warns below the principal, and saves only the Value", async () => {
+  let posted: { rows: Array<Record<string, unknown>> } | null = null;
+  server.use(
+    http.get("/api/investments/snapshots/accrued/entry", () => HttpResponse.json(entryList)),
+    http.get("/api/household/members", () => HttpResponse.json([])),
+    http.post("/api/investments/snapshots/accrued/bulk", async ({ request }) => {
+      posted = (await request.json()) as typeof posted;
+      return HttpResponse.json({ written: 1, replaced: 0 });
+    }),
+  );
+  renderScreen();
+  const user = userEvent.setup();
+
+  const value = await screen.findByTestId("investment-accrued-entry-amount-t1");
+  const interest = screen.getByTestId("investment-accrued-entry-value-t1");
+  // Nothing typed: no interest yet, no warning.
+  expect(interest).toHaveTextContent("—");
+  expect(screen.queryByTestId("investment-accrued-entry-warning-t1")).not.toBeInTheDocument();
+
+  // 101,500,000 against a 100,000,000 principal: 1,500,000 of interest.
+  await user.type(value, "101500000");
+  expect(interest).toHaveTextContent("1,500,000");
+  expect(screen.queryByTestId("investment-accrued-entry-warning-t1")).not.toBeInTheDocument();
+
+  // Below the principal: a soft warning, and the row still saves.
+  await user.clear(value);
+  await user.type(value, "99000000");
+  expect(interest).toHaveTextContent("-1,000,000");
+  expect(screen.getByTestId("investment-accrued-entry-warning-t1")).toHaveTextContent(
+    "Value is below the principal",
+  );
+  expect(screen.getByTestId("investment-accrued-entry-save")).toBeEnabled();
+
+  await user.click(screen.getByTestId("investment-accrued-entry-save"));
+  await waitFor(() => expect(posted).not.toBeNull());
+  expect(posted!.rows).toHaveLength(1);
+  // One figure goes up: the server derives accrued_interest, so none is sent.
+  expect(posted!.rows[0]).toEqual({ investment_id: "t1", currency: "IDR", amount: "99000000" });
+});
+
+// covers: INV-SNAPSHOTS-09
+it("a time deposit with a snapshot this month shows its Value, not its interest, as Current", async () => {
+  server.use(
+    http.get("/api/investments/snapshots/accrued/entry", () =>
+      HttpResponse.json({
+        year_month: "2026-05",
+        rows: [
+          {
+            ...entryList.rows[2],
+            prefill_amount: "101500000",
+            prefill_accrued_interest: "1500000",
+            carried_from: thisYearMonth(),
+          },
+        ],
+      }),
+    ),
+    http.get("/api/household/members", () => HttpResponse.json([])),
+  );
+  renderScreen();
+
+  const current = await screen.findByTestId("investment-accrued-entry-current-t1");
+  expect(current).toHaveTextContent("101,500,000");
 });

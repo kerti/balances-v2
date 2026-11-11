@@ -16,6 +16,8 @@ type Props<TUpdate, TDelete> = {
     UpdateAccruedInterestSnapshotMutationVariables
   >;
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
+  // A time deposit's principal in force (#844); bonds pass nothing.
+  principal?: string;
 };
 
 // Mobile leaf renderer for an accrued snapshot (ADR-0051 Phase B, "wide table →
@@ -31,6 +33,7 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
   snapshot,
   updateMutation,
   deleteMutation,
+  principal,
 }: Props<TUpdate, TDelete>) {
   const { t } = useTranslation(["investments"]);
   const {
@@ -43,7 +46,7 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
     onEdit,
     onDelete,
     dialogs,
-  } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation);
+  } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation, principal);
 
   // Principal and accrued each get their own line (label left, value right) —
   // either leg alone still reads, and neither renders nothing.

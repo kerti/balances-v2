@@ -8,7 +8,7 @@
 
 | ID | Invariant | Covered by |
 |----|-----------|------------|
-| INV-TENANCY-01 | Bank-account/asset reads & mutations never cross households | `backend/internal/repo/asset_time_series_test.go`<br>`backend/internal/repo/assets_tenancy_test.go` |
+| INV-TENANCY-01 | Bank-account/asset reads & mutations never cross households | `backend/internal/investments/time_deposit_derived_interest_test.go`<br>`backend/internal/repo/asset_time_series_test.go`<br>`backend/internal/repo/assets_tenancy_test.go` |
 | INV-TENANCY-02 | Property reads & mutations never cross households | `backend/internal/repo/properties_tenancy_test.go` |
 | INV-TENANCY-03 | Vehicle reads & mutations never cross households | `backend/internal/repo/vehicles_tenancy_test.go` |
 | INV-TENANCY-04 | Liability reads & mutations never cross households | `backend/internal/repo/liabilities_tenancy_test.go`<br>`backend/internal/repo/liability_time_series_test.go` |

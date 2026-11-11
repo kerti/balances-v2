@@ -437,4 +437,26 @@ describe("snapshot form bodies: Record and Edit render the same field order", ()
       ]
     `);
   });
+
+  it("accrued interest, time deposit (one Value)", () => {
+    const form: AccruedInterestSnapshotFormState = { ...month, amount: "", accrued_interest: "" };
+    expect(
+      expectSameLayout((mode) => (
+        <AccruedInterestSnapshotFormBody
+          mode={mode}
+          currency="IDR"
+          form={form}
+          setForm={noop}
+          principal="100000000"
+        />
+      )),
+    ).toMatchInlineSnapshot(`
+      [
+        "Month",
+        "Statement date (optional)",
+        "Value (IDR)",
+        "Description (optional)",
+      ]
+    `);
+  });
 });

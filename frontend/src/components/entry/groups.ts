@@ -12,11 +12,12 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { routes } from "@/lib/routes";
-import type { EntryDataConfig } from "@/hooks/useBulkEntry";
+import type { EntryDataConfig, EntryRow } from "@/hooks/useBulkEntry";
 import {
   amountOnlyShape,
   qtyPriceShape,
   accruedShape,
+  timeDepositShape,
   type EntryShape,
 } from "@/components/entry/shapes";
 
@@ -33,6 +34,10 @@ export type EntryGroupConfig = EntryDataConfig & {
   // Receivable, qty×price for the Stock/MutualFund/Gold group (#423). Drives
   // which inputs a row renders and how Save maps them to wire columns.
   shape: EntryShape;
+  // Picks a row's own shape when the group mixes shapes (the accrued group: a
+  // bond takes two figures, a time deposit one, #844). Absent ⇒ `shape` for every
+  // row.
+  shapeFor?: (row: EntryRow) => EntryShape;
   // i18n key prefix (common namespace) for the screen's title / description /
   // empty / rowError copy. Defaults to "bulkEntry" (account-centric wording);
   // the investment group overrides to "bulkEntry.investments" (holdings wording).
@@ -132,8 +137,9 @@ export const investmentEntryConfig: EntryGroupConfig = {
 };
 
 // Investments (accrued shape, #424) — the two subtypes whose snapshots take the
-// accrued_interest branch: Bond, TimeDeposit. Each row carries the total value +
-// accrued interest (the per-position accrued dialog's two figures). Distinct
+// accrued_interest branch: Bond, TimeDeposit. A bond row carries the total value +
+// accrued interest (the per-position accrued dialog's two figures); a time deposit
+// row carries one Value and its interest is derived (#844). Distinct
 // `group` id (own cache namespace) and `apiBase` (own /accrued/entry + /bulk
 // endpoints) so it never collides with the qty×price view. Invalidates the two
 // lists + the investment Home time-series so carried-forward totals refresh.
@@ -142,6 +148,8 @@ export const investmentAccruedEntryConfig: EntryGroupConfig = {
   group: "investments-accrued",
   enterRoute: routes.investmentsEnterAccrued,
   shape: accruedShape,
+  shapeFor: (row) =>
+    row.subtype === "time_deposit" ? timeDepositShape(row.principal) : accruedShape,
   copyPrefix: "bulkEntry.investmentsAccrued",
   apiBase: "/api/investments/snapshots/accrued",
   idField: "investment_id",

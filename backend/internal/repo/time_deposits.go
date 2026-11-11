@@ -99,6 +99,11 @@ type UpdateTimeDepositParams struct {
 type termBounds struct {
 	placement time.Time
 	maturity  time.Time
+	// principal is the deposit's principal in force (#844). A time deposit has
+	// one principal for its whole term — a rollover creates a successor row whose
+	// principal is the rolled amount (ADR-0009) — so time_deposit_details.principal
+	// is it. Only meaningful when !unbounded().
+	principal decimal.Decimal
 }
 
 func (b termBounds) unbounded() bool { return b.placement.IsZero() && b.maturity.IsZero() }
@@ -115,7 +120,20 @@ func timeDepositBounds(ctx context.Context, q *db.Queries, inv db.Investment) (t
 	if err != nil {
 		return termBounds{}, fmt.Errorf("load time deposit bounds: %w", err)
 	}
-	return termBounds{placement: d.PlacementDate, maturity: d.MaturityDate}, nil
+	return termBounds{placement: d.PlacementDate, maturity: d.MaturityDate, principal: d.Principal}, nil
+}
+
+// accruedForSnapshot is the accrued_interest a snapshot of this investment is
+// stored with. A time deposit's statement shows one net figure (the Value), so
+// the server derives the interest as Value − principal in force and ignores any
+// accrued_interest the client sent (#844); every other subtype stores what the
+// client supplied.
+func (b termBounds) accruedForSnapshot(amount decimal.Decimal, supplied *decimal.Decimal) *decimal.Decimal {
+	if b.unbounded() {
+		return supplied
+	}
+	derived := amount.Sub(b.principal)
+	return &derived
 }
 
 // checkSnapshotMonth confines a snapshot to the term at month granularity: its

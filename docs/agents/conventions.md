@@ -39,7 +39,12 @@ Not ADRs because they're tactical, but load-bearing:
   a month that already has a value is a replace and writes through the *update* mutation (the Edit
   `PATCH`, so ADR-0058's archive + Undo toast come for free), never a second POST. Month switching,
   prefill and "Same as last month" live in `useRecordSnapshotForm` + `lib/recordSnapshot.ts`; a new
-  shape reuses them and the `LastRecordedHint` / replace notice in the form body.
+  shape reuses them and the `LastRecordedHint` / replace notice in the form body. Within the accrued
+  fork a **time deposit takes one Value** (#844): the parent passes `principal` (from the TD detail
+  payload) and the form swaps to one input plus a read-only "of which interest"; the server derives
+  `accrued_interest = Value − principal` (INV-SNAPSHOTS-17) and the client sends none. Bonds pass no
+  `principal` and keep the total + accrued pair. The bulk accrued screen does the same per row
+  (`EntryGroupConfig.shapeFor` → `timeDepositShape(row.principal)`; the entry list carries `principal`).
 - **Transaction UI is split by shape (four forks).** Trade (Buy/Sell) →
   `Create/EditTradeTransactionDialog`; CashIncome (Coupon/Dividend/Distribution) →
   `Create/EditCashIncomeTransactionDialog`; Fee → `Create/EditFeeTransactionDialog`; Maturity →

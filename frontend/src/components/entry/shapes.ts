@@ -1,4 +1,5 @@
 import type { EntryRow } from "@/hooks/useBulkEntry";
+import { timeDepositInterest } from "@/lib/timeDepositInterest";
 import {
   currencyDecimals,
   PRICE_DECIMALS,
@@ -57,8 +58,12 @@ export type EntryShape = {
   complete: (v: EntryFieldValues) => boolean;
   // The computed value to display (qty×price: quantity × price), or null for a
   // shape with nothing to compute (amount-only). `valid` is false while the
-  // inputs don't yet form a number, so the screen shows a placeholder.
-  derived: ((v: EntryFieldValues) => { valid: boolean; amount: string }) | null;
+  // inputs don't yet form a number, so the screen shows a placeholder. `below`
+  // (time deposit: Value under the principal) raises the row's soft warning.
+  derived: ((v: EntryFieldValues) => { valid: boolean; amount: string; below?: boolean }) | null;
+  // The month's value as the "Current: …" line shows it, when it isn't the
+  // derived figure (a time deposit derives interest but its value is the field).
+  current?: (v: EntryFieldValues) => string;
   // i18n key naming the derived column ("Value" for qty×price, "Principal" for
   // accrued), or null for a shape with no derived column. Desktop positions the
   // total under an (unlabelled) column slot; the mobile stack has no such slot,
@@ -198,3 +203,29 @@ export const accruedShape: EntryShape = {
   derived: (v) => derivePrincipal(v.amount, v.accrued_interest),
   derivedLabelKey: "bulkEntry.principal",
 };
+
+// time deposit (#844): the one net figure the statement shows (stored as
+// `amount`) and nothing else typed; the server derives accrued_interest as
+// Value − principal in force. The derived column is that interest, computed live
+// from the row's principal (the entry list carries it), and a Value below the
+// principal raises a soft warning on the row that never blocks Save. A factory,
+// not a constant, because the derivation closes over the row's principal.
+export function timeDepositShape(principal: string | null): EntryShape {
+  return {
+    fields: [
+      {
+        key: "amount",
+        testidSuffix: "amount",
+        labelKey: "bulkEntry.value",
+        widthClass: "w-28",
+        decimals: currencyDecimals,
+        money: true,
+      },
+    ],
+    prefill: (row) => ({ amount: row.prefill_amount ?? "" }),
+    complete: (v) => isNumeric(v.amount),
+    derived: (v) => timeDepositInterest(v.amount, principal),
+    derivedLabelKey: "bulkEntry.interest",
+    current: (v) => v.amount,
+  };
+}

@@ -198,17 +198,22 @@ func (h *Handlers) handleBulkCreateInvestmentSnapshots(w http.ResponseWriter, r 
 //
 // The accrued twin of the qty×price handlers above, for the Bond/TimeDeposit
 // branch of the Investment group. A row carries the total value (amount) and the
-// accrued-interest component — both stored as given (quantity/price null), the
-// accrued branch of investment_snapshot_shape. Unlike qty×price there is no
-// server-side derivation: a bond's total value already *is* its snapshot amount.
+// accrued-interest component (quantity/price null), the accrued branch of
+// investment_snapshot_shape. A bond's two figures are stored as given — its total
+// value already *is* its snapshot amount. A time deposit's accrued_interest is
+// derived server-side as Value − principal in force (#844), whatever the client
+// sent.
 
 // bulkInvestmentAccruedSnapshotRow is one dirty accrued position in a bulk
 // monthly-entry batch (ADR-0046, #424). The row carries the two tab-stops the
 // per-position accrued dialog takes: the total value and the accrued component.
 type bulkInvestmentAccruedSnapshotRow struct {
-	InvestmentID    string           `json:"investment_id"    validate:"required,uuid"`
-	Amount          *decimal.Decimal `json:"amount"           validate:"required"`
-	AccruedInterest *decimal.Decimal `json:"accrued_interest" validate:"required"`
+	InvestmentID string           `json:"investment_id"    validate:"required,uuid"`
+	Amount       *decimal.Decimal `json:"amount"           validate:"required"`
+	// Required for a bond, ignored for a time deposit — the server derives it as
+	// Value − principal in force (#844). The repo enforces the bond half, since
+	// the subtype is only known there.
+	AccruedInterest *decimal.Decimal `json:"accrued_interest"`
 	Currency        string           `json:"currency"         validate:"required,iso4217"`
 }
 
@@ -228,13 +233,18 @@ type bulkInvestmentAccruedSnapshotReq struct {
 // CouponDisposition is null for a time deposit (no bond_details row); the client
 // treats null as pays_out (accrued default 0).
 type investmentAccruedEntryRowResp struct {
-	InvestmentID           string  `json:"investment_id"`
-	DisplayName            string  `json:"display_name"`
-	Currency               string  `json:"currency"`
-	Subtype                string  `json:"subtype"`
-	OwnershipType          string  `json:"ownership_type"`
-	SoleOwnerUserID        *string `json:"sole_owner_user_id"`
-	CouponDisposition      *string `json:"coupon_disposition"`
+	InvestmentID      string  `json:"investment_id"`
+	DisplayName       string  `json:"display_name"`
+	Currency          string  `json:"currency"`
+	Subtype           string  `json:"subtype"`
+	OwnershipType     string  `json:"ownership_type"`
+	SoleOwnerUserID   *string `json:"sole_owner_user_id"`
+	CouponDisposition *string `json:"coupon_disposition"`
+	// Principal is a time deposit's principal in force (null for a bond): the
+	// figure the entry row subtracts from the typed Value to show "of which
+	// interest" live (#844). The server derives the stored accrued_interest from
+	// the same number.
+	Principal              *string `json:"principal"`
 	PrefillAmount          *string `json:"prefill_amount"`
 	PrefillAccruedInterest *string `json:"prefill_accrued_interest"`
 	CarriedFrom            *string `json:"carried_from"`
@@ -279,6 +289,10 @@ func (h *Handlers) handleInvestmentAccruedEntryList(w http.ResponseWriter, r *ht
 		if row.SoleOwnerUserID != nil {
 			s := row.SoleOwnerUserID.String()
 			out.SoleOwnerUserID = &s
+		}
+		if row.Principal != nil {
+			s := row.Principal.String()
+			out.Principal = &s
 		}
 		if row.PrefillAmount != nil {
 			s := row.PrefillAmount.String()
@@ -346,7 +360,7 @@ func (h *Handlers) handleBulkCreateInvestmentAccruedSnapshots(w http.ResponseWri
 		rows[i] = repo.BulkInvestmentAccruedSnapshotRow{
 			InvestmentID:    id,
 			Amount:          *row.Amount,
-			AccruedInterest: *row.AccruedInterest,
+			AccruedInterest: row.AccruedInterest,
 			Currency:        row.Currency,
 		}
 	}

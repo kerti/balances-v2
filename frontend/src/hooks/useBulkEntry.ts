@@ -48,6 +48,9 @@ export type EntryRow = {
   prefill_price: string | null;
   prefill_accrued_interest: string | null;
   coupon_disposition: string | null;
+  // A time deposit's principal in force (accrued group only, #844); null for a
+  // bond and for every other group. The row derives "of which interest" from it.
+  principal: string | null;
   carried_from: string | null;
 };
 
@@ -94,6 +97,7 @@ type RawEntryRow = Record<string, unknown> & {
   prefill_price?: string | null;
   prefill_accrued_interest?: string | null;
   coupon_disposition?: string | null;
+  principal?: string | null;
   carried_from: string | null;
 };
 
@@ -121,6 +125,7 @@ export function useEntryList(cfg: EntryDataConfig, yearMonth: string | null) {
           prefill_price: r.prefill_price ?? null,
           prefill_accrued_interest: r.prefill_accrued_interest ?? null,
           coupon_disposition: r.coupon_disposition ?? null,
+          principal: r.principal ?? null,
           carried_from: r.carried_from,
         })),
       };
