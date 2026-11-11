@@ -16,7 +16,12 @@ export function sonnerMock() {
   return { toast };
 }
 
-type ToastOptions = { duration?: number; action?: { label: string; onClick: () => void } };
+type ToastOptions = {
+  duration?: number;
+  action?: { label: string; onClick: () => void };
+  className?: string;
+  style?: Record<string, string>;
+};
 
 // Every toast raised so far, whichever variant produced it.
 export function raisedToasts(toast: ReturnType<typeof sonnerMock>["toast"]) {

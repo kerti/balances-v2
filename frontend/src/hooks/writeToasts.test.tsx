@@ -53,6 +53,7 @@ describe("one toast per write", () => {
     expect(raised[0].message).toBe("Added");
     expect(raised[0].options.duration).toBe(4000);
     expect(raised[0].options.action).toBeUndefined();
+    expect(raised[0].options.className).toBeUndefined();
   });
 
   it("an edit that replaced a value offers Undo, which names both snapshot ids", async () => {
@@ -78,6 +79,9 @@ describe("one toast per write", () => {
     const raised = raisedToasts(mockedToast);
     expect(raised).toHaveLength(1);
     expect(raised[0].options.duration).toBe(8000);
+    // The countdown bar runs for exactly the toast's life.
+    expect(raised[0].options.className).toBe("undo-countdown");
+    expect(raised[0].options.style).toEqual({ "--undo-countdown-ms": "8000ms" });
     expect(raised[0].options.action?.label).toBe("Undo");
 
     act(() => raised[0].options.action?.onClick());
