@@ -44,9 +44,9 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   await expectNoA11yViolations(page, "position detail screen");
 
   // --- Close (active → closed; date auto-fills today, note optional) ---
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "Close…", exact: true }).click();
   const closeDialog = page.getByRole("dialog");
-  await expect(closeDialog.getByText("Close position")).toBeVisible();
+  await expect(closeDialog.getByText("Close bank account")).toBeVisible();
   await closeDialog.getByLabel("Status").selectOption("closed");
   await closeDialog.getByLabel("Note (optional)").fill("E2E closed");
   await closeDialog.getByRole("button", { name: "Save" }).click();
@@ -56,9 +56,9 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   await expect(page.getByRole("button", { name: "Record snapshot" })).toHaveCount(0);
 
   // --- Reopen (closed → active correction; biconditional clears the date) ---
-  await page.getByRole("button", { name: "Status", exact: true }).click();
+  await page.getByRole("button", { name: "Change status", exact: true }).click();
   const reopenDialog = page.getByRole("dialog");
-  await expect(reopenDialog.getByText("Edit lifecycle status")).toBeVisible();
+  await expect(reopenDialog.getByRole("heading", { name: "Change status" })).toBeVisible();
   await reopenDialog.getByLabel("Status").selectOption("active");
   await reopenDialog.getByRole("button", { name: "Save" }).click();
 

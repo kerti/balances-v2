@@ -58,9 +58,9 @@ test(
     await expect(snapshotCard.getByTestId("snapshot-amount")).toContainText("950");
 
     // --- Terminate as untracked ---
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("button", { name: "Close…", exact: true }).click();
     const closeDialog = page.getByRole("dialog");
-    await expect(closeDialog.getByText("Close position")).toBeVisible();
+    await expect(closeDialog.getByText("Close investment")).toBeVisible();
 
     // The status is offered at all — the subtype narrowing lets it through.
     await closeDialog.getByLabel("Status").selectOption("untracked");
@@ -83,7 +83,7 @@ test(
     // --- Reactivate: the displaced snapshot is handed back the way it is for
     //     every other terminal status — the close row goes, the 9,500 mark
     //     returns ---
-    await page.getByRole("button", { name: "Status", exact: true }).click();
+    await page.getByRole("button", { name: "Change status", exact: true }).click();
     const reopenDialog = page.getByRole("dialog");
     await reopenDialog.getByLabel("Status").selectOption("active");
     await reopenDialog.getByRole("button", { name: "Save" }).click();

@@ -32,6 +32,7 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
   entityKey: "property",
   testIdPrefix: "property",
   group: "assets",
+  assetSubtype: "property",
   tagGroup: "asset",
   listKey: "properties",
   i18nNamespaces: ["assets", "common", "errors"],

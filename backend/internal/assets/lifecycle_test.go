@@ -24,15 +24,24 @@ func TestAssetHandlers_Lifecycle(t *testing.T) {
 
 	t.Run("terminate happy path", func(t *testing.T) {
 		rec := h.do(t, "PATCH", base, map[string]any{
-			"status":           "sold",
+			"status":           "closed",
 			"terminated_at":    "2026-05-25",
-			"termination_note": "sold to dealer",
+			"termination_note": "closed at the bank",
 		})
 		requireStatus(t, rec, http.StatusOK)
 		got := decodeBody[lifecycleResp](t, rec)
-		if got.Status != "sold" || got.TerminatedAt == nil {
+		if got.Status != "closed" || got.TerminatedAt == nil {
 			t.Fatalf("unexpected body: %+v", got)
 		}
+	})
+
+	// covers: INV-LIFECYCLE-10
+	t.Run("status the subtype does not offer is 400", func(t *testing.T) {
+		other := h.createBankAccount(t, "Mismatch parent")
+		rec := h.do(t, "PATCH", "/assets/"+other.Asset.ID.String()+"/lifecycle", map[string]any{
+			"status": "sold", "terminated_at": "2026-05-25",
+		})
+		requireStatus(t, rec, http.StatusBadRequest)
 	})
 
 	t.Run("terminal status without date is 400", func(t *testing.T) {

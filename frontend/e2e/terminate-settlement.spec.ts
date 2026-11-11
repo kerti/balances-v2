@@ -46,7 +46,7 @@ test(
 
     // --- Close the position; the settlement block appears with the terminal
     //     status and is pre-filled from the ledger's held quantity ---
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page.getByRole("button", { name: "Close…", exact: true }).click();
     const closeDialog = page.getByRole("dialog");
     await closeDialog.getByLabel("Status").selectOption("sold");
 

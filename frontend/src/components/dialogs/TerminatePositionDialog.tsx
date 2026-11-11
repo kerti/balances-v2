@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import {
   formatCurrency,
+  formatShortYearMonth,
   PRICE_DECIMALS,
   QUANTITY_DECIMALS,
   QUANTITY_INTEGER_DIGITS,
@@ -31,6 +32,7 @@ import {
   settlementKind,
   statusOptions,
   STATUS_UNTRACKED,
+  type AssetSubtype,
   type InvestmentSubtype,
   type LifecycleGroup,
 } from "@/lib/lifecycle";
@@ -78,6 +80,9 @@ type Props = {
   // are narrowed to the ones its transaction matrix can settle, and terminating
   // it captures the settling Sell/Maturity. Absent for Asset/Liability/Receivable.
   investmentSubtype?: InvestmentSubtype;
+  // Asset-only. Narrows the status list (an account is closed, a property sold)
+  // and names the noun in the title and the consequence line.
+  assetSubtype?: AssetSubtype;
   currency?: string;
 };
 
@@ -100,6 +105,7 @@ export function TerminatePositionDialog({
   currentTerminatedAt,
   currentNote,
   investmentSubtype,
+  assetSubtype,
   currency,
 }: Props) {
   const { t } = useTranslation("common");
@@ -113,7 +119,9 @@ export function TerminatePositionDialog({
   const { data: transactions } = useInvestmentTransactions(settles ? id : null);
   const { data: snapshots } = useInvestmentSnapshots(settles ? id : null);
 
-  const [status, setStatus] = useState(currentStatus);
+  // An active position opens with no status picked: "What happened?" is a
+  // question the person answers, not a default that closes it by accident.
+  const [status, setStatus] = useState(currentStatus === "active" ? "" : currentStatus);
   const [terminatedAt, setTerminatedAt] = useState(
     currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "",
   );
@@ -122,7 +130,18 @@ export function TerminatePositionDialog({
   const [writeOff, setWriteOff] = useState(false);
 
   const wasActive = currentStatus === "active";
+  const picked = status !== "";
   const isActive = status === "active";
+  const subtype = investmentSubtype ?? assetSubtype;
+  const nounKey =
+    group === "assets"
+      ? (assetSubtype ?? "asset")
+      : group === "investments"
+        ? "investment"
+        : group === "liabilities"
+          ? "liability"
+          : "receivable";
+  const noun = t(`terminate.noun.${nounKey}`);
 
   // The exit side of a Tracking Change (ADR-0053 §5). It settles nothing, so it
   // never reaches `kind` below — but a household member choosing between it and
@@ -188,7 +207,7 @@ export function TerminatePositionDialog({
   }
 
   function reset() {
-    setStatus(currentStatus);
+    setStatus(currentStatus === "active" ? "" : currentStatus);
     setTerminatedAt(currentTerminatedAt ? currentTerminatedAt.slice(0, 10) : "");
     setNote(currentNote ?? "");
     setSettlement(EMPTY_SETTLEMENT);
@@ -238,6 +257,13 @@ export function TerminatePositionDialog({
     }
   }
 
+  // The month the position starts counting as 0, read live off the date field.
+  const consequenceMonth = /^\d{4}-\d{2}-\d{2}$/.test(terminatedAt)
+    ? formatShortYearMonth(
+        new Date(Number(terminatedAt.slice(0, 4)), Number(terminatedAt.slice(5, 7)) - 1, 1),
+      )
+    : null;
+
   const proceeds =
     kind === "sell"
       ? num(settlement.quantity) * num(settlement.price_per_unit)
@@ -284,7 +310,7 @@ export function TerminatePositionDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
-            {wasActive ? t("terminate.closeTitle") : t("terminate.editTitle")}
+            {wasActive ? t("terminate.closeTitle", { noun }) : t("terminate.editTitle")}
           </DialogTitle>
           <DialogDescription>{t("terminate.description")}</DialogDescription>
         </DialogHeader>
@@ -296,11 +322,18 @@ export function TerminatePositionDialog({
               value={status}
               onChange={(e) => onStatusChange(e.target.value)}
             >
-              {statusOptions(group, investmentSubtype, currentStatus).map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {!picked && (
+                <option value="" disabled>
+                  {t("terminate.statusPlaceholder")}
                 </option>
-              ))}
+              )}
+              {statusOptions(group, subtype, currentStatus)
+                .filter((o) => !(wasActive && o.value === "active"))
+                .map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
             </Select>
             {untracked && (
               <p className="text-xs text-muted-foreground" data-testid="terminate-untracked-hint">
@@ -311,15 +344,30 @@ export function TerminatePositionDialog({
 
           {!isActive && (
             <div className="grid gap-2">
-              <Label htmlFor="lifecycle_terminated_at">{t("terminate.terminatedOnLabel")}</Label>
+              <Label htmlFor="lifecycle_terminated_at">
+                {t(`terminate.dateLabel.${picked ? status : "none"}`, {
+                  defaultValue: t("terminate.dateLabel.none"),
+                })}
+              </Label>
               <Input
                 id="lifecycle_terminated_at"
                 type="date"
-                required
+                required={picked}
+                disabled={!picked}
                 max="9999-12-31"
                 value={terminatedAt}
                 onChange={(e) => setTerminatedAt(e.target.value)}
               />
+              {picked && consequenceMonth && (
+                <p className="text-xs text-muted-foreground" data-testid="terminate-consequence">
+                  {t("terminate.consequence", { month: consequenceMonth, noun })}{" "}
+                  {t(
+                    group === "liabilities"
+                      ? "terminate.consequenceMovedDebt"
+                      : "terminate.consequenceMovedMoney",
+                  )}
+                </p>
+              )}
             </div>
           )}
 
@@ -423,7 +471,9 @@ export function TerminatePositionDialog({
               id="lifecycle_note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder={t("terminate.notePlaceholder")}
+              placeholder={t(`terminate.notePlaceholder.${picked ? status : "none"}`, {
+                defaultValue: t("terminate.notePlaceholder.none"),
+              })}
             />
           </div>
 
@@ -433,7 +483,7 @@ export function TerminatePositionDialog({
             <Button type="button" variant="outline" onClick={close}>
               {t("cancel")}
             </Button>
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={!picked || mutation.isPending}>
               {mutation.isPending ? t("actions.saving") : t("save")}
             </Button>
           </DialogFooter>

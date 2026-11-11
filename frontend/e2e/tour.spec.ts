@@ -208,9 +208,9 @@ test("closed position: the actions step still anchors to the header group", asyn
 
   // Close the position. The per-card New/Import buttons hide, but the header
   // action group (tour-actions) is always rendered, so its step survives.
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "Close…", exact: true }).click();
   const closeDialog = page.getByRole("dialog");
-  await expect(closeDialog.getByText("Close position")).toBeVisible();
+  await expect(closeDialog.getByText("Close bank account")).toBeVisible();
   await closeDialog.getByLabel("Status").selectOption("closed");
   await closeDialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByTestId("status-badge")).toHaveText("Closed");

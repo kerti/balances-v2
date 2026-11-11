@@ -76,6 +76,34 @@ func validatePositionLifecycle(allowed []string, p LifecycleParams) error {
 	return nil
 }
 
+// assetTerminalStatuses narrows the group-level asset enum per subtype: a bank
+// account cannot be "sold" or "disposed", a property or vehicle cannot be
+// "closed". `untracked` is allowed for every subtype (ADR-0053 §5). Subtypes
+// absent from the map are unconstrained beyond the group enum.
+var assetTerminalStatuses = map[string][]string{
+	"bank_account": {"closed", StatusUntracked},
+	"property":     {"sold", "disposed", StatusUntracked},
+	"vehicle":      {"sold", "disposed", StatusUntracked},
+}
+
+// validateAssetSubtypeStatus rejects a terminal status the asset's subtype does
+// not offer (ErrInvalidLifecycle -> 400). Reactivation (active) is always fine.
+func validateAssetSubtypeStatus(subtype, status string) error {
+	if status == StatusActive {
+		return nil
+	}
+	allowed, ok := assetTerminalStatuses[subtype]
+	if !ok {
+		return nil
+	}
+	for _, s := range allowed {
+		if s == status {
+			return nil
+		}
+	}
+	return fmt.Errorf("%w: status %q is not valid for a %s", ErrInvalidLifecycle, status, subtype)
+}
+
 func (r *AssetRepo) UpdateAssetLifecycle(ctx context.Context, id uuid.UUID, p LifecycleParams) (*db.Asset, error) {
 	user, hid, err := currentUser(ctx)
 	if err != nil {
@@ -94,6 +122,14 @@ func (r *AssetRepo) UpdateAssetLifecycle(ctx context.Context, id uuid.UUID, p Li
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("get asset for lifecycle: %w", err)
+	}
+	// Re-saving the status the asset already has (a note or date edit) is
+	// allowed even if the narrowing no longer offers it: a row recorded before
+	// #827, or written by import/restore, must stay editable.
+	if p.Status != asset.Status {
+		if err := validateAssetSubtypeStatus(asset.Subtype, p.Status); err != nil {
+			return nil, err
+		}
 	}
 	priorTerminatedAt := asset.TerminatedAt
 

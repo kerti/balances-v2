@@ -71,21 +71,21 @@ func TestPositionLifecycle_UpdateAndValidation(t *testing.T) {
 	termDate := time.Date(2026, time.May, 25, 0, 0, 0, 0, time.UTC)
 	note := "closed per statement"
 
-	t.Run("alice terminates bank account (sold)", func(t *testing.T) {
+	t.Run("alice terminates bank account (closed)", func(t *testing.T) {
 		row, err := assetRepo.UpdateAssetLifecycle(aliceCtx, account.Asset.ID, repo.LifecycleParams{
-			Status: "sold", TerminatedAt: &termDate, TerminationNote: &note,
+			Status: "closed", TerminatedAt: &termDate, TerminationNote: &note,
 		})
 		if err != nil {
 			t.Fatalf("UpdateAssetLifecycle: %v", err)
 		}
-		if row.Status != "sold" || row.TerminatedAt == nil || !row.TerminatedAt.Equal(termDate) {
+		if row.Status != "closed" || row.TerminatedAt == nil || !row.TerminatedAt.Equal(termDate) {
 			t.Fatalf("status/date not persisted: %+v", row)
 		}
 		got, err := assetRepo.GetBankAccount(aliceCtx, account.Asset.ID)
 		if err != nil {
 			t.Fatalf("GetBankAccount: %v", err)
 		}
-		if got.Asset.Status != "sold" || got.Asset.TerminationNote == nil || *got.Asset.TerminationNote != note {
+		if got.Asset.Status != "closed" || got.Asset.TerminationNote == nil || *got.Asset.TerminationNote != note {
 			t.Fatalf("Get reflects wrong lifecycle: %+v", got.Asset)
 		}
 	})
