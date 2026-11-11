@@ -2,6 +2,7 @@
 // goes through these helpers so durations, the Undo action and the error copy
 // stay in one place. A plain toast lasts 4 s; a toast with an action lasts 8 s
 // (sonner pauses the timer while the pointer is over it).
+import type React from "react";
 import { toast } from "sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import i18n from "@/i18n";
@@ -124,6 +125,9 @@ export function toastUndoable({
   toast(message, {
     testId,
     duration: UNDO_TOAST_MS,
+    // The countdown bar (index.css) runs for exactly the toast's duration.
+    className: "undo-countdown",
+    style: { "--undo-countdown-ms": `${UNDO_TOAST_MS}ms` } as React.CSSProperties,
     action: {
       label: i18n.t("common:toast.undo"),
       onClick: () => {
