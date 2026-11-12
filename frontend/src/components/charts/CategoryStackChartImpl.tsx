@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, YAxis } from "recharts";
+import { MonthAxis } from "@/components/charts/MonthAxis";
 import {
   ChartContainer,
   ChartLegend,
@@ -64,10 +65,10 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
       <AreaChart
         data={data}
         stackOffset="expand"
-        margin={{ left: 0, right: 12, top: 12, bottom: 0 }}
+        margin={{ left: 0, right: 24, top: 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+        <MonthAxis months={data.map((p) => p.month)} yAxisWidth={48} />
         <YAxis
           tickLine={false}
           axisLine={false}
