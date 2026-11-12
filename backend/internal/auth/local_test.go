@@ -56,6 +56,20 @@ func TestAuthMethods_ReportsEnabledProviders(t *testing.T) {
 	}
 }
 
+// covers: INV-AUTH-33
+func TestAuthMethods_FoundingOpenMirrorsConfig(t *testing.T) {
+	for _, disabled := range []bool{false, true} {
+		h := newAuthHarness(t)
+		h.h.foundingDisabled = disabled
+		rec := h.doRaw(t, http.MethodGet, "/auth/methods", nil, nil)
+		requireStatus(t, rec, http.StatusOK)
+		got := decodeBody[authMethodsResponse](t, rec)
+		if got.FoundingOpen == disabled {
+			t.Errorf("foundingDisabled=%v: want founding_open=%v, got %v", disabled, !disabled, got.FoundingOpen)
+		}
+	}
+}
+
 // covers: INV-AUTH-27
 func TestAuthMethods_DemoModeExposesSharedCredentials(t *testing.T) {
 	h := newAuthHarness(t)
