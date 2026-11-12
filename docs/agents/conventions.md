@@ -139,6 +139,21 @@ Not ADRs because they're tactical, but load-bearing:
   parent's own `deleted_at`, never "all archived children". Mount must stay safe on a nil `*Handlers`
   (the httpserver test mounts without a repo), so pass `h.repository` plus a method expression, not
   `h.repo.Method`.
+- **The demo household's history is hand-written, not generated** (`backend/internal/backup/demo_seed_data.go`,
+  ADR-0041). Every series is a literal table of year rows (oldest first, "6 years ago" … "this year")
+  by calendar month, read through `demoSlot`, so the 72-month window rolls forward nightly while THR stays
+  in April and school fees in July; events are keyed `at(yearsBack, month)`. Money is whole IDR (USD tables
+  in cents, inflation in hundredths of a percent) — no formulas. The Everyday Checking row is written to
+  reconcile with every other table (INV-FINANCE-28): change income, a trade, a debt or savings balance and
+  you must re-balance checking by the same amount, or `TestSeedDemoData_Reconciles` goes red (derived Living
+  Expenses leave the plausible band). A position bought mid-history zeroes its table before its placement
+  slot; its placement and maturity must stay inside the window for every month "now" can be. Stale,
+  closed and matured positions go through the real paths, never raw rows: `demoNotUpdated` (name → trailing
+  months with no snapshot, so the report flags it stale), a sold vehicle / stock closed with
+  `UpdateAssetLifecycle` / `UpdateInvestmentLifecycle` (+ `InvestmentSettlement`), a rolled time deposit via a
+  Maturity transaction (`rolled_to_new`) and a successor created with `RolledFromInvestmentID`, a paid-out one
+  via the lifecycle flip with a settlement. Their tables are zero from the closing month on (the flip writes
+  the zero close snapshot), and a cash settlement (sale proceeds, maturity payout) lands in the checking row.
 - **Backend lint is enforced.** `golangci-lint run` from `backend/` must be clean. Config at repo
   root in `.golangci.yml`. `revive`'s `exported` and `package-comments` rules are deliberately
   disabled — don't reintroduce godoc-on-every-export expectations for application code. New shared
