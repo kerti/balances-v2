@@ -1,6 +1,7 @@
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
+import { CardField, CardFields } from "@/components/common/CardFields";
 import { SnapshotRowMenu } from "@/components/common/SnapshotRowMenu";
 import {
   useAccruedInterestSnapshotRow,
@@ -21,10 +22,8 @@ type Props<TUpdate, TDelete> = {
 };
 
 // Mobile leaf renderer for an accrued snapshot (ADR-0051 Phase B, "wide table →
-// stacked cards"): the total value is promoted to the card headline so the
-// figure the household member came for reads with no horizontal scroll, with the
-// principal and accrued-interest split as a secondary line, the month + statement
-// date below, and the note as a full-width line. Shares state, dialogs and the ⋮
+// stacked cards"): labelled key/value rows in the desktop column order (month,
+// principal, accrued, total value, note), the card grammar of #849. Shares state, dialogs and the ⋮
 // menu with the desktop `AccruedInterestSnapshotRow` via
 // `useAccruedInterestSnapshotRow`, and the same `snapshot-*` testids, so the two
 // renderers stay in lockstep. The ⋮ trigger sizes to the 44px tap floor
@@ -48,39 +47,35 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
     dialogs,
   } = useAccruedInterestSnapshotRow(snapshot, updateMutation, deleteMutation, principal);
 
-  // Principal and accrued each get their own line (label left, value right) —
-  // either leg alone still reads, and neither renders nothing.
-  const legs = [
-    principalText && {
-      label: t("investments:snapshotsCard.principalHeader"),
-      value: principalText,
-    },
-    accruedText && { label: t("investments:snapshotsCard.accruedHeader"), value: accruedText },
-  ].filter((leg): leg is { label: string; value: string } => Boolean(leg));
-
   return (
     <>
-      <Card data-testid="snapshot-row">
+      <Card data-testid="snapshot-row" className="py-0">
         <CardContent className="space-y-2 p-4">
           <div className="flex items-start gap-2">
-            <div className="flex-1 space-y-0.5">
-              <div className="text-lg font-semibold" data-testid="snapshot-amount">
-                {amountText}
-              </div>
-              {legs.map((leg) => (
-                <div
-                  key={leg.label}
-                  className="flex justify-between gap-2 text-sm text-muted-foreground"
-                >
-                  <span>{leg.label}</span>
-                  <span>{leg.value}</span>
-                </div>
-              ))}
-              <div className="text-sm text-muted-foreground">{monthText}</div>
-              {statementText && (
-                <div className="text-xs text-muted-foreground">{statementText}</div>
+            <CardFields className="flex-1">
+              <CardField label={t("investments:snapshotsCard.monthHeader")}>
+                <div className="font-medium">{monthText}</div>
+                {statementText && (
+                  <div className="text-xs text-muted-foreground">{statementText}</div>
+                )}
+              </CardField>
+              {principalText && (
+                <CardField label={t("investments:snapshotsCard.principalHeader")}>
+                  {principalText}
+                </CardField>
               )}
-            </div>
+              {accruedText && (
+                <CardField label={t("investments:snapshotsCard.accruedHeader")}>
+                  {accruedText}
+                </CardField>
+              )}
+              <CardField
+                label={t("investments:snapshotsCard.totalValueHeader")}
+                valueTestId="snapshot-amount"
+              >
+                <span className="font-semibold">{amountText}</span>
+              </CardField>
+            </CardFields>
             <SnapshotRowMenu
               onEdit={onEdit}
               onDelete={onDelete}
@@ -88,7 +83,13 @@ export function AccruedInterestSnapshotCard<TUpdate, TDelete>({
               triggerClassName="size-11 shrink-0"
             />
           </div>
-          {description && <p className="text-sm">{description}</p>}
+          {description && (
+            <CardFields>
+              <CardField label={t("investments:snapshotsCard.notesHeader")}>
+                {description}
+              </CardField>
+            </CardFields>
+          )}
         </CardContent>
       </Card>
 

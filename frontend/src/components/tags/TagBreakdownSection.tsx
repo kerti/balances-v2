@@ -46,6 +46,35 @@ export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
       color: c.color,
     }));
 
+  const body = (
+    <>
+      <InvestmentPieChart
+        slices={slices}
+        currency={bd.currency}
+        legendPosition={isMobile ? "none" : "right"}
+      />
+
+      {isMobile ? (
+        <TagBreakdownCards bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
+      ) : (
+        <TagBreakdownTable bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
+      )}
+    </>
+  );
+
+  // On phones the breakdown rows are cards themselves, so the section drops its
+  // own card chrome rather than nesting card-in-card (#849).
+  if (isMobile) {
+    return (
+      <section data-testid={`tag-breakdown-${bd.currency}`} className="space-y-3">
+        <h2 className="text-base font-semibold">
+          {t("report.currencyHeading", { currency: bd.currency })}
+        </h2>
+        {body}
+      </section>
+    );
+  }
+
   return (
     <Card data-testid={`tag-breakdown-${bd.currency}`}>
       <CardHeader>
@@ -53,19 +82,7 @@ export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
           {t("report.currencyHeading", { currency: bd.currency })}
         </CardTitle>
       </CardHeader>
-      <CardContent className={isMobile ? "space-y-3" : "space-y-6"}>
-        <InvestmentPieChart
-          slices={slices}
-          currency={bd.currency}
-          legendPosition={isMobile ? "none" : "right"}
-        />
-
-        {isMobile ? (
-          <TagBreakdownCards bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
-        ) : (
-          <TagBreakdownTable bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />
-        )}
-      </CardContent>
+      <CardContent className="space-y-6">{body}</CardContent>
     </Card>
   );
 }

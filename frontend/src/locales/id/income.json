@@ -13,7 +13,9 @@
     "byCategory": "Per kategori",
     "byRegularity": "Per keteraturan",
     "routine": "Rutin",
-    "incidental": "Sekali waktu"
+    "incidental": "Sekali waktu",
+    "showBreakdown": "Lihat rincian",
+    "hideBreakdown": "Sembunyikan rincian"
   },
   "filter": {
     "ariaLabel": "Saring berdasarkan keteraturan",
@@ -68,7 +70,6 @@
     "ownership": "Kepemilikan"
   },
   "createTrigger": "Pemasukan baru",
-  "createTriggerShort": "Baru",
   "createTitle": "Pemasukan baru",
   "createDescription": "Catat uang yang masuk ke rumah tangga Anda — gaji, hadiah, pengembalian, klaim.",
   "duplicateTitle": "Duplikat pemasukan",

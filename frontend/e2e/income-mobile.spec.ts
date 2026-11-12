@@ -49,6 +49,18 @@ test(
     });
     expect(overflow).toBeLessThanOrEqual(1);
 
+    // The hero collapses to the total behind a toggle (#849): the breakdown is
+    // out of the DOM until "Show breakdown" opens it, and "Hide breakdown"
+    // closes it again.
+    const toggle = page.getByTestId("income-breakdown-toggle");
+    await expect(toggle).toHaveText("Show breakdown");
+    await expect(page.getByTestId("income-breakdown")).toHaveCount(0);
+    await toggle.click();
+    await expect(toggle).toHaveText("Hide breakdown");
+    await expect(page.getByTestId("income-breakdown")).toBeVisible();
+    await toggle.click();
+    await expect(page.getByTestId("income-breakdown")).toHaveCount(0);
+
     // Tap-target floor: the card's ⋮ action clears 44px.
     const actions = page.getByRole("button", { name: "Income actions" }).first();
     const box = await actions.boundingBox();

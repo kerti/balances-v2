@@ -27,59 +27,72 @@ export function EntryRowMobile({
   const { t } = useTranslation("common");
   const { dirty, positionId } = view;
   const touched = dirty || view.unchanged;
+  // Two inputs (quantity | price, principal | accrued) share one line; the
+  // row's undo / Same controls then move up beside the currency (#849).
+  const sideBySide = shape.fields.length === 2;
+  const rowActions = (
+    <>
+      {touched && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-11 shrink-0"
+          onClick={onReset}
+          aria-label={t("bulkEntry.undo")}
+          title={t("bulkEntry.undo")}
+          data-testid={`${tid}-entry-undo-${positionId}`}
+        >
+          <RotateCcw className="size-4" />
+        </Button>
+      )}
+      {view.when.kind === "carried" && !view.dirty && (
+        <label className="flex h-11 min-w-11 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 px-1 text-[10px] leading-none text-muted-foreground">
+          <RowSameCheckbox view={view} tid={tid} onUnchanged={onUnchanged} />
+          {t("bulkEntry.same")}
+        </label>
+      )}
+    </>
+  );
   return (
     <li className="space-y-2 py-3" data-testid={`${tid}-entry-row-${positionId}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <EntryRowMeta view={view} tid={tid} copy={copy} />
         </div>
-        <span className="shrink-0 text-xs text-muted-foreground">{view.currency}</span>
+        <div className="flex shrink-0 items-start gap-1">
+          <span className="text-xs text-muted-foreground">{view.currency}</span>
+          {sideBySide && rowActions}
+        </div>
       </div>
 
-      {shape.fields.map((f, i) => {
-        const inputId = `${tid}-entry-${f.testidSuffix}-${positionId}`;
-        return (
-          <div key={f.key} className="space-y-1">
-            {f.labelKey && (
-              <Label htmlFor={inputId} className="text-xs text-muted-foreground">
-                {t(f.labelKey)}
-              </Label>
-            )}
-            <div className="flex items-center gap-2">
-              <NumericInput
-                id={inputId}
-                className={`h-11 min-w-0 flex-1 text-right text-base${dirty ? " border-primary ring-1 ring-primary" : ""}`}
-                decimals={f.decimals(view.currency)}
-                maxIntegerDigits={f.maxIntegerDigits}
-                aria-label={f.labelKey ? t(f.labelKey) : undefined}
-                value={view.fieldValues[f.key] ?? ""}
-                onChange={(v) => onFieldChange(f.key, v)}
-                data-testid={inputId}
-              />
-              {i === shape.fields.length - 1 && touched && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="size-11 shrink-0"
-                  onClick={onReset}
-                  aria-label={t("bulkEntry.undo")}
-                  title={t("bulkEntry.undo")}
-                  data-testid={`${tid}-entry-undo-${positionId}`}
-                >
-                  <RotateCcw className="size-4" />
-                </Button>
+      <div className={sideBySide ? "grid grid-cols-2 gap-2" : "space-y-2"}>
+        {shape.fields.map((f, i) => {
+          const inputId = `${tid}-entry-${f.testidSuffix}-${positionId}`;
+          return (
+            <div key={f.key} className="min-w-0 space-y-1">
+              {f.labelKey && (
+                <Label htmlFor={inputId} className="text-xs text-muted-foreground">
+                  {t(f.labelKey)}
+                </Label>
               )}
-              {i === shape.fields.length - 1 && view.when.kind === "carried" && !view.dirty && (
-                <label className="flex h-11 min-w-11 shrink-0 cursor-pointer flex-col items-center justify-center gap-0.5 px-1 text-[10px] leading-none text-muted-foreground">
-                  <RowSameCheckbox view={view} tid={tid} onUnchanged={onUnchanged} />
-                  {t("bulkEntry.same")}
-                </label>
-              )}
+              <div className="flex items-center gap-2">
+                <NumericInput
+                  id={inputId}
+                  className={`h-11 min-w-0 flex-1 text-right text-base${dirty ? " border-primary ring-1 ring-primary" : ""}`}
+                  decimals={f.decimals(view.currency)}
+                  maxIntegerDigits={f.maxIntegerDigits}
+                  aria-label={f.labelKey ? t(f.labelKey) : undefined}
+                  value={view.fieldValues[f.key] ?? ""}
+                  onChange={(v) => onFieldChange(f.key, v)}
+                  data-testid={inputId}
+                />
+                {!sideBySide && i === shape.fields.length - 1 && rowActions}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
 
       {/*
        * Desktop labels the derived-total column in its group header; mobile

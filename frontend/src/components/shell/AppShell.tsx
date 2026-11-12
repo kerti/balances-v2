@@ -1,6 +1,5 @@
 import type { CSSProperties } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shell/UserAvatar";
@@ -11,35 +10,20 @@ import { UpdateBanner } from "@/components/shell/UpdateBanner";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { useSession } from "@/hooks/useSession";
 import { useInviteIgnoredNotice } from "@/hooks/useInviteIgnoredNotice";
-import { routes } from "@/lib/routes";
 import { useLocaleReconcile } from "@/i18n/useLocaleReconcile";
 import { useThemeReconcile } from "@/theme/useThemeReconcile";
-import { api } from "@/api/client";
+import { useSignOut } from "@/hooks/useSignOut";
 
 // The authenticated layout: persistent sidebar on desktop, a hamburger-opened
 // drawer on phones (handled by SidebarProvider/Sidebar). The routed page renders
 // into <Outlet/>. Mounted only when signed in, so useSession always has a user.
 export function AppShell() {
-  const qc = useQueryClient();
-  const navigate = useNavigate();
   const { data: user } = useSession();
   const { t } = useTranslation("common");
   useLocaleReconcile(user);
   useThemeReconcile(user);
   useInviteIgnoredNotice(user);
-
-  async function handleSignOut() {
-    try {
-      await api("/api/auth/logout", { method: "POST" });
-    } finally {
-      // Land back on the dashboard route before the session flips to
-      // signed-out — otherwise App swaps RouterProvider for SignInScreen
-      // while leaving whatever path the user was on (e.g. /settings) in the
-      // address bar.
-      navigate(routes.dashboard, { replace: true });
-      await qc.invalidateQueries({ queryKey: ["session"] });
-    }
-  }
+  const signOut = useSignOut();
 
   if (!user) return null;
 
@@ -70,7 +54,14 @@ export function AppShell() {
                 <div className="text-xs text-muted-foreground">{user.email}</div>
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut}>
+            {/* Below 1024px Sign out lives in the drawer's account section. */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="max-lg:hidden"
+              onClick={signOut}
+              data-testid="header-sign-out"
+            >
               {t("signOut")}
             </Button>
           </div>

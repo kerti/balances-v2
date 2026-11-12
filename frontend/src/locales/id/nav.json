@@ -17,6 +17,7 @@
   "income": "Pemasukan",
   "tags": "Tag",
   "settings": "Pengaturan",
+  "closeMenu": "Tutup menu",
   "footer": {
     "deploy": {
       "preview": "Pratinjau",

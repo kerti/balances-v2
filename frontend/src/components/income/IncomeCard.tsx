@@ -21,7 +21,7 @@ export function IncomeCard({ income }: Props) {
 
   return (
     <>
-      <Card data-testid="income-row">
+      <Card data-testid="income-row" className="py-0">
         <CardContent className="space-y-2 p-4">
           {/* Top line: the amount (promoted headline) on the left; the category
               chip + regularity icon float to the right, clustered next to the

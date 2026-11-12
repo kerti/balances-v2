@@ -108,6 +108,7 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
           <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
+            amountLabel={t("common:tableHeaders.value")}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
           />

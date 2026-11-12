@@ -73,6 +73,12 @@ function makeDescriptor(
     getSecondary: (w) => w.sub,
     extraColumns: [
       {
+        id: "owner",
+        labelKey: "Ownership",
+        slot: "ownership",
+        render: () => "Joint",
+      },
+      {
         id: "kind",
         labelKey: "Kind",
         slot: "main",
@@ -217,6 +223,9 @@ describe("PositionListScreen (synthetic descriptor)", () => {
       expect(screen.getByText(/100/)).toBeInTheDocument();
       // The opt-out "kind" extra is hidden on mobile.
       expect(screen.queryByText("alpha-kind")).not.toBeInTheDocument();
+      // Labelled key/value rows, Ownership always shown (#849).
+      expect(screen.getAllByText("Value").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Ownership").length).toBe(2);
     } finally {
       Object.defineProperty(window, "innerWidth", {
         configurable: true,

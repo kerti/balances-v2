@@ -183,12 +183,12 @@ function RebuildFooter({ selected }: { selected: MonthlyReport }) {
   const { rebuildAll, rebuildMonth } = useRebuildReports();
   const busy = rebuildAll.isPending || rebuildMonth.isPending;
   return (
-    <div className="flex flex-col gap-2 border-t pt-4 text-xs text-muted-foreground md:flex-row md:flex-wrap md:items-center">
+    <div className="flex flex-wrap items-center gap-x-3 border-t pt-2 text-xs text-muted-foreground md:pt-4">
       <span>{t("rebuild.prompt")}</span>
-      {/* The two links keep the ≥44px tap floor on mobile, but stack flush
-          (no inter-link gap, separator hidden) so the footer doesn't sprawl;
-          on desktop they sit inline with the "·" between them. */}
-      <div className="flex flex-col md:flex-row md:items-center md:gap-2">
+      {/* The two links keep the ≥44px tap floor on mobile and sit side by side
+          (separator hidden) so they read as one pair; on desktop the "·"
+          goes between them. */}
+      <div className="flex items-center gap-x-4 md:gap-x-2">
         <button
           type="button"
           className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-foreground disabled:opacity-50 md:min-h-0"
@@ -635,7 +635,7 @@ function ByPerson({
         <CardTitle className="text-base">{t("byPerson.title")}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-6">
+        <div className="grid gap-4 sm:grid-cols-[repeat(auto-fit,minmax(10rem,1fr))]">
           {entries.map(([key, bucket]) => (
             <div key={key}>
               <div className="text-sm text-muted-foreground">
