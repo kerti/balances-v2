@@ -128,7 +128,7 @@ describe("CreateSnapshotDialog (Record snapshot)", () => {
     );
     expect(screen.queryByTestId("snapshot-last-recorded")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/Amount/)).toHaveValue("12,500,000");
-    expect(screen.getByLabelText("Description (optional)")).toHaveValue("BCA");
+    expect(screen.getByLabelText("Note (optional)")).toHaveValue("BCA");
 
     await userEvent.clear(screen.getByLabelText(/Amount/));
     await userEvent.type(screen.getByLabelText(/Amount/), "13000000");

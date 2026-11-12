@@ -470,5 +470,13 @@ loosely elsewhere for soft-delete), Deactivate (implies reversible).
   "Change status" once closed). Amounts are named by kind: **Balance** (bank accounts; snapshot
   tables of debts), **Owed** (liability and receivable totals and charts), **Value** (property,
   vehicles, investments, every overview total), **Amount** (only a single typed figure or a flow).
+  Income regularity reads **Regular** / **One-off** (Bahasa: Rutin / Sekali waktu); the enum values
+  stay `routine` / `incidental`. Interest is **Interest** everywhere. Investment copy uses plain
+  terms: **Price per unit** (not NAV), **Gain / loss** (not P/L), **Where coupons go** (Paid to my
+  bank / Kept in the bond), **What happened to the principal / interest** (not disposition),
+  **Bought from** (The government (new issue) / Another investor (market)). UI copy never says
+  "position", "terminate", "lifecycle" or "native currency": name the subtype, and fall back to
+  **item** only when a sentence cannot. Currency labels follow the multi-currency setting: on, every
+  amount shows its **ISO code** ("IDR", "USD"); off, the locale's own symbol ("Rp" in Bahasa).
 - **"Ownership"** means the Household's *intent* for attributing a Position in breakdowns, not the
   legal deed or registered account holder.

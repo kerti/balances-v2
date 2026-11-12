@@ -17,7 +17,7 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   // --- Create the bond position ---
   await page.getByRole("button", { name: "New bond" }).first().click();
   const createDialog = page.getByRole("dialog");
-  await expect(createDialog.getByText("New bond position")).toBeVisible();
+  await expect(createDialog.getByRole("heading", { name: "New bond" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByLabel("Issuer").fill("E2E Treasury");
   await createDialog.getByLabel("Face value").fill("1000000");
@@ -41,7 +41,7 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Total value (IDR)").fill("1010000");
   await snapDialog.getByLabel("Accrued (IDR)").fill("10000");
-  await snapDialog.getByLabel("Description (optional)").fill(desc);
+  await snapDialog.getByLabel("Note (optional)").fill(desc);
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
 
   const row = page.getByRole("row", { name: new RegExp(desc) });

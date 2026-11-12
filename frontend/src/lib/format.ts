@@ -19,6 +19,17 @@ import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 
 const NO_DECIMAL_CURRENCIES = new Set(["JPY", "KRW", "VND"]);
 
+// How currencies are labelled (#832). A multi-currency household sees ISO codes
+// everywhere ("IDR", "USD"), so amounts in different currencies can't be confused
+// ("$" alone is ambiguous). A single-currency household sees the locale's own
+// symbol ("Rp" in id-ID). App sets this from the session before rendering.
+export type CurrencyDisplay = "symbol" | "code";
+let currencyDisplay: CurrencyDisplay = "symbol";
+
+export function setCurrencyDisplay(display: CurrencyDisplay): void {
+  currencyDisplay = display;
+}
+
 // The number of minor units a currency displays and accepts on entry.
 export function currencyDecimals(currency: string): number {
   return NO_DECIMAL_CURRENCIES.has(currency) ? 0 : 2;
@@ -49,6 +60,7 @@ export function formatCurrency(amount: string, currency: string, locale?: Locale
   return new Intl.NumberFormat(resolve(locale), {
     style: "currency",
     currency,
+    currencyDisplay,
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(n);
@@ -70,6 +82,7 @@ export function formatCurrencyParts(
   const fmt = new Intl.NumberFormat(resolve(locale), {
     style: "currency",
     currency,
+    currencyDisplay,
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });

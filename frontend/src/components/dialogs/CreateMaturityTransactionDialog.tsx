@@ -245,7 +245,7 @@ export function CreateMaturityTransactionDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="mat_description">{t("common:fields.description")}</Label>
+            <Label htmlFor="mat_description">{t("common:fields.note")}</Label>
             <Input
               id="mat_description"
               value={form.description}

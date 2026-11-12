@@ -35,7 +35,7 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await snapDialog.getByLabel("Amount (IDR)").fill("12500000");
-  await snapDialog.getByLabel("Description (optional)").fill(desc);
+  await snapDialog.getByLabel("Note (optional)").fill(desc);
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 

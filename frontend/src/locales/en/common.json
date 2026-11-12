@@ -95,6 +95,8 @@
   "fields": {
     "displayName": "Display name",
     "description": "Description (optional)",
+    "note": "Note (optional)",
+    "lockedHint": "Can't be changed after creation.",
     "amount": "Amount",
     "amountIn": "Amount ({{currency}})",
     "currency": "Currency",
@@ -145,6 +147,9 @@
     "status": "Status",
     "month": "Month",
     "amount": "Amount",
+    "balance": "Balance",
+    "owed": "Owed",
+    "value": "Value",
     "notes": "Notes"
   },
   "activity": {
@@ -166,9 +171,9 @@
     "lastRecorded": "Last recorded: {{value}} ({{month}})",
     "sameAsLast": "Same as last month",
     "createTitle": "Record monthly snapshot",
-    "createDescription": "Enter the month-end value. Currency is locked to the position's native currency ({{currency}}).",
+    "createDescription": "Enter the month-end value. It is recorded in this item's currency ({{currency}}).",
     "editTitle": "Edit snapshot",
-    "editDescription": "Update the amount, statement date, or description. To change the month, use Move…",
+    "editDescription": "Update the amount, statement date, or note. To change the month, use Move…",
     "moveTrigger": "Move…",
     "moveTitle": "Move snapshot to another month",
     "moveDescription": "Moves the {{month}} snapshot as saved. {{month}} is left empty.",
@@ -249,10 +254,10 @@
   "import": {
     "trigger": "Import",
     "title": "Import snapshots",
-    "description": "Bulk-add monthly balances from a spreadsheet — handy for backfilling years of history at once.",
+    "description": "Add several months of values from a spreadsheet at once — handy for backfilling years of history.",
     "step1Label": "1. Download the template",
     "templateLink": "Download template (.xlsx)",
-    "step1Hint": "Fill one row per month-end balance (currency defaults to {{currency}}). Open it in Google Sheets, LibreOffice, Numbers, or Excel; save as <bold>.xlsx</bold> (not CSV). You only need the months you actually have a figure for.",
+    "step1Hint": "Fill one row per month-end value (currency defaults to {{currency}}). Open it in Google Sheets, LibreOffice, Numbers, or Excel; save as <bold>.xlsx</bold> (not CSV). You only need the months you actually have a figure for.",
     "step2Label": "2. Upload the filled-in file",
     "dropHint": "Drag your .xlsx here, or",
     "chooseFile": "Choose a file",
@@ -263,7 +268,7 @@
     "rowError": "Row {{row}}: {{message}}",
     "moreErrors_one": "…and {{count}} more error in the file.",
     "moreErrors_other": "…and {{count}} more errors in the file.",
-    "emptyPreview": "No rows found in the file. Add some balances and re-upload.",
+    "emptyPreview": "No rows found in the file. Add some values and re-upload.",
     "countNew_one": "{{count}} new month",
     "countNew_other": "{{count}} new months",
     "countReplaced_one": "{{count}} replaced",
@@ -277,10 +282,10 @@
   },
   "importCreate": {
     "trigger": "Import",
-    "title": "Import a {{noun}}",
-    "description": "Create a brand-new {{noun}} from a workbook — its details and full snapshot history, in one step.",
-    "uploadLabel": "Upload a position workbook",
-    "formatHint": "The workbook needs a Detail sheet and a Snapshots sheet. The easiest way to get the right format is to Export an existing {{noun}} and edit it.",
+    "title": "Import new {{noun}}",
+    "description": "Create a brand-new {{noun}} from a spreadsheet — its details and full snapshot history, in one step.",
+    "uploadLabel": "Upload a spreadsheet (.xlsx)",
+    "formatHint": "The spreadsheet needs a Detail sheet and a Snapshots sheet. The easiest way to get the right format is to Export an existing {{noun}} and edit it.",
     "needsFixing_one": "{{count}} thing needs fixing — nothing was created:",
     "needsFixing_other": "{{count}} things need fixing — nothing was created:",
     "fieldError": "{{field}}: {{message}}",
@@ -316,7 +321,7 @@
     "title": "Enter this month's balances",
     "description": "Update the value of each account for the chosen month. Only the ones you change are saved.",
     "empty": "No accounts are eligible for this month yet.",
-    "carriedFrom": "Carried from {{month}}",
+    "carriedFrom": "Last recorded: {{month}}",
     "noHistory": "No previous value",
     "rowError": "This account can't take a value for this month.",
     "changedCount": "{{count}} changed",
@@ -340,16 +345,16 @@
     "investments": {
       "trigger": "Enter prices",
       "title": "Enter this month's prices",
-      "description": "Update the units and price for each holding for the chosen month. The value is worked out for you, and only the ones you change are saved.",
-      "empty": "No holdings are eligible for this month yet.",
-      "rowError": "This holding can't take a value for this month."
+      "description": "Update the units and price for each investment for the chosen month. The value is worked out for you, and only the ones you change are saved.",
+      "empty": "No investments are eligible for this month yet.",
+      "rowError": "This investment can't take a value for this month."
     },
     "investmentsAccrued": {
-      "trigger": "Enter interest",
-      "title": "Enter this month's bond & deposit values",
+      "trigger": "Enter bonds & deposits",
+      "title": "Enter this month's bonds & deposits",
       "description": "Update the total value and accrued interest for each bond, and the value for each time deposit, for the chosen month. A deposit's interest is worked out for you. Only the ones you change are saved.",
       "empty": "No bonds or time deposits are eligible for this month yet.",
-      "rowError": "This holding can't take a value for this month."
+      "rowError": "This investment can't take a value for this month."
     }
   },
   "entry": {
@@ -357,7 +362,7 @@
     "owned": {
       "acquired": "We funded it with money already tracked here",
       "newlyTracked": "We already had it, or it came into the household",
-      "hint": "This tells the report whether the position's first entry was a purchase (so the money came from somewhere else you track) or wealth that was already yours. It only affects how the first month reads."
+      "hint": "This tells the report whether this item's first entry was a purchase (so the money came from somewhere else you track) or wealth that was already yours. It only affects how the first month reads."
     },
     "owed": {
       "acquired": "We took it on while tracking here — what it paid for is recorded too",

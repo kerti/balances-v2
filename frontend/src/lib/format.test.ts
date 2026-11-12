@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import {
   formatCurrency,
   formatCurrencyParts,
@@ -13,6 +13,7 @@ import {
   formatSignedPercent,
   formatPercent,
   roundToCurrency,
+  setCurrencyDisplay,
   numberSeparators,
   groupCanonical,
   formatQuantity,
@@ -65,6 +66,24 @@ describe("formatCurrency", () => {
 });
 
 // covers: INV-PRESENTATION-01
+// covers: INV-PRESENTATION-25
+describe("currency display (#832)", () => {
+  afterEach(() => setCurrencyDisplay("symbol"));
+
+  it("single-currency households see the locale's symbol", () => {
+    setCurrencyDisplay("symbol");
+    expect(formatCurrency("1000", "IDR", "id-ID")).toBe("Rp\u00a01.000,00");
+    expect(formatCurrency("150", "USD", "en-GB")).toBe("US$150.00");
+  });
+
+  it("multi-currency households see ISO codes everywhere", () => {
+    setCurrencyDisplay("code");
+    expect(formatCurrency("1000", "IDR", "id-ID")).toBe("IDR\u00a01.000,00");
+    expect(formatCurrency("150", "USD", "en-GB")).toBe("USD\u00a0150.00");
+    expect(formatCurrencyParts("150", "USD", "id-ID").symbol).toBe("USD");
+  });
+});
+
 describe("formatCurrencyParts", () => {
   it("splits symbol from number, applying the currency's decimals", () => {
     const idr = formatCurrencyParts("1500000", "IDR", "en-GB");

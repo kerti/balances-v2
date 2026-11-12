@@ -17,20 +17,20 @@ type Step = { id: string; title: string };
 // Bank-account variant: 5 steps when ≥2 snapshots make the chart render.
 const BANK_STEPS: Step[] = [
   { id: "tour-overview", title: "Your account at a glance" },
-  { id: "tour-actions", title: "Manage this position" },
+  { id: "tour-actions", title: "Manage this account" },
   { id: "tour-details", title: "The account's details" },
   { id: "tour-chart", title: "Balance over time" },
-  { id: "tour-snapshots", title: "Monthly balances" },
+  { id: "tour-snapshots", title: "Snapshots" },
 ];
 
 // Investment (bond) variant: 7 steps, adding the headline + transactions anchors.
 const BOND_STEPS: Step[] = [
   { id: "tour-overview", title: "Your bond at a glance" },
-  { id: "investment-headline", title: "Cost and profit/loss" },
-  { id: "tour-actions", title: "Manage this position" },
+  { id: "investment-headline", title: "Cost and gain / loss" },
+  { id: "tour-actions", title: "Manage this bond" },
   { id: "tour-details", title: "The bond's terms" },
   { id: "tour-chart", title: "Value over time" },
-  { id: "tour-snapshots", title: "Monthly values" },
+  { id: "tour-snapshots", title: "Snapshots" },
   { id: "tour-transactions", title: "Payments, trades, and maturity" },
 ];
 
@@ -54,7 +54,7 @@ async function createBond(page: Page, name: string) {
   await page.goto("/investments/bonds");
   await page.getByRole("button", { name: "New bond" }).first().click();
   const dialog = page.getByRole("dialog");
-  await expect(dialog.getByText("New bond position")).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
   await dialog.getByLabel("Display name").fill(name);
   await dialog.getByLabel("Issuer").fill("E2E Treasury");
   await dialog.getByLabel("Face value").fill("1000000");
@@ -106,7 +106,7 @@ async function deletePosition(page: Page) {
 // attached to the right element.
 async function expectStep(page: Page, index: number, total: number, step: Step) {
   const popover = page.getByRole("dialog");
-  await expect(popover.getByText(step.title)).toBeVisible();
+  await expect(popover.getByText(step.title, { exact: true })).toBeVisible();
   await expect(popover.getByText(`${index + 1} of ${total}`)).toBeVisible();
   await expect(page.getByTestId(step.id)).toHaveClass(/driver-active-element/);
 }
@@ -268,7 +268,7 @@ test("tour copy follows the Settings language (EN default → ID)", async ({ pag
   ).toBeVisible();
   await expect(popover.getByText("1 dari 4")).toBeVisible();
   await popover.getByRole("button", { name: "Lanjut" }).click();
-  await expect(popover.getByText("Kelola posisi ini")).toBeVisible();
+  await expect(popover.getByText("Kelola rekening ini")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toHaveCount(0);
 

@@ -184,7 +184,7 @@ export function CreateTradeTransactionDialog<TResult>({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="trade_description">{t("common:fields.description")}</Label>
+            <Label htmlFor="trade_description">{t("common:fields.note")}</Label>
             <Input
               id="trade_description"
               value={form.description}

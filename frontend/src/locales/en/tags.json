@@ -6,7 +6,7 @@
   },
   "manage": {
     "title": "Manage tags",
-    "description": "Group positions however you like — the breakdown above reflects any changes.",
+    "description": "Group your items however you like — the breakdown above reflects any changes.",
     "empty": "No tags yet. Add one below.",
     "namePlaceholder": "e.g. BCA, Retirement",
     "add": "Add",
@@ -25,7 +25,7 @@
     "title": "Tags",
     "subtitle": "How your holdings split across the tags you've defined.",
     "untagged": "Untagged",
-    "empty": "Nothing to show yet. Tag some positions to see the breakdown.",
+    "empty": "Nothing to show yet. Tag some items to see the breakdown.",
     "currencyHeading": "{{currency}}",
     "col": {
       "tag": "Tag",

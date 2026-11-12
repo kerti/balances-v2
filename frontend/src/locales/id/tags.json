@@ -6,7 +6,7 @@
   },
   "manage": {
     "title": "Kelola tag",
-    "description": "Kelompokkan posisi sesuka Anda — rincian di atas mengikuti setiap perubahan.",
+    "description": "Kelompokkan item sesuka Anda — rincian di atas mengikuti setiap perubahan.",
     "empty": "Belum ada tag. Tambahkan di bawah.",
     "namePlaceholder": "mis. BCA, Dana Pensiun",
     "add": "Tambah",
@@ -25,7 +25,7 @@
     "title": "Tag",
     "subtitle": "Bagaimana kepemilikan Anda terbagi di antara tag yang Anda buat.",
     "untagged": "Tanpa tag",
-    "empty": "Belum ada yang ditampilkan. Beri tag pada beberapa posisi untuk melihat rinciannya.",
+    "empty": "Belum ada yang ditampilkan. Beri tag pada beberapa item untuk melihat rinciannya.",
     "currencyHeading": "{{currency}}",
     "col": {
       "tag": "Tag",

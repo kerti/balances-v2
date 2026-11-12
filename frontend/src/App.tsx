@@ -7,6 +7,7 @@ import {
   type NavigateFunction,
 } from "react-router";
 import { useSession } from "@/hooks/useSession";
+import { setCurrencyDisplay } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { arrivalOptions } from "@/lib/recordOnArrival";
 import { DetailRoute } from "@/components/shell/DetailRoute";
@@ -395,6 +396,9 @@ const PRE_AUTH_PATHS: string[] = [
 function App() {
   const { t } = useTranslation();
   const { data: user, isPending } = useSession();
+  // Set before children render so every amount on this pass uses the rule;
+  // toggling multi-currency refetches the session and rerenders from here.
+  setCurrencyDisplay(user?.multi_currency_enabled ? "code" : "symbol");
 
   useEffect(() => {
     if (isPending || user) return;

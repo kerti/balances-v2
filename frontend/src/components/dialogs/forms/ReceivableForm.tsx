@@ -5,6 +5,7 @@ import { OwnershipField } from "@/components/common/OwnershipField";
 import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { EntryType } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type ReceivableFormState = {
   display_name: string;
@@ -53,6 +54,7 @@ export function ReceivableFormBody({ mode, form, setForm, soleOwnerID }: Props) 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
+          <LockedFieldHint mode={mode} id="native_currency" />
           <Input
             id="native_currency"
             required

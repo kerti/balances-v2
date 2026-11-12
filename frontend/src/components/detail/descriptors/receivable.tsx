@@ -42,6 +42,7 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
     detailsCardLine: "receivables:detailsCardLine",
     chartTitle: "receivables:chartTitle",
     chartDescription: "receivables:chartDescription",
+    chartSeriesLabel: "common:tableHeaders.owed",
     snapshotsTitle: "receivables:snapshotsTitle",
     snapshotsDescription: "receivables:snapshotsDescription",
     snapshotsEmpty: "receivables:snapshotsEmpty",
@@ -84,7 +85,7 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.balance")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>

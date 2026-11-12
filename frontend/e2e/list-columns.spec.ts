@@ -41,7 +41,7 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
   await snapshotCard.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const editDialog = page.getByRole("dialog");
-  await editDialog.getByLabel("Description (optional)").fill(longNote);
+  await editDialog.getByLabel("Note (optional)").fill(longNote);
   await editDialog.getByRole("button", { name: "Save changes" }).click();
   await expect(snapshotCard.getByTestId("snapshot-row")).toContainText("E2E long note");
   expect(await x(page, "snapshot-amount")).toBe(amountBefore);

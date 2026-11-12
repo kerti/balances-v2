@@ -1,11 +1,11 @@
 {
   "home": {
-    "valueChartTitle": "Total outstanding over time",
+    "valueChartTitle": "Total owed over time",
     "valueChartDescription": "Sum across all active receivables ({{currency}})."
   },
   "listTitle": "Receivables",
   "listSubtitle": "Money owed to your household — loans, deposits in transit, outstanding refunds.",
-  "totalOutstanding": "Total outstanding",
+  "totalOutstanding": "Total owed",
   "noun": "receivable",
   "nounPlural": "receivables",
   "emptyTitle": "No receivables yet",
@@ -16,16 +16,16 @@
   "createTitle": "New receivable",
   "createDescription": "Track money owed to your household — loans you've made, deposits you're due back, refunds in transit.",
   "editTitle": "Edit receivable",
-  "editDescription": "Currency is not editable — create a new receivable if it needs to change. Ownership is editable.",
+  "editDescription": "Currency can't be changed. To use a different one, create a new receivable. Ownership can be changed.",
   "detailSubtitleWithDue": "{{counterparty}} · due {{date}}",
   "rowDueSuffix": " · due {{date}}",
   "detailsCardTitle": "Receivable details",
   "detailsCardLine": "Ownership: {{ownership}} · Currency: {{currency}} · Status:",
-  "chartTitle": "Outstanding balance over time",
-  "chartDescription": "Monthly balance progression in {{currency}}.",
+  "chartTitle": "Owed over time",
+  "chartDescription": "Monthly amount owed to you in {{currency}}.",
   "snapshotsTitle": "Snapshots",
-  "snapshotsDescription": "Monthly outstanding-balance readings (manual entry).",
-  "snapshotsEmpty": "No snapshots yet. Click \"New\" to record this month's outstanding balance.",
+  "snapshotsDescription": "Monthly balance readings (manual entry).",
+  "snapshotsEmpty": "No snapshots yet. A snapshot is the value on your statement at month-end. Record one each month.",
   "fields": {
     "counterparty": "Counterparty",
     "dueDate": "Due date (optional)",
@@ -39,13 +39,13 @@
   "tour": {
     "overviewTitle": "Your receivable at a glance",
     "overviewBody": "Track money owed to you over time — it counts toward your net worth until it's repaid.",
-    "actionsTitle": "Manage this position",
-    "actionsBody": "Use “Edit” to change its details, “Close” to mark it ended — it then stops counting toward your net worth — or “Delete” to remove it entirely.",
+    "actionsTitle": "Manage this receivable",
+    "actionsBody": "Use “Edit” to change its details, “Close…” to mark it ended — it then stops counting toward your net worth — or “Delete” to remove it entirely.",
     "detailsTitle": "The receivable's details",
     "detailsBody": "Counterparty and due date were set when you added the receivable. Use “Edit” to change them.",
-    "chartTitle": "Outstanding over time",
-    "chartBody": "Each point is a month's outstanding amount, so you can watch it get repaid.",
-    "snapshotsTitle": "Outstanding amounts",
-    "snapshotsBody": "Each row is one month's amount owed to you. Tap “New” to record the outstanding amount this month, or “Import” for several months at once."
+    "chartTitle": "Owed over time",
+    "chartBody": "Each point is a month's amount owed, so you can watch it get repaid.",
+    "snapshotsTitle": "Snapshots",
+    "snapshotsBody": "Each row is one month's balance owed to you. Tap “Record snapshot” to add this month's balance, or “Import” for several months at once."
   }
 }

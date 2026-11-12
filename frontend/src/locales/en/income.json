@@ -12,17 +12,17 @@
     "byPerson": "By person",
     "byCategory": "By category",
     "byRegularity": "By regularity",
-    "routine": "Routine",
-    "incidental": "Incidental"
+    "routine": "Regular",
+    "incidental": "One-off"
   },
   "filter": {
     "ariaLabel": "Filter by regularity",
     "all": "All",
-    "routine": "Routine",
-    "incidental": "Incidental",
+    "routine": "Regular",
+    "incidental": "One-off",
     "emptyAll": "No income to show.",
-    "emptyRoutine": "No routine income to show.",
-    "emptyIncidental": "No incidental income to show."
+    "emptyRoutine": "No regular income to show.",
+    "emptyIncidental": "No one-off income to show."
   },
   "categories": {
     "salary": "Salary",
@@ -41,7 +41,8 @@
     "business_income": "Business income",
     "rental_income": "Rental income",
     "pension": "Pension",
-    "interest": "Interest income",
+    "interest": "Interest",
+    "interestHint": "From a bank account or deposit",
     "gift": "Gift",
     "tax_refund": "Tax refund",
     "insurance_payout": "Insurance payout",
@@ -50,20 +51,20 @@
   "regularity": {
     "label": "Regularity",
     "question": "Can you count on this income regularly?",
-    "routine": "Routine",
-    "incidental": "Incidental",
+    "routine": "Regular",
+    "incidental": "One-off",
     "routineOption": "Yes, it's regular",
     "routineHint": "Pay, pension, rent, steady gig work",
     "incidentalOption": "No, it's a one-off",
     "incidentalHint": "Bonus, severance, gift, tax refund, insurance payout",
-    "routineRowLabel": "Routine income",
-    "incidentalRowLabel": "Incidental income"
+    "routineRowLabel": "Regular income",
+    "incidentalRowLabel": "One-off income"
   },
   "tableHeaders": {
     "date": "Date",
     "category": "Category",
     "amount": "Amount",
-    "description": "Description",
+    "description": "Notes",
     "ownership": "Ownership"
   },
   "createTrigger": "New income",
@@ -79,7 +80,7 @@
     "category": "Category",
     "amount": "Amount",
     "currency": "Currency",
-    "description": "Description (optional)"
+    "description": "Note (optional)"
   },
   "placeholders": {
     "amount": "15,000,000",
@@ -90,11 +91,11 @@
     "create": "Create"
   },
   "copy": {
-    "trigger": "Copy last month's routine income",
+    "trigger": "Copy last month's regular income",
     "triggerShort": "Copy last month",
-    "title": "Copy last month's routine income",
-    "description": "Routine income from {{from}}, dated into {{to}}. Untick what you do not want and adjust any amount before saving.",
-    "alreadyThere": "Already has a routine entry like this in {{month}}. Unticked so it is not duplicated.",
+    "title": "Copy last month's regular income",
+    "description": "Regular income from {{from}}, dated into {{to}}. Untick what you do not want and adjust any amount before saving.",
+    "alreadyThere": "Already has a regular entry like this in {{month}}. Unticked so it is not duplicated.",
     "noneTicked": "Tick at least one row to copy.",
     "save_zero": "Copy",
     "save_one": "Copy {{count}} entry",

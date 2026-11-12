@@ -13,16 +13,16 @@
     "byCategory": "Per kategori",
     "byRegularity": "Per keteraturan",
     "routine": "Rutin",
-    "incidental": "Insidental"
+    "incidental": "Sekali waktu"
   },
   "filter": {
     "ariaLabel": "Saring berdasarkan keteraturan",
     "all": "Semua",
     "routine": "Rutin",
-    "incidental": "Insidental",
+    "incidental": "Sekali waktu",
     "emptyAll": "Tidak ada pemasukan untuk ditampilkan.",
     "emptyRoutine": "Tidak ada pemasukan rutin untuk ditampilkan.",
-    "emptyIncidental": "Tidak ada pemasukan insidental untuk ditampilkan."
+    "emptyIncidental": "Tidak ada pemasukan sekali waktu untuk ditampilkan."
   },
   "categories": {
     "salary": "Gaji",
@@ -41,7 +41,8 @@
     "business_income": "Pendapatan usaha",
     "rental_income": "Pendapatan sewa",
     "pension": "Pendapatan pensiun",
-    "interest": "Pendapatan bunga",
+    "interest": "Bunga",
+    "interestHint": "Dari rekening bank atau deposito",
     "gift": "Hadiah",
     "tax_refund": "Pengembalian pajak",
     "insurance_payout": "Klaim asuransi",
@@ -51,19 +52,19 @@
     "label": "Keteraturan",
     "question": "Apakah pemasukan ini bisa Anda andalkan secara rutin?",
     "routine": "Rutin",
-    "incidental": "Insidental",
+    "incidental": "Sekali waktu",
     "routineOption": "Ya, ini rutin",
     "routineHint": "Gaji, pensiun, sewa, pekerjaan lepas yang tetap",
     "incidentalOption": "Tidak, ini sekali waktu",
     "incidentalHint": "Bonus, pesangon, hadiah, pengembalian pajak, klaim asuransi",
     "routineRowLabel": "Pemasukan rutin",
-    "incidentalRowLabel": "Pemasukan insidental"
+    "incidentalRowLabel": "Pemasukan sekali waktu"
   },
   "tableHeaders": {
     "date": "Tanggal",
     "category": "Kategori",
     "amount": "Nominal",
-    "description": "Deskripsi",
+    "description": "Catatan",
     "ownership": "Kepemilikan"
   },
   "createTrigger": "Pemasukan baru",
@@ -79,7 +80,7 @@
     "category": "Kategori",
     "amount": "Nominal",
     "currency": "Mata uang",
-    "description": "Deskripsi (opsional)"
+    "description": "Catatan (opsional)"
   },
   "placeholders": {
     "amount": "15.000.000",

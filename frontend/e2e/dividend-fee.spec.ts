@@ -16,7 +16,7 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   // --- Create the stock position ---
   await page.getByRole("button", { name: "New stock" }).first().click();
   const createDialog = page.getByRole("dialog");
-  await expect(createDialog.getByText("New stock position")).toBeVisible();
+  await expect(createDialog.getByRole("heading", { name: "New stock" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByLabel("Ticker").fill("E2EY");
   await createDialog.getByLabel("Exchange").fill("IDX");

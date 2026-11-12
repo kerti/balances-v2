@@ -49,7 +49,7 @@ test(
     await page.getByRole("button", { name: "Record snapshot" }).click();
     const snapDialog = page.getByRole("dialog");
     await snapDialog.getByLabel("Amount (IDR)").fill("50000000");
-    await snapDialog.getByLabel("Description (optional)").fill(desc);
+    await snapDialog.getByLabel("Note (optional)").fill(desc);
     await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
     await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 

@@ -1,9 +1,10 @@
 {
   "title": "Kekayaan bersih",
+  "subtitle": "Semua aset dan utang Anda, dalam {{currency}}",
   "loadFailed": "Gagal memuat: {{message}}",
   "empty": {
     "title": "Belum ada kekayaan bersih untuk ditampilkan",
-    "body": "Catat snapshot di posisi mana pun — saldo rekening bank, nilai properti — dan kekayaan bersih Anda akan muncul di sini, dilacak per bulan."
+    "body": "Tambahkan rekening bank, properti, atau investasi, lalu catat snapshot, dan kekayaan bersih Anda akan muncul di sini, dilacak per bulan. Snapshot adalah nilai di laporan Anda pada akhir bulan. Catat satu setiap bulan."
   },
   "secondary": {
     "label": "Juga dalam",
@@ -15,8 +16,8 @@
     "firstTrackedMonth": "bulan pelacakan pertama",
     "vs": "vs {{when}}",
     "vsYoY": "vs {{when}} · YoY",
-    "stalePositions_one": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
-    "stalePositions_other": "⚠ {{count}} posisi dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
+    "stalePositions_one": "⚠ {{count}} item dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
+    "stalePositions_other": "⚠ {{count}} item dilanjutkan — catat snapshot {{when}} agar tetap terkini.",
     "staleEnter": "Perbarui sekarang →",
     "unsettledTerminations_one": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian.",
     "unsettledTerminations_other": "⚠ {{count}} investasi ditutup tanpa pencatatan penjualan atau jatuh tempo — nilai akhirnya tampak sebagai kerugian."
@@ -31,8 +32,8 @@
     }
   },
   "missingFx": {
-    "positions_one": "{{count}} posisi",
-    "positions_other": "{{count}} posisi",
+    "positions_one": "{{count}} item",
+    "positions_other": "{{count}} item",
     "someAmounts": "sebagian nominal",
     "addRate_one": "kurs",
     "addRate_other": "kurs",
@@ -41,7 +42,7 @@
   },
   "chart": {
     "title": "Kekayaan bersih dari waktu ke waktu",
-    "amountLegend": "Nominal",
+    "amountLegend": "Nilai",
     "netWorthLegend": "Kekayaan bersih",
     "costLegend": "Modal",
     "maturedMarker": "Jatuh tempo",

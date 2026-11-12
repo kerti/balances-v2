@@ -40,7 +40,7 @@
   "createTitle": "Liabilitas baru",
   "createDescription": "Lacak utang rumah tangga Anda. Liabilitas pribadi bersifat informal (keluarga, teman); institusional bersifat formal (KPR, pinjaman bank, saldo kartu kredit).",
   "editTitle": "Ubah liabilitas",
-  "editDescription": "Subtipe dan mata uang tidak bisa diubah — buat liabilitas baru jika perlu diubah. Kepemilikan bisa diubah.",
+  "editDescription": "Subtipe dan mata uang tidak bisa diubah. Untuk memakai yang lain, buat liabilitas baru. Kepemilikan bisa diubah.",
   "detailSubtitle": "{{subtype}} · {{counterparty}}",
   "detailsCardTitle": "Detail liabilitas",
   "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
@@ -53,17 +53,17 @@
   "periodLabel": "Periode:",
   "periodValue": "{{start}} → {{end}}",
   "periodMissing": "—",
-  "chartTitle": "Saldo terutang dari waktu ke waktu",
-  "chartDescription": "Perkembangan saldo bulanan dalam {{currency}}.",
+  "chartTitle": "Terutang dari waktu ke waktu",
+  "chartDescription": "Jumlah terutang bulanan dalam {{currency}}.",
   "snapshotsTitle": "Snapshot",
-  "snapshotsDescription": "Bacaan saldo terutang bulanan (input manual).",
-  "snapshotsEmpty": "Belum ada snapshot. Klik \"Baru\" untuk mencatat saldo terutang bulan ini.",
+  "snapshotsDescription": "Saldo bulanan (input manual).",
+  "snapshotsEmpty": "Belum ada snapshot. Snapshot adalah nilai di laporan Anda pada akhir bulan. Catat satu setiap bulan.",
   "fields": {
     "subtype": "Subtipe",
     "counterparty": "Pihak lawan",
     "principal": "Pokok (opsional)",
     "interestRate": "Suku bunga (% per tahun, opsional)",
-    "term": "Tenor (bulan, ops.)",
+    "term": "Tenor (bulan, opsional)",
     "startDate": "Mulai (opsional)",
     "maturityDate": "Jatuh tempo (opsional)"
   },
@@ -78,13 +78,13 @@
   "tour": {
     "overviewTitle": "Sekilas tentang liabilitas Anda",
     "overviewBody": "Lacak utang Anda dari waktu ke waktu — saldonya mengurangi kekayaan bersih hingga lunas.",
-    "actionsTitle": "Kelola posisi ini",
-    "actionsBody": "Gunakan “Ubah” untuk mengubah detailnya, “Tutup” untuk menandainya berakhir — setelah itu tidak lagi dihitung dalam kekayaan bersih Anda — atau “Hapus” untuk menghapusnya sepenuhnya.",
+    "actionsTitle": "Kelola liabilitas ini",
+    "actionsBody": "Gunakan “Ubah” untuk mengubah detailnya, “Tutup…” untuk menandainya berakhir — setelah itu tidak lagi dihitung dalam kekayaan bersih Anda — atau “Hapus” untuk menghapusnya sepenuhnya.",
     "detailsTitle": "Ketentuan liabilitas",
     "detailsBody": "Pokok, suku bunga, tenor, dan jatuh tempo ditetapkan saat Anda menambahkannya. Gunakan “Ubah” untuk mengubahnya.",
-    "chartTitle": "Saldo sepanjang waktu",
+    "chartTitle": "Terutang sepanjang waktu",
     "chartBody": "Setiap titik adalah saldo terutang satu bulan, sehingga Anda bisa melihat utang menyusut.",
-    "snapshotsTitle": "Saldo terutang",
-    "snapshotsBody": "Setiap baris adalah saldo utang satu bulan. Ketuk “Baru” untuk mencatat saldo terutang bulan ini, atau “Impor” untuk beberapa bulan sekaligus."
+    "snapshotsTitle": "Snapshot",
+    "snapshotsBody": "Setiap baris adalah saldo utang satu bulan. Ketuk “Catat snapshot” untuk mencatat saldo bulan ini, atau “Impor” untuk beberapa bulan sekaligus."
   }
 }

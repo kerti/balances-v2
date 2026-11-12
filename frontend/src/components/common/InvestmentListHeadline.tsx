@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { headlineSurface } from "@/lib/headline";
+import { InfoHint } from "@/components/common/InfoHint";
 import type { CurrencyAggregate } from "@/lib/listAggregates";
 
 type Props = {
@@ -54,7 +55,14 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
         ))}
       </div>
       <div className="mt-0.5 text-sm">
-        <span className="text-muted-foreground">{t("investments:list.unrealizedPL")}</span>{" "}
+        <span className="text-muted-foreground">{t("investments:list.unrealizedPL")}</span>
+        <InfoHint
+          label={t("investments:list.unrealizedPL")}
+          testId="list-gain-loss-hint"
+          className="-my-3 ml-0.5"
+        >
+          {t("investments:headline.unrealizedPLHint")}
+        </InfoHint>{" "}
         {aggregates.map((a, i) => (
           <span key={a.currency} className={stack}>
             {i > 0 && <SepMuted />}

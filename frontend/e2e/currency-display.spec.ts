@@ -12,6 +12,7 @@ import { deleteFxSeedAccount, seedUsdAccount } from "./fxSeed";
 // approximation renders a real amount. Self-cleaning — deletes the snapshot,
 // account, and rate, and turns multi-currency back off, restoring the seed
 // state. See ADR-0024.
+// covers: INV-PRESENTATION-25
 test("dashboard side-by-side currency: project net worth into USD", async ({ page }) => {
   const account = `E2E fx account ${Date.now()}`;
   const desc = `E2E fx snapshot ${Date.now()}`;
@@ -36,7 +37,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await snapDialog.getByLabel("Amount (IDR)").fill("12500000");
-  await snapDialog.getByLabel("Description (optional)").fill(desc);
+  await snapDialog.getByLabel("Note (optional)").fill(desc);
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
   await page.getByRole("button", { name: "← Back" }).click();
@@ -73,6 +74,9 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await expect(approx).toBeVisible();
   // A real conversion, not the "no rate yet" fallback.
   await expect(approx).not.toContainText("no USD rate yet");
+  // Multi-currency is on, so amounts carry ISO codes, never a symbol (#832).
+  await expect(approx).toContainText("USD");
+  await expect(approx).not.toContainText("US$");
 
   // --- Cleanup: snapshot + account, then the rate, then turn multi-currency off ---
   await page.getByRole("link", { name: "Bank accounts" }).click();

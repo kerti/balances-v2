@@ -44,6 +44,7 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
     detailsCardLine: "liabilities:detailsCardLine",
     chartTitle: "liabilities:chartTitle",
     chartDescription: "liabilities:chartDescription",
+    chartSeriesLabel: "common:tableHeaders.owed",
     snapshotsTitle: "liabilities:snapshotsTitle",
     snapshotsDescription: "liabilities:snapshotsDescription",
     snapshotsEmpty: "liabilities:snapshotsEmpty",
@@ -114,7 +115,7 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.balance")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>

@@ -114,7 +114,7 @@ export function SnapshotFormBody({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="description">{t("fields.description")}</Label>
+        <Label htmlFor="description">{t("fields.note")}</Label>
         <Input
           id="description"
           value={form.description}

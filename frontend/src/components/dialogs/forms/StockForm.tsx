@@ -6,6 +6,7 @@ import { OwnershipField } from "@/components/common/OwnershipField";
 import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { EntryType, RiskProfile } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type StockFormState = {
   display_name: string;
@@ -66,6 +67,7 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="stock_currency">{t("common:fields.currency")}</Label>
+        <LockedFieldHint mode={mode} id="stock_currency" />
         <Input
           id="stock_currency"
           required

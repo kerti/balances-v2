@@ -33,7 +33,7 @@
     "description": "Kekayaan bersih dilaporkan dalam mata uang ini.",
     "reportingLabel": "Mata uang pelaporan",
     "multiTitle": "Multi-mata-uang",
-    "multiDescription": "Simpan posisi dalam mata uang lain dan masukkan kurs bulanan untuk masing-masing.",
+    "multiDescription": "Simpan rekening bank, investasi, dan item lain dalam mata uang lain dan masukkan kurs bulanan untuk masing-masing.",
     "multiLabel": "Aktif",
     "manageFx": "Kelola kurs"
   },
@@ -162,7 +162,7 @@
     },
     "erase": {
       "title": "Hapus rumah tangga ini",
-      "description": "Hapus permanen rumah tangga ini beserta seluruh isinya — setiap posisi, snapshot, transaksi, dan akun anggota. Tindakan ini tidak dapat dibatalkan.",
+      "description": "Hapus permanen rumah tangga ini beserta seluruh isinya — setiap rekening, investasi, snapshot, transaksi, dan akun anggota. Tindakan ini tidak dapat dibatalkan.",
       "exportFirst": "Pertimbangkan untuk mengunduh cadangan terlebih dahulu — setelah dihapus, data ini tidak dapat dipulihkan.",
       "exportNow": "Unduh cadangan",
       "open": "Hapus rumah tangga ini…",

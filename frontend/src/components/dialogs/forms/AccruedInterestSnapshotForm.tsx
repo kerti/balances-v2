@@ -125,7 +125,7 @@ export function AccruedInterestSnapshotFormBody({
       )}
 
       <div className="grid gap-2">
-        <Label htmlFor="ai_description">{t("common:fields.description")}</Label>
+        <Label htmlFor="ai_description">{t("common:fields.note")}</Label>
         <Input
           id="ai_description"
           value={form.description}

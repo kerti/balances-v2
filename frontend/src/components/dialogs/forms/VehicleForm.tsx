@@ -8,6 +8,7 @@ import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { RATE_DECIMALS, RATE_INTEGER_DIGITS } from "@/lib/format";
 import type { EntryType } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type VehicleFormState = {
   display_name: string;
@@ -63,6 +64,7 @@ export function VehicleFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="v_native_currency">{t("common:fields.currency")}</Label>
+          <LockedFieldHint mode={mode} id="v_native_currency" />
           <Input
             id="v_native_currency"
             required

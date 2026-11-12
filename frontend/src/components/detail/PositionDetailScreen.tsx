@@ -334,6 +334,7 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
             <SnapshotChart
               snapshots={snapshots}
               currency={asset.native_currency}
+              primaryLabel={keys.chartSeriesLabel ? t(keys.chartSeriesLabel) : undefined}
               costSeries={costSeries}
               status={asset.status}
             />
