@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
-import type { ChartInteraction } from "./SnapshotChartImpl";
+import { RangeChips } from "./RangeChips";
+import { useRangeZoom } from "./useRangeZoom";
+import { monthRange } from "@/lib/months";
 
 type SnapshotLike = {
   year_month: string;
@@ -13,8 +15,10 @@ type CostPoint = {
 };
 
 type Props = {
-  // Dashboard-only window / marker / click / Brush wiring (#852).
-  interaction?: ChartInteraction;
+  // Dashboard-only (#852): the selected month ("YYYY-MM") is marked on the
+  // chart and clicking a point reports the clicked month. Other charts omit both.
+  selectedMonth?: string;
+  onSelectMonth?: (yearMonth: string) => void;
   snapshots: SnapshotLike[];
   currency: string;
   // Optional parallel cost-basis series (one entry per snapshot, same
@@ -47,7 +51,8 @@ type Props = {
 const SnapshotChartImpl = lazyWithReload(() => import("./SnapshotChartImpl"));
 
 export function SnapshotChart({
-  interaction,
+  selectedMonth,
+  onSelectMonth,
   snapshots,
   currency,
   costSeries,
@@ -56,19 +61,34 @@ export function SnapshotChart({
   primaryLabel,
   primaryColor,
 }: Props) {
+  const yms = snapshots.map((s) => s.year_month.slice(0, 7)).sort();
+  const months = yms.length > 0 ? monthRange(yms[0], yms[yms.length - 1]) : [];
+  const zoom = useRangeZoom(
+    months.length,
+    selectedMonth ? { key: selectedMonth, index: months.indexOf(selectedMonth) } : undefined,
+  );
   if (snapshots.length === 0) return null;
   return (
-    <Suspense fallback={<div className="h-64 w-full" />}>
-      <SnapshotChartImpl
-        interaction={interaction}
-        snapshots={snapshots}
-        currency={currency}
-        costSeries={costSeries}
-        status={status}
-        extraSeries={extraSeries}
-        primaryLabel={primaryLabel}
-        primaryColor={primaryColor}
-      />
-    </Suspense>
+    <div className="space-y-3">
+      <RangeChips chips={zoom.chips} pressed={zoom.pressed} onPick={zoom.pickPreset} />
+      <Suspense fallback={<div className="h-64 w-full" />}>
+        <SnapshotChartImpl
+          interaction={{
+            window: zoom.window,
+            showBrush: zoom.showBrush,
+            onWindowChange: zoom.onWindowChange,
+            selectedMonth,
+            onSelectMonth,
+          }}
+          snapshots={snapshots}
+          currency={currency}
+          costSeries={costSeries}
+          status={status}
+          extraSeries={extraSeries}
+          primaryLabel={primaryLabel}
+          primaryColor={primaryColor}
+        />
+      </Suspense>
+    </div>
   );
 }

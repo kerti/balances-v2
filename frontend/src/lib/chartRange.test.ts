@@ -5,6 +5,9 @@ import {
   loadRangePreset,
   presetWindow,
   saveRangePreset,
+  effectivePreset,
+  sliceWindow,
+  visiblePresets,
   shiftToInclude,
 } from "./chartRange";
 
@@ -84,5 +87,48 @@ describe("range persistence", () => {
     });
     expect(loadRangePreset()).toBe("5Y");
     expect(() => saveRangePreset("1Y")).not.toThrow();
+  });
+});
+
+// covers: INV-PRESENTATION-29
+describe("visiblePresets", () => {
+  it("shows no chip row at 12 months or fewer", () => {
+    expect(visiblePresets(0)).toEqual([]);
+    expect(visiblePresets(8)).toEqual([]);
+    expect(visiblePresets(12)).toEqual([]);
+  });
+
+  it("shows a chip only when the history is longer than it covers; All always", () => {
+    expect(visiblePresets(13)).toEqual(["1Y", "All"]);
+    expect(visiblePresets(30)).toEqual(["1Y", "All"]);
+    expect(visiblePresets(36)).toEqual(["1Y", "All"]);
+    expect(visiblePresets(37)).toEqual(["1Y", "3Y", "All"]);
+    expect(visiblePresets(60)).toEqual(["1Y", "3Y", "All"]);
+    expect(visiblePresets(61)).toEqual(["1Y", "3Y", "5Y", "All"]);
+  });
+});
+
+// covers: INV-PRESENTATION-29
+describe("effectivePreset", () => {
+  it("keeps a stored chip that is visible", () => {
+    expect(effectivePreset("3Y", 50)).toBe("3Y");
+  });
+
+  it("falls back to All when the stored chip is hidden for a short history", () => {
+    expect(effectivePreset("5Y", 20)).toBe("All");
+    expect(effectivePreset("1Y", 8)).toBe("All");
+  });
+});
+
+describe("sliceWindow", () => {
+  const rows = ["a", "b", "c", "d", "e"];
+
+  it("returns only the rows inside the window", () => {
+    expect(sliceWindow(rows, { start: 1, end: 3 })).toEqual(["b", "c", "d"]);
+  });
+
+  it("clamps a window past the end and passes everything without one", () => {
+    expect(sliceWindow(rows, { start: 3, end: 40 })).toEqual(["d", "e"]);
+    expect(sliceWindow(rows, undefined)).toEqual(rows);
   });
 });

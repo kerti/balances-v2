@@ -333,6 +333,55 @@ test(
         await expectNoControlOverlap(page, undefined, at("bond detail, Transactions tab"));
       }
 
+      // --- Range chips and Brush (#901). Chips only exist for a history over
+      // 12 months, so give the account 15 months and check the chart screens
+      // that carry them: the position detail, the Assets overview and the
+      // dashboard. ---
+      for (let n = 2; n <= 14; n++) {
+        await created(
+          await page.request.post(`/api/assets/${ids.account}/snapshots`, {
+            data: {
+              year_month: monthsAgo(n),
+              amount: String(1_000_000 + n * 10_000),
+              currency: "IDR",
+              as_of_date: null,
+              description: null,
+            },
+          }),
+          "account history snapshot",
+        );
+      }
+      for (const width of [768, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        const at = (what: string) => `${what} @${width}px`;
+        await page.goto(`/assets/bank-accounts/${ids.account}`);
+        await expect(page.getByRole("heading", { level: 1, name: accountName })).toBeVisible();
+        await expect(page.getByTestId("chart-range-chips")).toBeVisible();
+        await expectNoControlOverlap(page, undefined, at("bank-account detail with range chips"));
+        await page.goto("/assets");
+        await expect(page.getByRole("heading", { level: 1, name: "Assets" })).toBeVisible();
+        await expect(page.getByTestId("chart-range-chips").first()).toBeVisible();
+        await expectNoControlOverlap(page, undefined, at("Assets overview with range chips"));
+        await page.goto("/");
+        await expect(page.getByRole("heading", { level: 1, name: "Net worth" })).toBeVisible();
+        await expectNoControlOverlap(page, undefined, at("dashboard with range chips"));
+      }
+
+      // Chip a11y and the remembered choice (#852, #901), at 390px from the loop
+      // above. 15 months offers 1Y and All; the default 5Y is hidden, so All
+      // reads as pressed.
+      await page.goto(`/assets/bank-accounts/${ids.account}`);
+      await expect(page.getByTestId("chart-range-5Y")).toHaveCount(0);
+      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-pressed", "true");
+      const chipBox = await page.getByTestId("chart-range-1Y").boundingBox();
+      expect(chipBox).not.toBeNull();
+      expect(chipBox!.height).toBeGreaterThanOrEqual(44);
+      await page.getByTestId("chart-range-1Y").click();
+      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-pressed", "false");
+      await page.reload();
+      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-pressed", "true");
+
       // --- The Assets overview (#839 chart grid). The seed has one month, so
       // the share-over-time card doesn't render here; this guards the page's
       // controls only. ---

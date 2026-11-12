@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/chart";
 import { seriesOrder, seriesRank, sortBySeriesOrder } from "@/lib/chartSeries";
 import { fitYDomain } from "@/lib/chartDomain";
-import type { IndexWindow } from "@/lib/chartRange";
+import { sliceWindow, type IndexWindow } from "@/lib/chartRange";
 import { formatChartMonth, formatCompactNumber, formatCurrency } from "@/lib/format";
 import { monthRange } from "@/lib/months";
 
@@ -50,17 +50,16 @@ type ExtraSeries = {
   snapshots: SnapshotLike[];
 };
 
-// Dashboard-only interaction (#852): the visible window over the continuous
-// month list, a marker at the selected month, click-to-select, and (desktop) a
-// Brush strip. Detail and overview charts omit it and get the axis + curve
-// changes only.
+// Range zoom (#852, #901): the visible window over the continuous month list
+// and (desktop) a Brush strip. The selected-month marker and click-to-select
+// are dashboard-only: they exist only when both selection fields are passed.
 export type ChartInteraction = {
   window: IndexWindow;
   showBrush: boolean;
   onWindowChange: (w: IndexWindow) => void;
   // Selected month as bare "YYYY-MM".
-  selectedMonth: string;
-  onSelectMonth: (yearMonth: string) => void;
+  selectedMonth?: string;
+  onSelectMonth?: (yearMonth: string) => void;
 };
 
 type Props = {
@@ -208,7 +207,7 @@ export default function SnapshotChartImpl({
   // The y-axis fits what is on screen: the zoom window when there is one, else
   // everything. Series values only — `ym` / `month` are labels.
   const win = interaction?.window;
-  const visible = win ? data.slice(win.start, win.end + 1) : data;
+  const visible = sliceWindow(data, win);
   const fit = fitYDomain(
     visible.flatMap((p) =>
       Object.entries(p)
@@ -216,7 +215,8 @@ export default function SnapshotChartImpl({
         .map(([, v]) => Number(v)),
     ),
   );
-  const selectedLabel = interaction
+  const onSelectMonth = interaction?.onSelectMonth;
+  const selectedLabel = interaction?.selectedMonth
     ? data.find((p) => p.ym === interaction.selectedMonth)?.month
     : undefined;
   const showBrush = !!interaction?.showBrush && data.length > 2;
@@ -228,9 +228,9 @@ export default function SnapshotChartImpl({
     <ChartContainer config={chartConfig} className={showBrush ? "h-80 w-full" : "h-64 w-full"}>
       <AreaChart
         data={chartData}
-        className={interaction ? "cursor-pointer" : undefined}
+        className={onSelectMonth ? "cursor-pointer" : undefined}
         onClick={
-          interaction
+          onSelectMonth
             ? (state, event) => {
                 let label = state?.activeLabel;
                 const area = plotArea.current;
@@ -241,7 +241,7 @@ export default function SnapshotChartImpl({
                   label = chartData[Math.round(f * (chartData.length - 1))].month;
                 }
                 const hit = chartData.find((p) => p.month === label);
-                if (hit) interaction.onSelectMonth(hit.ym);
+                if (hit) onSelectMonth(hit.ym);
               }
             : undefined
         }
@@ -365,7 +365,7 @@ export default function SnapshotChartImpl({
             }}
           />
         )}
-        {interaction && <PlotAreaProbe onChange={setPlotArea} />}
+        {onSelectMonth && <PlotAreaProbe onChange={setPlotArea} />}
         {showBrush && interaction && win && (
           <Brush
             dataKey="month"
@@ -373,8 +373,8 @@ export default function SnapshotChartImpl({
             travellerWidth={10}
             stroke="var(--border)"
             fill="var(--card)"
-            startIndex={win.start}
-            endIndex={win.end}
+            startIndex={Math.min(win.start, data.length - 1)}
+            endIndex={Math.min(win.end, data.length - 1)}
             onChange={(r) => {
               if (r.startIndex === undefined || r.endIndex === undefined) return;
               if (r.startIndex === win.start && r.endIndex === win.end) return;

@@ -46,18 +46,7 @@
     "netWorthLegend": "Kekayaan bersih",
     "costLegend": "Modal",
     "maturedMarker": "Jatuh tempo",
-    "soldMarker": "Dijual",
-    "range": {
-      "ariaLabel": "Rentang grafik",
-      "1Y": "1Y",
-      "3Y": "3Y",
-      "5Y": "5Y",
-      "All": "Semua",
-      "label1Y": "1 tahun terakhir",
-      "label3Y": "3 tahun terakhir",
-      "label5Y": "5 tahun terakhir",
-      "labelAll": "Seluruh riwayat"
-    }
+    "soldMarker": "Dijual"
   },
   "breakdown": {
     "title": "Di mana disimpan",

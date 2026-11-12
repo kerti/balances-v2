@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ZoomableNetWorthChart } from "@/components/charts/ZoomableNetWorthChart";
+import { SnapshotChart } from "@/components/charts/SnapshotChart";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
@@ -142,7 +142,7 @@ export function DashboardScreen() {
           <CardTitle className="text-base">{t("chart.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <ZoomableNetWorthChart
+          <SnapshotChart
             selectedMonth={selected.year_month.slice(0, 7)}
             onSelectMonth={(ym) => {
               // The chart works in bare "YYYY-MM"; reports keep the API's own
