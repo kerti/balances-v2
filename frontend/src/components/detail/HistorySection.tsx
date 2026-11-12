@@ -78,7 +78,11 @@ export function HistorySection<TRow>({
           </>
         ) : (
           <>
-            <Table data-testid={`${testId}-table`}>
+            <Table
+              inset
+              data-testid={`${testId}-table`}
+              className="min-w-[40rem] table-fixed [&_th]:w-44 [&_th:last-child]:w-16 [&_th:nth-last-child(2)]:w-auto"
+            >
               <TableHeader>{header}</TableHeader>
               <TableBody>{pageRows.map((row, i) => renderRow(row, i))}</TableBody>
             </Table>

@@ -47,7 +47,9 @@ export function TransactionRow<TUpdate, TDelete>({
         <TableCell className={`text-right ${impactColorClass}`} data-testid="transaction-amount">
           {impactText}
         </TableCell>
-        <TableCell className="text-muted-foreground">{description ?? "—"}</TableCell>
+        <TableCell className="truncate text-muted-foreground" title={description ?? undefined}>
+          {description ?? "—"}
+        </TableCell>
         <TableCell className="text-right">
           <TransactionRowMenu onEdit={onEdit} onDelete={onDelete} />
         </TableCell>

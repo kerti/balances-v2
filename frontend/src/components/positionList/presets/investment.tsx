@@ -1,6 +1,6 @@
 // The investment cluster preset (ADR-0043). The sibling to the non-investment
 // preset: same `PositionListScreen` core, different configuration. Investments
-// swap the ownership column for a risk-profile badge beside the name + a
+// add a risk-profile badge beside the name + a
 // risk-profile row filter, add a shared transaction-activity column, and use
 // the cost/P-L headline (`InvestmentListHeadline` + `ListTimeGraph` over
 // `aggregateListPositions`) instead of the single-figure `ListHeadline`. A
@@ -17,6 +17,12 @@ import {
   RiskProfileFilter,
   type RiskProfileFilterValue,
 } from "@/components/common/RiskProfileFilter";
+import {
+  ownershipColumn,
+  useOwnershipContext,
+  type OwnershipCore,
+  type OwnershipCtx,
+} from "@/components/positionList/presets/ownership";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
@@ -32,7 +38,7 @@ import type {
 
 // The shared-surface fields the preset reads off any investment list item,
 // plus the two investment-only bits it needs (risk profile, description).
-type InvestmentCore = {
+type InvestmentCore = OwnershipCore & {
   id: string;
   display_name: string;
   status: string;
@@ -57,7 +63,7 @@ export type InvestmentConfig<T> = {
   // Ledger summary for the shared activity column (issue #67).
   activity: (item: T) => { count: number; lastDate: string | null };
   // Subtype-specific columns between name and status (gold's form+purity).
-  mainColumns?: PositionExtraColumn<T, void>[];
+  mainColumns?: PositionExtraColumn<T, OwnershipCtx>[];
   // An extra badge beside the name after the risk pill (the mutual-fund
   // fund-type chip).
   titleAccessory?: (item: T) => ReactNode;
@@ -125,11 +131,11 @@ function InvestmentHeadline<T>({ items, config }: { items: T[]; config: Investme
 
 export function investmentDescriptor<T>(
   config: InvestmentConfig<T>,
-): PositionListDescriptor<T, void> {
-  const activityColumn: PositionExtraColumn<T, void> = {
+): PositionListDescriptor<T, OwnershipCtx> {
+  const activityColumn: PositionExtraColumn<T, OwnershipCtx> = {
     id: "activity",
     labelKey: "common:activity.header",
-    slot: "trailing",
+    slot: "main",
     render: (item) => <ActivityContent {...config.activity(item)} />,
   };
   return {
@@ -142,6 +148,7 @@ export function investmentDescriptor<T>(
     useList: config.useList,
     useDelete: config.useDelete,
     useImport: config.useImport,
+    useExtraContext: useOwnershipContext,
     useRowFilter: () => {
       const [value, setValue] = useState<RiskProfileFilterValue>("all");
       return {
@@ -154,7 +161,7 @@ export function investmentDescriptor<T>(
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: (item) => config.entity(item).description ?? "",
-    extraColumns: [...(config.mainColumns ?? []), activityColumn],
+    extraColumns: [...(config.mainColumns ?? []), activityColumn, ownershipColumn(config.entity)],
     renderTitleAccessory: (item) => (
       <>
         <RiskProfileBadge profile={config.entity(item).risk_profile} compact />

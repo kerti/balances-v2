@@ -83,4 +83,22 @@ describe("goldDescriptor (conformance)", () => {
     expect(screen.getByRole("columnheader", { name: /Form & purity/ })).toBeInTheDocument();
     expect(screen.getByTestId("gold-total")).toBeInTheDocument();
   });
+
+  it("orders columns Name, subtype, Activity, Ownership, Value (#838)", async () => {
+    server.use(
+      http.get("/api/investments/golds", () => HttpResponse.json([goldItem])),
+      http.get("/api/investments/time-series", () => HttpResponse.json([])),
+    );
+    renderWithProviders(<PositionListScreen descriptor={goldDescriptor} onSelect={vi.fn()} />);
+
+    await screen.findByTestId("gold-row");
+    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent ?? "");
+    const at = (re: RegExp) => headers.findIndex((h) => re.test(h));
+    expect(at(/Name/)).toBe(0);
+    expect(at(/Form & purity/)).toBeLessThan(at(/Activity/));
+    expect(at(/Activity/)).toBeLessThan(at(/Ownership/));
+    expect(at(/Ownership/)).toBeLessThan(at(/Latest value/));
+    // Sole ownership renders in the row, same component as asset lists.
+    expect(within(screen.getByTestId("gold-row")).getByText(/Sole|\(you\)/)).toBeInTheDocument();
+  });
 });

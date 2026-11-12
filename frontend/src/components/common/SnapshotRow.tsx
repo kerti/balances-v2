@@ -31,7 +31,9 @@ export function SnapshotRow<TUpdate, TDelete>({
         <TableCell className="text-right" data-testid="snapshot-amount">
           {amountText}
         </TableCell>
-        <TableCell className="text-muted-foreground">{description ?? "—"}</TableCell>
+        <TableCell className="truncate text-muted-foreground" title={description ?? undefined}>
+          {description ?? "—"}
+        </TableCell>
         <TableCell className="text-right">
           <SnapshotRowMenu onEdit={onEdit} onDelete={onDelete} />
         </TableCell>

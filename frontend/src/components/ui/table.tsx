@@ -2,12 +2,20 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+// `inset` is for a table flush with its card edge (CardContent p-0): the outer
+// cells take the card's px-6 so table text lines up with the card header (#838).
+// A table inside padded card content already has that inset.
+function Table({
+  className,
+  inset = false,
+  ...props
+}: React.ComponentProps<"table"> & { inset?: boolean }) {
   return (
     <div data-slot="table-container" className="relative w-full overflow-x-auto">
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        data-inset={inset || undefined}
+        className={cn("group/table w-full caption-bottom text-sm", className)}
         {...props}
       />
     </div>
@@ -56,7 +64,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
+        "h-10 px-2 text-left group-data-[inset]/table:first:pl-6 group-data-[inset]/table:last:pr-6 align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0",
         className,
       )}
       {...props}
@@ -68,7 +76,10 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
   return (
     <td
       data-slot="table-cell"
-      className={cn("p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0", className)}
+      className={cn(
+        "p-2 align-middle whitespace-nowrap group-data-[inset]/table:first:pl-6 group-data-[inset]/table:last:pr-6 [&:has([role=checkbox])]:pr-0",
+        className,
+      )}
       {...props}
     />
   );
