@@ -39,9 +39,10 @@ export type PositionExtraColumn<T, Ctx> = {
   id: string;
   labelKey: string;
   align?: "left" | "right";
-  // "main" sits between name and status (ownership, activity); "trailing" sits
-  // after the value column. Default "main".
-  slot?: "main" | "trailing";
+  // "main" is a subtype-specific column (activity, gold's form + purity) and
+  // sits right after name; "ownership" is always placed after every "main"
+  // column, just before status (#838). Default "main".
+  slot?: "main" | "ownership";
   mobile?: "secondary";
   render: (item: T, ctx: Ctx) => ReactNode;
   sort?: {
@@ -143,11 +144,16 @@ export type RowView<T> = {
 // One column, resolved by the core to hard markup in `cell`. Both renderers
 // iterate the same list; the web renderer wraps each `cell` in a `<TableCell>`,
 // the mobile renderer drops the ones without `mobileVisible`.
+export type ColumnRole = "name" | "detail" | "ownership" | "status" | "value";
+
 export type ColumnView<T> = {
   id: string;
   label: string;
   align: "left" | "right";
   sortKey?: string;
+  // Which fixed width the table gives the column; the same role gets the same
+  // width on every list so columns land at the same x (#838).
+  role: ColumnRole;
   isTitle?: boolean; // the name column; the card heading
   mobileVisible: boolean; // shown on the mobile card
   cell: (row: RowView<T>) => ReactNode;

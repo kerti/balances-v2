@@ -73,13 +73,14 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
 
   // The four shared columns are hard JSX here — never config — plus the
   // descriptor's extra columns slotted in around them. "main" extras go between
-  // name and status; "trailing" extras after value.
+  // name and status, "ownership" extras last of those (#838).
   const columns = useMemo<ColumnView<T>[]>(() => {
     const nameCol: ColumnView<T> = {
       id: "name",
       label: t("common:tableHeaders.name"),
       align: "left",
       sortKey: "name",
+      role: "name",
       isTitle: true,
       mobileVisible: true,
       cell: (row) => (
@@ -97,6 +98,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
     const statusCol: ColumnView<T> = {
       id: "status",
       label: t("common:tableHeaders.status"),
+      role: "status",
       align: "left",
       sortKey: "status",
       mobileVisible: true,
@@ -105,6 +107,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
     const valueCol: ColumnView<T> = {
       id: "value",
       label: t(keys.valueLabel),
+      role: "value",
       align: "right",
       sortKey: "value",
       mobileVisible: true,
@@ -121,12 +124,13 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
         ),
     };
 
-    const extra = (slot: "main" | "trailing") =>
+    const extra = (slot: "main" | "ownership") =>
       descriptor.extraColumns
         .filter((col) => (col.slot ?? "main") === slot)
         .map<ColumnView<T>>((col) => ({
           id: col.id,
           label: t(col.labelKey),
+          role: slot === "ownership" ? "ownership" : "detail",
           align: col.align ?? "left",
           sortKey: col.sort?.key,
           mobileVisible: col.mobile === "secondary",
@@ -136,7 +140,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
     // Status is only news once inactive rows are on screen (#836): hidden until
     // the toggle is ticked, then every row carries its pill, Active included.
     const status = showInactive ? [statusCol] : [];
-    return [nameCol, ...extra("main"), ...status, valueCol, ...extra("trailing")];
+    return [nameCol, ...extra("main"), ...extra("ownership"), ...status, valueCol];
   }, [descriptor, keys.valueLabel, t, ctx, showInactive]);
 
   const sortColumns = useMemo<Record<string, ColumnSort<RowView<T>>>>(() => {

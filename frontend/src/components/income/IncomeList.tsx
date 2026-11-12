@@ -42,15 +42,15 @@ export function IncomeList({ rows, page, totalPages, onPageChange }: Props) {
   return (
     <Card>
       <CardContent className="p-0">
-        <Table data-testid="income-table">
+        <Table inset data-testid="income-table" className="table-fixed">
           <TableHeader>
             <TableRow>
-              <TableHead>{t("income:tableHeaders.date")}</TableHead>
-              <TableHead>{t("income:tableHeaders.category")}</TableHead>
-              <TableHead className="text-right">{t("income:tableHeaders.amount")}</TableHead>
+              <TableHead className="w-28">{t("income:tableHeaders.date")}</TableHead>
+              <TableHead className="w-40">{t("income:tableHeaders.category")}</TableHead>
+              <TableHead className="w-44 text-right">{t("income:tableHeaders.amount")}</TableHead>
               <TableHead>{t("income:tableHeaders.description")}</TableHead>
-              <TableHead>{t("income:tableHeaders.ownership")}</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead className="w-40">{t("income:tableHeaders.ownership")}</TableHead>
+              <TableHead className="w-16"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

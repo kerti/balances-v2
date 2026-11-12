@@ -11,14 +11,15 @@ import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ListHeadline } from "@/components/common/ListHeadline";
-import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
-import { useSession, type Me } from "@/hooks/useSession";
-import { ownershipLabel } from "@/lib/ownership";
+import {
+  ownershipColumn,
+  useOwnershipContext,
+  type OwnershipCore,
+  type OwnershipCtx,
+} from "@/components/positionList/presets/ownership";
 import { activeCurrencyTotals } from "@/lib/totals";
 import type { LifecycleGroup } from "@/lib/lifecycle";
-import type { HouseholdMember } from "@/api/types";
 import type {
-  PositionExtraColumn,
   PositionImportMutation,
   PositionListDescriptor,
   PositionListQuery,
@@ -26,22 +27,15 @@ import type {
   PositionSnapshotView,
 } from "@/components/positionList/types";
 
-// The extra-column context every non-investment type needs to render its
-// privacy-safe ownership label (INV-PRESENTATION-03).
-export type OwnershipCtx = {
-  members: HouseholdMember[] | undefined;
-  currentUser: Me | null | undefined;
-};
-
 // The Position shared-surface fields the preset reads off any list item,
 // however the item nests them (`item.asset`, `item.liability`, …).
-type PositionCore = {
+type PositionCore = OwnershipCore & {
   id: string;
   display_name: string;
   status: string;
-  ownership_type: "sole" | "joint";
-  sole_owner_user_id: string | null;
 };
+
+export type { OwnershipCtx };
 
 export type NonInvestmentConfig<T> = {
   entityKey: string;
@@ -65,25 +59,6 @@ export type NonInvestmentConfig<T> = {
   renderCreateDialog: (onCreated: (id: string) => void) => ReactNode;
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
 };
-
-function ownershipColumn<T>(config: NonInvestmentConfig<T>): PositionExtraColumn<T, OwnershipCtx> {
-  const label = (item: T, ctx: OwnershipCtx) => {
-    const core = config.entity(item);
-    return ownershipLabel(
-      core.ownership_type,
-      core.sole_owner_user_id,
-      ctx.members,
-      ctx.currentUser,
-    );
-  };
-  return {
-    id: "ownership",
-    labelKey: "common:tableHeaders.ownership",
-    slot: "main",
-    render: label,
-    sort: { key: "ownership", type: "text", value: label },
-  };
-}
 
 function NonInvestmentHeadline<T>({
   items,
@@ -132,17 +107,13 @@ export function nonInvestmentDescriptor<T>(
     useList: config.useList,
     useDelete: config.useDelete,
     useImport: config.useImport,
-    useExtraContext: (): OwnershipCtx => {
-      const { data: members } = useHouseholdMembers();
-      const { data: currentUser } = useSession();
-      return { members, currentUser };
-    },
+    useExtraContext: useOwnershipContext,
     getId: (item) => config.entity(item).id,
     getName: (item) => config.entity(item).display_name,
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: config.getSecondary,
-    extraColumns: [ownershipColumn(config)],
+    extraColumns: [ownershipColumn(config.entity)],
     renderHeadline: (items) => <NonInvestmentHeadline items={items} config={config} />,
     renderCreateDialog: config.renderCreateDialog,
     renderEditDialog: config.renderEditDialog,

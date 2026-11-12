@@ -33,10 +33,13 @@ export function IncomeRowDesktop({ income }: Props) {
         <TableCell className="whitespace-nowrap text-right font-medium" data-testid="income-amount">
           {row.amountText}
         </TableCell>
-        <TableCell className="text-sm text-muted-foreground">
+        <TableCell
+          className="truncate text-sm text-muted-foreground"
+          title={row.description ?? undefined}
+        >
           {row.description ?? <span className="text-muted-foreground/60">{"—"}</span>}
         </TableCell>
-        <TableCell className="text-xs text-muted-foreground">{row.ownerLabel}</TableCell>
+        <TableCell className="truncate text-xs text-muted-foreground">{row.ownerLabel}</TableCell>
         <TableCell className="text-right">
           <IncomeRowMenu
             onEdit={row.onEdit}
