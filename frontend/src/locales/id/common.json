@@ -92,6 +92,13 @@
     "saveChanges": "Simpan perubahan",
     "checking": "Memeriksa…"
   },
+  "positionMenu": {
+    "label": "Tindakan lainnya"
+  },
+  "historyTabs": {
+    "snapshots": "Snapshot ({{count}})",
+    "transactions": "Transaksi ({{count}})"
+  },
   "fields": {
     "displayName": "Nama tampilan",
     "description": "Deskripsi (opsional)",

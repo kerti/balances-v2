@@ -124,6 +124,7 @@ beforeEach(() => {
 async function renderStock() {
   renderWithProviders(
     <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
+    { route: "/" },
   );
   await screen.findByTestId("tour-transactions");
 }

@@ -8,6 +8,7 @@
 // The atomicity that request buys is a backend guarantee (proved in
 // repo/investment_settlement_test.go); what this tier can prove is that the
 // frontend never splits it into two calls.
+import { useState, type ComponentProps } from "react";
 import { describe, it, expect } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, waitFor, within } from "@testing-library/react";
@@ -71,13 +72,29 @@ function stubInvestment(snapshots: unknown[], transactions: unknown[], captured:
   );
 }
 
+// The dialog is controlled by the detail header's menu; the harness stands in
+// for it with a plain trigger button.
+function DialogHarness(
+  props: Omit<ComponentProps<typeof TerminatePositionDialog>, "open" | "onOpenChange">,
+) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button data-testid="terminate-position-trigger" onClick={() => setOpen(true)}>
+        open
+      </button>
+      <TerminatePositionDialog {...props} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
 function renderDialog(
   subtype: InvestmentSubtype | undefined,
   currentStatus = "active",
   assetSubtype?: AssetSubtype,
 ) {
   return renderWithProviders(
-    <TerminatePositionDialog
+    <DialogHarness
       group={subtype ? "investments" : "assets"}
       assetSubtype={assetSubtype}
       id={ID}
@@ -436,7 +453,7 @@ describe("TerminatePositionDialog close flow", () => {
   it("words the consequence for a liability as a debt, not an account", async () => {
     const user = userEvent.setup();
     renderWithProviders(
-      <TerminatePositionDialog
+      <DialogHarness
         group="liabilities"
         id={ID}
         listKey="personal"

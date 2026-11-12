@@ -38,6 +38,7 @@ function toForm(bond: Bond | BondListItem): BondFormState {
 export function EditBondDialog({ open, onOpenChange, bond }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(() => toForm(bond));
+  const [tagId, setTagId] = useState<string | null>(() => bond.investment.tag_id);
   const { data: user } = useSession();
   const mutation = useUpdateBond(bond.investment.id);
 
@@ -51,6 +52,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         bond_type: form.bond_type,
@@ -75,6 +77,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
     >

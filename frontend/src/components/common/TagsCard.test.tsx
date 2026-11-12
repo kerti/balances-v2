@@ -116,7 +116,7 @@ it("a tag's row menu offers Add items…, opening the picker preset to that tag"
         },
       ]),
     ),
-    http.put("/api/tags/assignments/bulk", async ({ request }) => {
+    http.put("/api/tags/assignments", async ({ request }) => {
       put = await request.json();
       return new HttpResponse(null, { status: 204 });
     }),

@@ -55,7 +55,8 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
   // --- Delete the parent bond (cleanup — returns to the empty list) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const bondConfirm = page.getByRole("alertdialog");
   await bondConfirm.getByRole("button", { name: "Delete" }).click();
 

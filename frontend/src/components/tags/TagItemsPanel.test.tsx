@@ -89,7 +89,7 @@ function setup() {
       return HttpResponse.json(rows);
     }),
     http.get("/api/tags/items", () => HttpResponse.json(items)),
-    http.put("/api/tags/assignments/bulk", async ({ request }) => {
+    http.put("/api/tags/assignments", async ({ request }) => {
       const body = (await request.json()) as Put;
       puts.push(body);
       const ids = new Set(body.items.map((i) => i.position_id));

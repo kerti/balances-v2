@@ -13,6 +13,16 @@ describe("InfoGrid", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it("sizes its columns by its own width (3 → 2 → 1), not the viewport's (#839)", () => {
+    render(<InfoGrid fields={[{ label: "Rate", value: "5%" }]} />);
+    // The wrapper is the CSS container; the grid steps up with container queries.
+    const grid = screen.getByTestId("info-grid");
+    expect(grid).toHaveClass("@container");
+    const list = grid.querySelector("dl")!;
+    expect(list).toHaveClass("grid-cols-1", "@md:grid-cols-2", "@2xl:grid-cols-3");
+    expect(list.className).not.toMatch(/(^|\s)(sm|md|lg):/);
+  });
+
   it("lays out each label/value pair with the value node verbatim", () => {
     render(
       <InfoGrid

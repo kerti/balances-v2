@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -16,9 +17,9 @@ import (
 
 // TagRepo wraps the generated queries for user-defined position Tags
 // (ADR-0028). A Tag is a household-scoped grouping label; a Position carries
-// at most one via a nullable tag_id on its shared parent table. Assignment is
-// a dedicated path here rather than a field on each position's create/update,
-// because a Tag is orthogonal to a Position's identity.
+// at most one via a nullable tag_id on its shared parent table. A Tag is set
+// through the position's own create/update (tag_id, same transaction; issue
+// #839) or in bulk from the Tags page (AssignTagBatch).
 type TagRepo struct {
 	pool *pgxpool.Pool
 	q    *db.Queries
@@ -164,35 +165,66 @@ func (r *TagRepo) DeleteTag(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// AssignTag sets (or, with a nil tagID, clears) the Tag on a Position. A
-// non-nil Tag is validated for household ownership first — a Tag from another
-// household is ErrNotFound, never a silent cross-tenant link. The per-group
-// UPDATE filters the Position by household_id too (belt + suspenders); zero
-// rows affected means the Position isn't in this household → ErrNotFound.
-func (r *TagRepo) AssignTag(ctx context.Context, group TagGroup, positionID uuid.UUID, tagID *uuid.UUID) error {
+// TagChange is a position write's tag_id field with the three states the wire
+// can express: absent (Set false: leave the Tag alone), null (Set true, ID nil:
+// clear it) and a uuid (Set true: assign it). A create ignores the difference
+// between absent and null; an update acts on it. Decoding it directly off the
+// request body is what lets the handler tell the first two apart.
+type TagChange struct {
+	Set bool
+	ID  *uuid.UUID
+}
+
+// UnmarshalJSON runs only when the key is present (encoding/json calls it for a
+// literal null too, on a non-pointer field), so Set is true by construction.
+func (t *TagChange) UnmarshalJSON(b []byte) error {
+	t.Set = true
+	if string(b) == "null" {
+		t.ID = nil
+		return nil
+	}
+	var id uuid.UUID
+	if err := json.Unmarshal(b, &id); err != nil {
+		return err
+	}
+	t.ID = &id
+	return nil
+}
+
+// assignTag sets (or, with a nil tagID, clears) the Tag on one Position, on
+// whichever Queries it is handed: the plain pool for AssignTag, a transaction
+// for a position create/update so the Tag lands atomically with the write
+// (issue #839). A non-nil Tag is looked up under the caller's household_id in
+// SQL first: a Tag from another household, or a deleted one, is ErrNotFound,
+// never a silent cross-tenant link and never an existence leak. The per-group
+// UPDATE filters the Position by household_id too (belt + suspenders); zero rows
+// affected means the Position isn't in this household -> ErrNotFound.
+func assignTag(ctx context.Context, q *db.Queries, hid, user uuid.UUID, group TagGroup, positionID uuid.UUID, tagID *uuid.UUID) error {
 	if !group.valid() {
 		return ErrNotFound
 	}
-	user, hid, err := currentUser(ctx)
-	if err != nil {
-		return err
-	}
 	if tagID != nil {
-		if _, err := r.GetTag(ctx, *tagID); err != nil {
-			return err // ErrNotFound for missing / cross-tenant
+		if _, err := q.GetTagByID(ctx, db.GetTagByIDParams{ID: *tagID, HouseholdID: hid}); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return fmt.Errorf("get tag: %w", err)
 		}
 	}
 
-	var rows int64
+	var (
+		rows int64
+		err  error
+	)
 	switch group {
 	case TagGroupAsset:
-		rows, err = r.q.AssignAssetTag(ctx, db.AssignAssetTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
+		rows, err = q.AssignAssetTag(ctx, db.AssignAssetTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
 	case TagGroupLiability:
-		rows, err = r.q.AssignLiabilityTag(ctx, db.AssignLiabilityTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
+		rows, err = q.AssignLiabilityTag(ctx, db.AssignLiabilityTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
 	case TagGroupReceivable:
-		rows, err = r.q.AssignReceivableTag(ctx, db.AssignReceivableTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
+		rows, err = q.AssignReceivableTag(ctx, db.AssignReceivableTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
 	case TagGroupInvestment:
-		rows, err = r.q.AssignInvestmentTag(ctx, db.AssignInvestmentTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
+		rows, err = q.AssignInvestmentTag(ctx, db.AssignInvestmentTagParams{TagID: tagID, ID: positionID, HouseholdID: hid, UpdatedBy: &user})
 	}
 	if err != nil {
 		return fmt.Errorf("assign %s tag: %w", group, err)
@@ -201,6 +233,31 @@ func (r *TagRepo) AssignTag(ctx context.Context, group TagGroup, positionID uuid
 		return ErrNotFound
 	}
 	return nil
+}
+
+// applyTagChange runs an update's TagChange inside its transaction: unset does
+// nothing, otherwise it assigns or clears. It returns the tag_id the row now
+// carries so the caller can reflect it in the aggregate it returns.
+func applyTagChange(ctx context.Context, q *db.Queries, hid, user uuid.UUID, group TagGroup, positionID uuid.UUID, c TagChange, current *uuid.UUID) (*uuid.UUID, error) {
+	if !c.Set {
+		return current, nil
+	}
+	if err := assignTag(ctx, q, hid, user, group, positionID, c.ID); err != nil {
+		return nil, err
+	}
+	return c.ID, nil
+}
+
+// AssignTag sets (or, with a nil tagID, clears) the Tag on a Position outside
+// any position write. HTTP no longer exposes it (a Tag is edited in the position
+// dialogs, and in bulk from the Tags page via AssignTagBatch); it remains for the
+// demo seed and tests.
+func (r *TagRepo) AssignTag(ctx context.Context, group TagGroup, positionID uuid.UUID, tagID *uuid.UUID) error {
+	user, hid, err := currentUser(ctx)
+	if err != nil {
+		return err
+	}
+	return assignTag(ctx, r.q, hid, user, group, positionID, tagID)
 }
 
 // TagBreakdown returns, per (tag, group, currency), the summed most-recent

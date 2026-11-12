@@ -6,7 +6,7 @@ import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestS
 import { AccruedInterestSnapshotCard } from "@/components/common/AccruedInterestSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { TransactionCard } from "@/components/common/TransactionCard";
-import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { investmentHeadlineFields } from "@/components/detail/investmentHeadlineFields";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateAccruedInterestSnapshotDialog } from "@/components/dialogs/CreateAccruedInterestSnapshotDialog";
@@ -41,8 +41,6 @@ import type { InfoField } from "@/components/detail/types";
 import type { Bond, InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
 
-const PAGE_SIZE = 12;
-
 // The per-render context for the Bond detail (ADR-0051, A5 — accrued
 // investments). Mirrors the A3 Stock mechanism: the transaction ledger + its
 // mutations + the search state live here — the "has-transactions" axis — so the
@@ -71,7 +69,6 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
   entityKey: "bond",
   testIdPrefix: "bond",
   group: "investments",
-  tagGroup: "investment",
   listKey: "bonds",
   investmentSubtype: "bond",
   i18nNamespaces: ["investments", "common", "errors"],
@@ -157,7 +154,7 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
   // Series code + type + issuer as a tight, label-less cluster at the top of the
   // details card's left column (ADR-0051 Phase B) — the identity moved off the
   // H1 subtitle. Face value + maturity stay as labelled left-column fields;
-  // coupon + disposition move to the middle column (see renderHeadline).
+  // coupon + disposition move to the middle column (see headlineFields).
   identityCluster: (entity, _ctx, t) => {
     const bondTypeLabel = t(
       entity.details.bond_type === "govt_primary"
@@ -183,15 +180,15 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
     return fields;
   },
 
-  renderHeadline: (entity, ctx, snapshots, t) => {
+  headlineFields: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
     const { details } = entity;
     const couponPct = Number(details.coupon_rate).toFixed(2);
     const frequencyLabel = t(`investments:bond.couponFrequency.${details.coupon_frequency}`);
-    return (
-      <InvestmentHeadline
-        currency={entity.investment.native_currency}
-        extraFields={[
+    return investmentHeadlineFields(
+      {
+        currency: entity.investment.native_currency,
+        extraFields: [
           {
             label: t("investments:bond.couponLabel"),
             value: t("investments:bond.couponValue", {
@@ -203,12 +200,13 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
             label: t("investments:bond.fields.couponDisposition"),
             value: t(`investments:bond.couponDisposition.${details.coupon_disposition}`),
           },
-        ]}
-        latestValue={latest ? Number(latest.amount) : null}
-        totalCost={computeCostBasis(ctx.transactions ?? []).cost}
-        status={entity.investment.status}
-        terminatedAt={entity.investment.terminated_at}
-      />
+        ],
+        latestValue: latest ? Number(latest.amount) : null,
+        totalCost: computeCostBasis(ctx.transactions ?? []).cost,
+        status: entity.investment.status,
+        terminatedAt: entity.investment.terminated_at,
+      },
+      t,
     );
   },
 
@@ -303,6 +301,7 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
         </TableRow>
       ),
       rows: filtered,
+      totalCount: allTxns.length,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
           key={tx.id}
@@ -321,7 +320,6 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
           deleteMutation={ctx.deleteTransactionMutation}
         />
       ),
-      pageSize: PAGE_SIZE,
       headerActions: active ? (
         // Two rows (#542): row 1 = trades — Buy (primary), Sell, and Maturity
         // (position-closing); row 2 = cash flows (coupon income + fees). Stacked

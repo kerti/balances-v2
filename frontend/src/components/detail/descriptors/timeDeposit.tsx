@@ -9,7 +9,7 @@ import { AccruedInterestSnapshotRow } from "@/components/common/AccruedInterestS
 import { AccruedInterestSnapshotCard } from "@/components/common/AccruedInterestSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { TransactionCard } from "@/components/common/TransactionCard";
-import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { investmentHeadlineFields } from "@/components/detail/investmentHeadlineFields";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateAccruedInterestSnapshotDialog } from "@/components/dialogs/CreateAccruedInterestSnapshotDialog";
@@ -44,8 +44,6 @@ import { erasedSection } from "@/components/detail/types";
 import type { InfoField } from "@/components/detail/types";
 import type { TimeDeposit, InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
-
-const PAGE_SIZE = 12;
 
 // The per-render context for the TimeDeposit detail (ADR-0051, A5 — the 25-Card
 // outlier). Carries the transaction ledger + its mutations + the search state
@@ -85,7 +83,6 @@ export const timeDepositDescriptor: DetailDescriptor<
   entityKey: "timeDeposit",
   testIdPrefix: "time-deposit",
   group: "investments",
-  tagGroup: "investment",
   listKey: "time-deposits",
   investmentSubtype: "time_deposit",
   i18nNamespaces: ["investments", "common", "errors"],
@@ -173,7 +170,7 @@ export const timeDepositDescriptor: DetailDescriptor<
   identityCluster: (entity) => <IdentityCluster lines={[entity.details.bank_name]} />,
   // Left column: interest rate + term — short values that read fine in the narrow
   // column. The date-range Period + at-maturity policy live in the wider middle
-  // column (see renderHeadline) so they don't wrap onto two lines here.
+  // column (see headlineFields) so they don't wrap onto two lines here.
   infoFields: (entity, _ctx, t) => {
     const { details } = entity;
     const fields: InfoField[] = [
@@ -201,14 +198,14 @@ export const timeDepositDescriptor: DetailDescriptor<
   // date-range Period and at-maturity policy threaded in as extraFields — the
   // wider column fits the "1 Jan → 1 Jul 2026" range on one line. Principal is
   // not repeated; it is the headline's Total cost.
-  renderHeadline: (entity, _ctx, snapshots, t) => {
+  headlineFields: (entity, _ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
     const { details } = entity;
     const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${details.rollover_policy}`);
-    return (
-      <InvestmentHeadline
-        currency={entity.investment.native_currency}
-        extraFields={[
+    return investmentHeadlineFields(
+      {
+        currency: entity.investment.native_currency,
+        extraFields: [
           {
             label: t("investments:timeDeposit.periodLabel"),
             value: (
@@ -224,12 +221,13 @@ export const timeDepositDescriptor: DetailDescriptor<
             label: t("investments:timeDeposit.atMaturityLabel"),
             value: rolloverLabel,
           },
-        ]}
-        latestValue={latest ? Number(latest.amount) : null}
-        totalCost={Number(entity.details.principal)}
-        status={entity.investment.status}
-        terminatedAt={entity.investment.terminated_at}
-      />
+        ],
+        latestValue: latest ? Number(latest.amount) : null,
+        totalCost: Number(entity.details.principal),
+        status: entity.investment.status,
+        terminatedAt: entity.investment.terminated_at,
+      },
+      t,
     );
   },
 
@@ -430,6 +428,7 @@ export const timeDepositDescriptor: DetailDescriptor<
         </TableRow>
       ),
       rows: filtered,
+      totalCount: allTxns.length,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
           key={tx.id}
@@ -448,7 +447,6 @@ export const timeDepositDescriptor: DetailDescriptor<
           deleteMutation={ctx.deleteTransactionMutation}
         />
       ),
-      pageSize: PAGE_SIZE,
       headerActions: active ? (
         // Lone Maturity action (#542): fills the width on phones like the other
         // subtypes' rows, natural width from 768px up.

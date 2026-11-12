@@ -9,10 +9,10 @@ import { backToListAfterCreate } from "./landing";
 // holds on the card — the net value (the figure the household member came for)
 // reads with no horizontal page scroll and the pie-inclusion toggle clears
 // 44px. Deep per-field assertions stay in the nightly suite; the desktop
-// assign/report flow lives in tags.spec.ts.
+// tag/report flow lives in tags.spec.ts.
 //
-// Seeds a positive-holdings tagged position (bank account + one snapshot + a
-// tag assignment) so a breakdown actually renders, and self-cleans afterward.
+// Seeds a positive-holdings tagged position (bank account created with the tag
+// chosen in its Create dialog + one snapshot) so a breakdown actually renders, and self-cleans afterward.
 //
 // covers: INV-PRESENTATION-08
 test(
@@ -38,6 +38,7 @@ test(
     await acctDialog.getByLabel("Display name").fill(account);
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
+    await acctDialog.getByTestId("tag-select").selectOption({ label: tagName });
     await acctDialog.getByRole("button", { name: "Create" }).click();
     await backToListAfterCreate(page);
 
@@ -52,13 +53,6 @@ test(
     await snapDialog.getByLabel("Note (optional)").fill(desc);
     await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
     await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
-
-    // --- Assign the tag via the detail-screen control (await the PUT) ---
-    const assigned = page.waitForResponse(
-      (r) => r.url().includes("/api/tags/assignments") && r.request().method() === "PUT" && r.ok(),
-    );
-    await page.getByTestId("tag-select").selectOption({ label: tagName });
-    await assigned;
 
     // --- Desktop: the wide table renderer mounts under the currency section ---
     await page.goto("/tags");
@@ -101,7 +95,8 @@ test(
       .getByRole("row", { name: new RegExp(account) })
       .getByText(account)
       .click();
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
 
     await page.goto("/tags");

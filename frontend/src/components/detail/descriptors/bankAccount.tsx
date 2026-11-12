@@ -29,7 +29,6 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
   testIdPrefix: "bank-account",
   group: "assets",
   assetSubtype: "bank_account",
-  tagGroup: "asset",
   listKey: "bank-accounts",
   i18nNamespaces: ["assets", "common", "errors"],
   keys: {

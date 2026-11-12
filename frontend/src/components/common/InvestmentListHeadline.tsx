@@ -7,7 +7,7 @@
 // dot separator on each line. Single-currency household sees one figure
 // per line; mixed sees "Rp X · $ Y". Active count under the rows.
 //
-// P/L tone follows the detail-screen `InvestmentHeadline`: emerald gain
+// P/L tone follows the detail-screen `investmentHeadlineFields`: emerald gain
 // / destructive loss / muted zero, "−" U+2212 minus glyph.
 
 import { useTranslation } from "react-i18next";

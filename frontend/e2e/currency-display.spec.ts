@@ -89,7 +89,8 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await row.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 

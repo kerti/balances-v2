@@ -83,7 +83,9 @@ test(
     await page.getByRole("menuitem", { name: "Delete" }).click();
     await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },
@@ -124,7 +126,9 @@ test(
     await expect(page.getByRole("heading", { level: 1, name: account })).toBeVisible();
     expect(await overflow()).toBeLessThanOrEqual(0);
 
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
   },

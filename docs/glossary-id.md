@@ -170,6 +170,8 @@ the choice is non-obvious.
 | Confirm | Konfirmasi | — |
 | Close | Tutup | — |
 | Close menu (the mobile drawer ×) | Tutup menu | #849. |
+| More actions (the detail header's ⋯ menu, screen-reader label) | Tindakan lainnya | #839. The menu holds Tutup… / Ubah status and Hapus. |
+| Snapshots (n) / Transactions (n) (the detail page's history tabs) | Snapshot (n) / Transaksi (n) | #839. |
 | Show breakdown / Hide breakdown (the Income hero toggle on phones) | Lihat rincian / Sembunyikan rincian | #849. |
 | Reopen | Buka Kembali | — |
 | Filter | Filter | Loanword acceptable; "Saring" reads stiff. |

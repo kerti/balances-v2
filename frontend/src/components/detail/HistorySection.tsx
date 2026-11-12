@@ -5,6 +5,9 @@ import { PaginationControls } from "@/components/common/PaginationControls";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { HistorySectionSpec } from "@/components/detail/types";
 
+const MOBILE_PAGE_SIZE = 6;
+const DESKTOP_PAGE_SIZE = 12;
+
 // One history table — snapshots, or (for investments) a transaction ledger
 // (ADR-0051). Owns the card + table + pagination + mobile table→cards reflow
 // (Phase B) and never inspects columns: `header` is a neutral `<TableRow>` of
@@ -27,9 +30,10 @@ export function HistorySection<TRow>({
   rows,
   renderRow,
   renderCard,
-  pageSize,
 }: HistorySectionSpec<TRow>) {
   const isMobile = useIsMobile();
+  // Six cards a page on phones (shorter pages, #839), twelve from 768px up.
+  const pageSize = isMobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const effectivePage = Math.min(page, totalPages);

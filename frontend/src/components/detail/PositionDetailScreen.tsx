@@ -1,24 +1,25 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { PageHeader } from "@/components/common/PageHeader";
-import { Download, Pencil, Trash2 } from "lucide-react";
+import { Download, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TerminatePositionDialog } from "@/components/dialogs/TerminatePositionDialog";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
 import { StatusBadge } from "@/components/common/StatusBadge";
-import { DetailTagControl } from "@/components/common/DetailTagControl";
 import { SnapshotChart } from "@/components/charts/SnapshotChart";
 import { HelpTourButton, type TourStep } from "@/components/shell/HelpTourButton";
 import { InfoGrid } from "@/components/detail/InfoGrid";
 import { HistorySection } from "@/components/detail/HistorySection";
+import { PositionActionsMenu } from "@/components/detail/PositionActionsMenu";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
 import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
 import { headlineSurface } from "@/lib/headline";
 import { RecordSnapshotRequestProvider } from "@/components/detail/RecordSnapshotRequestProvider";
-import { cn } from "@/lib/utils";
 import type {
   DetailDescriptor,
   HistorySectionSpec,
@@ -32,32 +33,28 @@ type Props<TEntity, TCtx, TSnap extends SnapshotShape> = {
   onBack: () => void;
 };
 
-const PAGE_SIZE = 12;
-
-// Shared by both details-card column layouts below: a vertical divider
-// between desktop columns, with padding on either side of it.
-const detailColumnDivider = cn(
-  "md:divide-x md:divide-border",
-  "md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0",
-);
-
 // The five standard tour anchors. Each maps to a core-owned `tour-${step}`
 // data-testid and to `${tourKeyPrefix}.tour.${step}Title` / `${step}Body` copy,
 // so a step can never point at a region the core doesn't render (ADR-0051). A
 // type with extra regions overrides the whole list via `descriptor.tourSteps`.
 const TOUR_STEPS = ["overview", "actions", "details", "chart", "snapshots"] as const;
 
+// The two history tabs. `?tab=` carries the open one so a link, a refresh and
+// Back all land on it (#839); Snapshots is the default and leaves no param.
+type HistoryTab = "snapshots" | "transactions";
+const TAB_PARAM = "tab";
+
 // The generic Position detail screen (ADR-0051). It owns every shared-surface
-// concern as hard JSX — back/title/tag control, the actions row
-// (help/edit-trigger/terminate/delete + export), the SnapshotChart card + its
-// ≥2-snapshot guard, loading/error/not-found, the page scaffold — and touches
-// only the Position shared surface (via `descriptor.getAsset`), never a
-// `details.*` field. The two variable regions arrive through
-// presentation-neutral primitives (`InfoGrid`, `HistorySection`); a descriptor
-// supplies only wiring + slots the core calls but never inspects. The snapshot
-// stream + its mutations are the descriptor's own (asset vs investment families
-// diverge), bound into `renderRow`/`renderCreateControls` closures so no mutation
-// type crosses the boundary.
+// concern as hard JSX — back/title, the actions row (help · edit · ⋯ menu with
+// close/change-status and delete), the details card, the SnapshotChart card + its
+// ≥2-snapshot guard, the snapshots/transactions tabs, loading/error/not-found,
+// the page scaffold — and touches only the Position shared surface (via
+// `descriptor.getAsset`), never a `details.*` field. The variable regions arrive
+// through presentation-neutral primitives (`InfoGrid`, `HistorySection`); a
+// descriptor supplies only wiring + slots the core calls but never inspects. The
+// snapshot stream + its mutations are the descriptor's own (asset vs investment
+// families diverge), bound into `renderRow`/`renderCreateControls` closures so no
+// mutation type crosses the boundary.
 export function PositionDetailScreen<TEntity, TCtx, TSnap extends SnapshotShape>(
   props: Props<TEntity, TCtx, TSnap>,
 ) {
@@ -83,9 +80,11 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
   const ctx = (descriptor.useDetailContext?.(assetId) ?? undefined) as TCtx;
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
 
   const { keys } = descriptor;
   const snapshots = snapshotRender.snapshots;
@@ -101,6 +100,20 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
           onBack();
         },
       },
+    );
+  }
+
+  function selectTab(next: HistoryTab) {
+    // Replace, not push: flipping tabs is not a navigation, and Back should leave
+    // the page rather than step through the tabs.
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev);
+        if (next === "snapshots") params.delete(TAB_PARAM);
+        else params.set(TAB_PARAM, next);
+        return params;
+      },
+      { replace: true },
     );
   }
 
@@ -127,19 +140,28 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
 
   const headerSecondary = descriptor.headerSecondary?.(entity, ctx, t);
   const headerBadge = descriptor.renderHeaderBadge?.(entity, ctx, t);
-  const infoFields = descriptor.infoFields(entity, ctx, t);
   const identity = descriptor.identityCluster?.(entity, ctx, t);
-  // The details card is a two-column headline on desktop (ADR-0051 Phase B, the
-  // Income headline idiom): the descriptor's own identity + spec fields fill the
-  // left column, the shared-surface meta the right; both collapse to one stacked
-  // column on mobile. Currency + status ride the card title instead, to save the
-  // vertical space extra rows would cost — leaving ownership the sole meta row.
+  // The details card is one identity line plus one labelled grid (#839): the
+  // type's own fields, then the investment money summary, then the shared
+  // ownership row. Currency + status ride the card title instead, to save the
+  // vertical space extra rows would cost.
+  const headlineFields = descriptor.headlineFields?.(entity, ctx, snapshots, t);
   const metaFields: InfoField[] = [{ label: t("common:fields.ownership"), value: ownerLabel }];
-  const headline = descriptor.renderHeadline?.(entity, ctx, snapshots, t);
+  const gridFields = [
+    ...descriptor.infoFields(entity, ctx, t),
+    ...(headlineFields ?? []),
+    ...metaFields,
+  ];
   const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);
   const afterDetails = descriptor.renderAfterDetails?.(entity, ctx, t);
   const extraSections = descriptor.historySections?.(entity, ctx, snapshots, t) ?? [];
   const costSeries = descriptor.chartCostSeries?.(entity, ctx, snapshots);
+
+  // A tab bar only when the position has a ledger to tab to (an account has none).
+  const transactionsSection = extraSections[0];
+  const requestedTab = searchParams.get(TAB_PARAM);
+  const tab: HistoryTab =
+    transactionsSection && requestedTab === "transactions" ? "transactions" : "snapshots";
 
   const tourSteps: TourStep[] =
     descriptor.tourSteps?.(t) ??
@@ -165,7 +187,6 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
     ...(snapshotRender.renderCard && {
       renderCard: (snapshot: TSnap) => snapshotRender.renderCard!(snapshot),
     }),
-    pageSize: PAGE_SIZE,
     // Two deliberate rows (#542), stacked on phones and inline from 768px up:
     // row 1 = the single Record snapshot button (#788), the promoted primary,
     // row 2 = the workbook *I/O* pair (Export + Import). Export is always
@@ -210,39 +231,24 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
         title={asset.display_name}
         titleTestId="tour-overview"
         subtitle={headerSecondary}
-        // Two rows on phones (#542): Help + Edit above, Close/Status + Delete
-        // below, each pair splitting the full width evenly
-        // (`max-md:[&>*]:flex-1`). From 768px up they collapse back to natural,
-        // inline widths.
+        // One row at every width (#839): `?` Help, Edit (the header's one primary
+        // button; it takes the spare width on phones) and the ⋯ menu holding
+        // Close… / Change status and the red Delete.
         actions={
           <div
             data-testid="tour-actions"
-            className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap"
+            className="flex w-full items-center gap-2 md:w-auto md:justify-end"
           >
-            <div className="flex gap-2 max-md:[&>*]:flex-1">
-              <HelpTourButton steps={tourSteps} />
-              <Button variant="outline" onClick={() => setEditOpen(true)}>
-                <Pencil className="mr-1 size-4" />
-                {t("common:actions.edit")}
-              </Button>
-            </div>
-            <div className="flex gap-2 max-md:[&>*]:flex-1">
-              <TerminatePositionDialog
-                group={descriptor.group}
-                id={asset.id}
-                listKey={descriptor.listKey}
-                currentStatus={asset.status}
-                currentTerminatedAt={asset.terminated_at}
-                currentNote={asset.termination_note}
-                investmentSubtype={descriptor.investmentSubtype}
-                assetSubtype={descriptor.assetSubtype}
-                currency={asset.native_currency}
-              />
-              <Button variant="outline" onClick={() => setDeleteOpen(true)}>
-                <Trash2 className="mr-1 size-4" />
-                {t("common:delete")}
-              </Button>
-            </div>
+            <HelpTourButton steps={tourSteps} />
+            <Button className="max-md:flex-1" onClick={() => setEditOpen(true)}>
+              <Pencil className="mr-1 size-4" />
+              {t("common:actions.edit")}
+            </Button>
+            <PositionActionsMenu
+              active={active}
+              onClose={() => setCloseOpen(true)}
+              onDelete={() => setDeleteOpen(true)}
+            />
           </div>
         }
       />
@@ -262,60 +268,14 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
               <StatusBadge group={descriptor.group} status={asset.status} />
             </div>
           </div>
+          {identity}
         </CardHeader>
         <CardContent className="space-y-3">
-          {headline ? (
-            /* Investment layout (ADR-0051 Phase B): three columns on desktop —
-               identity + info fields on the left, the risk/spec/money headline in
-               the middle (widened), ownership + tag on the right. On mobile the
-               three columns stack in reading order (left column fully, then the
-               middle, then the meta), so the details card reads top-to-bottom the
-               same way it reads left-to-right on desktop. */
-            <div
-              className={cn(
-                "grid gap-4 md:gap-x-0",
-                "md:grid-cols-[minmax(0,1fr)_minmax(0,1.7fr)_minmax(0,1fr)]",
-                detailColumnDivider,
-              )}
-            >
-              <div className="space-y-3">
-                {identity}
-                {/* Inline like the middle + meta columns, so an investment's
-                    left-column fields (bond face value/maturity, time-deposit
-                    rate/term) read as single label/value lines on mobile too. */}
-                <InfoGrid fields={infoFields} mobileLayout="inline" />
-              </div>
-              {headline}
-              <div className="space-y-3">
-                <InfoGrid fields={metaFields} mobileLayout="inline" />
-                <DetailTagControl
-                  group={descriptor.tagGroup}
-                  positionId={asset.id}
-                  currentTagId={asset.tag_id}
-                />
-              </div>
-            </div>
-          ) : (
-            /* Amount-only layout: two columns on desktop with a divider between
-               (the Income headline idiom) — identity + spec on the left, the
-               shared meta on the right; one stacked column on mobile. */
-            <div
-              className={cn("grid gap-x-6 gap-y-4 md:grid-cols-2 md:gap-y-0", detailColumnDivider)}
-            >
-              <div className="space-y-3">
-                {identity}
-                <InfoGrid fields={infoFields} />
-              </div>
-              <div className="space-y-3">
-                <InfoGrid fields={metaFields} mobileLayout="inline" />
-                <DetailTagControl
-                  group={descriptor.tagGroup}
-                  positionId={asset.id}
-                  currentTagId={asset.tag_id}
-                />
-              </div>
-            </div>
-          )}
+          {/* The anchor of the "Cost and gain / loss" tour step: the grid carries
+              the investment money summary. */}
+          <div data-testid={headlineFields ? "investment-headline" : undefined}>
+            <InfoGrid fields={gridFields} />
+          </div>
           {asset.description && <p className="text-sm">{asset.description}</p>}
         </CardContent>
       </Card>
@@ -342,13 +302,72 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
         </Card>
       )}
 
-      <HistorySection {...snapshotSection} />
-
-      {extraSections.map((section) => (
-        <HistorySection key={section.testId} {...section} />
-      ))}
+      {transactionsSection ? (
+        /* Snapshots | Transactions. Both panels stay mounted (`forceMount`, the
+           inactive one hidden by CSS) so the Record snapshot dialog a trade's toast
+           or the reconcile banner asks for (#830) can open from the Transactions tab,
+           and each tab keeps its own page and search state. */
+        <Tabs
+          value={tab}
+          onValueChange={(next) => selectTab(next as HistoryTab)}
+          className="flex-col gap-4"
+          data-testid="history-tabs"
+        >
+          <TabsList className="h-9 w-full max-md:h-11 md:w-fit">
+            <TabsTrigger
+              value="snapshots"
+              className={tabTriggerClass}
+              data-testid="history-tab-snapshots"
+            >
+              {t("common:historyTabs.snapshots", { count: snapshots?.length ?? 0 })}
+            </TabsTrigger>
+            <TabsTrigger
+              value="transactions"
+              className={tabTriggerClass}
+              data-testid="history-tab-transactions"
+            >
+              {t("common:historyTabs.transactions", {
+                count: transactionsSection.totalCount ?? transactionsSection.rows.length,
+              })}
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent
+            value="snapshots"
+            forceMount
+            className={panelClass}
+            data-testid="history-panel-snapshots"
+          >
+            <HistorySection {...snapshotSection} />
+          </TabsContent>
+          <TabsContent
+            value="transactions"
+            forceMount
+            className={panelClass}
+            data-testid="history-panel-transactions"
+          >
+            {extraSections.map((section) => (
+              <HistorySection key={section.testId} {...section} />
+            ))}
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <HistorySection {...snapshotSection} />
+      )}
 
       {descriptor.renderEditDialog(entity, { open: editOpen, onOpenChange: setEditOpen })}
+      <TerminatePositionDialog
+        group={descriptor.group}
+        id={asset.id}
+        listKey={descriptor.listKey}
+        currentStatus={asset.status}
+        currentTerminatedAt={asset.terminated_at}
+        currentNote={asset.termination_note}
+        investmentSubtype={descriptor.investmentSubtype}
+        assetSubtype={descriptor.assetSubtype}
+        currency={asset.native_currency}
+        open={closeOpen}
+        onOpenChange={setCloseOpen}
+      />
       <ConfirmDialog
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
@@ -362,3 +381,12 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
     </div>
   );
 }
+
+// The tab strip's look. The shadcn TabsTrigger keys its active state off a
+// `data-active` attribute Radix never sets, so the active style is spelled out
+// against `data-state`; `max-md:min-h-11` is the phone tap floor.
+const tabTriggerClass =
+  "max-md:min-h-11 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm";
+
+// Radix leaves a force-mounted inactive panel in the DOM; hide it with CSS.
+const panelClass = "data-[state=inactive]:hidden";

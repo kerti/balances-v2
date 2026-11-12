@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionDetailScreen } from "@/components/detail/PositionDetailScreen";
@@ -106,6 +107,7 @@ describe("liabilityDescriptor detail (conformance)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={liabilityDescriptor} assetId="a1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     const title = await screen.findByTestId("tour-overview");
@@ -129,7 +131,9 @@ describe("liabilityDescriptor detail (conformance)", () => {
 
     const actions = screen.getByTestId("tour-actions");
     expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: /delete/i })).toBeInTheDocument();
+    // Close / Delete live behind the header's ⋯ menu (#839).
+    await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("liability-export")).toHaveAttribute(
       "href",
       expect.stringContaining("/a1/"),

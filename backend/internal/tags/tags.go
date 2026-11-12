@@ -1,8 +1,10 @@
 // Package tags exposes HTTP handlers for user-defined position Tags
 // (ADR-0028). A Tag is a household-scoped grouping label; a Position carries
-// at most one. Assignment is a dedicated endpoint (PUT /api/tags/assignments)
-// because a Tag is orthogonal to a Position's identity, and a breakdown
-// endpoint (GET /api/tags/breakdown) sums Position value per (tag, currency).
+// at most one. A Position's own Tag is set through its create/update (an
+// optional tag_id, written in the same transaction; issue #839). The Tags page
+// moves many Positions at once through PUT /api/tags/assignments, and a
+// breakdown endpoint (GET /api/tags/breakdown) sums Position value per
+// (tag, currency).
 package tags
 
 import (
@@ -36,7 +38,6 @@ func (h *Handlers) Mount(r chi.Router) {
 		r.Get("/breakdown", h.handleBreakdown)
 		r.Get("/items", h.handleItems)
 		r.Put("/assignments", h.handleAssign)
-		r.Put("/assignments/bulk", h.handleAssignBulk)
 		r.Route("/{id}", func(r chi.Router) {
 			r.Patch("/", h.handleUpdate)
 			r.Delete("/", h.handleDelete)
@@ -51,20 +52,15 @@ type writeReq struct {
 	Color string `json:"color" validate:"required"`
 }
 
+// assignReq moves (or, with a nil tag_id, clears) many Positions in one
+// write (PUT /api/tags/assignments). The cap is a sanity bound well above a
+// household's position count.
 type assignReq struct {
-	Group      string     `json:"group"       validate:"required,oneof=asset liability receivable investment"`
-	PositionID uuid.UUID  `json:"position_id" validate:"required"`
-	TagID      *uuid.UUID `json:"tag_id"` // nil unassigns
+	TagID *uuid.UUID      `json:"tag_id"` // nil unassigns
+	Items []assignItemReq `json:"items" validate:"required,min=1,max=500,dive"`
 }
 
-// assignBulkReq moves (or, with a nil tag_id, clears) many Positions in one
-// write. The cap is a sanity bound well above a household's position count.
-type assignBulkReq struct {
-	TagID *uuid.UUID         `json:"tag_id"` // nil unassigns
-	Items []assignBulkItemRq `json:"items" validate:"required,min=1,max=500,dive"`
-}
-
-type assignBulkItemRq struct {
+type assignItemReq struct {
 	Group      string    `json:"group"       validate:"required,oneof=asset liability receivable investment"`
 	PositionID uuid.UUID `json:"position_id" validate:"required"`
 }
@@ -136,23 +132,6 @@ func (h *Handlers) handleDelete(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) handleAssign(w http.ResponseWriter, r *http.Request) {
 	var req assignReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
-		return
-	}
-	if err := h.validate.Struct(&req); err != nil {
-		httperr.WriteValidation(w, err)
-		return
-	}
-	if err := h.repo.AssignTag(r.Context(), repo.TagGroup(req.Group), req.PositionID, req.TagID); err != nil {
-		httperr.WriteRepo(w, "assign tag", err)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h *Handlers) handleAssignBulk(w http.ResponseWriter, r *http.Request) {
-	var req assignBulkReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		httperr.Write(w, http.StatusBadRequest, httperr.CodeInvalidJSONBody, nil)
 		return

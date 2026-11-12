@@ -41,6 +41,7 @@ export function CreateBondDialog({ onCreated }: Props) {
   const [form, setForm] = useState(emptyForm);
   const { data: user } = useSession();
   const mutation = useCreateBond();
+  const [tagId, setTagId] = useState<string | null>(null);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -53,6 +54,7 @@ export function CreateBondDialog({ onCreated }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
@@ -89,10 +91,12 @@ export function CreateBondDialog({ onCreated }: Props) {
       submitLabel={t("common:actions.create")}
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {
         setForm(emptyForm());
+        setTagId(null);
         mutation.reset();
       }}
     >

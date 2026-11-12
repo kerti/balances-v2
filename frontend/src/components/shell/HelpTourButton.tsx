@@ -23,9 +23,15 @@ export function HelpTourButton({ steps }: Props) {
 
   function start() {
     // Skip steps whose target isn't rendered this visit (the chart needs ≥2
-    // snapshots; the add-buttons hide on closed positions). A pruned step would
-    // otherwise pop up as a stray centered modal.
-    const present = steps.filter((s) => !s.element || document.querySelector(s.element));
+    // snapshots; the add-buttons hide on closed positions) or is on screen only
+    // when another tab is open (#839: the inactive Snapshots / Transactions
+    // panel is display:none). A pruned step would otherwise pop up as a stray
+    // centered modal.
+    const present = steps.filter((s) => {
+      if (!s.element) return true;
+      const el = document.querySelector(s.element);
+      return !!el && el.getClientRects().length > 0;
+    });
     if (present.length === 0) return;
     driver({
       showProgress: true,
@@ -47,9 +53,17 @@ export function HelpTourButton({ steps }: Props) {
   }
 
   return (
-    <Button variant="outline" onClick={start} data-testid="help-tour">
-      <CircleHelp className="mr-1 size-4" />
-      {t("tour.help")}
+    // Icon-only `?` (#839): the detail header is Help · Edit · ⋯ on one row, so
+    // Help spends no label width. `size-11` is the phone tap floor.
+    <Button
+      variant="outline"
+      size="icon"
+      className="max-md:size-11"
+      onClick={start}
+      aria-label={t("tour.help")}
+      data-testid="help-tour"
+    >
+      <CircleHelp />
     </Button>
   );
 }

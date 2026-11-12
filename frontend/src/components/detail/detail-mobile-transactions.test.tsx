@@ -126,6 +126,7 @@ describe("detail mobile a11y floor (transaction ledger)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Renderer flips to cards; the wide transaction table is gone.
@@ -151,6 +152,7 @@ describe("detail mobile a11y floor (transaction ledger)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Desktop stays on the wide table — no card list.

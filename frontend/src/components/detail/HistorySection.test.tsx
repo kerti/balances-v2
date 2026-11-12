@@ -37,7 +37,6 @@ function baseSpec(overrides: Partial<HistorySectionSpec<Row>> = {}): HistorySect
         <TableCell>{row.label}</TableCell>
       </TableRow>
     ),
-    pageSize: 12,
     ...overrides,
   };
 }
@@ -73,6 +72,21 @@ describe("HistorySection renderer pick", () => {
     render(<HistorySection {...baseSpec()} />);
     expect(screen.getByTestId("tour-snapshots-table")).toBeInTheDocument();
     expect(screen.queryByTestId("tour-snapshots-cards")).not.toBeInTheDocument();
+  });
+
+  it("pages six cards at a time on phones and twelve rows on desktop (#839)", () => {
+    const many: Row[] = Array.from({ length: 14 }, (_, i) => ({
+      id: `r${i + 1}`,
+      label: `Month ${i + 1}`,
+    }));
+    mockUseIsMobile.mockReturnValue(true);
+    const { unmount } = render(<HistorySection {...baseSpec({ rows: many, renderCard })} />);
+    expect(screen.getByTestId("tour-snapshots-cards").children).toHaveLength(6);
+    unmount();
+
+    mockUseIsMobile.mockReturnValue(false);
+    render(<HistorySection {...baseSpec({ rows: many })} />);
+    expect(screen.getAllByTestId(/^table-row-/)).toHaveLength(12);
   });
 
   it("shows the empty copy when there are no rows, at either width", () => {

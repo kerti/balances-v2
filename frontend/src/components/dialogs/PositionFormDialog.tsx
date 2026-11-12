@@ -11,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { FormError, ValidatedForm, type FieldMessages } from "@/components/common/ValidatedForm";
+import { TagSelect } from "@/components/common/TagSelect";
 
 type Props = {
   title: string;
@@ -35,6 +36,14 @@ type Props = {
    * The scaffold owns `preventDefault`.
    */
   onSubmit: (close: () => void) => void;
+  /**
+   * The position's Tag (ADR-0028). Position dialogs pass their tag state and get
+   * the one Tag field, in the same slot under the type's own fields in Create and
+   * Edit alike (#839); the rate and tag dialogs that share this shell omit it.
+   * The caller sends the value as the write's `tag_id`, so the Tag is saved by the
+   * one Save, with the one toast.
+   */
+  tag?: { value: string | null; onChange: (tagId: string | null) => void };
   /** The hand-written form body (fields only — no shell, error, or footer). */
   children: React.ReactNode;
   /**
@@ -69,6 +78,7 @@ export function PositionFormDialog({
   validate,
   error,
   onSubmit,
+  tag,
   children,
   formClassName = "space-y-3",
   trigger,
@@ -116,6 +126,8 @@ export function PositionFormDialog({
           className={formClassName}
         >
           {children}
+
+          {tag && <TagSelect value={tag.value} onChange={tag.onChange} />}
 
           <FormError />
 

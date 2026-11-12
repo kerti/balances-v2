@@ -39,6 +39,7 @@ function toForm(td: TimeDeposit | TimeDepositListItem): TimeDepositFormState {
 export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const [form, setForm] = useState(() => toForm(timeDeposit));
+  const [tagId, setTagId] = useState<string | null>(() => timeDeposit.investment.tag_id);
   const { data: user } = useSession();
   const mutation = useUpdateTimeDeposit(timeDeposit.investment.id);
 
@@ -59,6 +60,7 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         bank_name: form.bank_name,
@@ -83,6 +85,7 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       validate={() =>
         termInvalid ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") } : {}
       }

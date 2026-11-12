@@ -92,6 +92,13 @@
     "saveChanges": "Save changes",
     "checking": "Checking…"
   },
+  "positionMenu": {
+    "label": "More actions"
+  },
+  "historyTabs": {
+    "snapshots": "Snapshots ({{count}})",
+    "transactions": "Transactions ({{count}})"
+  },
   "fields": {
     "displayName": "Display name",
     "description": "Description (optional)",

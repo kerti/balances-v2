@@ -39,6 +39,9 @@ type CreateVehicleParams struct {
 	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
 	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
 	EntryType string
+	// TagID, when set, tags the new Position in the same transaction (issue
+	// #839). It must be a live Tag of the caller's household, else ErrNotFound.
+	TagID *uuid.UUID
 }
 
 type UpdateVehicleParams struct {
@@ -57,12 +60,15 @@ type UpdateVehicleParams struct {
 	// — the engine cannot detect one — so it is deliberately editable after the
 	// fact (ADR-0053 §3).
 	EntryType *string
+	// Tag re-tags the Position in the same transaction when Set: a uuid assigns,
+	// null clears, absent leaves it alone (issue #839).
+	Tag TagChange
 }
 
-// CreateVehicle is the no-tag, no-history degenerate of
+// CreateVehicle is the no-history degenerate of
 // CreateVehicleWithSnapshots (issue #366).
 func (r *AssetRepo) CreateVehicle(ctx context.Context, p CreateVehicleParams) (*Vehicle, error) {
-	return r.CreateVehicleWithSnapshots(ctx, p, nil, nil)
+	return r.CreateVehicleWithSnapshots(ctx, p, p.TagID, nil)
 }
 
 func (r *AssetRepo) GetVehicle(ctx context.Context, id uuid.UUID) (*Vehicle, error) {
@@ -189,6 +195,12 @@ func (r *AssetRepo) UpdateVehicle(ctx context.Context, id uuid.UUID, p UpdateVeh
 		return nil, fmt.Errorf("update vehicle_details: %w", err)
 	}
 
+	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupAsset, asset.ID, p.Tag, asset.TagID)
+	if err != nil {
+		return nil, err
+	}
+	asset.TagID = tagID
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
@@ -299,13 +311,8 @@ func (r *AssetRepo) CreateVehicleWithSnapshots(ctx context.Context, p CreateVehi
 	}
 
 	if tagID != nil {
-		if _, err := qtx.AssignAssetTag(ctx, db.AssignAssetTagParams{
-			TagID:       tagID,
-			ID:          asset.ID,
-			HouseholdID: hid,
-			UpdatedBy:   &user,
-		}); err != nil {
-			return nil, fmt.Errorf("assign tag: %w", err)
+		if err := assignTag(ctx, qtx, hid, user, TagGroupAsset, asset.ID, tagID); err != nil {
+			return nil, err
 		}
 		asset.TagID = tagID
 	}

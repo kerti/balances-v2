@@ -45,6 +45,7 @@ describe("one toast per write", () => {
         account_number: "1",
         account_type: "savings",
         entry_type: "acquired",
+        tag_id: null,
       }),
     );
 

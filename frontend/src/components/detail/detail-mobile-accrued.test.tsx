@@ -120,6 +120,7 @@ describe("detail mobile a11y floor (accrued)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bondDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Renderer flips to cards; the wide snapshot table is gone.
@@ -145,6 +146,7 @@ describe("detail mobile a11y floor (accrued)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bondDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Desktop stays on the wide table — no card list.

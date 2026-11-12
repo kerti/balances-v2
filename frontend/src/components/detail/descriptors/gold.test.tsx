@@ -165,6 +165,7 @@ describe("goldDescriptor detail (conformance)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={goldDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Title (H1). Form/purity no longer ride a subtitle here — they moved into
@@ -172,7 +173,7 @@ describe("goldDescriptor detail (conformance)", () => {
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Bullion Holding");
 
-    // The investment headline slot (renderHeadline) mounts the shared component.
+    // The investment headline slot (headlineFields) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
     // Details card: identity cluster (form primary, purity muted) + the
@@ -210,7 +211,9 @@ describe("goldDescriptor detail (conformance)", () => {
     // Actions row + the export anchor (gold-prefixed).
     const actions = screen.getByTestId("tour-actions");
     expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: /delete/i })).toBeInTheDocument();
+    // Close / Delete live behind the header's ⋯ menu (#839).
+    await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("gold-export")).toHaveAttribute(
       "href",
       expect.stringContaining("/i1/"),

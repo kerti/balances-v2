@@ -46,7 +46,8 @@ test(
     await expect(snapshotCard.locator("tbody tr")).toHaveCount(0);
 
     // --- Sell (active → sold; date auto-fills today → close snapshot month) ---
-    await page.getByRole("button", { name: "Close…", exact: true }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
     const sellDialog = page.getByRole("dialog");
     await expect(sellDialog.getByRole("heading", { name: "Close investment" })).toBeVisible();
     await sellDialog.getByLabel("Status").selectOption("sold");
@@ -60,7 +61,8 @@ test(
     await expect(snapshotCard.locator("tbody tr")).toHaveCount(1);
 
     // --- Delete (cleanup — returns to the list, leaving it empty) ---
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     const confirm = page.getByRole("alertdialog");
     await confirm.getByRole("button", { name: "Delete" }).click();
 

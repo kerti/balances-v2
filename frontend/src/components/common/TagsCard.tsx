@@ -49,7 +49,7 @@ function TagRow({ tag }: { tag: Tag }) {
   const [addOpen, setAddOpen] = useState(false);
 
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex items-center justify-between gap-2" data-testid={`tag-row-${tag.id}`}>
       <TagBadge name={tag.name} color={tag.color} />
       <RowActionsMenu
         label={t("manage.rowActions")}

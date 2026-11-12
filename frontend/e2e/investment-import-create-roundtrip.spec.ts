@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -41,6 +42,7 @@ test("stock export re-imports as a new position with its ledger from the list", 
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- Record a Buy so the export's Transactions sheet has a real ledger row ---
+  await openHistoryTab(page, "transactions");
   await page.getByRole("button", { name: "Buy" }).click();
   const buyDialog = page.getByRole("dialog");
   await expect(buyDialog.getByRole("heading", { name: "Record buy" })).toBeVisible();
@@ -50,6 +52,7 @@ test("stock export re-imports as a new position with its ledger from the list", 
   await expect(page.getByRole("row", { name: /Buy/ })).toBeVisible();
 
   // --- Record one quantity-price snapshot (month defaults to current) ---
+  await openHistoryTab(page, "snapshots");
   await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
@@ -102,6 +105,7 @@ test("stock export re-imports as a new position with its ledger from the list", 
     .getByText(name)
     .click();
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await openHistoryTab(page, "transactions");
   await expect(page.getByRole("row", { name: /Buy/ })).toBeVisible();
 
   // --- Cleanup: delete both stocks (each delete returns to the list) ---
@@ -112,7 +116,8 @@ test("stock export re-imports as a new position with its ledger from the list", 
       .first()
       .getByText(name)
       .click();
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     const confirm = page.getByRole("alertdialog");
     await confirm.getByRole("button", { name: "Delete" }).click();
     await expect(page.getByRole("row", { name: new RegExp(name) })).toHaveCount(1 - i);

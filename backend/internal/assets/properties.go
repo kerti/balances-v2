@@ -32,6 +32,10 @@ type createPropertyReq struct {
 	// behaviour, so a client that never learned the field still creates genuine
 	// acquisitions.
 	EntryType string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
+	// TagID tags the new Position in the same transaction. Optional; null or
+	// absent leaves it untagged. It must be a Tag of the caller's household or
+	// the request is a 404 (issue #839).
+	TagID repo.TagChange `json:"tag_id"`
 }
 
 type updatePropertyReq struct {
@@ -48,6 +52,10 @@ type updatePropertyReq struct {
 	// existing declaration alone rather than resetting it to `acquired` — silently
 	// undoing a `newly_tracked` declaration is the residual ADR-0053 warns about.
 	EntryType *string `json:"entry_type" validate:"omitempty,oneof=acquired newly_tracked"`
+	// TagID re-tags the Position in the same transaction. Absent leaves the Tag
+	// unchanged; null clears it; a uuid assigns it (a Tag of the caller's
+	// household, else 404). Our dialogs always send it (issue #839).
+	TagID repo.TagChange `json:"tag_id"`
 }
 
 // ----- handlers -----------------------------------------------------------
@@ -81,6 +89,7 @@ func (h *Handlers) handleCreateProperty(w http.ResponseWriter, r *http.Request) 
 		AcquisitionCost:        req.AcquisitionCost,
 		AnnualAppreciationRate: req.AnnualAppreciationRate,
 		EntryType:              req.EntryType,
+		TagID:                  req.TagID.ID,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "create property", err)
@@ -144,6 +153,7 @@ func (h *Handlers) handleUpdateProperty(w http.ResponseWriter, r *http.Request) 
 		AcquisitionCost:        req.AcquisitionCost,
 		AnnualAppreciationRate: req.AnnualAppreciationRate,
 		EntryType:              req.EntryType,
+		Tag:                    req.TagID,
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "update property", err)

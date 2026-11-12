@@ -172,6 +172,7 @@ describe("bondDescriptor detail (conformance)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bondDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Title (H1). Series/type/issuer no longer ride a subtitle — they moved into
@@ -179,7 +180,7 @@ describe("bondDescriptor detail (conformance)", () => {
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Govt Bond 2030");
 
-    // The investment headline slot (renderHeadline) mounts the shared component.
+    // The investment headline slot (headlineFields) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
     // Details card: identity cluster (series/issuer/type) + face-value field on
@@ -188,6 +189,9 @@ describe("bondDescriptor detail (conformance)", () => {
     // its own field row — the figure also appears as the headline's Total cost.
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText(/SR-015/)).toBeInTheDocument();
+    expect(within(detailsCard).getByTestId("identity-line")).toHaveTextContent(
+      /^SR-015 · Treasury Dept · /,
+    );
     expect(within(detailsCard).getByText(/Treasury Dept/)).toBeInTheDocument();
     expect(within(detailsCard).getByText(/Pat Owner \(you\)/)).toBeInTheDocument();
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
@@ -228,7 +232,9 @@ describe("bondDescriptor detail (conformance)", () => {
     // Actions row + the export anchor (bond-prefixed).
     const actions = screen.getByTestId("tour-actions");
     expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: /delete/i })).toBeInTheDocument();
+    // Close / Delete live behind the header's ⋯ menu (#839).
+    await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("bond-export")).toHaveAttribute(
       "href",
       expect.stringContaining("/i1/"),

@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 import { pickMonth } from "./monthPicker";
 
 // Built-in instruction-manual tours through the real UI (issue #23, #26). The
@@ -23,16 +24,22 @@ const BANK_STEPS: Step[] = [
   { id: "tour-snapshots", title: "Snapshots" },
 ];
 
-// Investment (bond) variant: 7 steps, adding the headline + transactions anchors.
-const BOND_STEPS: Step[] = [
+// Investment (bond) variant: the headline joins the five standard anchors, and the
+// history is tabbed (#839) - Snapshots | Transactions - so a tour covers the open
+// tab's card only (the other tab's panel is display:none, and HelpTourButton prunes
+// steps whose anchor is not on screen). 6 steps each way.
+const BOND_HEAD: Step[] = [
   { id: "tour-overview", title: "Your bond at a glance" },
   { id: "investment-headline", title: "Cost and gain / loss" },
   { id: "tour-actions", title: "Manage this bond" },
   { id: "tour-details", title: "The bond's terms" },
   { id: "tour-chart", title: "Value over time" },
-  { id: "tour-snapshots", title: "Snapshots" },
-  { id: "tour-transactions", title: "Payments, trades, and maturity" },
 ];
+const BOND_SNAPSHOTS_STEP: Step = { id: "tour-snapshots", title: "Snapshots" };
+const BOND_TRANSACTIONS_STEP: Step = {
+  id: "tour-transactions",
+  title: "Payments, trades, and maturity",
+};
 
 async function createBankAccount(page: Page, name: string) {
   await page.goto("/assets/bank-accounts");
@@ -96,7 +103,8 @@ async function addBondSnapshot(page: Page, month: string, total: string) {
 }
 
 async function deletePosition(page: Page) {
-  await page.getByRole("button", { name: "Delete" }).first().click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
 }
 
@@ -149,23 +157,30 @@ test("non-investment tour: launch, navigate forward/back, done (5 steps)", async
   await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });
 
-test("investment tour: 7 steps incl. headline + transactions", async ({ page }) => {
+test("investment tour: headline + the open tab's history (6 steps each tab)", async ({ page }) => {
   const name = `E2E tour bond ${Date.now()}`;
   await createBond(page, name);
   await addBondSnapshot(page, "2024-01", "1005000");
   await addBondSnapshot(page, "2024-02", "1010000");
 
   const popover = page.getByRole("dialog");
-  await page.getByTestId("help-tour").click();
-
-  for (let i = 0; i < BOND_STEPS.length; i++) {
-    await expectStep(page, i, BOND_STEPS.length, BOND_STEPS[i]);
-    if (i < BOND_STEPS.length - 1) {
-      await popover.getByRole("button", { name: "Next" }).click();
+  async function walk(steps: Step[]) {
+    await page.getByTestId("help-tour").click();
+    for (let i = 0; i < steps.length; i++) {
+      await expectStep(page, i, steps.length, steps[i]);
+      if (i < steps.length - 1) {
+        await popover.getByRole("button", { name: "Next" }).click();
+      }
     }
+    await popover.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
   }
-  await popover.getByRole("button", { name: "Done" }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // Snapshots is the default tab: the tour ends on its card.
+  await walk([...BOND_HEAD, BOND_SNAPSHOTS_STEP]);
+  // On Transactions the tour ends on the ledger card instead.
+  await openHistoryTab(page, "transactions");
+  await walk([...BOND_HEAD, BOND_TRANSACTIONS_STEP]);
 
   await deletePosition(page);
   await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
@@ -208,7 +223,8 @@ test("closed position: the actions step still anchors to the header group", asyn
 
   // Close the position. The per-card New/Import buttons hide, but the header
   // action group (tour-actions) is always rendered, so its step survives.
-  await page.getByRole("button", { name: "Close…", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
   const closeDialog = page.getByRole("dialog");
   await expect(closeDialog.getByText("Close bank account")).toBeVisible();
   await closeDialog.getByLabel("Status").selectOption("closed");

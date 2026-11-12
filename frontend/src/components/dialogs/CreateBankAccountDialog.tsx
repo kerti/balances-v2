@@ -33,6 +33,7 @@ export function CreateBankAccountDialog({ onCreated }: Props) {
   const [form, setForm] = useState(empty);
   const { data: user } = useSession();
   const mutation = useCreateBankAccount();
+  const [tagId, setTagId] = useState<string | null>(null);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -44,6 +45,7 @@ export function CreateBankAccountDialog({ onCreated }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         bank_name: form.bank_name,
@@ -72,10 +74,12 @@ export function CreateBankAccountDialog({ onCreated }: Props) {
       submitLabel={t("common:actions.create")}
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {
         setForm(empty);
+        setTagId(null);
         mutation.reset();
       }}
     >
