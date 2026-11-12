@@ -18,7 +18,7 @@ test("income create → edit → delete round-trip", async ({ page }) => {
   await expect(createDialog.getByText("New income")).toBeVisible();
   await createDialog.getByLabel("Amount").fill("15000000");
   await createDialog.getByLabel("Category").selectOption("salary");
-  await createDialog.getByLabel("Description (optional)").fill(desc);
+  await createDialog.getByLabel("Note (optional)").fill(desc);
   await createDialog.getByRole("button", { name: "Create" }).click();
 
   const row = page.getByRole("row", { name: new RegExp(desc) });
@@ -29,7 +29,7 @@ test("income create → edit → delete round-trip", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const editDialog = page.getByRole("dialog");
   await expect(editDialog.getByText("Edit income")).toBeVisible();
-  await editDialog.getByLabel("Description (optional)").fill(editedDesc);
+  await editDialog.getByLabel("Note (optional)").fill(editedDesc);
   await editDialog.getByRole("button", { name: "Save changes" }).click();
 
   const editedRow = page.getByRole("row", { name: new RegExp(editedDesc) });

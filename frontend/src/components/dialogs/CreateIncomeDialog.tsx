@@ -250,6 +250,11 @@ export function CreateIncomeDialog({
               </option>
               <option value="other">{t("income:categoryOptions.other")}</option>
             </Select>
+            {form.category === "interest" && (
+              <p className="text-xs text-muted-foreground" data-testid="income-interest-hint">
+                {t("income:categoryOptions.interestHint")}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-[1fr_120px] gap-3">

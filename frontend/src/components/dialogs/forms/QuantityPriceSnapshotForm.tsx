@@ -107,7 +107,7 @@ export function QuantityPriceSnapshotFormBody({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="inv_snap_description">{t("common:fields.description")}</Label>
+        <Label htmlFor="inv_snap_description">{t("common:fields.note")}</Label>
         <Input
           id="inv_snap_description"
           value={form.description}

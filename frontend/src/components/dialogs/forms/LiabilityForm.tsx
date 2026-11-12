@@ -13,6 +13,7 @@ import {
 } from "@/lib/format";
 import type { EntryType } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type LiabilityFormState = {
   display_name: string;
@@ -57,6 +58,7 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
           <Label htmlFor="subtype">{t("liabilities:fields.subtype")}</Label>
+          <LockedFieldHint mode={mode} id="subtype" />
           <Select
             id="subtype"
             disabled={mode === "edit"}
@@ -71,6 +73,7 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
+          <LockedFieldHint mode={mode} id="native_currency" />
           <Input
             id="native_currency"
             required

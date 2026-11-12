@@ -51,7 +51,7 @@ export function HistorySection<TRow>({
     <Card data-testid={testId}>
       <CardHeader>
         <div className="flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
-          <div>
+          <div className="min-w-0 md:flex-1">
             <CardTitle>{title}</CardTitle>
             {description && <CardDescription>{description}</CardDescription>}
           </div>
@@ -60,7 +60,7 @@ export function HistorySection<TRow>({
               would otherwise shrink-wrap this to content width. Natural width
               from 768px up. */}
           {headerActions && (
-            <div className="flex flex-wrap gap-2 max-md:w-full">{headerActions}</div>
+            <div className="flex flex-wrap gap-2 max-md:w-full md:shrink-0">{headerActions}</div>
           )}
         </div>
       </CardHeader>

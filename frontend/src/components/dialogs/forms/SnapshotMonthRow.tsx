@@ -8,6 +8,7 @@ import { monthEndDateCapped, monthStartDate, yearMonthsUpToNow } from "@/lib/dat
 import { formatYearMonth } from "@/lib/format";
 import { formatRecordMonth } from "@/lib/recordSnapshot";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 type Props = {
   mode: FormMode;
@@ -75,6 +76,7 @@ export function SnapshotMonthRow({
             )}
           </div>
         )}
+        <LockedFieldHint mode={mode} id="snapshot-month" />
         {mode === "create" && replacing !== undefined && (
           <Callout data-testid="snapshot-replace-notice">
             {t("snapshot.replaceNotice", { month: formatRecordMonth(yearMonth), value: replacing })}

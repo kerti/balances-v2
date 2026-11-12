@@ -22,7 +22,7 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   // --- Create the parent stock position ---
   await page.getByRole("button", { name: "New stock" }).first().click();
   const createDialog = page.getByRole("dialog");
-  await expect(createDialog.getByText("New stock position")).toBeVisible();
+  await expect(createDialog.getByRole("heading", { name: "New stock" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
   await createDialog.getByLabel("Ticker").fill("E2EX");
   await createDialog.getByLabel("Exchange").fill("IDX");
@@ -52,7 +52,7 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Quantity", { exact: true }).fill("100");
   await snapDialog.getByLabel("Price per unit (IDR)").fill("8500");
-  await snapDialog.getByLabel("Description (optional)").fill(desc);
+  await snapDialog.getByLabel("Note (optional)").fill(desc);
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 

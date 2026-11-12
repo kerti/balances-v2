@@ -1,3 +1,4 @@
+import { InfoHint } from "@/components/common/InfoHint";
 import { cn } from "@/lib/utils";
 import type { InfoField } from "@/components/detail/types";
 
@@ -44,7 +45,14 @@ export function InfoGrid({
           {/* Labels render without a trailing colon — some i18n values still
               carry one from when they doubled as inline prose, but the label/value
               grid reads cleaner without it. */}
-          <dt className="text-muted-foreground">{field.label.replace(/:\s*$/, "")}</dt>
+          <dt className="text-muted-foreground">
+            {field.label.replace(/:\s*$/, "")}
+            {field.hint && (
+              <InfoHint label={field.label} testId={`field-hint-${i}`} className="-my-3 ml-1">
+                {field.hint}
+              </InfoHint>
+            )}
+          </dt>
           <dd className={cn("flex", inline && "justify-end text-right")}>{field.value}</dd>
         </div>
       ))}

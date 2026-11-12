@@ -9,6 +9,7 @@ import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { GoldForm } from "@/hooks/useInvestments";
 import type { EntryType, RiskProfile } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type GoldFormState = {
   display_name: string;
@@ -67,6 +68,7 @@ export function GoldFormBody({ mode, form, setForm, soleOwnerID }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="gold_currency">{t("common:fields.currency")}</Label>
+        <LockedFieldHint mode={mode} id="gold_currency" />
         <Input
           id="gold_currency"
           required

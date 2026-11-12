@@ -26,7 +26,7 @@ test(
     const createDialog = page.getByRole("dialog");
     await createDialog.getByLabel("Amount").fill("15000000");
     await createDialog.getByLabel("Category").selectOption("salary");
-    await createDialog.getByLabel("Description (optional)").fill(desc);
+    await createDialog.getByLabel("Note (optional)").fill(desc);
     await createDialog.getByRole("button", { name: "Create" }).click();
     await expect(page.getByTestId("income-table")).toBeVisible();
     await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();

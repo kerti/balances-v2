@@ -37,6 +37,7 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
     detailsCardLine: "assets:bankAccount.detailsCardLine",
     chartTitle: "assets:bankAccount.chartTitle",
     chartDescription: "assets:bankAccount.chartDescription",
+    chartSeriesLabel: "common:tableHeaders.balance",
     snapshotsTitle: "assets:bankAccount.snapshotsTitle",
     snapshotsDescription: "assets:bankAccount.snapshotsDescription",
     snapshotsEmpty: "assets:bankAccount.snapshotsEmpty",
@@ -74,7 +75,7 @@ export const bankAccountDescriptor: DetailDescriptor<BankAccount> = {
         header: (
           <TableRow>
             <TableHead>{t("common:tableHeaders.month")}</TableHead>
-            <TableHead className="text-right">{t("common:tableHeaders.amount")}</TableHead>
+            <TableHead className="text-right">{t("common:tableHeaders.balance")}</TableHead>
             <TableHead>{t("common:tableHeaders.notes")}</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>

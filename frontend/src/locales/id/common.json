@@ -95,6 +95,8 @@
   "fields": {
     "displayName": "Nama tampilan",
     "description": "Deskripsi (opsional)",
+    "note": "Catatan (opsional)",
+    "lockedHint": "Tidak bisa diubah setelah dibuat.",
     "amount": "Nominal",
     "amountIn": "Nominal ({{currency}})",
     "currency": "Mata uang",
@@ -103,7 +105,7 @@
     "notes": "Catatan",
     "ownership": "Kepemilikan",
     "status": "Status",
-    "entryType": "Asal posisi"
+    "entryType": "Asal-usul"
   },
   "ownership": {
     "joint": "Bersama",
@@ -145,6 +147,9 @@
     "status": "Status",
     "month": "Bulan",
     "amount": "Nominal",
+    "balance": "Saldo",
+    "owed": "Terutang",
+    "value": "Nilai",
     "notes": "Catatan"
   },
   "activity": {
@@ -166,9 +171,9 @@
     "lastRecorded": "Terakhir dicatat: {{value}} ({{month}})",
     "sameAsLast": "Sama seperti bulan lalu",
     "createTitle": "Catat snapshot bulanan",
-    "createDescription": "Masukkan nilai akhir bulan. Mata uang dikunci ke mata uang asal posisi ({{currency}}).",
+    "createDescription": "Masukkan nilai akhir bulan. Dicatat dalam mata uang item ini ({{currency}}).",
     "editTitle": "Ubah snapshot",
-    "editDescription": "Perbarui nominal, tanggal laporan, atau deskripsi. Untuk mengubah bulan, gunakan Pindahkan…",
+    "editDescription": "Perbarui nominal, tanggal laporan, atau catatan. Untuk mengubah bulan, gunakan Pindahkan…",
     "moveTrigger": "Pindahkan…",
     "moveTitle": "Pindahkan snapshot ke bulan lain",
     "moveDescription": "Memindahkan snapshot {{month}} apa adanya. {{month}} akan kosong.",
@@ -193,7 +198,7 @@
     "editTrigger": "Ubah status",
     "closeTitle": "Tutup {{noun}}",
     "editTitle": "Ubah status",
-    "description": "Pilih apa yang terjadi. Mulai bulan yang Anda pilih, posisi ini tidak lagi dihitung ke kekayaan bersih. Anda bisa membukanya kembali nanti lewat Ubah status.",
+    "description": "Pilih apa yang terjadi. Mulai bulan yang Anda pilih, ini tidak lagi dihitung ke kekayaan bersih. Anda bisa membukanya kembali nanti lewat Ubah status.",
     "statusLabel": "Status",
     "statusPlaceholder": "Apa yang terjadi?",
     "dateLabel": {
@@ -242,17 +247,17 @@
     "settlementWriteOff": "Tidak ada uang kembali — hapus buku",
     "settlementAlreadyRecorded": "Penjualan pada bulan ini sudah tercatat, jadi tidak akan ditambahkan lagi.",
     "untracked": {
-      "owned": "Pilih ini jika posisi keluar dari catatan Anda tanpa dijual, dipakai, atau hilang — Anda hanya berhenti mencatatnya, misalnya karena pemiliknya keluar dari rumah tangga. Nilainya dicatat sebagai keluar dari pembukuan, bukan sebagai kerugian.",
+      "owned": "Pilih ini jika ini keluar dari catatan Anda tanpa dijual, dipakai, atau hilang — Anda hanya berhenti mencatatnya, misalnya karena pemiliknya keluar dari rumah tangga. Nilainya dicatat sebagai keluar dari pembukuan, bukan sebagai kerugian.",
       "owed": "Pilih ini jika utang keluar dari catatan Anda tanpa dilunasi atau dibebaskan — Anda hanya berhenti mencatatnya, misalnya karena penanggung utangnya keluar dari rumah tangga. Ini dicatat sebagai keluar dari pembukuan, bukan sebagai uang yang Anda bayarkan."
     }
   },
   "import": {
     "trigger": "Impor",
     "title": "Impor snapshot",
-    "description": "Tambahkan saldo bulanan secara massal dari spreadsheet — berguna untuk mengisi riwayat bertahun-tahun sekaligus.",
+    "description": "Tambahkan nilai beberapa bulan sekaligus dari spreadsheet — berguna untuk mengisi riwayat bertahun-tahun.",
     "step1Label": "1. Unduh template",
     "templateLink": "Unduh template (.xlsx)",
-    "step1Hint": "Isi satu baris per saldo akhir bulan (mata uang default {{currency}}). Buka di Google Sheets, LibreOffice, Numbers, atau Excel; simpan sebagai <bold>.xlsx</bold> (bukan CSV). Cukup isi bulan-bulan yang Anda punya angkanya.",
+    "step1Hint": "Isi satu baris per nilai akhir bulan (mata uang default {{currency}}). Buka di Google Sheets, LibreOffice, Numbers, atau Excel; simpan sebagai <bold>.xlsx</bold> (bukan CSV). Cukup isi bulan-bulan yang Anda punya angkanya.",
     "step2Label": "2. Unggah file yang sudah diisi",
     "dropHint": "Seret file .xlsx Anda ke sini, atau",
     "chooseFile": "Pilih file",
@@ -263,7 +268,7 @@
     "rowError": "Baris {{row}}: {{message}}",
     "moreErrors_one": "…dan {{count}} error lagi dalam file.",
     "moreErrors_other": "…dan {{count}} error lagi dalam file.",
-    "emptyPreview": "Tidak ada baris ditemukan dalam file. Tambahkan saldo lalu unggah ulang.",
+    "emptyPreview": "Tidak ada baris ditemukan dalam file. Tambahkan nilai lalu unggah ulang.",
     "countNew_one": "{{count}} bulan baru",
     "countNew_other": "{{count}} bulan baru",
     "countReplaced_one": "{{count}} diganti",
@@ -277,10 +282,10 @@
   },
   "importCreate": {
     "trigger": "Impor",
-    "title": "Impor {{noun}}",
-    "description": "Buat {{noun}} baru dari sebuah workbook — detail dan seluruh riwayat snapshot-nya, dalam satu langkah.",
-    "uploadLabel": "Unggah workbook posisi",
-    "formatHint": "Workbook memerlukan sheet Detail dan sheet Snapshots. Cara termudah mendapatkan formatnya adalah dengan Ekspor {{noun}} yang sudah ada lalu menyuntingnya.",
+    "title": "Impor {{noun}} baru",
+    "description": "Buat {{noun}} baru dari sebuah spreadsheet — detail dan seluruh riwayat snapshot-nya, dalam satu langkah.",
+    "uploadLabel": "Unggah spreadsheet (.xlsx)",
+    "formatHint": "Spreadsheet memerlukan sheet Detail dan sheet Snapshots. Cara termudah mendapatkan formatnya adalah dengan Ekspor {{noun}} yang sudah ada lalu menyuntingnya.",
     "needsFixing_one": "{{count}} hal perlu diperbaiki — tidak ada yang dibuat:",
     "needsFixing_other": "{{count}} hal perlu diperbaiki — tidak ada yang dibuat:",
     "fieldError": "{{field}}: {{message}}",
@@ -316,7 +321,7 @@
     "title": "Isi saldo bulan ini",
     "description": "Perbarui nilai setiap akun untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
     "empty": "Belum ada akun yang memenuhi syarat untuk bulan ini.",
-    "carriedFrom": "Dibawa dari {{month}}",
+    "carriedFrom": "Terakhir dicatat: {{month}}",
     "noHistory": "Belum ada nilai sebelumnya",
     "rowError": "Akun ini tidak dapat diisi nilai untuk bulan ini.",
     "changedCount": "{{count}} diubah",
@@ -340,16 +345,16 @@
     "investments": {
       "trigger": "Isi harga",
       "title": "Isi harga bulan ini",
-      "description": "Perbarui jumlah unit dan harga setiap aset untuk bulan yang dipilih. Nilainya dihitung otomatis, dan hanya yang Anda ubah yang disimpan.",
-      "empty": "Belum ada aset yang memenuhi syarat untuk bulan ini.",
-      "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
+      "description": "Perbarui jumlah unit dan harga setiap investasi untuk bulan yang dipilih. Nilainya dihitung otomatis, dan hanya yang Anda ubah yang disimpan.",
+      "empty": "Belum ada investasi yang memenuhi syarat untuk bulan ini.",
+      "rowError": "Investasi ini tidak dapat diisi nilai untuk bulan ini."
     },
     "investmentsAccrued": {
-      "trigger": "Isi bunga",
-      "title": "Isi nilai obligasi & deposito bulan ini",
+      "trigger": "Isi obligasi & deposito",
+      "title": "Isi obligasi & deposito bulan ini",
       "description": "Perbarui nilai total dan bunga berjalan setiap obligasi, serta nilai setiap deposito, untuk bulan yang dipilih. Bunga deposito dihitung otomatis. Hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada obligasi atau deposito yang memenuhi syarat untuk bulan ini.",
-      "rowError": "Aset ini tidak dapat diisi nilai untuk bulan ini."
+      "rowError": "Investasi ini tidak dapat diisi nilai untuk bulan ini."
     }
   },
   "entry": {
@@ -357,7 +362,7 @@
     "owned": {
       "acquired": "Kami membelinya dengan uang yang sudah dicatat di sini",
       "newlyTracked": "Kami sudah memilikinya, atau ini masuk ke rumah tangga",
-      "hint": "Ini memberi tahu laporan apakah pencatatan pertama posisi ini berupa pembelian (jadi uangnya berasal dari tempat lain yang Anda catat) atau kekayaan yang memang sudah milik Anda. Hanya memengaruhi cara bulan pertama dibaca."
+      "hint": "Ini memberi tahu laporan apakah pencatatan pertama item ini berupa pembelian (jadi uangnya berasal dari tempat lain yang Anda catat) atau kekayaan yang memang sudah milik Anda. Hanya memengaruhi cara bulan pertama dibaca."
     },
     "owed": {
       "acquired": "Kami mengambilnya saat sudah mencatat di sini — apa yang dibiayainya juga tercatat",
@@ -366,7 +371,7 @@
     }
   },
   "authHero": {
-    "headline": "Ketahui posisi keuangan rumah tangga Anda",
+    "headline": "Ketahui kondisi keuangan rumah tangga Anda",
     "body": "Pantau kekayaan bersih dari bulan ke bulan — tanpa mencatat setiap transaksi."
   },
   "appUpdate": {

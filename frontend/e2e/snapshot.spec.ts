@@ -42,7 +42,7 @@ test(
     await expect(createDialog.getByTestId("snapshot-replace-notice")).toHaveCount(0);
     await pickMonth(page, createDialog.getByTestId("year_month"), lastYm);
     await createDialog.getByLabel("Amount (IDR)").fill("12,500,000");
-    await createDialog.getByLabel("Description (optional)").fill(desc);
+    await createDialog.getByLabel("Note (optional)").fill(desc);
     await createDialog.getByRole("button", { name: "Save snapshot" }).click();
 
     const row = page.getByRole("row", { name: new RegExp(desc) });
@@ -83,7 +83,7 @@ test(
     await page.getByRole("menuitem", { name: "Edit" }).click();
     const editDialog = page.getByRole("dialog");
     await expect(editDialog.getByText("Edit snapshot")).toBeVisible();
-    await editDialog.getByLabel("Description (optional)").fill(editedDesc);
+    await editDialog.getByLabel("Note (optional)").fill(editedDesc);
     await editDialog.getByRole("button", { name: "Save changes" }).click();
 
     const editedRow = page.getByRole("row", { name: new RegExp(editedDesc) });

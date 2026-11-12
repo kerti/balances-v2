@@ -1,9 +1,10 @@
 {
   "title": "Net worth",
+  "subtitle": "Everything you own and owe, in {{currency}}",
   "loadFailed": "Failed to load: {{message}}",
   "empty": {
     "title": "No net worth to show yet",
-    "body": "Record a snapshot on any position — a bank account balance, a property value — and your net worth will appear here, tracked month by month."
+    "body": "Add a bank account, property or investment, then record a snapshot, and your net worth will appear here, tracked month by month. A snapshot is the value on your statement at month-end. Record one each month."
   },
   "secondary": {
     "label": "Also in",
@@ -15,8 +16,8 @@
     "firstTrackedMonth": "first tracked month",
     "vs": "vs {{when}}",
     "vsYoY": "vs {{when}} · YoY",
-    "stalePositions_one": "⚠ {{count}} position carried forward — record {{when}} snapshot to keep this up to date.",
-    "stalePositions_other": "⚠ {{count}} positions carried forward — record {{when}} snapshots to keep this up to date.",
+    "stalePositions_one": "⚠ {{count}} item carried forward — record {{when}} snapshot to keep this up to date.",
+    "stalePositions_other": "⚠ {{count}} items carried forward — record {{when}} snapshots to keep this up to date.",
     "staleEnter": "Update now →",
     "unsettledTerminations_one": "⚠ {{count}} investment was closed without a sale or maturity recorded — its final value is showing as a loss.",
     "unsettledTerminations_other": "⚠ {{count}} investments were closed without a sale or maturity recorded — their final value is showing as a loss."
@@ -31,8 +32,8 @@
     }
   },
   "missingFx": {
-    "positions_one": "{{count}} position",
-    "positions_other": "{{count}} positions",
+    "positions_one": "{{count}} item",
+    "positions_other": "{{count}} items",
     "someAmounts": "some amounts",
     "addRate_one": "a rate",
     "addRate_other": "rates",
@@ -41,7 +42,7 @@
   },
   "chart": {
     "title": "Net worth over time",
-    "amountLegend": "Amount",
+    "amountLegend": "Value",
     "netWorthLegend": "Net worth",
     "costLegend": "Cost",
     "maturedMarker": "Matured",

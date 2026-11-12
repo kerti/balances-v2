@@ -36,6 +36,8 @@ export type Position = {
 export type InfoField = {
   label: string;
   value: ReactNode;
+  // Optional ⓘ explanation beside the label.
+  hint?: string;
 };
 
 // The minimal slice of a react-query detail result the core consumes. The core
@@ -170,6 +172,8 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
     detailsCardLine: string; // interpolated { ownership, currency }
     chartTitle: string;
     chartDescription: string; // interpolated { currency }
+    // Legend/tooltip name of the plotted series (Balance / Owed); omitted means "Value".
+    chartSeriesLabel?: string;
     snapshotsTitle: string;
     snapshotsDescription: string;
     snapshotsEmpty: string;

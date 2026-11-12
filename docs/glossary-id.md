@@ -79,7 +79,7 @@ the choice is non-obvious.
 | Amount | Nominal | _Avoid mixing with_: Jumlah on the same screen — "Jumlah" is reserved for Quantity below to keep the two distinct. |
 | Currency | Mata Uang | — |
 | Reporting Currency | Mata Uang Pelaporan | — |
-| Native Currency | Mata Uang Asal | The currency a position is denominated in. |
+| Native Currency | Mata Uang Asal | Domain term only; UI copy says "mata uang item ini" / names the subtype (#832). |
 | FX Rate | Kurs | Canonical for foreign-exchange rate. |
 | Interest Rate | Suku Bunga | — |
 | Interest | Bunga | — |
@@ -92,7 +92,13 @@ the choice is non-obvious.
 | Accrued Interest | Bunga Berjalan | Canonical retail-bond term. _Avoid_: Bunga Akrual (technically correct but reads textbook-y). |
 | Of which interest (time deposit snapshot) | Di antaranya bunga | The read-only line under a time deposit's single "Nilai" input (#844): Value minus principal in force. The soft warning is "Nilai di bawah pokok". _Avoid_: "Bunga Berjalan" here — that is the bond's typed accrued figure. |
 | Cost / Cost Basis | Modal | Money put into a position. Retail-friendly; "Biaya perolehan" is the accounting term but reads jargon-y for the household audience. _Avoid_: Harga Pokok (stockbroker-specific). |
-| Unrealized P/L | Untung/rugi belum direalisasi | Gap between current value and cost basis. Long-form deliberate — abbreviation "L/R" (laba/rugi) reads too report-y for non-technical users. |
+| Gain / loss (was Unrealised P/L) | Untung / rugi | Gap between current value and cost basis (#832). Hint: "Di atas kertas: untung atau rugi Anda jika menjualnya dengan harga bulan ini." _Avoid_: "L/R" (laba/rugi) — reads report-y. |
+| Price per unit (was NAV) | Harga per unit | Mutual fund snapshots (#832). Hint: "NAB yang diumumkan manajer investasi Anda". _Avoid_: NAB as a column header. |
+| Owed | Terutang | Liability and receivable totals and charts (#832). The Snapshots value column says Saldo for bank accounts, liabilities and receivables, Nilai for property and vehicles. |
+| Where coupons go | Tujuan kupon | Options "Dibayar ke rekening saya" / "Disimpan di dalam obligasi" (#832). _Avoid_: Disposisi. |
+| What happened to the principal / interest | Yang terjadi pada pokok / bunga | Maturity dialog (#832). _Avoid_: Disposisi. |
+| Bought from | Dibeli dari | Bond type (#832): "Pemerintah (penerbitan baru)" / "Investor lain (pasar)". _Avoid_: primer / sekunder. |
+| Item | Item | Fallback noun when a sentence cannot name the subtype (#832). _Avoid_: Posisi. |
 | Fee | Biaya | Transaction fee. Distinct from Modal (cost basis) by context. |
 
 ## Time and dates
@@ -132,8 +138,8 @@ the choice is non-obvious.
 | Low Risk | Risiko Rendah | — |
 | Medium Risk | Risiko Sedang | — |
 | High Risk | Risiko Tinggi | — |
-| Routine | Rutin | Income regularity. |
-| Incidental | Insidental | Income regularity. Loanword is well-established in Indonesian financial writing. |
+| Regular (was Routine) | Rutin | Income regularity (#832). The enum value stays `routine`. |
+| One-off (was Incidental) | Sekali waktu | Income regularity (#832). Plain wording for a household audience; _Avoid_: Insidental. The enum value stays `incidental`. |
 
 ## Income categories
 

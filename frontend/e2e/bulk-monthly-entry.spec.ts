@@ -189,7 +189,7 @@ test(
     await page.goto("/investments/stocks");
     await page.getByRole("button", { name: "New stock" }).first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("New stock position")).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "New stock" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Ticker").fill("E2EB");
     await dialog.getByLabel("Exchange").fill("IDX");
@@ -252,7 +252,7 @@ test(
     await page.goto("/investments/bonds");
     await page.getByRole("button", { name: "New bond" }).first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("New bond position")).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Issuer").fill("E2E Treasury");
     await dialog.getByLabel("Face value").fill("1000000");
@@ -268,7 +268,7 @@ test(
     await page.goto("/investments");
     await expect(page.getByTestId("investments-home")).toBeVisible();
     await page.getByTestId("investments-enter-accrued").click();
-    await expect(page.getByText("Enter this month's bond & deposit values")).toBeVisible();
+    await expect(page.getByText("Enter this month's bonds & deposits")).toBeVisible();
 
     // The new bond is listed with no history and nothing counted as changed.
     const row = page.locator("li").filter({ hasText: name });
@@ -382,7 +382,7 @@ test(
     await page.goto("/investments/stocks");
     await page.getByRole("button", { name: "New stock" }).first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("New stock position")).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "New stock" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Ticker").fill("E2ED");
     await dialog.getByLabel("Exchange").fill("IDX");
@@ -458,7 +458,7 @@ test(
     await page.goto("/investments/bonds");
     await page.getByRole("button", { name: "New bond" }).first().click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByText("New bond position")).toBeVisible();
+    await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
     await dialog.getByLabel("Issuer").fill("E2E Treasury");
     await dialog.getByLabel("Face value").fill("1000000");
@@ -475,7 +475,7 @@ test(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/investments");
     await page.getByTestId("investments-enter-accrued").click();
-    await expect(page.getByText("Enter this month's bond & deposit values")).toBeVisible();
+    await expect(page.getByText("Enter this month's bonds & deposits")).toBeVisible();
     const mobileRow = page.locator("li").filter({ hasText: name });
     const mobileTotal = mobileRow.getByLabel("Total value");
     const mobileAccrued = mobileRow.getByLabel("Accrued");

@@ -62,6 +62,7 @@ function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
                   amount: String(p.value),
                 }))}
                 currency={currency}
+                primaryLabel={t("common:tableHeaders.owed")}
               />
             </CardContent>
           </Card>

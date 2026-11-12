@@ -129,7 +129,7 @@ describe("AssetsHome with a foreign currency held (multi-currency on)", () => {
     stubAssets({ multi: true, items, breakdown: breakdown("asset", months) });
 
     const warning = await screen.findByTestId("missing-fx-warning");
-    expect(warning).toHaveTextContent(/This total excludes 1 position/);
+    expect(warning).toHaveTextContent(/This total excludes 1 item/);
     expect(warning).toHaveTextContent(/exchange rate for USD/);
     // The headline is the figure that excludes it.
     expect(flat(screen.getByTestId("home-total-value").textContent)).toContain(

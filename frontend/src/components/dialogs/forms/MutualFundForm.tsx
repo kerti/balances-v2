@@ -7,6 +7,7 @@ import { OwnershipField } from "@/components/common/OwnershipField";
 import { EntryTypeField } from "@/components/common/EntryTypeField";
 import type { EntryType, MutualFundType, RiskProfile } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type MutualFundFormState = {
   display_name: string;
@@ -73,6 +74,7 @@ export function MutualFundFormBody({ mode, form, setForm, soleOwnerID }: Props) 
 
       <div className="grid gap-2">
         <Label htmlFor="mf_currency">{t("common:fields.currency")}</Label>
+        <LockedFieldHint mode={mode} id="mf_currency" />
         <Input
           id="mf_currency"
           required

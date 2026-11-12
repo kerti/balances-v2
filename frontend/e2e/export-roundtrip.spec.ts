@@ -37,7 +37,7 @@ test("property export re-imports flawlessly", async ({ page }) => {
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
   await snapDialog.getByLabel("Amount (IDR)").fill("2500000000");
-  await snapDialog.getByLabel("Description (optional)").fill(desc);
+  await snapDialog.getByLabel("Note (optional)").fill(desc);
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 

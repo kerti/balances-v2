@@ -9,7 +9,7 @@
     "categoryStackTitle": "Category share over time",
     "categoryStackDescription": "Percentage of total owed by category, month-by-month ({{currency}}).",
     "categoryPieTitle": "Current category mix",
-    "categoryPieDescription": "Share of current owed by category ({{currency}}).",
+    "categoryPieDescription": "Share of what is currently owed by category ({{currency}}).",
     "categoryLabel": {
       "personal": "Personal",
       "institutional": "Institutional"
@@ -40,7 +40,7 @@
   "createTitle": "New liability",
   "createDescription": "Track a debt your household owes. Personal liabilities are informal (family, friends); institutional are formal (mortgage, bank loan, credit-card balance).",
   "editTitle": "Edit liability",
-  "editDescription": "Subtype and currency are not editable — create a new liability if those need to change. Ownership is editable.",
+  "editDescription": "Subtype and currency can't be changed. To use different ones, create a new liability. Ownership can be changed.",
   "detailSubtitle": "{{subtype}} · {{counterparty}}",
   "detailsCardTitle": "Liability details",
   "detailsCardLine": "Ownership: {{ownership}} · Currency: {{currency}} · Status:",
@@ -53,17 +53,17 @@
   "periodLabel": "Period:",
   "periodValue": "{{start}} → {{end}}",
   "periodMissing": "—",
-  "chartTitle": "Outstanding balance over time",
-  "chartDescription": "Monthly balance progression in {{currency}}.",
+  "chartTitle": "Owed over time",
+  "chartDescription": "Monthly amount owed in {{currency}}.",
   "snapshotsTitle": "Snapshots",
-  "snapshotsDescription": "Monthly outstanding-balance readings (manual entry).",
-  "snapshotsEmpty": "No snapshots yet. Click \"New\" to record this month's outstanding balance.",
+  "snapshotsDescription": "Monthly balance readings (manual entry).",
+  "snapshotsEmpty": "No snapshots yet. A snapshot is the value on your statement at month-end. Record one each month.",
   "fields": {
     "subtype": "Subtype",
     "counterparty": "Counterparty",
     "principal": "Principal (optional)",
     "interestRate": "Interest rate (% per year, optional)",
-    "term": "Term (months, opt.)",
+    "term": "Term (months, optional)",
     "startDate": "Start (optional)",
     "maturityDate": "Maturity (optional)"
   },
@@ -78,13 +78,13 @@
   "tour": {
     "overviewTitle": "Your liability at a glance",
     "overviewBody": "Track what you owe over time — the balance lowers your net worth until it's paid off.",
-    "actionsTitle": "Manage this position",
-    "actionsBody": "Use “Edit” to change its details, “Close” to mark it ended — it then stops counting toward your net worth — or “Delete” to remove it entirely.",
+    "actionsTitle": "Manage this liability",
+    "actionsBody": "Use “Edit” to change its details, “Close…” to mark it ended — it then stops counting toward your net worth — or “Delete” to remove it entirely.",
     "detailsTitle": "The liability's terms",
     "detailsBody": "Principal, interest rate, term, and maturity were set when you added the liability. Use “Edit” to change them.",
-    "chartTitle": "Balance over time",
-    "chartBody": "Each point is a month's outstanding balance, so you can watch the debt shrink.",
-    "snapshotsTitle": "Outstanding balances",
-    "snapshotsBody": "Each row is one month's balance owed. Tap “New” to record the outstanding balance this month, or “Import” for several months at once."
+    "chartTitle": "Owed over time",
+    "chartBody": "Each point is a month's balance owed, so you can watch the debt shrink.",
+    "snapshotsTitle": "Snapshots",
+    "snapshotsBody": "Each row is one month's balance owed. Tap “Record snapshot” to add this month's balance, or “Import” for several months at once."
   }
 }

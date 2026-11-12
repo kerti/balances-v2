@@ -33,7 +33,7 @@
     "description": "Net worth is reported in this currency.",
     "reportingLabel": "Reporting currency",
     "multiTitle": "Multi-currency",
-    "multiDescription": "Hold positions in other currencies and enter a monthly exchange rate for each.",
+    "multiDescription": "Hold bank accounts, investments and other items in other currencies and enter a monthly exchange rate for each.",
     "multiLabel": "Enabled",
     "manageFx": "Manage exchange rates"
   },
@@ -162,7 +162,7 @@
     },
     "erase": {
       "title": "Delete this household",
-      "description": "Permanently delete this household and everything in it — every position, snapshot, transaction, and member account. This cannot be undone.",
+      "description": "Permanently delete this household and everything in it — every account, investment, snapshot, transaction, and member account. This cannot be undone.",
       "exportFirst": "Consider downloading a backup first — once deleted, this data can't be recovered.",
       "exportNow": "Download backup",
       "open": "Delete this household…",

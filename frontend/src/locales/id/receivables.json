@@ -16,16 +16,16 @@
   "createTitle": "Piutang baru",
   "createDescription": "Lacak uang yang terutang kepada rumah tangga Anda — pinjaman yang Anda berikan, simpanan yang harus dikembalikan, pengembalian dana dalam proses.",
   "editTitle": "Ubah piutang",
-  "editDescription": "Mata uang tidak bisa diubah — buat piutang baru jika perlu diubah. Kepemilikan bisa diubah.",
+  "editDescription": "Mata uang tidak bisa diubah. Untuk memakai mata uang lain, buat piutang baru. Kepemilikan bisa diubah.",
   "detailSubtitleWithDue": "{{counterparty}} · jatuh tempo {{date}}",
   "rowDueSuffix": " · jatuh tempo {{date}}",
   "detailsCardTitle": "Detail piutang",
   "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
-  "chartTitle": "Saldo terutang dari waktu ke waktu",
-  "chartDescription": "Perkembangan saldo bulanan dalam {{currency}}.",
+  "chartTitle": "Terutang dari waktu ke waktu",
+  "chartDescription": "Jumlah terutang kepada Anda per bulan dalam {{currency}}.",
   "snapshotsTitle": "Snapshot",
-  "snapshotsDescription": "Bacaan saldo terutang bulanan (input manual).",
-  "snapshotsEmpty": "Belum ada snapshot. Klik \"Baru\" untuk mencatat saldo terutang bulan ini.",
+  "snapshotsDescription": "Saldo bulanan (input manual).",
+  "snapshotsEmpty": "Belum ada snapshot. Snapshot adalah nilai di laporan Anda pada akhir bulan. Catat satu setiap bulan.",
   "fields": {
     "counterparty": "Pihak lawan",
     "dueDate": "Tanggal jatuh tempo (opsional)",
@@ -39,13 +39,13 @@
   "tour": {
     "overviewTitle": "Sekilas tentang piutang Anda",
     "overviewBody": "Lacak uang yang terutang kepada Anda dari waktu ke waktu — ini dihitung sebagai kekayaan bersih hingga dilunasi.",
-    "actionsTitle": "Kelola posisi ini",
-    "actionsBody": "Gunakan “Ubah” untuk mengubah detailnya, “Tutup” untuk menandainya berakhir — setelah itu tidak lagi dihitung dalam kekayaan bersih Anda — atau “Hapus” untuk menghapusnya sepenuhnya.",
+    "actionsTitle": "Kelola piutang ini",
+    "actionsBody": "Gunakan “Ubah” untuk mengubah detailnya, “Tutup…” untuk menandainya berakhir — setelah itu tidak lagi dihitung dalam kekayaan bersih Anda — atau “Hapus” untuk menghapusnya sepenuhnya.",
     "detailsTitle": "Detail piutang",
     "detailsBody": "Pihak lawan dan tanggal jatuh tempo ditetapkan saat Anda menambahkannya. Gunakan “Ubah” untuk mengubahnya.",
     "chartTitle": "Terutang sepanjang waktu",
     "chartBody": "Setiap titik adalah jumlah terutang satu bulan, sehingga Anda bisa melihatnya dilunasi.",
-    "snapshotsTitle": "Jumlah terutang",
-    "snapshotsBody": "Setiap baris adalah jumlah yang terutang kepada Anda satu bulan. Ketuk “Baru” untuk mencatat jumlah terutang bulan ini, atau “Impor” untuk beberapa bulan sekaligus."
+    "snapshotsTitle": "Snapshot",
+    "snapshotsBody": "Setiap baris adalah saldo yang terutang kepada Anda satu bulan. Ketuk “Catat snapshot” untuk mencatat saldo bulan ini, atau “Impor” untuk beberapa bulan sekaligus."
   }
 }

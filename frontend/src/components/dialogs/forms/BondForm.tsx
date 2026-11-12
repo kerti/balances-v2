@@ -15,6 +15,7 @@ import type {
   RiskProfile,
 } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type BondFormState = {
   display_name: string;
@@ -54,6 +55,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   const currencyField = (
     <div className="grid gap-2">
       <Label htmlFor="bond_currency">{t("common:fields.currency")}</Label>
+      <LockedFieldHint mode={mode} id="bond_currency" />
       <Input
         id="bond_currency"
         required

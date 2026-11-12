@@ -15,6 +15,7 @@ import {
 import { addMonths, type TimeDepositForm } from "@/lib/rollover";
 import type { RolloverPolicy } from "@/api/types";
 import type { FormMode } from "./mode";
+import { LockedFieldHint } from "./LockedFieldHint";
 
 export type TimeDepositFormState = TimeDepositForm;
 
@@ -89,6 +90,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
           </div>
           <div className="grid gap-2">
             <Label htmlFor="td_currency">{t("common:fields.currency")}</Label>
+            <LockedFieldHint mode={mode} id="td_currency" />
             <Input
               id="td_currency"
               required

@@ -235,6 +235,7 @@ function DashboardHeader({
     <PageHeader
       variant="hub"
       title={t("title")}
+      subtitle={t("subtitle", { currency: selected.reporting_currency })}
       actions={
         <>
           <MonthPickerPopover

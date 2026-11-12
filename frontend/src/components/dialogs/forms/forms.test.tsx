@@ -174,7 +174,7 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Counterparty",
         "Principal (optional)",
         "Interest rate (% per year, optional)",
-        "Term (months, opt.)",
+        "Term (months, optional)",
         "Start (optional)",
         "Maturity (optional)",
         "Ownership",
@@ -314,13 +314,13 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Series code (optional)",
         "Issuer",
         "Description (optional)",
-        "Bond type",
+        "Bought from",
         "Face value",
         "Currency",
         "Placement date",
         "Coupon rate (% per year)",
         "Coupon frequency",
-        "Coupon disposition",
+        "Where coupons go",
         "Maturity date",
         "Ownership",
         "Joint",
@@ -387,7 +387,7 @@ describe("snapshot form bodies: Record and Edit render the same field order", ()
         "Month",
         "Statement date (optional)",
         "Amount (IDR)",
-        "Description (optional)",
+        "Note (optional)",
       ]
     `);
   });
@@ -410,7 +410,7 @@ describe("snapshot form bodies: Record and Edit render the same field order", ()
         "Statement date (optional)",
         "Quantity",
         "Price per unit (IDR)",
-        "Description (optional)",
+        "Note (optional)",
       ]
     `);
   });
@@ -433,7 +433,7 @@ describe("snapshot form bodies: Record and Edit render the same field order", ()
         "Statement date (optional)",
         "Total value (IDR)",
         "Accrued (IDR)",
-        "Description (optional)",
+        "Note (optional)",
       ]
     `);
   });
@@ -455,8 +455,49 @@ describe("snapshot form bodies: Record and Edit render the same field order", ()
         "Month",
         "Statement date (optional)",
         "Value (IDR)",
-        "Description (optional)",
+        "Note (optional)",
       ]
     `);
+  });
+});
+
+describe("fixed fields say why they are disabled in Edit", () => {
+  const bank: BankAccountFormState = {
+    ...common,
+    bank_name: "",
+    account_number: "",
+    account_type: "savings",
+  };
+  const liability: LiabilityFormState = {
+    ...common,
+    subtype: "personal",
+    counterparty_name: "",
+    principal: "",
+    interest_rate: "",
+    term_months: "",
+    start_date: "",
+    maturity_date: "",
+  };
+
+  it("shows one hint under the currency in Edit and none in Create", () => {
+    const create = renderWithProviders(
+      <BankAccountFormBody mode="create" form={bank} setForm={noop} soleOwnerID={null} />,
+    );
+    expect(create.queryByTestId("locked-hint-native_currency")).toBeNull();
+    create.unmount();
+    const edit = renderWithProviders(
+      <BankAccountFormBody mode="edit" form={bank} setForm={noop} soleOwnerID={null} />,
+    );
+    expect(edit.getByTestId("locked-hint-native_currency")).toHaveTextContent(
+      "Can't be changed after creation.",
+    );
+  });
+
+  it("hints the liability subtype as well as its currency in Edit", () => {
+    const { getByTestId } = renderWithProviders(
+      <LiabilityFormBody mode="edit" form={liability} setForm={noop} soleOwnerID={null} />,
+    );
+    expect(getByTestId("locked-hint-subtype")).toBeInTheDocument();
+    expect(getByTestId("locked-hint-native_currency")).toBeInTheDocument();
   });
 });

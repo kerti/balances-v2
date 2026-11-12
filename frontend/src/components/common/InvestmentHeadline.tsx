@@ -86,6 +86,7 @@ export function InvestmentHeadline({
         }
       : {
           label: t("headline.unrealizedPL"),
+          hint: t("headline.unrealizedPLHint"),
           value:
             pl === null ? (
               <span className="text-muted-foreground">{t("headline.unrealizedPLEmpty")}</span>

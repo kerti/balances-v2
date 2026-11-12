@@ -90,3 +90,8 @@ it("shows no link when no stale position maps to an entry screen", async () => {
   await screen.findByTestId("dashboard-stale");
   expect(screen.queryByTestId("dashboard-stale-enter")).not.toBeInTheDocument();
 });
+
+it("says what the dashboard covers in the reporting currency", async () => {
+  renderWith([]);
+  expect(await screen.findByText("Everything you own and owe, in IDR")).toBeInTheDocument();
+});
