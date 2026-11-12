@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { MonthAxis } from "@/components/charts/MonthAxis";
 import {
   Area,
   AreaChart,
@@ -8,7 +9,6 @@ import {
   Line,
   ReferenceDot,
   ReferenceLine,
-  XAxis,
   YAxis,
   usePlotArea,
 } from "recharts";
@@ -248,10 +248,11 @@ export default function SnapshotChartImpl({
         // Extra top headroom when a maturity/sold marker is drawn — its
         // label sits above the dot, which often lands at the line's peak
         // (plot top), so the default 12px margin clips the text vertically.
-        margin={{ left: 0, right: 12, top: marker ? 28 : 12, bottom: 0 }}
+        margin={{ left: 0, right: 24, top: marker ? 28 : 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+        {/* Ticks follow the visible window: with the Brush, chartData is every month. */}
+        <MonthAxis months={visible.map((p) => p.month)} yAxisWidth={80} />
         <YAxis
           tickLine={false}
           axisLine={false}

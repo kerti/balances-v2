@@ -332,6 +332,16 @@ test(
         await expect(page).toHaveURL(/[?&]tab=transactions/);
         await expectNoControlOverlap(page, undefined, at("bond detail, Transactions tab"));
       }
+
+      // --- The Assets overview (#839 chart grid). The seed has one month, so
+      // the share-over-time card doesn't render here; this guards the page's
+      // controls only. ---
+      for (const width of [1440, 768]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto("/assets");
+        await expect(page.getByRole("heading", { level: 1, name: "Assets" })).toBeVisible();
+        await expectNoControlOverlap(page, undefined, `Assets overview @${width}px`);
+      }
     } finally {
       const cleanup = [
         ids.income && `/api/income/${ids.income}`,

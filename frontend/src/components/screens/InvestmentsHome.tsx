@@ -244,7 +244,7 @@ export function InvestmentsHome() {
         <div key={currency} className="space-y-4">
           <ValueCostCard currency={currency} series={value} />
           <CategoryStackCard currency={currency} series={stack} />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 lg:grid-cols-2">
             <CategoryPieCard currency={currency} slices={categorySlices} />
             <RiskPieCard currency={currency} slices={riskSlices} />
           </div>

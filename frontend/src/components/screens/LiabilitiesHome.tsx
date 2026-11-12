@@ -169,8 +169,10 @@ export function LiabilitiesHome() {
       {cardSets.map(({ currency, value, stack, slices }) => (
         <div key={currency} className="space-y-4">
           <ValueCard currency={currency} series={value} />
-          <CategoryStackCard currency={currency} series={stack} categories={stackCategories} />
-          <CategoryPieCard currency={currency} slices={slices} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <CategoryStackCard currency={currency} series={stack} categories={stackCategories} />
+            <CategoryPieCard currency={currency} slices={slices} />
+          </div>
         </div>
       ))}
     </div>
