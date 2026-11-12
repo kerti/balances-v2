@@ -19,11 +19,14 @@
 // Only `MembersCard` is stubbed: it fetches the members table on
 // mount and MSW is set to fail unhandled requests loudly. Everything else
 // renders for real.
-import { it, expect, vi } from "vitest";
+import { it, expect, vi, beforeEach, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
+import i18n from "@/i18n";
+import { raisedToasts } from "@/test/sonnerMock";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { ThemeProvider } from "@/theme/ThemeProvider";
@@ -31,6 +34,17 @@ import { SettingsScreen } from "@/components/screens/SettingsScreen";
 import type { Me } from "@/hooks/useSession";
 
 vi.mock("@/components/common/MembersCard", () => ({ MembersCard: () => <div /> }));
+vi.mock("sonner", async () => (await import("@/test/sonnerMock")).sonnerMock());
+
+const mockedToast = toast as unknown as Parameters<typeof raisedToasts>[0];
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+afterEach(async () => {
+  await i18n.changeLanguage("en-GB");
+  localStorage.clear();
+});
 
 const me: Me = {
   id: "u1",
@@ -202,4 +216,188 @@ it("puts the invite Send beside the email field", async () => {
   expect(
     within(controlRow as HTMLElement).getByRole("button", { name: "Send invitation" }),
   ).toBeInTheDocument();
+});
+
+// Stubs both write endpoints and records every PATCH body, so a test can say
+// what was sent and (via the mocked sonner) how many toasts it produced.
+function stubWrites() {
+  const bodies: Record<string, unknown>[] = [];
+  const record = (path: string) =>
+    http.patch(path, async ({ request }) => {
+      bodies.push((await request.json()) as Record<string, unknown>);
+      return HttpResponse.json(me);
+    });
+  server.use(record("/api/me"), record("/api/household/settings"));
+  return bodies;
+}
+
+const NAME_FIELDS = [
+  { label: "Your name", id: "nickname", typed: "Ally", body: { nickname: "Ally" } },
+  {
+    label: "Household name",
+    id: "household-name",
+    typed: "Renamed",
+    body: { display_name: "Renamed" },
+  },
+  {
+    label: "Reporting currency",
+    id: "reporting-currency",
+    typed: "usd",
+    body: { reporting_currency: "USD" },
+  },
+] as const;
+
+function saveButtonOf(container: HTMLElement, id: string) {
+  return within(
+    container.querySelector<HTMLElement>(`[data-slot=settings-row]:has(#${id})`)!,
+  ).getByRole("button", { name: "Save" });
+}
+
+// covers: INV-PRESENTATION-30
+it.each(NAME_FIELDS)(
+  "$label: Save is disabled until the field is dirty",
+  async ({ label, id, typed }) => {
+    const { container } = await renderScreen();
+    const user = userEvent.setup();
+    const input = screen.getByLabelText(label);
+
+    expect(saveButtonOf(container, id)).toBeDisabled();
+    await user.clear(input);
+    await user.type(input, typed);
+    expect(saveButtonOf(container, id)).toBeEnabled();
+  },
+);
+
+// covers: INV-PRESENTATION-30
+it.each(NAME_FIELDS)(
+  "$label: Enter saves with exactly one toast",
+  async ({ label, typed, body }) => {
+    const bodies = stubWrites();
+    await renderScreen();
+    const user = userEvent.setup();
+
+    const input = screen.getByLabelText(label);
+    await user.clear(input);
+    await user.type(input, `${typed}{Enter}`);
+
+    await waitFor(() => expect(raisedToasts(mockedToast)).toHaveLength(1));
+    expect(raisedToasts(mockedToast)[0].message).toBe("Saved");
+    expect(bodies).toHaveLength(1);
+    expect(bodies[0]).toMatchObject(body);
+  },
+);
+
+// covers: INV-PRESENTATION-30
+it("Esc restores the stored value and sends nothing", async () => {
+  const bodies = stubWrites();
+  const { container } = await renderScreen();
+  const user = userEvent.setup();
+
+  const input = screen.getByLabelText("Household name");
+  await user.type(input, " Two");
+  expect(input).toHaveValue("Test Household Two");
+
+  await user.keyboard("{Escape}");
+  expect(input).toHaveValue("Test Household");
+  expect(saveButtonOf(container, "household-name")).toBeDisabled();
+  expect(bodies).toHaveLength(0);
+  expect(raisedToasts(mockedToast)).toHaveLength(0);
+});
+
+// covers: INV-PRESENTATION-30
+it("Enter on a clean or invalid field writes nothing", async () => {
+  const bodies = stubWrites();
+  await renderScreen();
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText("Household name"), "{Enter}");
+  const currency = screen.getByLabelText("Reporting currency");
+  await user.clear(currency);
+  await user.type(currency, "US{Enter}");
+
+  expect(bodies).toHaveLength(0);
+  expect(raisedToasts(mockedToast)).toHaveLength(0);
+});
+
+// covers: INV-PRESENTATION-30
+it("assumed inflation: Enter saves with exactly one toast, Esc reverts", async () => {
+  const bodies = stubWrites();
+  const { container } = await renderScreen();
+  const user = userEvent.setup();
+
+  const input = screen.getByLabelText("Assumed annual %");
+  expect(saveButtonOf(container, "assumed-inflation")).toBeDisabled();
+  await user.type(input, "1");
+  await user.keyboard("{Escape}");
+  expect(input).toHaveValue("3.5");
+
+  await user.type(input, "1{Enter}");
+  await waitFor(() => expect(raisedToasts(mockedToast)).toHaveLength(1));
+  expect(bodies).toHaveLength(1);
+  expect(bodies[0]).toMatchObject({ assumed_annual_inflation: "3.51" });
+});
+
+// covers: INV-PRESENTATION-30
+it("a failed typed save is an inline error and no toast", async () => {
+  server.use(
+    http.patch("/api/household/settings", () =>
+      HttpResponse.json({ code: "UNKNOWN" }, { status: 500 }),
+    ),
+  );
+  const { container } = await renderScreen();
+  const user = userEvent.setup();
+
+  await user.type(screen.getByLabelText("Household name"), "x{Enter}");
+
+  await waitFor(() =>
+    expect(
+      container.querySelector("[data-slot=settings-row]:has(#household-name) .text-destructive"),
+    ).not.toBeNull(),
+  );
+  expect(raisedToasts(mockedToast)).toHaveLength(0);
+});
+
+// covers: INV-PRESENTATION-30
+it.each([
+  ["language", () => screen.getByLabelText("Language"), "id-ID"],
+  ["appearance", () => screen.getByLabelText("Appearance"), "dark"],
+])("choosing %s saves on change with exactly one toast", async (_name, control, option) => {
+  const bodies = stubWrites();
+  await renderScreen();
+  const user = userEvent.setup();
+
+  await user.selectOptions(control(), option);
+
+  await waitFor(() => expect(raisedToasts(mockedToast)).toHaveLength(1));
+  expect(bodies).toHaveLength(1);
+});
+
+// covers: INV-PRESENTATION-30
+it("toggling multi-currency saves on change with exactly one toast", async () => {
+  const bodies = stubWrites();
+  await renderScreen();
+  const user = userEvent.setup();
+
+  await user.click(screen.getByRole("checkbox"));
+
+  await waitFor(() => expect(raisedToasts(mockedToast)).toHaveLength(1));
+  expect(bodies).toEqual([expect.objectContaining({ multi_currency_enabled: true })]);
+});
+
+// covers: INV-PRESENTATION-30
+it("changing Appearance does not remount the screen", async () => {
+  stubWrites();
+  await renderScreen();
+  const user = userEvent.setup();
+
+  // A typed-but-unsaved draft survives only if nothing above it remounted.
+  const name = screen.getByLabelText("Household name");
+  await user.type(name, " Two");
+
+  await user.selectOptions(screen.getByLabelText("Appearance"), "dark");
+  await waitFor(() => expect(raisedToasts(mockedToast)).toHaveLength(1));
+
+  expect(screen.getByLabelText("Household name")).toBe(name);
+  expect(name).toHaveValue("Test Household Two");
+  expect(name.isConnected).toBe(true);
 });

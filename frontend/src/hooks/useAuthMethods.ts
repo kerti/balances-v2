@@ -12,6 +12,9 @@ export type AuthMethods = {
   // when local auth and outbound email are both on. The sign-in form hides its
   // "Forgot password?" link when false.
   password_reset: boolean;
+  // Whether the operator allows founding a new household (!FOUNDING_DISABLED,
+  // #842). The sign-in form hides its Create account tab when false.
+  founding_open: boolean;
   // The public demo posture (ADR-0041, #217). When true, demo_email/demo_password
   // carry the shared demo login — the sign-in form pre-fills them so a visitor can
   // just click Sign in. Absent (not merely empty) when demo_mode is false.

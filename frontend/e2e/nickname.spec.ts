@@ -27,8 +27,12 @@ test("settings nickname round-trip: set, persist, clear", async ({ page }) => {
   await expect(page.locator("#nickname")).toHaveValue("Ally");
 
   // --- Clear ---
+  // Enter saves too (ADR-0058 §7); Esc first proves it reverts an unsaved edit.
+  await page.locator("#nickname").fill("Zed");
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#nickname")).toHaveValue("Ally");
   await page.locator("#nickname").fill("");
-  await page.getByRole("button", { name: "Save" }).first().click();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("button", { name: "Save" }).first()).toBeDisabled();
 
   await page.reload();
