@@ -33,7 +33,10 @@ type authMethodsResponse struct {
 	// SPA can pre-fill the local-login form — there is no confidentiality cost to
 	// exposing them here, since every demo visitor authenticates as this same
 	// identity regardless of whether the SPA shows them.
-	DemoMode     bool   `json:"demo_mode"`
+	DemoMode bool `json:"demo_mode"`
+	// FoundingOpen is !FOUNDING_DISABLED (#842): the sign-in card hides its Create
+	// account tab when false. Display only — the onboarding gate still enforces it.
+	FoundingOpen bool   `json:"founding_open"`
 	DemoEmail    string `json:"demo_email,omitempty"`
 	DemoPassword string `json:"demo_password,omitempty"`
 }
@@ -44,6 +47,7 @@ func (h *Handlers) handleAuthMethods(w http.ResponseWriter, _ *http.Request) {
 		Local:         h.localEnabled,
 		PasswordReset: h.localEnabled && h.emailEnabled,
 		DemoMode:      h.demoMode,
+		FoundingOpen:  !h.foundingDisabled,
 	}
 	if h.demoMode {
 		resp.DemoEmail = h.demoEmail

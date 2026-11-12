@@ -358,3 +358,27 @@ test(
     }
   },
 );
+
+// covers: INV-PRESENTATION-26
+// The signed-out sign-in card (#842): language corner control, provider button,
+// tabs and form fields must not overlap at phone width. A fresh context with no
+// session needs no fixtures.
+test(
+  "sign-in card has no overlapping controls at 390px",
+  { tag: "@smoke" },
+  async ({ browser }) => {
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+      viewport: { width: 390, height: 844 },
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto("/");
+      await expect(page.getByTestId("signin-language-select")).toBeVisible();
+      await expect(page.getByTestId("local-auth-form")).toBeVisible();
+      await expectNoControlOverlap(page, undefined, "sign-in card @390");
+    } finally {
+      await context.close();
+    }
+  },
+);

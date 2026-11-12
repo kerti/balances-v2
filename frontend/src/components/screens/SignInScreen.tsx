@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Globe } from "lucide-react";
 import { AppLogo } from "@/components/shell/AppLogo";
 import { AuthLayout } from "@/components/shell/AuthLayout";
 import { AppInfo } from "@/components/shell/AppInfo";
@@ -75,20 +76,24 @@ export function SignInScreen() {
   return (
     <AuthLayout aside={isMobile ? undefined : demoNotice}>
       <Card className="w-full max-w-md">
-        <CardHeader>
-          <AppLogo className="w-full h-auto md:hidden" />
-          {/* Redundant with the desktop hero tagline, so mobile-only. */}
-          <CardDescription className="md:hidden">{t("signIn.tagline")}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isMobile && demoNotice}
-          <div className="space-y-1">
-            <Label htmlFor="signin-language">{t("signIn.languageLabel")}</Label>
+        {/* Compact corner control (#842): globe + current language + chevron. A
+            native select under the hood, so the platform picker still opens on a
+            phone; the visible label is the selected option's in-language name. */}
+        <div className="flex justify-end px-4">
+          <Label htmlFor="signin-language" className="sr-only">
+            {t("signIn.languageLabel")}
+          </Label>
+          <div className="relative">
+            <Globe
+              aria-hidden
+              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground md:left-2 md:size-3.5"
+            />
             <Select
               id="signin-language"
               data-testid="signin-language-select"
               value={locale}
               onChange={onChange}
+              className="w-auto field-sizing-content pl-8 md:h-7 md:border-transparent md:pl-7 md:text-xs md:shadow-none md:hover:bg-muted"
             >
               {SUPPORTED_LOCALES.map((l) => (
                 <option key={l} value={l}>
@@ -97,8 +102,16 @@ export function SignInScreen() {
               ))}
             </Select>
           </div>
+        </div>
+        <CardHeader>
+          <AppLogo className="w-full h-auto md:hidden" />
+          {/* Redundant with the desktop hero tagline, so mobile-only. */}
+          <CardDescription className="md:hidden">{t("signIn.tagline")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isMobile && demoNotice}
           {showGoogle && (
-            <Button asChild className="w-full">
+            <Button asChild variant="outline" className="w-full">
               <a
                 href={`/api/auth/google/start?lng=${encodeURIComponent(locale)}`}
                 data-testid="signin-google"

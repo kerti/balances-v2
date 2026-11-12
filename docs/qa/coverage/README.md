@@ -11,7 +11,7 @@
 | TENANCY | 13 / 13 | [TENANCY](01-tenancy.md) |
 | FINANCE | 39 / 39 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 10 / 10 | [LIFECYCLE](03-lifecycle.md) |
-| AUTH | 32 / 32 | [AUTH](04-auth.md) |
+| AUTH | 33 / 33 | [AUTH](04-auth.md) |
 | SNAPSHOTS | 18 / 18 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 12 / 12 | [IMPORT](07-import.md) |
