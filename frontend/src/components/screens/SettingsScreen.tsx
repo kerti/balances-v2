@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type ReactNode } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -13,6 +13,8 @@ import { errorMessage } from "@/lib/errorMessage";
 import { useSession } from "@/hooks/useSession";
 import { useUpdateMe } from "@/hooks/useUpdateMe";
 import { useUpdateHouseholdSettings } from "@/hooks/useHouseholdSettings";
+import { useTypedSetting } from "@/hooks/useTypedSetting";
+import { toastSaved } from "@/lib/writeToast";
 import { SUPPORTED_LOCALES, type Locale } from "@/i18n";
 import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_THEMES, type Theme } from "@/theme";
@@ -105,22 +107,14 @@ function NicknameRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateMe = useUpdateMe();
-  const [draft, setDraft] = useState<string | null>(null);
+  const field = useTypedSetting({
+    stored: me?.nickname ?? "",
+    pending: updateMe.isPending,
+    write: (nickname, done) =>
+      updateMe.mutate({ nickname: nickname === "" ? null : nickname }, { onSuccess: done }),
+  });
 
   if (!me) return null;
-
-  // `draft ?? me.nickname ?? ''` — null draft means "untouched, show current";
-  // once the user types, draft is a string (even "") and wins.
-  const value = draft ?? me.nickname ?? "";
-  const trimmed = value.trim();
-  const current = me.nickname ?? "";
-  const dirty = trimmed !== current;
-
-  const save = () =>
-    updateMe.mutate(
-      { nickname: trimmed === "" ? null : trimmed },
-      { onSuccess: () => setDraft(null) },
-    );
 
   return (
     <SettingsRow
@@ -130,7 +124,7 @@ function NicknameRow() {
     >
       <SettingsControlRow
         action={
-          <Button variant="outline" onClick={save} disabled={updateMe.isPending || !dirty}>
+          <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
             {t("common:save")}
           </Button>
         }
@@ -140,8 +134,9 @@ function NicknameRow() {
           className={CONTROL_WIDTH.full}
           maxLength={32}
           placeholder={me.display_name}
-          value={value}
-          onChange={(e) => setDraft(e.target.value)}
+          value={field.value}
+          onChange={(e) => field.setValue(e.target.value)}
+          onKeyDown={field.onKeyDown}
         />
       </SettingsControlRow>
 
@@ -271,24 +266,25 @@ function HouseholdNameRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateSettings = useUpdateHouseholdSettings();
-  const [draft, setDraft] = useState<string | null>(null);
+  const field = useTypedSetting({
+    stored: me?.household_display_name ?? "",
+    isValid: (name) => name !== "",
+    pending: updateSettings.isPending,
+    write: (name, done) => {
+      if (!me) return;
+      updateSettings.mutate(
+        {
+          display_name: name,
+          reporting_currency: me.reporting_currency,
+          multi_currency_enabled: me.multi_currency_enabled,
+          assumed_annual_inflation: me.assumed_annual_inflation,
+        },
+        { onSuccess: done },
+      );
+    },
+  });
 
   if (!me) return null;
-
-  const value = draft ?? me.household_display_name;
-  const trimmed = value.trim();
-  const dirty = trimmed !== me.household_display_name && trimmed !== "";
-
-  const save = () =>
-    updateSettings.mutate(
-      {
-        display_name: trimmed,
-        reporting_currency: me.reporting_currency,
-        multi_currency_enabled: me.multi_currency_enabled,
-        assumed_annual_inflation: me.assumed_annual_inflation,
-      },
-      { onSuccess: () => setDraft(null) },
-    );
 
   return (
     <SettingsRow
@@ -298,7 +294,7 @@ function HouseholdNameRow() {
     >
       <SettingsControlRow
         action={
-          <Button variant="outline" onClick={save} disabled={updateSettings.isPending || !dirty}>
+          <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
             {t("common:save")}
           </Button>
         }
@@ -307,8 +303,9 @@ function HouseholdNameRow() {
           id="household-name"
           className={CONTROL_WIDTH.full}
           maxLength={60}
-          value={value}
-          onChange={(e) => setDraft(e.target.value)}
+          value={field.value}
+          onChange={(e) => field.setValue(e.target.value)}
+          onKeyDown={field.onKeyDown}
         />
       </SettingsControlRow>
 
@@ -324,33 +321,32 @@ function ReportingCurrencyRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateSettings = useUpdateHouseholdSettings();
-  const [currency, setCurrency] = useState<string | null>(null);
+  const field = useTypedSetting({
+    stored: me?.reporting_currency ?? "",
+    normalize: (v) => v.trim().toUpperCase(),
+    isValid: (code) => code.length === 3,
+    pending: updateSettings.isPending,
+    write: (code, done) => {
+      if (!me) return;
+      updateSettings.mutate(
+        {
+          display_name: me.household_display_name,
+          reporting_currency: code,
+          multi_currency_enabled: me.multi_currency_enabled,
+          assumed_annual_inflation: me.assumed_annual_inflation,
+        },
+        { onSuccess: done },
+      );
+    },
+  });
 
   if (!me) return null;
-
-  const reportingCurrency = (currency ?? me.reporting_currency).toUpperCase();
-  const dirty = reportingCurrency !== me.reporting_currency.toUpperCase();
-
-  const save = () =>
-    updateSettings.mutate(
-      {
-        display_name: me.household_display_name,
-        reporting_currency: reportingCurrency,
-        multi_currency_enabled: me.multi_currency_enabled,
-        assumed_annual_inflation: me.assumed_annual_inflation,
-      },
-      { onSuccess: () => setCurrency(null) },
-    );
 
   return (
     <SettingsRow name={t("currency.title")} description={t("currency.description")}>
       <SettingsControlRow
         action={
-          <Button
-            variant="outline"
-            onClick={save}
-            disabled={updateSettings.isPending || !dirty || reportingCurrency.length !== 3}
-          >
+          <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
             {t("common:save")}
           </Button>
         }
@@ -360,8 +356,9 @@ function ReportingCurrencyRow() {
           id="reporting-currency"
           className={cn(CONTROL_WIDTH.narrow, "uppercase")}
           maxLength={3}
-          value={reportingCurrency}
-          onChange={(e) => setCurrency(e.target.value)}
+          value={field.value.toUpperCase()}
+          onChange={(e) => field.setValue(e.target.value)}
+          onKeyDown={field.onKeyDown}
         />
       </SettingsControlRow>
 
@@ -385,12 +382,15 @@ function MultiCurrencyRow() {
   if (!me) return null;
 
   const toggle = (enabled: boolean) =>
-    updateSettings.mutate({
-      display_name: me.household_display_name,
-      reporting_currency: me.reporting_currency,
-      multi_currency_enabled: enabled,
-      assumed_annual_inflation: me.assumed_annual_inflation,
-    });
+    updateSettings.mutate(
+      {
+        display_name: me.household_display_name,
+        reporting_currency: me.reporting_currency,
+        multi_currency_enabled: enabled,
+        assumed_annual_inflation: me.assumed_annual_inflation,
+      },
+      { onSuccess: () => toastSaved() },
+    );
 
   return (
     <SettingsRow name={t("currency.multiTitle")} description={t("currency.multiDescription")}>
@@ -427,34 +427,31 @@ function AssumedInflationRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
   const updateSettings = useUpdateHouseholdSettings();
-  const [assumed, setAssumed] = useState<string | null>(null);
+  const field = useTypedSetting({
+    stored: me?.assumed_annual_inflation ?? "",
+    isValid: (rate) => rate !== "",
+    pending: updateSettings.isPending,
+    write: (rate, done) => {
+      if (!me) return;
+      updateSettings.mutate(
+        {
+          display_name: me.household_display_name,
+          reporting_currency: me.reporting_currency,
+          multi_currency_enabled: me.multi_currency_enabled,
+          assumed_annual_inflation: rate,
+        },
+        { onSuccess: done },
+      );
+    },
+  });
 
   if (!me) return null;
-
-  const assumedValue = assumed ?? me.assumed_annual_inflation;
-  const assumedDirty =
-    assumedValue.trim() !== me.assumed_annual_inflation && assumedValue.trim() !== "";
-
-  const saveAssumed = () =>
-    updateSettings.mutate(
-      {
-        display_name: me.household_display_name,
-        reporting_currency: me.reporting_currency,
-        multi_currency_enabled: me.multi_currency_enabled,
-        assumed_annual_inflation: assumedValue.trim(),
-      },
-      { onSuccess: () => setAssumed(null) },
-    );
 
   return (
     <SettingsRow name={t("inflation.title")} description={t("inflation.description")}>
       <SettingsControlRow
         action={
-          <Button
-            variant="outline"
-            onClick={saveAssumed}
-            disabled={updateSettings.isPending || !assumedDirty}
-          >
+          <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
             {t("common:save")}
           </Button>
         }
@@ -466,8 +463,9 @@ function AssumedInflationRow() {
           decimals={INFLATION_DECIMALS}
           maxIntegerDigits={INFLATION_INTEGER_DIGITS}
           allowNegative
-          value={assumedValue}
-          onChange={(v) => setAssumed(v)}
+          value={field.value}
+          onChange={field.setValue}
+          onKeyDown={field.onKeyDown}
         />
       </SettingsControlRow>
 
