@@ -368,8 +368,8 @@ test(
 // ADR-0050 S2 (#505): the qty×price entry row — the worst case that triggered
 // #428 (#423), two tab-stops (quantity, price) plus a computed value that
 // overlaps the position name when crammed on mobile — diverges via the same
-// runtime pick-one renderer. This asserts BOTH tab-stops stack as full-width
-// ≥44px lines at <768px (EntryRowMobile) and cram into their w-28 columns
+// runtime pick-one renderer. This asserts BOTH tab-stops sit side by side as
+// ≥44px targets at <768px (EntryRowMobile) and cram into their w-28 columns
 // at ≥768px (EntryRowDesktop), one tree in the DOM, same testids. Deep qty×price
 // behaviour (dirty pair, computed value, overwrite) is the journey above.
 // covers: INV-JOURNEYS-05
@@ -391,7 +391,7 @@ test(
     await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
-    // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
+    // --- Mobile width: both tab-stops sit side by side as ≥44px targets and the
     //     computed value is reachable without horizontal scroll. ---
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/investments");
@@ -414,6 +414,10 @@ test(
     await expect(mobileValue).toBeInViewport();
     const qtyBox = await mobileQty.boundingBox();
     expect(qtyBox!.height).toBeGreaterThanOrEqual(44);
+    // Quantity | Price share one line (#849).
+    const priceBox = await mobilePrice.boundingBox();
+    expect(priceBox!.x).toBeGreaterThan(qtyBox!.x + qtyBox!.width - 1);
+    expect(Math.abs(priceBox!.y - qtyBox!.y)).toBeLessThanOrEqual(1);
 
     // --- Desktop width: a fresh load of the entry route mounts the cramped
     //     renderer (w-28 columns). goto (not reload) because the mobile section
@@ -443,7 +447,7 @@ test(
 // ADR-0050 S3 (#506): the accrued entry row (Bond/TimeDeposit) — two directly
 // entered tab-stops (total value, accrued interest) plus a derived principal —
 // diverges via the same runtime pick-one renderer. This asserts BOTH tab-stops
-// stack as full-width ≥44px lines at <768px (EntryRowMobile) and cram into their
+// sit side by side as ≥44px targets at <768px (EntryRowMobile) and cram into their
 // w-28 columns at ≥768px (EntryRowDesktop), one tree in the DOM, same testids,
 // and the derived principal is named in the footer (mobile) / group header
 // (desktop) so it never reads as a stray number. Deep accrued behaviour
@@ -470,7 +474,7 @@ test(
     await backToListAfterCreate(page);
     await expect(page.getByRole("row", { name: new RegExp(name) })).toBeVisible();
 
-    // --- Mobile width: both tab-stops stack as full-width ≥44px targets and the
+    // --- Mobile width: both tab-stops sit side by side as ≥44px targets and the
     //     derived principal, named "Principal", is reachable without h-scroll. ---
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/investments");

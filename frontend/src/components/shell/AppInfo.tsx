@@ -43,7 +43,7 @@ export function AppInfo({ className, variant = "stacked" }: Props) {
       aria-label={t("footer.sourceCode")}
       title={t("footer.sourceCode")}
       data-testid="footer-link-github"
-      className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
+      className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground max-lg:min-h-11"
     >
       <GitHubMark className="h-4 w-4" />
       {t("footer.sourceCodeLabel")}
@@ -57,7 +57,7 @@ export function AppInfo({ className, variant = "stacked" }: Props) {
       aria-label={t("footer.website")}
       title={t("footer.website")}
       data-testid="footer-link-website"
-      className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground"
+      className="flex w-fit items-center gap-1.5 transition-colors hover:text-foreground max-lg:min-h-11"
     >
       <CircleUser className="h-4 w-4" />
       {t("footer.maintainerLabel")}

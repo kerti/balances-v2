@@ -329,7 +329,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-4">
+    <div className="mx-auto max-w-4xl md:p-4">
       <PageHeader
         variant="sub-page"
         back={{

@@ -1,5 +1,10 @@
 import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/shell/UserAvatar";
+import { useSession } from "@/hooks/useSession";
+import { useSignOut } from "@/hooks/useSignOut";
 import {
   Sidebar,
   SidebarContent,
@@ -66,12 +71,51 @@ const NAV: Section[] = [
 // Uses shadcn's default text-sm for both main and sub items so the menu reads at
 // a normal size; the active item uses the accent fill (set explicitly so the
 // active style is legible here rather than inherited from the cva).
+// In the off-canvas drawer (<1024px) every link clears the 44px tap floor (#559).
 const navItemClass =
-  "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground";
+  "data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground max-lg:h-11";
+
+// The drawer's account section (<1024px): who is signed in, and Sign out, which
+// leaves the header at this width.
+function DrawerAccount() {
+  const { data: user } = useSession();
+  const { t } = useTranslation("common");
+  const signOut = useSignOut();
+  if (!user) return null;
+  return (
+    <div
+      className="flex flex-col gap-2 border-b border-sidebar-border px-2 pb-3"
+      data-testid="drawer-account"
+    >
+      <div className="flex items-center gap-2">
+        <UserAvatar name={user.display_name} pictureUrl={user.picture_url} />
+        <div className="min-w-0 text-sm">
+          <div className="truncate text-foreground" data-testid="drawer-account-name">
+            {user.display_name}
+          </div>
+          <div
+            className="truncate text-xs text-muted-foreground"
+            data-testid="drawer-account-email"
+          >
+            {user.email}
+          </div>
+        </div>
+      </div>
+      <Button
+        variant="outline"
+        className="h-11 w-full"
+        onClick={signOut}
+        data-testid="drawer-sign-out"
+      >
+        {t("signOut")}
+      </Button>
+    </div>
+  );
+}
 
 export function AppSidebar() {
   const { pathname } = useLocation();
-  const { setOpenMobile } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const { t } = useTranslation(["nav", "common"]);
   // Close the mobile drawer after a navigation; a no-op on desktop.
   const close = () => setOpenMobile(false);
@@ -85,6 +129,20 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
+        {isMobile && (
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-11"
+              onClick={close}
+              aria-label={t("closeMenu")}
+              data-testid="drawer-close"
+            >
+              <X />
+            </Button>
+          </div>
+        )}
         {/* Docked only — below 1024px the top header already shows the logo, so
             the drawer would double it up (issue #123). */}
         <div className="hidden px-2 py-1 lg:block">
@@ -130,9 +188,14 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {/* In the drawer the app info scrolls at the end of the menu, so only
+            the account block is pinned and the menu keeps most of the height. */}
+        {isMobile && (
+          <AppInfo variant="split" className="mt-auto border-t border-sidebar-border px-4 py-2" />
+        )}
       </SidebarContent>
-      <SidebarFooter>
-        <AppInfo className="px-2 py-1" />
+      <SidebarFooter className="shrink-0 border-t border-sidebar-border pt-3">
+        {isMobile ? <DrawerAccount /> : <AppInfo className="px-2 py-1" />}
       </SidebarFooter>
     </Sidebar>
   );

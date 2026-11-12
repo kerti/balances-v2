@@ -169,6 +169,8 @@ the choice is non-obvious.
 | Cancel | Batal | — |
 | Confirm | Konfirmasi | — |
 | Close | Tutup | — |
+| Close menu (the mobile drawer ×) | Tutup menu | #849. |
+| Show breakdown / Hide breakdown (the Income hero toggle on phones) | Lihat rincian / Sembunyikan rincian | #849. |
 | Reopen | Buka Kembali | — |
 | Filter | Filter | Loanword acceptable; "Saring" reads stiff. |
 | Import | Impor | — |

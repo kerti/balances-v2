@@ -133,7 +133,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
           role: slot === "ownership" ? "ownership" : "detail",
           align: col.align ?? "left",
           sortKey: col.sort?.key,
-          mobileVisible: col.mobile === "secondary",
+          mobileVisible: slot === "ownership" || col.mobile === "secondary",
           cell: (row) => col.render(row.item, ctx),
         }));
 

@@ -17,6 +17,7 @@
   "income": "Income",
   "tags": "Tags",
   "settings": "Settings",
+  "closeMenu": "Close menu",
   "footer": {
     "deploy": {
       "preview": "Preview",

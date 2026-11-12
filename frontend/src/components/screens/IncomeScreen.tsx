@@ -43,6 +43,7 @@ export function IncomeScreen() {
   const { data: currentUser } = useSession();
   const isMobile = useIsMobile();
   const [page, setPage] = useState(1);
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const [regularityFilter, setRegularityFilter] = useState<RegularityFilter>("all");
   // undefined = not yet set by user → auto-picks most recent month once data loads
   // string = specific "YYYY-MM"
@@ -156,9 +157,8 @@ export function IncomeScreen() {
                 }}
               />
             )}
-            {/* Desktop: the primary action lives top-right. On mobile it moves onto
-                the filter toolbar as a compact "New" (see below) to reclaim the
-                vertical space under the page copy. */}
+            {/* Desktop: the actions live top-right. On phones they get their own
+                50/50 row under the header (below), like every list page. */}
             {!isMobile && data && effectiveMonth && (
               <CopyRegularIncomeDialog income={data} month={effectiveMonth} />
             )}
@@ -166,6 +166,15 @@ export function IncomeScreen() {
           </>
         }
       />
+
+      {isMobile && data && data.length > 0 && (
+        <div className="flex gap-2 [&>*]:flex-1" data-testid="income-mobile-actions">
+          {effectiveMonth && (
+            <CopyRegularIncomeDialog income={data} month={effectiveMonth} compactTrigger />
+          )}
+          <CreateIncomeDialog />
+        </div>
+      )}
 
       {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
@@ -206,18 +215,6 @@ export function IncomeScreen() {
                 </Button>
               ))}
             </div>
-
-            {/* Mobile: the create action rides the filter toolbar, pushed to
-                the right edge; the `+` icon + primary fill keep it reading as an
-                action rather than another filter pill. */}
-            {isMobile && (
-              <div className="ml-auto flex gap-2">
-                {effectiveMonth && (
-                  <CopyRegularIncomeDialog income={data} month={effectiveMonth} compactTrigger />
-                )}
-                <CreateIncomeDialog compactTrigger />
-              </div>
-            )}
           </div>
 
           {headlineStats.length > 0 && (
@@ -237,70 +234,89 @@ export function IncomeScreen() {
                         {formatCurrency(String(h.total), h.currency)}
                       </div>
                     </div>
-                    {/* Regularity / by-person / by-category are peer breakdown
-                        blocks: side-by-side columns on desktop (md+), stacked on
-                        phones. Regularity is always first, by-person (when a
-                        household has more than one earner) second, by-category
-                        last. */}
-                    <div
-                      className={cn(
-                        "grid gap-y-4 md:gap-y-0 md:divide-x md:divide-border",
-                        "md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0",
-                        h.byUser.length > 1 ? "md:grid-cols-3" : "md:grid-cols-2",
-                      )}
-                    >
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("income:headline.byRegularity")}
-                        </div>
-                        <dl className="mt-1 space-y-0.5 text-sm">
-                          <div className="flex justify-between gap-3">
-                            <dt>{t("income:headline.routine")}</dt>
-                            <dd className="text-right">
-                              {formatCurrency(String(h.routine), h.currency)}
-                            </dd>
-                          </div>
-                          <div className="flex justify-between gap-3">
-                            <dt>{t("income:headline.incidental")}</dt>
-                            <dd className="text-right">
-                              {formatCurrency(String(h.incidental), h.currency)}
-                            </dd>
-                          </div>
-                        </dl>
-                      </div>
-                      {h.byUser.length > 1 && (
-                        <div>
-                          <div className="text-xs text-muted-foreground">
-                            {t("income:headline.byPerson")}
-                          </div>
-                          <dl className="mt-1 space-y-0.5 text-sm">
-                            {h.byUser.map((u) => (
-                              <div key={u.label} className="flex justify-between gap-3">
-                                <dt>{u.label}</dt>
+                    {isMobile && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="-ml-2 min-h-11"
+                        aria-expanded={showBreakdown}
+                        onClick={() => setShowBreakdown((v) => !v)}
+                        data-testid="income-breakdown-toggle"
+                      >
+                        {showBreakdown
+                          ? t("income:headline.hideBreakdown")
+                          : t("income:headline.showBreakdown")}
+                      </Button>
+                    )}
+                    {(!isMobile || showBreakdown) && (
+                      <div data-testid="income-breakdown">
+                        {/* Regularity / by-person / by-category are peer breakdown
+                          blocks: side-by-side columns on desktop (md+), stacked on
+                          phones. Regularity is always first, by-person (when a
+                          household has more than one earner) second, by-category
+                          last. */}
+                        <div
+                          className={cn(
+                            "grid gap-y-4 md:gap-y-0 md:divide-x md:divide-border",
+                            "md:[&>*]:px-6 md:[&>*:first-child]:pl-0 md:[&>*:last-child]:pr-0",
+                            h.byUser.length > 1 ? "md:grid-cols-3" : "md:grid-cols-2",
+                          )}
+                        >
+                          <div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("income:headline.byRegularity")}
+                            </div>
+                            <dl className="mt-1 space-y-0.5 text-sm">
+                              <div className="flex justify-between gap-3">
+                                <dt>{t("income:headline.routine")}</dt>
                                 <dd className="text-right">
-                                  {formatCurrency(String(u.amount), h.currency)}
+                                  {formatCurrency(String(h.routine), h.currency)}
                                 </dd>
                               </div>
-                            ))}
-                          </dl>
-                        </div>
-                      )}
-                      <div>
-                        <div className="text-xs text-muted-foreground">
-                          {t("income:headline.byCategory")}
-                        </div>
-                        <dl className="mt-1 space-y-0.5 text-sm">
-                          {h.byCategory.map((c) => (
-                            <div key={c.category} className="flex justify-between gap-3">
-                              <dt>{t(`income:categories.${c.category}`)}</dt>
-                              <dd className="text-right">
-                                {formatCurrency(String(c.amount), h.currency)}
-                              </dd>
+                              <div className="flex justify-between gap-3">
+                                <dt>{t("income:headline.incidental")}</dt>
+                                <dd className="text-right">
+                                  {formatCurrency(String(h.incidental), h.currency)}
+                                </dd>
+                              </div>
+                            </dl>
+                          </div>
+                          {h.byUser.length > 1 && (
+                            <div>
+                              <div className="text-xs text-muted-foreground">
+                                {t("income:headline.byPerson")}
+                              </div>
+                              <dl className="mt-1 space-y-0.5 text-sm">
+                                {h.byUser.map((u) => (
+                                  <div key={u.label} className="flex justify-between gap-3">
+                                    <dt>{u.label}</dt>
+                                    <dd className="text-right">
+                                      {formatCurrency(String(u.amount), h.currency)}
+                                    </dd>
+                                  </div>
+                                ))}
+                              </dl>
                             </div>
-                          ))}
-                        </dl>
+                          )}
+                          <div>
+                            <div className="text-xs text-muted-foreground">
+                              {t("income:headline.byCategory")}
+                            </div>
+                            <dl className="mt-1 space-y-0.5 text-sm">
+                              {h.byCategory.map((c) => (
+                                <div key={c.category} className="flex justify-between gap-3">
+                                  <dt>{t(`income:categories.${c.category}`)}</dt>
+                                  <dd className="text-right">
+                                    {formatCurrency(String(c.amount), h.currency)}
+                                  </dd>
+                                </div>
+                              ))}
+                            </dl>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}

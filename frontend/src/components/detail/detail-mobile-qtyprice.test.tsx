@@ -122,8 +122,13 @@ describe("detail mobile a11y floor (qty×price)", () => {
     // Position value promoted to the card headline under the shared testid.
     expect(within(cards).getByTestId("snapshot-amount")).toHaveTextContent(/6,?600/);
 
-    // The quantity × unit-price secondary line reads on the card.
-    expect(within(cards).getByText(/60 sh × .*110/)).toBeInTheDocument();
+    // Labelled rows in the desktop column order: month first, then the legs and
+    // the total value (#849).
+    expect(within(cards).getByText("Month")).toBeInTheDocument();
+    expect(within(cards).getByText("Quantity")).toBeInTheDocument();
+    expect(within(cards).getByText(/60 sh/)).toBeInTheDocument();
+    expect(within(cards).getByText("Price")).toBeInTheDocument();
+    expect(within(cards).getByText(/110/)).toBeInTheDocument();
 
     // Tap-target floor: the row ⋮ action carries the 44px size class.
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });

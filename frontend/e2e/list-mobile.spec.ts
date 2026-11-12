@@ -41,6 +41,9 @@ test(
     });
     expect(overflow).toBeLessThanOrEqual(1);
 
+    // One card grammar (#849): labelled key/value rows, Ownership included.
+    await expect(card.getByText("Ownership")).toBeVisible();
+
     // Tap-target floor: the row ⋮ action sizes to ≥44px on the card.
     const actions = card.getByRole("button", { name: "Bank account actions" });
     await expect(actions).toBeVisible();
