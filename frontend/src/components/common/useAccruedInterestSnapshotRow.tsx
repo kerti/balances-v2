@@ -70,7 +70,7 @@ export function useAccruedInterestSnapshotRow<TUpdate, TDelete>(
         snapshot={snapshot}
         mutation={updateMutation}
         principal={principalInForce}
-      />{" "}
+      />
     </>
   );
 

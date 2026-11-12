@@ -50,19 +50,13 @@ import {
   slicesHeld,
 } from "@/lib/groupBreakdown";
 import { formatCurrency } from "@/lib/format";
+import { LIABILITY_CATEGORY_COLORS } from "@/lib/categoryColors";
 import { headlineSurface } from "@/lib/headline";
 import { cn } from "@/lib/utils";
 
 type LiabilityCategory = "personal" | "institutional";
 
 const LIABILITY_CATEGORIES: LiabilityCategory[] = ["personal", "institutional"];
-
-// Distinct hues, kept clear of the asset palette. Personal = violet,
-// institutional = rose.
-const CATEGORY_FILLS: Record<LiabilityCategory, string> = {
-  personal: "#8b5cf6", // violet-500
-  institutional: "#f43f5e", // rose-500
-};
 
 export function LiabilitiesHome() {
   const { t } = useTranslation(["common", "liabilities", "errors"]);
@@ -120,7 +114,7 @@ export function LiabilitiesHome() {
   const stackCategories: GroupStackCategory[] = LIABILITY_CATEGORIES.map((c) => ({
     key: c,
     label: t(`liabilities:home.categoryLabel.${c}`),
-    color: CATEGORY_FILLS[c],
+    color: LIABILITY_CATEGORY_COLORS[c],
   }));
 
   return (
@@ -201,7 +195,7 @@ function buildCategorySlices(pie: { category: string; value: number }[], t: TFn)
       key: c,
       label: t(`liabilities:home.categoryLabel.${c}`),
       value: found?.value ?? 0,
-      color: CATEGORY_FILLS[c],
+      color: LIABILITY_CATEGORY_COLORS[c],
     };
   });
 }

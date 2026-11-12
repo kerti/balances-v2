@@ -43,7 +43,7 @@ export function useSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
-      />{" "}
+      />
     </>
   );
 

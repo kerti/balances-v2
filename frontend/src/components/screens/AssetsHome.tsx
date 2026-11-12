@@ -52,6 +52,7 @@ import {
   slicesHeld,
 } from "@/lib/groupBreakdown";
 import { formatCurrency } from "@/lib/format";
+import { ASSET_CATEGORY_COLORS } from "@/lib/categoryColors";
 import { headlineSurface } from "@/lib/headline";
 import { cn } from "@/lib/utils";
 import type {
@@ -65,15 +66,6 @@ import type {
 type AssetCategory = "bankAccount" | "property" | "vehicle";
 
 const ASSET_CATEGORIES: AssetCategory[] = ["bankAccount", "property", "vehicle"];
-
-// Distinct Tailwind 500-level hues, same palette family as the investment
-// category fills so the app reads consistently. Bank = emerald (cash tone),
-// property = blue, vehicle = amber.
-const CATEGORY_FILLS: Record<AssetCategory, string> = {
-  bankAccount: "#10b981", // emerald-500
-  property: "#3b82f6", // blue-500
-  vehicle: "#f59e0b", // amber-500
-};
 
 // The common subset of every subtype's *ListItem the aggregation reads.
 type AssetListItem = {
@@ -148,7 +140,7 @@ export function AssetsHome() {
   const stackCategories: GroupStackCategory[] = ASSET_CATEGORIES.map((c) => ({
     key: c,
     label: t(`assets:home.categoryLabel.${c}`),
-    color: CATEGORY_FILLS[c],
+    color: ASSET_CATEGORY_COLORS[c],
   }));
 
   return (
@@ -227,7 +219,7 @@ function buildCategorySlices(pie: { category: string; value: number }[], t: TFn)
       key: c,
       label: t(`assets:home.categoryLabel.${c}`),
       value: found?.value ?? 0,
-      color: CATEGORY_FILLS[c],
+      color: ASSET_CATEGORY_COLORS[c],
     };
   });
 }

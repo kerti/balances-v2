@@ -112,7 +112,7 @@ describe("bankAccountDescriptor (conformance)", () => {
     // Shared surface: name + the bank-detail secondary line + status + value.
     expect(within(row).getByText("Everyday Checking")).toBeInTheDocument();
     expect(within(row).getByText(/Test Bank · 1234567890 · Savings/)).toBeInTheDocument();
-    expect(within(row).getByText("Active")).toBeInTheDocument();
+    expect(within(row).queryByText("Active")).not.toBeInTheDocument();
     expect(within(row).getByText(/4,?321/)).toBeInTheDocument();
 
     // Ownership extra column: privacy-safe sole-owner label with "(you)".

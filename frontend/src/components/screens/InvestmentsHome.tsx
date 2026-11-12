@@ -30,6 +30,7 @@ import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { INVESTMENT_CATEGORY_COLORS, RISK_PROFILE_COLORS } from "@/lib/categoryColors";
 import { routes } from "@/lib/routes";
 import { InvestmentListHeadline } from "@/components/common/InvestmentListHeadline";
 import { SnapshotChart } from "@/components/charts/SnapshotChart";
@@ -74,27 +75,10 @@ type HomeListItem = {
   cost_basis: string;
 };
 
-// Mirror of CATEGORY_FILLS in CategoryStackChartImpl so the pie matches
-// the stacked area visually. Kept duplicated rather than re-exported so
-// each impl module stays self-contained for lazy-loading.
-const CATEGORY_FILLS: Record<InvestmentCategory, string> = {
-  stock: "#06b6d4",
-  mutualFund: "#8b5cf6",
-  bond: "#3b82f6",
-  timeDeposit: "#10b981",
-  gold: "#eab308",
-};
-
 // Risk pie: semantic traffic-light. Low = emerald (matches the gain
 // tone), medium = amber, high = a red close to the `--destructive`
 // token (the actual CSS var is OKLCH so we use a Tailwind red-500
 // hex here for a stable static-fill that recharts can consume).
-const RISK_FILLS: Record<InvestmentRiskProfile, string> = {
-  low: "#059669", // emerald-600 (matches text-emerald-600 used elsewhere)
-  medium: "#f59e0b", // amber-500
-  high: "#dc2626", // red-600
-};
-
 export function InvestmentsHome() {
   const { t } = useTranslation(["common", "investments", "errors"]);
   const stocks = useStocks();
@@ -292,7 +276,7 @@ function buildCategorySlices(
       key: c,
       label: t(`investments:home.categoryLabel.${c}`),
       value: found?.value ?? 0,
-      color: CATEGORY_FILLS[c],
+      color: INVESTMENT_CATEGORY_COLORS[c],
     };
   });
 }
@@ -308,7 +292,7 @@ function buildRiskSlices(
       key: r,
       label: t(labelKey),
       value: found?.value ?? 0,
-      color: RISK_FILLS[r],
+      color: RISK_PROFILE_COLORS[r],
     };
   });
 }
@@ -399,7 +383,7 @@ function RiskPieCard({ currency, slices }: { currency: string; slices: PieSlice[
         <CardDescription>{t("home.riskPieDescription", { currency })}</CardDescription>
       </CardHeader>
       <CardContent>
-        <InvestmentPieChart slices={slices} currency={currency} />
+        <InvestmentPieChart slices={slices} currency={currency} ordered />
       </CardContent>
     </Card>
   );

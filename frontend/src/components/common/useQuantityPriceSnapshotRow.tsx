@@ -54,7 +54,7 @@ export function useQuantityPriceSnapshotRow<TUpdate, TDelete>(
         onOpenChange={setEditOpen}
         snapshot={snapshot}
         mutation={updateMutation}
-      />{" "}
+      />
     </>
   );
 
