@@ -16,6 +16,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   const mutation = useUpdateVehicle(vehicle.asset.id);
   const { data: user } = useSession();
+  const [tagId, setTagId] = useState<string | null>(() => vehicle.asset.tag_id);
 
   const [form, setForm] = useState<VehicleFormState>({
     display_name: vehicle.asset.display_name,
@@ -41,6 +42,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         vehicle_type: form.vehicle_type,
         make: form.make || null,
@@ -62,6 +64,7 @@ export function EditVehicleDialog({ open, onOpenChange, vehicle }: Props) {
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
     >

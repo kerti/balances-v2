@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Archive } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
@@ -10,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/common/NumericInput";
@@ -84,6 +82,10 @@ type Props = {
   // and names the noun in the title and the consequence line.
   assetSubtype?: AssetSubtype;
   currency?: string;
+  // Controlled by the detail header's ⋯ menu (#839): its Close… / Change status
+  // item opens the dialog, so it renders no trigger of its own.
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 };
 
 // Dedicated "change lifecycle status" dialog (ADR-0009): a separate action from
@@ -107,9 +109,10 @@ export function TerminatePositionDialog({
   investmentSubtype,
   assetSubtype,
   currency,
+  open,
+  onOpenChange,
 }: Props) {
   const { t } = useTranslation("common");
-  const [open, setOpen] = useState(false);
   const mutation = useUpdateLifecycle(group, id, listKey);
 
   // Both are Investment-only reads, disabled by a null id for the other three
@@ -216,7 +219,7 @@ export function TerminatePositionDialog({
   }
 
   function close() {
-    setOpen(false);
+    onOpenChange(false);
     reset();
   }
 
@@ -300,13 +303,7 @@ export function TerminatePositionDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : close())}>
-      <DialogTrigger asChild>
-        <Button variant="outline" data-testid="terminate-position-trigger">
-          <Archive className="mr-1 size-4" />
-          {wasActive ? t("terminate.closeTrigger") : t("terminate.editTrigger")}
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>

@@ -1,18 +1,19 @@
-// A tight, label-less identity block for the details card's left column
-// (ADR-0051 Phase B). The first non-empty line reads as the primary identifier
-// (default weight), the rest muted beneath it — a compact stack that saves the
-// vertical space labelled rows would spend. Nullish lines drop out, so a
-// descriptor can pass optional pieces (an address, a plate) without guarding.
+// The details card's identity line (#839): the position's identifiers on one
+// muted, dot-separated line under the card title — "BCA · 1234 · Savings",
+// "ASII · IDX", "Bar · 24K". Nullish pieces drop out (and take their dot with
+// them), so a descriptor can pass optional pieces (an address, a plate) without
+// guarding. The line wraps on a narrow card; the dots are decorative.
 export function IdentityCluster({ lines }: { lines: (string | null | undefined)[] }) {
   const visible = lines.filter((line): line is string => Boolean(line));
   if (visible.length === 0) return null;
   return (
-    <div className="text-sm leading-snug">
+    <p className="text-sm text-muted-foreground" data-testid="identity-line">
       {visible.map((line, i) => (
-        <div key={i} className={i === 0 ? "font-medium" : "text-muted-foreground"}>
-          {line}
-        </div>
+        <span key={i}>
+          {i > 0 && <span aria-hidden="true"> · </span>}
+          <span>{line}</span>
+        </span>
       ))}
-    </div>
+    </p>
   );
 }

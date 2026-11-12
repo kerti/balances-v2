@@ -60,6 +60,7 @@ export function CreateTimeDepositDialog({
   }));
   const { data: user } = useSession();
   const mutation = useCreateTimeDeposit();
+  const [tagId, setTagId] = useState<string | null>(null);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -79,6 +80,7 @@ export function CreateTimeDepositDialog({
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         native_currency: form.native_currency,
@@ -114,6 +116,7 @@ export function CreateTimeDepositDialog({
       submitLabel={t("common:actions.create")}
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       validate={() =>
         termInvalid ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") } : {}
       }
@@ -121,6 +124,7 @@ export function CreateTimeDepositDialog({
       onSubmit={submit}
       onClosed={() => {
         setForm({ ...emptyForm(), ...prefill });
+        setTagId(null);
         mutation.reset();
       }}
     >

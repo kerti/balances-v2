@@ -15,7 +15,7 @@ import (
 )
 
 // TestTagRepo covers the Tag lifecycle (ADR-0028): tenancy isolation on CRUD +
-// assignment, the dedicated-endpoint assignment path, the per-currency
+// assignment, the per-currency
 // breakdown aggregate, and delete-clears-assignments. Mirrors the per-group
 // tenancy suites.
 // covers: INV-TENANCY-12, INV-TAGS-01, INV-TAGS-02, INV-TAGS-03, INV-TAGS-04

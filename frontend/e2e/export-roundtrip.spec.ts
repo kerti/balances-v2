@@ -80,7 +80,8 @@ test("property export re-imports flawlessly", async ({ page }) => {
   await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 
   // --- Delete the parent property (cleanup — returns to the empty list) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(name)).toHaveCount(0);

@@ -7,7 +7,7 @@ import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnaps
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { TransactionCard } from "@/components/common/TransactionCard";
-import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { investmentHeadlineFields } from "@/components/detail/investmentHeadlineFields";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
@@ -40,8 +40,6 @@ import { erasedSection } from "@/components/detail/types";
 import type { MutualFund, InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
 
-const PAGE_SIZE = 12;
-
 // The per-render context for the MutualFund detail (ADR-0051, A4). Mirrors the
 // A3 Stock mechanism: the investment transaction ledger + its mutations + the
 // search state live here — the "has-transactions" axis — so the core never sees
@@ -58,7 +56,7 @@ type MutualFundCtx = {
 
 // MutualFund detail, expressed on the generic `PositionDetailScreen` (ADR-0051,
 // A4 — qty×price completion). A mechanical repeat of the A3 Stock descriptor:
-// the `renderHeadline` slot (shared `InvestmentHeadline` fed cost-basis wiring)
+// the `headlineFields` slot (shared `InvestmentHeadline` fed cost-basis wiring)
 // and a multi-section `HistorySection` (units×NAV snapshots + a transaction
 // ledger). No `details.*` field reaches the core — the fund code/manager/type
 // ride the header line, cost basis is descriptor wiring, transactions live in
@@ -68,7 +66,6 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
     entityKey: "mutualFund",
     testIdPrefix: "mutual-fund",
     group: "investments",
-    tagGroup: "investment",
     listKey: "mutual-funds",
     investmentSubtype: "mutual_fund",
     i18nNamespaces: ["investments", "common", "errors"],
@@ -164,16 +161,17 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
     ),
     infoFields: () => [],
 
-    renderHeadline: (entity, ctx, snapshots) => {
+    headlineFields: (entity, ctx, snapshots, t) => {
       const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
-      return (
-        <InvestmentHeadline
-          currency={entity.investment.native_currency}
-          latestValue={latest ? Number(latest.amount) : null}
-          totalCost={computeCostBasis(ctx.transactions ?? []).cost}
-          status={entity.investment.status}
-          terminatedAt={entity.investment.terminated_at}
-        />
+      return investmentHeadlineFields(
+        {
+          currency: entity.investment.native_currency,
+          latestValue: latest ? Number(latest.amount) : null,
+          totalCost: computeCostBasis(ctx.transactions ?? []).cost,
+          status: entity.investment.status,
+          terminatedAt: entity.investment.terminated_at,
+        },
+        t,
       );
     },
 
@@ -272,6 +270,7 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
           </TableRow>
         ),
         rows: filtered,
+        totalCount: allTxns.length,
         renderRow: (tx: InvestmentTransaction) => (
           <TransactionRow
             key={tx.id}
@@ -290,7 +289,6 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
             deleteMutation={ctx.deleteTransactionMutation}
           />
         ),
-        pageSize: PAGE_SIZE,
         headerActions: active ? (
           // Two rows (#542): row 1 = trades (Buy leads as primary), row 2 = cash
           // flows (distribution income + fees). Stacked on phones, inline ≥768px.

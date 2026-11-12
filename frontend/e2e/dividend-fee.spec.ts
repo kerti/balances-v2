@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // The last two transaction dialog families (M4.4, ADR-0003): on a stock detail
 // page, record a Dividend (CashIncome shape — also covers Coupon/Distribution,
@@ -32,6 +33,7 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- Record a Dividend (CashIncome shape — amount only) ---
+  await openHistoryTab(page, "transactions");
   await page.getByRole("button", { name: "Dividend" }).click();
   const divDialog = page.getByRole("dialog");
   await expect(divDialog.getByRole("heading", { name: "Record dividend" })).toBeVisible();
@@ -51,7 +53,8 @@ test("stock dividend + fee transactions land on the ledger", async ({ page }) =>
   await expect(page.getByRole("row", { name: /Dividend/ })).toBeVisible();
 
   // --- Delete (cleanup — returns to the empty list) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 

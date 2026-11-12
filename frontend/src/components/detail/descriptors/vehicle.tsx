@@ -30,7 +30,6 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
   testIdPrefix: "vehicle",
   group: "assets",
   assetSubtype: "vehicle",
-  tagGroup: "asset",
   listKey: "vehicles",
   i18nNamespaces: ["assets", "common", "errors"],
   keys: {

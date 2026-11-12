@@ -165,6 +165,7 @@ describe("mutualFundDescriptor detail (conformance)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={mutualFundDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Title (H1). Fund code/manager/type no longer ride a subtitle here — they
@@ -172,7 +173,7 @@ describe("mutualFundDescriptor detail (conformance)", () => {
     const title = await screen.findByTestId("tour-overview");
     expect(title).toHaveTextContent("Global Equity Fund");
 
-    // The investment headline slot (renderHeadline) mounts the shared component.
+    // The investment headline slot (headlineFields) mounts the shared component.
     expect(screen.getByTestId("investment-headline")).toBeInTheDocument();
 
     // Details card: identity cluster (code primary, manager + type muted) + the
@@ -212,7 +213,9 @@ describe("mutualFundDescriptor detail (conformance)", () => {
     // Actions row + the export anchor (mutual-fund-prefixed).
     const actions = screen.getByTestId("tour-actions");
     expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: /delete/i })).toBeInTheDocument();
+    // Close / Delete live behind the header's ⋯ menu (#839).
+    await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("mutual-fund-export")).toHaveAttribute(
       "href",
       expect.stringContaining("/i1/"),

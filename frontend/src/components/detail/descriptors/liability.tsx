@@ -36,7 +36,6 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
   entityKey: "liability",
   testIdPrefix: "liability",
   group: "liabilities",
-  tagGroup: "liability",
   listKey: "liabilities",
   i18nNamespaces: ["liabilities", "common", "errors"],
   keys: {

@@ -7,7 +7,7 @@ import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnaps
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { TransactionCard } from "@/components/common/TransactionCard";
-import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { investmentHeadlineFields } from "@/components/detail/investmentHeadlineFields";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
@@ -40,8 +40,6 @@ import { erasedSection } from "@/components/detail/types";
 import type { Stock, InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
 
-const PAGE_SIZE = 12;
-
 // The per-render context for the Stock detail (ADR-0051, A3). The investment
 // transaction ledger + its mutations + the search state live here — the
 // "has-transactions" axis the amount-only linchpin (#525) never exercised. The
@@ -59,7 +57,7 @@ type StockCtx = {
 
 // Stock detail, expressed on the generic `PositionDetailScreen` (ADR-0051, A3 —
 // the investment mechanism). Stock is the richest investment type; it proves the
-// two investment-only pieces end-to-end: the `renderHeadline` slot (shared
+// two investment-only pieces end-to-end: the `headlineFields` slot (shared
 // `InvestmentHeadline` fed cost-basis wiring via `lib/costBasis`) and a
 // multi-section `HistorySection` (qty×price snapshots + a transaction ledger with
 // its own search toolbar + reconcile banner). No `details.*` field reaches the
@@ -69,7 +67,6 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
   entityKey: "stock",
   testIdPrefix: "stock",
   group: "investments",
-  tagGroup: "investment",
   listKey: "stocks",
   investmentSubtype: "stock",
   i18nNamespaces: ["investments", "common", "errors"],
@@ -160,16 +157,17 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
   ),
   infoFields: () => [],
 
-  renderHeadline: (entity, ctx, snapshots) => {
+  headlineFields: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
-    return (
-      <InvestmentHeadline
-        currency={entity.investment.native_currency}
-        latestValue={latest ? Number(latest.amount) : null}
-        totalCost={computeCostBasis(ctx.transactions ?? []).cost}
-        status={entity.investment.status}
-        terminatedAt={entity.investment.terminated_at}
-      />
+    return investmentHeadlineFields(
+      {
+        currency: entity.investment.native_currency,
+        latestValue: latest ? Number(latest.amount) : null,
+        totalCost: computeCostBasis(ctx.transactions ?? []).cost,
+        status: entity.investment.status,
+        terminatedAt: entity.investment.terminated_at,
+      },
+      t,
     );
   },
 
@@ -266,6 +264,7 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
         </TableRow>
       ),
       rows: filtered,
+      totalCount: allTxns.length,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
           key={tx.id}
@@ -284,7 +283,6 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
           deleteMutation={ctx.deleteTransactionMutation}
         />
       ),
-      pageSize: PAGE_SIZE,
       headerActions: active ? (
         // Two rows (#542): row 1 = trades (Buy leads as primary), row 2 = cash
         // flows (dividend income + fees). Stacked on phones, inline from 768px.

@@ -42,7 +42,7 @@ export function TagItemsPanel({ tagId, tagName, currency }: Props) {
         onSuccess: () =>
           toastUndoable({
             message: t("tags:items.toast.removed", { name: item.name, tag: tagName }),
-            undoPath: "/api/tags/assignments/bulk",
+            undoPath: "/api/tags/assignments",
             undoMethod: "PUT",
             undoBody: { tag_id: tagId, items: [ref] },
             testId: "toast-removed",

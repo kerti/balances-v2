@@ -67,7 +67,8 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   await row.getByRole("button", { name: "Snapshot actions" }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await expect(page.getByText("No snapshots yet.")).toBeVisible();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 });

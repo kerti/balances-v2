@@ -36,6 +36,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
   const mutation = useUpdateBankAccount(account.asset.id);
   const { data: user } = useSession();
   const [form, setForm] = useState(() => toForm(account));
+  const [tagId, setTagId] = useState<string | null>(() => account.asset.tag_id);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -46,6 +47,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         bank_name: form.bank_name,
         account_number: form.account_number,
@@ -64,6 +66,7 @@ export function EditBankAccountDialog({ open, onOpenChange, account }: Props) {
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
     >

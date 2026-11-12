@@ -34,7 +34,6 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
   entityKey: "receivable",
   testIdPrefix: "receivable",
   group: "receivables",
-  tagGroup: "receivable",
   listKey: "receivables",
   i18nNamespaces: ["receivables", "common", "errors"],
   keys: {

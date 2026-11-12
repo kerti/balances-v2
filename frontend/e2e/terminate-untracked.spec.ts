@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // The exit side of a Tracking Change through the real UI + backend (ADR-0053
 // §5, #595): a Position can be terminated as `untracked` — it left the
@@ -58,7 +59,8 @@ test(
     await expect(snapshotCard.getByTestId("snapshot-amount")).toContainText("950");
 
     // --- Terminate as untracked ---
-    await page.getByRole("button", { name: "Close…", exact: true }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
     const closeDialog = page.getByRole("dialog");
     await expect(closeDialog.getByText("Close investment")).toBeVisible();
 
@@ -78,12 +80,15 @@ test(
     await expect(statusBadge).toHaveText("No longer tracked");
     await expect(snapshotCard.getByTestId("snapshot-row")).toHaveCount(1);
     await expect(snapshotCard.getByTestId("snapshot-amount")).not.toContainText("950");
+    await openHistoryTab(page, "transactions");
     await expect(page.getByRole("row", { name: /Sell/ })).toHaveCount(0);
 
+    await openHistoryTab(page, "snapshots");
     // --- Reactivate: the displaced snapshot is handed back the way it is for
     //     every other terminal status — the close row goes, the 9,500 mark
     //     returns ---
-    await page.getByRole("button", { name: "Change status", exact: true }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Change status", exact: true }).click();
     const reopenDialog = page.getByRole("dialog");
     await reopenDialog.getByLabel("Status").selectOption("active");
     await reopenDialog.getByRole("button", { name: "Save" }).click();
@@ -93,7 +98,8 @@ test(
     await expect(snapshotCard.getByTestId("snapshot-amount")).toContainText("950");
 
     // --- Delete (cleanup — returns to the empty list) ---
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     const confirm = page.getByRole("alertdialog");
     await confirm.getByRole("button", { name: "Delete" }).click();
 

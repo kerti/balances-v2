@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // Investment trade + soft reconciliation through the real UI + backend (M4.4,
 // ADR-0003): create a stock, record a Buy (quantity-price transaction shape),
@@ -33,6 +34,7 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- Record a Buy: 100 sh @ 8500 (quantity-price transaction shape) ---
+  await openHistoryTab(page, "transactions");
   await page.getByRole("button", { name: "Buy" }).click();
   const buyDialog = page.getByRole("dialog");
   await expect(buyDialog.getByRole("heading", { name: "Record buy" })).toBeVisible();
@@ -45,6 +47,7 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   await expect(page.getByText(/match ledger total/)).toHaveCount(0);
 
   // --- Add a snapshot whose quantity (90) disagrees with the ledger (100) ---
+  await openHistoryTab(page, "snapshots");
   await page.getByRole("button", { name: "Record snapshot" }).click();
   const snapDialog = page.getByRole("dialog");
   await expect(snapDialog.getByText("Record monthly snapshot")).toBeVisible();
@@ -52,12 +55,14 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   await snapDialog.getByLabel("Price per unit (IDR)").fill("8500");
   await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
 
-  // Warning fires (display-only); the snapshot still saved despite the mismatch.
+  // Warning fires (display-only) on the ledger; the snapshot still saved despite the mismatch.
+  await openHistoryTab(page, "transactions");
   await expect(page.getByText(/Latest snapshot quantity \(90 sh\)/)).toBeVisible();
   await expect(page.getByText(/match ledger total/)).toBeVisible();
 
   // --- Delete (cleanup — returns to the empty list) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 
@@ -90,6 +95,7 @@ test("stock buy offers Update holding, which prefills Record snapshot and saves 
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
   // --- A 40 sh holding: Buy 40, and a snapshot that agrees with the ledger ---
+  await openHistoryTab(page, "transactions");
   await page.getByRole("button", { name: "Buy" }).click();
   let dialog = page.getByRole("dialog");
   // The trade dialog says up front that the holding and bank are updated separately.
@@ -101,11 +107,13 @@ test("stock buy offers Update holding, which prefills Record snapshot and saves 
   await dialog.getByRole("button", { name: "Record buy" }).click();
   await expect(page.getByRole("row", { name: /Buy/ })).toBeVisible();
 
+  await openHistoryTab(page, "snapshots");
   await page.getByRole("button", { name: "Record snapshot" }).click();
   dialog = page.getByRole("dialog");
   await dialog.getByLabel("Quantity", { exact: true }).fill("40");
   await dialog.getByLabel("Price per unit (IDR)").fill("8500");
   await dialog.getByRole("button", { name: "Save snapshot" }).click();
+  await openHistoryTab(page, "transactions");
   await expect(page.getByTestId("reconcile-banner")).toHaveCount(0);
 
   // --- Buy 10 more: the ledger says 50, the snapshot still says 40 ---
@@ -143,7 +151,8 @@ test("stock buy offers Update holding, which prefills Record snapshot and saves 
   await expect(page.getByTestId("reconcile-banner")).toHaveCount(0);
 
   // --- Delete (cleanup) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
 });

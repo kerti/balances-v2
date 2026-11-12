@@ -1,7 +1,7 @@
 // Per-type conformance for the Stock detail descriptor (ADR-0051, A3 — the
 // investment mechanism). Stock is the richest investment type: it exercises the
 // two investment-only pieces the amount-only linchpin (#525) didn't — the
-// `renderHeadline` slot (shared `InvestmentHeadline` fed cost-basis wiring) and a
+// `headlineFields` slot (shared `InvestmentHeadline` fed cost-basis wiring) and a
 // multi-section `HistorySection` (qty×price snapshots + a transaction ledger with
 // its own search toolbar + reconcile banner). This test drives the generic
 // `PositionDetailScreen` with the *real* descriptor over MSW-stubbed endpoints and
@@ -168,6 +168,7 @@ describe("stockDescriptor detail (conformance)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Title (H1). Ticker/exchange no longer ride a subtitle here — they moved
@@ -180,6 +181,7 @@ describe("stockDescriptor detail (conformance)", () => {
     // ownership/status line + the shared-surface description.
     const detailsCard = screen.getByTestId("tour-details");
     expect(within(detailsCard).getByText("ACME")).toBeInTheDocument();
+    expect(within(detailsCard).getByTestId("identity-line")).toHaveTextContent(/^ACME · \S+/);
     expect(within(detailsCard).getByText("NYSE")).toBeInTheDocument();
 
     // Risk profile rides the card header as a compact shield badge (medium),
@@ -223,7 +225,9 @@ describe("stockDescriptor detail (conformance)", () => {
     // Actions row + the export anchor (stock-prefixed).
     const actions = screen.getByTestId("tour-actions");
     expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    expect(within(actions).getByRole("button", { name: /delete/i })).toBeInTheDocument();
+    // Close / Delete live behind the header's ⋯ menu (#839).
+    await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("stock-export")).toHaveAttribute(
       "href",
       expect.stringContaining("/i1/"),

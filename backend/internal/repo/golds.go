@@ -45,6 +45,9 @@ type CreateGoldParams struct {
 	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
 	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
 	EntryType string
+	// TagID, when set, tags the new Position in the same transaction (issue
+	// #839). It must be a live Tag of the caller's household, else ErrNotFound.
+	TagID *uuid.UUID
 }
 
 type UpdateGoldParams struct {
@@ -60,6 +63,9 @@ type UpdateGoldParams struct {
 	// — the engine cannot detect one — so it is deliberately editable after the
 	// fact (ADR-0053 §3).
 	EntryType *string
+	// Tag re-tags the Position in the same transaction when Set: a uuid assigns,
+	// null clears, absent leaves it alone (issue #839).
+	Tag TagChange
 }
 
 func (r *InvestmentRepo) CreateGold(ctx context.Context, p CreateGoldParams) (*Gold, error) {
@@ -98,6 +104,13 @@ func (r *InvestmentRepo) CreateGold(ctx context.Context, p CreateGoldParams) (*G
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create gold_details: %w", err)
+	}
+
+	if p.TagID != nil {
+		if err := assignTag(ctx, qtx, hid, user, TagGroupInvestment, inv.ID, p.TagID); err != nil {
+			return nil, err
+		}
+		inv.TagID = p.TagID
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -241,6 +254,12 @@ func (r *InvestmentRepo) UpdateGold(ctx context.Context, id uuid.UUID, p UpdateG
 	if err != nil {
 		return nil, fmt.Errorf("update gold_details: %w", err)
 	}
+
+	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupInvestment, inv.ID, p.Tag, inv.TagID)
+	if err != nil {
+		return nil, err
+	}
+	inv.TagID = tagID
 
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)

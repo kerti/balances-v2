@@ -108,7 +108,8 @@ test(
     await expect(page.getByText("No snapshots yet.")).toBeVisible();
 
     // --- Delete the parent account (cleanup — returns to the empty list) ---
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     const acctConfirm = page.getByRole("alertdialog");
     await acctConfirm.getByRole("button", { name: "Delete" }).click();
 

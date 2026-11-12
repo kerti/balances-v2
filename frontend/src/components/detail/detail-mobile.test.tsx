@@ -100,6 +100,7 @@ describe("detail mobile a11y floor (amount-only)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Renderer flips to cards; the wide snapshot table is gone.
@@ -123,6 +124,7 @@ describe("detail mobile a11y floor (amount-only)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // The secondary controls left at `size-sm` after B1 (which floored only the
@@ -134,13 +136,18 @@ describe("detail mobile a11y floor (amount-only)", () => {
     const secondary = [
       await screen.findByTestId("bank-account-export"),
       screen.getByTestId("import-snapshots-trigger"),
-      screen.getByTestId("help-tour"),
       screen.getByRole("button", { name: /edit/i }),
-      screen.getByTestId("terminate-position-trigger"),
-      screen.getByRole("button", { name: /^delete$/i }),
     ];
     for (const control of secondary) {
       expect(control).toHaveClass("max-md:min-h-11");
+    }
+    // The header's two icon buttons (Help ?, the ⋯ menu) are square: they floor
+    // with `max-md:size-11` instead (#839).
+    for (const icon of [
+      screen.getByTestId("help-tour"),
+      screen.getByTestId("position-menu-trigger"),
+    ]) {
+      expect(icon).toHaveClass("max-md:size-11");
     }
   });
 
@@ -148,6 +155,7 @@ describe("detail mobile a11y floor (amount-only)", () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
+      { route: "/" },
     );
 
     // Row 1 — create: the single Record snapshot button, the promoted primary

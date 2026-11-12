@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // Capture-at-source through the real UI + backend (ADR-0052 §6, #587): closing
 // an Investment books the Sell that says where its value went, on the same
@@ -37,6 +38,7 @@ test(
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
     // --- Buy 100 @ 9,500, so the ledger carries a held quantity to close out ---
+    await openHistoryTab(page, "transactions");
     await page.getByRole("button", { name: "Buy" }).click();
     const buyDialog = page.getByRole("dialog");
     await buyDialog.getByLabel(/Quantity/).fill("100");
@@ -46,7 +48,8 @@ test(
 
     // --- Close the position; the settlement block appears with the terminal
     //     status and is pre-filled from the ledger's held quantity ---
-    await page.getByRole("button", { name: "Close…", exact: true }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
     const closeDialog = page.getByRole("dialog");
     await closeDialog.getByLabel("Status").selectOption("sold");
 
@@ -63,7 +66,8 @@ test(
     await expect(page.getByRole("row", { name: /Sell/ })).toBeVisible();
 
     // --- Delete (cleanup — returns to the empty list) ---
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     const confirm = page.getByRole("alertdialog");
     await confirm.getByRole("button", { name: "Delete" }).click();
 

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // Detail-page mobile divergence for the investment transaction-ledger shape
 // (#538, ADR-0051 Phase B / ADR-0050 "wide table → stacked cards"). Sibling to
@@ -37,6 +38,7 @@ test(
       .click();
     await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
 
+    await openHistoryTab(page, "transactions");
     await page.getByRole("button", { name: "Buy" }).click();
     const buyDialog = page.getByRole("dialog");
     await expect(buyDialog.getByRole("heading", { name: "Record buy" })).toBeVisible();
@@ -80,7 +82,9 @@ test(
     await page.getByRole("button", { name: "Transaction actions" }).first().click();
     await page.getByRole("menuitem", { name: "Delete" }).click();
 
-    await page.getByRole("button", { name: "Delete" }).click();
+    await page.getByTestId("position-menu-trigger").click();
+
+    await page.getByRole("menuitem", { name: "Delete" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
     await expect(page.getByRole("main").getByText(name)).toHaveCount(0);
   },

@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // Manually linking a hand-created rollover successor (issue #65). When a TD
 // matures with a rolled-over disposition, the source shows a "create rollover
@@ -53,6 +54,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await sourceRow.getByText(sourceName).click();
   await expect(page.getByRole("heading", { level: 1, name: sourceName })).toBeVisible();
 
+  await openHistoryTab(page, "transactions");
   await page.getByRole("button", { name: "Maturity" }).click();
   const matDialog = page.getByRole("dialog");
   await expect(matDialog.getByRole("heading", { name: "Record maturity" })).toBeVisible();
@@ -78,7 +80,8 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await expect(intoLink).toHaveText(successorName);
 
   // --- Cleanup: delete the source, then the successor ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(sourceName)).toHaveCount(0);
 
@@ -87,7 +90,8 @@ test("link an existing time deposit as the rollover successor", async ({ page })
     .getByText(successorName)
     .click();
   await expect(page.getByRole("heading", { level: 1, name: successorName })).toBeVisible();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(successorName)).toHaveCount(0);
 });

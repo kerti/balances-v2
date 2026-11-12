@@ -171,3 +171,20 @@ desktop width and the net value stays reachable; the desktop assign/report round
   Settings gains a Tags card; a new `/tags` report screen and one nav entry land.
 - Because the FK is nullable and defaults NULL, the feature is fully additive — no existing flow
   changes behaviour until a User creates and assigns a Tag.
+
+## Amendment (2026-11-12, #839): the Tag is a field of the position write
+
+"Assignment is a dedicated endpoint, not a create/update field" above is reversed. A Tag is now edited
+only in the position Create and Edit dialogs (the detail page's inline control is gone), so the
+position's own create and update requests, for every subtype, carry an optional `tag_id`, written in
+the **same transaction** as the position. That removes the two-call seam the original decision
+accepted: a position can no longer be created and then left untagged by a failed second call.
+
+- **Create:** `tag_id` is a uuid or null/absent (untagged).
+- **Update:** absent leaves the Tag unchanged, `null` clears it, a uuid assigns it. Our dialogs always
+  send the field; the absent case exists so a client that never learned it cannot wipe a Tag.
+- **Tenancy is unchanged:** the Tag is looked up under the caller's `household_id` in SQL before the
+  write. Another household's (or a deleted) Tag is a 404, the same as any missing id, and rolls the
+  position write back with it.
+- **Routes:** the single-item `PUT /api/tags/assignments` is deleted. The bulk route (Tags page,
+  #853) took its path: `PUT /api/tags/assignments` with `{tag_id, items: [{group, position_id}]}`.

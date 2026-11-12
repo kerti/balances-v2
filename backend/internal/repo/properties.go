@@ -39,6 +39,9 @@ type CreatePropertyParams struct {
 	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
 	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
 	EntryType string
+	// TagID, when set, tags the new Position in the same transaction (issue
+	// #839). It must be a live Tag of the caller's household, else ErrNotFound.
+	TagID *uuid.UUID
 }
 
 type UpdatePropertyParams struct {
@@ -56,13 +59,16 @@ type UpdatePropertyParams struct {
 	// — the engine cannot detect one — so it is deliberately editable after the
 	// fact (ADR-0053 §3).
 	EntryType *string
+	// Tag re-tags the Position in the same transaction when Set: a uuid assigns,
+	// null clears, absent leaves it alone (issue #839).
+	Tag TagChange
 }
 
 // CreateProperty is CreatePropertyWithSnapshots with no tag and no seeded
 // history — the tag-assign and snapshot-upsert loops are no-ops when both are
 // nil, so the plain create is just the degenerate call (issue #366).
 func (r *AssetRepo) CreateProperty(ctx context.Context, p CreatePropertyParams) (*Property, error) {
-	return r.CreatePropertyWithSnapshots(ctx, p, nil, nil)
+	return r.CreatePropertyWithSnapshots(ctx, p, p.TagID, nil)
 }
 
 func (r *AssetRepo) GetProperty(ctx context.Context, id uuid.UUID) (*Property, error) {
@@ -188,6 +194,12 @@ func (r *AssetRepo) UpdateProperty(ctx context.Context, id uuid.UUID, p UpdatePr
 		return nil, fmt.Errorf("update property_details: %w", err)
 	}
 
+	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupAsset, asset.ID, p.Tag, asset.TagID)
+	if err != nil {
+		return nil, err
+	}
+	asset.TagID = tagID
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, fmt.Errorf("commit: %w", err)
 	}
@@ -297,13 +309,8 @@ func (r *AssetRepo) CreatePropertyWithSnapshots(ctx context.Context, p CreatePro
 	}
 
 	if tagID != nil {
-		if _, err := qtx.AssignAssetTag(ctx, db.AssignAssetTagParams{
-			TagID:       tagID,
-			ID:          asset.ID,
-			HouseholdID: hid,
-			UpdatedBy:   &user,
-		}); err != nil {
-			return nil, fmt.Errorf("assign tag: %w", err)
+		if err := assignTag(ctx, qtx, hid, user, TagGroupAsset, asset.ID, tagID); err != nil {
+			return nil, err
 		}
 		asset.TagID = tagID
 	}

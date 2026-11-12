@@ -7,12 +7,6 @@ import type { Tag, TagBreakdownRow, TagGroup, TaggableItem } from "@/api/types";
 
 export type TagWritePayload = { name: string; color: string };
 
-export type AssignTagPayload = {
-  group: TagGroup;
-  position_id: string;
-  tag_id: string | null; // null unassigns
-};
-
 export function useTags() {
   return useQuery({
     queryKey: ["tags"],
@@ -49,7 +43,7 @@ export function useAssignTagsBulk() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: AssignTagsBulkPayload) =>
-      api("/api/tags/assignments/bulk", { method: "PUT", body: JSON.stringify(payload) }),
+      api("/api/tags/assignments", { method: "PUT", body: JSON.stringify(payload) }),
     onSuccess: () => {
       qc.invalidateQueries();
     },
@@ -98,22 +92,5 @@ export function useDeleteTag() {
       toast.success(i18n.t("common:toast.deleted.tag"), { duration: PLAIN_TOAST_MS });
     },
     onError: toastWriteError,
-  });
-}
-
-// useAssignTag sets or clears the Tag on a Position. Invalidates broadly: the
-// breakdown changes, and the affected position's list/detail caches carry the
-// old tag_id.
-export function useAssignTag() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: AssignTagPayload) =>
-      api("/api/tags/assignments", {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tags", "breakdown"] });
-    },
   });
 }

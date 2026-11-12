@@ -337,13 +337,8 @@ func (r *InvestmentRepo) createInvestmentWithHistory(
 	}
 
 	if tagID != nil {
-		if _, err := qtx.AssignInvestmentTag(ctx, db.AssignInvestmentTagParams{
-			TagID:       tagID,
-			ID:          inv.ID,
-			HouseholdID: hid,
-			UpdatedBy:   &user,
-		}); err != nil {
-			return fmt.Errorf("assign tag: %w", err)
+		if err := assignTag(ctx, qtx, hid, user, TagGroupInvestment, inv.ID, tagID); err != nil {
+			return err
 		}
 	}
 

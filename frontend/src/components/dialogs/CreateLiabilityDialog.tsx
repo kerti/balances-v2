@@ -39,6 +39,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }
   const [form, setForm] = useState(emptyForm(defaultSubtype));
   const { data: user } = useSession();
   const mutation = useCreateLiability();
+  const [tagId, setTagId] = useState<string | null>(null);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -51,6 +52,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }
         subtype: form.subtype,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         native_currency: form.native_currency,
         counterparty_name: form.counterparty_name,
@@ -82,10 +84,12 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }
       submitLabel={t("common:actions.create")}
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {
         setForm(emptyForm(defaultSubtype));
+        setTagId(null);
         mutation.reset();
       }}
     >

@@ -35,6 +35,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
   const mutation = useUpdateProperty(property.asset.id);
   const { data: user } = useSession();
   const [form, setForm] = useState(() => toForm(property));
+  const [tagId, setTagId] = useState<string | null>(() => property.asset.tag_id);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -45,6 +46,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         property_type: form.property_type,
         address: form.address || null,
@@ -65,6 +67,7 @@ export function EditPropertyDialog({ open, onOpenChange, property }: Props) {
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
     >

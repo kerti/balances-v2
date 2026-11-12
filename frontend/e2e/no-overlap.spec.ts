@@ -45,11 +45,13 @@ test(
     const accountName = `E2E overlap account ${stamp}`;
     const stockName = `E2E overlap stock ${stamp}`;
     const depositName = `E2E overlap deposit ${stamp}`;
+    const bondName = `E2E overlap bond ${stamp}`;
     const tagName = `E2E overlap tag ${stamp}`;
     const ids: {
       account?: string;
       stock?: string;
       deposit?: string;
+      bond?: string;
       tag?: string;
       income?: string;
     } = {};
@@ -157,12 +159,37 @@ test(
         "deposit snapshot",
       );
 
+      const bond = (await created(
+        await page.request.post("/api/investments/bonds", {
+          data: {
+            display_name: bondName,
+            description: null,
+            ownership_type: "joint",
+            sole_owner_user_id: null,
+            risk_profile: "medium",
+            native_currency: "IDR",
+            bond_type: "govt_primary",
+            series_code: "OVLB",
+            issuer: "E2E Treasury",
+            face_value: "1000000",
+            placement_date: placed,
+            coupon_rate: "6.5",
+            coupon_frequency: "semi_annual",
+            coupon_disposition: "pays_out",
+            maturity_date: matures,
+            entry_type: "newly_tracked",
+          },
+        }),
+        "bond",
+      )) as { investment: { id: string } };
+      ids.bond = bond.investment.id;
+
       const tag = (await created(
         await page.request.post("/api/tags", { data: { name: tagName, color: "#3b82f6" } }),
         "tag",
       )) as { id: string };
       ids.tag = tag.id;
-      const assigned = await page.request.put("/api/tags/assignments/bulk", {
+      const assigned = await page.request.put("/api/tags/assignments", {
         data: { tag_id: ids.tag, items: [{ group: "asset", position_id: ids.account }] },
       });
       expect(assigned.ok(), "seed tag assignment").toBeTruthy();
@@ -248,6 +275,8 @@ test(
           () => page.getByRole("button", { name: "Record snapshot" }).click(),
           at("Record snapshot (quantity x price)"),
         );
+        await page.goto(`/investments/stocks/${ids.stock}?tab=transactions`);
+        await expect(page.getByRole("heading", { level: 1, name: stockName })).toBeVisible();
         await openAndCheck(
           page,
           () => page.getByRole("button", { name: "Buy" }).click(),
@@ -270,12 +299,46 @@ test(
           at("New income"),
         );
       }
+
+      // --- The bond detail page (#839): the header (? · Edit · ⋯), the details
+      // card's identity line + key/value grid, and the Snapshots | Transactions
+      // tab bar, at tablet width (768px, where the grid goes from 3 columns to 2
+      // inside a card narrowed by the docked sidebar) and phone width. ---
+      for (const width of [768, 390]) {
+        await page.setViewportSize({ width, height: 900 });
+        const at = (what: string) => `${what} @${width}px`;
+        await page.goto(`/investments/bonds/${ids.bond}`);
+        await expect(page.getByRole("heading", { level: 1, name: bondName })).toBeVisible();
+        await expect(page.getByTestId("history-tab-transactions")).toBeVisible();
+        await expectNoControlOverlap(
+          page,
+          page.locator('[data-slot="page-header"]'),
+          at("bond detail header"),
+        );
+        await expectNoControlOverlap(
+          page,
+          page.getByTestId("tour-details"),
+          at("bond detail details card"),
+        );
+        await expectNoControlOverlap(page, undefined, at("bond detail"));
+
+        await page.getByTestId("position-menu-trigger").click();
+        const menu = page.getByRole("menu");
+        await expect(menu).toBeVisible();
+        await expectNoControlOverlap(page, menu, at("bond detail header menu"));
+        await page.keyboard.press("Escape");
+
+        await page.getByTestId("history-tab-transactions").click();
+        await expect(page).toHaveURL(/[?&]tab=transactions/);
+        await expectNoControlOverlap(page, undefined, at("bond detail, Transactions tab"));
+      }
     } finally {
       const cleanup = [
         ids.income && `/api/income/${ids.income}`,
         ids.account && `/api/bank-accounts/${ids.account}`,
         ids.stock && `/api/investments/stocks/${ids.stock}`,
         ids.deposit && `/api/investments/time-deposits/${ids.deposit}`,
+        ids.bond && `/api/investments/bonds/${ids.bond}`,
         ids.tag && `/api/tags/${ids.tag}`,
       ].filter((u): u is string => !!u);
       for (const url of cleanup) {

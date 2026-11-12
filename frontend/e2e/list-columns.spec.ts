@@ -47,7 +47,8 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
   expect(await x(page, "snapshot-amount")).toBe(amountBefore);
 
   // --- Close the account so the list offers "show inactive" ---
-  await page.getByRole("button", { name: "Close…", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
   const closeDialog = page.getByRole("dialog");
   await closeDialog.getByLabel("Status").selectOption("closed");
   await closeDialog.getByRole("button", { name: "Save" }).click();
@@ -72,7 +73,8 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
     .getByRole("row", { name: new RegExp(stock) })
     .getByText(stock)
     .click();
-  await page.getByRole("button", { name: "Close…", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Close…", exact: true }).click();
   const stockClose = page.getByRole("dialog");
   await stockClose.getByLabel("Status").selectOption("untracked");
   await stockClose.getByRole("button", { name: "Save" }).click();
@@ -103,7 +105,8 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
     .getByRole("row", { name: new RegExp(account) })
     .getByText(account)
     .click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(account)).toHaveCount(0);
 
@@ -113,7 +116,8 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
     .getByRole("row", { name: new RegExp(stock) })
     .getByText(stock)
     .click();
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Delete" }).click();
   await expect(page.getByRole("main").getByText(stock)).toHaveCount(0);
 });

@@ -20,6 +20,8 @@ export type CreateLiabilityPayload = {
   start_date: string | null;
   maturity_date: string | null;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateLiabilityPayload = {
@@ -34,6 +36,8 @@ export type UpdateLiabilityPayload = {
   start_date: string | null;
   maturity_date: string | null;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useLiabilities(subtype?: "personal" | "institutional") {
@@ -65,6 +69,8 @@ export function useCreateLiability() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -81,6 +87,8 @@ export function useUpdateLiability(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["liabilities"] });
       qc.invalidateQueries({ queryKey: ["liabilities", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });

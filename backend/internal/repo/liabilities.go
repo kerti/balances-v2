@@ -53,6 +53,9 @@ type CreateLiabilityParams struct {
 	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
 	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
 	EntryType string
+	// TagID, when set, tags the new Position in the same transaction (issue
+	// #839). It must be a live Tag of the caller's household, else ErrNotFound.
+	TagID *uuid.UUID
 }
 
 type UpdateLiabilityParams struct {
@@ -71,12 +74,15 @@ type UpdateLiabilityParams struct {
 	// — the engine cannot detect one — so it is deliberately editable after the
 	// fact (ADR-0053 §3).
 	EntryType *string
+	// Tag re-tags the Position in the same transaction when Set: a uuid assigns,
+	// null clears, absent leaves it alone (issue #839).
+	Tag TagChange
 }
 
-// CreateLiability is the no-tag, no-history degenerate of
+// CreateLiability is the no-history degenerate of
 // CreateLiabilityWithSnapshots (issue #366).
 func (r *LiabilityRepo) CreateLiability(ctx context.Context, p CreateLiabilityParams) (*db.Liability, error) {
-	return r.CreateLiabilityWithSnapshots(ctx, p, nil, nil)
+	return r.CreateLiabilityWithSnapshots(ctx, p, p.TagID, nil)
 }
 
 func (r *LiabilityRepo) GetLiability(ctx context.Context, id uuid.UUID) (*db.Liability, error) {
@@ -141,7 +147,14 @@ func (r *LiabilityRepo) UpdateLiability(ctx context.Context, id uuid.UUID, p Upd
 	if err != nil {
 		return nil, err
 	}
-	row, err := r.q.UpdateLiability(ctx, db.UpdateLiabilityParams{
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	row, err := qtx.UpdateLiability(ctx, db.UpdateLiabilityParams{
 		ID:               id,
 		HouseholdID:      hid,
 		DisplayName:      p.DisplayName,
@@ -162,6 +175,16 @@ func (r *LiabilityRepo) UpdateLiability(ctx context.Context, id uuid.UUID, p Upd
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("update liability: %w", err)
+	}
+
+	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupLiability, row.ID, p.Tag, row.TagID)
+	if err != nil {
+		return nil, err
+	}
+	row.TagID = tagID
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
 	}
 	return &row, nil
 }
@@ -352,13 +375,8 @@ func (r *LiabilityRepo) CreateLiabilityWithSnapshots(ctx context.Context, p Crea
 	}
 
 	if tagID != nil {
-		if _, err := qtx.AssignLiabilityTag(ctx, db.AssignLiabilityTagParams{
-			TagID:       tagID,
-			ID:          row.ID,
-			HouseholdID: hid,
-			UpdatedBy:   &user,
-		}); err != nil {
-			return nil, fmt.Errorf("assign tag: %w", err)
+		if err := assignTag(ctx, qtx, hid, user, TagGroupLiability, row.ID, tagID); err != nil {
+			return nil, err
 		}
 		row.TagID = tagID
 	}

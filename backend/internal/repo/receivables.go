@@ -45,6 +45,9 @@ type CreateReceivableParams struct {
 	// wealth already tracked here) or `newly_tracked` (already owned, or arrived
 	// with the Household). Empty normalises to `acquired` (ADR-0053 §3).
 	EntryType string
+	// TagID, when set, tags the new Position in the same transaction (issue
+	// #839). It must be a live Tag of the caller's household, else ErrNotFound.
+	TagID *uuid.UUID
 }
 
 type UpdateReceivableParams struct {
@@ -59,12 +62,15 @@ type UpdateReceivableParams struct {
 	// — the engine cannot detect one — so it is deliberately editable after the
 	// fact (ADR-0053 §3).
 	EntryType *string
+	// Tag re-tags the Position in the same transaction when Set: a uuid assigns,
+	// null clears, absent leaves it alone (issue #839).
+	Tag TagChange
 }
 
-// CreateReceivable is the no-tag, no-history degenerate of
+// CreateReceivable is the no-history degenerate of
 // CreateReceivableWithSnapshots (issue #366).
 func (r *ReceivableRepo) CreateReceivable(ctx context.Context, p CreateReceivableParams) (*db.Receivable, error) {
-	return r.CreateReceivableWithSnapshots(ctx, p, nil, nil)
+	return r.CreateReceivableWithSnapshots(ctx, p, p.TagID, nil)
 }
 
 func (r *ReceivableRepo) GetReceivable(ctx context.Context, id uuid.UUID) (*db.Receivable, error) {
@@ -126,7 +132,14 @@ func (r *ReceivableRepo) UpdateReceivable(ctx context.Context, id uuid.UUID, p U
 	if err != nil {
 		return nil, err
 	}
-	row, err := r.q.UpdateReceivable(ctx, db.UpdateReceivableParams{
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	row, err := qtx.UpdateReceivable(ctx, db.UpdateReceivableParams{
 		ID:               id,
 		HouseholdID:      hid,
 		DisplayName:      p.DisplayName,
@@ -143,6 +156,16 @@ func (r *ReceivableRepo) UpdateReceivable(ctx context.Context, id uuid.UUID, p U
 			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("update receivable: %w", err)
+	}
+
+	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupReceivable, row.ID, p.Tag, row.TagID)
+	if err != nil {
+		return nil, err
+	}
+	row.TagID = tagID
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit: %w", err)
 	}
 	return &row, nil
 }
@@ -328,13 +351,8 @@ func (r *ReceivableRepo) CreateReceivableWithSnapshots(ctx context.Context, p Cr
 	}
 
 	if tagID != nil {
-		if _, err := qtx.AssignReceivableTag(ctx, db.AssignReceivableTagParams{
-			TagID:       tagID,
-			ID:          row.ID,
-			HouseholdID: hid,
-			UpdatedBy:   &user,
-		}); err != nil {
-			return nil, fmt.Errorf("assign tag: %w", err)
+		if err := assignTag(ctx, qtx, hid, user, TagGroupReceivable, row.ID, tagID); err != nil {
+			return nil, err
 		}
 		row.TagID = tagID
 	}

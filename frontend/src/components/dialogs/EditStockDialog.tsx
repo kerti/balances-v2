@@ -33,6 +33,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
   const mutation = useUpdateStock(stock.investment.id);
   const { data: user } = useSession();
   const [form, setForm] = useState(() => toForm(stock));
+  const [tagId, setTagId] = useState<string | null>(() => stock.investment.tag_id);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -44,6 +45,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
         description: form.description || null,
         ownership_type: form.ownership_type,
         entry_type: form.entry_type,
+        tag_id: tagId,
         sole_owner_user_id: form.ownership_type === "sole" ? effectiveSoleOwnerID : null,
         risk_profile: form.risk_profile,
         ticker: form.ticker.toUpperCase(),
@@ -62,6 +64,7 @@ export function EditStockDialog({ open, onOpenChange, stock }: Props) {
       submitLabel={t("common:actions.saveChanges")}
       pendingLabel={t("common:actions.saving")}
       isPending={mutation.isPending}
+      tag={{ value: tagId, onChange: setTagId }}
       error={mutation.error}
       onSubmit={submit}
     >

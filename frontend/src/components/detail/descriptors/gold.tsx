@@ -7,7 +7,7 @@ import { QuantityPriceSnapshotRow } from "@/components/common/QuantityPriceSnaps
 import { QuantityPriceSnapshotCard } from "@/components/common/QuantityPriceSnapshotCard";
 import { TransactionRow } from "@/components/common/TransactionRow";
 import { TransactionCard } from "@/components/common/TransactionCard";
-import { InvestmentHeadline } from "@/components/common/InvestmentHeadline";
+import { investmentHeadlineFields } from "@/components/detail/investmentHeadlineFields";
 import { RiskProfileBadge } from "@/components/common/RiskProfileBadge";
 import { IdentityCluster } from "@/components/detail/IdentityCluster";
 import { CreateQuantityPriceSnapshotDialog } from "@/components/dialogs/CreateQuantityPriceSnapshotDialog";
@@ -40,8 +40,6 @@ import { erasedSection } from "@/components/detail/types";
 import type { Gold, InvestmentSnapshot, InvestmentTransaction } from "@/api/types";
 import type { DetailDescriptor, HistorySectionSpec } from "@/components/detail/types";
 
-const PAGE_SIZE = 12;
-
 // The per-render context for the Gold detail (ADR-0051, A4). Mirrors the A3
 // Stock mechanism: the investment transaction ledger + its mutations + the
 // search state live here — the "has-transactions" axis — so the core never sees
@@ -66,7 +64,6 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
   entityKey: "gold",
   testIdPrefix: "gold",
   group: "investments",
-  tagGroup: "investment",
   listKey: "golds",
   investmentSubtype: "gold",
   i18nNamespaces: ["investments", "common", "errors"],
@@ -160,16 +157,17 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
   ),
   infoFields: () => [],
 
-  renderHeadline: (entity, ctx, snapshots) => {
+  headlineFields: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
-    return (
-      <InvestmentHeadline
-        currency={entity.investment.native_currency}
-        latestValue={latest ? Number(latest.amount) : null}
-        totalCost={computeCostBasis(ctx.transactions ?? []).cost}
-        status={entity.investment.status}
-        terminatedAt={entity.investment.terminated_at}
-      />
+    return investmentHeadlineFields(
+      {
+        currency: entity.investment.native_currency,
+        latestValue: latest ? Number(latest.amount) : null,
+        totalCost: computeCostBasis(ctx.transactions ?? []).cost,
+        status: entity.investment.status,
+        terminatedAt: entity.investment.terminated_at,
+      },
+      t,
     );
   },
 
@@ -267,6 +265,7 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
         </TableRow>
       ),
       rows: filtered,
+      totalCount: allTxns.length,
       renderRow: (tx: InvestmentTransaction) => (
         <TransactionRow
           key={tx.id}
@@ -285,7 +284,6 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
           deleteMutation={ctx.deleteTransactionMutation}
         />
       ),
-      pageSize: PAGE_SIZE,
       headerActions: active ? (
         // Two rows (#542): row 1 = trades (Buy leads as primary), row 2 = fees.
         // Stacked on phones, inline from 768px up.

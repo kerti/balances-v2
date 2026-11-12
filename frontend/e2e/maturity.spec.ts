@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { backToListAfterCreate } from "./landing";
+import { openHistoryTab } from "./detailTabs";
 
 // Maturity-flips-status invariant (M4.6, ADR-0009): recording a Maturity
 // transaction on a TimeDeposit atomically flips the position to 'matured' on
@@ -37,6 +38,7 @@ test("time deposit maturity flips status to matured and gates the row", async ({
   await row.getByText(name).click();
 
   await expect(page.getByRole("heading", { level: 1, name })).toBeVisible();
+  await openHistoryTab(page, "transactions");
   // Active position: badge muted-active, Maturity entry available.
   await expect(statusBadge).toHaveText("Active");
   await expect(page.getByRole("button", { name: "Maturity" })).toBeVisible();
@@ -55,7 +57,8 @@ test("time deposit maturity flips status to matured and gates the row", async ({
   await expect(page.getByRole("button", { name: "Maturity" })).toHaveCount(0);
 
   // --- Delete (cleanup — returns to the list, leaving it empty) ---
-  await page.getByRole("button", { name: "Delete" }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await confirm.getByRole("button", { name: "Delete" }).click();
 

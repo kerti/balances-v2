@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import type { AssetSnapshot } from "@/api/types";
-import type { TagGroup } from "@/api/types";
 import type { AssetSubtype, InvestmentSubtype, LifecycleGroup } from "@/lib/lifecycle";
 import type { TourStep } from "@/components/shell/HelpTourButton";
 
@@ -69,7 +68,7 @@ export type SnapshotShape = {
 // top of the component, before the entity loads) and, later, `currency`.
 export type SnapshotSectionRender<TSnap extends SnapshotShape> = {
   // The snapshot stream — also the core's source for the chart + ≥2 guard and
-  // for the investment slots (`renderHeadline` / `chartCostSeries` /
+  // for the investment slots (`headlineFields` / `chartCostSeries` /
   // `historySections`), which receive it typed as the concrete `TSnap`.
   snapshots: TSnap[] | undefined;
   // Neutral `<TableRow>` of `<TableHead>`s; the primitive never inspects columns.
@@ -115,12 +114,15 @@ export type HistorySectionSpec<TRow = unknown> = {
   emptyText: ReactNode;
   header: ReactNode;
   rows: TRow[];
+  // The unfiltered row count, for the tab label ("Transactions (14)") — `rows`
+  // shrinks while a search is typed, the tab's count must not. Defaults to
+  // `rows.length`.
+  totalCount?: number;
   renderRow: (row: TRow, index: number) => ReactNode;
   // The mobile card variant (Phase B). When present the primitive renders a
   // stacked card list below 768px instead of the wide table; when absent it
   // stays on the table at every width (a row shape not yet carded).
   renderCard?: (row: TRow, index: number) => ReactNode;
-  pageSize: number;
 };
 
 // Erase a concretely-typed section to the heterogeneous list the core renders.
@@ -144,10 +146,8 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // Stable identity: `${testIdPrefix}-export` and friends; row keys.
   entityKey: string;
   testIdPrefix: string;
-  // `group` drives StatusBadge/Terminate/lifecycle; `tagGroup` is the singular
-  // form DetailTagControl wants ("asset" vs "assets").
+  // `group` drives StatusBadge/Terminate/lifecycle.
   group: LifecycleGroup;
-  tagGroup: TagGroup;
   // The parent list cache key TerminatePositionDialog invalidates.
   listKey: string;
   // Set by the five investment descriptors only (ADR-0052 §6). It narrows the
@@ -209,10 +209,9 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // Position surface, so it reaches the header through this slot); the core
   // renders the node verbatim and never inspects it. Amount-only types omit it.
   renderHeaderBadge?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
-  // Optional tight, label-less identity block rendered at the top of the details
-  // card's left column (ADR-0051 Phase B) — for a type whose identity reads
-  // better as a compact cluster (bank name / number / type) than as labelled
-  // rows, saving vertical space on mobile. Types without it put their identity in
+  // Optional muted, dot-separated identity line under the card title (#839) —
+  // "BCA · 1234 · Savings", "ASII · IDX" — for a type whose identity reads better
+  // as one line than as labelled rows. Types without it put their identity in
   // `infoFields` as normal labelled rows; the core never inspects the node.
   identityCluster?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   infoFields: (entity: TEntity, ctx: TCtx, t: TFunction) => InfoField[];
@@ -221,22 +220,22 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   // between the header block and the details card; `renderAfterDetails` between
   // the details card and the chart. TimeDeposit — the lone type whose regions
   // exceed the shared skeleton — uses them for its maturity-rollover callout and
-  // its rollover-chain card; every other type omits both. Like `renderHeadline`
-  // they are `ReactNode` the core renders verbatim, never a field it reads, so the
+  // its rollover-chain card; every other type omits both. They are `ReactNode` the core renders verbatim, never a field it reads, so the
   // per-type rollover linkage stays in a slot rather than leaking into the core.
   renderBeforeDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   renderAfterDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
-  // Optional investment headline (has-transactions axis); absent for amount-only.
+  // Optional investment money summary (has-transactions axis); absent for
+  // amount-only. Label/value fields appended to the details card's one InfoGrid,
+  // between the type's own `infoFields` and the shared ownership row (#839).
   // Receives the snapshot stream (for latest value) alongside the ctx (for the
-  // cost-basis inputs) and `t` (for the type-specific `extraFields` copy it
-  // threads into the middle column) — all computed as descriptor wiring, never
-  // in the core.
-  renderHeadline?: (
+  // cost-basis inputs) and `t` — all computed as descriptor wiring, never in the
+  // core.
+  headlineFields?: (
     entity: TEntity,
     ctx: TCtx,
     snapshots: TSnap[] | undefined,
     t: TFunction,
-  ) => ReactNode;
+  ) => InfoField[];
   // The universal snapshot table's per-shape wiring (S1/S2/S3), fetching its own
   // stream and binding its own mutations.
   snapshot: SnapshotSection<TSnap>;

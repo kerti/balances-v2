@@ -36,6 +36,8 @@ export type CreateStockPayload = {
   ticker: string;
   exchange: string;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateStockPayload = {
@@ -47,6 +49,8 @@ export type UpdateStockPayload = {
   ticker: string;
   exchange: string;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useStocks() {
@@ -75,6 +79,8 @@ export function useCreateStock() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -91,6 +97,8 @@ export function useUpdateStock(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stocks"] });
       qc.invalidateQueries({ queryKey: ["stocks", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });
@@ -119,6 +127,8 @@ export type CreateMutualFundPayload = {
   fund_manager: string | null;
   fund_type: MutualFundType;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateMutualFundPayload = {
@@ -131,6 +141,8 @@ export type UpdateMutualFundPayload = {
   fund_manager: string | null;
   fund_type: MutualFundType;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useMutualFunds() {
@@ -159,6 +171,8 @@ export function useCreateMutualFund() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -175,6 +189,8 @@ export function useUpdateMutualFund(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["mutual-funds"] });
       qc.invalidateQueries({ queryKey: ["mutual-funds", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });
@@ -204,6 +220,8 @@ export type CreateGoldPayload = {
   form: GoldForm;
   purity: string;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateGoldPayload = {
@@ -215,6 +233,8 @@ export type UpdateGoldPayload = {
   form: GoldForm;
   purity: string;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useGolds() {
@@ -243,6 +263,8 @@ export function useCreateGold() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["golds"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -259,6 +281,8 @@ export function useUpdateGold(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["golds"] });
       qc.invalidateQueries({ queryKey: ["golds", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });
@@ -296,6 +320,8 @@ export type CreateBondPayload = {
   coupon_disposition: CouponDisposition;
   maturity_date: string;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateBondPayload = {
@@ -312,6 +338,8 @@ export type UpdateBondPayload = {
   coupon_disposition: CouponDisposition;
   maturity_date: string;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useBonds() {
@@ -340,6 +368,8 @@ export function useCreateBond() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -356,6 +386,8 @@ export function useUpdateBond(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["bonds"] });
       qc.invalidateQueries({ queryKey: ["bonds", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });
@@ -391,6 +423,8 @@ export type CreateTimeDepositPayload = {
   // for a fresh deposit.
   rolled_from_investment_id?: string;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdateTimeDepositPayload = {
@@ -407,6 +441,8 @@ export type UpdateTimeDepositPayload = {
   maturity_date: string;
   rollover_policy: RolloverPolicy;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useTimeDeposits() {
@@ -442,6 +478,8 @@ export function useCreateTimeDeposit() {
           queryKey: ["time-deposits", variables.rolled_from_investment_id],
         });
       }
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -458,6 +496,8 @@ export function useUpdateTimeDeposit(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["time-deposits"] });
       qc.invalidateQueries({ queryKey: ["time-deposits", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });

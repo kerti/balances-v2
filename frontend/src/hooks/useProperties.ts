@@ -18,6 +18,8 @@ export type CreatePropertyPayload = {
   acquisition_cost: string | null;
   annual_appreciation_rate: string | null;
   entry_type: EntryType;
+  // A Tag of this household, or null for none.
+  tag_id: string | null;
 };
 
 export type UpdatePropertyPayload = {
@@ -31,6 +33,8 @@ export type UpdatePropertyPayload = {
   acquisition_cost: string | null;
   annual_appreciation_rate: string | null;
   entry_type: EntryType;
+  // Always sent by the Edit dialog: a Tag id assigns, null clears (omitting it would leave the Tag alone).
+  tag_id: string | null;
 };
 
 export function useProperties() {
@@ -59,6 +63,8 @@ export function useCreateProperty() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved("added");
     },
   });
@@ -75,6 +81,8 @@ export function useUpdateProperty(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["properties"] });
       qc.invalidateQueries({ queryKey: ["properties", id] });
+      // The position write carries tag_id: the Tags page and its breakdown move with it.
+      qc.invalidateQueries({ queryKey: ["tags"] });
       toastSaved();
     },
   });
