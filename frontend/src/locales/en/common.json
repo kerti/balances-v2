@@ -433,5 +433,16 @@
   "deleteConfirm": {
     "positionTitle": "Delete {{name}}?",
     "positionDescription": "It disappears from lists and reports."
+  },
+  "chartRange": {
+    "ariaLabel": "Chart range",
+    "1Y": "1Y",
+    "3Y": "3Y",
+    "5Y": "5Y",
+    "All": "All",
+    "label1Y": "Last 1 year",
+    "label3Y": "Last 3 years",
+    "label5Y": "Last 5 years",
+    "labelAll": "All history"
   }
 }

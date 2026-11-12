@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Area, AreaChart, CartesianGrid, YAxis } from "recharts";
+import { Area, AreaChart, Brush, CartesianGrid, YAxis } from "recharts";
 import { MonthAxis } from "@/components/charts/MonthAxis";
 import {
   ChartContainer,
@@ -9,6 +9,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { sliceWindow, type IndexWindow } from "@/lib/chartRange";
 import { formatChartMonth, formatCurrency } from "@/lib/format";
 import { INVESTMENT_CATEGORY_COLORS } from "@/lib/categoryColors";
 import {
@@ -20,6 +21,12 @@ import {
 type Props = {
   series: CategoryTimePoint[];
   currency: string;
+  // Range zoom (#901): the visible window over the sorted months. With the
+  // Brush the chart keeps every month and the Brush narrows the view; without
+  // it (phones) the chart draws only the window.
+  window: IndexWindow;
+  showBrush: boolean;
+  onWindowChange: (w: IndexWindow) => void;
 };
 
 type Row = {
@@ -42,9 +49,19 @@ function toRows(series: CategoryTimePoint[]): Row[] {
     });
 }
 
-export default function CategoryStackChartImpl({ series, currency }: Props) {
+export default function CategoryStackChartImpl({
+  series,
+  currency,
+  window: win,
+  showBrush,
+  onWindowChange,
+}: Props) {
   const { t } = useTranslation("investments");
   const data = toRows(series);
+  // Ticks follow the visible window: with the Brush, chartData is every month.
+  const visible = sliceWindow(data, win);
+  const brush = showBrush && data.length > 2;
+  const chartData = brush ? data : visible;
 
   // Drop categories that are zero across every month — keeps the legend
   // tight for households that only hold a few subtypes.
@@ -61,14 +78,14 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
   );
 
   return (
-    <ChartContainer config={chartConfig} className="h-64 w-full">
+    <ChartContainer config={chartConfig} className={brush ? "h-80 w-full" : "h-64 w-full"}>
       <AreaChart
-        data={data}
+        data={chartData}
         stackOffset="expand"
         margin={{ left: 0, right: 24, top: 12, bottom: 0 }}
       >
         <CartesianGrid vertical={false} strokeDasharray="3 3" />
-        <MonthAxis months={data.map((p) => p.month)} yAxisWidth={48} />
+        <MonthAxis months={visible.map((p) => p.month)} yAxisWidth={48} />
         <YAxis
           tickLine={false}
           axisLine={false}
@@ -125,6 +142,22 @@ export default function CategoryStackChartImpl({ series, currency }: Props) {
             isAnimationActive={false}
           />
         ))}
+        {brush && (
+          <Brush
+            dataKey="month"
+            height={28}
+            travellerWidth={10}
+            stroke="var(--border)"
+            fill="var(--card)"
+            startIndex={Math.min(win.start, data.length - 1)}
+            endIndex={Math.min(win.end, data.length - 1)}
+            onChange={(r) => {
+              if (r.startIndex === undefined || r.endIndex === undefined) return;
+              if (r.startIndex === win.start && r.endIndex === win.end) return;
+              onWindowChange({ start: r.startIndex, end: r.endIndex });
+            }}
+          />
+        )}
         <ChartLegend content={<ChartLegendContent />} />
       </AreaChart>
     </ChartContainer>

@@ -1,5 +1,5 @@
-// Range zoom for the dashboard net-worth chart (#852): the 1Y / 3Y / 5Y / All
-// chips, the Brush window, and the remembered choice. Pure, so the window
+// Range zoom for the monthly time-series charts (#852, #901): the 1Y / 3Y / 5Y
+// / All chips, the Brush window, and the one remembered choice. Pure, so the window
 // arithmetic is testable without rendering a chart.
 
 export const RANGE_PRESETS = ["1Y", "3Y", "5Y", "All"] as const;
@@ -14,6 +14,25 @@ const PRESET_MONTHS: Record<Exclude<RangePreset, "All">, number> = {
   "3Y": 36,
   "5Y": 60,
 };
+
+// Which chips to offer for a history of `count` months: a chip only when the
+// history is longer than it covers (otherwise it would show the same thing as
+// All), All always, and no chip row at all at 12 months or fewer.
+export function visiblePresets(count: number): RangePreset[] {
+  if (count <= PRESET_MONTHS["1Y"]) return [];
+  return RANGE_PRESETS.filter((p) => p === "All" || count > PRESET_MONTHS[p]);
+}
+
+// The remembered preset in force for this history: a stored chip that is
+// hidden for a short history reads as All (without touching the stored choice).
+export function effectivePreset(preset: RangePreset, count: number): RangePreset {
+  return visiblePresets(count).includes(preset) ? preset : "All";
+}
+
+// The rows inside the window (clamped to the data).
+export function sliceWindow<T>(rows: T[], win: IndexWindow | undefined): T[] {
+  return win ? rows.slice(win.start, win.end + 1) : rows;
+}
 
 // The most recent N months (all of them for "All", or when history is shorter).
 export function presetWindow(preset: RangePreset, count: number): IndexWindow {
