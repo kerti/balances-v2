@@ -29,5 +29,9 @@ export function AppLogo({ className = "h-7 w-auto" }: { className?: string }) {
   const { t } = useTranslation("common");
   const { theme } = useTheme();
   const src = theme === "dark" ? wordmarkDark : wordmarkLight;
-  return <img src={src} alt={t("brand")} className={className} />;
+  // width/height reserve the wordmark's aspect ratio (both variants share one
+  // 439.1 x 117.98 viewBox). Without them the sidebar's `w-full h-auto` img has
+  // no height until the swapped-in SVG has loaded, so the docked sidebar's nav
+  // dropped ~30px and snapped back on every Appearance change (#823).
+  return <img src={src} alt={t("brand")} width={439} height={118} className={className} />;
 }
