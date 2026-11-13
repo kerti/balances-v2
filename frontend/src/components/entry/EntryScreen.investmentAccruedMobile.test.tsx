@@ -19,6 +19,7 @@ import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { EntryScreen } from "@/components/entry/EntryScreen";
 import { investmentAccruedEntryConfig } from "@/components/entry/groups";
+import { thisYearMonth } from "@/lib/dateLimits";
 
 const entryList = {
   year_month: "2026-05",
@@ -145,4 +146,23 @@ it("mobile: a fresh accrues bond with only the total typed stays not-dirty — t
   expect(screen.getByTestId("investment-accrued-entry-save")).toBeDisabled();
   // Principal stays a placeholder until both figures are present.
   expect(screen.getByTestId("investment-accrued-entry-value-b2")).toHaveTextContent("—");
+});
+
+// covers: INV-SNAPSHOTS-09
+it("mobile: a bond with a snapshot this month shows its total value as Current", async () => {
+  setViewport(500);
+  server.use(
+    http.get("/api/investments/snapshots/accrued/entry", () =>
+      HttpResponse.json({
+        year_month: "2026-05",
+        rows: [{ ...entryList.rows[0], carried_from: thisYearMonth() }],
+      }),
+    ),
+    http.get("/api/household/members", () => HttpResponse.json([])),
+  );
+  renderScreen();
+
+  const current = await screen.findByTestId("investment-accrued-entry-current-b1");
+  expect(current).toHaveTextContent("50,250,000");
+  expect(current).not.toHaveTextContent("50,000,000");
 });

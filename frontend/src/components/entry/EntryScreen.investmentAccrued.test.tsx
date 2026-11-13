@@ -256,3 +256,21 @@ it("a time deposit with a snapshot this month shows its Value, not its interest,
   const current = await screen.findByTestId("investment-accrued-entry-current-t1");
   expect(current).toHaveTextContent("101,500,000");
 });
+
+// covers: INV-SNAPSHOTS-09
+it("a bond with a snapshot this month shows its total value, not its principal, as Current", async () => {
+  server.use(
+    http.get("/api/investments/snapshots/accrued/entry", () =>
+      HttpResponse.json({
+        year_month: "2026-05",
+        rows: [{ ...entryList.rows[0], carried_from: thisYearMonth() }],
+      }),
+    ),
+    http.get("/api/household/members", () => HttpResponse.json([])),
+  );
+  renderScreen();
+
+  const current = await screen.findByTestId("investment-accrued-entry-current-b1");
+  expect(current).toHaveTextContent("50,250,000");
+  expect(current).not.toHaveTextContent("50,000,000");
+});
