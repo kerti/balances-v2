@@ -372,15 +372,15 @@ test(
       // reads as pressed.
       await page.goto(`/assets/bank-accounts/${ids.account}`);
       await expect(page.getByTestId("chart-range-5Y")).toHaveCount(0);
-      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-checked", "true");
       const chipBox = await page.getByTestId("chart-range-1Y").boundingBox();
       expect(chipBox).not.toBeNull();
       expect(chipBox!.height).toBeGreaterThanOrEqual(44);
       await page.getByTestId("chart-range-1Y").click();
-      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-pressed", "true");
-      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-pressed", "false");
+      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-checked", "true");
+      await expect(page.getByTestId("chart-range-All")).toHaveAttribute("aria-checked", "false");
       await page.reload();
-      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("chart-range-1Y")).toHaveAttribute("aria-checked", "true");
 
       // --- The Assets overview (#839 chart grid). The seed has one month, so
       // the share-over-time card doesn't render here; this guards the page's

@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useSession } from "@/hooks/useSession";
@@ -199,22 +200,19 @@ export function IncomeScreen() {
       {data && data.length > 0 && (
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-2" role="group" aria-label={t("income:filter.ariaLabel")}>
-              {FILTER_VALUES.map((value) => (
-                <Button
-                  key={value}
-                  size="sm"
-                  variant={regularityFilter === value ? "default" : "outline"}
-                  onClick={() => {
-                    setRegularityFilter(value);
-                    setPage(1);
-                  }}
-                  data-testid={`regularity-filter-${value}`}
-                >
-                  {t(`income:filter.${value}`)}
-                </Button>
-              ))}
-            </div>
+            <SegmentedControl
+              ariaLabel={t("income:filter.ariaLabel")}
+              value={regularityFilter}
+              onChange={(value) => {
+                setRegularityFilter(value);
+                setPage(1);
+              }}
+              options={FILTER_VALUES.map((value) => ({
+                value,
+                label: t(`income:filter.${value}`),
+                testId: `regularity-filter-${value}`,
+              }))}
+            />
           </div>
 
           {headlineStats.length > 0 && (
