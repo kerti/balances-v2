@@ -142,6 +142,20 @@ func (b termBounds) accruedForSnapshot(amount decimal.Decimal, supplied *decimal
 	return &derived
 }
 
+// accruedForImportedSnapshot is accruedForSnapshot for a workbook-import row
+// (#883): a time deposit's accrued_interest is Value − principal in force, the
+// file's accrued column ignored — except the close snapshot, the 0/0 reading a
+// terminal flip wrote at the termination month (an export carries it, so a
+// re-import must hand it back untouched). A zero Value at a terminated deposit's
+// termination month is recognised the way isCloseRow does everywhere else.
+func (b termBounds) accruedForImportedSnapshot(terminatedAt *time.Time, month time.Time, amount decimal.Decimal, supplied *decimal.Decimal) *decimal.Decimal {
+	if !b.unbounded() && isCloseRow(terminatedAt, month, amount) {
+		zero := decimal.Zero
+		return &zero
+	}
+	return b.accruedForSnapshot(amount, supplied)
+}
+
 // checkSnapshotMonth confines a snapshot to the term at month granularity: its
 // year_month must lie within the placement month..maturity month, inclusive —
 // a placement on the 20th still admits that whole month's reading (issue #62).
