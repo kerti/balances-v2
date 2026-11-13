@@ -167,11 +167,25 @@ export function formatNumber(value: number | string, locale?: Locale): string {
 
 // Compact-notation number for chart Y-axis ticks. en: "1.5K", "2.3M";
 // id: "1,5 rb", "2,3 jt" (Intl emits the locale-native compact units).
-export function formatCompactNumber(value: number, locale?: Locale): string {
+export function formatCompactNumber(value: number, locale?: Locale, fractionDigits = 1): string {
   return new Intl.NumberFormat(resolve(locale), {
     notation: "compact",
-    maximumFractionDigits: 1,
+    maximumFractionDigits: fractionDigits,
   }).format(value);
+}
+
+// compactTickFormatter formats a Y axis's known ticks with the fewest decimals
+// (1–3) that keep every label distinct: on a narrow range one decimal rounds
+// neighbours together ("1.6K, 1.6K").
+export function compactTickFormatter(ticks: number[], locale?: Locale): (v: number) => string {
+  let digits = 1;
+  while (
+    digits < 3 &&
+    new Set(ticks.map((t) => formatCompactNumber(t, locale, digits))).size < ticks.length
+  ) {
+    digits++;
+  }
+  return (v) => formatCompactNumber(v, locale, digits);
 }
 
 // formatSignedPercent renders a signed-decimal rate like property's

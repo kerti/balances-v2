@@ -23,7 +23,7 @@ import {
 import { seriesOrder, seriesRank, sortBySeriesOrder } from "@/lib/chartSeries";
 import { fitYDomain } from "@/lib/chartDomain";
 import { sliceWindow, type IndexWindow } from "@/lib/chartRange";
-import { formatChartMonth, formatCompactNumber, formatCurrency } from "@/lib/format";
+import { compactTickFormatter, formatChartMonth, formatCurrency } from "@/lib/format";
 import { monthRange } from "@/lib/months";
 
 // Generic snapshot shape — all four position groups (asset, liability,
@@ -262,7 +262,7 @@ export default function SnapshotChartImpl({
           domain={fit.domain}
           ticks={fit.ticks}
           interval={0}
-          tickFormatter={(v: number) => formatCompactNumber(v)}
+          tickFormatter={compactTickFormatter(fit.ticks)}
         />
         {fit.crossesZero && (
           <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeOpacity={0.6} />

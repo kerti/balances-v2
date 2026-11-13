@@ -10,6 +10,7 @@ import {
   formatShortYearMonth,
   formatNumber,
   formatCompactNumber,
+  compactTickFormatter,
   formatSignedPercent,
   formatPercent,
   roundToCurrency,
@@ -184,6 +185,22 @@ describe("formatCompactNumber", () => {
     // the unit rather than exact spacing/glyph.
     expect(formatCompactNumber(1500, "id-ID")).toMatch(/rb/);
     expect(formatCompactNumber(2_300_000, "id-ID")).toMatch(/jt/);
+  });
+});
+
+describe("compactTickFormatter", () => {
+  it("adds decimals until a narrow range's tick labels stop repeating", () => {
+    // 1 decimal gives 1.5K, 1.6K, 1.6K, 1.7K (a USD time deposit's axis).
+    const ticks = [1500, 1550, 1600, 1650];
+    const fmt = compactTickFormatter(ticks, "en-GB");
+    const labels = ticks.map(fmt);
+    expect(new Set(labels).size).toBe(ticks.length);
+    expect(labels[1]).toMatch(/1\.55\s*k/i);
+  });
+  it("keeps one decimal when that is already distinct", () => {
+    const ticks = [0, 500_000, 1_000_000, 1_500_000];
+    const fmt = compactTickFormatter(ticks, "en-GB");
+    expect(fmt(1_500_000)).toMatch(/^1\.5\s*m$/i);
   });
 });
 
