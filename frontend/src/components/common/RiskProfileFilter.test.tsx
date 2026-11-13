@@ -15,13 +15,13 @@ it("fills the width and floors each option at the 44px tap target on phones", ()
   renderWithProviders(<RiskProfileFilter value="all" onChange={vi.fn()} />);
 
   // The bar stretches full width and distributes its options evenly on phones.
-  const group = screen.getByRole("group");
-  expect(group).toHaveClass("max-md:w-full", "max-md:[&>*]:flex-1");
+  const group = screen.getByRole("radiogroup");
+  expect(group).toHaveClass("max-md:w-full");
 
   // Every option (All / Low / Medium / High) clears the tap floor on phones and
   // relaxes back to its natural size from 768px up.
   for (const value of ["all", "low", "medium", "high"]) {
     const chip = screen.getByTestId(`risk-filter-${value}`);
-    expect(chip).toHaveClass("max-md:min-h-11");
+    expect(chip).toHaveClass("max-md:min-h-11", "max-md:flex-1");
   }
 });
