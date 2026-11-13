@@ -202,6 +202,8 @@ export const accruedShape: EntryShape = {
   complete: (v) => isNumeric(v.amount) && isNumeric(v.accrued_interest),
   derived: (v) => derivePrincipal(v.amount, v.accrued_interest),
   derivedLabelKey: "bulkEntry.principal",
+  // "Current" is the total value typed last time, not the derived principal (#884).
+  current: (v) => v.amount,
 };
 
 // time deposit (#844): the one net figure the statement shows (stored as
