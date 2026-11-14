@@ -265,7 +265,7 @@ func (r *InvestmentRepo) CreateTimeDepositWithSnapshotsAndLedger(ctx context.Con
 		return nil, ErrInvalidDepositTerm
 	}
 	var out *TimeDeposit
-	bounds := termBounds{placement: p.PlacementDate, maturity: p.MaturityDate}
+	bounds := termBounds{placement: p.PlacementDate, maturity: p.MaturityDate, principal: p.Principal}
 	err := r.createInvestmentWithHistory(ctx, "time_deposit", tagID, snaps, ledger, bounds, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
@@ -359,6 +359,11 @@ func (r *InvestmentRepo) createInvestmentWithHistory(
 // each row's value-shape against the subtype first (the DB CHECK is the backstop).
 func seedSnapshots(ctx context.Context, qtx *db.Queries, invID uuid.UUID, subtype string, snaps []ImportInvestmentSnapshotRow, bounds termBounds, user, hid uuid.UUID) error {
 	for _, row := range snaps {
+		// A seeded time deposit's interest is Value − principal, the file's accrued
+		// column ignored (#883). The principal is already on bounds, taken from the
+		// details this same call wrote. The Maturity close (0/0) is written by
+		// seedLedger afterwards and wins over any seeded row in its month.
+		row.AccruedInterest = bounds.accruedForSnapshot(row.Amount, row.AccruedInterest)
 		if err := validateInvestmentSnapshotShape(subtype, row.Quantity, row.PricePerUnit, row.AccruedInterest); err != nil {
 			return err
 		}
