@@ -59,7 +59,13 @@ func (m moveSource) isClose() bool {
 	if m.supersedes != nil {
 		return true
 	}
-	return m.terminatedAt != nil && m.amount.IsZero() && monthStart(*m.terminatedAt).Equal(monthStart(m.month))
+	return isCloseRow(m.terminatedAt, m.month, m.amount)
+}
+
+// isCloseRow is the supersedes-free half of the close-snapshot test: a zero
+// amount at the termination month of a terminated Position.
+func isCloseRow(terminatedAt *time.Time, month time.Time, amount decimal.Decimal) bool {
+	return terminatedAt != nil && amount.IsZero() && monthStart(*terminatedAt).Equal(monthStart(month))
 }
 
 // snapshotMoveOps adapts one group's sqlc queries to the shared move flow. The

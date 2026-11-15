@@ -407,6 +407,20 @@ func (r *InvestmentRepo) ImportInvestmentSnapshots(ctx context.Context, investme
 		return nil, fmt.Errorf("import: load investment: %w", err)
 	}
 
+	// A time deposit's accrued_interest is derived (Value − principal in force),
+	// whatever the file's accrued column says (#883, as #844 for the other write
+	// paths). Derive on a copy before the shape check and the classification, so
+	// the preview and the commit judge — and store — the same figures. Bonds and
+	// the quantity×price subtypes pass through.
+	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	rows = append([]ImportInvestmentSnapshotRow(nil), rows...)
+	for i := range rows {
+		rows[i].AccruedInterest = bounds.accruedForImportedSnapshot(inv.TerminatedAt, rows[i].YearMonth, rows[i].Amount, rows[i].AccruedInterest)
+	}
+
 	for _, row := range rows {
 		if err := validateInvestmentSnapshotShape(inv.Subtype, row.Quantity, row.PricePerUnit, row.AccruedInterest); err != nil {
 			return nil, err
