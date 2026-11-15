@@ -3924,7 +3924,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - vite@8.3.5
+ - vite@8.3.8
 
 This package contains the following license:
 
@@ -7570,7 +7570,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 The following npm package may be included in this product:
 
- - lucide-react@1.68.0
+ - lucide-react@1.72.0
 
 This package contains the following license:
 
@@ -8563,7 +8563,7 @@ SOFTWARE.
 
 The following npm package may be included in this product:
 
- - rolldown@1.2.15
+ - rolldown@1.2.19
 
 This package contains the following license:
 
@@ -8597,7 +8597,7 @@ The licenses of externally maintained libraries from which parts of the Software
 
 The following npm package may be included in this product:
 
- - @oxc-project/types@0.155.0
+ - @oxc-project/types@0.156.0
 
 This package contains the following license:
 
@@ -9589,7 +9589,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - driver.js@1.10.2
+ - driver.js@1.11.0
 
 This package contains the following license:
 
@@ -9649,7 +9649,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - i18next@26.7.1
+ - i18next@27.1.1
 
 This package contains the following license:
 
@@ -10101,7 +10101,7 @@ SOFTWARE.
 
 The following npm package may be included in this product:
 
- - react-i18next@17.1.9
+ - react-i18next@18.0.1
 
 This package contains the following license:
 
@@ -10648,7 +10648,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - postcss@8.5.30
+ - postcss@8.5.33
 
 This package contains the following license:
 
