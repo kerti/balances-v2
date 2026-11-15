@@ -9,6 +9,18 @@ import { currencyDecimals } from "@/lib/format";
 // Ported from kerti/uruni's AmountInput tests (ADR-0056), widened from whole
 // rupiah to a decimal model: digits plus at most one decimal point.
 
+// NumericInput moves the caret to the end one frame after focus, so the
+// caret is placed only after that frame has run — otherwise it races the
+// typing (user-event's `initialSelectionStart` loses that race intermittently).
+async function typeAt(input: HTMLInputElement, text: string, start: number, end = start) {
+  if (document.activeElement !== input) {
+    act(() => input.focus());
+    await flushFrame();
+  }
+  input.setSelectionRange(start, end);
+  await userEvent.keyboard(text);
+}
+
 function Controlled({
   onChange,
   decimals = 2,
@@ -157,15 +169,12 @@ describe("NumericInput", () => {
     expect(input.value).toBe("45,000");
 
     // A digit typed after the "4": 415,000 with the caret after the "1".
-    await userEvent.type(input, "1", { initialSelectionStart: 1, initialSelectionEnd: 1 });
+    await typeAt(input, "1", 1);
     expect(input.value).toBe("415,000");
     expect(input.selectionStart).toBe(2);
 
     // Backspace there takes the "1" back, caret after the "4".
-    await userEvent.type(input, "{Backspace}", {
-      initialSelectionStart: 2,
-      initialSelectionEnd: 2,
-    });
+    await typeAt(input, "{Backspace}", 2);
     expect(input.value).toBe("45,000");
     expect(input.selectionStart).toBe(1);
     expect(onChange).toHaveBeenLastCalledWith("45000");
@@ -176,10 +185,7 @@ describe("NumericInput", () => {
     await userEvent.type(input, "45000");
     await flushFrame();
     // Caret just after the comma in 45,|000.
-    await userEvent.type(input, "{Backspace}", {
-      initialSelectionStart: 3,
-      initialSelectionEnd: 3,
-    });
+    await typeAt(input, "{Backspace}", 3);
     expect(input.value).toBe("4,000");
     expect(onChange).toHaveBeenLastCalledWith("4000");
   });
@@ -189,10 +195,7 @@ describe("NumericInput", () => {
     await userEvent.type(input, "45000");
     await flushFrame();
     // Caret just before the comma in 45|,000.
-    await userEvent.type(input, "{Delete}", {
-      initialSelectionStart: 2,
-      initialSelectionEnd: 2,
-    });
+    await typeAt(input, "{Delete}", 2);
     expect(input.value).toBe("4,500");
     expect(onChange).toHaveBeenLastCalledWith("4500");
   });
@@ -200,10 +203,7 @@ describe("NumericInput", () => {
   it("replaces a selected value with what is typed", async () => {
     const { onChange, input } = setup({ initial: "50000" });
     expect(input.value).toBe("50,000");
-    await userEvent.type(input, "23456", {
-      initialSelectionStart: 0,
-      initialSelectionEnd: input.value.length,
-    });
+    await typeAt(input, "23456", 0, input.value.length);
     expect(input.value).toBe("23,456");
     expect(onChange).toHaveBeenLastCalledWith("23456");
   });
@@ -336,21 +336,18 @@ describe("NumericInput", () => {
 
     it("toggles the sign when a minus is typed anywhere, keeping the caret by its digit", async () => {
       const { onChange, input } = setup({ allowNegative: true, initial: "2.5" });
-      await userEvent.type(input, "-", { initialSelectionStart: 3, initialSelectionEnd: 3 });
+      await typeAt(input, "-", 3);
       expect(input.value).toBe("-2.5");
       expect(input.selectionStart).toBe(4);
       expect(onChange).toHaveBeenLastCalledWith("-2.5");
-      await userEvent.type(input, "-", { initialSelectionStart: 4, initialSelectionEnd: 4 });
+      await typeAt(input, "-", 4);
       expect(input.value).toBe("2.5");
       expect(onChange).toHaveBeenLastCalledWith("2.5");
     });
 
     it("drops the sign on backspace over it", async () => {
       const { onChange, input } = setup({ allowNegative: true, initial: "-3" });
-      await userEvent.type(input, "{Backspace}", {
-        initialSelectionStart: 1,
-        initialSelectionEnd: 1,
-      });
+      await typeAt(input, "{Backspace}", 1);
       expect(input.value).toBe("3");
       expect(onChange).toHaveBeenLastCalledWith("3");
     });
