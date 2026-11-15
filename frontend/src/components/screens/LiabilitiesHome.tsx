@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 // Liabilities landing page (epic #204, slice 2) — the value-only parity twin
 // of InvestmentsHome / AssetsHome.
 //
@@ -188,9 +189,7 @@ type CardSet = {
   slices: PieSlice[];
 };
 
-type TFn = (key: string, opts?: Record<string, unknown>) => string;
-
-function buildCategorySlices(pie: { category: string; value: number }[], t: TFn): PieSlice[] {
+function buildCategorySlices(pie: { category: string; value: number }[], t: TFunction): PieSlice[] {
   return LIABILITY_CATEGORIES.map((c) => {
     const found = pie.find((p) => p.category === c);
     return {

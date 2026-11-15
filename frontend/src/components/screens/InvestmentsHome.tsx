@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 // Investments landing page (issue #14 slice 14d).
 //
 // Aggregates across all 5 subtypes (stock / mutual fund / bond / time
@@ -264,11 +265,9 @@ type CardSet = {
   riskSlices: PieSlice[];
 };
 
-type TFn = (key: string, opts?: Record<string, unknown>) => string;
-
 function buildCategorySlices(
   pie: { category: InvestmentCategory; value: number }[],
-  t: TFn,
+  t: TFunction,
 ): PieSlice[] {
   return INVESTMENT_CATEGORIES.map((c) => {
     const found = pie.find((p) => p.category === c);
@@ -283,7 +282,7 @@ function buildCategorySlices(
 
 function buildRiskSlices(
   pie: { profile: InvestmentRiskProfile; value: number }[],
-  t: TFn,
+  t: TFunction,
 ): PieSlice[] {
   return INVESTMENT_RISK_PROFILES.map((r) => {
     const found = pie.find((p) => p.profile === r);
