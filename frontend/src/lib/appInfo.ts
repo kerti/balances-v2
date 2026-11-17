@@ -29,4 +29,4 @@ export function resolveDeployEnv(raw: string | undefined): DeployEnv {
 
 // External links shown in the footer.
 export const REPO_URL = "https://github.com/kerti/balances-v2";
-export const MAINTAINER_URL = "https://radityakertiyasa.com";
+export const MAINTAINER_URL = "https://kerti.dev";
