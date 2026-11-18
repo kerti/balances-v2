@@ -86,7 +86,10 @@ export function HintedLabel({
       {label.slice(0, cut)}
       <span className="whitespace-nowrap">
         {label.slice(cut)}
-        <InfoHint label={label} testId={testId} className="-my-3 ml-1">
+        {/* The trigger's tap target is wider than the icon (44px on phones,
+            24px from md up), so pull it left until the icon sits 4px off the
+            word: -10px (14px padding) and 0 (4px padding). */}
+        <InfoHint label={label} testId={testId} className="-my-3 -ml-2.5 md:ml-0">
           {hint}
         </InfoHint>
       </span>

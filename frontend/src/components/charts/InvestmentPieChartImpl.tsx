@@ -7,7 +7,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatPercent } from "@/lib/format";
 import type { PieSlice } from "./InvestmentPieChart";
 
 type Props = {
@@ -67,7 +67,7 @@ export default function InvestmentPieChartImpl({
                 const pct = total > 0 ? (Number(value) / total) * 100 : 0;
                 const amount = formatCurrency(String(value), currency);
                 const label = item.payload.label as string;
-                return `${label}: ${amount} (${pct.toFixed(1)}%)`;
+                return `${label}: ${amount} (${formatPercent(pct, undefined, 1)})`;
               }}
             />
           }

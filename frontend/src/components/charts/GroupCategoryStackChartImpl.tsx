@@ -9,7 +9,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { sliceWindow, type IndexWindow } from "@/lib/chartRange";
-import { formatChartMonth, formatCurrency } from "@/lib/format";
+import { formatChartMonth, formatCurrency, formatPercent } from "@/lib/format";
 import type { GroupCategoryTimePoint } from "@/lib/groupHomeAggregates";
 import type { GroupStackCategory } from "./GroupCategoryStackChart";
 
@@ -103,7 +103,7 @@ export default function GroupCategoryStackChartImpl({
                       {seriesLabel ?? key}
                     </span>
                     <span className="font-medium text-foreground">
-                      {pct.toFixed(1)}%
+                      {formatPercent(pct, undefined, 1)}
                       <span className="ml-2 font-normal text-muted-foreground">
                         {formatCurrency(String(value), currency)}
                       </span>

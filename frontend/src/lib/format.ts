@@ -188,32 +188,30 @@ export function compactTickFormatter(ticks: number[], locale?: Locale): (v: numb
   return (v) => formatCompactNumber(v, locale, digits);
 }
 
-// formatSignedPercent renders a signed-decimal rate like property's
-// annual_appreciation_rate with an explicit "+" or "−" prefix and 2dp.
-// Locale-agnostic — sign + ASCII number only, no thousand separators.
+// formatSignedPercent renders a signed percentage with an explicit "+" or "−"
+// (a real minus sign) and fixed decimals, in the locale's separators: a P/L or
+// appreciation figure reads "+3.50%" in en and "+3,50%" in id (#932).
 // "3.5"  -> "+3.50%"
-// "-2"   -> "−2.00%" (real minus sign, not hyphen)
+// "-2"   -> "−2.00%"
 // "0"    -> "0.00%"
-export function formatSignedPercent(value: string): string {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return value;
+export function formatSignedPercent(value: number | string, locale?: Locale, digits = 2): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
   const sign = n > 0 ? "+" : n < 0 ? "−" : "";
-  return `${sign}${Math.abs(n).toFixed(2)}%`;
+  return `${sign}${formatPercent(Math.abs(n), locale, digits)}`;
 }
 
-// formatPercent renders a decimal-string rate as a plain 2dp percentage — no
-// forced "+" on positives (unlike formatSignedPercent, which is for signed
-// appreciation figures): normal inflation reads as "3.50%", deflation carries
-// the Intl minus ("-2.00%"). Locale-aware separators to match formatNumber (the
-// app's numeric display standard) — "3,50%" under id-ID. Used for the manual
-// inflation-rate table, where the figures are always shown to a fixed 2dp and
-// right-aligned so the decimal points line up.
-export function formatPercent(value: number | string, locale?: Locale): string {
+// formatPercent renders a percentage with fixed decimals (2 by default) and no
+// forced "+" on positives (unlike formatSignedPercent): normal inflation reads as
+// "3.50%", deflation carries the Intl minus ("-2.00%"). Locale-aware separators
+// to match formatNumber (the app's numeric display standard) — "3,50%" under
+// id-ID. Never build a percentage with `toFixed`: it always prints ".".
+export function formatPercent(value: number | string, locale?: Locale, digits = 2): string {
   const n = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(n)) return String(value);
   const num = new Intl.NumberFormat(resolve(locale), {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
   }).format(n);
   return `${num}%`;
 }

@@ -14,7 +14,13 @@ import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
-import { formatCurrency, formatNumber, formatShortYearMonth, formatYearMonth } from "@/lib/format";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+  formatShortYearMonth,
+  formatYearMonth,
+} from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
@@ -530,7 +536,8 @@ function Trend({
     yoySpan = (
       <span className={`text-sm font-medium ${yoyUp ? "text-positive" : "text-negative"}`}>
         {yoyUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(yoyDelta)), currency)}
-        {yoyPct !== null && ` (${yoyUp ? "+" : "−"}${Math.abs(yoyPct).toFixed(1)}%)`}{" "}
+        {yoyPct !== null &&
+          ` (${yoyUp ? "+" : "−"}${formatPercent(Math.abs(yoyPct), undefined, 1)})`}{" "}
         <span className="font-normal text-muted-foreground">
           {t("headline.vsYoY", {
             when: formatYearMonth(previousYear.year_month),
@@ -544,7 +551,8 @@ function Trend({
     <div className="flex flex-col gap-0.5">
       <span className={`text-sm font-medium ${momUp ? "text-positive" : "text-negative"}`}>
         {momUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(momDelta)), currency)}
-        {momPct !== null && ` (${momUp ? "+" : "−"}${Math.abs(momPct).toFixed(1)}%)`}{" "}
+        {momPct !== null &&
+          ` (${momUp ? "+" : "−"}${formatPercent(Math.abs(momPct), undefined, 1)})`}{" "}
         <span className="font-normal text-muted-foreground">
           {t("headline.vs", { when: formatYearMonth(previous.year_month) })}
         </span>
