@@ -66,3 +66,33 @@ export function InfoHint({
     </Popover>
   );
 }
+
+// HintedLabel renders a label with its InfoHint glued to the last word (#931):
+// when a long label wraps on a phone, the ⓘ travels with that word instead of
+// dropping onto a line of its own.
+export function HintedLabel({
+  label,
+  hint,
+  testId,
+}: {
+  label: string;
+  hint?: ReactNode;
+  testId?: string;
+}) {
+  if (!hint) return <>{label}</>;
+  const cut = label.lastIndexOf(" ") + 1;
+  return (
+    <>
+      {label.slice(0, cut)}
+      <span className="whitespace-nowrap">
+        {label.slice(cut)}
+        {/* The trigger's tap target is wider than the icon (44px on phones,
+            24px from md up), so pull it left until the icon sits 4px off the
+            word: -10px (14px padding) and 0 (4px padding). */}
+        <InfoHint label={label} testId={testId} className="-my-3 -ml-2.5 md:ml-0">
+          {hint}
+        </InfoHint>
+      </span>
+    </>
+  );
+}

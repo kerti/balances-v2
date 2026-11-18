@@ -10,7 +10,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { sliceWindow, type IndexWindow } from "@/lib/chartRange";
-import { formatChartMonth, formatCurrency } from "@/lib/format";
+import { formatChartMonth, formatCurrency, formatPercent } from "@/lib/format";
 import { INVESTMENT_CATEGORY_COLORS } from "@/lib/categoryColors";
 import {
   INVESTMENT_CATEGORIES,
@@ -119,7 +119,7 @@ export default function CategoryStackChartImpl({
                       {seriesLabel ?? key}
                     </span>
                     <span className="font-medium text-foreground">
-                      {pct.toFixed(1)}%
+                      {formatPercent(pct, undefined, 1)}
                       <span className="ml-2 font-normal text-muted-foreground">
                         {formatCurrency(String(value), currency)}
                       </span>

@@ -234,6 +234,11 @@ describe("formatSignedPercent", () => {
   it("returns the raw input when the value is not a number", () => {
     expect(formatSignedPercent("abc")).toBe("abc");
   });
+  it("uses the locale's decimal separator (#932: id showed +14.28%)", () => {
+    expect(formatSignedPercent(14.2834, "id-ID")).toBe("+14,28%");
+    expect(formatSignedPercent(-3.25, "en-GB", 1)).toBe("−3.3%");
+    expect(formatPercent(42.15, "id-ID", 1)).toBe("42,2%");
+  });
 });
 
 describe("formatPercent", () => {

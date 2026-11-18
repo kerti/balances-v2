@@ -14,11 +14,17 @@ import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
-import { formatCurrency, formatNumber, formatShortYearMonth, formatYearMonth } from "@/lib/format";
+import {
+  formatCurrency,
+  formatNumber,
+  formatPercent,
+  formatShortYearMonth,
+  formatYearMonth,
+} from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
-import { InfoHint } from "@/components/common/InfoHint";
+import { HintedLabel } from "@/components/common/InfoHint";
 import { positionDetail } from "@/lib/routes";
 import { staleEntryRoute } from "@/lib/staleEntry";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
@@ -530,7 +536,8 @@ function Trend({
     yoySpan = (
       <span className={`text-sm font-medium ${yoyUp ? "text-positive" : "text-negative"}`}>
         {yoyUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(yoyDelta)), currency)}
-        {yoyPct !== null && ` (${yoyUp ? "+" : "−"}${Math.abs(yoyPct).toFixed(1)}%)`}{" "}
+        {yoyPct !== null &&
+          ` (${yoyUp ? "+" : "−"}${formatPercent(Math.abs(yoyPct), undefined, 1)})`}{" "}
         <span className="font-normal text-muted-foreground">
           {t("headline.vsYoY", {
             when: formatYearMonth(previousYear.year_month),
@@ -544,7 +551,8 @@ function Trend({
     <div className="flex flex-col gap-0.5">
       <span className={`text-sm font-medium ${momUp ? "text-positive" : "text-negative"}`}>
         {momUp ? "▲" : "▼"} {formatCurrency(String(Math.abs(momDelta)), currency)}
-        {momPct !== null && ` (${momUp ? "+" : "−"}${Math.abs(momPct).toFixed(1)}%)`}{" "}
+        {momPct !== null &&
+          ` (${momUp ? "+" : "−"}${formatPercent(Math.abs(momPct), undefined, 1)})`}{" "}
         <span className="font-normal text-muted-foreground">
           {t("headline.vs", { when: formatYearMonth(previous.year_month) })}
         </span>
@@ -764,9 +772,9 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-write-offs">
             {writeOffPositions.map((p) => (
-              <li key={p.position_id} className="flex items-center justify-between gap-4">
+              <li key={p.position_id} className={STATEMENT_ROW}>
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-right text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -786,9 +794,9 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-tracking-changes">
             {trackingChangePositions.map((p) => (
-              <li key={p.position_id} className="flex items-center justify-between gap-4">
+              <li key={p.position_id} className={STATEMENT_ROW}>
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-right text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -816,6 +824,12 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
   );
 }
 
+// Below the 1024px shell boundary a statement line puts its label on one line
+// and the amount right-aligned under it (#931): however long the number, the
+// label is never squeezed. Desktop keeps label and amount on one line.
+const STATEMENT_ROW =
+  "flex flex-col gap-0.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4";
+
 function StatementRow({
   label,
   value,
@@ -840,16 +854,14 @@ function StatementRow({
       ? "text-positive"
       : "text-negative";
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div
+      className={STATEMENT_ROW}
+      data-testid={hintId ? `dashboard-statement-${hintId}` : undefined}
+    >
       <span className={muted ? "text-muted-foreground" : ""}>
-        {label}
-        {hint && (
-          <InfoHint label={label} testId={`dashboard-hint-${hintId}`} className="-my-3 ml-1">
-            {hint}
-          </InfoHint>
-        )}
+        <HintedLabel label={label} hint={hint} testId={`dashboard-hint-${hintId}`} />
       </span>
-      <span className={`${bold ? "font-semibold" : ""} ${amountClass}`}>
+      <span className={`text-right ${bold ? "font-semibold" : ""} ${amountClass}`}>
         {positive ? "+" : "−"}
         {formatCurrency(String(Math.abs(value)), currency)}
       </span>

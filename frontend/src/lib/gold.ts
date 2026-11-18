@@ -1,3 +1,5 @@
+import { formatPercent } from "@/lib/format";
+
 // Purity comes from the backend as a decimal fraction string (e.g. "0.9999",
 // "0.7500"). Display as karat when it cleanly divides by 24/x, otherwise
 // fall through to a percentage. Pure (0.9999+) is conventionally called
@@ -12,7 +14,7 @@ export function formatGoldPurity(purity: string): string {
   if (Math.abs(karat - rounded) < 0.01) {
     return `${rounded}K`;
   }
-  return `${(n * 100).toFixed(2)}%`;
+  return formatPercent(n * 100);
 }
 
 // Karat presets for the purity picker. 24K maps to 0.9999 (Antam-bar fine gold)

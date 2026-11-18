@@ -11,7 +11,7 @@
 // / destructive loss / muted zero, "−" U+2212 minus glyph.
 
 import { useTranslation } from "react-i18next";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatSignedPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { headlineSurface } from "@/lib/headline";
 import { InfoHint } from "@/components/common/InfoHint";
@@ -108,7 +108,5 @@ function formatPL({ cost, pl, currency }: CurrencyAggregate): string {
   const sign = pl > 0 ? "+" : pl < 0 ? "−" : "";
   const amount = `${sign}${formatCurrency(Math.abs(pl).toString(), currency)}`;
   if (Math.abs(cost) === 0) return amount;
-  const pct = (pl / cost) * 100;
-  const pctSign = pct > 0 ? "+" : pct < 0 ? "−" : "";
-  return `${amount} (${pctSign}${Math.abs(pct).toFixed(2)}%)`;
+  return `${amount} (${formatSignedPercent((pl / cost) * 100)})`;
 }

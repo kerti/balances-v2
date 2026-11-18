@@ -20,7 +20,7 @@
 // principal+interest close snapshot — #25 removed that false row.
 
 import type { TFunction } from "i18next";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatCurrency, formatDate, formatSignedPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { InfoField } from "@/components/detail/types";
 
@@ -110,6 +110,5 @@ function formatPL(pl: number, plPct: number | null, currency: string): string {
   const sign = pl > 0 ? "+" : pl < 0 ? "−" : "";
   const amount = `${sign}${formatCurrency(Math.abs(pl).toString(), currency)}`;
   if (plPct === null) return amount;
-  const pctSign = plPct > 0 ? "+" : plPct < 0 ? "−" : "";
-  return `${amount} (${pctSign}${Math.abs(plPct).toFixed(2)}%)`;
+  return `${amount} (${formatSignedPercent(plPct)})`;
 }

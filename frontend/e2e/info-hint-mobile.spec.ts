@@ -13,6 +13,7 @@ import { pickMonth } from "./monthPicker";
 // latest month carries a non-cash asset value change) and a stock for the badge.
 //
 // covers: INV-PRESENTATION-08
+// covers: INV-PRESENTATION-31
 test(
   "InfoHints open by tap and clear the 44px floor at 390px",
   { tag: "@smoke" },
@@ -85,6 +86,28 @@ test(
       await nonCash.click();
       await expect(page.getByTestId("dashboard-hint-non-cash-content")).toContainText("Non-cash");
 
+      // --- #931: label above its amount, ⓘ glued to the last word ---
+      // 390px is a real phone; 320px forces the long label to wrap.
+      await expectStackedRow(
+        page,
+        "dashboard-hint-non-cash",
+        '[data-testid="dashboard-statement-non-cash"]',
+      );
+      await page.setViewportSize({ width: 320, height: 700 });
+      await expectStackedRow(
+        page,
+        "dashboard-hint-non-cash",
+        '[data-testid="dashboard-statement-non-cash"]',
+      );
+      await page.setViewportSize({ width: 390, height: 844 });
+
+      // The detail info grid follows the same rule (the stock's "Gain / loss" hint).
+      await page.goto(`/investments/stocks/${stockId}`);
+      const plHint = page.getByTestId("info-grid").getByRole("button", { name: "Gain / loss" });
+      await expect(plHint).toBeVisible();
+      const plHintId = await plHint.getAttribute("data-testid");
+      await expectStackedRow(page, plHintId!, "dl > div");
+
       // --- Risk badge label opens by tap ---
       await page.goto("/investments/stocks");
       const badge = page.getByTestId("risk-profile-hint-medium").first();
@@ -104,6 +127,30 @@ test(
     }
   },
 );
+
+// A label/value row whose label carries an InfoHint, at phone width (#931): the
+// label sits wholly above the value, the value's text ends at the row's right
+// edge, and the hint shares a line with the label's last word.
+async function expectStackedRow(page: Page, hintTestId: string, rowSelector: string) {
+  const hint = page.getByTestId(hintTestId);
+  await hint.scrollIntoViewIfNeeded();
+  const m = await hint.evaluate((el, sel) => {
+    const row = el.closest(sel)!;
+    const [label, value] = Array.from(row.children);
+    const text = document.createRange();
+    text.selectNodeContents(value);
+    return {
+      glueLines: el.parentElement!.getClientRects().length,
+      labelBottom: label.getBoundingClientRect().bottom,
+      valueTop: value.getBoundingClientRect().top,
+      valueTextRight: text.getBoundingClientRect().right,
+      rowRight: row.getBoundingClientRect().right,
+    };
+  }, rowSelector);
+  expect(m.glueLines, "ⓘ shares a line with the last word").toBe(1);
+  expect(m.valueTop, "value sits below its label").toBeGreaterThanOrEqual(m.labelBottom - 1);
+  expect(Math.abs(m.rowRight - m.valueTextRight), "value is right-aligned").toBeLessThanOrEqual(1);
+}
 
 async function cleanup(page: Page, propertyId: string, stockId: string) {
   await page.request.delete(`/api/properties/${propertyId}`);
