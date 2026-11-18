@@ -28,9 +28,11 @@ const TOTAL_COL = "w-32 shrink-0 text-right";
 // The narrow "Same" checkbox column at the row's right edge.
 const SAME_COL = "flex w-12 shrink-0 justify-center";
 
-// What the header's "Same" checkbox shows and does: `visible` is false when the
-// group has no carried row to tick (the label stays, the checkbox goes).
+// What the header's "Same" column shows and does: `column` is false when no row in
+// the group can ever be ticked (no header label, no row cell); `visible` is false
+// when no row is tickable right now (the label stays, the checkbox goes).
 export type TickAll = {
+  column: boolean;
   visible: boolean;
   checked: boolean;
   indeterminate: boolean;
@@ -69,18 +71,20 @@ export function EntryRowDesktopHeader({ shape, tickAll }: { shape: EntryShape; t
           <span className={TOTAL_COL}>{shape.derivedLabelKey ? t(shape.derivedLabelKey) : ""}</span>
         </div>
       )}
-      <div className={`${SAME_COL} flex-col items-center gap-0.5`}>
-        <span aria-hidden>{t("bulkEntry.same")}</span>
-        {tickAll.visible && (
-          <SameCheckbox
-            checked={tickAll.checked}
-            indeterminate={tickAll.indeterminate}
-            onChange={tickAll.onChange}
-            label={t("bulkEntry.sameAll")}
-            testId={tickAll.testId}
-          />
-        )}
-      </div>
+      {tickAll.column && (
+        <div className={`${SAME_COL} flex-col items-center gap-0.5`}>
+          <span aria-hidden>{t("bulkEntry.same")}</span>
+          {tickAll.visible && (
+            <SameCheckbox
+              checked={tickAll.checked}
+              indeterminate={tickAll.indeterminate}
+              onChange={tickAll.onChange}
+              label={t("bulkEntry.sameAll")}
+              testId={tickAll.testId}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -98,6 +102,7 @@ export function EntryRowDesktop({
   onFieldChange,
   onReset,
   onUnchanged,
+  sameColumn = true,
 }: EntryRowRendererProps) {
   const { t } = useTranslation("common");
   const { dirty, positionId, derived } = view;
@@ -147,9 +152,11 @@ export function EntryRowDesktop({
           </span>
         </div>
       )}
-      <div className={SAME_COL}>
-        <RowSameCheckbox view={view} tid={tid} onUnchanged={onUnchanged} />
-      </div>
+      {sameColumn && (
+        <div className={SAME_COL}>
+          <RowSameCheckbox view={view} tid={tid} onUnchanged={onUnchanged} />
+        </div>
+      )}
     </li>
   );
 }

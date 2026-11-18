@@ -23,6 +23,7 @@ import {
 import { routes } from "@/lib/routes";
 import { AppLogo } from "@/components/shell/AppLogo";
 import { AppInfo } from "@/components/shell/AppInfo";
+import { isLeafActive, isSectionActive } from "@/components/shell/navActive";
 
 // `labelKey` indexes into the `nav` namespace catalog rather than carrying the
 // EN string inline — keeps the structural NAV array translation-agnostic.
@@ -120,12 +121,6 @@ export function AppSidebar() {
   // Close the mobile drawer after a navigation; a no-op on desktop.
   const close = () => setOpenMobile(false);
 
-  // A leaf/childless destination stays highlighted while you're on it or any
-  // detail page beneath it (e.g. Bank Accounts active on /assets/bank-accounts
-  // and /assets/bank-accounts/:id). The dashboard's `/` is exact-only — the
-  // prefix test below reduces to an equality check for it.
-  const leafActive = (to: string) => pathname === to || pathname.startsWith(to + "/");
-
   return (
     <Sidebar>
       <SidebarHeader>
@@ -158,9 +153,7 @@ export function AppSidebar() {
                   <SidebarMenuButton
                     asChild
                     className={navItemClass}
-                    // A group's own button highlights only on its exact home
-                    // path; its children own their own active state.
-                    isActive={section.children ? pathname === section.to : leafActive(section.to)}
+                    isActive={isSectionActive(pathname, section)}
                   >
                     <Link to={section.to} onClick={close}>
                       {t(section.labelKey)}
@@ -173,7 +166,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton
                             asChild
                             className={navItemClass}
-                            isActive={leafActive(child.to)}
+                            isActive={isLeafActive(pathname, child.to)}
                           >
                             <Link to={child.to} onClick={close}>
                               {t(child.labelKey)}

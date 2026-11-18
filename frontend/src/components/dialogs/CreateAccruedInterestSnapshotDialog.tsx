@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { focusFirstValue } from "@/lib/recordSnapshot";
 import { useRecordOnArrival } from "@/lib/recordOnArrival";
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -158,7 +159,7 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
           {t("common:snapshot.recordTrigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={focusFirstValue}>
         <DialogHeader>
           <DialogTitle>{t("investments:accruedInterestSnapshot.createTitle")}</DialogTitle>
           <DialogDescription>

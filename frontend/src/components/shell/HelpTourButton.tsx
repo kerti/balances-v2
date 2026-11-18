@@ -3,6 +3,7 @@ import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
 import { CircleHelp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toDriveSteps } from "@/components/shell/tourSteps";
 
 // One step of a screen tour. `element` is a CSS selector (we anchor to
 // data-testid attributes, mirroring the E2E convention); omit it for a
@@ -45,10 +46,7 @@ export function HelpTourButton({ steps }: Props) {
         current: "{{current}}",
         total: "{{total}}",
       }),
-      steps: present.map((s) => ({
-        element: s.element,
-        popover: { title: s.title, description: s.description },
-      })),
+      steps: toDriveSteps(present),
     }).drive();
   }
 

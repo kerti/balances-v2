@@ -6,6 +6,7 @@
 // a separate chunk, matching the investment chart.
 
 import { lazy, Suspense } from "react";
+import { ChartSkeleton } from "./ChartSkeleton";
 import { RangeChips } from "./RangeChips";
 import { useRangeZoom } from "./useRangeZoom";
 import type { GroupCategoryTimePoint } from "@/lib/groupHomeAggregates";
@@ -30,7 +31,7 @@ export function GroupCategoryStackChart({ series, categories, currency }: Props)
   return (
     <div className="space-y-3">
       <RangeChips chips={zoom.chips} pressed={zoom.pressed} onPick={zoom.pickPreset} />
-      <Suspense fallback={<div className="h-64 w-full" />}>
+      <Suspense fallback={<ChartSkeleton className={zoom.showBrush ? "h-80" : "h-64"} />}>
         <GroupCategoryStackChartImpl
           series={series}
           categories={categories}

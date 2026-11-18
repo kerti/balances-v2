@@ -106,3 +106,14 @@ export function latestHoldingPrice(
   }
   return latest?.price_per_unit ?? null;
 }
+
+// Radix `onOpenAutoFocus` for the Record snapshot dialogs: land on the form's
+// first value input (marked `data-first-value`) instead of the month picker's
+// previous-month arrow, which is the first tabbable element. The picker stays
+// reachable with Shift+Tab.
+export function focusFirstValue(event: Event) {
+  const first = (event.target as HTMLElement).querySelector<HTMLElement>("[data-first-value]");
+  if (!first) return;
+  event.preventDefault();
+  first.focus();
+}

@@ -180,6 +180,44 @@ describe("PositionFormDialog", () => {
   });
 });
 
+describe("PositionFormDialog layout", () => {
+  // covers: INV-PRESENTATION-33
+  it("keeps the footer outside the scrolling body, before and after a validation error", async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <PositionFormDialog
+        trigger={<button>Add thing</button>}
+        title="Create thing"
+        description="A new thing"
+        submitLabel="Create"
+        pendingLabel="Creating…"
+        isPending={false}
+        error={null}
+        onSubmit={() => {}}
+      >
+        <input id="thing_name" aria-label="thing name" required />
+      </PositionFormDialog>,
+    );
+    await user.click(screen.getByRole("button", { name: "Add thing" }));
+    const dialog = await screen.findByRole("dialog");
+
+    function expectPinnedFooter() {
+      const body = dialog.querySelector('[data-slot="dialog-body"]') as HTMLElement;
+      const footer = dialog.querySelector('[data-slot="dialog-footer"]') as HTMLElement;
+      expect(body).toHaveClass("overflow-y-auto");
+      expect(body).toContainElement(screen.getByLabelText("thing name"));
+      expect(body).not.toContainElement(footer);
+      expect(dialog).not.toHaveClass("overflow-y-auto");
+      expect(dialog).toHaveClass("overflow-hidden");
+    }
+
+    expectPinnedFooter();
+    await user.click(screen.getByRole("button", { name: "Create" }));
+    expect(screen.getByLabelText("thing name")).toHaveFocus();
+    expectPinnedFooter();
+  });
+});
+
 async function waitForDialogGone() {
   await vi.waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
 }

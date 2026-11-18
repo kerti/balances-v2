@@ -70,6 +70,7 @@ export function QuantityPriceSnapshotFormBody({
           </Label>
           <NumericInput
             id="inv_quantity"
+            data-first-value
             required
             decimals={QUANTITY_DECIMALS}
             maxIntegerDigits={QUANTITY_INTEGER_DIGITS}

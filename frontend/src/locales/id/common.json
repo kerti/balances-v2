@@ -325,7 +325,7 @@
   },
   "bulkEntry": {
     "trigger": "Isi bulan ini",
-    "title": "Isi saldo bulan ini",
+    "title": "Isi saldo untuk {{month}}",
     "description": "Perbarui nilai setiap akun untuk bulan yang dipilih. Hanya yang Anda ubah yang disimpan.",
     "empty": "Belum ada akun yang memenuhi syarat untuk bulan ini.",
     "carriedFrom": "Terakhir dicatat: {{month}}",
@@ -338,7 +338,7 @@
     "sameAll": "Tandai semua sama seperti sebelumnya",
     "allSame": "Semua sama",
     "sameAriaLabel": "{{name}}: sama seperti {{month}}",
-    "current": "Saat ini: {{value}}",
+    "recorded": "Tercatat: {{value}}",
     "unchangedCount": "{{count}} tidak berubah",
     "undo": "Urungkan",
     "quantity": "Jumlah",
@@ -351,14 +351,14 @@
     "accrued": "Bunga berjalan",
     "investments": {
       "trigger": "Isi harga",
-      "title": "Isi harga bulan ini",
+      "title": "Isi harga untuk {{month}}",
       "description": "Perbarui jumlah unit dan harga setiap investasi untuk bulan yang dipilih. Nilainya dihitung otomatis, dan hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada investasi yang memenuhi syarat untuk bulan ini.",
       "rowError": "Investasi ini tidak dapat diisi nilai untuk bulan ini."
     },
     "investmentsAccrued": {
       "trigger": "Isi obligasi & deposito",
-      "title": "Isi obligasi & deposito bulan ini",
+      "title": "Isi obligasi & deposito untuk {{month}}",
       "description": "Perbarui nilai total dan bunga berjalan setiap obligasi, serta nilai setiap deposito, untuk bulan yang dipilih. Bunga deposito dihitung otomatis. Hanya yang Anda ubah yang disimpan.",
       "empty": "Belum ada obligasi atau deposito yang memenuhi syarat untuk bulan ini.",
       "rowError": "Investasi ini tidak dapat diisi nilai untuk bulan ini."

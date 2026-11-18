@@ -4,6 +4,7 @@
 
 import { Suspense } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
+import { ChartSkeleton } from "./ChartSkeleton";
 import { RangeChips } from "./RangeChips";
 import { useRangeZoom } from "./useRangeZoom";
 import type { CategoryTimePoint } from "@/lib/homeAggregates";
@@ -21,7 +22,7 @@ export function CategoryStackChart({ series, currency }: Props) {
   return (
     <div className="space-y-3">
       <RangeChips chips={zoom.chips} pressed={zoom.pressed} onPick={zoom.pickPreset} />
-      <Suspense fallback={<div className="h-64 w-full" />}>
+      <Suspense fallback={<ChartSkeleton className={zoom.showBrush ? "h-80" : "h-64"} />}>
         <CategoryStackChartImpl
           series={series}
           currency={currency}
