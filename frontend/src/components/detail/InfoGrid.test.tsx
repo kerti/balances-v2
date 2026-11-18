@@ -37,4 +37,14 @@ describe("InfoGrid", () => {
     // Node-level alignment rides on the value, not a grid-read flag.
     expect(screen.getByText("1,234")).toHaveClass("ml-auto");
   });
+
+  // covers: INV-PRESENTATION-31
+  it("puts every label above its value; one column right-aligns the value (#931)", () => {
+    render(<InfoGrid fields={[{ label: "Interest rate", value: "5.5%", hint: "Yearly." }]} />);
+    const dd = screen.getByText("5.5%");
+    expect(dd.parentElement).toHaveClass("flex-col");
+    expect(dd.parentElement!.className).not.toMatch(/justify-between/);
+    expect(dd).toHaveClass("text-right", "@md:text-left");
+    expect(screen.getByTestId("field-hint-0").parentElement).toHaveClass("whitespace-nowrap");
+  });
 });

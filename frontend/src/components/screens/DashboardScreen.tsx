@@ -18,7 +18,7 @@ import { formatCurrency, formatNumber, formatShortYearMonth, formatYearMonth } f
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
-import { InfoHint } from "@/components/common/InfoHint";
+import { HintedLabel } from "@/components/common/InfoHint";
 import { positionDetail } from "@/lib/routes";
 import { staleEntryRoute } from "@/lib/staleEntry";
 import { availableDisplayCurrencies, resolveDisplayRate, convert } from "@/lib/fx";
@@ -764,9 +764,9 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-write-offs">
             {writeOffPositions.map((p) => (
-              <li key={p.position_id} className="flex items-center justify-between gap-4">
+              <li key={p.position_id} className={STATEMENT_ROW}>
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-right text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -786,9 +786,9 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
           />
           <ul className="space-y-1 pl-4" data-testid="dashboard-tracking-changes">
             {trackingChangePositions.map((p) => (
-              <li key={p.position_id} className="flex items-center justify-between gap-4">
+              <li key={p.position_id} className={STATEMENT_ROW}>
                 <span className="text-xs text-muted-foreground">{p.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-right text-xs text-muted-foreground">
                   {formatCurrency(p.amount, currency)}
                 </span>
               </li>
@@ -816,6 +816,12 @@ function IncomeStatement({ selected, currency }: { selected: MonthlyReport; curr
   );
 }
 
+// Below the 1024px shell boundary a statement line puts its label on one line
+// and the amount right-aligned under it (#931): however long the number, the
+// label is never squeezed. Desktop keeps label and amount on one line.
+const STATEMENT_ROW =
+  "flex flex-col gap-0.5 lg:flex-row lg:items-center lg:justify-between lg:gap-4";
+
 function StatementRow({
   label,
   value,
@@ -840,16 +846,14 @@ function StatementRow({
       ? "text-positive"
       : "text-negative";
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div
+      className={STATEMENT_ROW}
+      data-testid={hintId ? `dashboard-statement-${hintId}` : undefined}
+    >
       <span className={muted ? "text-muted-foreground" : ""}>
-        {label}
-        {hint && (
-          <InfoHint label={label} testId={`dashboard-hint-${hintId}`} className="-my-3 ml-1">
-            {hint}
-          </InfoHint>
-        )}
+        <HintedLabel label={label} hint={hint} testId={`dashboard-hint-${hintId}`} />
       </span>
-      <span className={`${bold ? "font-semibold" : ""} ${amountClass}`}>
+      <span className={`text-right ${bold ? "font-semibold" : ""} ${amountClass}`}>
         {positive ? "+" : "−"}
         {formatCurrency(String(Math.abs(value)), currency)}
       </span>

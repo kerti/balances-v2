@@ -66,3 +66,30 @@ export function InfoHint({
     </Popover>
   );
 }
+
+// HintedLabel renders a label with its InfoHint glued to the last word (#931):
+// when a long label wraps on a phone, the ⓘ travels with that word instead of
+// dropping onto a line of its own.
+export function HintedLabel({
+  label,
+  hint,
+  testId,
+}: {
+  label: string;
+  hint?: ReactNode;
+  testId?: string;
+}) {
+  if (!hint) return <>{label}</>;
+  const cut = label.lastIndexOf(" ") + 1;
+  return (
+    <>
+      {label.slice(0, cut)}
+      <span className="whitespace-nowrap">
+        {label.slice(cut)}
+        <InfoHint label={label} testId={testId} className="-my-3 ml-1">
+          {hint}
+        </InfoHint>
+      </span>
+    </>
+  );
+}
