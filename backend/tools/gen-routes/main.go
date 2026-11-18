@@ -183,7 +183,7 @@ func buildRouter() (chi.Router, error) {
 			Income:      income.New(repo.NewIncomeRepo(nil)),
 			Reports:     reports.New(repo.NewMonthlyReportRepo(nil)),
 			FxRates:     fxrates.New(repo.NewFxRateRepo(nil)),
-			Tags:        tags.New(repo.NewTagRepo(nil)),
+			Tags:        tags.New(repo.NewTagRepo(nil), repo.NewMonthlyReportRepo(nil)),
 		},
 	)
 

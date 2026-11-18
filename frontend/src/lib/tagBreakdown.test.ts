@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { aggregateTagBreakdown } from "@/lib/tagBreakdown";
+import { projectTagBreakdown } from "@/lib/tagBreakdown";
 import { UNTAGGED_COLOR } from "@/lib/tagColors";
-import type { Tag, TagBreakdownRow } from "@/api/types";
+import type { Tag, TagBreakdown } from "@/api/types";
 
 const tag = (id: string, name: string, color: string): Tag => ({
   id,
@@ -15,44 +15,48 @@ const tag = (id: string, name: string, color: string): Tag => ({
   deleted_at: null,
 });
 
-const row = (
-  tag_id: string | null,
-  group: TagBreakdownRow["group"],
-  currency: string,
-  total: string,
-): TagBreakdownRow => ({ tag_id, group, currency, total });
+const data = (tags: TagBreakdown["tags"]): TagBreakdown => ({
+  reporting_currency: "IDR",
+  year_month: "2026-11-01T00:00:00Z",
+  tags,
+  missing_fx: [],
+  fx_rates_used: {},
+});
 
-const tags = [tag("t1", "BCA", "#3b82f6"), tag("t2", "Mandiri", "#10b981")];
+const entry = (tag_id: string | null, holdings: string, liabilities = "0") => ({
+  tag_id,
+  holdings,
+  liabilities,
+});
+
+const tags = [tag("t1", "Alpha", "#3b82f6"), tag("t2", "Beta", "#10b981")];
 
 // covers: INV-TAGS-05
-describe("aggregateTagBreakdown", () => {
-  it("returns [] for no rows", () => {
-    expect(aggregateTagBreakdown([], tags, "Untagged")).toEqual([]);
+describe("projectTagBreakdown", () => {
+  it("returns no cells for no tags and carries the reporting currency", () => {
+    const bd = projectTagBreakdown(data([]), tags, "Untagged");
+    expect(bd.cells).toEqual([]);
+    expect(bd.currency).toBe("IDR");
+    expect(bd.totalHoldings).toBe(0);
   });
 
-  it("sums holdings (asset+receivable+investment) and keeps liabilities separate", () => {
-    const rows = [
-      row("t1", "asset", "IDR", "100"),
-      row("t1", "investment", "IDR", "50"),
-      row("t1", "receivable", "IDR", "10"),
-      row("t1", "liability", "IDR", "40"),
-    ];
-    const [bd] = aggregateTagBreakdown(rows, tags, "Untagged");
-    expect(bd.currency).toBe("IDR");
+  it("keeps liabilities separate and nets them off holdings", () => {
+    const bd = projectTagBreakdown(data([entry("t1", "160", "40")]), tags, "Untagged");
     expect(bd.cells).toHaveLength(1);
-    const cell = bd.cells[0];
-    expect(cell.tagId).toBe("t1");
-    expect(cell.name).toBe("BCA");
-    expect(cell.holdings).toBe(160);
-    expect(cell.liabilities).toBe(40);
-    expect(cell.net).toBe(120);
+    expect(bd.cells[0]).toMatchObject({
+      tagId: "t1",
+      name: "Alpha",
+      color: "#3b82f6",
+      holdings: 160,
+      liabilities: 40,
+      net: 120,
+    });
     expect(bd.totalHoldings).toBe(160);
     expect(bd.totalLiabilities).toBe(40);
   });
 
-  it("puts null tag_id into an Untagged bucket with the muted colour", () => {
-    const rows = [row(null, "asset", "IDR", "70")];
-    const [bd] = aggregateTagBreakdown(rows, tags, "Untagged");
+  it("puts a null tag_id into an Untagged cell with the muted colour", () => {
+    const bd = projectTagBreakdown(data([entry(null, "70")]), tags, "Untagged");
     expect(bd.cells[0]).toMatchObject({
       tagId: null,
       name: "Untagged",
@@ -61,24 +65,28 @@ describe("aggregateTagBreakdown", () => {
     });
   });
 
+  it("falls back to Untagged styling for a tag id not in the tag list", () => {
+    const bd = projectTagBreakdown(data([entry("gone", "5")]), tags, "Untagged");
+    expect(bd.cells[0]).toMatchObject({ tagId: "gone", name: "Untagged", color: UNTAGGED_COLOR });
+  });
+
   it("sorts tags by holdings desc with Untagged always last", () => {
-    const rows = [
-      row(null, "asset", "IDR", "999"), // untagged biggest, must still sink
-      row("t1", "asset", "IDR", "30"),
-      row("t2", "asset", "IDR", "80"),
-    ];
-    const [bd] = aggregateTagBreakdown(rows, tags, "Untagged");
+    const bd = projectTagBreakdown(
+      data([entry(null, "999"), entry("t1", "30"), entry("t2", "80")]),
+      tags,
+      "Untagged",
+    );
     expect(bd.cells.map((c) => c.tagId)).toEqual(["t2", "t1", null]);
   });
 
-  it("separates currencies into their own breakdowns, ordered by code", () => {
-    const rows = [row("t1", "asset", "USD", "5"), row("t1", "asset", "IDR", "5")];
-    const out = aggregateTagBreakdown(rows, tags, "Untagged");
-    expect(out.map((b) => b.currency)).toEqual(["IDR", "USD"]);
-  });
-
-  it("ignores non-numeric totals defensively", () => {
-    const rows = [row("t1", "asset", "IDR", "not-a-number")];
-    expect(aggregateTagBreakdown(rows, tags, "Untagged")).toEqual([]);
+  it("totals across cells and drops non-finite amounts defensively", () => {
+    const bd = projectTagBreakdown(
+      data([entry("t1", "100", "10"), entry("t2", "50"), entry(null, "oops")]),
+      tags,
+      "Untagged",
+    );
+    expect(bd.cells).toHaveLength(2);
+    expect(bd.totalHoldings).toBe(150);
+    expect(bd.totalLiabilities).toBe(10);
   });
 });

@@ -200,7 +200,7 @@ func serveCmd() error {
 	inflationRatesH := inflationrates.New(inflationRateRepo)
 
 	tagRepo := repo.NewTagRepo(pool)
-	tagsH := tags.New(tagRepo)
+	tagsH := tags.New(tagRepo, reportRepo)
 
 	srv := httpserver.New(pool, cfg, httpserver.Handlers{
 		Auth:           authH,

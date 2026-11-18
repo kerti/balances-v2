@@ -100,6 +100,9 @@ type reportPosition struct {
 	// (ADR-0048 amendment / #476 / INV-FINANCE-25). Accruing bonds record no
 	// Coupon Transaction, so their yield stays in snapshot growth (g) untouched.
 	couponDisposition *string
+	// tagID is the Position's user-defined Tag (ADR-0028), nil = Untagged. It
+	// feeds only the in-memory per-tag split (#937); no report column reads it.
+	tagID *uuid.UUID
 }
 
 // reportSnapshot is one monthly observation in its native currency.
@@ -284,6 +287,15 @@ func (g *groupValueAmounts) add(subtype string, v decimal.Decimal) {
 	g.bySubtype[subtype] = g.bySubtype[subtype].Add(v)
 }
 
+// tagValueAmounts is one Tag's contribution to a month's net worth, split the
+// way the Tags report shows it: holdings (assets + receivables + investments)
+// and liabilities as a positive magnitude. holdings − liabilities is the tag's
+// net, and across every tag (Untagged included) the nets sum to nw_total.
+type tagValueAmounts struct {
+	holdings    decimal.Decimal
+	liabilities decimal.Decimal
+}
+
 // missingFxEntry names a position (or, for a flow, nil) and the currency that
 // could not be converted because no rate existed at or before its month.
 type missingFxEntry struct {
@@ -380,6 +392,15 @@ type monthlyReportData struct {
 	// belongs to the group, for the same hubs' exclude-and-warn.
 	groupValue     map[positionGroup]*groupValueAmounts
 	groupMissingFx map[positionGroup][]missingFxEntry
+	// tagValue is the month's converted closing value per Tag (uuid.Nil =
+	// Untagged), recorded in the same net-worth-pass branch as groupValue — so the
+	// tags' holdings − liabilities sum to nw_total by construction (INV-FINANCE-40).
+	// tagMissingFx / tagFxRatesUsed are the Position-only slices of missingFx /
+	// fxRatesUsed (income and transaction conversions excluded) for the Tags
+	// report's exclude-and-warn and rates line. In-memory only, never persisted.
+	tagValue       map[uuid.UUID]*tagValueAmounts
+	tagMissingFx   []TagMissingFxEntry
+	tagFxRatesUsed map[string]decimal.Decimal
 	// passiveCouponCash is the month's paid-out bond coupon cash (pays_out
 	// disposition), materialised for the statistics passive-cash scope. It is a
 	// slice of investmentReturn.bond (the domain keeps coupon yield inside
@@ -438,6 +459,15 @@ func ownerKey(ownershipType string, soleOwnerID *uuid.UUID) string {
 		return soleOwnerID.String()
 	}
 	return jointKey
+}
+
+// tagKey maps a Position's optional Tag to the per-tag map key; Untagged is
+// uuid.Nil (a real Tag id is never the nil UUID).
+func tagKey(id *uuid.UUID) uuid.UUID {
+	if id == nil {
+		return uuid.Nil
+	}
+	return *id
 }
 
 func decOrZero(d *decimal.Decimal) decimal.Decimal {
@@ -739,6 +769,8 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			missingSeen:             make(map[string]bool),
 			groupValue:              make(map[positionGroup]*groupValueAmounts),
 			groupMissingFx:          make(map[positionGroup][]missingFxEntry),
+			tagValue:                make(map[uuid.UUID]*tagValueAmounts),
+			tagFxRatesUsed:          make(map[string]decimal.Decimal),
 		}
 		for _, u := range in.members {
 			m.userBreakdowns[u.String()] = userBreakdown{}
@@ -781,9 +813,23 @@ func generateMonthlyReports(in reportEngineInput) []monthlyReportData {
 			if !cok {
 				m.addMissingFx(&p.id, carried.currency)
 				m.groupMissingFx[p.group] = append(m.groupMissingFx[p.group], missingFxEntry{PositionID: &p.id, Currency: carried.currency})
+				m.tagMissingFx = append(m.tagMissingFx, TagMissingFxEntry{PositionID: p.id, Currency: carried.currency, TagID: p.tagID})
 				continue
 			}
 			m.recordRate(fx, carried.currency, rate)
+			if fx.foreign(carried.currency) {
+				m.tagFxRatesUsed[carried.currency] = rate
+			}
+			tv := m.tagValue[tagKey(p.tagID)]
+			if tv == nil {
+				tv = &tagValueAmounts{}
+				m.tagValue[tagKey(p.tagID)] = tv
+			}
+			if p.group == groupLiability {
+				tv.liabilities = tv.liabilities.Add(v)
+			} else {
+				tv.holdings = tv.holdings.Add(v)
+			}
 			gv := m.groupValue[p.group]
 			if gv == nil {
 				gv = &groupValueAmounts{bySubtype: make(map[string]decimal.Decimal)}

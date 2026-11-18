@@ -21,15 +21,25 @@ export type TagGroup = "asset" | "liability" | "receivable" | "investment";
 
 export type Tag = Generated.Tag;
 
-// One row of the breakdown report: the summed most-recent-snapshot value of a
-// (tag, group, currency) cell. tag_id null is the Untagged bucket; `total` is
-// a decimal string. Liabilities ride back under group='liability' so the
-// report can render them as their own negative slice.
-export type TagBreakdownRow = {
+// The Tags report (GET /api/tags/breakdown, repo.TagBreakdown): one month in
+// the household reporting currency, cut from the engine's net-worth pass
+// (#937). Hand-written: a repo wrapper, not a table row. Decimals are strings.
+// tag_id null is the Untagged bucket; only tags with a contributing Position
+// are listed; liabilities is a positive magnitude. year_month is null for a
+// household with no snapshot data. missing_fx lists Positions left out for want
+// of a rate (ADR-0002); tag_id there is the tag each would have landed in.
+export type TagBreakdownEntry = {
   tag_id: string | null;
-  group: TagGroup;
-  currency: string;
-  total: string;
+  holdings: string;
+  liabilities: string;
+};
+
+export type TagBreakdown = {
+  reporting_currency: string;
+  year_month: string | null;
+  tags: TagBreakdownEntry[];
+  missing_fx: { position_id: string; currency: string; tag_id: string | null }[];
+  fx_rates_used: Record<string, string>;
 };
 
 // One Position on the Tags page's expand lists and Add-items picker

@@ -260,24 +260,6 @@ func (r *TagRepo) AssignTag(ctx context.Context, group TagGroup, positionID uuid
 	return assignTag(ctx, r.q, hid, user, group, positionID, tagID)
 }
 
-// TagBreakdown returns, per (tag, group, currency), the summed most-recent
-// snapshot value of contributing Positions. tag_id NULL is the Untagged
-// bucket; the report layer renders liabilities as their own negative slice.
-func (r *TagRepo) TagBreakdown(ctx context.Context) ([]db.TagBreakdownByHouseholdRow, error) {
-	_, hid, err := currentUser(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := r.q.TagBreakdownByHousehold(ctx, hid)
-	if err != nil {
-		return nil, fmt.Errorf("tag breakdown: %w", err)
-	}
-	if rows == nil {
-		rows = []db.TagBreakdownByHouseholdRow{}
-	}
-	return rows, nil
-}
-
 // TagItemRef names one Position in a batch assignment.
 type TagItemRef struct {
 	Group      TagGroup

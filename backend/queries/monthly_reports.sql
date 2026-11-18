@@ -169,19 +169,20 @@ SELECT COALESCE(GREATEST(
 
 -- display_name + subtype let the report name unrecorded positions in the
 -- dashboard drill-down (issue #50): the stale-position list carries enough to
--- render a label and deep-link to the position's detail page.
+-- render a label and deep-link to the position's detail page. tag_id feeds the
+-- Tags report's converted breakdown (#937), cut in the same net-worth pass.
 -- name: ListAssetsForReport :many
-SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListLiabilitiesForReport :many
-SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL;
 
 -- name: ListReceivablesForReport :many
-SELECT id, display_name, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL;
 
@@ -192,7 +193,7 @@ WHERE household_id = $1 AND deleted_at IS NULL;
 -- name: ListInvestmentsForReport :many
 SELECT i.id, i.display_name, i.subtype, i.risk_profile, i.status, i.entry_type,
        i.ownership_type, i.sole_owner_user_id, i.terminated_at,
-       i.native_currency, i.rolled_from_investment_id,
+       i.native_currency, i.rolled_from_investment_id, i.tag_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date,
        bd.coupon_disposition AS coupon_disposition
 FROM investments i

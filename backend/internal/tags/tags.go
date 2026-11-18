@@ -3,8 +3,8 @@
 // at most one. A Position's own Tag is set through its create/update (an
 // optional tag_id, written in the same transaction; issue #839). The Tags page
 // moves many Positions at once through PUT /api/tags/assignments, and a
-// breakdown endpoint (GET /api/tags/breakdown) sums Position value per
-// (tag, currency).
+// breakdown endpoint (GET /api/tags/breakdown) sums Position value per Tag in
+// the household reporting currency, from the dashboard's engine pass (#937).
 package tags
 
 import (
@@ -14,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/auth"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
@@ -23,11 +22,12 @@ import (
 
 type Handlers struct {
 	repo     *repo.TagRepo
+	reports  *repo.MonthlyReportRepo
 	validate *validator.Validate
 }
 
-func New(r *repo.TagRepo) *Handlers {
-	return &Handlers{repo: r, validate: httperr.NewValidator()}
+func New(r *repo.TagRepo, reports *repo.MonthlyReportRepo) *Handlers {
+	return &Handlers{repo: r, reports: reports, validate: httperr.NewValidator()}
 }
 
 func (h *Handlers) Mount(r chi.Router) {
@@ -160,23 +160,14 @@ func (h *Handlers) handleItems(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, items)
 }
 
-// breakdownRow renames the generated row's `grp` to the wire-friendly `group`.
-type breakdownRow struct {
-	TagID    *uuid.UUID      `json:"tag_id"`
-	Group    string          `json:"group"`
-	Currency string          `json:"currency"`
-	Total    decimal.Decimal `json:"total"`
-}
-
+// handleBreakdown serves the Tags report in the household reporting currency,
+// cut from the same engine pass as the dashboard's reports so its net is the
+// dashboard's net worth for the month it names (INV-FINANCE-40).
 func (h *Handlers) handleBreakdown(w http.ResponseWriter, r *http.Request) {
-	rows, err := h.repo.TagBreakdown(r.Context())
+	out, err := h.reports.TagBreakdown(r.Context())
 	if err != nil {
 		httperr.WriteRepo(w, "tag breakdown", err)
 		return
-	}
-	out := make([]breakdownRow, len(rows))
-	for i, row := range rows {
-		out[i] = breakdownRow{TagID: row.TagID, Group: row.Grp, Currency: row.Currency, Total: row.Total}
 	}
 	writeJSON(w, http.StatusOK, out)
 }

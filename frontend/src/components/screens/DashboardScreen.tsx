@@ -7,6 +7,7 @@ import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SnapshotChart } from "@/components/charts/SnapshotChart";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import { RatesLine } from "@/components/common/RatesLine";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
 import { Select } from "@/components/ui/select";
@@ -14,13 +15,7 @@ import { useReports, useRebuildReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
-import {
-  formatCurrency,
-  formatNumber,
-  formatPercent,
-  formatShortYearMonth,
-  formatYearMonth,
-} from "@/lib/format";
+import { formatCurrency, formatPercent, formatYearMonth } from "@/lib/format";
 import { headlineSurface } from "@/lib/headline";
 import { preferredName } from "@/lib/names";
 import { COMPOSITION_ORDER, netWorthComposition } from "@/lib/netWorthComposition";
@@ -302,7 +297,12 @@ function HeadlineCard({
             controls it sit together, right under the headline they annotate
             (moved off the top nav toolbar, #507). Multi-currency households
             with ≥1 rate only. */}
-        <RatesLine selected={selected} currency={currency} rates={rates} />
+        <RatesLine
+          fxRatesUsed={selected.fx_rates_used}
+          yearMonth={selected.year_month}
+          currency={currency}
+          rates={rates}
+        />
         {displayCurrencies.length > 0 && (
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
             <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -655,49 +655,6 @@ function ByPerson({
         </div>
       </CardContent>
     </Card>
-  );
-}
-
-// RatesLine is the one muted line under the headline: the rates applied this
-// month (fx_rates_used). A rate carried forward from an earlier month says so on
-// the same line, so the rate and its caveat can't disagree.
-function RatesLine({
-  selected,
-  currency,
-  rates,
-}: {
-  selected: MonthlyReport;
-  currency: string;
-  rates: FxRate[];
-}) {
-  const { t } = useTranslation("dashboard");
-  const entries = Object.entries(selected.fx_rates_used).sort(([a], [b]) => a.localeCompare(b));
-  if (entries.length === 0) return null;
-  const month = selected.year_month.slice(0, 7);
-  return (
-    <p data-testid="dashboard-rates" className="text-sm text-muted-foreground">
-      {t("rates.prefix")}{" "}
-      {entries.map(([cur, rate], i) => {
-        const from = resolveDisplayRate(rates, cur, selected.year_month)?.rateMonth;
-        const carried = from !== undefined && from.slice(0, 7) !== month;
-        return (
-          <span key={cur} data-testid={`dashboard-rate-${cur}`}>
-            {i > 0 && " · "}
-            {t("rates.line", { base: cur, rate: formatNumber(rate), quote: currency })}
-            {carried && (
-              <span data-testid={`dashboard-rate-carried-${cur}`} className="text-warning">
-                {" · "}
-                {t("rates.carriedForward", {
-                  from: formatShortYearMonth(
-                    new Date(Number(from.slice(0, 4)), Number(from.slice(5, 7)) - 1, 1),
-                  ),
-                })}
-              </span>
-            )}
-          </span>
-        );
-      })}
-    </p>
   );
 }
 

@@ -4,7 +4,7 @@ import { backToListAfterCreate } from "./landing";
 // Tag breakdown mobile divergence (#509, ADR-0050 B2c "wide table → stacked
 // cards"). The /tags report splits at the renderer: useIsMobile (768px) mounts
 // TagBreakdownCards on phones and the wide holdings/liabilities/net table on
-// desktop, both under the shared `tag-breakdown-<currency>` testid. This @smoke
+// desktop, both under the shared `tag-breakdown` testid. This @smoke
 // asserts the correct renderer mounts at each width and the ADR-0050 a11y floor
 // holds on the card — the net value (the figure the household member came for)
 // reads with no horizontal page scroll and the pie-inclusion toggle clears
@@ -54,20 +54,20 @@ test(
     await snapDialog.getByRole("button", { name: "Save snapshot" }).click();
     await expect(page.getByRole("row", { name: new RegExp(desc) })).toBeVisible();
 
-    // --- Desktop: the wide table renderer mounts under the currency section ---
+    // --- Desktop: the wide table renderer mounts under the report section ---
     await page.goto("/tags");
-    const section = page.getByTestId("tag-breakdown-IDR");
+    const section = page.getByTestId("tag-breakdown");
     await expect(section).toBeVisible();
     await expect(section.getByRole("table")).toBeVisible();
-    await expect(page.getByTestId("tag-breakdown-cards-IDR")).toHaveCount(0);
+    await expect(page.getByTestId("tag-breakdown-cards")).toHaveCount(0);
 
     // --- Phone width: the renderer flips from table to cards ---
     // At <768px the shell collapses the sidebar (ADR-0025), so navigate by URL.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/tags");
-    const cards = page.getByTestId("tag-breakdown-cards-IDR");
+    const cards = page.getByTestId("tag-breakdown-cards");
     await expect(cards).toBeVisible();
-    await expect(page.getByTestId("tag-breakdown-IDR").getByRole("table")).toHaveCount(0);
+    await expect(page.getByTestId("tag-breakdown").getByRole("table")).toHaveCount(0);
 
     // Primary value reachable: the net figure reads on the card, in the viewport.
     const net = page.getByTestId("tag-breakdown-net").first();

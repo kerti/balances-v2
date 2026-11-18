@@ -242,7 +242,7 @@ test(
         await expectNoControlOverlap(page, undefined, at("Income"));
 
         await page.goto("/tags");
-        await expect(page.getByTestId("tag-breakdown-IDR")).toBeVisible();
+        await expect(page.getByTestId("tag-breakdown")).toBeVisible();
         await expectNoControlOverlap(page, undefined, at("Tags"));
 
         // --- The open drawer (both widths are below the 1024px shell boundary) ---
