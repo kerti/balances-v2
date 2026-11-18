@@ -9,6 +9,7 @@
 
 import { Suspense } from "react";
 import { lazyWithReload } from "@/lib/lazyWithReload";
+import { ChartSkeleton } from "./ChartSkeleton";
 
 export type PieSlice = {
   key: string;
@@ -38,9 +39,14 @@ export function InvestmentPieChart({
   if (total <= 0) return null;
   // Fallback height tracks the rendered container so the lazy chunk swaps in
   // without a layout jump: taller with a right-hand legend, tighter with none.
-  const fallbackHeight = legendPosition === "none" ? "h-52" : "h-64";
+  const fallbackHeight =
+    legendPosition === "none"
+      ? "h-52"
+      : legendPosition === "right"
+        ? "h-64 max-w-sm mx-auto"
+        : "h-64";
   return (
-    <Suspense fallback={<div className={`${fallbackHeight} w-full`} />}>
+    <Suspense fallback={<ChartSkeleton className={fallbackHeight} />}>
       <InvestmentPieChartImpl
         slices={slices}
         currency={currency}

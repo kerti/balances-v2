@@ -66,6 +66,7 @@ export function SnapshotFormBody({
         <Label htmlFor="amount">{t("fields.amountIn", { currency })}</Label>
         <NumericInput
           id="amount"
+          data-first-value
           required
           decimals={currencyDecimals(currency)}
           value={form.amount}

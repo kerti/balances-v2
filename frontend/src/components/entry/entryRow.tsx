@@ -49,6 +49,9 @@ export type EntryRowRendererProps = {
   onFieldChange: (fieldKey: string, value: string) => void;
   onReset: () => void;
   onUnchanged: (checked: boolean) => void;
+  // Desktop only: false drops the right-hand "Same" cell when no row in the
+  // group can be ticked, matching the header.
+  sameColumn?: boolean;
 };
 
 // A native checkbox (the brand accent themes it, #780) that can show the
@@ -139,7 +142,7 @@ export function EntryRowMeta({
         {" · "}
         {view.when.kind === "overwrite" ? (
           <span data-testid={`${tid}-entry-current-${view.positionId}`}>
-            {t("bulkEntry.current", { value: view.when.current })}
+            {t("bulkEntry.recorded", { value: view.when.current })}
           </span>
         ) : view.when.kind === "carried" ? (
           view.unchanged ? (

@@ -31,7 +31,7 @@ test(
     await page.goto("/assets");
     await expect(page.getByTestId("assets-home")).toBeVisible();
     await page.getByTestId("assets-enter-month").click();
-    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    await expect(page.getByText(/^Enter balances for /)).toBeVisible();
 
     // The new account is listed with no history and nothing counted as changed.
     const row = page.locator("li").filter({ hasText: account });
@@ -55,7 +55,7 @@ test(
     //     forward this month's own value and shows its muted "Current" value. ---
     await page.getByTestId("assets-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: account });
-    await expect(savedRow.getByText(/Current:/)).toBeVisible();
+    await expect(savedRow.getByText(/Recorded:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("12,500,000");
 
     // --- Cleanup: delete the parent account (returns to the empty list) ---
@@ -96,7 +96,7 @@ test(
     await page.goto("/liabilities");
     await expect(page.getByTestId("liabilities-home")).toBeVisible();
     await page.getByTestId("liabilities-enter-month").click();
-    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    await expect(page.getByText(/^Enter balances for /)).toBeVisible();
 
     const row = page.locator("li").filter({ hasText: name });
     await expect(row.getByText("No previous value")).toBeVisible();
@@ -112,7 +112,7 @@ test(
 
     await page.getByTestId("liabilities-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText(/Current:/)).toBeVisible();
+    await expect(savedRow.getByText(/Recorded:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("250,000,000");
 
     // Cleanup: delete via the list row actions menu.
@@ -146,7 +146,7 @@ test(
 
     // Launch from the list toolbar (flat group has no Home).
     await page.getByTestId("receivables-enter-month").click();
-    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    await expect(page.getByText(/^Enter balances for /)).toBeVisible();
 
     const row = page.locator("li").filter({ hasText: name });
     await expect(row.getByText("No previous value")).toBeVisible();
@@ -162,7 +162,7 @@ test(
 
     await page.getByTestId("receivables-enter-month").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText(/Current:/)).toBeVisible();
+    await expect(savedRow.getByText(/Recorded:/)).toBeVisible();
     await expect(savedRow.getByRole("textbox")).toHaveValue("4,500,000");
 
     // Cleanup: delete via the list row actions menu.
@@ -203,7 +203,7 @@ test(
     await page.goto("/investments");
     await expect(page.getByTestId("investments-home")).toBeVisible();
     await page.getByTestId("investments-enter-prices").click();
-    await expect(page.getByText("Enter this month's prices")).toBeVisible();
+    await expect(page.getByText(/^Enter prices for /)).toBeVisible();
 
     // The new stock is listed with no history and nothing counted as changed.
     const row = page.locator("li").filter({ hasText: name });
@@ -227,7 +227,7 @@ test(
     // own quantity + price and shows its muted "Current" value.
     await page.getByTestId("investments-enter-prices").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText(/Current:/)).toBeVisible();
+    await expect(savedRow.getByText(/Recorded:/)).toBeVisible();
     await expect(savedRow.getByLabel("Quantity")).toHaveValue("100");
     await expect(savedRow.getByLabel("Price per unit")).toHaveValue("8,500");
 
@@ -270,7 +270,7 @@ test(
     await page.goto("/investments");
     await expect(page.getByTestId("investments-home")).toBeVisible();
     await page.getByTestId("investments-enter-accrued").click();
-    await expect(page.getByText("Enter this month's bonds & deposits")).toBeVisible();
+    await expect(page.getByText(/^Enter bonds & deposits for /)).toBeVisible();
 
     // The new bond is listed with no history and nothing counted as changed.
     const row = page.locator("li").filter({ hasText: name });
@@ -292,7 +292,7 @@ test(
     // own total value + accrued and shows its muted "Current" value.
     await page.getByTestId("investments-enter-accrued").click();
     const savedRow = page.locator("li").filter({ hasText: name });
-    await expect(savedRow.getByText(/Current:/)).toBeVisible();
+    await expect(savedRow.getByText(/Recorded:/)).toBeVisible();
     await expect(savedRow.getByLabel("Total value")).toHaveValue("1,010,000");
     await expect(savedRow.getByLabel("Accrued")).toHaveValue("0");
 
@@ -338,7 +338,7 @@ test(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/assets");
     await page.getByTestId("assets-enter-month").click();
-    await expect(page.getByText("Enter this month's balances")).toBeVisible();
+    await expect(page.getByText(/^Enter balances for /)).toBeVisible();
     const mobileRow = page.locator("li").filter({ hasText: account });
     const mobileInput = mobileRow.getByRole("textbox");
     await expect(mobileInput).toHaveClass(/h-11/);
@@ -400,7 +400,7 @@ test(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/investments");
     await page.getByTestId("investments-enter-prices").click();
-    await expect(page.getByText("Enter this month's prices")).toBeVisible();
+    await expect(page.getByText(/^Enter prices for /)).toBeVisible();
     const mobileRow = page.locator("li").filter({ hasText: name });
     const mobileQty = mobileRow.getByLabel("Quantity");
     const mobilePrice = mobileRow.getByLabel("Price per unit");
@@ -484,7 +484,7 @@ test(
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/investments");
     await page.getByTestId("investments-enter-accrued").click();
-    await expect(page.getByText("Enter this month's bonds & deposits")).toBeVisible();
+    await expect(page.getByText(/^Enter bonds & deposits for /)).toBeVisible();
     const mobileRow = page.locator("li").filter({ hasText: name });
     const mobileTotal = mobileRow.getByLabel("Total value");
     const mobileAccrued = mobileRow.getByLabel("Accrued");

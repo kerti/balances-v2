@@ -118,7 +118,7 @@ it("shows a muted Current value when a snapshot already exists for the month", a
   );
   renderScreen();
 
-  expect(await screen.findByTestId("asset-entry-current-x1")).toHaveTextContent(/^Current: .*999/);
+  expect(await screen.findByTestId("asset-entry-current-x1")).toHaveTextContent(/^Recorded: .*999/);
   // A row with this month's own value is not "carried", and has no Unchanged action.
   expect(screen.queryByText(/carried from/i)).not.toBeInTheDocument();
 });

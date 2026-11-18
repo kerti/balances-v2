@@ -325,7 +325,7 @@
   },
   "bulkEntry": {
     "trigger": "Enter this month",
-    "title": "Enter this month's balances",
+    "title": "Enter balances for {{month}}",
     "description": "Update the value of each account for the chosen month. Only the ones you change are saved.",
     "empty": "No accounts are eligible for this month yet.",
     "carriedFrom": "Last recorded: {{month}}",
@@ -338,7 +338,7 @@
     "sameAll": "Mark all as same as before",
     "allSame": "All same",
     "sameAriaLabel": "{{name}}: same as {{month}}",
-    "current": "Current: {{value}}",
+    "recorded": "Recorded: {{value}}",
     "unchangedCount": "{{count}} unchanged",
     "undo": "Undo",
     "quantity": "Quantity",
@@ -351,14 +351,14 @@
     "accrued": "Accrued",
     "investments": {
       "trigger": "Enter prices",
-      "title": "Enter this month's prices",
+      "title": "Enter prices for {{month}}",
       "description": "Update the units and price for each investment for the chosen month. The value is worked out for you, and only the ones you change are saved.",
       "empty": "No investments are eligible for this month yet.",
       "rowError": "This investment can't take a value for this month."
     },
     "investmentsAccrued": {
       "trigger": "Enter bonds & deposits",
-      "title": "Enter this month's bonds & deposits",
+      "title": "Enter bonds & deposits for {{month}}",
       "description": "Update the total value and accrued interest for each bond, and the value for each time deposit, for the chosen month. A deposit's interest is worked out for you. Only the ones you change are saved.",
       "empty": "No bonds or time deposits are eligible for this month yet.",
       "rowError": "This investment can't take a value for this month."

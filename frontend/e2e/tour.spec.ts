@@ -132,10 +132,13 @@ test("non-investment tour: launch, navigate forward/back, done (5 steps)", async
 
   // Launch lands on step 1 with its title visible.
   await expectStep(page, 0, 5, BANK_STEPS[0]);
+  // Nothing precedes step 1, so Back is not offered there (#945).
+  await expect(popover.getByRole("button", { name: "Back" })).toHaveCount(0);
 
   // Next advances; Back returns to the prior step.
   await popover.getByRole("button", { name: "Next" }).click();
   await expectStep(page, 1, 5, BANK_STEPS[1]);
+  await expect(popover.getByRole("button", { name: "Back" })).toBeEnabled();
   await popover.getByRole("button", { name: "Next" }).click();
   await expectStep(page, 2, 5, BANK_STEPS[2]);
   await popover.getByRole("button", { name: "Back" }).click();

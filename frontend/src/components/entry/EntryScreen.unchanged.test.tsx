@@ -223,7 +223,7 @@ it("a month that already has a value shows a muted 'Current: …' and no same-as
   renderScreen(assetEntryConfig);
 
   const current = await screen.findByTestId("asset-entry-current-a3");
-  expect(current).toHaveTextContent(/^Current: .*900,000/);
+  expect(current).toHaveTextContent(/^Recorded: .*900,000/);
   expect(current).not.toHaveClass("text-warning");
   expect(screen.queryByTestId("asset-entry-same-a3")).not.toBeInTheDocument();
   expect(screen.queryByTestId("asset-entry-same-a4")).not.toBeInTheDocument();

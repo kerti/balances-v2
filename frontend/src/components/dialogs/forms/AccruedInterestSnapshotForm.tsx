@@ -83,6 +83,7 @@ export function AccruedInterestSnapshotFormBody({
               </Label>
               <NumericInput
                 id="ai_amount"
+                data-first-value
                 required
                 decimals={currencyDecimals(currency)}
                 value={form.amount}
@@ -161,6 +162,7 @@ function TimeDepositValue({
         <Label htmlFor="ai_amount">{t("accruedInterestSnapshot.valueLabel", { currency })}</Label>
         <NumericInput
           id="ai_amount"
+          data-first-value
           required
           decimals={currencyDecimals(currency)}
           value={amount}

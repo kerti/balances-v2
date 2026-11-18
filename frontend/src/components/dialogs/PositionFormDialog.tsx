@@ -114,7 +114,7 @@ export function PositionFormDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent>
+      <DialogContent className="flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
@@ -123,13 +123,21 @@ export function PositionFormDialog({
           onSubmit={() => onSubmit(close)}
           validate={validate}
           error={error}
-          className={formClassName}
+          className={`flex min-h-0 flex-1 flex-col ${formClassName}`}
         >
-          {children}
+          {/* Only the body scrolls; the footer sits outside it so a validation
+              error that grows the body can never push Cancel/Save past the
+              dialog's edge. The -mx-1/px-1 keeps field focus rings unclipped. */}
+          <div
+            data-slot="dialog-body"
+            className={`-mx-1 min-h-0 flex-1 overflow-y-auto px-1 ${formClassName}`}
+          >
+            {children}
 
-          {tag && <TagSelect value={tag.value} onChange={tag.onChange} />}
+            {tag && <TagSelect value={tag.value} onChange={tag.onChange} />}
 
-          <FormError />
+            <FormError />
+          </div>
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={close}>

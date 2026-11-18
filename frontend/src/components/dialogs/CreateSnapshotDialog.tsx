@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { focusFirstValue } from "@/lib/recordSnapshot";
 import { useRecordOnArrival } from "@/lib/recordOnArrival";
 import { Plus } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
@@ -133,7 +134,7 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
           {t("snapshot.recordTrigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent onOpenAutoFocus={focusFirstValue}>
         <DialogHeader>
           <DialogTitle>{t("snapshot.createTitle")}</DialogTitle>
           <DialogDescription>{t("snapshot.createDescription", { currency })}</DialogDescription>

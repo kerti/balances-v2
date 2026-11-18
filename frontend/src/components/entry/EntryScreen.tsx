@@ -156,12 +156,16 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
       !isDirty(row)
     );
   }
+  function isCarried(row: EntryRow): boolean {
+    return Boolean(row.carried_from) && row.carried_from !== yearMonth;
+  }
   // The tick-all checkbox over a set of rows: hidden with nothing markable,
   // checked when all are marked, indeterminate when only some are.
   function tickAllFor(scope: EntryRow[], testId: string): TickAll {
     const markable = scope.filter(isMarkable);
     const marked = markable.filter((r) => unchangedIds.has(r.position_id)).length;
     return {
+      column: scope.some(isCarried),
       visible: markable.length > 0,
       checked: markable.length > 0 && marked === markable.length,
       indeterminate: marked > 0 && marked < markable.length,
@@ -286,7 +290,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
     };
   }
 
-  function renderRow(row: EntryRow) {
+  function renderRow(row: EntryRow, sameColumn = true) {
     return (
       <RowRenderer
         key={row.position_id}
@@ -294,6 +298,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
         shape={shapeOf(row)}
         tid={tid}
         copy={copy}
+        sameColumn={sameColumn}
         onUnchanged={(checked) => setMarked([row.position_id], checked)}
         onFieldChange={(fieldKey, value) => {
           setUnchangedIds((prev) => {
@@ -337,7 +342,9 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
           onClick: () => navigate(config.backRoute),
           testId: `${tid}-entry-back`,
         }}
-        title={t(`${copy}.title`)}
+        title={t(`${copy}.title`, {
+          month: formatYearMonth(`${yearMonth}-01T12:00:00Z`),
+        })}
         subtitle={t(`${copy}.description`)}
       />
       <Card className="mt-4">
@@ -401,7 +408,7 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                     />
                   </div>
                 )}
-                <ul className="divide-y">{rows.map(renderRow)}</ul>
+                <ul className="divide-y">{rows.map((r) => renderRow(r, rows.some(isCarried)))}</ul>
               </div>
             ) : (
               <div className="space-y-4">
@@ -432,7 +439,11 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
                           />
                         )}
                       </div>
-                      <ul className="divide-y">{grouped.get(subtype)!.map(renderRow)}</ul>
+                      <ul className="divide-y">
+                        {grouped
+                          .get(subtype)!
+                          .map((r) => renderRow(r, grouped.get(subtype)!.some(isCarried)))}
+                      </ul>
                     </div>
                   );
                 })}
