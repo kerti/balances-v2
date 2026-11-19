@@ -1,8 +1,10 @@
 // Receivable, on the non-investment preset (ADR-0043). Two group-specific bits
 // beyond the shared surface: the secondary line carries the counterparty + an
-// optional due-date suffix, and a value-over-time chart per currency renders
-// beneath the headline (epic #204) — supplied through the preset's
-// `renderHeadlineExtra` slot, keeping the core untouched.
+// optional due-date suffix, and a value-over-time chart renders beneath the
+// headline (epic #204) — supplied through the preset's `renderHeadlineExtra`
+// slot, keeping the core untouched. A household holding a foreign currency gets
+// one chart in the reporting currency from the engine (#937); otherwise one per
+// native currency, as before.
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo } from "react";
 import { Link } from "react-router";
@@ -23,7 +25,40 @@ import { useReceivableTimeSeries } from "@/hooks/useReceivableTimeSeries";
 import { nonInvestmentDescriptor } from "@/components/positionList/presets/nonInvestment";
 import { aggregateListPositions } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
+import { listShareSeries } from "@/lib/groupBreakdown";
+import type { ListConversion } from "@/hooks/useListConversion";
 import type { ReceivableListItem } from "@/api/types";
+
+function ValueChartCard({
+  currency,
+  description,
+  series,
+}: {
+  currency: string;
+  description: string;
+  series: { year_month: string; value: number }[];
+}) {
+  const { t } = useTranslation("receivables");
+  if (series.length < 2) return null;
+  return (
+    <Card data-testid={`receivables-value-chart-${currency}`}>
+      <CardHeader>
+        <CardTitle>{t("home.valueChartTitle")}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SnapshotChart
+          snapshots={series.map((p) => ({
+            year_month: p.year_month,
+            amount: String(p.value),
+          }))}
+          currency={currency}
+          primaryLabel={t("common:tableHeaders.owed")}
+        />
+      </CardContent>
+    </Card>
+  );
+}
 
 // Total-outstanding over time, per native currency. Receivables are a flat
 // value-only group (no cost basis), so aggregateListPositions runs with cost
@@ -46,29 +81,30 @@ function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
   const chartCurrencies = [...timeSeriesByCurrency.keys()].sort();
   return (
     <>
-      {chartCurrencies.map((currency) => {
-        const series = timeSeriesByCurrency.get(currency) ?? [];
-        if (series.length < 2) return null;
-        return (
-          <Card key={currency} data-testid={`receivables-value-chart-${currency}`}>
-            <CardHeader>
-              <CardTitle>{t("home.valueChartTitle")}</CardTitle>
-              <CardDescription>{t("home.valueChartDescription", { currency })}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SnapshotChart
-                snapshots={series.map((p) => ({
-                  year_month: p.year_month,
-                  amount: String(p.value),
-                }))}
-                currency={currency}
-                primaryLabel={t("common:tableHeaders.owed")}
-              />
-            </CardContent>
-          </Card>
-        );
-      })}
+      {chartCurrencies.map((currency) => (
+        <ValueChartCard
+          key={currency}
+          currency={currency}
+          description={t("home.valueChartDescription", { currency })}
+          series={timeSeriesByCurrency.get(currency) ?? []}
+        />
+      ))}
     </>
+  );
+}
+
+function ReceivableConvertedChart({
+  conversion,
+}: {
+  conversion: Extract<ListConversion, { mode: "converted" }>;
+}) {
+  const { t } = useTranslation("receivables");
+  return (
+    <ValueChartCard
+      currency={conversion.currency}
+      description={t("home.convertedChartDescription", { currency: conversion.currency })}
+      series={listShareSeries(conversion.breakdown)}
+    />
   );
 }
 
@@ -91,6 +127,7 @@ export const receivableDescriptor = {
     entityKey: "receivable",
     testIdPrefix: "receivable",
     group: "receivables",
+    breakdown: { group: "receivable" },
     i18nNamespaces: ["receivables", "common", "errors"],
     keys: {
       listTitle: "receivables:listTitle",
@@ -116,7 +153,12 @@ export const receivableDescriptor = {
         : ""),
     headlineLabelKey: "receivables:totalOutstanding",
     headlineTestId: "receivables-total",
-    renderHeadlineExtra: (items) => <ReceivableCharts items={items} />,
+    renderHeadlineExtra: (items, conversion) =>
+      conversion.mode === "converted" ? (
+        <ReceivableConvertedChart conversion={conversion} />
+      ) : conversion.mode === "native" ? (
+        <ReceivableCharts items={items} />
+      ) : null,
     renderCreateDialog: (onCreated) => <CreateReceivableDialog onCreated={onCreated} />,
     renderEditDialog: (item, props) => (
       <EditReceivableDialog key={item.receivable.id} receivable={item.receivable} {...props} />

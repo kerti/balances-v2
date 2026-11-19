@@ -16,6 +16,7 @@ export const bankAccountDescriptor = nonInvestmentDescriptor<BankAccountListItem
   entityKey: "bankAccount",
   testIdPrefix: "bank-account",
   group: "assets",
+  breakdown: { group: "asset", subtype: "bank_account" },
   i18nNamespaces: ["assets", "common", "errors"],
   keys: {
     listTitle: "assets:bankAccount.listTitle",

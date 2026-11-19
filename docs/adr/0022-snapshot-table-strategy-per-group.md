@@ -140,7 +140,7 @@ said nothing. The "no FX, mirroring the list-screen convention" line above is re
 - A composition chart (category share area, category or risk pie) with a single category is not
   rendered.
 
-List screens and detail pages stay in native currency; this changes the hubs only.
+List screens and detail pages stay in native currency; this changes the hubs only. (List summaries: see the 2026-11-19 amendment.)
 
 Implementation (#845): the converted figures are not computed in the client. `GET
 /api/reports/groups/{asset|liability|investment}` projects, per month, the group's total, its
@@ -150,3 +150,16 @@ construction (INV-FINANCE-39). It is computed per read and persisted nowhere —
 `engine_version` bump. A hub converts only when the household has multi-currency on **and** holds a
 currency other than the reporting one; otherwise it renders its native set unchanged. The converted
 set is value-only: cost basis and unrealized P/L stay native, on the list screens.
+
+## Amendment (2026-11-19): list summaries convert too
+
+#937 extends the 2026-11-10 hub rule to every position list's summary. "List screens … stay in native
+currency" above now covers the **rows** only: each list's headline (and its value-over-time chart) is
+the list's share of net worth in the reporting currency — `by_subtype[subtype]` of the latest month,
+or the group `total` for a whole-group list (Receivables) — read from the same
+`GET /api/reports/groups/{group}` projection, which now also accepts `receivable` (a flat group:
+`by_subtype` is empty). Being the net-worth share, the headline ignores list filters and counts a
+Position closed this month. The trigger is the hubs' (multi-currency on and a non-reporting currency
+held among the list's active Positions); otherwise the native per-currency headline is unchanged. On
+investment lists only the headline value converts; cost basis, unrealized P/L and the value-and-cost charts stay per currency
+beneath it. Missing-rate warnings are narrowed to the list's own Positions.

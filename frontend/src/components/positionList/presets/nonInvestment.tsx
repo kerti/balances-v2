@@ -1,7 +1,9 @@
 // The non-investment cluster preset (ADR-0043). Bank accounts, properties,
 // vehicles, liabilities and receivables all share the same list shape over the
-// Position shared surface: an ownership column, and a per-currency
-// active-total headline (`activeCurrencyTotals` → `ListHeadline`). This factory
+// Position shared surface: an ownership column, and a headline that is the
+// list's converted net-worth share (`useListConversion` → `ConvertedHeadline`,
+// #937) — or, for a household with nothing outside the reporting currency, the
+// per-currency active total (`activeCurrencyTotals` → `ListHeadline`). This factory
 // fills those in so each concrete type is reduced to wiring + copy + its
 // group-specific secondary line and dialogs. The investment cluster (#332) is
 // the sibling preset with a different headline + a risk filter.
@@ -11,6 +13,13 @@ import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { ListHeadline } from "@/components/common/ListHeadline";
+import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
+import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import {
+  useListConversion,
+  type ListBreakdown,
+  type ListConversion,
+} from "@/hooks/useListConversion";
 import {
   ownershipColumn,
   useOwnershipContext,
@@ -41,6 +50,8 @@ export type NonInvestmentConfig<T> = {
   entityKey: string;
   testIdPrefix: string;
   group: LifecycleGroup;
+  // The engine slice the headline shows (whole group or one subtype).
+  breakdown: ListBreakdown;
   i18nNamespaces: string[];
   keys: PositionListDescriptor<T>["keys"];
   copyArgs?: (t: TFunction) => Record<string, unknown>;
@@ -52,10 +63,10 @@ export type NonInvestmentConfig<T> = {
   getSnapshot: (item: T) => PositionSnapshotView | null;
   getSecondary: (item: T, t: TFunction) => ReactNode;
   // Headline copy + an optional extra block rendered beneath it (the
-  // receivables value-over-time chart).
+  // receivables value-over-time chart), told whether the headline converted.
   headlineLabelKey: string;
   headlineTestId: string;
-  renderHeadlineExtra?: (items: T[]) => ReactNode;
+  renderHeadlineExtra?: (items: T[], conversion: ListConversion) => ReactNode;
   renderCreateDialog: (onCreated: (id: string) => void) => ReactNode;
   renderEditDialog: PositionListDescriptor<T>["renderEditDialog"];
 };
@@ -78,17 +89,55 @@ function NonInvestmentHeadline<T>({
       ),
     [items, config],
   );
+  const conversion = useListConversion(
+    config.breakdown,
+    items.map((item) => {
+      const core = config.entity(item);
+      return {
+        id: core.id,
+        status: core.status,
+        currency: config.getSnapshot(item)?.currency ?? "",
+      };
+    }),
+  );
+  const label = t(config.headlineLabelKey);
+  const noun = t(config.keys.noun);
+  const nounPlural = t(config.keys.nounPlural);
   return (
     <>
-      <ListHeadline
-        totals={totals}
-        count={count}
-        label={t(config.headlineLabelKey)}
-        noun={t(config.keys.noun)}
-        nounPlural={t(config.keys.nounPlural)}
-        testId={config.headlineTestId}
-      />
-      {config.renderHeadlineExtra?.(items)}
+      {conversion.mode === "converted" ? (
+        <ConvertedHeadline
+          label={label}
+          total={conversion.total}
+          currency={conversion.currency}
+          nativeSubtotals={totals
+            .filter((r) => r.currency !== conversion.currency)
+            .map((r) => ({ currency: r.currency, value: r.amount }))}
+          countText={t("common:list.activeCount", {
+            count,
+            noun: count === 1 ? noun : nounPlural,
+          })}
+          testId={config.headlineTestId}
+        >
+          <MissingFxWarning
+            missingFx={conversion.missingFx}
+            yearMonth={conversion.yearMonth}
+            scope="groupTotal"
+          />
+        </ConvertedHeadline>
+      ) : (
+        conversion.mode === "native" && (
+          <ListHeadline
+            totals={totals}
+            count={count}
+            label={label}
+            noun={noun}
+            nounPlural={nounPlural}
+            testId={config.headlineTestId}
+          />
+        )
+      )}
+      {config.renderHeadlineExtra?.(items, conversion)}
     </>
   );
 }

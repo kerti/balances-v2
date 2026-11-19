@@ -281,6 +281,25 @@ func TestReportsHandlers_GroupBreakdown(t *testing.T) {
 		}
 	})
 
+	t.Run("200 receivable is a known group", func(t *testing.T) {
+		rec := do(t, router, "/reports/groups/receivable", &user)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status: got %d (%s)", rec.Code, rec.Body.String())
+		}
+		var out struct {
+			Group  string `json:"group"`
+			Months []any  `json:"months"`
+		}
+		if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		// The harness seeds no receivable, so the group has no months — but it is
+		// a known group, not a 404.
+		if out.Group != "receivable" || out.Months == nil || len(out.Months) != 0 {
+			t.Errorf("receivable: %+v, want group=receivable with an empty months list", out)
+		}
+	})
+
 	t.Run("404 unknown group", func(t *testing.T) {
 		if rec := do(t, router, "/reports/groups/bogus", &user); rec.Code != http.StatusNotFound {
 			t.Errorf("status: got %d, want 404", rec.Code)

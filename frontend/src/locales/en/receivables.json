@@ -1,7 +1,8 @@
 {
   "home": {
     "valueChartTitle": "Total owed over time",
-    "valueChartDescription": "Sum across all active receivables ({{currency}})."
+    "valueChartDescription": "Sum across all active receivables ({{currency}}).",
+    "convertedChartDescription": "Total owed in {{currency}}, converted at each month's rate."
   },
   "listTitle": "Receivables",
   "listSubtitle": "Money owed to your household — loans, deposits in transit, outstanding refunds.",

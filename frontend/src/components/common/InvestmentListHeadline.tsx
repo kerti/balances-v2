@@ -3,6 +3,9 @@
 // (which has a single value figure); investment screens swap to this
 // one because they also need to surface cost + unrealized P/L.
 //
+// With `converted`, the Value line is one reporting-currency figure (plus a muted
+// native-subtotals line) and Cost / P/L stay per currency underneath (#937).
+//
 // Layout: one card, three lines (Value / Cost / P/L) with a per-currency
 // dot separator on each line. Single-currency household sees one figure
 // per line; mixed sees "Rp X · $ Y". Active count under the rows.
@@ -10,6 +13,7 @@
 // P/L tone follows the detail-screen `investmentHeadlineFields`: emerald gain
 // / destructive loss / muted zero, "−" U+2212 minus glyph.
 
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { formatCurrency, formatSignedPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -23,9 +27,22 @@ type Props = {
   noun: string;
   nounPlural: string;
   testId?: string;
+  // The value in the reporting currency from the engine (#937). When set it
+  // replaces the per-currency value figures; cost and P/L stay per currency.
+  converted?: { total: string; currency: string };
+  // Rendered beneath the count (the missing-rate warning).
+  children?: ReactNode;
 };
 
-export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, testId }: Props) {
+export function InvestmentListHeadline({
+  aggregates,
+  count,
+  noun,
+  nounPlural,
+  testId,
+  converted,
+  children,
+}: Props) {
   const { t } = useTranslation(["common", "investments"]);
   if (aggregates.length === 0) return null;
   // Multi-currency stacks one figure per line on mobile (ADR-0050) — value,
@@ -34,17 +51,35 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
   // unchanged (the labelled cost/PL rows stay label + figure on one line).
   const multi = aggregates.length > 1;
   const stack = multi ? "block md:inline" : undefined;
+  const nativeValues = aggregates.filter((a) => a.currency !== converted?.currency);
   return (
     <div className={cn("rounded-lg border p-4", headlineSurface)} data-testid={testId}>
       <div className="text-sm text-muted-foreground">{t("investments:list.totalValue")}</div>
-      <div className="mt-0.5 text-2xl font-semibold">
-        {aggregates.map((a, i) => (
-          <span key={a.currency} className={stack}>
-            {i > 0 && <Sep />}
-            {formatCurrency(String(a.value), a.currency)}
-          </span>
-        ))}
-      </div>
+      {converted ? (
+        <>
+          <div className="mt-0.5 text-2xl font-semibold" data-testid="home-total-value">
+            {formatCurrency(converted.total, converted.currency)}
+          </div>
+          {nativeValues.length > 0 && (
+            <div className="mt-0.5 text-sm text-muted-foreground" data-testid="home-total-native">
+              {t("common:hub.nativeSubtotals", {
+                amounts: nativeValues
+                  .map((a) => formatCurrency(String(a.value), a.currency))
+                  .join(" · "),
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="mt-0.5 text-2xl font-semibold">
+          {aggregates.map((a, i) => (
+            <span key={a.currency} className={stack}>
+              {i > 0 && <Sep />}
+              {formatCurrency(String(a.value), a.currency)}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="mt-1 text-sm text-muted-foreground">
         <span>{t("investments:list.totalCost")}</span>{" "}
         {aggregates.map((a, i) => (
@@ -76,6 +111,7 @@ export function InvestmentListHeadline({ aggregates, count, noun, nounPlural, te
           noun: count === 1 ? noun : nounPlural,
         })}
       </div>
+      {children && <div className="mt-2">{children}</div>}
     </div>
   );
 }

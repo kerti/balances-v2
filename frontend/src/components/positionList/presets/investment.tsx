@@ -3,7 +3,9 @@
 // add a risk-profile badge beside the name + a
 // risk-profile row filter, add a shared transaction-activity column, and use
 // the cost/P-L headline (`InvestmentListHeadline` + `ListTimeGraph` over
-// `aggregateListPositions`) instead of the single-figure `ListHeadline`. A
+// `aggregateListPositions`) instead of the single-figure `ListHeadline`; its
+// value is the converted net-worth share when the household holds a foreign
+// currency (#937), with cost and P/L staying native. A
 // concrete investment type supplies only its subtype columns (e.g. gold's form
 // + purity) plus wiring and dialogs.
 /* eslint-disable react-refresh/only-export-components */
@@ -23,6 +25,8 @@ import {
   type OwnershipCore,
   type OwnershipCtx,
 } from "@/components/positionList/presets/ownership";
+import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import { useListConversion } from "@/hooks/useListConversion";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
@@ -51,6 +55,9 @@ type InvestmentCore = OwnershipCore & {
 export type InvestmentConfig<T> = {
   entityKey: string;
   testIdPrefix: string;
+  // The subtype key in the engine's investment breakdown (by_subtype), which the
+  // headline's converted value is read from (#937).
+  breakdownSubtype: string;
   i18nNamespaces: string[];
   keys: PositionListDescriptor<T>["keys"];
   useList: () => PositionListQuery<T>;
@@ -115,6 +122,34 @@ function InvestmentHeadline<T>({ items, config }: { items: T[]; config: Investme
     [items, timeSeries.byId, config],
   );
   const aggregates = useMemo(() => aggregateListPositions(positions), [positions]);
+  const conversion = useListConversion(
+    { group: "investment", subtype: config.breakdownSubtype },
+    positions,
+  );
+  if (conversion.mode === "loading") return null;
+  if (conversion.mode === "converted") {
+    // Only the headline value converts; the charts stay per currency so cost
+    // remains visible beside value (no converted cost series exists).
+    return (
+      <>
+        <InvestmentListHeadline
+          aggregates={aggregates.byCurrency}
+          count={aggregates.count}
+          noun={t(config.keys.noun)}
+          nounPlural={t(config.keys.nounPlural)}
+          testId={config.headlineTestId}
+          converted={{ total: conversion.total, currency: conversion.currency }}
+        >
+          <MissingFxWarning
+            missingFx={conversion.missingFx}
+            yearMonth={conversion.yearMonth}
+            scope="groupTotal"
+          />
+        </InvestmentListHeadline>
+        <ListTimeGraph timeSeriesByCurrency={aggregates.timeSeriesByCurrency} />
+      </>
+    );
+  }
   return (
     <>
       <InvestmentListHeadline

@@ -2,7 +2,7 @@
 // #845) into what the hub charts take. Pure: it only re-keys and re-types; every
 // conversion already happened server-side in the dashboard's engine pass.
 
-import type { GroupBreakdown, GroupBreakdownMonth } from "@/api/types";
+import type { GroupBreakdown, GroupBreakdownMonth, MissingFx } from "@/api/types";
 
 // The wire names subtypes snake_case; the hubs' category keys (and their i18n
 // labels) are camelCase.
@@ -79,4 +79,32 @@ export function categoriesHeld(series: { byCategory: Record<string, number> }[])
 
 export function slicesHeld(slices: { value: number }[]): number {
   return slices.filter((s) => s.value > 0).length;
+}
+
+// A position list's headline is its slice of the group's net worth: the latest
+// month's by_subtype entry for a subtype-scoped list, the group `total` for a
+// whole-group list (receivables). It deliberately ignores the list's filters and
+// counts a position closed this month, so it always equals the dashboard's
+// figure (INV-FINANCE-39, #937). A subtype the group doesn't hold is zero.
+export function listShare(month: GroupBreakdownMonth, subtype?: string): string {
+  return subtype === undefined ? month.total : (month.by_subtype[subtype] ?? "0");
+}
+
+// The month's missing-rate entries narrowed to the positions on this list. An
+// entry without a position id can't be attributed, so it stays (group-level).
+export function listMissingFx(month: GroupBreakdownMonth, positionIds: string[]): MissingFx[] {
+  const ids = new Set(positionIds);
+  return month.missing_fx.filter((m) => m.position_id === null || ids.has(m.position_id));
+}
+
+// The group's total-over-time for a list's converted chart: the subtype's
+// monthly share, or the group total for a whole-group list.
+export function listShareSeries(
+  b: GroupBreakdown,
+  subtype?: string,
+): { year_month: string; value: number }[] {
+  return b.months.map((m) => ({
+    year_month: monthOf(m.year_month),
+    value: Number(listShare(m, subtype)),
+  }));
 }
