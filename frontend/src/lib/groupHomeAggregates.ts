@@ -55,6 +55,7 @@ const monthOf = (s: string) => s.slice(0, 7);
 export function aggregateGroupHome(
   positions: GroupPosition[],
   categories: string[],
+  reporting = "",
 ): GroupHomeAggregates {
   // Headline + total-over-time come straight from the list aggregator. Cost
   // is omitted, so every TimePoint.cost is 0 — callers render value only.
@@ -67,6 +68,7 @@ export function aggregateGroupHome(
       latestValue: p.latestValue,
       snapshots: p.snapshots,
     })),
+    reporting,
   );
 
   const byCurrencyAll = new Map<string, GroupPosition[]>();

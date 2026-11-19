@@ -7,10 +7,12 @@
 // FX conversion): a mixed-currency household sees subtotals, a single-currency
 // one sees a single figure. FX-converted net worth lives on the dashboard (ADR-0002).
 
+import { orderByCurrency } from "@/lib/currencyOrder";
+
 export type CurrencyTotal = { currency: string; amount: number };
 
 export type TotalsResult = {
-  totals: CurrencyTotal[]; // largest first; currency code breaks ties
+  totals: CurrencyTotal[]; // reporting currency first, then A-Z
   count: number; // every active position, including ones with no snapshot yet
 };
 
@@ -19,7 +21,7 @@ type TotalsInput = {
   snapshot: { amount: string; currency: string } | null;
 };
 
-export function activeCurrencyTotals(items: TotalsInput[]): TotalsResult {
+export function activeCurrencyTotals(items: TotalsInput[], reporting = ""): TotalsResult {
   const byCurrency = new Map<string, number>();
   let count = 0;
   for (const it of items) {
@@ -29,8 +31,9 @@ export function activeCurrencyTotals(items: TotalsInput[]): TotalsResult {
     const prev = byCurrency.get(it.snapshot.currency) ?? 0;
     byCurrency.set(it.snapshot.currency, prev + Number(it.snapshot.amount));
   }
-  const totals = [...byCurrency.entries()]
-    .map(([currency, amount]) => ({ currency, amount }))
-    .sort((a, b) => b.amount - a.amount || a.currency.localeCompare(b.currency));
+  const totals = orderByCurrency(
+    [...byCurrency.entries()].map(([currency, amount]) => ({ currency, amount })),
+    reporting,
+  );
   return { totals, count };
 }

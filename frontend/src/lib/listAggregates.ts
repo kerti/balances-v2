@@ -54,18 +54,19 @@ export type TimePoint = {
 };
 
 export type ListAggregates = {
-  byCurrency: CurrencyAggregate[]; // value desc; currency code breaks ties
+  byCurrency: CurrencyAggregate[]; // reporting currency first, then A-Z
   timeSeriesByCurrency: Map<string, TimePoint[]>;
   // Every active position, including ones with no value yet — for the
   // "N stocks" count under the headline.
   count: number;
 };
 
+import { orderByCurrency, orderMapByCurrency } from "@/lib/currencyOrder";
 import { monthRange } from "@/lib/months";
 
 const monthOf = (s: string) => s.slice(0, 7);
 
-export function aggregateListPositions(positions: Position[]): ListAggregates {
+export function aggregateListPositions(positions: Position[], reporting = ""): ListAggregates {
   const active = positions.filter((p) => p.status === "active");
 
   // Per-currency current totals.
@@ -87,14 +88,15 @@ export function aggregateListPositions(positions: Position[]): ListAggregates {
     currencyMap.set(p.currency, entry);
   }
 
-  const byCurrency: CurrencyAggregate[] = [...currencyMap.entries()]
-    .map(([currency, { value, cost }]) => ({
+  const byCurrency: CurrencyAggregate[] = orderByCurrency(
+    [...currencyMap.entries()].map(([currency, { value, cost }]) => ({
       currency,
       value,
       cost,
       pl: value - cost,
-    }))
-    .sort((a, b) => b.value - a.value || a.currency.localeCompare(b.currency));
+    })),
+    reporting,
+  );
 
   // Per-currency monthly series (carry-forward). Includes closed
   // positions historically (issue #21) — `aggregateMonthly` caps each
@@ -118,7 +120,11 @@ export function aggregateListPositions(positions: Position[]): ListAggregates {
   // Every active position, valued or not — for the headline subline count.
   const count = active.length;
 
-  return { byCurrency, timeSeriesByCurrency, count };
+  return {
+    byCurrency,
+    timeSeriesByCurrency: orderMapByCurrency(timeSeriesByCurrency, reporting),
+    count,
+  };
 }
 
 // Walks the union of snapshot months across the positions in one

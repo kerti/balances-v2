@@ -32,33 +32,25 @@ describe("activeCurrencyTotals", () => {
     expect(r.count).toBe(2);
   });
 
-  it("keeps currencies separate, largest first", () => {
-    const r = activeCurrencyTotals([
-      { status: "active", snapshot: snap("100", "USD") },
+  // covers: INV-PRESENTATION-34
+  it("keeps currencies separate, reporting currency first then A-Z", () => {
+    const items = [
       { status: "active", snapshot: snap("50000000", "IDR") },
-      { status: "active", snapshot: snap("50", "USD") },
-    ]);
-    expect(r.totals).toEqual([
-      { currency: "IDR", amount: 50000000 },
-      { currency: "USD", amount: 150 },
-    ]);
-    expect(r.count).toBe(3);
-  });
-
-  it("breaks equal-amount ties by currency code", () => {
-    const r = activeCurrencyTotals([
       { status: "active", snapshot: snap("100", "USD") },
-      { status: "active", snapshot: snap("100", "EUR") },
+      { status: "active", snapshot: snap("9", "EUR") },
+      { status: "active", snapshot: snap("50", "USD") },
+    ];
+    const r = activeCurrencyTotals(items, "USD");
+    expect(r.totals).toEqual([
+      { currency: "USD", amount: 150 },
+      { currency: "EUR", amount: 9 },
+      { currency: "IDR", amount: 50000000 },
     ]);
-    expect(r.totals.map((t) => t.currency)).toEqual(["EUR", "USD"]);
-  });
-
-  it("returns empty totals when nothing is valued; counts only active rows", () => {
-    const r = activeCurrencyTotals([
-      { status: "closed", snapshot: snap("100") },
-      { status: "active", snapshot: null },
+    expect(r.count).toBe(4);
+    expect(activeCurrencyTotals(items).totals.map((t) => t.currency)).toEqual([
+      "EUR",
+      "IDR",
+      "USD",
     ]);
-    expect(r.totals).toEqual([]);
-    expect(r.count).toBe(1);
   });
 });

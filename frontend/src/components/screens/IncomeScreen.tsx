@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useIncome } from "@/hooks/useIncome";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
+import { orderByCurrency } from "@/lib/currencyOrder";
 import { useSession } from "@/hooks/useSession";
 import { CreateIncomeDialog } from "@/components/dialogs/CreateIncomeDialog";
 import { CopyRegularIncomeDialog } from "@/components/dialogs/CopyRegularIncomeDialog";
@@ -42,6 +43,7 @@ export function IncomeScreen() {
   const { data, isPending, error } = useIncome();
   const { data: members } = useHouseholdMembers();
   const { data: currentUser } = useSession();
+  const reporting = currentUser?.reporting_currency ?? "";
   const isMobile = useIsMobile();
   const [page, setPage] = useState(1);
   const [showBreakdown, setShowBreakdown] = useState(false);
@@ -100,21 +102,20 @@ export function IncomeScreen() {
       cur.byUser.set(userLabel, (cur.byUser.get(userLabel) ?? 0) + amount);
       cur.byCategory.set(r.category, (cur.byCategory.get(r.category) ?? 0) + amount);
     }
-    return Array.from(byCurrency.entries())
-      .map(([currency, d]) => ({
-        currency,
-        total: d.total,
-        routine: d.routine,
-        incidental: d.incidental,
-        byUser: Array.from(d.byUser.entries())
-          .map(([label, amount]) => ({ label, amount }))
-          .sort((a, b) => b.amount - a.amount),
-        byCategory: Array.from(d.byCategory.entries())
-          .map(([category, amount]) => ({ category, amount }))
-          .sort((a, b) => b.amount - a.amount),
-      }))
-      .sort((a, b) => a.currency.localeCompare(b.currency));
-  }, [monthFiltered, members, currentUser]);
+    const stats = Array.from(byCurrency.entries()).map(([currency, d]) => ({
+      currency,
+      total: d.total,
+      routine: d.routine,
+      incidental: d.incidental,
+      byUser: Array.from(d.byUser.entries())
+        .map(([label, amount]) => ({ label, amount }))
+        .sort((a, b) => b.amount - a.amount),
+      byCategory: Array.from(d.byCategory.entries())
+        .map(([category, amount]) => ({ category, amount }))
+        .sort((a, b) => b.amount - a.amount),
+    }));
+    return orderByCurrency(stats, reporting);
+  }, [monthFiltered, members, currentUser, reporting]);
 
   const filtered = useMemo(() => {
     const base =

@@ -26,6 +26,7 @@ import {
   type OwnershipCtx,
 } from "@/components/positionList/presets/ownership";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
+import { useSession } from "@/hooks/useSession";
 import { useListConversion } from "@/hooks/useListConversion";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
@@ -121,7 +122,11 @@ function InvestmentHeadline<T>({ items, config }: { items: T[]; config: Investme
       }),
     [items, timeSeries.byId, config],
   );
-  const aggregates = useMemo(() => aggregateListPositions(positions), [positions]);
+  const reporting = useSession().data?.reporting_currency ?? "";
+  const aggregates = useMemo(
+    () => aggregateListPositions(positions, reporting),
+    [positions, reporting],
+  );
   const conversion = useListConversion(
     { group: "investment", subtype: config.breakdownSubtype },
     positions,

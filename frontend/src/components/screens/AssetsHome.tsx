@@ -36,6 +36,7 @@ import { useBankAccounts } from "@/hooks/useBankAccounts";
 import { useProperties } from "@/hooks/useProperties";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useAssetTimeSeries } from "@/hooks/useAssetTimeSeries";
+import { useSession } from "@/hooks/useSession";
 import { useHubConversion } from "@/hooks/useGroupBreakdown";
 import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
@@ -103,7 +104,11 @@ export function AssetsHome() {
     return out;
   }, [bankAccounts.data, properties.data, vehicles.data, timeSeries.byId]);
 
-  const aggregates = useMemo(() => aggregateGroupHome(positions, ASSET_CATEGORIES), [positions]);
+  const reportingCurrency = useSession().data?.reporting_currency ?? "";
+  const aggregates = useMemo(
+    () => aggregateGroupHome(positions, ASSET_CATEGORIES, reportingCurrency),
+    [positions, reportingCurrency],
+  );
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);
   const { converted, reporting, breakdown } = useHubConversion("asset", currencies);
