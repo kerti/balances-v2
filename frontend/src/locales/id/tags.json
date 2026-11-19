@@ -23,12 +23,12 @@
   },
   "report": {
     "title": "Tag",
-    "subtitle": "Bagaimana kepemilikan Anda terbagi di antara tag yang Anda buat.",
+    "subtitle": "Bagaimana aset Anda terbagi di antara tag yang Anda buat.",
     "untagged": "Tanpa tag",
     "empty": "Belum ada yang ditampilkan. Beri tag pada beberapa item untuk melihat rinciannya.",
     "col": {
       "tag": "Tag",
-      "holdings": "Kepemilikan",
+      "holdings": "Aset",
       "liabilities": "Liabilitas",
       "net": "Bersih"
     },
