@@ -2,11 +2,11 @@ import { useTranslation } from "react-i18next";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { TagBadge } from "@/components/common/TagBadge";
 import { TagItemsPanel } from "@/components/tags/TagItemsPanel";
-import { cellKey, type CurrencyBreakdown } from "@/lib/tagBreakdown";
+import { cellKey, type TagBreakdownView } from "@/lib/tagBreakdown";
 import { formatCurrency } from "@/lib/format";
 
 type Props = {
-  bd: CurrencyBreakdown;
+  bd: TagBreakdownView;
   isChecked: (key: string) => boolean;
   toggle: (key: string) => void;
   isExpanded: (key: string) => boolean;
@@ -25,7 +25,7 @@ export function TagBreakdownCards({ bd, isChecked, toggle, isExpanded, toggleExp
   const { t } = useTranslation(["tags"]);
 
   return (
-    <div className="space-y-2" data-testid={`tag-breakdown-cards-${bd.currency}`}>
+    <div className="space-y-2" data-testid="tag-breakdown-cards">
       {bd.cells.map((c) => {
         const key = cellKey(c);
         const on = isChecked(key);
@@ -72,14 +72,14 @@ export function TagBreakdownCards({ bd, isChecked, toggle, isExpanded, toggleExp
               className="mt-1 flex min-h-11 w-full items-center gap-1 text-sm text-muted-foreground"
               aria-expanded={open}
               onClick={() => toggleExpanded(key)}
-              data-testid={`tag-expand-${key}-${bd.currency}`}
+              data-testid={`tag-expand-${key}`}
             >
               <Chevron className="size-4 shrink-0" aria-hidden />
               {t(open ? "report.collapse" : "report.expand", { name: c.name })}
             </button>
             {open && (
               <div className="mt-1">
-                <TagItemsPanel tagId={c.tagId} tagName={c.name} currency={bd.currency} />
+                <TagItemsPanel tagId={c.tagId} tagName={c.name} />
               </div>
             )}
           </div>

@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/table";
 import { TagBadge } from "@/components/common/TagBadge";
 import { TagItemsPanel } from "@/components/tags/TagItemsPanel";
-import { cellKey, type CurrencyBreakdown } from "@/lib/tagBreakdown";
+import { cellKey, type TagBreakdownView } from "@/lib/tagBreakdown";
 import { formatCurrency } from "@/lib/format";
 
 type Props = {
-  bd: CurrencyBreakdown;
+  bd: TagBreakdownView;
   isChecked: (key: string) => boolean;
   toggle: (key: string) => void;
   isExpanded: (key: string) => boolean;
@@ -65,7 +65,7 @@ export function TagBreakdownTable({ bd, isChecked, toggle, isExpanded, toggleExp
                     aria-expanded={open}
                     aria-label={t(open ? "report.collapse" : "report.expand", { name: c.name })}
                     onClick={() => toggleExpanded(key)}
-                    data-testid={`tag-expand-${key}-${bd.currency}`}
+                    data-testid={`tag-expand-${key}`}
                   >
                     <Chevron className="size-4 shrink-0" aria-hidden />
                     <TagBadge name={c.name} color={c.color} />
@@ -87,7 +87,7 @@ export function TagBreakdownTable({ bd, isChecked, toggle, isExpanded, toggleExp
                 <TableRow>
                   <TableCell />
                   <TableCell colSpan={4} className="whitespace-normal">
-                    <TagItemsPanel tagId={c.tagId} tagName={c.name} currency={bd.currency} />
+                    <TagItemsPanel tagId={c.tagId} tagName={c.name} />
                   </TableCell>
                 </TableRow>
               )}

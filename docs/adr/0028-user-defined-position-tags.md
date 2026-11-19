@@ -2,7 +2,7 @@
 
 A **Tag** is a household-defined label a User can attach to any Position to group it on a
 breakdown report. Each Position carries **at most one** Tag (a nullable FK); Positions with none
-fall into an **Untagged** bucket. A new report sums Position value by Tag, per currency, so the
+fall into an **Untagged** bucket. A new report sums Position value by Tag (per currency at first; converted since #937), so the
 household can answer "how much sits behind each grouping I care about" — by bank, by goal, by risk
 bucket, by anything they choose to name. Tags are orthogonal to every existing domain field
 (notably the bank-account / time-deposit `bank_name`), carry no built-in financial meaning, and are
@@ -188,3 +188,27 @@ accepted: a position can no longer be created and then left untagged by a failed
   position write back with it.
 - **Routes:** the single-item `PUT /api/tags/assignments` is deleted. The bulk route (Tags page,
   #853) took its path: `PUT /api/tags/assignments` with `{tag_id, items: [{group, position_id}]}`.
+
+## Amendment (2026-11-18, #937): the report converts to the reporting currency
+
+"Per currency, no FX" above is replaced. The Tags page rendered one section per currency, so a
+household holding USD saw a Tags net that disagreed with the dashboard's net worth by exactly its
+foreign holdings (the gap was not a wrong number; it was a rule the hubs had already dropped in
+[[adr-0022]]'s #845 amendment).
+
+- The report is **one figure per Tag in the household reporting currency**: each Tag's slice is its
+  full value across currencies, converted with the monthly FX rate and the same missing-rate rule as
+  the dashboard ([[adr-0002]]: a Position with no rate at or before the month is **excluded and
+  warned**, never counted 1:1).
+- It is computed by the report engine, in the net-worth pass that writes the dashboard's `nw_*`
+  columns, not by a separate query. For the month it serves, **Σ holdings − Σ liabilities across
+  every Tag (Untagged included) is the dashboard's `nw_total`** by construction (INV-FINANCE-40).
+- `GET /api/tags/breakdown` returns that one month, the latest generated (the dashboard's default
+  selection): `reporting_currency`, `year_month`, `tags: [{tag_id|null, holdings, liabilities}]`,
+  `missing_fx: [{position_id, currency, tag_id|null}]` and `fx_rates_used`. Holdings (asset +
+  receivable + investment) and liabilities (a positive magnitude) stay separate per Tag, as before.
+  The `TagBreakdownByHousehold` SQL aggregate is deleted.
+- Computed per read, persisted nowhere: no migration, no `engine_version` bump. With multi-currency
+  off the engine passes native amounts through, so the report does what the dashboard does.
+- Unchanged: the unconverted per-Position list that the expand panel shows (`GET /api/tags/items`)
+  stays in each Position's native currency, as do list rows and detail pages.

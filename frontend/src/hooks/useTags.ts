@@ -3,7 +3,7 @@ import { api } from "@/api/client";
 import { toast } from "sonner";
 import i18n from "@/i18n";
 import { PLAIN_TOAST_MS, toastSaved, toastWriteError } from "@/lib/writeToast";
-import type { Tag, TagBreakdownRow, TagGroup, TaggableItem } from "@/api/types";
+import type { Tag, TagBreakdown, TagGroup, TaggableItem } from "@/api/types";
 
 export type TagWritePayload = { name: string; color: string };
 
@@ -18,7 +18,7 @@ export function useTags() {
 export function useTagBreakdown() {
   return useQuery({
     queryKey: ["tags", "breakdown"],
-    queryFn: () => api<TagBreakdownRow[]>("/api/tags/breakdown"),
+    queryFn: () => api<TagBreakdown>("/api/tags/breakdown"),
     staleTime: 10_000,
   });
 }

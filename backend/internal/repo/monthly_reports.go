@@ -480,7 +480,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 			id: a.ID, name: a.DisplayName, group: groupAsset, subtype: a.Subtype, status: a.Status,
 			entryType:     a.EntryType,
 			ownershipType: a.OwnershipType,
-			soleOwnerID:   a.SoleOwnerUserID, terminatedAt: a.TerminatedAt,
+			soleOwnerID:   a.SoleOwnerUserID, terminatedAt: a.TerminatedAt, tagID: a.TagID,
 		})
 	}
 	liabilities, err := r.q.ListLiabilitiesForReport(ctx, hid)
@@ -492,7 +492,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 			id: l.ID, name: l.DisplayName, group: groupLiability, subtype: l.Subtype, status: l.Status,
 			entryType:     l.EntryType,
 			ownershipType: l.OwnershipType,
-			soleOwnerID:   l.SoleOwnerUserID, terminatedAt: l.TerminatedAt,
+			soleOwnerID:   l.SoleOwnerUserID, terminatedAt: l.TerminatedAt, tagID: l.TagID,
 		})
 	}
 	receivables, err := r.q.ListReceivablesForReport(ctx, hid)
@@ -504,7 +504,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 			id: rc.ID, name: rc.DisplayName, group: groupReceivable, status: rc.Status,
 			entryType:     rc.EntryType,
 			ownershipType: rc.OwnershipType,
-			soleOwnerID:   rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt,
+			soleOwnerID:   rc.SoleOwnerUserID, terminatedAt: rc.TerminatedAt, tagID: rc.TagID,
 		})
 	}
 	investments, err := r.q.ListInvestmentsForReport(ctx, hid)
@@ -520,7 +520,7 @@ func (r *MonthlyReportRepo) loadEngineInput(ctx context.Context, hid uuid.UUID, 
 			status:      i.Status,
 			entryType:   i.EntryType,
 			riskProfile: i.RiskProfile,
-			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt,
+			soleOwnerID: i.SoleOwnerUserID, terminatedAt: i.TerminatedAt, tagID: i.TagID,
 			rolledFrom:        i.RolledFromInvestmentID,
 			couponDisposition: i.CouponDisposition,
 		}

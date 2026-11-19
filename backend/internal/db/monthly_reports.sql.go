@@ -152,7 +152,7 @@ func (q *Queries) ListAssetSnapshotsForReport(ctx context.Context, householdID u
 
 const listAssetsForReport = `-- name: ListAssetsForReport :many
 
-SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM assets
 WHERE household_id = $1 AND deleted_at IS NULL
 `
@@ -166,6 +166,7 @@ type ListAssetsForReportRow struct {
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	TerminatedAt    *time.Time `json:"terminated_at"`
+	TagID           *uuid.UUID `json:"tag_id"`
 }
 
 // ----- engine inputs: positions (lifecycle + ownership) -------------------
@@ -178,7 +179,8 @@ type ListAssetsForReportRow struct {
 // the per-user / Joint breakdown.
 // display_name + subtype let the report name unrecorded positions in the
 // dashboard drill-down (issue #50): the stale-position list carries enough to
-// render a label and deep-link to the position's detail page.
+// render a label and deep-link to the position's detail page. tag_id feeds the
+// Tags report's converted breakdown (#937), cut in the same net-worth pass.
 func (q *Queries) ListAssetsForReport(ctx context.Context, householdID uuid.UUID) ([]ListAssetsForReportRow, error) {
 	rows, err := q.db.Query(ctx, listAssetsForReport, householdID)
 	if err != nil {
@@ -197,6 +199,7 @@ func (q *Queries) ListAssetsForReport(ctx context.Context, householdID uuid.UUID
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.TerminatedAt,
+			&i.TagID,
 		); err != nil {
 			return nil, err
 		}
@@ -389,7 +392,7 @@ func (q *Queries) ListInvestmentTransactionsForReport(ctx context.Context, house
 const listInvestmentsForReport = `-- name: ListInvestmentsForReport :many
 SELECT i.id, i.display_name, i.subtype, i.risk_profile, i.status, i.entry_type,
        i.ownership_type, i.sole_owner_user_id, i.terminated_at,
-       i.native_currency, i.rolled_from_investment_id,
+       i.native_currency, i.rolled_from_investment_id, i.tag_id,
        td.principal AS td_principal, td.placement_date AS td_placement_date,
        bd.coupon_disposition AS coupon_disposition
 FROM investments i
@@ -410,6 +413,7 @@ type ListInvestmentsForReportRow struct {
 	TerminatedAt           *time.Time       `json:"terminated_at"`
 	NativeCurrency         string           `json:"native_currency"`
 	RolledFromInvestmentID *uuid.UUID       `json:"rolled_from_investment_id"`
+	TagID                  *uuid.UUID       `json:"tag_id"`
 	TdPrincipal            *decimal.Decimal `json:"td_principal"`
 	TdPlacementDate        *time.Time       `json:"td_placement_date"`
 	CouponDisposition      *string          `json:"coupon_disposition"`
@@ -440,6 +444,7 @@ func (q *Queries) ListInvestmentsForReport(ctx context.Context, householdID uuid
 			&i.TerminatedAt,
 			&i.NativeCurrency,
 			&i.RolledFromInvestmentID,
+			&i.TagID,
 			&i.TdPrincipal,
 			&i.TdPlacementDate,
 			&i.CouponDisposition,
@@ -455,7 +460,7 @@ func (q *Queries) ListInvestmentsForReport(ctx context.Context, householdID uuid
 }
 
 const listLiabilitiesForReport = `-- name: ListLiabilitiesForReport :many
-SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, subtype, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM liabilities
 WHERE household_id = $1 AND deleted_at IS NULL
 `
@@ -469,6 +474,7 @@ type ListLiabilitiesForReportRow struct {
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	TerminatedAt    *time.Time `json:"terminated_at"`
+	TagID           *uuid.UUID `json:"tag_id"`
 }
 
 func (q *Queries) ListLiabilitiesForReport(ctx context.Context, householdID uuid.UUID) ([]ListLiabilitiesForReportRow, error) {
@@ -489,6 +495,7 @@ func (q *Queries) ListLiabilitiesForReport(ctx context.Context, householdID uuid
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.TerminatedAt,
+			&i.TagID,
 		); err != nil {
 			return nil, err
 		}
@@ -674,7 +681,7 @@ func (q *Queries) ListReceivableSnapshotsForReport(ctx context.Context, househol
 }
 
 const listReceivablesForReport = `-- name: ListReceivablesForReport :many
-SELECT id, display_name, status, entry_type, ownership_type, sole_owner_user_id, terminated_at
+SELECT id, display_name, status, entry_type, ownership_type, sole_owner_user_id, terminated_at, tag_id
 FROM receivables
 WHERE household_id = $1 AND deleted_at IS NULL
 `
@@ -687,6 +694,7 @@ type ListReceivablesForReportRow struct {
 	OwnershipType   string     `json:"ownership_type"`
 	SoleOwnerUserID *uuid.UUID `json:"sole_owner_user_id"`
 	TerminatedAt    *time.Time `json:"terminated_at"`
+	TagID           *uuid.UUID `json:"tag_id"`
 }
 
 func (q *Queries) ListReceivablesForReport(ctx context.Context, householdID uuid.UUID) ([]ListReceivablesForReportRow, error) {
@@ -706,6 +714,7 @@ func (q *Queries) ListReceivablesForReport(ctx context.Context, householdID uuid
 			&i.OwnershipType,
 			&i.SoleOwnerUserID,
 			&i.TerminatedAt,
+			&i.TagID,
 		); err != nil {
 			return nil, err
 		}

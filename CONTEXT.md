@@ -161,8 +161,9 @@ financial meaning: "by bank", "by goal", "by risk bucket" are all Tag values the
 not a fixed taxonomy. Tags are orthogonal to every domain field (a Tag is *not* the bank-account
 `bank_name`) and assert nothing about where a Position's value is held. **Income is not taggable** —
 it is a flow event, not a Position. The Tag-breakdown report sums each Tag's Positions by
-most-recent-snapshot value (the net-worth carry-forward rule), per currency with no FX conversion,
-showing Liabilities as their own negative slice plus the Untagged bucket so proportions stay honest.
+most-recent-snapshot value (the net-worth carry-forward rule), converted into the reporting currency
+by the same engine pass as the dashboard (a Position with no rate is left out and warned), showing
+Liabilities as their own negative slice plus the Untagged bucket so proportions stay honest.
 _Avoid_: Group (reserved for the four top-level groups), Category (reserved for Income categories),
 Label.
 

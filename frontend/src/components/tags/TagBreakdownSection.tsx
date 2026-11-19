@@ -1,29 +1,28 @@
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, type ReactNode } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { InvestmentPieChart, type PieSlice } from "@/components/charts/InvestmentPieChart";
 import { TagBreakdownTable } from "@/components/tags/TagBreakdownTable";
 import { TagBreakdownCards } from "@/components/tags/TagBreakdownCards";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cellKey, type CurrencyBreakdown } from "@/lib/tagBreakdown";
+import { cellKey, type TagBreakdownView } from "@/lib/tagBreakdown";
 
 type Props = {
-  bd: CurrencyBreakdown;
+  /** Rates line + missing-rate warning, rendered above the chart. */
+  notes?: ReactNode;
+  bd: TagBreakdownView;
   isChecked: (key: string) => boolean;
   toggle: (key: string) => void;
 };
 
 // The Tag breakdown's mobile–web split point (ADR-0050 B2c, #509). TagsScreen
-// owns the query and the per-currency pie-inclusion state; this section takes
-// one currency's projection and picks which renderer mounts — stacked cards on
+// owns the query and the pie-inclusion state; this section takes the single
+// reporting-currency projection (#937) and picks which renderer mounts — stacked cards on
 // phones, the wide table on desktop (`useIsMobile`, 768px) — so only one tree is
 // ever in the DOM. The pie is shared: its legend sits to the right on desktop,
 // and is dropped entirely on phones — the breakdown cards below double as the
 // legend (each carries the tag badge + colour), so a mobile legend is just
-// clutter, and its absence lets the donut's container tighten. The per-currency
-// `tag-breakdown-<currency>` testid wraps whichever renderer is active.
-export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
-  const { t } = useTranslation(["tags"]);
+// clutter, and its absence lets the donut's container tighten. The `tag-breakdown` testid wraps whichever renderer is active.
+export function TagBreakdownSection({ notes, bd, isChecked, toggle }: Props) {
   const isMobile = useIsMobile();
   // Which rows are expanded to list their items (#853). Kept here, above the
   // table/cards split, so resizing across 768px keeps a row open.
@@ -48,6 +47,7 @@ export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
 
   const body = (
     <>
+      {notes}
       <InvestmentPieChart
         slices={slices}
         currency={bd.currency}
@@ -66,22 +66,14 @@ export function TagBreakdownSection({ bd, isChecked, toggle }: Props) {
   // own card chrome rather than nesting card-in-card (#849).
   if (isMobile) {
     return (
-      <section data-testid={`tag-breakdown-${bd.currency}`} className="space-y-3">
-        <h2 className="text-base font-semibold">
-          {t("report.currencyHeading", { currency: bd.currency })}
-        </h2>
+      <section data-testid="tag-breakdown" className="space-y-3">
         {body}
       </section>
     );
   }
 
   return (
-    <Card data-testid={`tag-breakdown-${bd.currency}`}>
-      <CardHeader>
-        <CardTitle className="text-base">
-          {t("report.currencyHeading", { currency: bd.currency })}
-        </CardTitle>
-      </CardHeader>
+    <Card data-testid="tag-breakdown">
       <CardContent className="space-y-6">{body}</CardContent>
     </Card>
   );

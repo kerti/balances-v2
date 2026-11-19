@@ -15,8 +15,8 @@ import (
 )
 
 // TestTagRepo covers the Tag lifecycle (ADR-0028): tenancy isolation on CRUD +
-// assignment, the per-currency
-// breakdown aggregate, and delete-clears-assignments. Mirrors the per-group
+// assignment, the converted breakdown (INV-FINANCE-40), and
+// delete-clears-assignments. Mirrors the per-group
 // tenancy suites.
 // covers: INV-TENANCY-12, INV-TAGS-01, INV-TAGS-02, INV-TAGS-03, INV-TAGS-04
 func TestTagRepo(t *testing.T) {
@@ -33,6 +33,7 @@ func TestTagRepo(t *testing.T) {
 
 	tr := repo.NewTagRepo(tdb.Pool)
 	rr := repo.NewReceivableRepo(tdb.Pool)
+	mr := repo.NewMonthlyReportRepo(tdb.Pool)
 
 	aliceTag, err := tr.CreateTag(aliceCtx, "BCA", "#3b82f6")
 	if err != nil {
@@ -153,44 +154,41 @@ func TestTagRepo(t *testing.T) {
 			t.Errorf("receivable tag_id = %v, want %v", got.TagID, aliceTag.ID)
 		}
 
-		rows, err := tr.TagBreakdown(aliceCtx)
+		bd, err := mr.TagBreakdown(aliceCtx)
 		if err != nil {
 			t.Fatalf("alice TagBreakdown: %v", err)
 		}
 		var tagged, untagged bool
-		recvTotal := decimal.Zero
-		for _, r := range rows {
-			if r.Grp != "receivable" {
-				continue
-			}
-			recvTotal = recvTotal.Add(r.Total)
+		total := decimal.Zero
+		for _, e := range bd.Tags {
+			total = total.Add(e.Holdings)
 			switch {
-			case r.TagID != nil && *r.TagID == aliceTag.ID:
+			case e.TagID != nil && *e.TagID == aliceTag.ID:
 				tagged = true
-				if !r.Total.Equal(decimal.NewFromInt(50_000_000)) {
-					t.Errorf("tagged breakdown total = %s, want 50000000", r.Total)
+				if !e.Holdings.Equal(decimal.NewFromInt(50_000_000)) {
+					t.Errorf("tagged holdings = %s, want 50000000", e.Holdings)
 				}
-			case r.TagID == nil:
+			case e.TagID == nil:
 				untagged = true
-				if !r.Total.Equal(decimal.NewFromInt(20_000_000)) {
-					t.Errorf("untagged breakdown total = %s, want 20000000", r.Total)
+				if !e.Holdings.Equal(decimal.NewFromInt(20_000_000)) {
+					t.Errorf("untagged holdings = %s, want 20000000", e.Holdings)
 				}
 			}
 		}
 		if !tagged {
-			t.Errorf("alice breakdown missing the tagged receivable cell: %+v", rows)
+			t.Errorf("alice breakdown missing the tagged receivable entry: %+v", bd.Tags)
 		}
 		if !untagged {
-			t.Errorf("alice breakdown missing the Untagged bucket: %+v", rows)
+			t.Errorf("alice breakdown missing the Untagged bucket: %+v", bd.Tags)
 		}
-		// Reconciliation: tagged + Untagged cover every receivable, so the cells
+		// Reconciliation: tagged + Untagged cover every receivable, so the entries
 		// sum back to the household's receivable total (INV-FINANCE-01 cut by tag).
-		if !recvTotal.Equal(decimal.NewFromInt(70_000_000)) {
-			t.Errorf("receivable cells sum = %s, want 70000000 (50M tagged + 20M untagged)", recvTotal)
+		if !total.Equal(decimal.NewFromInt(70_000_000)) {
+			t.Errorf("receivable entries sum = %s, want 70000000 (50M tagged + 20M untagged)", total)
 		}
 
-		if bobRows, err := tr.TagBreakdown(bobCtx); err != nil || len(bobRows) != 0 {
-			t.Errorf("bob TagBreakdown: got (%+v, %v); want ([], nil)", bobRows, err)
+		if bobBd, err := mr.TagBreakdown(bobCtx); err != nil || len(bobBd.Tags) != 0 {
+			t.Errorf("bob TagBreakdown: got (%+v, %v); want no tags", bobBd, err)
 		}
 	})
 
@@ -206,13 +204,13 @@ func TestTagRepo(t *testing.T) {
 			t.Errorf("receivable tag_id = %v after tag delete; want nil", got.TagID)
 		}
 		// The receivable now reports under the Untagged bucket (nil tag_id).
-		rows, err := tr.TagBreakdown(aliceCtx)
+		bd, err := mr.TagBreakdown(aliceCtx)
 		if err != nil {
 			t.Fatalf("TagBreakdown after delete: %v", err)
 		}
-		for _, r := range rows {
-			if r.TagID != nil {
-				t.Errorf("breakdown still has a tagged cell after delete: %+v", r)
+		for _, e := range bd.Tags {
+			if e.TagID != nil {
+				t.Errorf("breakdown still has a tagged entry after delete: %+v", e)
 			}
 		}
 		// And the tag is gone from the list.

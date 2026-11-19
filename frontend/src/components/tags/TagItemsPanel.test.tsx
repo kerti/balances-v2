@@ -12,7 +12,7 @@ import { server } from "@/test/server";
 import { raisedToasts } from "@/test/sonnerMock";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { TagsScreen } from "@/components/screens/TagsScreen";
-import type { Tag, TaggableItem, TagBreakdownRow } from "@/api/types";
+import type { Tag, TaggableItem, TagBreakdown } from "@/api/types";
 
 vi.mock("sonner", async () => (await import("@/test/sonnerMock")).sonnerMock());
 
@@ -43,11 +43,17 @@ function item(over: Partial<TaggableItem> & Pick<TaggableItem, "id" | "name">): 
 }
 
 const tags = [tag("t-ret", "Retirement"), tag("t-trv", "Travel")];
-const rows: TagBreakdownRow[] = [
-  { tag_id: "t-ret", group: "investment", currency: "IDR", total: "5000" },
-  { tag_id: "t-trv", group: "asset", currency: "IDR", total: "2000" },
-  { tag_id: null, group: "receivable", currency: "IDR", total: "300" },
-];
+const rows: TagBreakdown = {
+  reporting_currency: "IDR",
+  year_month: "2026-11-01T00:00:00Z",
+  tags: [
+    { tag_id: "t-ret", holdings: "5000", liabilities: "0" },
+    { tag_id: "t-trv", holdings: "2000", liabilities: "0" },
+    { tag_id: null, holdings: "300", liabilities: "0" },
+  ],
+  missing_fx: [],
+  fx_rates_used: {},
+};
 
 function seed() {
   return [
@@ -114,9 +120,9 @@ afterEach(() => {
 describe("Tags page item lists", () => {
   it("expanding a tag lists exactly its items", async () => {
     setup();
-    await userEvent.click(await screen.findByTestId("tag-expand-t-ret-IDR"));
+    await userEvent.click(await screen.findByTestId("tag-expand-t-ret"));
 
-    const panel = await screen.findByTestId("tag-items-t-ret-IDR");
+    const panel = await screen.findByTestId("tag-items-t-ret");
     const names = within(panel)
       .getAllByTestId("tag-item-link")
       .map((a) => a.textContent);
@@ -131,8 +137,8 @@ describe("Tags page item lists", () => {
 
   it("remove x untags one item and offers Undo", async () => {
     const { puts } = setup();
-    await userEvent.click(await screen.findByTestId("tag-expand-t-ret-IDR"));
-    const panel = await screen.findByTestId("tag-items-t-ret-IDR");
+    await userEvent.click(await screen.findByTestId("tag-expand-t-ret"));
+    const panel = await screen.findByTestId("tag-items-t-ret");
     await userEvent.click(within(panel).getAllByTestId("tag-item-remove")[0]);
 
     await waitFor(() =>
@@ -165,7 +171,7 @@ describe("Tags page item lists", () => {
   // covers: INV-TAGS-06
   it("adding 5 items (2 from another tag) moves them in one save and refreshes the breakdown", async () => {
     const { puts, fetches } = setup();
-    await userEvent.click(await screen.findByTestId("tag-expand-t-ret-IDR"));
+    await userEvent.click(await screen.findByTestId("tag-expand-t-ret"));
     await userEvent.click(await screen.findByTestId("tag-items-add"));
 
     const dialog = await screen.findByRole("dialog");
@@ -201,7 +207,7 @@ describe("Tags page item lists", () => {
 
   it("saving with nothing selected shows an inline error and writes nothing", async () => {
     const { puts } = setup();
-    await userEvent.click(await screen.findByTestId("tag-expand-t-ret-IDR"));
+    await userEvent.click(await screen.findByTestId("tag-expand-t-ret"));
     await userEvent.click(await screen.findByTestId("tag-items-add"));
     await userEvent.click(await screen.findByTestId("add-items-save"));
     expect(await screen.findByTestId("field-error-pick_items")).toHaveTextContent(
@@ -212,8 +218,8 @@ describe("Tags page item lists", () => {
 
   it("Untagged lists untagged items and Add to a tag asks for the tag", async () => {
     const { puts } = setup();
-    await userEvent.click(await screen.findByTestId("tag-expand-untagged-IDR"));
-    const panel = await screen.findByTestId("tag-items-untagged-IDR");
+    await userEvent.click(await screen.findByTestId("tag-expand-untagged"));
+    const panel = await screen.findByTestId("tag-items-untagged");
     expect(
       within(panel)
         .getAllByTestId("tag-item-link")
@@ -241,10 +247,10 @@ describe("Tags page item lists", () => {
   it("mobile: expand toggle, links and remove clear the 44px tap floor", async () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 500 });
     setup();
-    const toggle = await screen.findByTestId("tag-expand-t-ret-IDR");
+    const toggle = await screen.findByTestId("tag-expand-t-ret");
     expect(toggle).toHaveClass("min-h-11");
     await userEvent.click(toggle);
-    const panel = await screen.findByTestId("tag-items-t-ret-IDR");
+    const panel = await screen.findByTestId("tag-items-t-ret");
     expect(within(panel).getAllByTestId("tag-item-remove")[0]).toHaveClass("size-11");
     expect(within(panel).getAllByTestId("tag-item-link")[0]).toHaveClass("min-h-11");
   });
