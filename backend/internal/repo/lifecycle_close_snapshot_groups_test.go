@@ -50,7 +50,7 @@ type closeSnapshotGroup struct {
 // overwrote the user's row in place (#25), so un-terminate left the month empty
 // rather than restoring a value.
 //
-// covers: INV-LIFECYCLE-03, INV-LIFECYCLE-04
+// covers: INV-LIFECYCLE-03, INV-LIFECYCLE-04, INV-SNAPSHOTS-11
 func TestPositionLifecycle_CloseSnapshotAllGroups(t *testing.T) {
 	tdb := testutil.NewTestDB(t)
 	q := db.New(tdb.Pool)
@@ -300,7 +300,74 @@ func TestPositionLifecycle_CloseSnapshotAllGroups(t *testing.T) {
 				t.Fatalf("archived rows after collision: got %d, want 3", n)
 			}
 		})
+
+		// #912: an import that touches the close month replaces the close row
+		// (ADR-0058 §1), and the replacement must inherit the close row's
+		// `supersedes` link, otherwise un-terminate has nothing to hand back.
+		t.Run(g.name+" import over the close row keeps the link to the displaced snapshot", func(t *testing.T) {
+			posID := g.create(t)
+			g.addSnap(t, posID, jan, 20)
+			g.addSnap(t, posID, mar, 25)
+			if err := g.lifecycle(posID, repo.LifecycleParams{
+				Status: g.terminal, TerminatedAt: &termDate, TerminationNote: &note,
+			}); err != nil {
+				t.Fatalf("terminate: %v", err)
+			}
+			displaced := rawSupersedes(t, tdb.Pool, g.table, g.fkCol, posID, mar)
+			if displaced == nil {
+				t.Fatal("setup: the close row should name the March 25 it displaced")
+			}
+
+			// A re-import of the close month (0, no statement date) differs from
+			// the live close row (0, dated the 15th), so it is replaced.
+			g.addSnap(t, posID, mar, 0)
+
+			assertSnapshots(t, g.list(t, posID), map[time.Time]int64{jan: 20, mar: 0})
+			if n := countArchivedSnapshots(t, tdb.Pool, g.table, g.fkCol, posID); n != 2 {
+				t.Fatalf("archived rows after the import: got %d, want 2 (the March 25 and the replaced close)", n)
+			}
+			got := rawSupersedes(t, tdb.Pool, g.table, g.fkCol, posID, mar)
+			if got == nil || *got != *displaced {
+				t.Fatalf("replacement close row supersedes = %v, want %v", got, displaced)
+			}
+
+			if err := g.lifecycle(posID, repo.LifecycleParams{Status: repo.StatusActive}); err != nil {
+				t.Fatalf("un-terminate: %v", err)
+			}
+			assertSnapshots(t, g.list(t, posID), map[time.Time]int64{jan: 20, mar: 25})
+		})
+
+		// A value the user records over the close row wins over the archive
+		// (INV-LIFECYCLE-04) and is an ordinary snapshot: it names nothing, so it
+		// is not mistaken for a close row (INV-SNAPSHOTS-15).
+		t.Run(g.name+" import of a non-zero value over the close row stays a plain snapshot", func(t *testing.T) {
+			posID := g.create(t)
+			g.addSnap(t, posID, mar, 25)
+			if err := g.lifecycle(posID, repo.LifecycleParams{
+				Status: g.terminal, TerminatedAt: &termDate, TerminationNote: &note,
+			}); err != nil {
+				t.Fatalf("terminate: %v", err)
+			}
+			g.addSnap(t, posID, mar, 30)
+			if got := rawSupersedes(t, tdb.Pool, g.table, g.fkCol, posID, mar); got != nil {
+				t.Fatalf("a user-recorded value must not carry the close link, got supersedes %v", got)
+			}
+		})
 	}
+}
+
+// rawSupersedes reads the live row's `supersedes` straight from the table; no
+// repo list returns it for all four groups.
+func rawSupersedes(t *testing.T, pool *pgxpool.Pool, table, fkCol string, posID uuid.UUID, month time.Time) *uuid.UUID {
+	t.Helper()
+	var s *uuid.UUID
+	err := pool.QueryRow(context.Background(),
+		"SELECT supersedes FROM "+table+" WHERE "+fkCol+" = $1 AND year_month = $2 AND deleted_at IS NULL",
+		posID, month).Scan(&s)
+	if err != nil {
+		t.Fatalf("read supersedes from %s: %v", table, err)
+	}
+	return s
 }
 
 // assertSnapshots pins the exact set of live snapshots: month → amount.

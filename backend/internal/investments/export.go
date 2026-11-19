@@ -147,6 +147,7 @@ func writeInvestmentWorkbook(
 		PositionName:    inv.DisplayName,
 		DefaultCurrency: inv.NativeCurrency,
 		Shape:           shapeForSubtype(inv.Subtype),
+		AccruedDerived:  accruedDerivedForSubtype(inv.Subtype),
 		Detail:          detail,
 		Transactions:    transactionsToExport(common.Transactions),
 	}, investmentSnapshotsToExport(common.Snapshots))
