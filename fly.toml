@@ -22,10 +22,12 @@ primary_region = "sin"
   LOG_FORMAT = "json"
   # serve the SPA baked into the image (single-origin, ADR-0030)
   WEB_DIR = "/app/web"
-  # Fly's edge is the sole path to the app, and it sets Fly-Client-IP itself
-  # (overwriting anything the client sent) — a trustworthy source for the
-  # login/reset rate limiter's real-client key (#363).
-  TRUST_PROXY_HEADERS = "true"
+  # The login/reset rate limiter's real-client key (#363, #755). `fly` trusts
+  # Fly's private range (172.16.0.0/12) as the peer and reads Fly-Client-IP only
+  # from there — Fly's edge sets it itself. Fly-Client-IP is believed under no
+  # other setting, and X-Forwarded-For is not consulted: Fly appends its own
+  # ingress address after the visitor, so the rightmost hop is not the client.
+  TRUSTED_PROXIES = "fly"
 
 [http_service]
   internal_port = 8080

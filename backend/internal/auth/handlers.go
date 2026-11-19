@@ -19,6 +19,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/clientip"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/email"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
@@ -86,32 +87,32 @@ type Config struct {
 	BackendURL   string
 	EmailFrom    string
 	Mailer       email.Mailer
-	// TrustProxyHeaders mirrors config.Config.TrustProxyHeaders (#363) — see
-	// there for the full rationale. Read by clientIP to decide whether a
-	// fronting proxy's header or RemoteAddr keys the login/reset limiter.
-	TrustProxyHeaders bool
+	// TrustedProxies mirrors config.Config.TrustedProxies (#363, #755) — see
+	// there for the full rationale. Read by clientIP to decide which address
+	// keys the login/reset limiter; the zero value trusts nothing.
+	TrustedProxies clientip.Trusted
 }
 
 type Handlers struct {
-	q                 *db.Queries
-	pool              *pgxpool.Pool
-	googleOAuth       googleOAuthClient
-	googleEnabled     bool
-	localEnabled      bool
-	emailEnabled      bool
-	foundingDisabled  bool
-	demoMode          bool
-	demoEmail         string
-	demoPassword      string
-	limiter           *loginLimiter
-	mailer            email.Mailer
-	validate          *validator.Validate
-	sessionTTL        time.Duration
-	cookieSecure      bool
-	frontendURL       string
-	backendURL        string
-	emailFrom         string
-	trustProxyHeaders bool
+	q                *db.Queries
+	pool             *pgxpool.Pool
+	googleOAuth      googleOAuthClient
+	googleEnabled    bool
+	localEnabled     bool
+	emailEnabled     bool
+	foundingDisabled bool
+	demoMode         bool
+	demoEmail        string
+	demoPassword     string
+	limiter          *loginLimiter
+	mailer           email.Mailer
+	validate         *validator.Validate
+	sessionTTL       time.Duration
+	cookieSecure     bool
+	frontendURL      string
+	backendURL       string
+	emailFrom        string
+	trustedProxies   clientip.Trusted
 	// dispatch runs a background task. In production it spawns a goroutine; the
 	// reset-request path uses it to send the email *off* the request goroutine so
 	// the SMTP round-trip never lands in the response timing (the no-enumeration
@@ -156,27 +157,27 @@ func New(ctx context.Context, q *db.Queries, cfg Config, opts ...Option) (*Handl
 		return nil, errors.New("auth: backend url is required")
 	}
 	h := &Handlers{
-		q:                 q,
-		pool:              cfg.Pool,
-		googleOAuth:       g,
-		googleEnabled:     cfg.GoogleEnabled,
-		localEnabled:      cfg.LocalEnabled,
-		emailEnabled:      cfg.EmailEnabled,
-		foundingDisabled:  cfg.FoundingDisabled,
-		demoMode:          cfg.DemoMode,
-		demoEmail:         cfg.DemoEmail,
-		demoPassword:      cfg.DemoPassword,
-		limiter:           newLoginLimiter(),
-		mailer:            cfg.Mailer,
-		validate:          httperr.NewValidator(),
-		sessionTTL:        cfg.SessionTTL,
-		cookieSecure:      cfg.CookieSecure,
-		frontendURL:       cfg.FrontendURL,
-		backendURL:        cfg.BackendURL,
-		emailFrom:         cfg.EmailFrom,
-		trustProxyHeaders: cfg.TrustProxyHeaders,
-		dispatch:          func(fn func()) { go fn() },
-		now:               time.Now,
+		q:                q,
+		pool:             cfg.Pool,
+		googleOAuth:      g,
+		googleEnabled:    cfg.GoogleEnabled,
+		localEnabled:     cfg.LocalEnabled,
+		emailEnabled:     cfg.EmailEnabled,
+		foundingDisabled: cfg.FoundingDisabled,
+		demoMode:         cfg.DemoMode,
+		demoEmail:        cfg.DemoEmail,
+		demoPassword:     cfg.DemoPassword,
+		limiter:          newLoginLimiter(),
+		mailer:           cfg.Mailer,
+		validate:         httperr.NewValidator(),
+		sessionTTL:       cfg.SessionTTL,
+		cookieSecure:     cfg.CookieSecure,
+		frontendURL:      cfg.FrontendURL,
+		backendURL:       cfg.BackendURL,
+		emailFrom:        cfg.EmailFrom,
+		trustedProxies:   cfg.TrustedProxies,
+		dispatch:         func(fn func()) { go fn() },
+		now:              time.Now,
 	}
 	for _, opt := range opts {
 		opt(h)

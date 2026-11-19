@@ -100,12 +100,12 @@ func (s *Server) buildRouter() chi.Router {
 	r.Use(middleware.RequestID)
 	// No middleware.RealIP: it trusts X-Forwarded-For / X-Real-IP unconditionally,
 	// which any client can spoof, and chi deprecated it for this reason
-	// (GHSA-3fxj-6jh8-hvhx). A bare self-host (docker-compose.yml, no proxy) has
-	// no trusted source for those headers at all. Where a trusted proxy IS known
-	// to front every request (Fly, or an operator's own reverse proxy), the
-	// TRUST_PROXY_HEADERS-gated extractor in auth.Handlers.clientIP (#363) is the
-	// narrow exception — scoped to the login/reset rate-limit key only, not a
-	// blanket RealIP swap here.
+	// (GHSA-3fxj-6jh8-hvhx). A bare self-host has no trusted source for those
+	// headers at all. Where a trusted proxy IS known to front every request (Fly,
+	// or an operator's own reverse proxy), the TRUSTED_PROXIES-gated extractor in
+	// auth.Handlers.clientIP (#363, #755) is the narrow exception — it believes
+	// the headers only from a peer inside that list, and is scoped to the
+	// login/reset rate-limit key only, not a blanket RealIP swap here.
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(securityHeaders(s.cfg.CookieSecure))

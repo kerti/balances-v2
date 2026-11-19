@@ -2,6 +2,7 @@ package config_test
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -19,7 +20,7 @@ var configEnvKeys = []string{
 	"AUTH_GOOGLE_ENABLED", "AUTH_LOCAL_ENABLED", "FOUNDING_DISABLED",
 	"DEMO_MODE", "DEMO_RESET_TOKEN", "DEMO_EMAIL", "DEMO_PASSWORD",
 	"APP_URL", "OAUTH_REDIRECT_URL", "FRONTEND_URL", "BACKEND_URL",
-	"SESSION_TTL", "COOKIE_SECURE", "TRUST_PROXY_HEADERS",
+	"SESSION_TTL", "COOKIE_SECURE", "TRUST_PROXY_HEADERS", "TRUSTED_PROXIES",
 	"HTTP_READ_TIMEOUT", "HTTP_WRITE_TIMEOUT", "HTTP_IDLE_TIMEOUT",
 	"EMAIL_ENABLED",
 	"SMTP_HOST", "SMTP_PORT", "SMTP_USERNAME", "SMTP_PASSWORD",
@@ -79,10 +80,10 @@ func TestLoad_Defaults(t *testing.T) {
 	if cfg.CookieSecure {
 		t.Errorf("CookieSecure = true, want default false")
 	}
-	// Off by default (#363): RemoteAddr is the only trustworthy source unless an
-	// operator confirms a trusted proxy genuinely fronts every request.
-	if cfg.TrustProxyHeaders {
-		t.Errorf("TrustProxyHeaders = true, want default false")
+	// Trust nothing by default (#363, #755): the TCP peer is the only trustworthy
+	// source unless an operator names the proxies that front every request.
+	if !cfg.TrustedProxies.Empty() {
+		t.Errorf("TrustedProxies is not empty by default, want trust-nothing")
 	}
 	if cfg.SMTPPort != 1025 {
 		t.Errorf("SMTPPort = %d, want default 1025", cfg.SMTPPort)
@@ -310,20 +311,71 @@ func TestLoad_EmailDisabled(t *testing.T) {
 	}
 }
 
-// TestLoad_TrustProxyHeaders: an operator confirming a trusted proxy fronts
-// every request (Fly, or their own reverse proxy) flips the client-IP
-// extractor auth.Handlers.clientIP consults (#363).
-func TestLoad_TrustProxyHeaders(t *testing.T) {
-	clearConfigEnv(t)
-	t.Setenv("DATABASE_URL", "postgres://localhost/db")
-	t.Setenv("TRUST_PROXY_HEADERS", "true")
-
-	cfg, err := config.Load()
-	if err != nil {
-		t.Fatalf("Load: %v", err)
+// TestLoad_TrustedProxies: the operator names the proxies whose forwarding
+// headers the limiter may believe (#755); a bad entry fails the boot naming it.
+//
+// covers: INV-AUTH-34
+func TestLoad_TrustedProxies(t *testing.T) {
+	cases := []struct {
+		name    string
+		value   string
+		wantErr string // substring; "" = must load
+		wantFly bool
+		isEmpty bool
+	}{
+		{"CIDR list", "172.16.0.0/12, 10.0.0.0/8", "", false, false},
+		{"bare IP", "10.1.2.3", "", false, false},
+		{"fly preset", "fly", "", true, false},
+		{"blank is trust-nothing", "", "", false, true},
+		{"bad CIDR names the entry", "10.0.0.0/8,10.0.0.0/99", "10.0.0.0/99", false, false},
+		{"garbage names the entry", "proxy.example.com", "proxy.example.com", false, false},
 	}
-	if !cfg.TrustProxyHeaders {
-		t.Error("TrustProxyHeaders = false, want true")
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			clearConfigEnv(t)
+			t.Setenv("DATABASE_URL", "postgres://localhost/db")
+			t.Setenv("TRUSTED_PROXIES", tc.value)
+
+			cfg, err := config.Load()
+			if tc.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+					t.Fatalf("Load error = %v, want one naming %q", err, tc.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Load: %v", err)
+			}
+			if cfg.TrustedProxies.IsFly() != tc.wantFly || cfg.TrustedProxies.Empty() != tc.isEmpty {
+				t.Errorf("fly=%v empty=%v, want fly=%v empty=%v", cfg.TrustedProxies.IsFly(), cfg.TrustedProxies.Empty(), tc.wantFly, tc.isEmpty)
+			}
+		})
+	}
+}
+
+// TestLoad_RefusesTrustProxyHeaders: the removed boolean must stop the boot
+// whatever its value (even "false" or empty) — an upgrade that silently kept a
+// forgeable limiter is the failure this guards (#755). The message has to tell
+// the operator what to set instead.
+//
+// covers: INV-AUTH-34
+func TestLoad_RefusesTrustProxyHeaders(t *testing.T) {
+	for _, v := range []string{"true", "false", "1", ""} {
+		t.Run("value="+v, func(t *testing.T) {
+			clearConfigEnv(t)
+			t.Setenv("DATABASE_URL", "postgres://localhost/db")
+			t.Setenv("TRUST_PROXY_HEADERS", v)
+
+			cfg, err := config.Load()
+			if err == nil {
+				t.Fatalf("Load succeeded with TRUST_PROXY_HEADERS=%q (cfg=%+v), want an error", v, cfg)
+			}
+			for _, want := range []string{"TRUST_PROXY_HEADERS", "TRUSTED_PROXIES", "fly"} {
+				if !strings.Contains(err.Error(), want) {
+					t.Errorf("error %q should mention %q", err, want)
+				}
+			}
+		})
 	}
 }
 

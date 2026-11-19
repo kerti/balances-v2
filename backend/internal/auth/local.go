@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log/slog"
-	"net"
 	"net/http"
 	"net/mail"
 	"strconv"
@@ -235,38 +234,12 @@ func weakPasswordReason(err error) string {
 	return "min"
 }
 
-// clientIP extracts the address that keys the login/reset limiter (#363).
-// RemoteAddr is the only trustworthy source by default — it's the real
-// transport peer and, unlike a header, cannot be forged by the caller — which
-// is correct for a bare self-host with no proxy in front (see the RealIP note
-// in httpserver). But when trustProxyHeaders is set (the operator has
-// confirmed every request genuinely arrives via a trusted proxy — Fly's edge,
-// or their own reverse proxy per SELF-HOSTING.md "bring your own proxy"),
-// RemoteAddr is the *proxy's* address, not the client's, and every real client
-// collapses onto that one key: one attacker's failed logins would then
-// rate-limit every other household member behind the same proxy. In that mode
-// we trust Fly's dedicated `Fly-Client-IP` header first (Fly's edge sets it
-// itself, overwriting anything the client sent), then fall back to the
-// rightmost hop of `X-Forwarded-For` (the immediate proxy's own append —
-// earlier hops may be attacker-supplied on a multi-hop chain, but the last one
-// is written by the proxy the operator just told us to trust).
+// clientIP extracts the address that keys the login/reset limiter (#363,
+// #755). The decision lives in internal/clientip: forwarding headers count only
+// when the TCP peer is inside TRUSTED_PROXIES, so a caller who reaches the app
+// directly cannot choose their own key.
 func (h *Handlers) clientIP(r *http.Request) string {
-	if h.trustProxyHeaders {
-		if ip := strings.TrimSpace(r.Header.Get("Fly-Client-IP")); ip != "" {
-			return ip
-		}
-		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			parts := strings.Split(xff, ",")
-			if ip := strings.TrimSpace(parts[len(parts)-1]); ip != "" {
-				return ip
-			}
-		}
-	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
+	return h.trustedProxies.ClientIP(r)
 }
 
 // beginLocalOnboarding records a credential-bearing, google_sub-less handshake

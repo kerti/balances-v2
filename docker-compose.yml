@@ -47,8 +47,16 @@ services:
       # Read at runtime (#354), not baked into the image — the same published
       # image also runs unmodified on Fly, where this is set per environment.
       DEPLOY_ENV: self-hosted
+      # Peers whose X-Forwarded-For the login/reset rate limiter believes (#755):
+      # the Docker private ranges, so the bundled Caddy — and a proxy on this
+      # host, which reaches the published port through the Docker gateway — just
+      # work. Override in .env (it replaces this list, it does not add to it).
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-172.16.0.0/12,10.0.0.0/8,192.168.0.0/16}
     ports:
-      - "${APP_PORT:-8080}:8080"
+      # Loopback only (#755): the app has no TLS and no auth in front of the
+      # limiter, so it must not be reachable except through a proxy on this host
+      # (the bundled Caddy reaches it over the compose network, not this port).
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy

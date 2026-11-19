@@ -97,6 +97,12 @@ all migrations, then starts the app. Open <http://localhost:8080>.
 For the OAuth client, the redirect URI is `http://localhost:8080/api/auth/google/callback` (Google
 permits `http` **only** for `localhost`).
 
+The compose file publishes the app on `127.0.0.1` only (`APP_PORT`, default `8080`), so even on a
+machine with open network interfaces nothing else can reach it directly. No proxy is in front, so no
+forwarding header is present: the login rate limiter keys every request on the address Docker
+connects from (the bridge gateway, which `TRUSTED_PROXIES`'s preset covers) — all your browsers on this
+machine share one key. That is fine for one person trying it out.
+
 > A localhost trial is not reachable from other machines and has no HTTPS. Do not use it for real
 > data shared with your household — use one of the two topologies below.
 
@@ -110,22 +116,39 @@ fully supported — it is simply the bundled proxy profile left off.
 ```ini
 APP_URL=https://balances.example.com
 COOKIE_SECURE=true
-TRUST_PROXY_HEADERS=true
 ```
 
 ```sh
 docker compose up -d
 ```
 
-The app is published on `APP_PORT` (default `8080`). Point your proxy at `http://<host>:8080` and have
-it serve `https://balances.example.com`. Forward the `Host`, `X-Forwarded-Proto`, and
-`X-Forwarded-For` headers as usual.
+The app is published on `127.0.0.1:APP_PORT` (default `8080`) — loopback only. Run your proxy on the
+**same machine**, point it at `http://127.0.0.1:8080`, and have it serve `https://balances.example.com`.
+Forward the `Host`, `X-Forwarded-Proto`, and `X-Forwarded-For` headers as usual. A tunnel client
+(`cloudflared`, `tailscale funnel`, `ngrok`) running on the same machine is exactly this case.
 
-`TRUST_PROXY_HEADERS=true` matters here too: with it left off, the login/reset rate limiter sees every
-household member as arriving from your proxy's one address, so a single attacker's failed logins would
-throttle everyone behind it. Only set this when a proxy you control genuinely sits in front of every
-request — an app reachable directly (no proxy) must leave it `false`, or anyone could spoof
-`X-Forwarded-For` to dodge the limiter entirely.
+**Rate limiting and `TRUSTED_PROXIES`.** The login/reset rate limiter keys on the client's address.
+It believes `X-Forwarded-For` **only when the connection comes from a proxy you listed** in
+`TRUSTED_PROXIES`; from anyone else the header is ignored, so nobody can dodge the limiter by forging
+it. The compose file presets `TRUSTED_PROXIES` to the Docker private ranges
+(`172.16.0.0/12,10.0.0.0/8,192.168.0.0/16`). A proxy on the same machine reaches the published port
+through Docker's gateway, which is inside that range, so **a same-host proxy needs no setting at all**.
+
+Two cases need you to act:
+
+- **Your proxy runs on another machine** (a separate VM or host). Loopback is not reachable from it, so
+  change the `ports:` line in `docker-compose.yml` (or a `docker-compose.override.yml`) to publish on an
+  address that machine can reach, and set `TRUSTED_PROXIES` in `.env` to that proxy's address
+  (`TRUSTED_PROXIES=192.168.1.10`, or a CIDR). It replaces the preset, so list every proxy that is in
+  the chain (see below). Keep the port off the open internet — anything that can connect to it directly
+  and is *inside* a trusted range can choose its own rate-limit key.
+- **Two proxies in a row** (for example Cloudflare, then your own proxy): list the inner proxy's range
+  too. The limiter walks `X-Forwarded-For` from the right, skips every trusted hop, and keys on the
+  first address that is not one of yours — the real visitor.
+
+Leave `TRUSTED_PROXIES` empty and the limiter keys on whoever connected, which behind a proxy means
+every household member shares your proxy's one key (one attacker's failed logins would throttle
+everyone).
 
 `COOKIE_SECURE=true` is required: the session cookie is then marked `Secure` and is only sent over
 HTTPS, which your proxy now provides. (Leaving it `false` behind HTTPS is harmless; setting it `true`
@@ -154,7 +177,6 @@ Prerequisites:
 APP_URL=https://balances.example.com
 COOKIE_SECURE=true
 CADDY_DOMAIN=balances.example.com
-TRUST_PROXY_HEADERS=true
 ```
 
 ```sh
@@ -165,9 +187,12 @@ docker compose --profile proxy up -d
 certificate on first boot (a few seconds) and proxies to the app. Issued certificates persist in the
 `caddy_data` volume, so restarts do not re-request them (which matters — Let's Encrypt rate-limits).
 
-`TRUST_PROXY_HEADERS=true` is needed here for the same reason as [option 2](#2-bring-your-own-proxy):
-Caddy is the only path to the app, and it sets `X-Forwarded-For` itself — a trustworthy source for the
-login/reset rate limiter's real-client key.
+Nothing to set for rate limiting: the compose file's `TRUSTED_PROXIES` preset already covers Caddy (it
+reaches the app over the compose network, inside the Docker private ranges), so the login/reset rate
+limiter keys on each visitor's real address from the `X-Forwarded-For` Caddy writes. The app's own port
+is bound to `127.0.0.1`, so the only way in from the network is through Caddy. See
+[`TRUSTED_PROXIES`](#2-bring-your-own-proxy) under option 2 if you also put something (Cloudflare, say)
+in front of Caddy.
 
 The OAuth redirect URI is `https://balances.example.com/api/auth/google/callback`.
 
@@ -341,6 +366,13 @@ upgrade itself.
 > Always read the [release notes](https://github.com/kerti/balances-v2/releases) for the version
 > you're moving to. A **major** bump means there is something there you need to act on.
 
+> **Upgrading from a release that used `TRUST_PROXY_HEADERS`?** That variable is gone, and the server
+> **refuses to start** while it is set (a one-line error says what to use instead). Delete the line
+> from `.env`. With the bundled Caddy, or a proxy on the same machine, nothing replaces it — the compose
+> file's `TRUSTED_PROXIES` default covers both. For a proxy on another machine, set `TRUSTED_PROXIES`
+> to its address as described under [option 2](#2-bring-your-own-proxy). The app port is also now
+> published on `127.0.0.1` only. On Fly, `fly.toml` sets `TRUSTED_PROXIES = "fly"`.
+
 ## Backup and restore
 
 There are **two** distinct kinds of backup; don't confuse them:
@@ -470,7 +502,7 @@ actually touch:
 | `APP_URL` | `http://localhost:8080` | The one origin the app is reached on. Derives frontend/backend URLs and the OAuth callback. |
 | `COOKIE_SECURE` | `false` | `true` once HTTPS is in front; `false` only for an http localhost trial. |
 | `CADDY_DOMAIN` | _(empty)_ | Domain for the bundled Caddy proxy profile. Leave empty unless using `--profile proxy`. |
-| `TRUST_PROXY_HEADERS` | `false` | `true` once a proxy you control (your own, or bundled Caddy) fronts every request — the login/reset rate limiter then keys on the proxy's forwarded client IP instead of its own address. Leave `false` for a no-proxy localhost trial. |
+| `TRUSTED_PROXIES` | Docker private ranges (set by `docker-compose.yml`) | Comma-separated CIDRs (or bare IPs) of the proxies whose `X-Forwarded-For` the login/reset rate limiter believes; anything else is keyed on its own address. Overriding it **replaces** the preset. Empty = trust nothing. The literal `fly` is for Fly.io only. Replaces `TRUST_PROXY_HEADERS`. |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | `balances` | Bundled database credentials. **Change the password** beyond a trial. `DATABASE_URL` is assembled from these — you do not set it. |
 | `AUTH_GOOGLE_ENABLED` | `true` | Google sign-in. Set `false` to run without a Google OAuth client. |
 | `AUTH_LOCAL_ENABLED` | `false` | `true` to enable local email + password accounts. The server refuses to start if both providers are disabled. |

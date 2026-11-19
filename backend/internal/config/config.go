@@ -1,11 +1,15 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/caarlos0/env/v11"
+
+	"github.com/kerti/balances-v2/backend/internal/clientip"
 )
 
 // Split-origin dev defaults: Vite serves the SPA on :5173 and proxies /api to
@@ -96,19 +100,16 @@ type Config struct {
 	SessionTTL       time.Duration `env:"SESSION_TTL" envDefault:"720h"`
 	CookieSecure     bool          `env:"COOKIE_SECURE" envDefault:"false"`
 
-	// TrustProxyHeaders opts the login/reset rate limiter's client-IP extraction
-	// into trusting a fronting proxy's header — Fly's `Fly-Client-IP`, or
-	// otherwise the rightmost `X-Forwarded-For` hop — instead of RemoteAddr
-	// (#363). Default false: RemoteAddr is always the genuine transport peer,
-	// which is correct for a bare self-host with no proxy in front, but a
-	// real client's IP when every request already arrives via a trusted proxy
-	// (Fly's edge, or an operator's own reverse proxy — SELF-HOSTING.md "bring
-	// your own proxy") — with this off in that case, every client collapses onto
-	// the proxy's one address and one attacker's failed logins rate-limit every
-	// other household member sharing it. Only flip this on when a trusted proxy
-	// is genuinely the sole path in — an untrusted header source makes the
-	// limiter trivially bypassable (attacker sets their own X-Forwarded-For).
-	TrustProxyHeaders bool `env:"TRUST_PROXY_HEADERS" envDefault:"false"`
+	// TrustedProxies lists the proxies whose forwarding headers the login/reset
+	// rate limiter may believe (#363, #755): comma-separated CIDRs (a bare IP is
+	// a /32 or /128), or the literal `fly`. Default empty trusts nothing, so the
+	// limiter keys on the TCP peer — correct for a bare self-host and for dev.
+	// Headers are read only when the peer is inside the list; otherwise a caller
+	// could mint a fresh key per request by forging them. Parsed in Load (the
+	// raw env string never reaches here); replaces the TRUST_PROXY_HEADERS
+	// boolean, which Load now refuses.
+	TrustedProxies    clientip.Trusted `env:"-"`
+	TrustedProxiesRaw string           `env:"TRUSTED_PROXIES"`
 
 	// EmailEnabled gates all outbound transactional mail (ADR-0037). The default
 	// is true, preserving current behaviour. A self-hoster who wants no mail
@@ -137,6 +138,12 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	// The old boolean is refused outright rather than translated: it never said
+	// *which* proxy to believe, and silently mapping it to a guess would keep a
+	// forgeable limiter alive behind an upgrade nobody noticed (#755).
+	if _, set := os.LookupEnv("TRUST_PROXY_HEADERS"); set {
+		return nil, errTrustProxyHeadersRemoved
+	}
 	var cfg Config
 	if err := env.Parse(&cfg); err != nil {
 		return nil, fmt.Errorf("env parse: %w", err)
@@ -147,9 +154,18 @@ func Load() (*Config, error) {
 	if cfg.DemoMode && cfg.DemoResetToken == "" {
 		return nil, fmt.Errorf("DEMO_MODE is set but DEMO_RESET_TOKEN is empty")
 	}
+	trusted, err := clientip.Parse(cfg.TrustedProxiesRaw)
+	if err != nil {
+		return nil, err
+	}
+	cfg.TrustedProxies = trusted
 	applyURLDefaults(&cfg)
 	return &cfg, nil
 }
+
+var errTrustProxyHeadersRemoved = errors.New("TRUST_PROXY_HEADERS is no longer supported: remove it and set TRUSTED_PROXIES instead " +
+	"(Fly: TRUSTED_PROXIES=fly; docker compose with bundled Caddy or a proxy on the same host: the compose default already covers it, so just delete the line; " +
+	"your own proxy elsewhere: TRUSTED_PROXIES=<its IP or CIDR>; no proxy: leave it unset)")
 
 // applyURLDefaults fills the single-origin URL fields. An explicitly-set
 // FRONTEND_URL / BACKEND_URL / OAUTH_REDIRECT_URL always wins. Otherwise, when
