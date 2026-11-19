@@ -69,12 +69,22 @@ describe("aggregateListPositions — byCurrency totals", () => {
     expect(r.byCurrency).toEqual([{ currency: "IDR", value: 1000, cost: 0, pl: 1000 }]);
   });
 
-  it("orders byCurrency by value desc, then currency code", () => {
-    const r = aggregateListPositions([
-      pos({ id: "a", currency: "USD", latestValue: 100, cost: 0 }),
-      pos({ id: "b", currency: "IDR", latestValue: 100, cost: 0 }),
-    ]);
-    expect(r.byCurrency.map((c) => c.currency)).toEqual(["IDR", "USD"]);
+  // covers: INV-PRESENTATION-34
+  it("orders byCurrency and the time-series map reporting currency first, then A-Z", () => {
+    const snaps = [
+      { year_month: "2025-01", amount: "5" },
+      { year_month: "2025-02", amount: "5" },
+    ];
+    const r = aggregateListPositions(
+      [
+        pos({ id: "a", currency: "USD", latestValue: 900, snapshots: snaps }),
+        pos({ id: "b", currency: "IDR", latestValue: 1, snapshots: snaps }),
+        pos({ id: "c", currency: "EUR", latestValue: 50, snapshots: snaps }),
+      ],
+      "IDR",
+    );
+    expect(r.byCurrency.map((c) => c.currency)).toEqual(["IDR", "EUR", "USD"]);
+    expect([...r.timeSeriesByCurrency.keys()]).toEqual(["IDR", "EUR", "USD"]);
   });
 });
 

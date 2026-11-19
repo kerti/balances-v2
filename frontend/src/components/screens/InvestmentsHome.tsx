@@ -45,6 +45,7 @@ import {
   useTimeDeposits,
 } from "@/hooks/useInvestments";
 import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
+import { useSession } from "@/hooks/useSession";
 import { useHubConversion } from "@/hooks/useGroupBreakdown";
 import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
@@ -123,7 +124,11 @@ export function InvestmentsHome() {
     return out;
   }, [stocks.data, mutualFunds.data, bonds.data, timeDeposits.data, golds.data, timeSeries.byId]);
 
-  const aggregates = useMemo(() => aggregateHomePositions(positions), [positions]);
+  const reportingCurrency = useSession().data?.reporting_currency ?? "";
+  const aggregates = useMemo(
+    () => aggregateHomePositions(positions, reportingCurrency),
+    [positions, reportingCurrency],
+  );
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);
   const { converted, reporting, breakdown } = useHubConversion("investment", currencies);

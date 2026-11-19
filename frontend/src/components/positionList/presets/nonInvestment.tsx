@@ -9,6 +9,7 @@
 // the sibling preset with a different headline + a risk filter.
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo } from "react";
+import { useSession } from "@/hooks/useSession";
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
@@ -79,6 +80,7 @@ function NonInvestmentHeadline<T>({
   config: NonInvestmentConfig<T>;
 }) {
   const { t } = useTranslation(config.i18nNamespaces);
+  const reporting = useSession().data?.reporting_currency ?? "";
   const { totals, count } = useMemo(
     () =>
       activeCurrencyTotals(
@@ -86,8 +88,9 @@ function NonInvestmentHeadline<T>({
           status: config.entity(item).status,
           snapshot: config.getSnapshot(item),
         })),
+        reporting,
       ),
-    [items, config],
+    [items, config, reporting],
   );
   const conversion = useListConversion(
     config.breakdown,

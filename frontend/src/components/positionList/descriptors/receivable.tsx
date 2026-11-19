@@ -7,6 +7,7 @@
 // native currency, as before.
 /* eslint-disable react-refresh/only-export-components */
 import { useMemo } from "react";
+import { useSession } from "@/hooks/useSession";
 import { Link } from "react-router";
 import { CalendarPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -66,6 +67,7 @@ function ValueChartCard({
 function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
   const { t } = useTranslation("receivables");
   const timeSeries = useReceivableTimeSeries();
+  const reporting = useSession().data?.reporting_currency ?? "";
   const timeSeriesByCurrency = useMemo(() => {
     const positions = items.map((item) => ({
       id: item.receivable.id,
@@ -75,10 +77,10 @@ function ReceivableCharts({ items }: { items: ReceivableListItem[] }) {
       latestValue: item.latest_snapshot ? Number(item.latest_snapshot.amount) : null,
       snapshots: timeSeries.byId.get(item.receivable.id)?.snapshots ?? [],
     }));
-    return aggregateListPositions(positions).timeSeriesByCurrency;
-  }, [items, timeSeries.byId]);
+    return aggregateListPositions(positions, reporting).timeSeriesByCurrency;
+  }, [items, timeSeries.byId, reporting]);
 
-  const chartCurrencies = [...timeSeriesByCurrency.keys()].sort();
+  const chartCurrencies = [...timeSeriesByCurrency.keys()];
   return (
     <>
       {chartCurrencies.map((currency) => (

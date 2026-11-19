@@ -34,6 +34,7 @@ import {
 import { InvestmentPieChart, type PieSlice } from "@/components/charts/InvestmentPieChart";
 import { useLiabilities } from "@/hooks/useLiabilities";
 import { useLiabilityTimeSeries } from "@/hooks/useLiabilityTimeSeries";
+import { useSession } from "@/hooks/useSession";
 import { useHubConversion } from "@/hooks/useGroupBreakdown";
 import { ConvertedHeadline } from "@/components/common/ConvertedHeadline";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
@@ -81,9 +82,10 @@ export function LiabilitiesHome() {
     return out;
   }, [liabilities.data, timeSeries.byId]);
 
+  const reportingCurrency = useSession().data?.reporting_currency ?? "";
   const aggregates = useMemo(
-    () => aggregateGroupHome(positions, LIABILITY_CATEGORIES),
-    [positions],
+    () => aggregateGroupHome(positions, LIABILITY_CATEGORIES, reportingCurrency),
+    [positions, reportingCurrency],
   );
 
   const currencies = aggregates.byCurrency.map((c) => c.currency);

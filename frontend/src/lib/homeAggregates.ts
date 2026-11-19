@@ -80,7 +80,7 @@ const emptyByCategory = (): Record<InvestmentCategory, number> => ({
   gold: 0,
 });
 
-export function aggregateHomePositions(positions: HomePosition[]): HomeAggregates {
+export function aggregateHomePositions(positions: HomePosition[], reporting = ""): HomeAggregates {
   // Headline + time series come straight from the list aggregator,
   // which already does the active-only headline + all-positions time
   // series split. Strip the extra fields so the call is type-clean.
@@ -95,6 +95,7 @@ export function aggregateHomePositions(positions: HomePosition[]): HomeAggregate
       snapshots: p.snapshots,
       costSeries: p.costSeries,
     })),
+    reporting,
   );
 
   // Category stack series includes closed positions historically (capped
