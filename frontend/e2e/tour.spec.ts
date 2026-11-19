@@ -46,6 +46,7 @@ async function createBankAccount(page: Page, name: string) {
   await page.getByRole("button", { name: "New bank account" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Display name").fill(name);
+  await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await dialog.getByLabel("Bank name").fill("E2E Bank");
   await dialog.getByLabel("Account number").fill("1234567890");
   await dialog.getByRole("button", { name: "Create" }).click();
@@ -63,6 +64,7 @@ async function createBond(page: Page, name: string) {
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
   await dialog.getByLabel("Display name").fill(name);
+  await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await dialog.getByLabel("Issuer").fill("E2E Treasury");
   await dialog.getByLabel("Face value").fill("1000000");
   await dialog.getByLabel("Coupon rate (% per year)").fill("6.5");

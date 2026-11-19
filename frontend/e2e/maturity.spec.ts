@@ -22,6 +22,7 @@ test("time deposit maturity flips status to matured and gates the row", async ({
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByText("New time deposit")).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Bank name").fill("E2E Bank");
   await createDialog.getByLabel("Principal").fill("50000000");
   await createDialog.getByLabel("Interest rate (% per year)").fill("4.5");

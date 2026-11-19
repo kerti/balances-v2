@@ -31,23 +31,38 @@ function renderField(props: Partial<React.ComponentProps<typeof EntryTypeField>>
 describe("EntryTypeField", () => {
   // Two radios rather than a checkbox: an unchecked box says nothing, and the
   // report needs an affirmative answer to tell an acquisition from an arrival.
-  it("offers both answers with the acquired default selected", () => {
-    renderField();
+  it("offers both answers, with the stored one selected", () => {
+    renderField({ value: "acquired" });
     const radios = screen.getAllByRole("radio");
     expect(radios).toHaveLength(2);
-    expect(screen.getByRole("radio", { name: /funded it with money/i })).toBeChecked();
-    expect(screen.getByRole("radio", { name: /came into the household/i })).not.toBeChecked();
+    expect(screen.getByRole("radio", { name: /paid for it from an account/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /gift or inheritance/i })).not.toBeChecked();
+  });
+
+  // #934: every default silently misstates the first month in one common case.
+  it("checks neither radio while the answer is null", () => {
+    renderField({ value: null });
+    for (const radio of screen.getAllByRole("radio")) expect(radio).not.toBeChecked();
+  });
+
+  it("shows the error under the radios and marks them invalid", () => {
+    renderField({ value: null, error: "Pick one." });
+    expect(screen.getByText("Pick one.")).toBeInTheDocument();
+    const [first, second] = screen.getAllByRole("radio");
+    expect(first).toHaveAttribute("aria-invalid", "true");
+    expect(second).toHaveAttribute("aria-invalid", "true");
+    expect(first).toHaveAttribute("aria-describedby", `${first.id}-error`);
   });
 
   it("reports the wire value, not the label key, to the parent", async () => {
     const { onChange } = renderField();
-    await userEvent.click(screen.getByRole("radio", { name: /came into the household/i }));
+    await userEvent.click(screen.getByRole("radio", { name: /gift or inheritance/i }));
     expect(onChange).toHaveBeenCalledWith("newly_tracked");
   });
 
   it("reflects an existing declaration when editing", () => {
     renderField({ value: "newly_tracked" });
-    expect(screen.getByRole("radio", { name: /came into the household/i })).toBeChecked();
+    expect(screen.getByRole("radio", { name: /gift or inheritance/i })).toBeChecked();
   });
 
   // A debt is never "funded from money already tracked here" — nothing funds it.
@@ -56,10 +71,13 @@ describe("EntryTypeField", () => {
   // funded from reads as nonsense, so the liability wording is its own set while
   // the wire values stay identical.
   it("asks a liability how the debt was taken on, not how it was funded", async () => {
-    const { onChange } = renderField({ group: "liability" });
+    const { onChange } = renderField({ group: "liability", value: "acquired" });
+    expect(screen.getByText("When did this debt start?")).toBeInTheDocument();
 
-    expect(screen.queryByRole("radio", { name: /funded it with money/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /took it on while tracking here/i })).toBeChecked();
+    expect(
+      screen.queryByRole("radio", { name: /paid for it from an account/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /just took it on/i })).toBeChecked();
 
     const arrived = screen.getByRole("radio", { name: /already owed it/i });
     await userEvent.click(arrived);
@@ -72,7 +90,9 @@ describe("EntryTypeField", () => {
     "keeps the funded-from wording for %s",
     (group) => {
       renderField({ group });
-      expect(screen.getByRole("radio", { name: /funded it with money/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole("radio", { name: /paid for it from an account/i }),
+      ).toBeInTheDocument();
     },
   );
 

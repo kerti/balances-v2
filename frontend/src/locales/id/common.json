@@ -365,16 +365,18 @@
     }
   },
   "entry": {
-    "question": "Dari mana asalnya?",
+    "required": "Pilih salah satu agar bulan pertama terhitung dengan benar.",
     "owned": {
-      "acquired": "Kami membelinya dengan uang yang sudah dicatat di sini",
-      "newlyTracked": "Kami sudah memilikinya, atau ini masuk ke rumah tangga",
-      "hint": "Ini memberi tahu laporan apakah pencatatan pertama item ini berupa pembelian (jadi uangnya berasal dari tempat lain yang Anda catat) atau kekayaan yang memang sudah milik Anda. Hanya memengaruhi cara bulan pertama dibaca."
+      "question": "Dari mana uang untuk ini?",
+      "acquired": "Kami membayarnya dari rekening yang dicatat di sini",
+      "newlyTracked": "Kami sudah memilikinya, atau ini hadiah atau warisan",
+      "hint": "Pilih yang pertama jika uang keluar dari rekening lain di sini untuk membayarnya. Ini menjaga perkiraan biaya hidup bulan pertama tetap tepat."
     },
     "owed": {
-      "acquired": "Kami mengambilnya saat sudah mencatat di sini — apa yang dibiayainya juga tercatat",
-      "newlyTracked": "Kami sudah menanggungnya, atau ini masuk ke rumah tangga",
-      "hint": "Ini memberi tahu laporan apakah utang ini diambil saat Anda sudah mencatat di sini (jadi uang yang cair, atau barang yang dibeli, ikut tercatat) atau memang sudah ditanggung sebelumnya. Hanya memengaruhi cara bulan pertama dibaca."
+      "question": "Kapan utang ini dimulai?",
+      "acquired": "Baru kami ambil, dan uang yang dicairkannya tercatat di sini",
+      "newlyTracked": "Sudah kami tanggung sebelum dicatat di sini",
+      "hint": "Pilih yang pertama jika uang pinjamannya, atau barang yang dibelinya, juga tercatat di sini. Ini menjaga perkiraan biaya hidup bulan pertama tetap tepat."
     }
   },
   "authHero": {

@@ -83,6 +83,9 @@ async function pickTag(label: string) {
   await userEvent.selectOptions(select, label);
 }
 
+const pickEntryType = (index = 0) =>
+  userEvent.click(within(screen.getByTestId("entry-type-options")).getAllByRole("radio")[index]);
+
 const typeInto = (label: string | RegExp, text: string) =>
   userEvent.type(screen.getByLabelText(label), text);
 const setValue = (label: string | RegExp, value: string) =>
@@ -225,6 +228,7 @@ describe("Create dialogs carry the Tag", () => {
     await userEvent.click(screen.getByRole("button"));
     await screen.findByRole("dialog");
     await c.fill();
+    await pickEntryType();
     await pickTag("Retirement");
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
@@ -240,6 +244,7 @@ describe("Create dialogs carry the Tag", () => {
     await userEvent.click(screen.getByRole("button"));
     await screen.findByRole("dialog");
     await c.fill();
+    await pickEntryType();
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(write.count).toBe(1));

@@ -40,6 +40,7 @@ export function EditMutualFundDialog({ open, onOpenChange, mutualFund }: Props) 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
+    if (form.entry_type === null) return;
     if (!form.risk_profile) return;
     if (!form.fund_type) return;
     mutation.mutate(

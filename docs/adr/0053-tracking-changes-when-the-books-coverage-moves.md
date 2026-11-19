@@ -229,3 +229,14 @@ invested — never by its mechanism.
   no fact the engine can check: a one-sided birth is indistinguishable from an acquisition whose funding
   the Household has not snapshotted yet. An advisory here would be a heuristic firing on wrong months,
   so none ships. The remedy is the editable control in §3.
+
+## Amendment (2026-11-19): Create forms pre-select nothing (#934)
+
+The §3 control no longer defaults to `acquired` on Create. The 2026-11-16 demo audit added an account
+the household already had; the pre-selected `acquired` dropped that month's living-expenses estimate by
+the account's full value. Flipping the default only moves the error: a purchase from a tracked account
+declared `newly_tracked` would overstate the estimate by the same amount. Since nothing detects a
+mis-declared entry (Consequences), the form now asks with neither radio checked and refuses to submit
+until one is picked. Edit forms show the stored value as before. The column `DEFAULT 'acquired'` stays,
+for import and restore, where there is no one to ask. The copy now splits the question by owned/owed
+and names the effect on the first month's estimate. Guarded by INV-FINANCE-41.

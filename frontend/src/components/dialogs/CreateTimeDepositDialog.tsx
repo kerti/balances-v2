@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateTimeDeposit } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { TimeDepositFormBody } from "@/components/dialogs/forms/TimeDepositForm";
 import type { TimeDepositForm } from "@/lib/rollover";
@@ -13,7 +14,7 @@ function emptyForm(): TimeDepositForm {
     display_name: "",
     description: "",
     ownership_type: "sole",
-    entry_type: "acquired",
+    entry_type: null,
     sole_owner_user_id: null,
     risk_profile: "",
     native_currency: "IDR",
@@ -71,7 +72,7 @@ export function CreateTimeDepositDialog({
     !!form.placement_date && !!form.maturity_date && form.maturity_date <= form.placement_date;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     if (!form.risk_profile) return;
     if (termInvalid) return;
     mutation.mutate(
@@ -117,9 +118,12 @@ export function CreateTimeDepositDialog({
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
-      validate={() =>
-        termInvalid ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") } : {}
-      }
+      validate={() => ({
+        ...(termInvalid
+          ? { td_maturity_date: t("investments:timeDeposit.maturityAfterPlacement") }
+          : {}),
+        ...entryTypeRequired("td_create", form.entry_type, t("common:entry.required")),
+      })}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

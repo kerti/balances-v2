@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateGold, type GoldForm } from "@/hooks/useInvestments";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { GoldFormBody } from "@/components/dialogs/forms/GoldForm";
 import type { RiskProfile, EntryType } from "@/api/types";
@@ -13,7 +14,7 @@ function emptyForm() {
     display_name: "",
     description: "",
     ownership_type: "sole" as "sole" | "joint",
-    entry_type: "acquired" as EntryType,
+    entry_type: null as EntryType | null,
     sole_owner_user_id: null as string | null,
     risk_profile: "" as RiskProfile | "",
     native_currency: "IDR",
@@ -38,7 +39,7 @@ export function CreateGoldDialog({ onCreated }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     if (!form.risk_profile) return;
     mutation.mutate(
       {
@@ -76,6 +77,7 @@ export function CreateGoldDialog({ onCreated }: Props) {
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() => entryTypeRequired("gold_create", form.entry_type, t("common:entry.required"))}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

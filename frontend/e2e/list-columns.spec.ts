@@ -26,6 +26,7 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
   await page.getByRole("button", { name: "New bank account" }).first().click();
   const acctDialog = page.getByRole("dialog");
   await acctDialog.getByLabel("Display name").fill(account);
+  await acctDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByRole("button", { name: "Create" }).click();
   await expect(page).toHaveURL(/\/assets\/bank-accounts\/[0-9a-f-]{36}$/);
@@ -59,6 +60,7 @@ test("list columns align across lists and do not reflow", { tag: "@smoke" }, asy
   await page.getByRole("button", { name: "New stock" }).first().click();
   const stockDialog = page.getByRole("dialog");
   await stockDialog.getByLabel("Display name").fill(stock);
+  await stockDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await stockDialog.getByLabel("Ticker").fill("E2EC");
   await stockDialog.getByLabel("Exchange").fill("IDX");
   await stockDialog.getByLabel("Risk profile").selectOption("medium");

@@ -25,6 +25,7 @@ test("stock export re-imports flawlessly", async ({ page }) => {
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByRole("heading", { name: "New stock" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Ticker").fill("E2EX");
   await createDialog.getByLabel("Exchange").fill("IDX");
   await createDialog.getByLabel("Risk profile").selectOption("medium");

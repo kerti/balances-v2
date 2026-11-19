@@ -52,7 +52,7 @@ export function EditTimeDepositDialog({ open, onOpenChange, timeDeposit }: Props
     !!form.placement_date && !!form.maturity_date && form.maturity_date <= form.placement_date;
 
   function submit(close: () => void) {
-    if (!form.risk_profile) return;
+    if (!form.risk_profile || form.entry_type === null) return;
     if (termInvalid) return;
     mutation.mutate(
       {

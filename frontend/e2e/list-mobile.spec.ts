@@ -22,6 +22,7 @@ test(
     await page.getByRole("button", { name: "New bank account" }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Display name").fill(account);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Bank name").fill("E2E Bank");
     await dialog.getByLabel("Account number").fill("1234567890");
     await dialog.getByRole("button", { name: "Create" }).click();

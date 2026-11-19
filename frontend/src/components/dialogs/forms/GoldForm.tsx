@@ -15,7 +15,7 @@ export type GoldFormState = {
   display_name: string;
   description: string;
   ownership_type: "sole" | "joint";
-  entry_type: EntryType;
+  entry_type: EntryType | null;
   sole_owner_user_id: string | null;
   risk_profile: RiskProfile | "";
   native_currency: string;
