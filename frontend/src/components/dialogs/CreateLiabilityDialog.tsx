@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateLiability } from "@/hooks/useLiabilities";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { LiabilityFormBody } from "@/components/dialogs/forms/LiabilityForm";
 import type { EntryType } from "@/api/types";
@@ -22,7 +23,7 @@ function emptyForm(defaultSubtype: "personal" | "institutional") {
     description: "",
     subtype: defaultSubtype,
     ownership_type: "sole" as "sole" | "joint",
-    entry_type: "acquired" as EntryType,
+    entry_type: null as EntryType | null,
     sole_owner_user_id: null as string | null,
     native_currency: "IDR",
     counterparty_name: "",
@@ -44,7 +45,7 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -85,6 +86,9 @@ export function CreateLiabilityDialog({ defaultSubtype = "personal", onCreated }
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() =>
+        entryTypeRequired("liability_create", form.entry_type, t("common:entry.required"))
+      }
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

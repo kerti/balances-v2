@@ -75,9 +75,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
       ]
     `);
@@ -108,9 +108,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
       ]
     `);
@@ -143,9 +143,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
       ]
     `);
@@ -180,9 +180,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We took it on while tracking here — what it paid for is recorded too",
-        "We already owed it, or it came into the household",
+        "When did this debt start?",
+        "We just took it on, and the money it paid out is tracked here",
+        "We already owed it before tracking it here",
         "Description (optional)",
       ]
     `);
@@ -203,9 +203,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
       ]
     `);
@@ -226,9 +226,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Risk profile",
         "Description (optional)",
       ]
@@ -257,9 +257,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
         "Risk profile",
       ]
@@ -281,9 +281,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Description (optional)",
         "Risk profile",
       ]
@@ -325,9 +325,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Risk profile",
       ]
     `);
@@ -364,9 +364,9 @@ describe("position form bodies: Create and Edit render the same field order", ()
         "Ownership",
         "Joint",
         "Sole owner",
-        "Where did this come from?",
-        "We funded it with money already tracked here",
-        "We already had it, or it came into the household",
+        "Where did the money for this come from?",
+        "We paid for it from an account tracked here",
+        "We already had it, or it was a gift or inheritance",
         "Risk profile",
       ]
     `);

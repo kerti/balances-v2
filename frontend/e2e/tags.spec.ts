@@ -38,6 +38,7 @@ test("tags: set in Create, change and clear in Edit, report renders, cleanup", a
   await page.getByRole("button", { name: "New bank account" }).first().click();
   const createDialog = page.getByRole("dialog");
   await createDialog.getByLabel("Display name").fill(acctName);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Bank name").fill("E2E Bank");
   await createDialog.getByLabel("Account number").fill("1234567890");
   await createDialog.getByTestId("tag-select").selectOption({ label: tagName });

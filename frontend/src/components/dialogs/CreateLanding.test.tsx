@@ -3,7 +3,7 @@
 // the detail page; the detail route then opens Record snapshot exactly once.
 import { describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
-import { screen, waitFor } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useNavigate, useLocation } from "react-router";
 import { server } from "@/test/server";
@@ -95,6 +95,9 @@ describe("Create dialogs hand the new id to the list", () => {
     await userEvent.click(screen.getByRole("button"));
     await userEvent.type(await screen.findByLabelText("Display name"), "Everyday");
     await userEvent.type(screen.getByLabelText("Bank name"), "Test Bank");
+    await userEvent.click(
+      within(screen.getByTestId("entry-type-options")).getAllByRole("radio")[0],
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith("new-asset"));
@@ -114,6 +117,9 @@ describe("Create dialogs hand the new id to the list", () => {
     await userEvent.click(screen.getByRole("button"));
     await userEvent.type(await screen.findByLabelText("Display name"), "Car loan");
     await userEvent.type(screen.getByLabelText("Counterparty"), "Test Lender");
+    await userEvent.click(
+      within(screen.getByTestId("entry-type-options")).getAllByRole("radio")[0],
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith("new-liab"));
@@ -130,6 +136,9 @@ describe("Create dialogs hand the new id to the list", () => {
     await userEvent.click(screen.getByRole("button"));
     await userEvent.type(await screen.findByLabelText("Display name"), "Friend loan");
     await userEvent.type(screen.getByLabelText("Counterparty"), "Test Friend");
+    await userEvent.click(
+      within(screen.getByTestId("entry-type-options")).getAllByRole("radio")[0],
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith("new-rec"));
@@ -148,6 +157,9 @@ describe("Create dialogs hand the new id to the list", () => {
     await userEvent.click(screen.getByRole("button"));
     await userEvent.type(await screen.findByLabelText("Display name"), "Test bar");
     await userEvent.selectOptions(screen.getByLabelText(/risk profile/i), "low");
+    await userEvent.click(
+      within(screen.getByTestId("entry-type-options")).getAllByRole("radio")[0],
+    );
     await userEvent.click(screen.getByRole("button", { name: "Create" }));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith("new-gold"));

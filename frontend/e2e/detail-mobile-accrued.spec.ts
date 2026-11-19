@@ -25,6 +25,7 @@ test(
     await page.getByRole("button", { name: "New bond" }).first().click();
     const createDialog = page.getByRole("dialog");
     await createDialog.getByLabel("Display name").fill(name);
+    await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await createDialog.getByLabel("Issuer").fill("E2E Treasury");
     await createDialog.getByLabel("Face value").fill("1000000");
     await createDialog.getByLabel("Coupon rate (% per year)").fill("6.5");

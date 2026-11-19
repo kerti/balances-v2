@@ -365,16 +365,18 @@
     }
   },
   "entry": {
-    "question": "Where did this come from?",
+    "required": "Pick one so the first month adds up.",
     "owned": {
-      "acquired": "We funded it with money already tracked here",
-      "newlyTracked": "We already had it, or it came into the household",
-      "hint": "This tells the report whether this item's first entry was a purchase (so the money came from somewhere else you track) or wealth that was already yours. It only affects how the first month reads."
+      "question": "Where did the money for this come from?",
+      "acquired": "We paid for it from an account tracked here",
+      "newlyTracked": "We already had it, or it was a gift or inheritance",
+      "hint": "Choose the first if money left another account here to pay for it. This keeps the first month's living-expenses estimate right."
     },
     "owed": {
-      "acquired": "We took it on while tracking here — what it paid for is recorded too",
-      "newlyTracked": "We already owed it, or it came into the household",
-      "hint": "This tells the report whether the debt was taken on while you were tracking here (so the money it released, or the thing it bought, is recorded too) or was already owed before. It only affects how the first month reads."
+      "question": "When did this debt start?",
+      "acquired": "We just took it on, and the money it paid out is tracked here",
+      "newlyTracked": "We already owed it before tracking it here",
+      "hint": "Choose the first if the loan's money, or the thing it bought, is also tracked here. This keeps the first month's living-expenses estimate right."
     }
   },
   "authHero": {

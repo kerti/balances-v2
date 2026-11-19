@@ -21,6 +21,7 @@ test(
     await page.getByRole("button", { name: "New bank account" }).first().click();
     const acctDialog = page.getByRole("dialog");
     await acctDialog.getByLabel("Display name").fill(account);
+    await acctDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
@@ -87,6 +88,7 @@ test(
     await page.getByRole("button", { name: "New liability" }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
     await dialog.getByRole("button", { name: "Create" }).click();
     await backToListAfterCreate(page);
@@ -139,6 +141,7 @@ test(
     await page.getByRole("button", { name: "New receivable" }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Counterparty").fill("E2E Counterparty");
     await dialog.getByRole("button", { name: "Create" }).click();
     await backToListAfterCreate(page);
@@ -192,6 +195,7 @@ test(
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "New stock" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Ticker").fill("E2EB");
     await dialog.getByLabel("Exchange").fill("IDX");
     await dialog.getByLabel("Risk profile").selectOption("medium");
@@ -256,6 +260,7 @@ test(
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Issuer").fill("E2E Treasury");
     await dialog.getByLabel("Face value").fill("1000000");
     await dialog.getByLabel("Coupon rate (% per year)").fill("6.5");
@@ -327,6 +332,7 @@ test(
     await page.getByRole("button", { name: "New bank account" }).first().click();
     const acctDialog = page.getByRole("dialog");
     await acctDialog.getByLabel("Display name").fill(account);
+    await acctDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await acctDialog.getByLabel("Bank name").fill("E2E Bank");
     await acctDialog.getByLabel("Account number").fill("1234567890");
     await acctDialog.getByRole("button", { name: "Create" }).click();
@@ -388,6 +394,7 @@ test(
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "New stock" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Ticker").fill("E2ED");
     await dialog.getByLabel("Exchange").fill("IDX");
     await dialog.getByLabel("Risk profile").selectOption("medium");
@@ -469,6 +476,7 @@ test(
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "New bond" })).toBeVisible();
     await dialog.getByLabel("Display name").fill(name);
+    await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
     await dialog.getByLabel("Issuer").fill("E2E Treasury");
     await dialog.getByLabel("Face value").fill("1000000");
     await dialog.getByLabel("Coupon rate (% per year)").fill("6.5");

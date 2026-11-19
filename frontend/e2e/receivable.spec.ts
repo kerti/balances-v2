@@ -19,6 +19,7 @@ test("receivable create → edit → delete round-trip", async ({ page }) => {
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByText("New receivable")).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Counterparty").fill("E2E Counterparty");
   await createDialog.getByRole("button", { name: "Create" }).click();
   await backToListAfterCreate(page);

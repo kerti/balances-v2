@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateVehicle } from "@/hooks/useVehicles";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { VehicleFormBody, type VehicleFormState } from "@/components/dialogs/forms/VehicleForm";
 
@@ -11,7 +12,7 @@ const empty: VehicleFormState = {
   display_name: "",
   description: "",
   ownership_type: "sole",
-  entry_type: "acquired",
+  entry_type: null,
   sole_owner_user_id: null,
   native_currency: "IDR",
   vehicle_type: "car",
@@ -38,7 +39,7 @@ export function CreateVehicleDialog({ onCreated }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -78,6 +79,9 @@ export function CreateVehicleDialog({ onCreated }: Props) {
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() =>
+        entryTypeRequired("vehicle_create", form.entry_type, t("common:entry.required"))
+      }
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

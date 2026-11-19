@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateReceivable } from "@/hooks/useReceivables";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { ReceivableFormBody } from "@/components/dialogs/forms/ReceivableForm";
 import type { EntryType } from "@/api/types";
@@ -12,7 +13,7 @@ const empty = {
   display_name: "",
   description: "",
   ownership_type: "sole" as "sole" | "joint",
-  entry_type: "acquired" as EntryType,
+  entry_type: null as EntryType | null,
   sole_owner_user_id: null as string | null,
   native_currency: "IDR",
   counterparty_name: "",
@@ -35,7 +36,7 @@ export function CreateReceivableDialog({ onCreated }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -71,6 +72,9 @@ export function CreateReceivableDialog({ onCreated }: Props) {
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() =>
+        entryTypeRequired("receivable_create", form.entry_type, t("common:entry.required"))
+      }
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

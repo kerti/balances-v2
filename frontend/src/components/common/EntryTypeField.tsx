@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Label } from "@/components/ui/label";
+import { FieldError, describedBy, useFieldError } from "@/components/ui/field-error";
+import { entryTypeFieldId } from "@/components/common/entryTypeValidation";
 import type { EntryType } from "@/api/types";
 
 // The "where did this come from?" control, shared by all 20 position
@@ -9,10 +11,11 @@ import type { EntryType } from "@/api/types";
 // is the same radio-pair shape.
 //
 // Two radios rather than a checkbox, deliberately: an unchecked box says
-// nothing, and this needs an affirmative answer. `acquired` is the default,
-// because post-baseline births skew heavily toward acquisition and the household
-// that onboards everything at once is already covered by the report's
-// first-month baseline suppression.
+// nothing, and this needs an affirmative answer. Create forms pre-select
+// nothing and block submit until one is picked, because each default silently
+// misstates the first month's living-expenses estimate in one common case
+// (#934). The DB default (`acquired`) remains for import and restore, which
+// have no one to ask.
 //
 // It appears on Edit as well as Create, and that is load-bearing rather than a
 // convenience: nothing detects a mis-declared entry — a one-sided birth is
@@ -43,20 +46,25 @@ type Props = {
    * that needs its own phrasing is a change here, not at twenty callsites.
    */
   group: PositionGroup;
-  value: EntryType;
+  /** `null` on Create until the user answers: neither radio is checked. */
+  value: EntryType | null;
   onChange: (next: EntryType) => void;
+  /** Overrides the message the surrounding `ValidatedForm` supplies for this field. */
+  error?: string;
 };
 
-export function EntryTypeField({ idPrefix, group, value, onChange }: Props) {
+export function EntryTypeField({ idPrefix, group, value, onChange, error }: Props) {
   const { t } = useTranslation("common");
-  const name = `${idPrefix}_entry_type`;
+  const name = entryTypeFieldId(idPrefix);
+  const fieldError = useFieldError(name);
+  const message = error ?? fieldError.message;
   const copy: CopySet = group === "liability" ? "owed" : "owned";
 
   return (
     <div className="grid gap-2">
-      <Label>{t("entry.question")}</Label>
+      <Label>{t(`entry.${copy}.question`)}</Label>
       <div data-testid="entry-type-options" className="grid gap-2 text-sm">
-        {(["acquired", "newlyTracked"] as const).map((option) => {
+        {(["acquired", "newlyTracked"] as const).map((option, index) => {
           const optionValue: EntryType = option === "acquired" ? "acquired" : "newly_tracked";
           return (
             <label
@@ -65,6 +73,9 @@ export function EntryTypeField({ idPrefix, group, value, onChange }: Props) {
             >
               <input
                 type="radio"
+                id={index === 0 ? name : undefined}
+                aria-invalid={message !== undefined || undefined}
+                aria-describedby={describedBy(undefined, name, message !== undefined)}
                 name={name}
                 value={optionValue}
                 checked={value === optionValue}
@@ -75,6 +86,7 @@ export function EntryTypeField({ idPrefix, group, value, onChange }: Props) {
           );
         })}
       </div>
+      {message && <FieldError id={name}>{message}</FieldError>}
       <p className="text-xs text-muted-foreground">{t(`entry.${copy}.hint`)}</p>
     </div>
   );

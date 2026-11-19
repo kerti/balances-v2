@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateProperty } from "@/hooks/useProperties";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { PropertyFormBody, type PropertyFormState } from "@/components/dialogs/forms/PropertyForm";
 
@@ -11,7 +12,7 @@ const empty: PropertyFormState = {
   display_name: "",
   description: "",
   ownership_type: "sole",
-  entry_type: "acquired",
+  entry_type: null,
   sole_owner_user_id: null,
   native_currency: "IDR",
   property_type: "house",
@@ -37,7 +38,7 @@ export function CreatePropertyDialog({ onCreated }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -76,6 +77,9 @@ export function CreatePropertyDialog({ onCreated }: Props) {
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() =>
+        entryTypeRequired("property_create", form.entry_type, t("common:entry.required"))
+      }
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

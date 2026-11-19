@@ -24,6 +24,7 @@ test("bank account lifecycle: close → reopen → delete", { tag: "@smoke" }, a
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByText("New bank account")).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Bank name").fill("E2E Bank");
   await createDialog.getByLabel("Account number").fill("1234567890");
   await createDialog.getByRole("button", { name: "Create" }).click();

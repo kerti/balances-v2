@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreateBankAccount } from "@/hooks/useBankAccounts";
 import { useSession } from "@/hooks/useSession";
+import { entryTypeRequired } from "@/components/common/entryTypeValidation";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import {
   BankAccountFormBody,
@@ -14,7 +15,7 @@ const empty: BankAccountFormState = {
   display_name: "",
   description: "",
   ownership_type: "sole",
-  entry_type: "acquired",
+  entry_type: null,
   sole_owner_user_id: null,
   native_currency: "IDR",
   bank_name: "",
@@ -38,7 +39,7 @@ export function CreateBankAccountDialog({ onCreated }: Props) {
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
   function submit(close: () => void) {
-    if (!user) return;
+    if (!user || form.entry_type === null) return;
     mutation.mutate(
       {
         display_name: form.display_name,
@@ -75,6 +76,7 @@ export function CreateBankAccountDialog({ onCreated }: Props) {
       pendingLabel={t("common:actions.creating")}
       isPending={mutation.isPending}
       tag={{ value: tagId, onChange: setTagId }}
+      validate={() => entryTypeRequired("ba_create", form.entry_type, t("common:entry.required"))}
       error={mutation.error}
       onSubmit={submit}
       onClosed={() => {

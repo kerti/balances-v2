@@ -14,7 +14,7 @@ export type PropertyFormState = {
   display_name: string;
   description: string;
   ownership_type: "sole" | "joint";
-  entry_type: EntryType;
+  entry_type: EntryType | null;
   sole_owner_user_id: string | null;
   native_currency: string;
   property_type: "house" | "apartment" | "land" | "commercial";

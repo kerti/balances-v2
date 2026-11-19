@@ -22,6 +22,7 @@ test("dashboard PDF export downloads a PDF file", { tag: "@smoke" }, async ({ pa
   await page.getByRole("button", { name: "New bank account" }).first().click();
   const acctDialog = page.getByRole("dialog");
   await acctDialog.getByLabel("Display name").fill(account);
+  await acctDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await acctDialog.getByLabel("Bank name").fill("E2E Bank");
   await acctDialog.getByLabel("Account number").fill("1234567890");
   await acctDialog.getByRole("button", { name: "Create" }).click();

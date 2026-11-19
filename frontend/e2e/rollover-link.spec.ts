@@ -21,6 +21,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   let dialog = page.getByRole("dialog");
   await expect(dialog.getByText("New time deposit")).toBeVisible();
   await dialog.getByLabel("Display name").fill(successorName);
+  await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await dialog.getByLabel("Bank name").fill("E2E Bank");
   await dialog.getByLabel("Principal").fill("52750000");
   await dialog.getByLabel("Interest rate (% per year)").fill("4.5");
@@ -37,6 +38,7 @@ test("link an existing time deposit as the rollover successor", async ({ page })
   await page.getByRole("button", { name: "New time deposit" }).first().click();
   dialog = page.getByRole("dialog");
   await dialog.getByLabel("Display name").fill(sourceName);
+  await dialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await dialog.getByLabel("Bank name").fill("E2E Bank");
   await dialog.getByLabel("Principal").fill("50000000");
   await dialog.getByLabel("Interest rate (% per year)").fill("4.5");

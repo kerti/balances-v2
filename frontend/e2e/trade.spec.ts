@@ -20,6 +20,7 @@ test("stock buy + mismatched snapshot raises the reconciliation warning", async 
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByRole("heading", { name: "New stock" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Ticker").fill("E2EX");
   await createDialog.getByLabel("Exchange").fill("IDX");
   await createDialog.getByLabel("Risk profile").selectOption("medium");
@@ -83,6 +84,7 @@ test("stock buy offers Update holding, which prefills Record snapshot and saves 
   await page.getByRole("button", { name: "New stock" }).first().click();
   const createDialog = page.getByRole("dialog");
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Ticker").fill("E2EH");
   await createDialog.getByLabel("Exchange").fill("IDX");
   await createDialog.getByLabel("Risk profile").selectOption("medium");

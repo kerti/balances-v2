@@ -19,6 +19,7 @@ test("bond accrued-interest snapshot create → delete", async ({ page }) => {
   const createDialog = page.getByRole("dialog");
   await expect(createDialog.getByRole("heading", { name: "New bond" })).toBeVisible();
   await createDialog.getByLabel("Display name").fill(name);
+  await createDialog.getByTestId("entry-type-options").getByRole("radio").first().click();
   await createDialog.getByLabel("Issuer").fill("E2E Treasury");
   await createDialog.getByLabel("Face value").fill("1000000");
   await createDialog.getByLabel("Coupon rate (% per year)").fill("6.5");
