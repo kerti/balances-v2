@@ -25,6 +25,7 @@ export function liabilityDescriptor(
     entityKey: `liability-${subtype}`,
     testIdPrefix: "liability",
     group: "liabilities",
+    breakdown: { group: "liability", subtype },
     i18nNamespaces: ["liabilities", "common", "errors"],
     keys: {
       listTitle: `liabilities:screens.${subtype}.title`,

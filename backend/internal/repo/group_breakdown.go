@@ -10,7 +10,8 @@ import (
 // GroupBreakdownMonth is one month of a single Position group's converted
 // value, as the overview hubs (Assets / Investments / Liabilities) chart it.
 // Total is the very nw_* figure the dashboard shows for that group and month;
-// BySubtype and ByRisk are partitions of it. MissingFx lists the group's
+// BySubtype and ByRisk are partitions of it (BySubtype is empty for receivables,
+// which carry no subtype). MissingFx lists the group's
 // Positions left out of Total for want of an exchange rate (ADR-0002).
 type GroupBreakdownMonth struct {
 	YearMonth time.Time                  `json:"year_month"`
@@ -31,7 +32,7 @@ type GroupBreakdown struct {
 // GroupBreakdown returns one group's month-by-month converted value from the
 // same engine pass that materializes the dashboard's reports (INV-FINANCE-39),
 // so a hub total can never drift from the dashboard's group total. The group is
-// its wire name — "asset", "liability" or "investment"; anything else is
+// its wire name — "asset", "liability", "receivable" or "investment"; anything else is
 // ErrNotFound. Nothing here is persisted.
 func (r *MonthlyReportRepo) GroupBreakdown(ctx context.Context, group string) (*GroupBreakdown, error) {
 	g, ok := hubGroup(group)
@@ -59,6 +60,8 @@ func hubGroup(name string) (positionGroup, bool) {
 		return groupAsset, true
 	case "liability":
 		return groupLiability, true
+	case "receivable":
+		return groupReceivable, true
 	case "investment":
 		return groupInvestment, true
 	}
@@ -85,7 +88,9 @@ func buildGroupBreakdown(reports []monthlyReportData, g positionGroup, currency 
 			BySubtype: map[string]decimal.Decimal{},
 			MissingFx: append([]missingFxEntry{}, missing...),
 		}
-		if gv != nil {
+		// Receivables are a flat group: the engine files them under subtype "",
+		// which is no category, so by_subtype stays empty rather than {"": total}.
+		if gv != nil && g != groupReceivable {
 			for subtype, v := range gv.bySubtype {
 				month.BySubtype[subtype] = v
 			}

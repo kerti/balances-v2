@@ -145,10 +145,129 @@ func TestMonthlyReportRepo_GroupBreakdown(t *testing.T) {
 	})
 
 	t.Run("unknown group is not found", func(t *testing.T) {
-		for _, g := range []string{"receivable", "bogus", ""} {
+		for _, g := range []string{"receivables", "bogus", ""} {
 			if _, err := r.GroupBreakdown(aliceCtx, g); !errors.Is(err, repo.ErrNotFound) {
 				t.Errorf("GroupBreakdown(%q): want ErrNotFound, got %v", g, err)
 			}
+		}
+	})
+}
+
+// The receivable hub breakdown over a real household: its per-month total is the
+// stored dashboard report's nw_receivables (same engine pass, INV-FINANCE-39), a
+// month with no USD rate excludes the USD receivable and names it, a
+// soft-deleted receivable drops out of both, another household's receivable
+// never appears, and a household without any has no months.
+// covers: INV-FINANCE-39, INV-TENANCY-05
+func TestMonthlyReportRepo_GroupBreakdownReceivable(t *testing.T) {
+	tdb := testutil.NewTestDB(t)
+	q := db.New(tdb.Pool)
+	ctx := context.Background()
+
+	alice := testutil.CreateHouseholdWithUser(t, q, "Alice")
+	carol := testutil.CreateHouseholdWithUser(t, q, "Carol")
+	dave := testutil.CreateHouseholdWithUser(t, q, "Dave")
+	aliceCtx := identity.WithUser(ctx, alice)
+	carolCtx := identity.WithUser(ctx, carol)
+	daveCtx := identity.WithUser(ctx, dave)
+
+	if _, err := q.UpdateHouseholdSettings(ctx, db.UpdateHouseholdSettingsParams{
+		ID: alice.HouseholdID, DisplayName: "Alice's Household", ReportingCurrency: "IDR",
+		MultiCurrencyEnabled: true, AssumedAnnualInflation: decimal.Zero, UpdatedBy: &alice.ID,
+	}); err != nil {
+		t.Fatalf("enable multi-currency: %v", err)
+	}
+
+	jan, feb := ymUTC(2026, time.January), ymUTC(2026, time.February)
+	rr := repo.NewReceivableRepo(tdb.Pool)
+	mk := func(c context.Context, name, currency, amount string) uuid.UUID {
+		t.Helper()
+		rc, err := rr.CreateReceivable(c, repo.CreateReceivableParams{
+			DisplayName: name, OwnershipType: "joint", NativeCurrency: currency, CounterpartyName: "Cp",
+		})
+		if err != nil {
+			t.Fatalf("CreateReceivable %s: %v", name, err)
+		}
+		if _, err := rr.CreateReceivableSnapshot(c, repo.CreateReceivableSnapshotParams{
+			ReceivableID: rc.ID, YearMonth: jan, Amount: decimal.RequireFromString(amount), Currency: currency,
+		}); err != nil {
+			t.Fatalf("CreateReceivableSnapshot %s: %v", name, err)
+		}
+		return rc.ID
+	}
+	mk(aliceCtx, "IDR loan", "IDR", "1000")
+	usdLoan := mk(aliceCtx, "USD loan", "USD", "10")
+	deleted := mk(aliceCtx, "Deleted loan", "IDR", "999999")
+	if n, err := q.SoftDeleteReceivable(ctx, db.SoftDeleteReceivableParams{ID: deleted, HouseholdID: alice.HouseholdID}); err != nil || n != 1 {
+		t.Fatalf("soft-delete receivable: n=%d err=%v", n, err)
+	}
+	mk(carolCtx, "Carol loan", "IDR", "777777")
+
+	// USD's first rate is February; January has none.
+	if _, err := q.CreateFxRate(ctx, db.CreateFxRateParams{
+		HouseholdID: alice.HouseholdID, YearMonth: feb, Currency: "USD", Rate: decimal.NewFromInt(15000),
+	}); err != nil {
+		t.Fatalf("CreateFxRate: %v", err)
+	}
+
+	r := repo.NewMonthlyReportRepo(tdb.Pool)
+	b, err := r.GroupBreakdown(aliceCtx, "receivable")
+	if err != nil {
+		t.Fatalf("GroupBreakdown: %v", err)
+	}
+	if b.Group != "receivable" || b.ReportingCurrency != "IDR" {
+		t.Errorf("header: got %s/%s", b.Group, b.ReportingCurrency)
+	}
+	rows, err := r.ListReports(aliceCtx)
+	if err != nil {
+		t.Fatalf("ListReports: %v", err)
+	}
+	if len(b.Months) < 2 {
+		t.Fatalf("want at least Jan and Feb, got %d months", len(b.Months))
+	}
+	for _, m := range b.Months {
+		row := mustMonth(t, rows, m.YearMonth)
+		if !m.Total.Equal(row.NwReceivables) {
+			t.Errorf("%s: hub total %s != stored nw_receivables %s", m.YearMonth.Format("2006-01"), m.Total, row.NwReceivables)
+		}
+		if len(m.BySubtype) != 0 {
+			t.Errorf("%s: by_subtype %v, want empty", m.YearMonth.Format("2006-01"), m.BySubtype)
+		}
+	}
+	janM, febM := b.Months[0], b.Months[1]
+	if !janM.YearMonth.Equal(jan) || !febM.YearMonth.Equal(feb) {
+		t.Fatalf("months start %s,%s; want Jan,Feb", janM.YearMonth, febM.YearMonth)
+	}
+	if !janM.Total.Equal(decimal.NewFromInt(1000)) {
+		t.Errorf("Jan total %s, want 1000 (deleted and Carol's absent, USD has no rate)", janM.Total)
+	}
+	if len(janM.MissingFx) != 1 || janM.MissingFx[0].PositionID == nil || *janM.MissingFx[0].PositionID != usdLoan {
+		t.Errorf("Jan missing_fx %+v, want the USD loan", janM.MissingFx)
+	}
+	if !febM.Total.Equal(decimal.NewFromInt(151000)) { // 1000 + 10 × 15000
+		t.Errorf("Feb total %s, want 151000", febM.Total)
+	}
+	if len(febM.MissingFx) != 0 {
+		t.Errorf("Feb missing_fx %+v, want none", febM.MissingFx)
+	}
+
+	t.Run("tenancy: carol sees only her own", func(t *testing.T) {
+		cb, err := r.GroupBreakdown(carolCtx, "receivable")
+		if err != nil {
+			t.Fatalf("GroupBreakdown carol: %v", err)
+		}
+		if len(cb.Months) == 0 || !cb.Months[0].Total.Equal(decimal.NewFromInt(777777)) {
+			t.Errorf("carol breakdown: %+v, want her 777777 only", cb.Months)
+		}
+	})
+
+	t.Run("empty group", func(t *testing.T) {
+		eb, err := r.GroupBreakdown(daveCtx, "receivable")
+		if err != nil {
+			t.Fatalf("GroupBreakdown dave: %v", err)
+		}
+		if len(eb.Months) != 0 {
+			t.Errorf("dave months: %v, want none", eb.Months)
 		}
 	})
 }

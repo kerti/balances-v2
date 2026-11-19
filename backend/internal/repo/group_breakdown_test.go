@@ -269,14 +269,78 @@ func TestGroupBreakdown_InvestmentSubtypeAndRisk(t *testing.T) {
 }
 
 func TestHubGroup(t *testing.T) {
-	for _, name := range []string{"asset", "liability", "investment"} {
+	for _, name := range []string{"asset", "liability", "receivable", "investment"} {
 		if _, ok := hubGroup(name); !ok {
 			t.Errorf("hubGroup(%q) not recognised", name)
 		}
 	}
-	for _, name := range []string{"", "receivable", "assets", "bogus"} {
+	for _, name := range []string{"", "receivables", "assets", "bogus"} {
 		if _, ok := hubGroup(name); ok {
 			t.Errorf("hubGroup(%q) should be rejected", name)
 		}
+	}
+}
+
+// Receivables are a flat group: the hub total is the report's nw_receivables
+// (a USD loan converted at the month's rate, a month with no rate excluded and
+// named, a position closed this month still counted in its closing month and
+// gone after), and by_subtype is empty rather than {"": total}.
+// covers: INV-FINANCE-39
+func TestGroupBreakdown_Receivable(t *testing.T) {
+	idrLoan, usdLoan, closed, debt := uuid.New(), uuid.New(), uuid.New(), uuid.New()
+	jan, feb, mar := ym(2026, time.January), ym(2026, time.February), ym(2026, time.March)
+	term := feb
+	in := reportEngineInput{
+		reportingCurrency: "IDR",
+		multiCurrency:     true,
+		positions: []reportPosition{
+			{id: idrLoan, group: groupReceivable, ownershipType: "joint"},
+			{id: usdLoan, group: groupReceivable, ownershipType: "joint"},
+			{id: closed, group: groupReceivable, ownershipType: "joint", terminatedAt: &term, status: "repaid"},
+			{id: debt, group: groupLiability, subtype: "personal", ownershipType: "joint"},
+		},
+		snapshots: []reportSnapshot{
+			{positionID: idrLoan, yearMonth: jan, amount: dec("1000"), currency: "IDR"},
+			{positionID: usdLoan, yearMonth: jan, amount: dec("10"), currency: "USD"},
+			{positionID: closed, yearMonth: jan, amount: dec("300"), currency: "IDR"},
+			{positionID: closed, yearMonth: feb, amount: dec("0"), currency: "IDR"},
+			{positionID: debt, yearMonth: jan, amount: dec("40"), currency: "IDR"},
+		},
+		// USD's first rate is February; January has none.
+		fxRates:      []reportFxRate{{currency: "USD", yearMonth: feb, rate: dec("15000")}},
+		currentMonth: mar,
+	}
+	reports := generateMonthlyReports(in)
+	b := buildGroupBreakdown(reports, groupReceivable, "IDR")
+	if b.Group != "receivable" {
+		t.Errorf("group %q, want receivable", b.Group)
+	}
+
+	want := map[time.Time]string{
+		jan: "1300",   // 1000 + 300; the USD loan has no rate yet
+		feb: "151000", // 1000 + 0 (closed) + 10 × 15,000
+		mar: "151000", // the closed loan is gone, the rest carry forward
+	}
+	for m, w := range want {
+		bm := findBreakdownMonth(t, b, m)
+		if !bm.Total.Equal(dec(w)) {
+			t.Errorf("%s: total %s, want %s", m.Format("2006-01"), bm.Total, w)
+		}
+		if !bm.Total.Equal(findMonth(t, reports, m).nwReceivables) {
+			t.Errorf("%s: hub total differs from the report's nw_receivables", m.Format("2006-01"))
+		}
+		if bm.BySubtype == nil || len(bm.BySubtype) != 0 {
+			t.Errorf("%s: by_subtype %v, want an empty non-nil map", m.Format("2006-01"), bm.BySubtype)
+		}
+		if bm.ByRisk != nil {
+			t.Errorf("%s: by_risk %v, want none", m.Format("2006-01"), bm.ByRisk)
+		}
+	}
+	janM := findBreakdownMonth(t, b, jan)
+	if len(janM.MissingFx) != 1 || janM.MissingFx[0].PositionID == nil || *janM.MissingFx[0].PositionID != usdLoan {
+		t.Errorf("Jan missing_fx %+v, want exactly the USD loan", janM.MissingFx)
+	}
+	if got := findBreakdownMonth(t, b, feb).MissingFx; len(got) != 0 {
+		t.Errorf("Feb missing_fx %+v, want none once the rate exists", got)
 	}
 }
