@@ -12,7 +12,7 @@
 | INV-TENANCY-02 | Property reads & mutations never cross households | `backend/internal/repo/properties_tenancy_test.go` |
 | INV-TENANCY-03 | Vehicle reads & mutations never cross households | `backend/internal/repo/vehicles_tenancy_test.go` |
 | INV-TENANCY-04 | Liability reads & mutations never cross households | `backend/internal/repo/liabilities_tenancy_test.go`<br>`backend/internal/repo/liability_time_series_test.go` |
-| INV-TENANCY-05 | Receivable reads & mutations never cross households | `backend/internal/repo/receivable_time_series_test.go`<br>`backend/internal/repo/receivables_tenancy_test.go` |
+| INV-TENANCY-05 | Receivable reads & mutations never cross households | `backend/internal/repo/group_breakdown_tenancy_test.go`<br>`backend/internal/repo/receivable_time_series_test.go`<br>`backend/internal/repo/receivables_tenancy_test.go` |
 | INV-TENANCY-06 | Investment reads & mutations never cross households | `backend/internal/repo/investments_tenancy_test.go` |
 | INV-TENANCY-07 | Investment-transaction reads & mutations never cross households | `backend/internal/repo/investment_transactions_tenancy_test.go` |
 | INV-TENANCY-08 | Position-lifecycle mutations never cross households | `backend/internal/repo/lifecycle_tenancy_test.go` |

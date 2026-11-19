@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/kerti/balances-v2/backend/internal/clientip"
 	"github.com/kerti/balances-v2/backend/internal/db"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 )
@@ -301,29 +303,33 @@ func TestLocalLogin_RateLimited(t *testing.T) {
 	}
 }
 
-// TestClientIP_TrustProxyHeaders exercises the extractor at the unit level
-// (#363): off, headers are ignored and RemoteAddr always wins — the safe
-// default for a bare self-host, where any header is attacker-supplied. On,
-// Fly's dedicated header wins over X-Forwarded-For, and X-Forwarded-For falls
-// back to its rightmost hop (the trusted proxy's own append). Neither header
-// present still falls back to RemoteAddr either way.
-func TestClientIP_TrustProxyHeaders(t *testing.T) {
+// TestHandlersClientIP pins the wiring from Handlers.trustedProxies to the
+// extractor (the decision table lives in internal/clientip): a zero-value
+// Handlers ignores forwarding headers, a configured one honours them only from
+// a trusted peer.
+//
+// covers: INV-AUTH-34
+func TestHandlersClientIP(t *testing.T) {
 	cases := []struct {
 		name       string
-		trust      bool
+		trusted    string
 		remoteAddr string
 		flyIP      string
 		xff        string
 		want       string
 	}{
-		{"trust off, headers ignored", false, "203.0.113.9:1234", "198.51.100.7", "198.51.100.1, 198.51.100.2", "203.0.113.9"},
-		{"trust on, Fly-Client-IP wins", true, "203.0.113.9:1234", "198.51.100.7", "198.51.100.1, 198.51.100.2", "198.51.100.7"},
-		{"trust on, XFF rightmost hop wins with no Fly header", true, "203.0.113.9:1234", "", "198.51.100.1, 198.51.100.2", "198.51.100.2"},
-		{"trust on, neither header falls back to RemoteAddr", true, "203.0.113.9:1234", "", "", "203.0.113.9"},
+		{"unset: forged headers ignored", "", "203.0.113.9:1234", "198.51.100.7", "198.51.100.1, 198.51.100.2", "203.0.113.9"},
+		{"untrusted peer: forged headers ignored", "10.0.0.0/8", "203.0.113.9:1234", "198.51.100.7", "198.51.100.1", "203.0.113.9"},
+		{"trusted peer: XFF client", "10.0.0.0/8", "10.0.0.2:1234", "", "198.51.100.1", "198.51.100.1"},
+		{"fly preset: Fly-Client-IP", "fly", "172.19.0.2:1234", "198.51.100.7", "", "198.51.100.7"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			h := &Handlers{trustProxyHeaders: tc.trust}
+			trusted, err := clientip.Parse(tc.trusted)
+			if err != nil {
+				t.Fatal(err)
+			}
+			h := &Handlers{trustedProxies: trusted}
 			req := httptest.NewRequest(http.MethodPost, "/auth/local/login", nil)
 			req.RemoteAddr = tc.remoteAddr
 			if tc.flyIP != "" {
@@ -339,62 +345,120 @@ func TestClientIP_TrustProxyHeaders(t *testing.T) {
 	}
 }
 
-// TestLocalLogin_RateLimitIsolationBehindTrustedProxy is the regression this
-// fix targets (#363): with TRUST_PROXY_HEADERS on, two different real clients
-// arriving through the same fronting proxy (identical RemoteAddr) must key the
-// limiter on their distinct Fly-Client-IP, not collapse onto one shared bucket
-// — otherwise an attacker hammering one household's login from behind the
-// proxy would also lock out every other household sharing it.
-//
-// covers: INV-AUTH-17
-func TestLocalLogin_RateLimitIsolationBehindTrustedProxy(t *testing.T) {
-	h := newAuthHarness(t)
-	h.h.trustProxyHeaders = true
-	h.seedLocalUser(t, "victim@example.com", "the-correct-passphrase")
-
-	loginAs := func(flyIP string) *httptest.ResponseRecorder {
-		buf, err := json.Marshal(map[string]string{
-			"email": "attacker-target@example.com", "password": "deliberately-wrong",
-		})
-		if err != nil {
-			t.Fatalf("marshal: %v", err)
-		}
-		req := httptest.NewRequest(http.MethodPost, "/auth/local/login", bytes.NewReader(buf))
-		req.Header.Set("Content-Type", "application/json")
-		req.RemoteAddr = "192.0.2.100:443" // shared proxy address for both "clients"
-		req.Header.Set("Fly-Client-IP", flyIP)
-		rec := httptest.NewRecorder()
-		h.router.ServeHTTP(rec, req)
-		return rec
-	}
-
-	// Attacker (203.0.113.1) trips their own IP bucket.
-	var attackerGot429 bool
-	for i := 0; i < 6; i++ {
-		if rec := loginAs("203.0.113.1"); rec.Code == http.StatusTooManyRequests {
-			attackerGot429 = true
-			break
-		}
-	}
-	if !attackerGot429 {
-		t.Fatal("attacker never tripped the rate limiter")
-	}
-
-	// A different real client (203.0.113.2) behind the same proxy, targeting a
-	// different (unrelated) email, must still get a normal 401 — not swept up
-	// in the attacker's IP-bucket backoff.
+// failedLogin posts a wrong-password login as the given peer with the given
+// forwarding headers and returns the response.
+func (h *authHarness) failedLogin(t *testing.T, email, remoteAddr, flyIP, xff string) *httptest.ResponseRecorder {
+	t.Helper()
 	buf, err := json.Marshal(map[string]string{
-		"email": "victim@example.com", "password": "wrong-but-unrelated",
+		"email": email, "password": "deliberately-wrong",
 	})
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodPost, "/auth/local/login", bytes.NewReader(buf))
 	req.Header.Set("Content-Type", "application/json")
-	req.RemoteAddr = "192.0.2.100:443"
-	req.Header.Set("Fly-Client-IP", "203.0.113.2")
+	req.RemoteAddr = remoteAddr
+	if flyIP != "" {
+		req.Header.Set("Fly-Client-IP", flyIP)
+	}
+	if xff != "" {
+		req.Header.Set("X-Forwarded-For", xff)
+	}
 	rec := httptest.NewRecorder()
 	h.router.ServeHTTP(rec, req)
+	return rec
+}
 
-	requireStatus(t, rec, http.StatusUnauthorized)
+// TestLocalLogin_ForgedHeadersCannotDodgeLimiter is the bypass this fix closes
+// (#755): a caller reaching the app directly (an untrusted peer) who sends a
+// fresh Fly-Client-IP / X-Forwarded-For on every attempt must still land in one
+// bucket — their own — and trip the backoff. Each attempt targets a different
+// email so only the per-IP bucket can be what trips.
+//
+// covers: INV-AUTH-34
+func TestLocalLogin_ForgedHeadersCannotDodgeLimiter(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		trusted string
+		forge   func(i int) (flyIP, xff string)
+	}{
+		{"nothing trusted, forged Fly-Client-IP", "", func(i int) (string, string) { return fmt.Sprintf("198.51.100.%d", i+1), "" }},
+		{"nothing trusted, forged XFF", "", func(i int) (string, string) { return "", fmt.Sprintf("198.51.100.%d", i+1) }},
+		{"proxy list, untrusted peer, forged XFF", "10.0.0.0/8", func(i int) (string, string) { return "", fmt.Sprintf("198.51.100.%d", i+1) }},
+		{"fly preset, public peer, forged Fly-Client-IP", "fly", func(i int) (string, string) { return fmt.Sprintf("198.51.100.%d", i+1), "" }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newAuthHarness(t)
+			trusted, err := clientip.Parse(tc.trusted)
+			if err != nil {
+				t.Fatal(err)
+			}
+			h.h.trustedProxies = trusted
+
+			got429 := false
+			for i := 0; i < 12 && !got429; i++ {
+				flyIP, xff := tc.forge(i)
+				got429 = h.failedLogin(t, fmt.Sprintf("target%d@example.com", i), "203.0.113.9:4000", flyIP, xff).Code == http.StatusTooManyRequests
+			}
+			if !got429 {
+				t.Error("forging a new client address per attempt dodged the per-IP limiter")
+			}
+		})
+	}
+}
+
+// TestLocalLogin_RateLimitIsolationBehindTrustedProxy is the regression the
+// original fix targeted (#363), now on TRUSTED_PROXIES: two different real
+// clients arriving through the same trusted proxy (identical RemoteAddr) must
+// key the limiter on their distinct forwarded address, not collapse onto one
+// shared bucket — otherwise an attacker hammering one household's login from
+// behind the proxy would also lock out every other household sharing it. Also
+// covers the two-proxy chain, where the real client sits left of an inner hop.
+//
+// covers: INV-AUTH-17, INV-AUTH-34
+func TestLocalLogin_RateLimitIsolationBehindTrustedProxy(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		trusted string
+		remote  string
+		fly     bool
+		header  func(client string) string
+	}{
+		{"one proxy via XFF", "192.0.2.0/24", "192.0.2.100:443", false, func(c string) string { return c }},
+		{"two proxies via XFF", "192.0.2.0/24,198.18.0.0/15", "192.0.2.100:443", false, func(c string) string { return c + ", 198.18.0.7" }},
+		{"fly preset via Fly-Client-IP", "fly", "172.19.0.2:443", true, func(c string) string { return c }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newAuthHarness(t)
+			trusted, err := clientip.Parse(tc.trusted)
+			if err != nil {
+				t.Fatal(err)
+			}
+			h.h.trustedProxies = trusted
+			login := func(email, client string) *httptest.ResponseRecorder {
+				if tc.fly {
+					return h.failedLogin(t, email, tc.remote, tc.header(client), "")
+				}
+				return h.failedLogin(t, email, tc.remote, "", tc.header(client))
+			}
+
+			// Attacker (203.0.113.1) trips their own IP bucket.
+			var attackerGot429 bool
+			for i := 0; i < 6; i++ {
+				if login("attacker-target@example.com", "203.0.113.1").Code == http.StatusTooManyRequests {
+					attackerGot429 = true
+					break
+				}
+			}
+			if !attackerGot429 {
+				t.Fatal("attacker never tripped the rate limiter")
+			}
+
+			// A different real client behind the same proxy must still get a
+			// normal 401 — not swept up in the attacker's IP-bucket backoff. A
+			// different email keeps the per-email bucket out of the picture.
+			rec := login("victim@example.com", "203.0.113.2")
+			requireStatus(t, rec, http.StatusUnauthorized)
+		})
+	}
 }

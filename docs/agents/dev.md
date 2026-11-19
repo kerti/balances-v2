@@ -59,7 +59,7 @@ fills fields left *unset*, and `.env.dev.example` ships all three pinned to loca
 use the external URL only. Reverting is the same edit backwards.
 
 Add `<APP_URL>/api/auth/google/callback` to the OAuth client's authorized redirect URIs in Google
-Cloud Console, keeping the localhost entry so you can switch back. Leave `TRUST_PROXY_HEADERS=false`
+Cloud Console, keeping the localhost entry so you can switch back. Leave `TRUSTED_PROXIES` unset
 — Vite's proxy doesn't set `X-Forwarded-For`, so the backend sees `127.0.0.1` regardless.
 
 Put an identity layer in front of anything that outlives the session. The dev database holds real
