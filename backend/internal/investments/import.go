@@ -25,6 +25,13 @@ func shapeForSubtype(subtype string) snapshotimport.Shape {
 	}
 }
 
+// accruedDerivedForSubtype reports whether the server derives the subtype's
+// accrued_interest (Value − principal), so its template calls the column ignored
+// (#883, #910). Only a time deposit does; a bond's column still counts.
+func accruedDerivedForSubtype(subtype string) bool {
+	return subtype == "time_deposit"
+}
+
 // handleImportTemplate streams an .xlsx snapshot-import template scoped to the
 // investment — its name + native currency + subtype-driven column shape baked
 // into the example + instructions.
@@ -45,6 +52,7 @@ func (h *Handlers) handleImportTemplate(w http.ResponseWriter, r *http.Request) 
 		PositionName:    name,
 		DefaultCurrency: currency,
 		Shape:           shapeForSubtype(subtype),
+		AccruedDerived:  accruedDerivedForSubtype(subtype),
 	})
 	if err != nil {
 		httperr.WriteRepo(w, "import template: build", err)

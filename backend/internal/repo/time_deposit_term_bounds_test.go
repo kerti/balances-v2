@@ -214,3 +214,75 @@ func TestTimeDeposit_TermEditCannotStrandHistory(t *testing.T) {
 		t.Fatalf("stranding term edit: want ErrOutsideDepositTerm, got %v", err)
 	}
 }
+
+// TestTimeDepositSnapshotImport_ConfinedToTerm verifies the workbook snapshot
+// import holds a deposit's months inside the term the way create, edit, bulk
+// entry and move do (#911, issue #62): a row outside placement..maturity (month
+// granularity, both ends inclusive) is refused with ErrOutsideDepositTerm in the
+// preview and the commit alike, and the all-or-nothing batch writes nothing, not
+// even its in-term rows.
+// covers: INV-BONDS-03
+func TestTimeDepositSnapshotImport_ConfinedToTerm(t *testing.T) {
+	r, ctx, td := newTermBoundsTD(t) // term 2026-01-15 .. 2027-01-15
+	id := td.Investment.ID
+
+	row := func(ym time.Time) repo.ImportInvestmentSnapshotRow {
+		return repo.ImportInvestmentSnapshotRow{
+			YearMonth: ym, Amount: decimal.NewFromInt(50_100_000), Currency: "IDR",
+		}
+	}
+	month := func(y int, m time.Month) time.Time { return time.Date(y, m, 1, 0, 0, 0, 0, time.UTC) }
+	liveCount := func() int {
+		snaps, err := r.ListInvestmentSnapshots(ctx, id)
+		if err != nil {
+			t.Fatalf("ListInvestmentSnapshots: %v", err)
+		}
+		return len(snaps)
+	}
+
+	for _, dryRun := range []bool{true, false} {
+		mode := map[bool]string{true: "preview", false: "commit"}[dryRun]
+
+		t.Run(mode+": month before placement is rejected and nothing is written", func(t *testing.T) {
+			_, err := r.ImportInvestmentSnapshots(ctx, id, []repo.ImportInvestmentSnapshotRow{
+				row(month(2026, time.March)), // in term: must not survive the failed batch
+				row(month(2025, time.December)),
+			}, dryRun)
+			if !errors.Is(err, repo.ErrOutsideDepositTerm) {
+				t.Fatalf("pre-term row: want ErrOutsideDepositTerm, got %v", err)
+			}
+			if n := liveCount(); n != 0 {
+				t.Fatalf("a refused import wrote %d rows", n)
+			}
+		})
+
+		t.Run(mode+": month after maturity is rejected and nothing is written", func(t *testing.T) {
+			_, err := r.ImportInvestmentSnapshots(ctx, id, []repo.ImportInvestmentSnapshotRow{
+				row(month(2026, time.March)),
+				row(month(2027, time.February)),
+			}, dryRun)
+			if !errors.Is(err, repo.ErrOutsideDepositTerm) {
+				t.Fatalf("post-term row: want ErrOutsideDepositTerm, got %v", err)
+			}
+			if n := liveCount(); n != 0 {
+				t.Fatalf("a refused import wrote %d rows", n)
+			}
+		})
+	}
+
+	t.Run("the placement and maturity months are admitted", func(t *testing.T) {
+		res, err := r.ImportInvestmentSnapshots(ctx, id, []repo.ImportInvestmentSnapshotRow{
+			row(month(2026, time.January)), // placed on the 15th: the whole month is in term
+			row(month(2027, time.January)),
+		}, false)
+		if err != nil {
+			t.Fatalf("in-term import: %v", err)
+		}
+		if res.ToInsert != 2 {
+			t.Fatalf("want 2 inserts, got %+v", res)
+		}
+		if n := liveCount(); n != 2 {
+			t.Fatalf("want 2 live rows, got %d", n)
+		}
+	})
+}

@@ -19,7 +19,8 @@ import (
 // the caller's transaction, so the earlier value survives as an ordinary
 // soft-deleted row. `supersedes` stays NULL: it keeps its one meaning, "a close
 // row displaced this" (ADR-0052 §2), because a compacted backup carries every
-// archived row a live row supersedes.
+// archived row a live row supersedes. The one exception is a close row replaced
+// by another 0-value reading, which inherits the link (carriedSupersedes, #912).
 //
 // A write whose fields all equal the live row's is unchanged and writes
 // nothing, so re-saving or re-importing identical data creates no archived rows.
@@ -161,6 +162,20 @@ func mapSnapshotWriteErr(op string, err error) error {
 	return fmt.Errorf("%s: %w", op, err)
 }
 
+// carriedSupersedes is the `supersedes` a replacement row inherits from the live
+// row it archives. A close row names the snapshot its terminal flip displaced
+// (ADR-0052 §2); when a write replaces that close row with another 0-value
+// reading (an import carrying a different statement date, #912) the link moves to
+// the replacement, so un-terminate still hands the displaced snapshot back
+// (INV-LIFECYCLE-04). A non-zero replacement is the user's own value: it wins
+// over the archive on un-terminate, so it stays an ordinary row naming nothing.
+func carriedSupersedes(cur *uuid.UUID, amount decimal.Decimal) *uuid.UUID {
+	if cur == nil || !amount.Round(amountScale).IsZero() {
+		return nil
+	}
+	return cur
+}
+
 // replaceAssetSnapshot writes p as the live asset snapshot for p.YearMonth
 // inside qtx's transaction. It returns the live row after the write and, when
 // an earlier live row was archived, that row's id. Create's ownership CTE is
@@ -176,6 +191,7 @@ func replaceAssetSnapshot(ctx context.Context, qtx *db.Queries, user uuid.UUID, 
 		if assetSnapshotUnchanged(cur, p) {
 			return cur, nil, replaceUnchanged, nil
 		}
+		p.Supersedes = carriedSupersedes(cur.Supersedes, p.Amount)
 		rows, err := qtx.SoftDeleteAssetSnapshot(ctx, db.SoftDeleteAssetSnapshotParams{
 			ID: cur.ID, HouseholdID: p.HouseholdID, UpdatedBy: &user,
 		})
@@ -212,6 +228,7 @@ func replaceLiabilitySnapshot(ctx context.Context, qtx *db.Queries, user uuid.UU
 		if liabilitySnapshotUnchanged(cur, p) {
 			return cur, nil, replaceUnchanged, nil
 		}
+		p.Supersedes = carriedSupersedes(cur.Supersedes, p.Amount)
 		rows, err := qtx.SoftDeleteLiabilitySnapshot(ctx, db.SoftDeleteLiabilitySnapshotParams{
 			ID: cur.ID, HouseholdID: p.HouseholdID, UpdatedBy: &user,
 		})
@@ -247,6 +264,7 @@ func replaceReceivableSnapshot(ctx context.Context, qtx *db.Queries, user uuid.U
 		if receivableSnapshotUnchanged(cur, p) {
 			return cur, nil, replaceUnchanged, nil
 		}
+		p.Supersedes = carriedSupersedes(cur.Supersedes, p.Amount)
 		rows, err := qtx.SoftDeleteReceivableSnapshot(ctx, db.SoftDeleteReceivableSnapshotParams{
 			ID: cur.ID, HouseholdID: p.HouseholdID, UpdatedBy: &user,
 		})
@@ -282,6 +300,7 @@ func replaceInvestmentSnapshot(ctx context.Context, qtx *db.Queries, user uuid.U
 		if investmentSnapshotUnchanged(cur, p) {
 			return cur, nil, replaceUnchanged, nil
 		}
+		p.Supersedes = carriedSupersedes(cur.Supersedes, p.Amount)
 		rows, err := qtx.SoftDeleteInvestmentSnapshot(ctx, db.SoftDeleteInvestmentSnapshotParams{
 			ID: cur.ID, HouseholdID: p.HouseholdID, UpdatedBy: &user,
 		})

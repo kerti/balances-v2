@@ -422,6 +422,12 @@ func (r *InvestmentRepo) ImportInvestmentSnapshots(ctx context.Context, investme
 	}
 
 	for _, row := range rows {
+		// A time deposit's months are confined to its term on every write path
+		// (issue #62, #911); a no-op for every other subtype. Checked up front so
+		// the preview refuses what the commit would, before anything is written.
+		if err := bounds.checkSnapshotMonth(row.YearMonth); err != nil {
+			return nil, err
+		}
 		if err := validateInvestmentSnapshotShape(inv.Subtype, row.Quantity, row.PricePerUnit, row.AccruedInterest); err != nil {
 			return nil, err
 		}

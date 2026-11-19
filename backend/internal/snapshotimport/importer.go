@@ -171,6 +171,12 @@ type TemplateMeta struct {
 	// empty (but non-nil) slice, which still emits the sheet with just its
 	// header. The other position groups leave it nil: they have no ledger.
 	Transactions []ExportTransaction
+	// AccruedDerived marks an ShapeAccruedInterest position whose accrued_interest
+	// the server derives (a time deposit: Value − principal) and so ignores in the
+	// file (#883). The column stays on the sheet — the shape is shared with bonds
+	// and an export carries the derived figure — but the instructions say it is
+	// not read. Bonds leave it false: their column still counts.
+	AccruedDerived bool
 }
 
 // DetailField is one key/value row on the Detail sheet. Value is the example
@@ -462,6 +468,11 @@ func exampleRow(meta TemplateMeta) []string {
 	case ShapeQuantityPrice:
 		return []string{"2015-01", "2015-01-31", "100", "8500", meta.DefaultCurrency, "100 units @ 8,500"}
 	case ShapeAccruedInterest:
+		if meta.AccruedDerived {
+			// accrued_interest is not read for a time deposit, so the example
+			// leaves it blank rather than imply a figure matters.
+			return []string{"2015-01", "2015-01-31", "50250000", "", meta.DefaultCurrency, "Value on the statement"}
+		}
 		return []string{"2015-01", "2015-01-31", "50250000", "250000", meta.DefaultCurrency, "Total incl. accrued"}
 	default:
 		return []string{"2015-01", "2015-01-31", "10000000", meta.DefaultCurrency, "Opening balance"}
@@ -489,6 +500,18 @@ func instructions(meta TemplateMeta) []string {
 			"                   (The total value is quantity × price_per_unit — computed for you.)",
 		}
 	case ShapeAccruedInterest:
+		if meta.AccruedDerived {
+			// A time deposit's statement shows one net figure, so the server works
+			// the interest out itself (#883, #910).
+			valueLines = []string{
+				"  amount           — the total value that month as the statement shows it",
+				"                     (principal plus interest), digits only, no thousands",
+				"                     separators. Required.",
+				"  accrued_interest — ignored. The interest is worked out as amount − principal,",
+				"                     so anything in this column, or nothing, makes no difference.",
+			}
+			break
+		}
 		valueLines = []string{
 			"  amount           — the total value that month (including accrued interest),",
 			"                     digits only, no thousands separators. Required.",
@@ -508,7 +531,7 @@ func instructions(meta TemplateMeta) []string {
 		"You do NOT need a row for every month. The report carries the latest value",
 		"forward until the next one, so enter only the months you actually have a figure for.",
 		"",
-		"Re-importing is safe: a month you already imported is overwritten, not duplicated.",
+		"Re-importing is safe: a month you already imported is replaced, not duplicated, and the old value is archived.",
 		"",
 		"Editing in Google Sheets / LibreOffice / Numbers / Excel is all fine —",
 		"just use \"Download as .xlsx\" (NOT CSV) when you save to upload.",
