@@ -19,6 +19,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    # On a daemon restart (host reboot, Docker upgrade) depends_on is not
+    # re-evaluated; each container returns by its own policy alone (#961).
+    restart: unless-stopped
 
   # One-shot: apply pending migrations, then exit 0. The app waits on this
   # completing successfully, so a failed migration leaves a clearly-failed

@@ -459,6 +459,13 @@ that success. A non-zero exit leaves a clearly failed `migrate` container and no
 (usually a bad `DATABASE_URL`-derived password or an interrupted prior upgrade), then `docker compose
 up -d` to retry. The database is never left half-migrated.
 
+**After a host reboot the site returns 502 and `app` keeps restarting.**
+`postgres`, `app` and `caddy` are `restart: unless-stopped`, so they come back on their own after a
+reboot or Docker upgrade; `migrate` is one-shot and stays exited, which is expected. Stacks created
+from `v0.9.0-alpha.11` or earlier had no restart policy on `postgres`: run `docker compose up -d` once
+after upgrading so the container picks up the new policy (or start it by hand with
+`docker compose up -d postgres`).
+
 **I can sign in but get bounced straight back to the login page (or the cookie won't stick).**
 Almost always `COOKIE_SECURE=true` while the site is served over plain HTTP. A `Secure` cookie is
 dropped by the browser on non-HTTPS connections, so the session never persists. Either put HTTPS in
