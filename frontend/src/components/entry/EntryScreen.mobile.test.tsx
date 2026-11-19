@@ -78,6 +78,23 @@ it("mobile: renders the stacked amount input under the same testid and meets the
   expect(screen.getByTestId("receivable-entry-row-r2")).toHaveTextContent(/no previous value/i);
 });
 
+it("mobile: the count and Save all share a bar that sticks to the bottom, safe-area aware (#941)", async () => {
+  setViewport(500);
+  server.use(
+    http.get("/api/receivables/snapshots/entry", () => HttpResponse.json(entryList)),
+    http.get("/api/household/members", () => HttpResponse.json([])),
+  );
+  renderScreen();
+
+  const bar = await screen.findByTestId("receivable-entry-save-bar");
+  // jsdom has no layout, so assert the phone-only utility classes (desktop
+  // keeps the plain row: every sticky class is max-md: scoped).
+  expect(bar).toHaveClass("max-md:sticky", "max-md:bottom-0");
+  expect(bar.className).toContain("env(safe-area-inset-bottom)");
+  expect(bar).toContainElement(screen.getByTestId("receivable-entry-dirty-count"));
+  expect(bar).toContainElement(screen.getByTestId("receivable-entry-save"));
+});
+
 // covers: INV-SNAPSHOTS-06
 it("mobile: Save still sends only the dirty rows from the shared container", async () => {
   setViewport(500);

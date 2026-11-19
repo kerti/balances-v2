@@ -454,7 +454,12 @@ export function EntryScreen({ config }: { config: EntryGroupConfig }) {
               <p className="text-sm text-destructive">{errorMessage(save.error)}</p>
             )}
 
-            <div className="flex items-center justify-between">
+            {/* Phones: pinned to the viewport bottom so the count and Save all stay
+                in reach on a long list (#941); md+ is the plain inline row. */}
+            <div
+              className="flex items-center justify-between max-md:sticky max-md:bottom-0 max-md:z-10 max-md:-mx-6 max-md:border-t max-md:bg-background max-md:px-6 max-md:pt-3 max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+              data-testid={`${tid}-entry-save-bar`}
+            >
               <div className="flex flex-wrap items-center gap-x-2">
                 <span
                   className="text-sm text-muted-foreground"

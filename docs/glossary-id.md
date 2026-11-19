@@ -125,8 +125,9 @@ the choice is non-obvious.
 | Invite (verb) | Undang | — |
 | Revoke (an invite) | Batalkan | "Batalkan undangan". The invite is withdrawn before it is accepted; _Avoid_: Cabut (reads as stripping a right from someone who already has it). |
 | Pending (invite) | Tertunda | "Undangan tertunda": sent, not yet accepted or expired. |
-| Dormant (member) | Belum bisa masuk | User-facing status "Can't sign in yet" → "Belum bisa masuk". The domain term stays _dormant_ ([[adr-0039]]); the screen says what it means for the person. |
-| Reactivate (a member) | Aktifkan kembali | — |
+| Dormant (member) | Belum ada kata sandi | User-facing badge "No password set" → "Belum ada kata sandi" (#942). The domain term stays _dormant_ ([[adr-0039]]); the screen says what it means for the person. |
+| Reactivate (a member) | Buat tautan masuk | UI action "Create sign-in link" (#942). |
+| Holdings (Tags report column) | Aset | Not "Kepemilikan", which is Ownership (#943). Columns read Aset / Liabilitas / Bersih. |
 | Sign in | Masuk | — |
 | Sign out | Keluar | — |
 | Erasure (whole-household hard delete, ADR-0040) | Hapus (rumah tangga) | Rendered as a plain verb phrase ("Hapus rumah tangga ini"), not a noun loanword — matches Restore's existing informal treatment ("Pulihkan"/"cadangan" have no dedicated glossary row either). _Avoid_: Penghapusan (correct but reads bureaucratic for a destructive-action button). |

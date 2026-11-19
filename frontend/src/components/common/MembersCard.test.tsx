@@ -101,7 +101,7 @@ it("lists every member with a You tag, a joined date and a dormant status, plus 
   const carol = screen.getByTestId("member-row-carol@example.test");
   expect(within(carol).getByText("Caz")).toBeInTheDocument();
   expect(within(carol).queryByTestId("member-you-tag")).not.toBeInTheDocument();
-  expect(within(carol).getByTestId("member-dormant-tag")).toHaveTextContent("Can't sign in yet");
+  expect(within(carol).getByTestId("member-dormant-tag")).toHaveTextContent("No password set");
   expect(within(carol).getByText("20 Mar 2026")).toBeInTheDocument();
 
   const dave = screen.getByTestId("invite-row-dave@example.test");

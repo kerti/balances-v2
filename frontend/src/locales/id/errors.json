@@ -55,7 +55,7 @@
     "FOUNDING_DISABLED": "Instans ini tidak terbuka untuk rumah tangga baru saat ini.",
     "RESET_LINK_NO_LONGER_VALID": "Tautan setel ulang ini sudah tidak berlaku. Minta yang baru untuk melanjutkan.",
     "FORBIDDEN": "Anda tidak memiliki izin untuk melakukan itu.",
-    "MEMBER_NOT_DORMANT": "Anggota itu sudah memiliki cara untuk masuk, jadi tidak dapat diaktifkan kembali di sini.",
+    "MEMBER_NOT_DORMANT": "Anggota itu sudah memiliki cara untuk masuk, jadi tautan masuk tidak perlu dibuat.",
     "EMAIL_TAKEN": "Email itu sudah terdaftar. Coba masuk saja.",
     "WEAK_PASSWORD": "Pilih kata sandi yang lebih kuat: minimal 10 karakter dan bukan kata sandi yang umum.",
     "INVALID_CREDENTIALS": "Email atau kata sandi salah.",
