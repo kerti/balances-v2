@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
+import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
 import {
   asOfInputValue,
   defaultRecordMonth,
@@ -106,12 +108,14 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   const { t } = useTranslation(["investments", "common"]);
   // Open straight away when a create flow just landed on this item (#843).
   const [open, setOpen] = useState(useRecordOnArrival());
-  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+  const { form, setForm, existing, last, prior, pickMonth, reset } = useRecordSnapshotForm({
     snapshots,
     emptyForm,
     formFrom,
   });
   const mutation = existing ? updateMutation : createMutation;
+  // A value (quantity x price) 10x or a tenth of the last one waits for a yes (#933).
+  const [ask, setAsk] = useState<SwingAsk | null>(null);
 
   const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
   const ledgerQty = ledgerQuantity(transactions);
@@ -139,12 +143,20 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
 
   function close() {
     setOpen(false);
+    setAsk(null);
     createMutation.reset();
     updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (derivedAmount === null) return;
+    const question = swingAsk(prior, derivedAmount, currency);
+    if (question) setAsk(question);
+    else save();
+  }
+
+  function save() {
     if (derivedAmount === null) return;
     const common = {
       amount: derivedAmount,
@@ -212,6 +224,14 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
             </Button>
           </DialogFooter>
         </ValidatedForm>
+        <SwingConfirmDialog
+          ask={ask}
+          onConfirm={() => {
+            setAsk(null);
+            save();
+          }}
+          onCancel={() => setAsk(null)}
+        />
       </DialogContent>
     </Dialog>
   );

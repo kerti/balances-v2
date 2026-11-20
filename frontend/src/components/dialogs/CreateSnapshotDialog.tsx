@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
+import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
 import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { RevaluationSuggestion } from "@/lib/revaluation";
@@ -85,12 +87,14 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
   const { t } = useTranslation("common");
   // Open straight away when a create flow just landed on this item (#843).
   const [open, setOpen] = useState(useRecordOnArrival());
-  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+  const { form, setForm, existing, last, prior, pickMonth, reset } = useRecordSnapshotForm({
     snapshots,
     emptyForm,
     formFrom,
   });
   const mutation = existing ? updateMutation : createMutation;
+  // A figure 10x or a tenth of the last one waits for a yes (#933).
+  const [ask, setAsk] = useState<SwingAsk | null>(null);
 
   function begin() {
     reset();
@@ -102,12 +106,19 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
 
   function close() {
     setOpen(false);
+    setAsk(null);
     createMutation.reset();
     updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    const question = swingAsk(prior, form.amount, currency);
+    if (question) setAsk(question);
+    else save();
+  }
+
+  function save() {
     const common = {
       currency,
       as_of_date: form.as_of_date || null,
@@ -164,6 +175,14 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
             </Button>
           </DialogFooter>
         </ValidatedForm>
+        <SwingConfirmDialog
+          ask={ask}
+          onConfirm={() => {
+            setAsk(null);
+            save();
+          }}
+          onCancel={() => setAsk(null)}
+        />
       </DialogContent>
     </Dialog>
   );

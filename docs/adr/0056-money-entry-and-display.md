@@ -60,3 +60,14 @@ and amends [[adr-0011]]'s display table.
   its CLDR default gives IDR 0 digits. The PDF fixtures get regenerated.
 - A large IDR total is 3 characters longer (`Rp1.234.567.890,00`). The dashboard hero and list totals
   need checking at 390px.
+
+## Amendment (2026-11-20, #933): say what was dropped, refuse misplaced grouping
+
+Two refinements to §2 and §3, from the demo audit. A keystroke the field discards (a letter, a
+space) now shows **Numbers only** under it for about 2 s, announced politely, so a dropped key no
+longer looks like a dead one. And §3's strictness reaches text inserted in one edit: grouping that
+is not thousands (the locale's grouping mark not followed by exactly three digits) is refused with
+**Check this number** instead of falling back to the per-key rule, which read `1,5` as a decimal
+and `12,34,567` as nothing at all. Inside a `ValidatedForm` the refusal also fails the field's own
+validity, so Save is blocked until the figure is edited. A keyed separator is unchanged: it is
+still the decimal point.

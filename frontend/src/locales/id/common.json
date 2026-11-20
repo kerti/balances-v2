@@ -177,6 +177,13 @@
     "replaceNotice": "{{month}} sudah memiliki {{value}}, menyimpan akan menggantinya.",
     "lastRecorded": "Terakhir dicatat: {{value}} ({{month}})",
     "sameAsLast": "Sama seperti bulan lalu",
+    "swing": {
+      "title": "Apakah nilai ini sudah benar?",
+      "up": "{{value}} adalah 10 kali lipat atau lebih dari nilai terakhir yang tercatat, {{prior}} ({{month}}). Tetap simpan?",
+      "down": "{{value}} adalah sepersepuluh atau kurang dari nilai terakhir yang tercatat, {{prior}} ({{month}}). Tetap simpan?",
+      "confirm": "Tetap simpan",
+      "cancel": "Kembali"
+    },
     "createTitle": "Catat snapshot bulanan",
     "createDescription": "Masukkan nilai akhir bulan. Dicatat dalam mata uang item ini ({{currency}}).",
     "editTitle": "Ubah snapshot",
@@ -398,7 +405,9 @@
   },
   "numericInput": {
     "invalidPaste": "Isian ini tidak bisa dibaca sebagai angka.",
-    "tooLong": "Angka ini terlalu panjang untuk kolom ini."
+    "tooLong": "Angka ini terlalu panjang untuk kolom ini.",
+    "malformedGrouping": "Periksa angka ini",
+    "numbersOnly": "Hanya angka"
   },
   "notFound": {
     "title": "Halaman tidak ditemukan",

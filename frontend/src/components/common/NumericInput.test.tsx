@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import i18n from "@/i18n";
 import { NumericInput } from "@/components/common/NumericInput";
+import { ValidatedForm } from "@/components/common/ValidatedForm";
 import { currencyDecimals } from "@/lib/format";
 
 // Ported from kerti/uruni's AmountInput tests (ADR-0056), widened from whole
@@ -27,8 +28,10 @@ function Controlled({
   maxIntegerDigits,
   allowNegative,
   initial = "",
+  required,
 }: {
   onChange: (v: string) => void;
+  required?: boolean;
   decimals?: number;
   maxIntegerDigits?: number;
   allowNegative?: boolean;
@@ -43,6 +46,7 @@ function Controlled({
         decimals={decimals}
         maxIntegerDigits={maxIntegerDigits}
         allowNegative={allowNegative}
+        required={required}
         value={value}
         onChange={(v) => {
           setValue(v);
@@ -120,9 +124,17 @@ describe("NumericInput", () => {
     expect(input.value).toBe("48,500,000");
     expect(onChange).toHaveBeenLastCalledWith("48500000");
 
-    // Text that doesn't parse whole falls back to the per-key rule.
+    // Text that doesn't parse whole falls back to the per-key rule, unless it
+    // misuses the grouping mark: that is refused (#933), never read as a decimal.
+    onChange.mockClear();
     fireEvent.change(input, { target: { value: "48,500,0001,5" } });
-    expect(onChange).toHaveBeenLastCalledWith("485000001.5");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input.value).toBe("48,500,000");
+    expect(screen.getByRole("alert")).toHaveTextContent("Check this number");
+
+    // A one-shot insert with no grouping mark in it is still the per-key rule.
+    fireEvent.change(input, { target: { value: "48,500,0005a" } });
+    expect(onChange).toHaveBeenLastCalledWith("485000005");
   });
 
   it("ignores a typed separator on a field with no decimal places", async () => {
@@ -364,5 +376,212 @@ describe("NumericInput", () => {
       setup({ allowNegative: true, initial: "-1500.5" });
       expect((screen.getByLabelText("Amount") as HTMLInputElement).value).toBe("-1,500.5");
     });
+  });
+});
+
+// #933: a keystroke the field drops says so, briefly, without refusing anything
+// else, and without moving what is emitted.
+// covers: INV-PRESENTATION-35
+describe("NumericInput: Numbers only hint", () => {
+  const hint = () => screen.getByRole("status");
+
+  it("is silent until something is dropped, and the live region is always mounted", async () => {
+    const { input } = setup();
+    expect(hint()).toHaveTextContent("");
+    await userEvent.type(input, "12");
+    expect(hint()).toHaveTextContent("");
+  });
+
+  it.each([
+    ["a letter", "a", "en-GB"],
+    ["a space", " ", "en-GB"],
+    ["a symbol", "%", "id-ID"],
+    ["a minus on an unsigned field", "-", "en-GB"],
+  ])("shows for %s, in the app language", async (_name, key, locale) => {
+    await i18n.changeLanguage(locale);
+    const { onChange, input } = setup();
+    await userEvent.type(input, "5");
+    onChange.mockClear();
+    await userEvent.type(input, key);
+    expect(hint()).toHaveTextContent(locale === "en-GB" ? "Numbers only" : "Hanya angka");
+    expect(hint()).toHaveAttribute("aria-live", "polite");
+    expect(input.value).toBe("5");
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["a digit", "5", {}],
+    ["a typed separator", ".", {}],
+    ["a typed comma", ",", {}],
+    ["a separator on a no-decimal field", ",", { decimals: 0 }],
+  ])("does not show for %s", async (_name, key, props) => {
+    const { input } = setup(props);
+    await userEvent.type(input, `1${key}`);
+    expect(hint()).toHaveTextContent("");
+  });
+
+  it("does not show for a minus on a signed field", async () => {
+    const { input } = setup({ allowNegative: true });
+    await userEvent.type(input, "-5");
+    expect(hint()).toHaveTextContent("");
+  });
+
+  it("goes after about two seconds, and a second dropped key restarts the clock", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const { input } = setup();
+      fireEvent.change(input, { target: { value: "x" } });
+      expect(hint()).toHaveTextContent("Numbers only");
+      act(() => vi.advanceTimersByTime(1500));
+      fireEvent.change(input, { target: { value: "xy" } });
+      act(() => vi.advanceTimersByTime(1500));
+      expect(hint()).toHaveTextContent("Numbers only");
+      act(() => vi.advanceTimersByTime(600));
+      expect(hint()).toHaveTextContent("");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// #933: grouping that is not thousands is refused, never guessed at.
+// covers: INV-PRESENTATION-35
+describe("NumericInput: malformed grouping", () => {
+  const refused = [
+    ["en-GB", "1,5"],
+    ["en-GB", "12,34,567"],
+    ["en-GB", "1234,567"],
+    ["en-GB", "1,2345"],
+    ["en-GB", "1,000,00"],
+    ["en-GB", "1.000,5"],
+    ["id-ID", "1.5"],
+    ["id-ID", "12.34.567"],
+    ["id-ID", "1234.567"],
+    ["id-ID", "1.2345"],
+    ["id-ID", "1,000.5"],
+  ] as const;
+  const read = [
+    ["en-GB", "1,000", "1000"],
+    ["en-GB", "1,234,567.89", "1234567.89"],
+    ["en-GB", "999", "999"],
+    ["id-ID", "1.000", "1000"],
+    ["id-ID", "1.234.567,89", "1234567.89"],
+    ["id-ID", "1,5", "1.5"],
+    ["id-ID", "999", "999"],
+  ] as const;
+  const message = (locale: string) =>
+    locale === "en-GB" ? "Check this number" : "Periksa angka ini";
+
+  it.each(refused)("refuses a paste in %s of %s, keeping the value", async (locale, text) => {
+    await i18n.changeLanguage(locale);
+    const { onChange, input } = setup({ initial: "500" });
+    await userEvent.click(input);
+    await userEvent.paste(text);
+    expect(input.value).toBe("500");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(message(locale));
+  });
+
+  it.each(refused)("refuses a one-shot insert in %s of %s", async (locale, text) => {
+    await i18n.changeLanguage(locale);
+    const { onChange, input } = setup();
+    fireEvent.change(input, { target: { value: text } });
+    expect(input.value).toBe("");
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(message(locale));
+  });
+
+  it.each(read)("reads a well-formed paste in %s of %s", async (locale, text, want) => {
+    await i18n.changeLanguage(locale);
+    const { onChange, input } = setup();
+    await userEvent.click(input);
+    await userEvent.paste(text);
+    expect(onChange).toHaveBeenLastCalledWith(want);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(input.validity.valid).toBe(true);
+  });
+
+  it("does not call a different failure malformed grouping", async () => {
+    const { input } = setup();
+    await userEvent.click(input);
+    await userEvent.paste("1.2.3");
+    expect(screen.getByRole("alert")).toHaveTextContent("isn't a number");
+    // Nor does it block Save: only a malformed figure does.
+    expect(input.validity.valid).toBe(true);
+  });
+
+  it("clears on the next edit, and marks the field invalid while it stands", async () => {
+    const { onChange, input } = setup({ initial: "500" });
+    await userEvent.click(input);
+    await userEvent.paste("1,5");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input.validity.valid).toBe(false);
+    expect(input.validationMessage).toBe("Check this number");
+
+    await userEvent.type(input, "0");
+    expect(onChange).toHaveBeenLastCalledWith("5000");
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(input.validity.valid).toBe(true);
+  });
+
+  it("clears when the value is set from outside", () => {
+    const { rerender } = render(
+      <NumericInput aria-label="X" decimals={2} value="500" onChange={() => {}} />,
+    );
+    const input = screen.getByLabelText("X") as HTMLInputElement;
+    fireEvent.paste(input, { clipboardData: { getData: () => "1,5" } });
+    expect(input.validity.valid).toBe(false);
+    rerender(<NumericInput aria-label="X" decimals={2} value="900" onChange={() => {}} />);
+    expect(input.validity.valid).toBe(true);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("keeps the typed-separator rule: a keyed comma is still the decimal point", async () => {
+    const { onChange, input } = setup();
+    await userEvent.type(input, "1,5");
+    expect(input.value).toBe("1.5");
+    expect(onChange).toHaveBeenLastCalledWith("1.5");
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("blocks a ValidatedForm's submit and says why, once", async () => {
+    const onSubmit = vi.fn();
+    render(
+      <ValidatedForm onSubmit={onSubmit}>
+        <Controlled onChange={() => {}} initial="500" />
+        <button type="submit">Save</button>
+      </ValidatedForm>,
+    );
+    const input = screen.getByLabelText("Amount") as HTMLInputElement;
+    await userEvent.click(input);
+    await userEvent.paste("12,34,567");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.getAllByText("Check this number")).toHaveLength(1);
+    expect(screen.getByTestId("field-error-amt")).toHaveTextContent("Check this number");
+
+    // Fixing the figure lets Save through, with the message gone.
+    await userEvent.type(input, "1");
+    expect(screen.queryByText("Check this number")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("names the malformed figure, not 'required', on an empty required field", async () => {
+    render(
+      <ValidatedForm onSubmit={vi.fn()}>
+        <Controlled onChange={() => {}} required />
+        <button type="submit">Save</button>
+      </ValidatedForm>,
+    );
+    const input = screen.getByLabelText("Amount") as HTMLInputElement;
+    await userEvent.click(input);
+    await userEvent.paste("1,5");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    expect(screen.getByTestId("field-error-amt")).toHaveTextContent("Check this number");
+    expect(screen.getAllByText("Check this number")).toHaveLength(1);
+    expect(screen.queryByText("This field is required.")).toBeNull();
   });
 });

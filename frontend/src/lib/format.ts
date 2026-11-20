@@ -302,6 +302,18 @@ export function parseLocaleNumber(
   return m[2] === undefined ? sign + int : `${sign}${int}.${m[2]}`;
 }
 
+// hasMalformedGrouping reports text that uses the locale's grouping mark but not
+// as a thousands separator (#933): "1,5", "12,34,567", "1234,567" in en-GB;
+// "1.5" in id-ID. A group mark must be followed by exactly three digits, and the
+// strict reader above refuses the rest rather than guess whether it meant a
+// decimal. Text that has no grouping mark between digits, or that reads fine, is
+// not malformed grouping (it may still be unreadable for another reason).
+export function hasMalformedGrouping(text: string, locale?: Locale): boolean {
+  const { group } = numberSeparators(locale);
+  const between = new RegExp(`\\d${escapeRegExp(group)}\\d`);
+  return between.test(text) && parseLocaleNumber(text, locale, { allowNegative: true }) === null;
+}
+
 // Entry limits for the non-money numeric columns (ADR-0011 precision shapes):
 // quantities are NUMERIC(20,8); a price per unit is NUMERIC(20,4), and takes all
 // four places because a fund's NAV is quoted to four.

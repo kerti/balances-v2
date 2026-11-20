@@ -52,6 +52,10 @@ export function isControl(el: unknown): el is Control {
 export function nativeMessage(el: Control): string | undefined {
   const v = el.validity;
   if (v.valid) return undefined;
+  // A control that set its own validity (NumericInput's malformed figure, #933)
+  // carries its own localised message. It goes first: a refused paste into an
+  // empty required field is also valueMissing, and "required" would hide why.
+  if (v.customError && el.validationMessage) return el.validationMessage;
   if (v.valueMissing) return i18n.t("common:validation.required");
   const isDate = el instanceof HTMLInputElement && ["date", "month"].includes(el.type);
   if (v.rangeUnderflow && "min" in el) {

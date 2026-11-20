@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
+import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
 import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
 import { useOnRecordOpen, useOnRecordRequest } from "@/lib/recordSnapshotRequest";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
@@ -105,12 +107,14 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
     description: s.description ?? "",
   });
 
-  const { form, setForm, existing, last, pickMonth, reset } = useRecordSnapshotForm({
+  const { form, setForm, existing, last, prior, pickMonth, reset } = useRecordSnapshotForm({
     snapshots,
     emptyForm,
     formFrom,
   });
   const mutation = existing ? updateMutation : createMutation;
+  // A total value 10x or a tenth of the last one waits for a yes (#933).
+  const [ask, setAsk] = useState<SwingAsk | null>(null);
 
   const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest);
 
@@ -128,12 +132,19 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
 
   function close() {
     setOpen(false);
+    setAsk(null);
     createMutation.reset();
     updateMutation.reset();
   }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    const question = swingAsk(prior, form.amount, currency);
+    if (question) setAsk(question);
+    else save();
+  }
+
+  function save() {
     const common = {
       amount: form.amount,
       currency,
@@ -204,6 +215,14 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
             </Button>
           </DialogFooter>
         </ValidatedForm>
+        <SwingConfirmDialog
+          ask={ask}
+          onConfirm={() => {
+            setAsk(null);
+            save();
+          }}
+          onCancel={() => setAsk(null)}
+        />
       </DialogContent>
     </Dialog>
   );
