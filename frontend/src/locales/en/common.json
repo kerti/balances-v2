@@ -177,6 +177,13 @@
     "replaceNotice": "{{month}} already has {{value}}, saving replaces it.",
     "lastRecorded": "Last recorded: {{value}} ({{month}})",
     "sameAsLast": "Same as last month",
+    "swing": {
+      "title": "Is this value right?",
+      "up": "{{value}} is 10 times or more than the last recorded value, {{prior}} ({{month}}). Save it anyway?",
+      "down": "{{value}} is a tenth or less of the last recorded value, {{prior}} ({{month}}). Save it anyway?",
+      "confirm": "Save anyway",
+      "cancel": "Go back"
+    },
     "createTitle": "Record monthly snapshot",
     "createDescription": "Enter the month-end value. It is recorded in this item's currency ({{currency}}).",
     "editTitle": "Edit snapshot",
@@ -398,7 +405,9 @@
   },
   "numericInput": {
     "invalidPaste": "That isn't a number this field can read.",
-    "tooLong": "That number is too long for this field."
+    "tooLong": "That number is too long for this field.",
+    "malformedGrouping": "Check this number",
+    "numbersOnly": "Numbers only"
   },
   "notFound": {
     "title": "Page not found",

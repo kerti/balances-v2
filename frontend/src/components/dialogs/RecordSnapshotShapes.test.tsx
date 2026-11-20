@@ -134,6 +134,39 @@ describe("Record snapshot, quantity × price", () => {
     );
     expect(create).not.toHaveBeenCalled();
   });
+
+  // #933: the checked figure is the value (quantity x price), so a typo in either
+  // factor is caught and a split (quantity x10, price /10) is not.
+  // covers: INV-SNAPSHOTS-19
+  it("asks when quantity x price is 10x the last value, and not for a split", async () => {
+    const { create } = setup(history);
+    await open();
+    await userEvent.type(screen.getByLabelText("Quantity"), "60");
+    await userEvent.type(screen.getByLabelText(/Price per unit/), "1100");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+
+    expect(create).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(
+      /66,000.*10 times or more.*6,600.*\(Sep 2026\)/,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: "60", price_per_unit: "1100", amount: "66000" }),
+      expect.anything(),
+    );
+  });
+
+  // covers: INV-SNAPSHOTS-19
+  it("does not ask when a split moves quantity and price but not the value", async () => {
+    const { create } = setup(history);
+    await open();
+    await userEvent.type(screen.getByLabelText("Quantity"), "600");
+    await userEvent.type(screen.getByLabelText(/Price per unit/), "11");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(create).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("Record snapshot, time deposit (one Value, #844)", () => {
@@ -216,6 +249,21 @@ describe("Record snapshot, time deposit (one Value, #844)", () => {
       }),
       expect.anything(),
     );
+  });
+
+  // covers: INV-SNAPSHOTS-19
+  it("asks when the Value is a tenth of the last one", async () => {
+    const { create } = setup(history);
+    await open();
+    await userEvent.type(screen.getByLabelText("Value (IDR)"), "10150000");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+
+    expect(create).not.toHaveBeenCalled();
+    expect(await screen.findByRole("alertdialog")).toHaveTextContent(
+      /10,150,000.*a tenth or less.*101,500,000/,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   it("Same as last month fills the Value, and a recorded month replaces through update", async () => {

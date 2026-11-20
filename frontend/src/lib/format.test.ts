@@ -19,6 +19,7 @@ import {
   groupCanonical,
   formatQuantity,
   parseLocaleNumber,
+  hasMalformedGrouping,
   currencyDecimals,
 } from "@/lib/format";
 
@@ -360,6 +361,45 @@ describe("parseLocaleNumber", () => {
   it("drops leading zeros and reads a bare fraction", () => {
     expect(parseLocaleNumber("007", "en-GB")).toBe("7");
     expect(parseLocaleNumber(".5", "en-GB")).toBe("0.5");
+  });
+});
+
+// covers: INV-PRESENTATION-35
+describe("hasMalformedGrouping", () => {
+  const cases: Array<[string, "en-GB" | "id-ID", boolean]> = [
+    // A grouping mark that is not a thousands separator.
+    ["1,5", "en-GB", true],
+    ["12,34,567", "en-GB", true],
+    ["1234,567", "en-GB", true],
+    ["1,2345", "en-GB", true],
+    ["1,000,00", "en-GB", true],
+    ["1.000,5", "en-GB", true],
+    ["Rp 1,5", "en-GB", true],
+    ["-1,5", "en-GB", true],
+    ["1.5", "id-ID", true],
+    ["12.34.567", "id-ID", true],
+    ["1234.567", "id-ID", true],
+    ["1,000.5", "id-ID", true],
+    // Well-formed: nothing to flag.
+    ["1,000", "en-GB", false],
+    ["1,234,567.89", "en-GB", false],
+    ["-1,234", "en-GB", false],
+    ["1.000", "id-ID", false],
+    ["1.234.567,89", "id-ID", false],
+    ["1,5", "id-ID", false],
+    ["1234.5", "en-GB", false],
+    ["1234,5", "id-ID", false],
+    // Unreadable for some other reason, or no grouping mark between digits.
+    ["", "en-GB", false],
+    ["abc", "en-GB", false],
+    ["1.2.3", "en-GB", false],
+    ["1,", "en-GB", false],
+    [",5", "en-GB", false],
+    ["12a34", "en-GB", false],
+  ];
+
+  it.each(cases)("%s in %s -> %s", (text, locale, want) => {
+    expect(hasMalformedGrouping(text, locale)).toBe(want);
   });
 });
 

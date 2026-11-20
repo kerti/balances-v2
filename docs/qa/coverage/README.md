@@ -4,7 +4,7 @@
 <!-- Rows come from docs/qa/invariants/; counts are computed from
      `// covers:` annotations in the test suite. -->
 
-**259 / 259** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
+**261 / 261** invariants are verified in the per-PR gate (0 covered only nightly, 0 uncovered). The per-PR number is what `make qa-matrix -strict` enforces.
 
 | Zone | Per-PR | Coverage |
 |----|----|----|
@@ -12,7 +12,7 @@
 | FINANCE | 41 / 41 | [FINANCE](02-finance.md) |
 | LIFECYCLE | 10 / 10 | [LIFECYCLE](03-lifecycle.md) |
 | AUTH | 34 / 34 | [AUTH](04-auth.md) |
-| SNAPSHOTS | 18 / 18 | [SNAPSHOTS](05-snapshots.md) |
+| SNAPSHOTS | 19 / 19 | [SNAPSHOTS](05-snapshots.md) |
 | COST-BASIS | 4 / 4 | [COST-BASIS](06-cost-basis.md) |
 | IMPORT | 12 / 12 | [IMPORT](07-import.md) |
 | BONDS | 4 / 4 | [BONDS](08-bonds.md) |
@@ -23,7 +23,7 @@
 | STALENESS | 4 / 4 | [STALENESS](13-staleness.md) |
 | ATTRIBUTION | 4 / 4 | [ATTRIBUTION](14-attribution.md) |
 | INTEGRITY | 4 / 4 | [INTEGRITY](15-integrity.md) |
-| PRESENTATION | 34 / 34 | [PRESENTATION](16-presentation.md) |
+| PRESENTATION | 35 / 35 | [PRESENTATION](16-presentation.md) |
 | JOURNEYS | 6 / 6 | [JOURNEYS](17-journeys.md) |
 | NOTIFICATIONS | 13 / 13 | [NOTIFICATIONS](18-notifications.md) |
 | CONTRACT | 5 / 5 | [CONTRACT](19-contract.md) |

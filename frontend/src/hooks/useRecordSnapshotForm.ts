@@ -29,6 +29,9 @@ export function useRecordSnapshotForm<S extends Dated, F extends Dateable>({
   const existing = snapshotForMonth(snapshots, form.year_month);
   // "Same as last month" only makes sense for an empty month.
   const last = existing ? undefined : lastRecordedBefore(snapshots, form.year_month);
+  // The previous month's value, in replace mode too: what a new figure is
+  // checked against for a 10x / a tenth swing (#933).
+  const prior = lastRecordedBefore(snapshots, form.year_month);
 
   function startFor(yearMonth: string): F {
     const found = snapshotForMonth(snapshots, yearMonth);
@@ -60,5 +63,5 @@ export function useRecordSnapshotForm<S extends Dated, F extends Dateable>({
     }
   }
 
-  return { form, setForm, existing, last, pickMonth, reset };
+  return { form, setForm, existing, last, prior, pickMonth, reset };
 }

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useLayoutEffect,
   useRef,
@@ -10,7 +11,13 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
-import { groupCanonical, numberSeparators, parseLocaleNumber } from "@/lib/format";
+import { useFormErrors } from "@/components/ui/field-error";
+import {
+  groupCanonical,
+  hasMalformedGrouping,
+  numberSeparators,
+  parseLocaleNumber,
+} from "@/lib/format";
 
 // NumericInput is the one field for amounts, quantities, prices and rates
 // (ADR-0056), ported from kerti/uruni's AmountInput. It holds and emits a
@@ -22,6 +29,13 @@ import { groupCanonical, numberSeparators, parseLocaleNumber } from "@/lib/forma
 // the grouping itself, a typed "." or "," can only mean the decimal point, which
 // is what makes a phone's region-following decimal key work in either locale.
 // Pasted text goes through the strict parseLocaleNumber instead.
+//
+// Feedback (#933): a typed character the field drops (a letter, a space) flashes
+// a "Numbers only" hint under it for a couple of seconds, announced politely. A
+// paste or one-shot insert that misuses the grouping mark ("1,5", "12,34,567")
+// is refused with "Check this number" — the field never guesses whether it meant
+// a decimal — and, inside a ValidatedForm, marks the field invalid so Save is
+// blocked until the figure is edited.
 type Props = Omit<ComponentProps<typeof Input>, "value" | "onChange" | "type" | "inputMode"> & {
   value: string;
   onChange: (value: string) => void;
@@ -35,7 +49,16 @@ type Props = Omit<ComponentProps<typeof Input>, "value" | "onChange" | "type" | 
   allowNegative?: boolean;
 };
 
-type PasteError = "invalid" | "tooLong";
+type PasteError = "invalid" | "tooLong" | "malformed";
+
+const ERROR_KEY: Record<PasteError, string> = {
+  invalid: "numericInput.invalidPaste",
+  tooLong: "numericInput.tooLong",
+  malformed: "numericInput.malformedGrouping",
+};
+
+// How long the "Numbers only" hint stays up after a dropped keystroke.
+const HINT_MS = 2000;
 
 const MODEL_RE = /^-?\d*(\.\d*)?$/;
 
@@ -95,7 +118,18 @@ export function NumericInput({
   // What the user has typed while focused. Differs from `value` only by a
   // trailing "." (canonical() drops it); a value set from outside wins.
   const [model, setModel] = useState("");
-  const [error, setError] = useState<PasteError | null>(null);
+  // The refusal showing under the field, and the value it was raised against: an
+  // edit clears it, and so does the value changing from outside (a prefill, a
+  // month switch), which would otherwise leave a stale block on Save.
+  const [refusal, setRefusal] = useState<{ kind: PasteError; value: string } | null>(null);
+  const error = refusal !== null && refusal.value === value ? refusal.kind : null;
+  const [hint, setHint] = useState(false);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formMessage = useFormErrors()?.messageFor(rest.id);
+  const errorText = error ? t(ERROR_KEY[error]) : null;
+  // Inside a ValidatedForm the same text is drawn under the field once it is
+  // blurred or submitted; show it once.
+  const showError = errorText !== null && formMessage !== errorText;
   // Model characters before the caret after the next render, set by an edit.
   const caretModel = useRef<number | null>(null);
 
@@ -125,6 +159,29 @@ export function NumericInput({
     return text.length;
   }
 
+  function setError(kind: PasteError | null) {
+    setRefusal(kind === null ? null : { kind, value });
+  }
+
+  function flashHint() {
+    setHint(true);
+    if (hintTimer.current !== null) clearTimeout(hintTimer.current);
+    hintTimer.current = setTimeout(() => setHint(false), HINT_MS);
+  }
+
+  useEffect(
+    () => () => {
+      if (hintTimer.current !== null) clearTimeout(hintTimer.current);
+    },
+    [],
+  );
+
+  // A malformed figure blocks the form's Save through the field's own validity,
+  // which ValidatedForm reads on submit and blur.
+  useEffect(() => {
+    inputRef.current?.setCustomValidity(error === "malformed" && errorText ? errorText : "");
+  }, [error, errorText]);
+
   useLayoutEffect(() => {
     const input = inputRef.current;
     if (caretModel.current === null || input === null) return;
@@ -147,6 +204,8 @@ export function NumericInput({
     caretModel.current = Math.max(0, caret + n.shift);
     setModel(n.model);
     setError(null);
+    // Before onChange bubbles to the form, which re-reads the field's validity.
+    inputRef.current?.setCustomValidity("");
     onChange(canonical(n.model));
   }
 
@@ -176,16 +235,28 @@ export function NumericInput({
         commit(whole, whole.length);
         return;
       }
+      // A grouping mark in the wrong place is refused, not read as a decimal.
+      if (whole === null && inserted.includes(group) && hasMalformedGrouping(next)) {
+        input.value = prev;
+        input.setSelectionRange(p, p);
+        setError("malformed");
+        return;
+      }
     }
     let head = toModel(prev.slice(0, p));
     let tail = toModel(prev.slice(prev.length - s));
     let typed = "";
     let flipSign = false;
+    let dropped = false;
     for (const ch of inserted) {
       if (ch >= "0" && ch <= "9") typed += ch;
-      else if ((ch === "." || ch === ",") && decimals > 0) typed += ".";
-      else if ((ch === "-" || ch === "\u2212") && allowNegative) flipSign = !flipSign;
+      else if (ch === "." || ch === ",") {
+        // A separator on a no-decimal field is ignored (ADR-0056 \u00a72), not junk.
+        if (decimals > 0) typed += ".";
+      } else if ((ch === "-" || ch === "\u2212") && allowNegative) flipSign = !flipSign;
+      else dropped = true;
     }
+    if (dropped) flashHint();
     // A delete that took only a group mark meant the digit beside it.
     if (inserted === "" && removed !== "" && toModel(removed) === "") {
       const inputType = (event.nativeEvent as InputEvent).inputType;
@@ -225,7 +296,7 @@ export function NumericInput({
     const input = event.currentTarget;
     const pasted = readPasted(event.clipboardData.getData("text"));
     if (pasted === null) {
-      setError("invalid");
+      setError(hasMalformedGrouping(event.clipboardData.getData("text")) ? "malformed" : "invalid");
       return;
     }
     const start = input.selectionStart ?? display.length;
@@ -282,13 +353,24 @@ export function NumericInput({
         onFocus={handleFocus}
         onBlur={handleBlur}
         aria-invalid={error !== null || rest["aria-invalid"] ? true : undefined}
-        aria-describedby={error ? [describedBy, errorId].filter(Boolean).join(" ") : describedBy}
+        aria-describedby={
+          showError ? [describedBy, errorId].filter(Boolean).join(" ") : describedBy
+        }
       />
-      {error && (
+      {showError && (
         <p id={errorId} role="alert" className="text-xs text-destructive">
-          {t(error === "invalid" ? "numericInput.invalidPaste" : "numericInput.tooLong")}
+          {errorText}
         </p>
       )}
+      {/* Always mounted, so a screen reader hears the text arrive; empty, it is
+          out of flow and silent. */}
+      <p
+        role="status"
+        aria-live="polite"
+        className={hint ? "text-xs text-muted-foreground" : "sr-only"}
+      >
+        {hint ? t("numericInput.numbersOnly") : ""}
+      </p>
     </div>
   );
 }

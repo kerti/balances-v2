@@ -173,12 +173,85 @@ describe("CreateSnapshotDialog (Record snapshot)", () => {
     // "Same as last month" now copies the latest snapshot before Sep: Aug.
     expect(screen.getByTestId("snapshot-last-recorded")).toHaveTextContent(/\(Aug 2026\)/);
 
-    await userEvent.type(screen.getByLabelText(/Amount/), "7");
+    await userEvent.type(screen.getByLabelText(/Amount/), "1100000");
     await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
     expect(create).toHaveBeenCalledWith(
-      expect.objectContaining({ year_month: "2026-09", amount: "7" }),
+      expect.objectContaining({ year_month: "2026-09", amount: "1100000" }),
       expect.anything(),
     );
     expect(update).not.toHaveBeenCalled();
+  });
+
+  // #933: a single-entry save 10x or a tenth of the last recorded month asks first.
+  // covers: INV-SNAPSHOTS-19
+  describe("10x / a tenth swing", () => {
+    const history = [snap("s1", "2026-10", "5000000")];
+    const save = () => userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    const type = (text: string) => userEvent.type(screen.getByLabelText(/Amount/), text);
+
+    it("asks before saving a figure 10x the last one, and saves on Save anyway", async () => {
+      const { create } = setup(history);
+      await open();
+      await type("50000000");
+      await save();
+
+      expect(create).not.toHaveBeenCalled();
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("Is this value right?");
+      expect(dialog).toHaveTextContent(/50,000,000.*10 times or more.*5,000,000.*\(Oct 2026\)/);
+
+      await userEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+      expect(create).toHaveBeenCalledTimes(1);
+      expect(create).toHaveBeenCalledWith(
+        expect.objectContaining({ year_month: "2026-11", amount: "50000000" }),
+        expect.anything(),
+      );
+    });
+
+    it("asks before saving a tenth, and Go back leaves the form as it was", async () => {
+      const { create } = setup(history);
+      await open();
+      await type("500000");
+      await save();
+
+      expect(await screen.findByRole("alertdialog")).toHaveTextContent(
+        /500,000.*a tenth or less.*5,000,000/,
+      );
+      await userEvent.click(screen.getByRole("button", { name: "Go back" }));
+      expect(create).not.toHaveBeenCalled();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/Amount/)).toHaveValue("500,000");
+    });
+
+    it.each([
+      ["an ordinary change", history, "6000000"],
+      ["a zero", history, "0"],
+      ["a first snapshot", [], "50000000"],
+      ["a zero prior", [snap("z", "2026-10", "0")], "50000000"],
+    ])("does not ask for %s", async (_name, snapshots, amount) => {
+      const { create } = setup(snapshots);
+      await open();
+      await type(amount);
+      await save();
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(create).toHaveBeenCalledTimes(1);
+    });
+
+    it("asks in replace mode too, against the month before, and replaces through update", async () => {
+      const { create, update } = setup([
+        snap("s2", "2026-11", "5200000"),
+        snap("s1", "2026-10", "5000000"),
+      ]);
+      await open();
+      expect(screen.getByLabelText(/Amount/)).toHaveValue("5,200,000");
+      await userEvent.clear(screen.getByLabelText(/Amount/));
+      await type("52000000");
+      await save();
+
+      expect(await screen.findByRole("alertdialog")).toHaveTextContent(/5,000,000.*\(Oct 2026\)/);
+      await userEvent.click(screen.getByRole("button", { name: "Save anyway" }));
+      expect(update).toHaveBeenCalledTimes(1);
+      expect(create).not.toHaveBeenCalled();
+    });
   });
 });
