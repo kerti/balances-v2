@@ -53,7 +53,8 @@ test("tags: set in Create, change and clear in Edit, report renders, cleanup", a
     .getByText(acctName)
     .click();
   await expect(page.getByRole("heading", { level: 1, name: acctName })).toBeVisible();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByTestId("position-menu-edit").click();
   const editDialog = page.getByRole("dialog");
   await expect(editDialog.getByText("Edit bank account")).toBeVisible();
   await expect(editDialog.getByTestId("tag-select")).toHaveValue(tagId!);
@@ -72,7 +73,8 @@ test("tags: set in Create, change and clear in Edit, report renders, cleanup", a
   expect(await taggedItemTagId(page, acctName)).toBeNull();
 
   // --- Set it again in the Edit dialog; persists across a reload ---
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByTestId("position-menu-edit").click();
   await expect(editDialog.getByTestId("tag-select")).toHaveValue("");
   patched = saved();
   await editDialog.getByTestId("tag-select").selectOption({ label: tagName });
@@ -82,7 +84,8 @@ test("tags: set in Create, change and clear in Edit, report renders, cleanup", a
   expect(await taggedItemTagId(page, acctName)).toBe(tagId);
 
   await page.reload();
-  await page.getByRole("button", { name: "Edit", exact: true }).click();
+  await page.getByTestId("position-menu-trigger").click();
+  await page.getByTestId("position-menu-edit").click();
   await expect(page.getByRole("dialog").getByTestId("tag-select")).toHaveValue(tagId!);
   await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
 

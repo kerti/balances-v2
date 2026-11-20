@@ -135,12 +135,10 @@ describe("detail mobile a11y floor (qty×price)", () => {
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });
     expect(action).toHaveClass("size-11");
 
-    // #542/#788: Record snapshot is the lone, promoted primary of the create
-    // row — the large tap target (`h-11 md:h-8`) plus the Button primitive's
-    // `max-md:min-h-11` floor (#559).
+    // #935: Record snapshot is the detail header primary, with the Button
+    // primitive floor
+    // `max-md:min-h-11` (#559).
     const record = screen.getByRole("button", { name: "Record snapshot" });
-    expect(record).toHaveClass("h-11");
-    expect(record).toHaveClass("md:h-8");
     expect(record).toHaveClass("max-md:min-h-11");
     expect(screen.queryByTestId("snapshot-carryover")).not.toBeInTheDocument();
 

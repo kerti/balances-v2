@@ -64,6 +64,7 @@ describe("Record snapshot, quantity × price", () => {
         createMutation={create.mutation}
         updateMutation={update.mutation}
       />,
+      { recordButton: true },
     );
     return { create: create.mutate, update: update.mutate };
   }
@@ -155,6 +156,7 @@ describe("Record snapshot, time deposit (one Value, #844)", () => {
         updateMutation={update.mutation}
         principal="100000000"
       />,
+      { recordButton: true },
     );
     return { create: create.mutate, update: update.mutate };
   }
@@ -259,6 +261,7 @@ describe("Record snapshot, accrued interest", () => {
         updateMutation={update.mutation}
         couponDisposition="accrues"
       />,
+      { recordButton: true },
     );
     return { create: create.mutate, update: update.mutate };
   }

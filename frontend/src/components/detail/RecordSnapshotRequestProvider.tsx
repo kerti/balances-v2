@@ -6,7 +6,12 @@ import { RecordSnapshotRequestContext } from "@/lib/recordSnapshotRequest";
 export function RecordSnapshotRequestProvider({ children }: { children: ReactNode }) {
   const [seq, setSeq] = useState(0);
   const request = useCallback(() => setSeq((n) => n + 1), []);
-  const value = useMemo(() => ({ seq, available: true, request }), [seq, request]);
+  const [openSeq, setOpenSeq] = useState(0);
+  const open = useCallback(() => setOpenSeq((n) => n + 1), []);
+  const value = useMemo(
+    () => ({ seq, available: true, request, openSeq, open }),
+    [seq, request, openSeq, open],
+  );
   return (
     <RecordSnapshotRequestContext.Provider value={value}>
       {children}

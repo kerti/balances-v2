@@ -1,4 +1,4 @@
-import { Archive, MoreHorizontal, Trash2 } from "lucide-react";
+import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +14,16 @@ type Props = {
   // An active position offers "Close…"; a closed one "Change status" (the same
   // dialog, reopened to correct the date or note).
   active: boolean;
+  onEdit: () => void;
   onClose: () => void;
   onDelete: () => void;
 };
 
-// The detail header's ⋯ menu (#839): the status change and the delete, behind one
-// icon button so the header stays Help · Edit · ⋯ on a single row at every width.
-// Delete sits last, below a separator, in destructive red; the confirm + undo
+// The detail header's ⋯ menu (#839, #935): Edit, the status change and the delete,
+// behind one icon button so the header stays Help · Record snapshot · ⋯ on a single
+// row at every width. Delete sits last, below a separator, in destructive red; the confirm + undo
 // flow it opens is unchanged (ADR-0058).
-export function PositionActionsMenu({ active, onClose, onDelete }: Props) {
+export function PositionActionsMenu({ active, onEdit, onClose, onDelete }: Props) {
   const { t } = useTranslation("common");
   // The trigger is dead on iOS without this — see `useMenuOpenOnClick` (#572).
   const menu = useMenuOpenOnClick();
@@ -41,6 +42,10 @@ export function PositionActionsMenu({ active, onClose, onDelete }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={onEdit} data-testid="position-menu-edit">
+          <Pencil />
+          {t("actions.edit")}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onClose} data-testid="position-menu-close">
           <Archive />
           {active ? t("terminate.closeTrigger") : t("terminate.editTrigger")}

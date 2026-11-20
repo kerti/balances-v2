@@ -28,6 +28,7 @@ describe("Record snapshot initial focus", () => {
         createMutation={mutation()}
         updateMutation={mutation()}
       />,
+      { recordButton: true },
     );
     await open();
     expect(screen.getByLabelText(/^Amount/)).toHaveFocus();
@@ -47,6 +48,7 @@ describe("Record snapshot initial focus", () => {
         createMutation={mutation()}
         updateMutation={mutation()}
       />,
+      { recordButton: true },
     );
     await open();
     expect(screen.getByLabelText("Quantity")).toHaveFocus();
@@ -60,6 +62,7 @@ describe("Record snapshot initial focus", () => {
         createMutation={mutation()}
         updateMutation={mutation()}
       />,
+      { recordButton: true },
     );
     await open();
     expect(screen.getByLabelText(/^Total value/)).toHaveFocus();
@@ -73,6 +76,7 @@ describe("Record snapshot initial focus", () => {
         updateMutation={mutation()}
         principal="100000000"
       />,
+      { recordButton: true },
     );
     await open();
     expect(screen.getByLabelText("Value (IDR)")).toHaveFocus();

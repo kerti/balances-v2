@@ -15,12 +15,18 @@ export type RecordSnapshotRequest = {
   seq: number;
   available: boolean;
   request: () => void;
+  // The header's plain "Record snapshot" button (#935): opens the dialog on its
+  // default month with nothing carried over, unlike `request`, which prefills.
+  openSeq: number;
+  open: () => void;
 };
 
 export const RecordSnapshotRequestContext = createContext<RecordSnapshotRequest>({
   seq: 0,
   available: false,
   request: () => {},
+  openSeq: 0,
+  open: () => {},
 });
 
 export function useRecordSnapshotRequest(): RecordSnapshotRequest {
@@ -37,5 +43,16 @@ export function useOnRecordRequest(onRequest: () => void) {
   if (seq !== seen) {
     setSeen(seq);
     onRequest();
+  }
+}
+
+// For the Record snapshot dialogs: runs `onOpen` once for each press of the
+// header's Record snapshot button (same derive-during-render pattern).
+export function useOnRecordOpen(onOpen: () => void) {
+  const { openSeq } = useContext(RecordSnapshotRequestContext);
+  const [seen, setSeen] = useState(openSeq);
+  if (openSeq !== seen) {
+    setSeen(openSeq);
+    onOpen();
   }
 }

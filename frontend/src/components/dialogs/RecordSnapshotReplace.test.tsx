@@ -68,7 +68,7 @@ describe("Record snapshot replace round trip", () => {
         return new HttpResponse(null, { status: 204 });
       }),
     );
-    renderWithProviders(<Harness />);
+    renderWithProviders(<Harness />, { recordButton: true });
 
     await userEvent.click(screen.getByRole("button", { name: "Record snapshot" }));
     // The notice is there before anything is sent.
