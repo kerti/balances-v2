@@ -79,10 +79,9 @@ export type SnapshotSectionRender<TSnap extends SnapshotShape> = {
   // below 768px; optional so a snapshot shape not yet carded falls back to the
   // table on mobile instead of rendering nothing. Mutations already bound inside.
   renderCard?: (snapshot: TSnap) => ReactNode;
-  // The snapshot *create* control (the single Record snapshot button), mutations bound. The
-  // core owns the active-gate (a terminated position hides them) and injects
-  // `currency` at render time. Kept separate from the workbook I/O control below
-  // so the header can lay them out as two rows (create / I/O) per #542.
+  // Mounts the Record snapshot dialog (no trigger of its own; the page header's
+  // Record snapshot button opens it, #935), mutations bound. The core owns the
+  // active-gate (a terminated position hides it) and injects `currency` at render time.
   renderCreateControls: (currency: string) => ReactNode;
   // The workbook *import* control, mutations bound. Split out of the create
   // controls so it rides the Export button on the header's second row (#542).

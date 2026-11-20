@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { focusFirstValue } from "@/lib/recordSnapshot";
+import { useOnRecordOpen } from "@/lib/recordSnapshotRequest";
 import { useRecordOnArrival } from "@/lib/recordOnArrival";
-import { Plus } from "lucide-react";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
 import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
@@ -98,6 +97,9 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
     setOpen(true);
   }
 
+  // The detail header's Record snapshot button (#935) asks this dialog to open.
+  useOnRecordOpen(begin);
+
   function close() {
     setOpen(false);
     createMutation.reset();
@@ -126,14 +128,6 @@ export function CreateSnapshotDialog<TCreated, TUpdated>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? begin() : close())}>
-      {/* The single entry point to recording a value (#788): the primary of the
-          create row, with the large mobile tap target (`h-11 md:h-8`). */}
-      <DialogTrigger asChild>
-        <Button size="sm" className="h-11 md:h-8" data-testid="snapshot-record">
-          <Plus className="mr-1 size-4" />
-          {t("snapshot.recordTrigger")}
-        </Button>
-      </DialogTrigger>
       <DialogContent onOpenAutoFocus={focusFirstValue}>
         <DialogHeader>
           <DialogTitle>{t("snapshot.createTitle")}</DialogTitle>

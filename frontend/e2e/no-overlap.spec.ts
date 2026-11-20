@@ -264,7 +264,10 @@ test(
         );
         await openAndCheck(
           page,
-          () => page.getByRole("button", { name: "Edit", exact: true }).click(),
+          async () => {
+            await page.getByTestId("position-menu-trigger").click();
+            await page.getByTestId("position-menu-edit").click();
+          },
           at("Edit bank account"),
         );
 
@@ -300,7 +303,7 @@ test(
         );
       }
 
-      // --- The bond detail page (#839): the header (? · Edit · ⋯), the details
+      // --- The bond detail page (#839): the header (? · Record snapshot · ⋯), the details
       // card's identity line + key/value grid, and the Snapshots | Transactions
       // tab bar, at tablet width (768px, where the grid goes from 3 columns to 2
       // inside a card narrowed by the docked sidebar) and phone width. ---

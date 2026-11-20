@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
 import { MemoryRouter } from "react-router";
 import i18n from "@/i18n";
+import { RecordSnapshotRequestProvider } from "@/components/detail/RecordSnapshotRequestProvider";
+import { RecordSnapshotButton } from "@/test/RecordSnapshotButton";
 
 // A fresh QueryClient per render keeps cache state from leaking between tests;
 // retries off so an intentional error handler surfaces immediately instead of
@@ -22,10 +24,15 @@ export function makeTestQueryClient() {
 // component test exercises hooks (react-query) and copy (i18next) the way it
 // runs in production. A component that reads the URL (the detail page's
 // `?tab=`) opts in with `route`, which mounts a MemoryRouter at that location;
-// a test that brings its own router leaves it out.
+// a test that brings its own router leaves it out. `recordButton` adds the
+// header's Record snapshot button + its request channel for a dialog under test.
 export function renderWithProviders(
   ui: ReactElement,
-  { client = makeTestQueryClient(), route }: { client?: QueryClient; route?: string } = {},
+  {
+    client = makeTestQueryClient(),
+    route,
+    recordButton = false,
+  }: { client?: QueryClient; route?: string; recordButton?: boolean } = {},
 ) {
   function Wrapper({ children }: { children: ReactNode }) {
     const body =
@@ -34,9 +41,17 @@ export function renderWithProviders(
       ) : (
         <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
       );
+    const withRecord = recordButton ? (
+      <RecordSnapshotRequestProvider>
+        <RecordSnapshotButton />
+        {body}
+      </RecordSnapshotRequestProvider>
+    ) : (
+      body
+    );
     return (
       <I18nextProvider i18n={i18n}>
-        <QueryClientProvider client={client}>{body}</QueryClientProvider>
+        <QueryClientProvider client={client}>{withRecord}</QueryClientProvider>
       </I18nextProvider>
     );
   }

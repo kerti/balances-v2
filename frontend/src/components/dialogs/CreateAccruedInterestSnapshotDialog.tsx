@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { focusFirstValue } from "@/lib/recordSnapshot";
 import { useRecordOnArrival } from "@/lib/recordOnArrival";
-import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -13,11 +12,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
 import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
-import { useOnRecordRequest } from "@/lib/recordSnapshotRequest";
+import { useOnRecordOpen, useOnRecordRequest } from "@/lib/recordSnapshotRequest";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
 import type { CouponDisposition } from "@/api/types";
@@ -121,6 +119,9 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
     setOpen(true);
   }
 
+  // The detail header's Record snapshot button (#935) asks this dialog to open.
+  useOnRecordOpen(begin);
+
   // "Update {Mon} holding →" (#830) after a bond trade: this shape has no
   // quantity or price to carry over, so it just opens on the default month.
   useOnRecordRequest(begin);
@@ -151,14 +152,6 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
 
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? begin() : close())}>
-      {/* The single entry point to recording a value (#788); mirrors the
-          amount-only `CreateSnapshotDialog`. */}
-      <DialogTrigger asChild>
-        <Button size="sm" className="h-11 md:h-8" data-testid="snapshot-record">
-          <Plus className="mr-1 size-4" />
-          {t("common:snapshot.recordTrigger")}
-        </Button>
-      </DialogTrigger>
       <DialogContent onOpenAutoFocus={focusFirstValue}>
         <DialogHeader>
           <DialogTitle>{t("investments:accruedInterestSnapshot.createTitle")}</DialogTitle>

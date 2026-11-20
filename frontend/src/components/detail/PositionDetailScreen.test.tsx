@@ -281,7 +281,7 @@ describe("header ⋯ menu", () => {
     return user;
   }
 
-  it("the header is Help, Edit, ⋯ — and Close… / Delete are not loose buttons", async () => {
+  it("the header is Help, Record snapshot, ⋯ — and Edit / Close… / Delete are not loose buttons (#935)", async () => {
     stubStock();
     renderStock();
 
@@ -289,19 +289,19 @@ describe("header ⋯ menu", () => {
     const buttons = within(actions)
       .getAllByRole("button")
       .map((b) => b.getAttribute("data-testid") ?? b.textContent);
-    expect(buttons).toEqual(["help-tour", "Edit", "position-menu-trigger"]);
+    expect(buttons).toEqual(["help-tour", "snapshot-record", "position-menu-trigger"]);
   });
 
-  it("an open position offers Close… then, after a separator, a red Delete", async () => {
+  it("an open position offers Edit, Close… then, after a separator, a red Delete", async () => {
     stubStock();
     renderStock();
     await openMenu();
 
     const menu = await screen.findByRole("menu");
     const items = within(menu).getAllByRole("menuitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Close…", "Delete"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Edit", "Close…", "Delete"]);
     expect(within(menu).getByRole("separator")).toBeInTheDocument();
-    expect(items[1]).toHaveAttribute("data-variant", "destructive");
+    expect(items[2]).toHaveAttribute("data-variant", "destructive");
     expect(within(menu).queryByRole("menuitem", { name: "Change status" })).toBeNull();
   });
 
@@ -315,7 +315,9 @@ describe("header ⋯ menu", () => {
       within(menu)
         .getAllByRole("menuitem")
         .map((i) => i.textContent),
-    ).toEqual(["Change status", "Delete"]);
+    ).toEqual(["Edit", "Change status", "Delete"]);
+    // A closed position has no header primary.
+    expect(screen.queryByTestId("snapshot-record")).not.toBeInTheDocument();
   });
 
   it("Close… opens the status dialog", async () => {

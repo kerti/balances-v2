@@ -205,6 +205,7 @@ function renderRoutes() {
         <Route path="/items/:id" element={<Detail />} />
       </Routes>
     </MemoryRouter>,
+    { recordButton: true },
   );
 }
 
@@ -227,6 +228,7 @@ describe("Landing on the new item", () => {
           <Route path="/items/:id" element={<Detail />} />
         </Routes>
       </MemoryRouter>,
+      { recordButton: true },
     );
     expect(await screen.findByTestId("snapshot-record")).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();

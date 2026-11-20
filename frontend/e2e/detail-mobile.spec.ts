@@ -70,7 +70,7 @@ test(
 
     // #542: the section's *secondary* controls clear 44px too, not only the
     // promoted primary action. The Export trigger stands in for the header /
-    // actions-row secondary sweep (Import / Help / Edit / Terminate /
+    // actions-row secondary sweep (Import / Help / Record snapshot / Terminate /
     // Delete), all raised from `size-sm` to `min-h-11 md:min-h-0` on phones.
     const exportBox = await page.getByTestId("bank-account-export").boundingBox();
     expect(exportBox).not.toBeNull();

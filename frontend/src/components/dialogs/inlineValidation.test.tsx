@@ -107,6 +107,7 @@ describe("inline validation", () => {
         createMutation={mutation as never}
         updateMutation={stub().mutation as never}
       />,
+      { recordButton: true },
     );
     await userEvent.click(
       screen.getByRole("button", { name: i18n.t("common:snapshot.recordTrigger") }),
@@ -127,6 +128,7 @@ describe("inline validation", () => {
         createMutation={mutation as never}
         updateMutation={stub().mutation as never}
       />,
+      { recordButton: true },
     );
     await userEvent.click(
       screen.getByRole("button", { name: i18n.t("common:snapshot.recordTrigger") }),

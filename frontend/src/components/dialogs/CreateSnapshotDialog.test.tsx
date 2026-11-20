@@ -46,6 +46,7 @@ function setup(snapshots: ReturnType<typeof snap>[] | undefined) {
       createMutation={create.mutation}
       updateMutation={update.mutation as never}
     />,
+    { recordButton: true },
   );
   return { create: create.mutate, update: update.mutate };
 }

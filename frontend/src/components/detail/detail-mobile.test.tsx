@@ -129,14 +129,14 @@ describe("detail mobile a11y floor (amount-only)", () => {
 
     // The secondary controls left at `size-sm` after B1 (which floored only the
     // single promoted primary action) — the snapshot-section header Export /
-    // Import triggers and the actions-row Help / Edit / Terminate / Delete —
+    // Import triggers and the actions-row Help / Record snapshot / Terminate / Delete —
     // now inherit the primitive floor (`max-md:min-h-11` on the Button text
     // sizes, #559): ≥44px on phones, natural size
     // (32px) from 768px up. The row ⋮ (above) rides its own `size-11` floor.
     const secondary = [
       await screen.findByTestId("bank-account-export"),
       screen.getByTestId("import-snapshots-trigger"),
-      screen.getByRole("button", { name: /edit/i }),
+      screen.getByTestId("snapshot-record"),
     ];
     for (const control of secondary) {
       expect(control).toHaveClass("max-md:min-h-11");
@@ -151,20 +151,20 @@ describe("detail mobile a11y floor (amount-only)", () => {
     }
   });
 
-  it("lays the snapshot header out as two rows, Record snapshot the lone primary (#542, #788)", async () => {
+  it("makes Record snapshot the header primary; the card keeps only the I/O row (#935)", async () => {
     stubEndpoints();
     renderWithProviders(
       <PositionDetailScreen descriptor={bankAccountDescriptor} assetId="a1" onBack={vi.fn()} />,
       { route: "/" },
     );
 
-    // Row 1 — create: the single Record snapshot button, the promoted primary
-    // (large tap target). Copy carryover and New are gone.
-    const createRow = await screen.findByTestId("snapshot-create-row");
-    const record = within(createRow).getByRole("button", { name: "Record snapshot" });
-    expect(record).toHaveClass("h-11", "md:h-8", "max-md:min-h-11");
-    expect(within(createRow).getAllByRole("button")).toHaveLength(1);
-    expect(within(createRow).queryByTestId("snapshot-carryover")).not.toBeInTheDocument();
+    // The header's one primary; Edit moved into the ⋯ menu.
+    const actions = await screen.findByTestId("tour-actions");
+    expect(within(actions).getByRole("button", { name: "Record snapshot" })).toBeInTheDocument();
+    expect(within(actions).queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    // The snapshots card no longer has its own record button.
+    expect(screen.queryByTestId("snapshot-create-row")).not.toBeInTheDocument();
+    expect(screen.getAllByTestId("snapshot-record")).toHaveLength(1);
 
     // Row 2 — I/O: Export + Import ride the second row.
     const ioRow = screen.getByTestId("snapshot-io-row");

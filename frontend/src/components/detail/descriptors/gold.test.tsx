@@ -210,9 +210,10 @@ describe("goldDescriptor detail (conformance)", () => {
 
     // Actions row + the export anchor (gold-prefixed).
     const actions = screen.getByTestId("tour-actions");
-    expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
-    // Close / Delete live behind the header's ⋯ menu (#839).
+    expect(within(actions).getByTestId("snapshot-record")).toBeInTheDocument();
+    // Edit / Close / Delete live behind the header's ⋯ menu (#839, #935).
     await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
+    expect(await screen.findByRole("menuitem", { name: /edit/i })).toBeInTheDocument();
     expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();
     expect(screen.getByTestId("gold-export")).toHaveAttribute(
       "href",

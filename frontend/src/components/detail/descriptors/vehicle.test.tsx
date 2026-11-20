@@ -131,7 +131,7 @@ describe("vehicleDescriptor detail (conformance)", () => {
     expect(within(snapshotsCard).getByText(/18,?000/)).toBeInTheDocument();
 
     const actions = screen.getByTestId("tour-actions");
-    expect(within(actions).getByRole("button", { name: /edit/i })).toBeInTheDocument();
+    expect(within(actions).getByTestId("snapshot-record")).toBeInTheDocument();
     // Close / Delete live behind the header's ⋯ menu (#839).
     await userEvent.click(within(actions).getByTestId("position-menu-trigger"));
     expect(await screen.findByRole("menuitem", { name: /delete/i })).toBeInTheDocument();

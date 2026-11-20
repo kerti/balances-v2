@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { PageHeader } from "@/components/common/PageHeader";
-import { Download, Pencil } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,7 @@ import { isActiveStatus } from "@/lib/lifecycle";
 import { ownershipLabel } from "@/lib/ownership";
 import { headlineSurface } from "@/lib/headline";
 import { RecordSnapshotRequestProvider } from "@/components/detail/RecordSnapshotRequestProvider";
+import { useRecordSnapshotRequest } from "@/lib/recordSnapshotRequest";
 import type {
   DetailDescriptor,
   HistorySectionSpec,
@@ -45,8 +46,8 @@ type HistoryTab = "snapshots" | "transactions";
 const TAB_PARAM = "tab";
 
 // The generic Position detail screen (ADR-0051). It owns every shared-surface
-// concern as hard JSX — back/title, the actions row (help · edit · ⋯ menu with
-// close/change-status and delete), the details card, the SnapshotChart card + its
+// concern as hard JSX — back/title, the actions row (help · record snapshot · ⋯ menu
+// with edit, close/change-status and delete), the details card, the SnapshotChart card + its
 // ≥2-snapshot guard, the snapshots/transactions tabs, loading/error/not-found,
 // the page scaffold — and touches only the Position shared surface (via
 // `descriptor.getAsset`), never a `details.*` field. The variable regions arrive
@@ -81,6 +82,7 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
   const { data: currentUser } = useSession();
   const ctx = (descriptor.useDetailContext?.(assetId) ?? undefined) as TCtx;
   const [searchParams, setSearchParams] = useSearchParams();
+  const recordSnapshot = useRecordSnapshotRequest();
 
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -187,21 +189,15 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
     ...(snapshotRender.renderCard && {
       renderCard: (snapshot: TSnap) => snapshotRender.renderCard!(snapshot),
     }),
-    // Two deliberate rows (#542), stacked on phones and inline from 768px up:
-    // row 1 = the single Record snapshot button (#788), the promoted primary,
-    // row 2 = the workbook *I/O* pair (Export + Import). Export is always
-    // present so a terminated position can still be backed up; the create row
-    // and Import hide when the position is closed. On phones the header goes
-    // full width and each row's buttons split it evenly (`max-md:[&>*]:flex-1`,
-    // so Record snapshot fills row 1); from 768px up they fall back to natural,
-    // inline widths.
+    // Record snapshot is the page header's primary (#935), so this card carries
+    // only the workbook *I/O* row (Export + Import). The create controls still
+    // mount here, inactive-gated, because they own the dialog the header button
+    // opens (it has no trigger of its own). Export is always present so a
+    // terminated position can still be backed up; Import hides when closed. On
+    // phones the header goes full width and the buttons split it evenly.
     headerActions: (
       <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row md:flex-wrap md:items-center">
-        {active && (
-          <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="snapshot-create-row">
-            {snapshotRender.renderCreateControls(asset.native_currency)}
-          </div>
-        )}
+        {active && snapshotRender.renderCreateControls(asset.native_currency)}
         <div className="flex gap-2 max-md:[&>*]:flex-1" data-testid="snapshot-io-row">
           {/* Export the full position workbook (Detail + Snapshots [+ Transactions
               for investments]). Plain anchor download — session cookie rides along
@@ -231,21 +227,29 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
         title={asset.display_name}
         titleTestId="tour-overview"
         subtitle={headerSecondary}
-        // One row at every width (#839): `?` Help, Edit (the header's one primary
-        // button; it takes the spare width on phones) and the ⋯ menu holding
-        // Close… / Change status and the red Delete.
+        // One row at every width (#839, #935): `?` Help, Record snapshot (the
+        // header's one primary button; it takes the spare width on phones, and is
+        // absent on a closed position) and the ⋯ menu holding Edit, Close… /
+        // Change status and the red Delete.
         actions={
           <div
             data-testid="tour-actions"
             className="flex w-full items-center gap-2 md:w-auto md:justify-end"
           >
             <HelpTourButton steps={tourSteps} />
-            <Button className="max-md:flex-1" onClick={() => setEditOpen(true)}>
-              <Pencil className="mr-1 size-4" />
-              {t("common:actions.edit")}
-            </Button>
+            {active && (
+              <Button
+                className="max-md:flex-1"
+                onClick={recordSnapshot.open}
+                data-testid="snapshot-record"
+              >
+                <Plus className="mr-1 size-4" />
+                {t("common:snapshot.recordTrigger")}
+              </Button>
+            )}
             <PositionActionsMenu
               active={active}
+              onEdit={() => setEditOpen(true)}
               onClose={() => setCloseOpen(true)}
               onDelete={() => setDeleteOpen(true)}
             />
