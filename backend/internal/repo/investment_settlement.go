@@ -9,6 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/snapshotamount"
 )
 
 // InvestmentSettlement is the capture-at-source payload of ADR-0052 §6: the
@@ -72,7 +73,9 @@ func settlementTypeFor(subtype, status string) (string, error) {
 // redundantly. A Sell's amount is always quantity × price_per_unit — never taken
 // from the caller — because amount is the single figure the return formula reads
 // as cash_in (ADR-0008), and letting it disagree with the quantity leg would put
-// the cash flow and the cost basis on different numbers.
+// the cash flow and the cost basis on different numbers. The product is rounded
+// once, explicitly, by the shared helper (ADR-0011 amendment) rather than left
+// to Postgres to round on insert.
 func settlementParams(inv db.Investment, txnType string, s InvestmentSettlement, terminatedAt time.Time) (db.CreateInvestmentTransactionParams, error) {
 	p := db.CreateInvestmentTransactionParams{
 		ID:              inv.ID,
@@ -88,7 +91,7 @@ func settlementParams(inv db.Investment, txnType string, s InvestmentSettlement,
 		if s.PrincipalAmount != nil || s.InterestAmount != nil {
 			return p, fmt.Errorf("%w: settling a sale must not carry maturity columns", ErrInvalidTransactionShape)
 		}
-		amount := s.Quantity.Mul(*s.PricePerUnit)
+		amount := snapshotamount.QuantityPrice(*s.Quantity, *s.PricePerUnit)
 		p.Amount = &amount
 		p.Quantity = s.Quantity
 		p.PricePerUnit = s.PricePerUnit

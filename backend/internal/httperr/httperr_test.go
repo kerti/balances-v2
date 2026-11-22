@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/kerti/balances-v2/backend/internal/errs"
 )
@@ -246,4 +249,47 @@ func TestNewValidator_untaggedFieldFallsBackToGoName(t *testing.T) {
 	if env.Args["field"] != "Untagged" {
 		t.Errorf("args.field: want Untagged, got %v", env.Args["field"])
 	}
+}
+
+// covers: INV-CONTRACT-06
+func TestWriteRepo_numericOutOfRange(t *testing.T) {
+	overflow := &pgconn.PgError{Code: "22003", Message: "numeric field overflow"}
+
+	cases := []struct {
+		name string
+		err  error
+	}{
+		{"bare", overflow},
+		{"wrapped", fmt.Errorf("create investment transaction: %w", overflow)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			WriteRepo(rec, "op", tc.err)
+			if rec.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("status: want 422, got %d", rec.Code)
+			}
+			var env Envelope
+			if err := json.Unmarshal(rec.Body.Bytes(), &env); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if env.Code != CodeValueOutOfRange {
+				t.Errorf("code: want %s, got %s", CodeValueOutOfRange, env.Code)
+			}
+			if env.Args != nil {
+				t.Errorf("args should be nil; got %v", env.Args)
+			}
+			if body := rec.Body.String(); strings.Contains(body, "overflow") {
+				t.Errorf("the Postgres message leaked onto the wire: %s", body)
+			}
+		})
+	}
+
+	t.Run("another Postgres error stays INTERNAL", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		WriteRepo(rec, "op", &pgconn.PgError{Code: "23514", Message: "check violation"})
+		if rec.Code != http.StatusInternalServerError {
+			t.Fatalf("status: want 500, got %d", rec.Code)
+		}
+	})
 }

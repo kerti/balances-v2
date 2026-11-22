@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/kerti/balances-v2/backend/internal/errs"
 )
@@ -85,10 +86,23 @@ func WriteRepo(w http.ResponseWriter, op string, err error) {
 		Write(w, http.StatusConflict, CodeSnapshotCloseNotMovable, nil)
 	case errors.Is(err, errs.ErrSnapshotMoveSameMonth):
 		Write(w, http.StatusBadRequest, CodeSnapshotMoveSameMonth, nil)
+	case isNumericOutOfRange(err):
+		Write(w, http.StatusUnprocessableEntity, CodeValueOutOfRange, nil)
 	default:
 		slog.Error(op, "err", err)
 		Write(w, http.StatusInternalServerError, CodeInternal, nil)
 	}
+}
+
+// pgNumericValueOutOfRange is Postgres SQLSTATE 22003: a value wider than its
+// NUMERIC column (a 17-digit amount in DECIMAL(20,4), a 13-digit quantity in
+// DECIMAL(20,8)). The wire has no per-field digit limits, so one generic
+// mapping covers every write rather than each handler pre-checking its columns.
+const pgNumericValueOutOfRange = "22003"
+
+func isNumericOutOfRange(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgNumericValueOutOfRange
 }
 
 // WriteValidation maps a validator.ValidationErrors to a 400 VALIDATION

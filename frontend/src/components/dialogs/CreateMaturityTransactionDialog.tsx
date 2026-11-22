@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
+import { sumDecimals } from "@/lib/decimal";
 import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 import type { Disposition, RolloverPolicy } from "@/api/types";
 
@@ -100,12 +101,7 @@ export function CreateMaturityTransactionDialog<TResult>({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(() => emptyForm(rolloverPolicy, maturityDate));
 
-  const totalReceived = (() => {
-    const p = Number(form.principal_amount);
-    const i = Number(form.interest_amount);
-    if (Number.isNaN(p) || Number.isNaN(i)) return null;
-    return (p + i).toString();
-  })();
+  const totalReceived = sumDecimals([form.principal_amount, form.interest_amount]);
 
   function close() {
     setOpen(false);
@@ -194,9 +190,7 @@ export function CreateMaturityTransactionDialog<TResult>({
             <span className="text-muted-foreground">
               {t("investments:maturityTxn.totalAtMaturityLabel")}
             </span>{" "}
-            <span className="font-medium">
-              {totalReceived !== null ? formatCurrency(totalReceived, currency) : "—"}
-            </span>
+            <span className="font-medium">{formatCurrency(totalReceived, currency)}</span>
           </div>
 
           {/* Single column: both children are disposition selects whose longest

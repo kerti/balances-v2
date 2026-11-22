@@ -21,6 +21,7 @@ import {
   QUANTITY_INTEGER_DIGITS,
 } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
+import { multiplyDecimals } from "@/lib/decimal";
 import type { UpdateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 import type { InvestmentTransaction } from "@/api/types";
 
@@ -37,15 +38,6 @@ type Props<TResult> = {
   mutation: UseMutationResult<TResult, unknown, UpdateTransactionMutationVariables>;
 };
 
-function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity);
-  const p = Number(pricePerUnit);
-  if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null;
-  }
-  return (q * p).toString();
-}
-
 export function EditTradeTransactionDialog<TResult>({
   open,
   onOpenChange,
@@ -61,7 +53,7 @@ export function EditTradeTransactionDialog<TResult>({
     description: transaction.description ?? "",
   });
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
+  const derivedAmount = multiplyDecimals(form.quantity, form.price_per_unit);
   const isBuy = transaction.transaction_type === "buy";
 
   function submit(e: React.FormEvent) {

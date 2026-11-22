@@ -189,7 +189,13 @@ export function useBulkSaveSnapshots(
         body: JSON.stringify(body),
       });
       if (res.status === 422) {
-        const parsed = (await res.json()) as {
+        const body = await res.json();
+        // The generic overflow mapping (VALUE_OUT_OF_RANGE) is a 422 envelope, not
+        // the per-row body: it is an error, so it throws.
+        if (isEnvelope(body)) {
+          throw new ApiError(res.status, res.statusText || "bulk save failed (422)", body);
+        }
+        const parsed = body as {
           errors: Array<Record<string, unknown> & { code: string }>;
         };
         return {

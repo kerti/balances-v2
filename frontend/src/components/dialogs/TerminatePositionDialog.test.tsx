@@ -211,6 +211,28 @@ describe("TerminatePositionDialog settlement capture", () => {
     });
   });
 
+  // covers: INV-FINANCE-42
+  it("seeds a deposit's principal as an exact difference, not a float", async () => {
+    const user = userEvent.setup();
+    const captured: Captured = { body: undefined };
+    stubInvestment(
+      [{ ...accruedSnapshots[0], amount: "0.3", accrued_interest: "0.1" }],
+      [],
+      captured,
+    );
+    renderDialog("time_deposit");
+
+    await openDialog(user);
+    await user.selectOptions(screen.getByLabelText(/status/i), "matured");
+    await screen.findByTestId("terminate-settlement");
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    await waitFor(() => expect(captured.body).toBeDefined());
+    expect(captured.body).toMatchObject({
+      settlement: { principal_amount: "0.2", interest_amount: "0.1" },
+    });
+  });
+
   // covers: INV-LIFECYCLE-08
   it("stays submittable for a position that was never marked or funded", async () => {
     const user = userEvent.setup();

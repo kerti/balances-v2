@@ -5,6 +5,7 @@ import {
   fromScaled,
   multiplyDecimals,
   subtractDecimals,
+  divideDecimals,
 } from "@/lib/decimal";
 
 describe("sumDecimals", () => {
@@ -108,5 +109,34 @@ describe("subtractDecimals", () => {
   it("returns null for nothing and junk", () => {
     expect(subtractDecimals("", "1")).toBeNull();
     expect(subtractDecimals("1", "x")).toBeNull();
+  });
+});
+
+// covers: INV-FINANCE-42
+describe("divideDecimals", () => {
+  const rows: Array<[string, string, string, string]> = [
+    ["whole", "100", "4", "25"],
+    ["trailing zeros trimmed", "1", "2", "0.5"],
+    ["repeating rounds down at 8", "1", "3", "0.33333333"],
+    ["repeating rounds up at 8", "2", "3", "0.66666667"],
+    ["9th decimal 5 rounds up", "0.000000005", "1", "0.00000001"],
+    ["9th decimal below 5 rounds down", "0.000000004", "1", "0"],
+    ["negative rounds away from zero", "-0.000000005", "1", "-0.00000001"],
+    ["negative dividend and divisor", "-1", "-3", "0.33333333"],
+    ["mixed signs", "1", "-8", "-0.125"],
+    ["zero dividend", "0", "7", "0"],
+    ["decimal divisor", "1.5", "0.5", "3"],
+    ["every digit kept", "123456789012.12345678", "1", "123456789012.12345678"],
+  ];
+  it.each(rows)("%s", (_name, a, b, want) => {
+    expect(divideDecimals(a, b)).toBe(want);
+  });
+
+  it("returns null for a zero divisor, nothing and junk", () => {
+    expect(divideDecimals("1", "0")).toBeNull();
+    expect(divideDecimals("1", "0.000")).toBeNull();
+    expect(divideDecimals("", "3")).toBeNull();
+    expect(divideDecimals("2", "abc")).toBeNull();
+    expect(divideDecimals("1e3", "2")).toBeNull();
   });
 });

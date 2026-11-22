@@ -19,6 +19,17 @@ export type ImportResult = {
   errors: ImportRowError[];
 };
 
+// A 422 here is normally the workbook's own verdict, a body that is data. The
+// generic overflow mapping (VALUE_OUT_OF_RANGE) answers 422 too, but with the
+// ADR-0027 envelope: that one is an error, so it throws and reaches the toast.
+async function unprocessable<T>(res: Response): Promise<T> {
+  const body = await res.json();
+  if (isEnvelope(body)) {
+    throw new ApiError(res.status, res.statusText || "request failed (422)", body);
+  }
+  return body as T;
+}
+
 export type ImportArgs = { file: File; mode: "preview" | "commit" };
 
 // ----- create-from-file import (position workbook -> new position) ----------
@@ -77,7 +88,7 @@ async function sendCreateImport(
     method: "POST",
     body,
   });
-  if (res.status === 422) return (await res.json()) as CreateImportResult;
+  if (res.status === 422) return unprocessable<CreateImportResult>(res);
   if (!res.ok) {
     let errBody: ErrorEnvelope | string | undefined;
     try {
@@ -113,7 +124,7 @@ async function sendSnapshotImport(
     method: "POST",
     body,
   });
-  if (res.status === 422) return (await res.json()) as ImportResult;
+  if (res.status === 422) return unprocessable<ImportResult>(res);
   if (!res.ok) {
     let errBody: ErrorEnvelope | string | undefined;
     try {
