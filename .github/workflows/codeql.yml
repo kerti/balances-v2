@@ -50,7 +50,7 @@ jobs:
       # We build manually so the module in backend/ resolves correctly rather
       # than relying on autobuild guessing the subdirectory.
       - if: matrix.language == 'go'
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
         with:
           go-version-file: backend/go.mod
           # No build cache: CodeQL extracts by tracing the compiler, so cached

@@ -3179,12 +3179,11 @@ MIT License
 
 -----------
 
-The following npm packages may be included in this product:
+The following npm package may be included in this product:
 
- - lightningcss@1.32.0
  - lightningcss@1.33.0
 
-These packages each contain the following license:
+This package contains the following license:
 
 Mozilla Public License Version 2.0
 ==================================
@@ -7240,7 +7239,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 The following npm package may be included in this product:
 
- - magic-string@0.30.21
+ - magic-string@1.4.5
 
 This package contains the following license:
 
@@ -7456,7 +7455,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 The following npm package may be included in this product:
 
- - enhanced-resolve@5.24.2
+ - enhanced-resolve@5.27.0
 
 This package contains the following license:
 
@@ -7620,11 +7619,14 @@ SOFTWARE.
 
 -----------
 
-The following npm package may be included in this product:
+The following npm packages may be included in this product:
 
+ - @napi-rs/wasm-runtime@1.2.2
+ - @tailwindcss/oxide-wasm32-wasi@4.3.5
+ - @tybys/wasm-util@0.10.3
  - react-remove-scroll-bar@2.3.8
 
-This package contains the following license:
+These packages each contain the following license:
 
 MIT
 
@@ -8235,6 +8237,38 @@ These packages each contain the following license:
 MIT License
 
 Copyright (c) 2021-present Tanner Linsley
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-----------
+
+The following npm packages may be included in this product:
+
+ - @emnapi/core@1.11.3
+ - @emnapi/runtime@1.11.3
+ - @emnapi/wasi-threads@1.2.3
+
+These packages each contain the following license:
+
+MIT License
+
+Copyright (c) 2021-present Toyobayashi
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -9079,10 +9113,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 The following npm packages may be included in this product:
 
- - @tailwindcss/node@4.3.3
- - @tailwindcss/oxide@4.3.3
- - @tailwindcss/vite@4.3.3
- - tailwindcss@4.3.3
+ - @tailwindcss/node@4.3.5
+ - @tailwindcss/oxide@4.3.5
+ - @tailwindcss/vite@4.3.5
+ - tailwindcss@4.3.5
 
 These packages each contain the following license:
 
@@ -9619,7 +9653,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - tapable@2.3.3
+ - tapable@2.3.4
 
 This package contains the following license:
 
@@ -9649,7 +9683,7 @@ THE SOFTWARE.
 
 The following npm package may be included in this product:
 
- - i18next@27.1.1
+ - i18next@27.1.5
 
 This package contains the following license:
 
@@ -10131,7 +10165,7 @@ SOFTWARE.
 
 The following npm package may be included in this product:
 
- - recharts@3.10.1
+ - recharts@3.11.0
 
 This package contains the following license:
 
