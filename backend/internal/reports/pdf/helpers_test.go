@@ -1,6 +1,11 @@
 package pdf
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+	"unicode"
+	"unicode/utf8"
+)
 
 func TestDecAmt(t *testing.T) {
 	if got := decAmt("123.45"); got.String() != "123.45" {
@@ -76,17 +81,114 @@ func TestComposition(t *testing.T) {
 	if len(slices) != 2 {
 		t.Fatalf("composition: got %d slices, want 2 (zero-value vehicle dropped)", len(slices))
 	}
-	if slices[0].Label != "Bank Accounts" || slices[0].Value != 600 {
+	if slices[0].Label != "Bank accounts" || slices[0].Value != 600 {
 		t.Errorf("composition[0]: got %+v", slices[0])
 	}
 }
 
-func TestPaletteAtWraps(t *testing.T) {
-	if paletteAt(0) != paletteAt(len(chartPalette)) {
-		t.Error("paletteAt must wrap modulo palette length")
+// covers: INV-PRESENTATION-22
+func TestCategoryColorsAvoidDirectionHues(t *testing.T) {
+	seen := map[[3]int]string{}
+	for st, c := range categoryColors {
+		if prev, dup := seen[c]; dup {
+			t.Errorf("%s and %s share a colour", st, prev)
+		}
+		seen[c] = st
+		r, g, b := float64(c[0]), float64(c[1]), float64(c[2])
+		mx, mn := max(r, g, b), min(r, g, b)
+		if mx == mn {
+			continue
+		}
+		var h float64
+		switch mx {
+		case r:
+			h = 60 * ((g - b) / (mx - mn))
+		case g:
+			h = 60 * (2 + (b-r)/(mx-mn))
+		default:
+			h = 60 * (4 + (r-g)/(mx-mn))
+		}
+		if h < 0 {
+			h += 360
+		}
+		if h < 25 || h > 335 || (h > 90 && h < 165) {
+			t.Errorf("%s colour %v has hue %.0f: red and green are reserved for direction (ADR-0054)", st, c, h)
+		}
 	}
-	if paletteAt(1) == paletteAt(0) {
-		t.Error("adjacent palette entries must differ")
+	for _, st := range []string{"bank_account", "property", "vehicle", "personal", "institutional",
+		"stock", "mutual_fund", "bond", "time_deposit", "gold"} {
+		if _, ok := categoryColors[st]; !ok {
+			t.Errorf("no category colour for %s", st)
+		}
+	}
+}
+
+func TestCompositionCarriesCategoryColor(t *testing.T) {
+	d := &doc{in: Input{Locale: "en-GB", Positions: []Position{
+		{Group: "investment", Subtype: "time_deposit", Amount: "10"},
+	}}}
+	got := d.composition("investment", []string{"time_deposit"})
+	if len(got) != 1 || got[0].Color != categoryColors["time_deposit"] {
+		t.Errorf("composition colour: got %+v", got)
+	}
+}
+
+// Sentence case (#783): in headings, labels and subtype names only the first
+// word is capitalised, matching the UI's locale catalogs.
+func TestReportCopySentenceCase(t *testing.T) {
+	check := func(loc, field, v string) {
+		for i, w := range splitWords(v) {
+			r, _ := utf8.DecodeRuneInString(w)
+			if i > 0 && unicode.IsUpper(r) {
+				t.Errorf("%s %s = %q: %q should not be capitalised", loc, field, v, w)
+			}
+		}
+	}
+	fields := []string{"title", "netWorth", "statistics", "assets", "liabilities", "investments",
+		"receivables", "cashFlow", "charts", "currentAssets", "nonCurrentAssets", "cashIn", "cashOut",
+		"income", "expenses", "netCashFlow", "fxTitle", "writeOffsTitle", "writeOffsTotal",
+		"trackingChangesTitle", "trackingChangesTotal", "investmentPerf", "chartAssets",
+		"chartInvestments", "chartLiabilities", "chartTrend"}
+	for loc, c := range reportCatalog {
+		v := reflect.ValueOf(c)
+		for _, f := range fields {
+			check(loc, f, v.FieldByName(f).String())
+		}
+		for i, r := range c.statRows {
+			check(loc, "statRows", r)
+			_ = i
+		}
+		for st, label := range subtypeLabels[loc] {
+			check(loc, "subtype "+st, label)
+		}
+	}
+}
+
+func splitWords(s string) []string {
+	var out []string
+	start := -1
+	for i, r := range s {
+		if r == ' ' {
+			if start >= 0 {
+				out = append(out, s[start:i])
+				start = -1
+			}
+		} else if start < 0 {
+			start = i
+		}
+	}
+	if start >= 0 {
+		out = append(out, s[start:])
+	}
+	return out
+}
+
+func TestTotalLabelsSentenceCase(t *testing.T) {
+	if got := copyFor("en-GB").total("Mutual funds"); got != "Total mutual funds" {
+		t.Errorf("total: got %q", got)
+	}
+	if got := copyFor("en-GB").totalOf("Alice"); got != "Total Alice" {
+		t.Errorf("totalOf keeps a name's capital: got %q", got)
 	}
 }
 
@@ -97,11 +199,11 @@ func TestSprintfPct(t *testing.T) {
 }
 
 func TestSubtypeLabel(t *testing.T) {
-	if got := subtypeLabel("id-ID", "bank_account"); got != "Rekening Bank" {
+	if got := subtypeLabel("id-ID", "bank_account"); got != "Rekening bank" {
 		t.Errorf("id-ID bank_account: got %q", got)
 	}
 	// Unknown locale falls back to en-GB.
-	if got := subtypeLabel("fr-FR", "bank_account"); got != "Bank Accounts" {
+	if got := subtypeLabel("fr-FR", "bank_account"); got != "Bank accounts" {
 		t.Errorf("fr-FR fallback: got %q", got)
 	}
 	// Unknown subtype passes through verbatim.
@@ -134,10 +236,10 @@ func TestJointLabel(t *testing.T) {
 }
 
 func TestReportCopyTotal(t *testing.T) {
-	if got := copyFor("en-GB").total("Assets"); got != "Total Assets" {
+	if got := copyFor("en-GB").total("Assets"); got != "Total assets" {
 		t.Errorf("en-GB total: got %q", got)
 	}
-	if got := copyFor("id-ID").total("Harta"); got != "Jumlah Harta" {
+	if got := copyFor("id-ID").total("Aset"); got != "Jumlah aset" {
 		t.Errorf("id-ID total: got %q", got)
 	}
 }

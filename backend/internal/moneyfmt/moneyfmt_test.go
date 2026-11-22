@@ -81,3 +81,23 @@ func TestFormatCurrencyBadInputPassesThrough(t *testing.T) {
 		t.Errorf("bad input = %q, want passthrough", got)
 	}
 }
+
+// covers: INV-PRESENTATION-01
+func TestFormatCurrencyCode(t *testing.T) {
+	cases := []struct{ amount, cur, locale, want string }{
+		{"2635", "USD", "en-GB", "USD2,635.00"},
+		{"-2635", "USD", "en-GB", "-USD2,635.00"},
+		{"2635", "USD", "id-ID", "USD2.635,00"},
+		{"1000", "IDR", "en-GB", "IDR1,000.00"},
+		{"abc", "USD", "en-GB", "abc"},
+	}
+	for _, c := range cases {
+		got := FormatCurrencyCode(c.amount, c.cur, c.locale)
+		if strings.Contains(got, "US$") {
+			t.Errorf("%v: %q uses a symbol, want the ISO code", c, got)
+		}
+		if spaceless(got) != c.want {
+			t.Errorf("FormatCurrencyCode(%s,%s,%s) = %q, want %q (ignoring spaces)", c.amount, c.cur, c.locale, got, c.want)
+		}
+	}
+}

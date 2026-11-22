@@ -259,7 +259,7 @@ func (d *doc) position(p Position, indent float64) {
 	}
 	d.line(name, d.money(p.Amount), indent, lineOpt{})
 	if p.NativeCurrency != "" && p.NativeCurrency != d.in.ReportingCurrency {
-		d.line(moneyfmt.FormatCurrency(p.NativeAmount, p.NativeCurrency, d.in.Locale), "", indent+4,
+		d.line(moneyfmt.FormatCurrencyCode(p.NativeAmount, p.NativeCurrency, d.in.Locale), "", indent+4,
 			lineOpt{mutedText: true, size: 7.5})
 	}
 }
@@ -571,7 +571,7 @@ func (d *doc) assets() {
 			for _, p := range ps {
 				d.position(p, 8)
 			}
-			d.line(d.c.total(owner), d.money(sum(ps).String()), 5,
+			d.line(d.c.totalOf(owner), d.money(sum(ps).String()), 5,
 				lineOpt{mutedText: true, size: 9, topBorder: true})
 		}
 		d.line(d.c.total(subtypeLabel(d.in.Locale, "bank_account")), d.money(sum(banks).String()), 2,
@@ -904,7 +904,7 @@ func (d *doc) composition(group string, order []string) []slice {
 		if v <= 0 {
 			continue
 		}
-		out = append(out, slice{Label: subtypeLabel(d.in.Locale, st), Value: v})
+		out = append(out, slice{Label: subtypeLabel(d.in.Locale, st), Value: v, Color: categoryColors[st]})
 	}
 	return out
 }
