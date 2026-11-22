@@ -23,7 +23,7 @@
     "clsx": "^2.1.1",
     "driver.js": "^1.12.1",
     "i18next": "^27.2.3",
-    "i18next-browser-languagedetector": "^8.2.1",
+    "i18next-browser-languagedetector": "^8.3.0",
     "lucide-react": "^1.72.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.0",
