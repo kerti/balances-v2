@@ -11,7 +11,8 @@ import { useTags, useDeleteTag } from "@/hooks/useTags";
 import type { Tag } from "@/api/types";
 
 // TagsCard is the Settings management surface for user-defined Tags (ADR-0028).
-// Create and rename/recolour both happen in `TagDialog` (#840); each row's ⋯
+// Create (header button on the Tags page, #949) and rename/recolour both happen
+// in `TagDialog` (#840); each row's ⋯
 // menu offers Edit and Delete (Delete keeps its red confirm — a tag delete has
 // no undo).
 export function TagsCard() {
@@ -25,9 +26,6 @@ export function TagsCard() {
         <CardDescription>{t("manage.description")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-end">
-          <TagDialog mode="create" />
-        </div>
         <div className="space-y-2" data-testid="tag-list">
           {(tags ?? []).length === 0 && (
             <p className="text-sm text-muted-foreground">{t("manage.empty")}</p>

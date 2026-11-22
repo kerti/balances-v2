@@ -120,7 +120,7 @@ export function TagDialog(props: Props) {
   return (
     <PositionFormDialog
       trigger={
-        <Button size="sm" data-testid="new-tag">
+        <Button data-testid="new-tag">
           <Plus className="mr-1 size-4" />
           {t("tags:manage.newTag")}
         </Button>

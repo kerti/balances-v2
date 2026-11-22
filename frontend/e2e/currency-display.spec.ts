@@ -57,8 +57,7 @@ test("dashboard side-by-side currency: project net worth into USD", async ({ pag
   await page.getByTestId("multi-currency-toggle").click();
   await expect(page.getByRole("link", { name: "Manage exchange rates" })).toBeVisible();
   await page.getByRole("link", { name: "Manage exchange rates" }).click();
-  const fxCard = page.getByTestId("fx-rates-card");
-  await fxCard.getByTestId("fx-new-rate").click();
+  await page.getByTestId("fx-new-rate").click();
   const fxDialog = page.getByRole("dialog");
   await pickMonth(page, fxDialog.getByTestId("fx-month"), month);
   await fxDialog.getByLabel("Currency", { exact: true }).selectOption("USD");

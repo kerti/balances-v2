@@ -28,9 +28,9 @@ const PAGE_SIZE = 12;
 // card-level title/description — the page header (SettingsInflationRatesScreen)
 // owns that.
 //
-// Every create and edit happens in `InflationRateDialog` (#840): the card
-// toolbar holds the "New inflation rate" button and each row's ⋯ menu opens the
-// same dialog in edit mode (only the rate is editable — the month is the row's
+// Every create and edit happens in `InflationRateDialog` (#840): the "New
+// inflation rate" button lives in the page header (#949) and each row's ⋯ menu
+// opens the same dialog in edit mode (only the rate is editable — the month is the row's
 // identity).
 //
 // Mobile–web layout divergence (ADR-0050 B3b, #511): the entered rows split at
@@ -63,10 +63,6 @@ export function InflationRatesCard() {
   return (
     <Card data-testid="inflation-rates-card">
       <CardContent className="space-y-4">
-        <div className="flex justify-end">
-          <InflationRateDialog mode="create" />
-        </div>
-
         {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
         {rates && rates.length === 0 && (

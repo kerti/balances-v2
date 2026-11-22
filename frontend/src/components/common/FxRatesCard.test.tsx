@@ -13,8 +13,19 @@ import { raisedToasts } from "@/test/sonnerMock";
 import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
+import { FxRateDialog } from "@/components/dialogs/FxRateDialog";
 import type { FxRate } from "@/api/types";
 import type { Me } from "@/hooks/useSession";
+
+// The create button lives in the page header now (#949); mount it beside the card.
+function CardWithCreate() {
+  return (
+    <>
+      <FxRateDialog mode="create" />
+      <FxRatesCard />
+    </>
+  );
+}
 
 const me: Me = {
   id: "u1",
@@ -78,7 +89,7 @@ function renderCard(currencies: string[] = ["SGD", "USD"]) {
     http.get("/api/fx-rates/currencies", () => HttpResponse.json(currencies)),
     http.get("/api/me", () => HttpResponse.json(me)),
   );
-  return renderWithProviders(<FxRatesCard />);
+  return renderWithProviders(<CardWithCreate />);
 }
 
 // covers: INV-PRESENTATION-08
@@ -253,7 +264,7 @@ it("desktop: paginates at 12 rows per page", async () => {
     http.get("/api/fx-rates", () => HttpResponse.json(many)),
     http.get("/api/me", () => HttpResponse.json(me)),
   );
-  renderWithProviders(<FxRatesCard />);
+  renderWithProviders(<CardWithCreate />);
 
   await screen.findByTestId("fx-rate-table");
   expect(screen.getAllByTestId("fx-rate-row")).toHaveLength(12);
@@ -339,4 +350,13 @@ it("mobile: the card's trash also deletes at once with no dialog", async () => {
   await waitFor(() => expect(deletes).toBe(1));
   expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   expect(raisedToasts(mockedToast)).toHaveLength(1);
+});
+
+// #949: numbers right-align, matching the Inflation rates table.
+it("desktop: the Rate column header and cells are right-aligned", async () => {
+  setViewport(1280);
+  renderCard();
+  const table = await screen.findByTestId("fx-rate-table");
+  expect(within(table).getByRole("columnheader", { name: "Rate" })).toHaveClass("text-right");
+  expect(screen.getByTestId("fx-rate-value")).toHaveClass("text-right");
 });

@@ -27,9 +27,9 @@ const PAGE_SIZE = 12;
 // (gated by the caller) — there is nothing to convert otherwise. No card-level
 // title/description — the page header (SettingsFxRatesScreen) owns that.
 //
-// Every create and edit happens in `FxRateDialog` (#840): the card toolbar holds
-// the "New exchange rate" button and each row's ⋯ menu opens the same dialog in
-// edit mode (only the rate is editable — month + currency are the row's
+// Every create and edit happens in `FxRateDialog` (#840): the "New exchange
+// rate" button lives in the page header (#949) and each row's ⋯ menu opens the
+// same dialog in edit mode (only the rate is editable — month + currency are the row's
 // identity).
 //
 // Mobile–web layout divergence (ADR-0050 B3b, #511): the entered rows split at
@@ -65,10 +65,6 @@ export function FxRatesCard() {
   return (
     <Card data-testid="fx-rates-card">
       <CardContent className="space-y-4">
-        <div className="flex justify-end">
-          <FxRateDialog mode="create" />
-        </div>
-
         {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
 
         {rates && rates.length === 0 && (
@@ -89,7 +85,7 @@ export function FxRatesCard() {
                 <TableRow>
                   <TableHead>{t("fx.month")}</TableHead>
                   <TableHead>{t("fx.currency")}</TableHead>
-                  <TableHead>{t("fx.rate")}</TableHead>
+                  <TableHead className="text-right">{t("fx.rate")}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -98,7 +94,9 @@ export function FxRatesCard() {
                   <TableRow key={r.id} data-testid="fx-rate-row">
                     <TableCell>{formatYearMonth(r.year_month)}</TableCell>
                     <TableCell>{fxPair(r.currency, base)}</TableCell>
-                    <TableCell data-testid="fx-rate-value">{groupCanonical(r.rate)}</TableCell>
+                    <TableCell className="text-right" data-testid="fx-rate-value">
+                      {groupCanonical(r.rate)}
+                    </TableCell>
                     <TableCell className="text-right">{menu(r, false)}</TableCell>
                   </TableRow>
                 ))}

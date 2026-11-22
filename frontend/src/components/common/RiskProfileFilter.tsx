@@ -23,15 +23,20 @@ type Props = {
 export function RiskProfileFilter({ value, onChange }: Props) {
   const { t } = useTranslation("investments");
   return (
-    <SegmentedControl
-      ariaLabel={t("riskProfile.filterAriaLabel")}
-      value={value}
-      onChange={onChange}
-      options={OPTIONS.map((opt) => ({
-        value: opt.value,
-        label: t(opt.labelKey),
-        testId: `risk-filter-${opt.value}`,
-      }))}
-    />
+    <div className="flex items-center gap-2 max-md:w-full">
+      <span className="shrink-0 text-sm text-muted-foreground" data-testid="risk-filter-label">
+        {t("riskProfile.filterLabel")}
+      </span>
+      <SegmentedControl
+        ariaLabel={t("riskProfile.filterAriaLabel")}
+        value={value}
+        onChange={onChange}
+        options={OPTIONS.map((opt) => ({
+          value: opt.value,
+          label: t(opt.labelKey),
+          testId: `risk-filter-${opt.value}`,
+        }))}
+      />
+    </div>
   );
 }

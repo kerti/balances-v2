@@ -127,7 +127,7 @@ export function InflationRateDialog(props: Props) {
   return (
     <PositionFormDialog
       trigger={
-        <Button size="sm" data-testid="inflation-new-rate">
+        <Button data-testid="inflation-new-rate">
           <Plus className="mr-1 size-4" />
           {t("settings:inflation.newRate")}
         </Button>

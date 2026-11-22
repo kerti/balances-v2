@@ -198,7 +198,7 @@ export function FxRateDialog(props: Props) {
   return (
     <PositionFormDialog
       trigger={
-        <Button size="sm" data-testid="fx-new-rate">
+        <Button data-testid="fx-new-rate">
           <Plus className="mr-1 size-4" />
           {t("settings:fx.newRate")}
         </Button>
