@@ -239,6 +239,26 @@ func TestParse_QuantityPrice(t *testing.T) {
 	}
 }
 
+// The derived amount is rounded half up to 4 places by the shared helper, not
+// left at the 12-place product for Postgres to round.
+//
+// covers: INV-SNAPSHOTS-20
+func TestParse_QuantityPriceAmountIsRounded(t *testing.T) {
+	parsed, errs := parseShaped(t, ShapeQuantityPrice, [][]string{
+		{"2015-01", "", "0.00005", "1", "", ""},
+		{"2015-02", "", "1.00004999", "1", "", ""},
+	}, Options{DefaultCurrency: "IDR"})
+	if len(errs) != 0 || len(parsed) != 2 {
+		t.Fatalf("want 2 clean rows, got %d rows, errs %+v", len(parsed), errs)
+	}
+	if got := parsed[0].Amount.String(); got != "0.0001" {
+		t.Errorf("round-up row amount = %s, want 0.0001", got)
+	}
+	if got := parsed[1].Amount.String(); got != "1" {
+		t.Errorf("round-down row amount = %s, want 1", got)
+	}
+}
+
 func TestRoundTrip_QuantityPrice(t *testing.T) {
 	tpl, err := BuildTemplate(TemplateMeta{PositionName: "BBCA", DefaultCurrency: "IDR", Shape: ShapeQuantityPrice})
 	if err != nil {

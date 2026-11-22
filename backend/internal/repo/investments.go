@@ -12,6 +12,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/snapshotamount"
 )
 
 // InvestmentRepo wraps the generated queries with tenancy-aware methods for
@@ -84,6 +85,7 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
 		return nil, err
 	}
+	p.Amount = storedSnapshotAmount(inv.Subtype, p.Amount, p.Quantity, p.PricePerUnit)
 
 	snap, err := r.q.CreateInvestmentSnapshot(ctx, db.CreateInvestmentSnapshotParams{
 		ID:              p.InvestmentID,
@@ -166,6 +168,7 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 	if err := validateInvestmentSnapshotShape(inv.Subtype, p.Quantity, p.PricePerUnit, p.AccruedInterest); err != nil {
 		return nil, err
 	}
+	p.Amount = storedSnapshotAmount(inv.Subtype, p.Amount, p.Quantity, p.PricePerUnit)
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -265,6 +268,18 @@ func (r *InvestmentRepo) softDeleteInvestment(ctx context.Context, id uuid.UUID)
 		return fmt.Errorf("commit soft delete investment: %w", err)
 	}
 	return nil
+}
+
+// storedSnapshotAmount is the amount a snapshot is stored with. A stock, mutual
+// fund or gold snapshot's amount is always quantity × price_per_unit, whatever
+// the client sent (#968); the other subtypes store what they were given. Call it
+// after validateInvestmentSnapshotShape, which guarantees both factors are set.
+func storedSnapshotAmount(subtype string, amount decimal.Decimal, quantity, pricePerUnit *decimal.Decimal) decimal.Decimal {
+	switch subtype {
+	case "stock", "mutual_fund", "gold":
+		return snapshotamount.QuantityPrice(*quantity, *pricePerUnit)
+	}
+	return amount
 }
 
 // validateInvestmentSnapshotShape enforces the subtype→shape mapping that

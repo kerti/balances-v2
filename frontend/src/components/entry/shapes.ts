@@ -1,4 +1,5 @@
 import type { EntryRow } from "@/hooks/useBulkEntry";
+import { multiplyDecimals, subtractDecimals, toScaled } from "@/lib/decimal";
 import { timeDepositInterest } from "@/lib/timeDepositInterest";
 import {
   currencyDecimals,
@@ -86,37 +87,26 @@ export function minorUnitsShown(stored: string, currency: string): string {
   return rounded.includes(".") ? rounded.replace(/\.?0+$/, "") : rounded;
 }
 
-// deriveProduct computes quantity × price with Number — household scale is fine
-// and the precision-sensitive arithmetic is re-done on the backend
-// (decimal.Decimal), which also derives the stored amount rather than trusting
-// this. Mirrors CreateQuantityPriceSnapshotDialog.deriveAmount.
+// deriveProduct previews quantity × price exactly, rounded to 4 places the way
+// the backend derives the stored amount (#968; it never trusts this figure).
 function deriveProduct(quantity: string, price: string): { valid: boolean; amount: string } {
-  const q = Number(quantity);
-  const p = Number(price);
-  if (!quantity || !price || Number.isNaN(q) || Number.isNaN(p)) {
-    return { valid: false, amount: "" };
-  }
-  return { valid: true, amount: (q * p).toString() };
+  const amount = multiplyDecimals(quantity, price);
+  return amount === null ? { valid: false, amount: "" } : { valid: true, amount };
 }
 
-// isNumeric reports whether a raw input string is a present, finite number —
-// the accrued shape's completeness test for each of its two directly-entered
-// fields (total value, accrued interest).
+// isNumeric reports whether a raw input string is a plain decimal, the same test
+// the derived columns use, so a complete row always has its derived figure. The
+// accrued shape's completeness test for each of its two directly-entered fields.
 function isNumeric(s: string): boolean {
-  return s.trim() !== "" && !Number.isNaN(Number(s));
+  return toScaled(s) !== null;
 }
 
-// derivePrincipal computes total value − accrued interest, the "of which
-// principal" figure the per-position accrued dialog shows. Mirrors
-// CreateAccruedInterestSnapshotDialog.derivePrincipal, surfaced here as the
-// accrued shape's derived display column.
+// derivePrincipal computes total value − accrued interest exactly, the "of which
+// principal" figure the accrued dialogs show, as the accrued shape's derived
+// display column.
 function derivePrincipal(amount: string, accrued: string): { valid: boolean; amount: string } {
-  const a = Number(amount);
-  const i = Number(accrued);
-  if (!amount || !accrued || Number.isNaN(a) || Number.isNaN(i)) {
-    return { valid: false, amount: "" };
-  }
-  return { valid: true, amount: (a - i).toString() };
+  const principal = subtractDecimals(amount, accrued);
+  return principal === null ? { valid: false, amount: "" } : { valid: true, amount: principal };
 }
 
 // amount-only (Asset/Liability/Receivable): one value field, no computed line.

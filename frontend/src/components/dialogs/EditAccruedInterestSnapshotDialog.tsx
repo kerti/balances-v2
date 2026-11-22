@@ -4,6 +4,7 @@ import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { MoveSnapshotDialog } from "@/components/dialogs/MoveSnapshotDialog";
 import { snapshotGroupOf } from "@/lib/snapshotMove";
+import { subtractDecimals } from "@/lib/decimal";
 import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
@@ -41,15 +42,6 @@ type Props<TResult> = {
   principal?: string;
 };
 
-function derivePrincipal(amount: string, accrued: string): string | null {
-  const a = Number(amount);
-  const i = Number(accrued);
-  if (!amount || !accrued || Number.isNaN(a) || Number.isNaN(i)) {
-    return null;
-  }
-  return (a - i).toString();
-}
-
 export function EditAccruedInterestSnapshotDialog<TResult>({
   open,
   onOpenChange,
@@ -68,7 +60,7 @@ export function EditAccruedInterestSnapshotDialog<TResult>({
     description: snapshot.description ?? "",
   });
 
-  const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest);
+  const derivedPrincipal = subtractDecimals(form.amount, form.accrued_interest);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

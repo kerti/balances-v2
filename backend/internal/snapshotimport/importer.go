@@ -33,6 +33,8 @@ import (
 
 	"github.com/shopspring/decimal"
 	"github.com/xuri/excelize/v2"
+
+	"github.com/kerti/balances-v2/backend/internal/snapshotamount"
 )
 
 // SheetName is the worksheet the importer reads data rows from.
@@ -703,7 +705,7 @@ func parseValues(shape Shape, get func(int) string, rowNum int, row *ParsedRow) 
 		}
 		row.Quantity = &qty
 		row.PricePerUnit = &price
-		row.Amount = qty.Mul(price)
+		row.Amount = snapshotamount.QuantityPrice(qty, price)
 		return nil
 
 	case ShapeAccruedInterest:

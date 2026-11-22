@@ -39,14 +39,16 @@ func TestInvestmentTimeSeries_StockLedger(t *testing.T) {
 		"transaction_type": "buy", "transaction_date": "2026-02-15", "currency": "IDR",
 		"amount": "500000", "quantity": "50", "price_per_unit": "10000",
 	})
-	for _, s := range []struct{ ym, amount string }{
-		{"2026-01", "1100000"},
-		{"2026-02", "1600000"},
-		{"2026-03", "1700000"},
+	// The server derives amount = quantity × price_per_unit (#968), so each
+	// month's price is chosen to give the amount the series is asserted against.
+	for _, s := range []struct{ ym, amount, price string }{
+		{"2026-01", "1100000", "11000"},
+		{"2026-02", "1600000", "16000"},
+		{"2026-03", "1700000", "17000"},
 	} {
 		rec := h.do(t, "POST", "/investments/"+id.String()+"/snapshots", map[string]any{
 			"year_month": s.ym, "amount": s.amount, "currency": "IDR",
-			"quantity": "100", "price_per_unit": "11000",
+			"quantity": "100", "price_per_unit": s.price,
 		})
 		requireStatus(t, rec, http.StatusCreated)
 	}
