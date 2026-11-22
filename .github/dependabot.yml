@@ -5,17 +5,25 @@ version: 2
 # the GitHub Actions pinned in our workflows, and the Dockerfile base images
 # (digest-pinned per #364 CF-21 — this entry is what keeps those digests from
 # going stale, since a pinned digest never floats to a newer patch on its own).
+#
+# Every ecosystem waits 7 days after a release before proposing it: fewer PRs
+# re-opened mid-batch by a fast-moving package, and a window for a compromised
+# release to be pulled before we take it. Security updates ignore cooldown.
 updates:
   - package-ecosystem: gomod
     directory: /backend
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       # Collapse the dev-tooling churn (eslint, vitest, types, etc.) into one
@@ -36,6 +44,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       # init and analyze are pinned in lockstep in codeql.yml — a version
@@ -48,6 +58,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     ignore:
       # Stay on the Node 24 LTS line; odd/Current majors (25, 26) never go LTS.
