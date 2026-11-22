@@ -135,6 +135,50 @@ describe("Record snapshot, quantity × price", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  // #968: the preview is the figure the server stores (exact, rounded to 4 places),
+  // and it is the amount sent, so there is no float noise or exponent on the wire.
+  // covers: INV-SNAPSHOTS-20
+  it("previews 0.1 x 3 as exactly 0.3 and sends that", async () => {
+    const { create } = setup([]);
+    await open();
+    await userEvent.type(screen.getByLabelText("Quantity"), "0.1");
+    await userEvent.type(screen.getByLabelText(/Price per unit/), "3");
+
+    expect(screen.getByTestId("snapshot-total-value")).toHaveTextContent("$0.30");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ quantity: "0.1", price_per_unit: "3", amount: "0.3" }),
+      expect.anything(),
+    );
+  });
+
+  // covers: INV-SNAPSHOTS-20
+  it("rounds a long product half up to 4 places, like the server", async () => {
+    const { create } = setup([]);
+    await open();
+    await userEvent.type(screen.getByLabelText("Quantity"), "0.00005");
+    await userEvent.type(screen.getByLabelText(/Price per unit/), "1");
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: "0.0001" }),
+      expect.anything(),
+    );
+  });
+
+  // covers: INV-SNAPSHOTS-20
+  it("sends every digit of a 20-digit product", async () => {
+    const { create } = setup([]);
+    await open();
+    await userEvent.type(screen.getByLabelText("Quantity"), "123456789012");
+    await userEvent.type(screen.getByLabelText(/Price per unit/), "98765432");
+
+    await userEvent.click(screen.getByRole("button", { name: "Save snapshot" }));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: "12193263100103033184" }),
+      expect.anything(),
+    );
+  });
+
   // #933: the checked figure is the value (quantity x price), so a typo in either
   // factor is caught and a split (quantity x10, price /10) is not.
   // covers: INV-SNAPSHOTS-19

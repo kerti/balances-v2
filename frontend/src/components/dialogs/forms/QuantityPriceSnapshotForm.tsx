@@ -102,7 +102,7 @@ export function QuantityPriceSnapshotFormBody({
         <span className="text-muted-foreground">
           {t("investments:quantityPriceSnapshot.totalValueLabel")}
         </span>{" "}
-        <span className="font-medium">
+        <span className="font-medium" data-testid="snapshot-total-value">
           {derivedAmount !== null ? formatCurrency(derivedAmount, currency) : "—"}
         </span>
       </div>

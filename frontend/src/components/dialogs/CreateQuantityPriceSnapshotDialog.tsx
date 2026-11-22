@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency } from "@/lib/format";
+import { multiplyDecimals } from "@/lib/decimal";
 import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
 import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
 import {
@@ -82,19 +83,6 @@ const formFrom = (s: SnapshotLike, yearMonth: string): QuantityPriceSnapshotForm
   description: s.description ?? "",
 });
 
-// amount = quantity × price_per_unit. The backend re-validates and stores
-// amount alongside the two factors, so the UI sends both. Computed in
-// JS with Number — household scale is fine; precision-sensitive arithmetic
-// stays on the backend (decimal.Decimal).
-function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity);
-  const p = Number(pricePerUnit);
-  if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null;
-  }
-  return (q * p).toString();
-}
-
 // "Record snapshot" for the quantity × price shape (stock, mutual fund, gold).
 // See CreateSnapshotDialog for the replace-mode behaviour (#788).
 export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
@@ -117,7 +105,10 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   // A value (quantity x price) 10x or a tenth of the last one waits for a yes (#933).
   const [ask, setAsk] = useState<SwingAsk | null>(null);
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
+  // What the server stores: it derives amount = quantity × price_per_unit itself and
+  // ignores the one sent, so this is a preview of that figure, exact and rounded to
+  // 4 places the same way (lib/decimal). It is also what the swing check judges.
+  const derivedAmount = multiplyDecimals(form.quantity, form.price_per_unit);
   const ledgerQty = ledgerQuantity(transactions);
 
   function begin() {

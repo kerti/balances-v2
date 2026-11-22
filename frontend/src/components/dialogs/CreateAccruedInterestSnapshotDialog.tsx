@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { subtractDecimals } from "@/lib/decimal";
 import { formatCurrency } from "@/lib/format";
 import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
 import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
@@ -61,17 +62,8 @@ type Props<TCreated, TUpdated> = {
 };
 
 // `amount` is the dirty total value (already includes accrued); the user
-// types it as it appears on the statement. The derived "of which principal"
-// line below = amount − accrued. The backend's validateInvestmentSnapshotShape
-// re-checks both fields are present for bond/time_deposit subtypes.
-function derivePrincipal(amount: string, accrued: string): string | null {
-  const a = Number(amount);
-  const i = Number(accrued);
-  if (!amount || !accrued || Number.isNaN(a) || Number.isNaN(i)) {
-    return null;
-  }
-  return (a - i).toString();
-}
+// types it as it appears on the statement, and what is typed is what is sent.
+// The "of which principal" line below is display only: amount − accrued.
 
 // "Record snapshot" for the accrued-interest shape (bond, time deposit). See
 // CreateSnapshotDialog for the replace-mode behaviour (#788).
@@ -116,7 +108,7 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
   // A total value 10x or a tenth of the last one waits for a yes (#933).
   const [ask, setAsk] = useState<SwingAsk | null>(null);
 
-  const derivedPrincipal = derivePrincipal(form.amount, form.accrued_interest);
+  const derivedPrincipal = subtractDecimals(form.amount, form.accrued_interest);
 
   function begin() {
     reset();

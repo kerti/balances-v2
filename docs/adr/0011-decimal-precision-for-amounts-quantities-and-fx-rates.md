@@ -35,7 +35,7 @@ The frontend formats each stored value according to its currency's ISO 4217 conv
 - BHD / KWD → 3 decimals
 - Future crypto → up to 8 decimals
 
-Rounding is half-up. The storage layer never rounds.
+Rounding is half-up. The storage layer never rounds (one exception: a derived product, see the 2026-11-22 amendment).
 
 ## Considered alternatives
 
@@ -59,3 +59,7 @@ Rounding is half-up. The storage layer never rounds.
 - Display formatting per ISO 4217 is a frontend responsibility, not a database concern.
 - Aggregations sum at full precision; rounding happens once at the boundary into the UI.
 - Future currencies (crypto, weird inflation indexers) are absorbed without schema migration.
+
+## Amendment (2026-11-22): a derived product is rounded once, at derivation (#968)
+
+A figure derived from other stored figures (a quantity × price snapshot's `amount`: up to 12 places from 8 + 4) is rounded half away from zero (half-up for positives, which is also what Postgres `NUMERIC` does) to its column's scale once, explicitly, where it is derived (`snapshotamount.QuantityPrice`, mirrored by `lib/decimal`'s `multiplyDecimals`), so the storage layer never has to round it silently.

@@ -9,6 +9,7 @@ import (
 	"github.com/shopspring/decimal"
 
 	"github.com/kerti/balances-v2/backend/internal/db"
+	"github.com/kerti/balances-v2/backend/internal/snapshotamount"
 )
 
 // BulkAssetSnapshotRow is one position's value in a bulk monthly-entry batch
@@ -660,7 +661,7 @@ func (r *InvestmentRepo) BulkUpsertInvestmentSnapshots(ctx context.Context, p Bu
 	for _, row := range p.Rows {
 		qty := row.Quantity
 		price := row.PricePerUnit
-		amount := qty.Mul(price)
+		amount := snapshotamount.QuantityPrice(qty, price)
 		_, _, outcome, err := replaceInvestmentSnapshot(ctx, qtx, user, db.CreateInvestmentSnapshotParams{
 			ID:              row.InvestmentID,
 			YearMonth:       p.YearMonth,

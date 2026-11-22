@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { sumDecimals, toScaled, fromScaled } from "@/lib/decimal";
+import {
+  sumDecimals,
+  toScaled,
+  fromScaled,
+  multiplyDecimals,
+  subtractDecimals,
+} from "@/lib/decimal";
 
 describe("sumDecimals", () => {
   it("is exact where floats drift", () => {
@@ -33,5 +39,74 @@ describe("toScaled / fromScaled", () => {
   it("round-trips", () => {
     expect(fromScaled(toScaled("12.3400")!)).toBe("12.34");
     expect(toScaled("1e3")).toBeNull();
+  });
+});
+
+// Rows mirror backend/internal/snapshotamount/snapshotamount_test.go: the Go
+// helper and this one must print the same string for every row.
+// covers: INV-SNAPSHOTS-20
+describe("multiplyDecimals", () => {
+  const rows: Array<[string, string, string, string]> = [
+    ["whole numbers", "40", "110", "4400"],
+    ["fractional quantity", "0.5", "9.99", "4.995"],
+    ["float artefact avoided", "0.1", "3", "0.3"],
+    ["eight-place quantity, four-place price", "1.12345678", "2.1234", "2.3855"],
+    ["fifth decimal 5 rounds up", "0.00005", "1", "0.0001"],
+    ["fifth decimal below 5 rounds down", "0.00004", "1", "0"],
+    ["just above the half rounds up", "1.00005001", "1", "1.0001"],
+    ["just below the half rounds down", "1.00004999", "1", "1"],
+    ["twelve-place product rounds once", "0.12345678", "0.1234", "0.0152"],
+    ["trailing zeros trimmed", "2.50000000", "4.0000", "10"],
+    ["20-digit figures", "12345678901234.5", "1000000", "12345678901234500000"],
+    [
+      "product wider than the column",
+      "99999999999999",
+      "99999999999999",
+      "9999999999999800000000000001",
+    ],
+    ["zero quantity", "0", "123.4567", "0"],
+    ["zero price", "7.5", "0", "0"],
+    ["negative rounds away from zero", "-0.00005", "1", "-0.0001"],
+    ["negative below the half", "-0.00004", "1", "0"],
+    ["negative quantity", "-2", "1.5", "-3"],
+  ];
+
+  it.each(rows)("%s", (_name, a, b, want) => {
+    expect(multiplyDecimals(a, b)).toBe(want);
+  });
+
+  it("is exact where floats drift or go exponential", () => {
+    expect(0.1 * 3).not.toBe(0.3);
+    expect(multiplyDecimals("0.1", "3")).toBe("0.3");
+    expect(multiplyDecimals("12345678901234567890", "1000")).toBe("12345678901234567890000");
+  });
+
+  it("returns null for nothing and junk", () => {
+    expect(multiplyDecimals("", "3")).toBeNull();
+    expect(multiplyDecimals("2", "abc")).toBeNull();
+    expect(multiplyDecimals(".", "2")).toBeNull();
+    expect(multiplyDecimals("1e3", "2")).toBeNull();
+  });
+});
+
+describe("subtractDecimals", () => {
+  it("is exact where floats drift", () => {
+    expect(0.3 - 0.1).not.toBe(0.2);
+    expect(subtractDecimals("0.3", "0.1")).toBe("0.2");
+    expect(subtractDecimals("1500000.5", "0.25")).toBe("1500000.25");
+  });
+
+  it("handles a negative result and zero", () => {
+    expect(subtractDecimals("1", "2.5")).toBe("-1.5");
+    expect(subtractDecimals("2.5", "2.5")).toBe("0");
+  });
+
+  it("keeps DECIMAL(20,4) magnitudes", () => {
+    expect(subtractDecimals("9999999999999999.9999", "0.0001")).toBe("9999999999999999.9998");
+  });
+
+  it("returns null for nothing and junk", () => {
+    expect(subtractDecimals("", "1")).toBeNull();
+    expect(subtractDecimals("1", "x")).toBeNull();
   });
 });

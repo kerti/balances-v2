@@ -4,6 +4,7 @@ import type { UseMutationResult } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { MoveSnapshotDialog } from "@/components/dialogs/MoveSnapshotDialog";
 import { snapshotGroupOf } from "@/lib/snapshotMove";
+import { multiplyDecimals } from "@/lib/decimal";
 import { FormError, ValidatedForm } from "@/components/common/ValidatedForm";
 import {
   Dialog,
@@ -41,15 +42,6 @@ type Props<TResult> = {
   mutation: UseMutationResult<TResult, unknown, UpdateQuantityPriceSnapshotMutationVariables>;
 };
 
-function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity);
-  const p = Number(pricePerUnit);
-  if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null;
-  }
-  return (q * p).toString();
-}
-
 // year_month is not editable here (same as the amount-shape edit dialog); Move…
 // is the way to another month (#791).
 export function EditQuantityPriceSnapshotDialog<TResult>({
@@ -69,7 +61,8 @@ export function EditQuantityPriceSnapshotDialog<TResult>({
     description: snapshot.description ?? "",
   });
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
+  // A preview of what the server stores: it derives the amount from quantity × price.
+  const derivedAmount = multiplyDecimals(form.quantity, form.price_per_unit);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
