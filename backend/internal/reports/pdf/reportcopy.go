@@ -1,6 +1,10 @@
 package pdf
 
-import "fmt"
+import (
+	"fmt"
+	"unicode"
+	"unicode/utf8"
+)
 
 // Localized copy for the PDF report (ADR-0045), a hand-rolled per-locale catalog
 // keyed by BCP-47 — the same pattern as auth/email_i18n.go (the report renders
@@ -99,45 +103,45 @@ type reportCopy struct {
 
 var reportCatalog = map[string]reportCopy{
 	"en-GB": {
-		title:            "Monthly Financial Report",
-		subtitle:         "Figures reflect the household's financial position on the last day of %s.",
-		netWorth:         "Net Worth",
+		title:            "Monthly financial report",
+		subtitle:         "Figures reflect the household's finances on the last day of %s.",
+		netWorth:         "Net worth",
 		baseline:         "First reported month — no prior month to compare against.",
 		statistics:       "Statistics",
 		assets:           "Assets",
 		liabilities:      "Liabilities",
 		investments:      "Investments",
 		receivables:      "Receivables",
-		cashFlow:         "Cash Flow",
+		cashFlow:         "Cash flow",
 		charts:           "Charts",
-		currentAssets:    "Current Assets",
-		nonCurrentAssets: "Non-current Assets",
-		cashIn:           "Cash In",
-		cashOut:          "Cash Out",
+		currentAssets:    "Current assets",
+		nonCurrentAssets: "Non-current assets",
+		cashIn:           "Cash in",
+		cashOut:          "Cash out",
 		income:           "Income",
 		bySource:         "By source",
 		activeIncome:     "Active income",
 		passiveIncome:    "Passive income",
 		couponsPaidOut:   "Bond coupons paid out",
-		expenses:         "Living Expenses (estimated)",
-		netCashFlow:      "Net Cash Flow",
+		expenses:         "Living expenses (estimated)",
+		netCashFlow:      "Net cash flow",
 		joint:            "Joint",
 		totalPrefix:      "Total",
-		fxTitle:          "Exchange Rates Used",
+		fxTitle:          "Exchange rates used",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* carried forward from an earlier month's statement",
-		writeOffsTitle:   "Write-Offs",
+		writeOffsTitle:   "Write-offs",
 		writeOffsNote:    "Value that left your books this month without any money changing hands — property or belongings disposed of, a debt someone forgave, money owed to you that won't be repaid. A forgiven debt counts in your favour, so the total can be positive.",
-		writeOffsTotal:   "Total Write-Offs",
+		writeOffsTotal:   "Total write-offs",
 		unsettledNote:    "* terminated with no sale or maturity recorded, so its final value shows as an investment loss. If money did come back, record the sale for that month.",
 
-		trackingChangesTitle: "Tracking Changes",
+		trackingChangesTitle: "Tracking changes",
 		trackingChangesNote:  "Value that came into or went out of what you track here this month without being earned, spent or invested — something you already owned but only started tracking now, or an account that joined or left the household. It is neither income nor spending, so it is kept out of both.",
-		trackingChangesTotal: "Total Tracking Changes",
+		trackingChangesTotal: "Total tracking changes",
 		deltaVs:              "vs %s",
 		footerPage:           "Page %d of %s",
 		statNote:             "Income, living expenses and passive income are 12-month trailing averages, so one unusual month doesn't skew the picture. Balances — cash and investments — are read as of this month. Living expenses are never recorded directly: they're derived as what came in (income and investment returns) minus the change in your net worth, so every expense figure is an estimate.",
-		statRows:             []string{"Cash-Flow Ratio", "Passive-Income Ratio", "Instant-Liquidity Ratio", "Fund Resilience"},
+		statRows:             []string{"Cash-flow ratio", "Passive-income ratio", "Instant-liquidity ratio", "Fund resilience"},
 		statDescs: []string{
 			"Share of earned income kept after living expenses, averaged over the past year. Counts income you marked as regular — one-offs like bonuses or severance are left out.",
 			"Passive income — rent, pension, interest and investment returns — as a share of living expenses; 100% means it fully covers them. Only regular passive income counts. Living expenses are estimated, and this figure moves with the market.",
@@ -154,10 +158,10 @@ var reportCatalog = map[string]reportCopy{
 		statInputIncome:   "Avg income",
 		statInputExpenses: "Avg living expenses",
 		statInputPassive:  "Avg total passive income",
-		statFormulaCash:   "Cash-Flow = (income − living expenses) ÷ income",
-		statFormulaPass:   "Passive-Income = total passive income ÷ living expenses",
-		investmentPerf:    "Investment Performance",
-		perfNote:          "Return as a rate — this month's investment return over the value you started the month holding. The 12-month figure compounds the last year's monthly returns, so it reads as the trend rather than one lumpy month. A bucket you held for the first month, or have fully exited, has no starting value to measure against and shows \"—\". The three breakdowns don't add up to the total: each rate is measured against its own base.",
+		statFormulaCash:   "Cash-flow = (income − living expenses) ÷ income",
+		statFormulaPass:   "Passive-income = total passive income ÷ living expenses",
+		investmentPerf:    "Investment performance",
+		perfNote:          "Return as a rate — this month's investment return over the value you started the month with. The 12-month figure compounds the last year's monthly returns, so it reads as the trend rather than one lumpy month. A bucket you held for the first month, or have fully exited, has no starting value to measure against and shows \"—\". The three breakdowns don't add up to the total: each rate is measured against its own base.",
 		perfColMonth:      "This month",
 		perfColTrailing:   "12-mo",
 		perfTotal:         "All investments",
@@ -166,56 +170,56 @@ var reportCatalog = map[string]reportCopy{
 		perfAmount:        "%s this month",
 		perfPlacement:     "Net money placed",
 		perfPlaceNote:     "New money you put into investments, net of what came back out (sales and matured principal), as a share of the pool — this month beside its 12-month average. Reinvesting a matured bond or TD nets to about zero; a month you took out more than you put in shows negative. Coupons and dividends don't count here.",
-		chartAssets:       "Assets Composition",
-		chartInvestments:  "Investments Composition",
-		chartLiabilities:  "Liabilities Composition",
-		chartTrend:        "Net Worth — last 12 months",
+		chartAssets:       "Assets composition",
+		chartInvestments:  "Investments composition",
+		chartLiabilities:  "Liabilities composition",
+		chartTrend:        "Net worth — last 12 months",
 	},
 	"id-ID": {
-		title:            "Laporan Keuangan Bulanan",
-		subtitle:         "Data menunjukkan posisi keuangan rumah tangga pada hari terakhir bulan %s.",
-		netWorth:         "Kekayaan Bersih",
+		title:            "Laporan keuangan bulanan",
+		subtitle:         "Data menunjukkan kondisi keuangan rumah tangga pada hari terakhir bulan %s.",
+		netWorth:         "Kekayaan bersih",
 		baseline:         "Bulan pertama yang dilaporkan — belum ada bulan sebelumnya untuk dibandingkan.",
 		statistics:       "Statistika",
-		assets:           "Harta",
-		liabilities:      "Hutang",
+		assets:           "Aset",
+		liabilities:      "Liabilitas",
 		investments:      "Investasi",
 		receivables:      "Piutang",
-		cashFlow:         "Arus Kas",
+		cashFlow:         "Arus kas",
 		charts:           "Grafik",
-		currentAssets:    "Harta Lancar",
-		nonCurrentAssets: "Harta Tidak Lancar",
-		cashIn:           "Kas Masuk",
-		cashOut:          "Kas Keluar",
-		income:           "Pendapatan",
+		currentAssets:    "Aset lancar",
+		nonCurrentAssets: "Aset tidak lancar",
+		cashIn:           "Kas masuk",
+		cashOut:          "Kas keluar",
+		income:           "Pemasukan",
 		bySource:         "Berdasarkan sumber",
-		activeIncome:     "Pendapatan aktif",
-		passiveIncome:    "Pendapatan pasif",
+		activeIncome:     "Pemasukan aktif",
+		passiveIncome:    "Pemasukan pasif",
 		couponsPaidOut:   "Kupon obligasi dibayarkan",
-		expenses:         "Pengeluaran (estimasi)",
-		netCashFlow:      "Arus Kas Bersih",
+		expenses:         "Pengeluaran (perkiraan)",
+		netCashFlow:      "Arus kas bersih",
 		joint:            "Bersama",
 		totalPrefix:      "Jumlah",
-		fxTitle:          "Kurs yang Digunakan",
+		fxTitle:          "Kurs yang digunakan",
 		fxLine:           "1 %[1]s = %[2]s %[3]s",
 		staleNote:        "* nilai dibawa dari laporan bulan sebelumnya",
-		writeOffsTitle:   "Penghapusan Nilai",
+		writeOffsTitle:   "Penghapusan nilai",
 		writeOffsNote:    "Nilai yang hilang dari pembukuan bulan ini tanpa ada uang yang berpindah — harta yang dilepas atau dibuang, utang yang dibebaskan pemberi pinjaman, atau piutang yang tidak akan tertagih. Utang yang dibebaskan menguntungkan Anda, jadi totalnya bisa bernilai positif.",
-		writeOffsTotal:   "Jumlah Penghapusan Nilai",
+		writeOffsTotal:   "Jumlah penghapusan nilai",
 		unsettledNote:    "* diakhiri tanpa pencatatan penjualan atau jatuh tempo, sehingga nilai akhirnya tampak sebagai kerugian investasi. Jika dananya kembali, catat penjualannya pada bulan tersebut.",
 
-		trackingChangesTitle: "Perubahan Cakupan Pencatatan",
+		trackingChangesTitle: "Perubahan cakupan pencatatan",
 		trackingChangesNote:  "Nilai yang masuk atau keluar dari yang Anda catat di sini pada bulan ini tanpa diperoleh, dibelanjakan, atau diinvestasikan — sesuatu yang sudah Anda miliki tetapi baru mulai dicatat sekarang, atau rekening yang bergabung atau keluar dari rumah tangga. Ini bukan penghasilan maupun pengeluaran, jadi tidak dihitung sebagai keduanya.",
-		trackingChangesTotal: "Jumlah Perubahan Cakupan Pencatatan",
+		trackingChangesTotal: "Jumlah perubahan cakupan pencatatan",
 		deltaVs:              "vs %s",
 		footerPage:           "Halaman %d dari %s",
-		statNote:             "Pendapatan, pengeluaran, dan pendapatan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pendapatan dan imbal hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",
-		statRows:             []string{"Rasio Arus Kas", "Rasio Pendapatan Pasif", "Rasio Likuiditas Instan", "Ketahanan Dana"},
+		statNote:             "Pemasukan, pengeluaran, dan pemasukan pasif memakai rata-rata 12 bulan terakhir, agar satu bulan yang tidak biasa tidak membiaskan gambaran. Saldo — kas dan investasi — dibaca per bulan ini. Pengeluaran tidak pernah dicatat langsung: angkanya diturunkan dari uang yang masuk (pemasukan dan hasil investasi) dikurangi perubahan kekayaan bersih, sehingga setiap angka pengeluaran adalah estimasi.",
+		statRows:             []string{"Rasio arus kas", "Rasio pemasukan pasif", "Rasio likuiditas instan", "Ketahanan dana"},
 		statDescs: []string{
-			"Bagian dari pendapatan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti bonus atau pesangon tidak disertakan.",
-			"Pendapatan pasif — sewa, pensiun, bunga dan imbal hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Hanya pendapatan pasif rutin yang dihitung. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",
+			"Bagian dari pemasukan yang disisihkan setelah pengeluaran, dirata-ratakan selama setahun terakhir. Hanya menghitung pemasukan yang Anda tandai Rutin — pemasukan Sekali waktu seperti bonus atau pesangon tidak disertakan.",
+			"Pemasukan pasif — sewa, pensiun, bunga dan hasil investasi — sebagai bagian dari pengeluaran; 100% berarti menutupi seluruhnya. Hanya pemasukan pasif rutin yang dihitung. Pengeluaran bersifat perkiraan, dan angka ini bergerak mengikuti pasar.",
 			"Kas di rekening bank sebagai bagian dari total investasi. Tolok ukur batas atas: angka tinggi menandakan kas menganggur yang bisa didayagunakan.",
-			"Berapa lama investasi akan bertahan bila pendapatan aktif berhenti, dikurangi perkiraan pengeluaran setelah dipotong pendapatan pasif yang terus berjalan. Hanya menghitung pendapatan yang Anda tandai rutin — pemasukan sekali waktu seperti pesangon tidak disertakan.",
+			"Berapa lama investasi akan bertahan bila pemasukan aktif berhenti, dikurangi perkiraan pengeluaran setelah dipotong pemasukan pasif yang terus berjalan. Hanya menghitung pemasukan yang Anda tandai Rutin — pemasukan Sekali waktu seperti pesangon tidak disertakan.",
 		},
 		statUndefined:     "Riwayat belum cukup untuk dihitung.",
 		statIndefinite:    "Tak terbatas",
@@ -223,14 +227,14 @@ var reportCatalog = map[string]reportCopy{
 		statYearsUnit:     "%s tahun",
 		statMonthUnit:     "%s bulan",
 		statMonthsUnit:    "%s bulan",
-		statInputsTitle:   "Masukan — rata-rata 12 bln, pendapatan rutin saja",
-		statInputIncome:   "Rata-rata pendapatan",
+		statInputsTitle:   "Dasar perhitungan — rata-rata 12 bln, pemasukan rutin saja",
+		statInputIncome:   "Rata-rata pemasukan",
 		statInputExpenses: "Rata-rata pengeluaran",
-		statInputPassive:  "Rata-rata total pendapatan pasif",
-		statFormulaCash:   "Arus Kas = (pendapatan − pengeluaran) ÷ pendapatan",
-		statFormulaPass:   "Pendapatan Pasif = total pendapatan pasif ÷ pengeluaran",
-		investmentPerf:    "Kinerja Investasi",
-		perfNote:          "Imbal hasil sebagai tingkat — imbal hasil investasi bulan ini dibagi nilai yang Anda pegang di awal bulan. Angka 12 bulan menggabungkan imbal hasil bulanan setahun terakhir secara majemuk, sehingga terbaca sebagai tren, bukan satu bulan yang menonjol. Aset yang baru dipegang bulan pertama, atau sudah dilepas seluruhnya, tidak punya nilai awal sebagai pembanding dan ditampilkan \"—\". Ketiga rincian tidak menjumlah ke total: setiap tingkat diukur terhadap basisnya sendiri.",
+		statInputPassive:  "Rata-rata total pemasukan pasif",
+		statFormulaCash:   "Arus kas = (pemasukan − pengeluaran) ÷ pemasukan",
+		statFormulaPass:   "Pemasukan pasif = total pemasukan pasif ÷ pengeluaran",
+		investmentPerf:    "Kinerja investasi",
+		perfNote:          "Hasil sebagai tingkat — hasil investasi bulan ini dibagi nilai di awal bulan. Angka 12 bulan menggabungkan hasil bulanan setahun terakhir secara majemuk, sehingga terbaca sebagai tren, bukan satu bulan yang menonjol. Kelompok yang baru dimiliki bulan pertama, atau sudah dilepas seluruhnya, tidak punya nilai awal sebagai pembanding dan ditampilkan \"—\". Ketiga rincian tidak menjumlah ke total: setiap tingkat diukur terhadap basisnya sendiri.",
 		perfColMonth:      "Bulan ini",
 		perfColTrailing:   "12-bln",
 		perfTotal:         "Seluruh investasi",
@@ -239,35 +243,35 @@ var reportCatalog = map[string]reportCopy{
 		perfAmount:        "%s bulan ini",
 		perfPlacement:     "Dana bersih ditempatkan",
 		perfPlaceNote:     "Dana baru yang Anda tempatkan ke investasi, dikurangi yang kembali keluar (penjualan dan pokok jatuh tempo), sebagai bagian dari pool — bulan ini di samping rata-rata 12 bulannya. Menempatkan ulang obligasi atau deposito yang jatuh tempo bersih mendekati nol; bulan saat Anda menarik lebih banyak daripada menempatkan akan bernilai negatif. Kupon dan dividen tidak dihitung di sini.",
-		chartAssets:       "Komposisi Harta",
-		chartInvestments:  "Komposisi Investasi",
-		chartLiabilities:  "Komposisi Hutang",
-		chartTrend:        "Kekayaan Bersih — 12 Bulan Terakhir",
+		chartAssets:       "Komposisi aset",
+		chartInvestments:  "Komposisi investasi",
+		chartLiabilities:  "Komposisi liabilitas",
+		chartTrend:        "Kekayaan bersih — 12 bulan terakhir",
 	},
 }
 
 // subtypeLabels maps a domain subtype to its localized display name.
 var subtypeLabels = map[string]map[string]string{
 	"en-GB": {
-		"bank_account":  "Bank Accounts",
+		"bank_account":  "Bank accounts",
 		"property":      "Property",
 		"vehicle":       "Vehicles",
-		"institutional": "Institutional Debt",
-		"personal":      "Personal Debt",
+		"institutional": "Institutional liabilities",
+		"personal":      "Personal liabilities",
 		"stock":         "Stocks",
-		"mutual_fund":   "Mutual Funds",
+		"mutual_fund":   "Mutual funds",
 		"bond":          "Bonds",
 		"gold":          "Gold",
-		"time_deposit":  "Time Deposits",
+		"time_deposit":  "Time deposits",
 	},
 	"id-ID": {
-		"bank_account":  "Rekening Bank",
+		"bank_account":  "Rekening bank",
 		"property":      "Properti",
 		"vehicle":       "Kendaraan",
-		"institutional": "Hutang Lembaga",
-		"personal":      "Hutang Pribadi",
+		"institutional": "Liabilitas institusional",
+		"personal":      "Liabilitas pribadi",
 		"stock":         "Saham",
-		"mutual_fund":   "Reksa Dana",
+		"mutual_fund":   "Reksa dana",
 		"bond":          "Obligasi",
 		"gold":          "Emas",
 		"time_deposit":  "Deposito",
@@ -278,7 +282,7 @@ var subtypeLabels = map[string]map[string]string{
 // (ADR-0048 amendment — investment-performance breakdown).
 var riskLabels = map[string]map[string]string{
 	"en-GB": {"low": "Low risk", "medium": "Medium risk", "high": "High risk"},
-	"id-ID": {"low": "Risiko rendah", "medium": "Risiko menengah", "high": "Risiko tinggi"},
+	"id-ID": {"low": "Risiko rendah", "medium": "Risiko sedang", "high": "Risiko tinggi"},
 }
 
 const fallbackLocale = "en-GB"
@@ -318,9 +322,17 @@ func riskLabel(locale, risk string) string {
 	return risk
 }
 
-// total renders "Total Assets" / "Jumlah Harta".
+// total renders "Total assets" / "Jumlah aset" — sentence case, so the section
+// name is lowercased after the prefix.
 func (c reportCopy) total(section string) string {
-	return fmt.Sprintf("%s %s", c.totalPrefix, section)
+	r, n := utf8.DecodeRuneInString(section)
+	return fmt.Sprintf("%s %c%s", c.totalPrefix, unicode.ToLower(r), section[n:])
+}
+
+// totalOf is the "Total <name>" label for a proper name (a household member),
+// which keeps its capital.
+func (c reportCopy) totalOf(name string) string {
+	return c.totalPrefix + " " + name
 }
 
 var monthNamesEN = [...]string{"", "January", "February", "March", "April", "May", "June",

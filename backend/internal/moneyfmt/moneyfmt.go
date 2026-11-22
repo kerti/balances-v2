@@ -74,6 +74,31 @@ func FormatCurrency(amount, cur, locale string) string {
 	return s
 }
 
+// FormatCurrencyCode is FormatCurrency with the ISO-4217 code in place of the
+// locale's symbol ("USD 2,635.00", never "US$"), the frontend's currencyDisplay
+// "code" (#832). Used where a foreign amount sits beside the reporting currency.
+func FormatCurrencyCode(amount, cur, locale string) string {
+	f, err := strconv.ParseFloat(amount, 64)
+	if err != nil {
+		return amount
+	}
+	neg := math.Signbit(f)
+	mag := math.Abs(f)
+	p := message.NewPrinter(localeOf(locale))
+	var s string
+	if c, err := currency.ParseISO(cur); err != nil {
+		s = cur + " " + p.Sprint(number.Decimal(mag))
+	} else if digits, ok := fractionOverride[cur]; ok {
+		s = cur + " " + p.Sprint(number.Decimal(mag, number.MinFractionDigits(digits), number.MaxFractionDigits(digits)))
+	} else {
+		s = p.Sprint(currency.ISO(c.Amount(mag)))
+	}
+	if neg {
+		return "-" + s
+	}
+	return s
+}
+
 // FormatNumber renders a decimal string with locale grouping and no currency —
 // the server-side counterpart of the frontend's formatNumber (used for FX rates).
 func FormatNumber(value, locale string) string {

@@ -11,26 +11,29 @@ import (
 // theme-independent, no image pipeline). The geometry ports the frontend's
 // pieChartMath / lineChartMath.
 
-// slice is one donut segment.
+// slice is one donut segment. Color is the subtype's category colour.
 type slice struct {
 	Label string
 	Value float64
+	Color [3]int
 }
 
-// chartPalette is a small categorical palette (RGB), reused across donuts. Colours
-// are assigned by slice order; a slice past the end wraps.
-var chartPalette = [][3]int{
-	{0x25, 0x63, 0xEB}, // blue
-	{0x10, 0xB9, 0x81}, // emerald
-	{0xF5, 0x9E, 0x0B}, // amber
-	{0x8B, 0x5C, 0xF6}, // violet
-	{0xEF, 0x44, 0x44}, // red
-	{0x06, 0xB6, 0xD4}, // cyan
-	{0x64, 0x74, 0x8B}, // slate
-	{0xEC, 0x48, 0x99}, // pink
+// categoryColors mirrors the UI's --cat-* light-theme tokens in
+// frontend/src/index.css (ADR-0054 amendment, #836): no category uses red or
+// green, which mean direction. The report prints on white, so the light values
+// apply.
+var categoryColors = map[string][3]int{
+	"bank_account":  {0x40, 0xA7, 0xF9},
+	"property":      {0xB3, 0x3A, 0xA0},
+	"vehicle":       {0xD3, 0x83, 0x01},
+	"personal":      {0x86, 0x71, 0xFC},
+	"institutional": {0xE5, 0x8E, 0x13},
+	"stock":         {0x24, 0xB3, 0xCD},
+	"mutual_fund":   {0x6E, 0x41, 0xC6},
+	"bond":          {0x18, 0x7F, 0xDA},
+	"time_deposit":  {0xBC, 0x51, 0xAF},
+	"gold":          {0xB9, 0xA8, 0x43},
 }
-
-func paletteAt(i int) [3]int { return chartPalette[i%len(chartPalette)] }
 
 // drawDonut renders a donut at centre (cx,cy) with the given outer/inner radii
 // (mm), one segment per slice sized by value share. Zero-total is a no-op.
@@ -46,14 +49,13 @@ func drawDonut(pdf *pdfDoc, cx, cy, rOuter, rInner float64, slices []slice) {
 	}
 	const steps = 64 // arc smoothness per full circle
 	angle := -math.Pi / 2
-	for i, s := range slices {
+	for _, s := range slices {
 		if s.Value <= 0 {
 			continue
 		}
 		sweep := (s.Value / total) * 2 * math.Pi
 		end := angle + sweep
-		col := paletteAt(i)
-		pdf.SetFillColor(col[0], col[1], col[2])
+		pdf.SetFillColor(s.Color[0], s.Color[1], s.Color[2])
 
 		// Annular sector as a filled polygon: outer arc forward, inner arc back.
 		n := max(int(math.Ceil(float64(steps)*(sweep/(2*math.Pi)))), 1)
@@ -72,7 +74,7 @@ func drawDonut(pdf *pdfDoc, cx, cy, rOuter, rInner float64, slices []slice) {
 }
 
 // drawLegend draws a colour-swatch + label list starting at (x,y), one row per
-// slice, using the same palette order as drawDonut. Values are formatted as a
+// slice, using the same colours as drawDonut. Values are formatted as a
 // percentage of the total. Returns the y after the last row.
 func drawLegend(pdf *pdfDoc, x, y float64, slices []slice) float64 {
 	var total float64
@@ -83,12 +85,11 @@ func drawLegend(pdf *pdfDoc, x, y float64, slices []slice) float64 {
 	}
 	pdf.SetFont("Geist", "", 7)
 	const rowH = 4.2
-	for i, s := range slices {
+	for _, s := range slices {
 		if s.Value <= 0 {
 			continue
 		}
-		col := paletteAt(i)
-		pdf.SetFillColor(col[0], col[1], col[2])
+		pdf.SetFillColor(s.Color[0], s.Color[1], s.Color[2])
 		pdf.Rect(x, y+0.8, 2.4, 2.4, "F")
 		pct := 0.0
 		if total > 0 {
