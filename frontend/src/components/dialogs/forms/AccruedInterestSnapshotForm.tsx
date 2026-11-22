@@ -78,7 +78,7 @@ export function AccruedInterestSnapshotFormBody({
         <>
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="ai_amount">
+              <Label required htmlFor="ai_amount">
                 {t("investments:accruedInterestSnapshot.totalValueLabel", { currency })}
               </Label>
               <NumericInput
@@ -92,7 +92,7 @@ export function AccruedInterestSnapshotFormBody({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="ai_accrued">
+              <Label required htmlFor="ai_accrued">
                 {t("investments:accruedInterestSnapshot.accruedLabel", { currency })}
               </Label>
               <NumericInput
@@ -159,7 +159,9 @@ function TimeDepositValue({
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="ai_amount">{t("accruedInterestSnapshot.valueLabel", { currency })}</Label>
+        <Label required htmlFor="ai_amount">
+          {t("accruedInterestSnapshot.valueLabel", { currency })}
+        </Label>
         <NumericInput
           id="ai_amount"
           data-first-value

@@ -81,7 +81,9 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
               just on a phone (#572). The two dialogs must agree, since a member
               who picks a category on create then re-reads it on edit. */}
           <div className="grid gap-2">
-            <Label htmlFor="edit_income_date">{t("income:fields.date")}</Label>
+            <Label required htmlFor="edit_income_date">
+              {t("income:fields.date")}
+            </Label>
             <Input
               id="edit_income_date"
               type="date"
@@ -93,7 +95,9 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="edit_income_category">{t("income:fields.category")}</Label>
+            <Label required htmlFor="edit_income_category">
+              {t("income:fields.category")}
+            </Label>
             <Select
               id="edit_income_category"
               required
@@ -126,7 +130,9 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
 
           <div className="grid grid-cols-[1fr_120px] gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="edit_income_amount">{t("income:fields.amount")}</Label>
+              <Label required htmlFor="edit_income_amount">
+                {t("income:fields.amount")}
+              </Label>
               <NumericInput
                 id="edit_income_amount"
                 required
@@ -136,7 +142,9 @@ export function EditIncomeDialog({ open, onOpenChange, income }: Props) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_income_currency">{t("income:fields.currency")}</Label>
+              <Label required htmlFor="edit_income_currency">
+                {t("income:fields.currency")}
+              </Label>
               <Input
                 id="edit_income_currency"
                 required

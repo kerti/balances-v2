@@ -46,7 +46,9 @@ export function GoldPuritySelect({ idPrefix, value, onChange }: Props) {
 
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>{t("gold.fields.purity")}</Label>
+      <Label required htmlFor={id}>
+        {t("gold.fields.purity")}
+      </Label>
       <Select
         id={id}
         data-testid={`${idPrefix}-purity-select`}

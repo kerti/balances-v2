@@ -35,7 +35,9 @@ export function GoldFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="gold_display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="gold_display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="gold_display_name"
           required

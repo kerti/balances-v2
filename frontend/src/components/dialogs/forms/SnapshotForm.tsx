@@ -63,7 +63,9 @@ export function SnapshotFormBody({
       />
 
       <div className="grid gap-2">
-        <Label htmlFor="amount">{t("fields.amountIn", { currency })}</Label>
+        <Label required htmlFor="amount">
+          {t("fields.amountIn", { currency })}
+        </Label>
         <NumericInput
           id="amount"
           data-first-value

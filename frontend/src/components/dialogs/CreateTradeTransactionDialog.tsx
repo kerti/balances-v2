@@ -123,7 +123,9 @@ export function CreateTradeTransactionDialog<TResult>({
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="trade_date">{t("investments:trade.tradeDateLabel")}</Label>
+            <Label required htmlFor="trade_date">
+              {t("investments:trade.tradeDateLabel")}
+            </Label>
             <Input
               id="trade_date"
               type="date"
@@ -136,7 +138,7 @@ export function CreateTradeTransactionDialog<TResult>({
 
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="trade_quantity">
+              <Label required htmlFor="trade_quantity">
                 {t("investments:trade.quantityLabel", { unit: quantityUnit })}
               </Label>
               <NumericInput
@@ -150,7 +152,7 @@ export function CreateTradeTransactionDialog<TResult>({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="trade_price">
+              <Label required htmlFor="trade_price">
                 {t("investments:trade.pricePerUnitLabel", { currency })}
               </Label>
               <NumericInput

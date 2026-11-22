@@ -32,7 +32,9 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="stock_display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="stock_display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="stock_display_name"
           required
@@ -44,7 +46,9 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
-          <Label htmlFor="stock_ticker">{t("investments:stock.fields.ticker")}</Label>
+          <Label required htmlFor="stock_ticker">
+            {t("investments:stock.fields.ticker")}
+          </Label>
           <Input
             id="stock_ticker"
             required
@@ -54,7 +58,9 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="stock_exchange">{t("investments:stock.fields.exchange")}</Label>
+          <Label required htmlFor="stock_exchange">
+            {t("investments:stock.fields.exchange")}
+          </Label>
           <Input
             id="stock_exchange"
             required

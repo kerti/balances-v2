@@ -72,7 +72,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
     <>
       <div className="space-y-3">
         <div className="grid gap-2">
-          <Label htmlFor="bond_display_name">{t("common:fields.displayName")}</Label>
+          <Label required htmlFor="bond_display_name">
+            {t("common:fields.displayName")}
+          </Label>
           <Input
             id="bond_display_name"
             required
@@ -93,7 +95,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="bond_issuer">{t("investments:bond.fields.issuer")}</Label>
+            <Label required htmlFor="bond_issuer">
+              {t("investments:bond.fields.issuer")}
+            </Label>
             <Input
               id="bond_issuer"
               required
@@ -120,7 +124,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             `sm:max-w-sm` at every width, so there is no wider layout to fall
             back to (#572). */}
         <div className="grid gap-2">
-          <Label htmlFor="bond_type">{t("investments:bond.fields.bondType")}</Label>
+          <Label required htmlFor="bond_type">
+            {t("investments:bond.fields.bondType")}
+          </Label>
           <Select
             id="bond_type"
             value={form.bond_type}
@@ -141,7 +147,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
                 below the pair rather than sharing with the face value. */}
             <div className="grid grid-cols-[1fr_120px] gap-3 [&>*]:content-end">
               <div className="grid gap-2">
-                <Label htmlFor="bond_face_value">{t("investments:bond.fields.faceValue")}</Label>
+                <Label required htmlFor="bond_face_value">
+                  {t("investments:bond.fields.faceValue")}
+                </Label>
                 <NumericInput
                   id="bond_face_value"
                   required
@@ -154,7 +162,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
               {currencyField}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="bond_placement_date">
+              <Label required htmlFor="bond_placement_date">
                 {t("investments:bond.fields.placementDate")}
               </Label>
               <Input
@@ -185,7 +193,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
       <div className="space-y-3 border-t pt-4">
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
-            <Label htmlFor="bond_coupon_rate">{t("investments:bond.fields.couponRate")}</Label>
+            <Label required htmlFor="bond_coupon_rate">
+              {t("investments:bond.fields.couponRate")}
+            </Label>
             <NumericInput
               id="bond_coupon_rate"
               required
@@ -197,7 +207,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="bond_coupon_frequency">
+            <Label required htmlFor="bond_coupon_frequency">
               {t("investments:bond.fields.couponFrequency")}
             </Label>
             <Select
@@ -218,7 +228,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="bond_coupon_disposition">
+          <Label required htmlFor="bond_coupon_disposition">
             {t("investments:bond.fields.couponDisposition")}
           </Label>
           <Select
@@ -237,7 +247,9 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="bond_maturity">{t("investments:bond.fields.maturityDate")}</Label>
+          <Label required htmlFor="bond_maturity">
+            {t("investments:bond.fields.maturityDate")}
+          </Label>
           <Input
             id="bond_maturity"
             required

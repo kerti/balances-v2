@@ -36,7 +36,9 @@ export function PropertyFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="display_name"
           required

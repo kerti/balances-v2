@@ -177,10 +177,11 @@ function CopyForm({
 // before has no Regular events: the header action only appears when it can do
 // something, and the dialog it opens always has rows.
 export function CopyRegularIncomeDialog({ income, month, compactTrigger = false }: Props) {
-  const { t } = useTranslation(["income"]);
+  const { t } = useTranslation(["income", "common"]);
   const [open, setOpen] = useState(false);
   const candidates = copyCandidates(income, month);
   if (candidates.length === 0) return null;
+  const allThere = candidates.every((c) => c.alreadyThere);
   const from = previousMonth(month);
 
   return (
@@ -194,11 +195,30 @@ export function CopyRegularIncomeDialog({ income, month, compactTrigger = false 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("income:copy.title")}</DialogTitle>
-          <DialogDescription>
-            {t("income:copy.description", { from: monthLabel(from), to: monthLabel(month) })}
+          <DialogDescription data-testid={allThere ? "copy-income-nothing" : undefined}>
+            {allThere
+              ? t("income:copy.nothingToCopy", { from: monthLabel(from), to: monthLabel(month) })
+              : t("income:copy.description", { from: monthLabel(from), to: monthLabel(month) })}
           </DialogDescription>
         </DialogHeader>
-        <CopyForm candidates={candidates} month={month} onDone={() => setOpen(false)} />
+        {allThere ? (
+          // Everything last month brought in is already recorded (#953 S6): say so
+          // rather than open a form of unticked rows whose Copy button can only error.
+          <>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+                data-testid="copy-income-nothing-done"
+              >
+                {t("common:actions.done")}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <CopyForm candidates={candidates} month={month} onDone={() => setOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );

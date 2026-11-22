@@ -131,7 +131,9 @@ export function CreateFeeTransactionDialog<TResult>({
         >
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="fee_date">{t("investments:fee.feeDateLabel")}</Label>
+              <Label required htmlFor="fee_date">
+                {t("investments:fee.feeDateLabel")}
+              </Label>
               <Input
                 id="fee_date"
                 type="date"
@@ -142,7 +144,7 @@ export function CreateFeeTransactionDialog<TResult>({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="fee_amount">
+              <Label required htmlFor="fee_amount">
                 {t("investments:fee.cashAmountLabel", { currency })}
               </Label>
               <NumericInput

@@ -17,7 +17,7 @@ import { subtractDecimals } from "@/lib/decimal";
 import { formatCurrency } from "@/lib/format";
 import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
 import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
-import { asOfInputValue, formatRecordMonth } from "@/lib/recordSnapshot";
+import { asOfInputValue, formatRecordMonth, holdingMonth } from "@/lib/recordSnapshot";
 import { useOnRecordOpen, useOnRecordRequest } from "@/lib/recordSnapshotRequest";
 import { useRecordSnapshotForm } from "@/hooks/useRecordSnapshotForm";
 import type { CreateInvestmentSnapshotPayload } from "@/hooks/useInvestmentSnapshots";
@@ -120,7 +120,10 @@ export function CreateAccruedInterestSnapshotDialog<TCreated, TUpdated>({
 
   // "Update {Mon} holding →" (#830) after a bond trade: this shape has no
   // quantity or price to carry over, so it just opens on the default month.
-  useOnRecordRequest(begin);
+  useOnRecordRequest(() => {
+    reset(undefined, holdingMonth(snapshots));
+    setOpen(true);
+  });
 
   function close() {
     setOpen(false);

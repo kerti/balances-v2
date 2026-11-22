@@ -37,7 +37,9 @@ export function VehicleFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="v_display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="v_display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="v_display_name"
           required

@@ -34,7 +34,9 @@ export function MutualFundFormBody({ mode, form, setForm, soleOwnerID }: Props) 
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="mf_display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="mf_display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="mf_display_name"
           required
@@ -46,7 +48,9 @@ export function MutualFundFormBody({ mode, form, setForm, soleOwnerID }: Props) 
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
-          <Label htmlFor="mf_fund_code">{t("investments:mutualFund.fields.fundCode")}</Label>
+          <Label required htmlFor="mf_fund_code">
+            {t("investments:mutualFund.fields.fundCode")}
+          </Label>
           <Input
             id="mf_fund_code"
             required

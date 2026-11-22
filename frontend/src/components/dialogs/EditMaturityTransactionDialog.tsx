@@ -78,7 +78,9 @@ export function EditMaturityTransactionDialog<TResult>({
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="edit_mat_date">{t("investments:maturityTxn.maturityDateLabel")}</Label>
+            <Label required htmlFor="edit_mat_date">
+              {t("investments:maturityTxn.maturityDateLabel")}
+            </Label>
             <Input
               id="edit_mat_date"
               type="date"
@@ -91,7 +93,7 @@ export function EditMaturityTransactionDialog<TResult>({
 
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="edit_mat_principal">
+              <Label required htmlFor="edit_mat_principal">
                 {t("investments:maturityTxn.principalLabel", {
                   currency: transaction.currency,
                 })}
@@ -105,7 +107,7 @@ export function EditMaturityTransactionDialog<TResult>({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_mat_interest">
+              <Label required htmlFor="edit_mat_interest">
                 {t("investments:maturityTxn.interestLabel", {
                   currency: transaction.currency,
                 })}

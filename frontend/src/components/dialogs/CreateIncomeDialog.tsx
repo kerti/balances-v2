@@ -200,7 +200,9 @@ export function CreateIncomeDialog({
               exactly the bar INV-PRESENTATION-08 sets. The chevron's `pr-8`
               made it worse than it looked on the native control it replaced. */}
           <div className="grid gap-2">
-            <Label htmlFor="income_date">{t("income:fields.date")}</Label>
+            <Label required htmlFor="income_date">
+              {t("income:fields.date")}
+            </Label>
             <Input
               id="income_date"
               type="date"
@@ -212,7 +214,9 @@ export function CreateIncomeDialog({
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="income_category">{t("income:fields.category")}</Label>
+            <Label required htmlFor="income_category">
+              {t("income:fields.category")}
+            </Label>
             <Select
               id="income_category"
               required
@@ -254,7 +258,9 @@ export function CreateIncomeDialog({
 
           <div className="grid grid-cols-[1fr_120px] gap-3">
             <div className="grid gap-2">
-              <Label htmlFor="income_amount">{t("income:fields.amount")}</Label>
+              <Label required htmlFor="income_amount">
+                {t("income:fields.amount")}
+              </Label>
               <NumericInput
                 id="income_amount"
                 required
@@ -265,7 +271,9 @@ export function CreateIncomeDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="income_currency">{t("income:fields.currency")}</Label>
+              <Label required htmlFor="income_currency">
+                {t("income:fields.currency")}
+              </Label>
               <Input
                 id="income_currency"
                 required

@@ -76,7 +76,7 @@ export function LinkRolloverSuccessorDialog({ sourceId }: Props) {
           className="space-y-4"
         >
           <div className="grid gap-2">
-            <Label htmlFor="rollover_successor_select">
+            <Label required htmlFor="rollover_successor_select">
               {t("investments:timeDeposit.rollover.linkLabel")}
             </Label>
             {candidates.length === 0 ? (

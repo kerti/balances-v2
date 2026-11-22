@@ -94,7 +94,9 @@ export function ResetSetScreen() {
               </div>
 
               <div className="space-y-1">
-                <Label htmlFor="reset-set-password">{t("resetSet.passwordLabel")}</Label>
+                <Label required htmlFor="reset-set-password">
+                  {t("resetSet.passwordLabel")}
+                </Label>
                 <Input
                   id="reset-set-password"
                   data-testid="reset-set-password"

@@ -57,7 +57,9 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
     <>
       <div className="space-y-3">
         <div className="grid gap-2">
-          <Label htmlFor="td_display_name">{t("common:fields.displayName")}</Label>
+          <Label required htmlFor="td_display_name">
+            {t("common:fields.displayName")}
+          </Label>
           <Input
             id="td_display_name"
             required
@@ -79,7 +81,9 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
       <div className="space-y-3 border-t pt-4">
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
-            <Label htmlFor="td_bank_name">{t("investments:timeDeposit.fields.bankName")}</Label>
+            <Label required htmlFor="td_bank_name">
+              {t("investments:timeDeposit.fields.bankName")}
+            </Label>
             <Input
               id="td_bank_name"
               required
@@ -103,7 +107,9 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="td_principal">{t("investments:timeDeposit.fields.principal")}</Label>
+          <Label required htmlFor="td_principal">
+            {t("investments:timeDeposit.fields.principal")}
+          </Label>
           <NumericInput
             id="td_principal"
             required
@@ -118,7 +124,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
       <div className="space-y-3 border-t pt-4">
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
-            <Label htmlFor="td_interest_rate">
+            <Label required htmlFor="td_interest_rate">
               {t("investments:timeDeposit.fields.interestRate")}
             </Label>
             <NumericInput
@@ -132,7 +138,9 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="td_term_months">{t("investments:timeDeposit.fields.termMonths")}</Label>
+            <Label required htmlFor="td_term_months">
+              {t("investments:timeDeposit.fields.termMonths")}
+            </Label>
             <NumericInput
               id="td_term_months"
               required
@@ -146,7 +154,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
         </div>
         <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
           <div className="grid gap-2">
-            <Label htmlFor="td_placement_date">
+            <Label required htmlFor="td_placement_date">
               {t("investments:timeDeposit.fields.placementDate")}
             </Label>
             <Input
@@ -159,7 +167,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="td_maturity_date">
+            <Label required htmlFor="td_maturity_date">
               {t("investments:timeDeposit.fields.maturityDate")}
             </Label>
             <Input

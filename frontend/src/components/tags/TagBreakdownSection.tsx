@@ -48,11 +48,16 @@ export function TagBreakdownSection({ notes, bd, isChecked, toggle }: Props) {
   const body = (
     <>
       {notes}
-      <InvestmentPieChart
-        slices={slices}
-        currency={bd.currency}
-        legendPosition={isMobile ? "none" : "right"}
-      />
+      {/* A donut of one slice is just a ring: skipped (#953 S10). */}
+      {slices.length > 1 && (
+        <div data-testid="tag-breakdown-pie">
+          <InvestmentPieChart
+            slices={slices}
+            currency={bd.currency}
+            legendPosition={isMobile ? "none" : "right"}
+          />
+        </div>
+      )}
 
       {isMobile ? (
         <TagBreakdownCards bd={bd} isChecked={isChecked} toggle={toggle} {...expansion} />

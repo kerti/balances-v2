@@ -109,6 +109,25 @@ describe("CopyRegularIncomeDialog", () => {
     expect(bodies[0].rows[0]).toEqual(expect.objectContaining({ category: "pension" }));
   });
 
+  // #953 S6
+  it("says there is nothing to copy when every source is already recorded", async () => {
+    const bodies = captureBulk();
+    const copied = [
+      inc({ id: "n1", date: "2026-06-25", amount: "15000000", category: "salary" }),
+      inc({ id: "n2", date: "2026-06-30", amount: "2000000", category: "pension" }),
+    ];
+    renderWithProviders(<CopyRegularIncomeDialog income={[...may, ...copied]} month="2026-06" />);
+    await userEvent.click(screen.getByTestId("copy-income-trigger"));
+
+    expect(await screen.findByTestId("copy-income-nothing")).toHaveTextContent(/nothing to copy/i);
+    expect(screen.queryByTestId("copy-income-save")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("copy-income-row")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId("copy-income-nothing-done"));
+    expect(screen.queryByTestId("copy-income-nothing")).not.toBeInTheDocument();
+    expect(bodies).toHaveLength(0);
+  });
+
   it("writes nothing on cancel, and explains when no row is ticked", async () => {
     const bodies = captureBulk();
     renderWithProviders(<CopyRegularIncomeDialog income={may} month="2026-06" />);
