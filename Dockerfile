@@ -7,7 +7,7 @@
 # ---- web (SPA) ----
 # Built on the native build platform — the SPA bundle is architecture-agnostic,
 # so there's no reason to emulate the target arch here.
-FROM --platform=$BUILDPLATFORM node:24@sha256:3d27e5c11e5786e309ec3e03f93ae536eb36e6e5eb3714d5eb3300a36157add0 AS web
+FROM --platform=$BUILDPLATFORM node:26@sha256:e18c3ccdf7d71619990b0e85639f506e2028a95410999cab24cc373cbd10e0ac AS web
 WORKDIR /web
 # Release tag baked into the bundle (issue #75). The deploy workflow passes it
 # as a build arg; Vite picks up VITE_*-prefixed vars from the environment at
