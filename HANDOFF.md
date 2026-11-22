@@ -51,21 +51,22 @@ Per-milestone history — what each tag contained — is in the GitHub Releases,
 epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction rather than picking the
 next item off the backlog — they pause between items to direct.
 
-**Active line: building the 2026-11-04 UI/UX audit of the demo.** Decided in themed grill rounds; each round
-files its own `ready-for-agent` issues. Quick wins #779–#784; round (a), money entry and the monthly
-flow (ADR-0056, ADR-0046 amendment), is #785–#792. Round (c), feedback and safety (ADR-0058: replaces
-archive, single-item Undo toasts, confirm tiers, one toast per write), is #820–#825; it unblocks
-#788 (after #820 + #822), #791 (after #820) and #805 (after #822); #790 still waits on #788. Round
-(b), close/import/trades (no ADR), is #827–#830. Round (d), wording (no ADR; vocabulary in
-`CONTEXT.md`), is #832 copy sweep + #833 counts/months; it renamed ADR-0058's "Record month" button
-to **Record snapshot**. Round (e), colour (ADR-0054 amendment), is #835 tokens + #836 palettes and
-badges. Round (f), layout and shell (ADR-0050 amendment), is #837–#842. Round (g), scope calls (ADR-0022
-amendment), is #843–#847, with member removal deferred to an ADR issue (#848). Phone width is
-#849 fixes + #850 real-device check (`ready-for-human`, after #849 and #841). The final pass mapped
-every finding ID to an outcome (#851–#853 closed the gaps; table in a comment on #834). **Decisions
-are complete; #779–#853 is the build backlog.** Build in dependency order: #820 and #822 first (they
-unblock #788, #791, #805; #788 then unblocks #790 and #843). `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload
-under repo **Settings → Social preview**.
+**Both demo UI/UX audits are built.** The 2026-11-04 audit (#779–#853) shipped through alpha.10; the
+2026-11-16 audit's ready-for-agent issues merged in #956–#967. Its remaining findings are
+`needs-triage`: #968 (float math in the snapshot dialogs, a money bug, so first), #948–#955 polish,
+and #936 (one monthly check-in flow; needs a grill and an ADR).
+
+**Next tag (`v0.9.0-alpha.12`) carries release-note debt:**
+- Breaking config: `TRUST_PROXY_HEADERS` is removed and the app refuses to boot if it is set;
+  `TRUSTED_PROXIES` replaces it (#962). Self-hosters must edit `.env`.
+- Re-importing an old time-deposit export with months outside the deposit's term now fails with
+  `OUTSIDE_DEPOSIT_TERM` (#964).
+- Run `make e2e` before tagging (#963's spec edits and Playwright 1.65.1 are unrun locally).
+- After the preview deploy, check that Fly's edge peer falls in `172.16.0.0/12`; otherwise every
+  visitor shares one rate-limit key.
+
+`social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload under repo
+**Settings → Social preview**.
 
 Standing carry-forwards:
 
