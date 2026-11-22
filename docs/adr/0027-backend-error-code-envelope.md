@@ -176,7 +176,8 @@ field labels already do.
   renders row-by-row. The per-row `message` stays English in this slice; converting each
   spreadsheet-validation outcome to a code is high churn for marginal gain because the
   surrounding context is already a list of file-row diagnostics, not a single user-facing
-  toast. May revisit if user feedback warrants.
+  toast. May revisit if user feedback warrants. (Amended 2026-11-22, #991: a `422` on these
+  endpoints may also be an envelope, `VALUE_OUT_OF_RANGE`; clients discriminate with `isEnvelope`.)
 - **The repo's English error strings themselves.** `ErrNotFound = errors.New("repo: not
   found")` stays English — it's Go-internal context for logs, not the HTTP surface.
 

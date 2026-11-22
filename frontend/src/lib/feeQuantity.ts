@@ -6,21 +6,18 @@
 // The user always knows the cash amount (it's what the manager charged) and the
 // conversion price (the spot/buyback price the units were valued at). This
 // derives the third — the units deducted — so the non-technical owner never
-// does the division by hand. Pure Number arithmetic, matching `lib/revaluation`
-// and `lib/costBasis`; the result is a display suggestion the user can override,
-// not authoritative — the backend stores whatever the form submits.
+// does the division by hand. The division is exact (`lib/decimal`), so the
+// suggestion carries no float artefact; it is still only a suggestion the user can
+// override — the backend stores whatever the form submits.
 //
-// quantity is DECIMAL(20,8) on the wire, so the result rounds to 8dp with
-// trailing zeros trimmed (so "0.05000000" shows as "0.05").
+// quantity is DECIMAL(20,8) on the wire, so the result rounds half away from zero
+// to 8dp with trailing zeros trimmed (so "0.05000000" shows as "0.05").
+
+import { divideDecimals, parseExact } from "@/lib/decimal";
 
 export function deriveFeeQuantity(amount: string, pricePerUnit: string): string | null {
-  if (!amount || !pricePerUnit) return null;
-  const a = Number(amount);
-  const p = Number(pricePerUnit);
-  if (!Number.isFinite(a) || !Number.isFinite(p)) return null;
-  if (a <= 0 || p <= 0) return null;
-  const q = a / p;
-  // Round to 8dp (DECIMAL(20,8)); `toString()` drops the trailing zeros the
-  // round introduces.
-  return (Math.round(q * 1e8) / 1e8).toString();
+  const a = parseExact(amount);
+  const p = parseExact(pricePerUnit);
+  if (a === null || p === null || a.n <= 0n || p.n <= 0n) return null;
+  return divideDecimals(amount, pricePerUnit);
 }

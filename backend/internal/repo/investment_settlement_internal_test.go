@@ -54,7 +54,7 @@ func TestSettlementTypeFor(t *testing.T) {
 	}
 }
 
-// covers: INV-LIFECYCLE-08
+// covers: INV-LIFECYCLE-08, INV-FINANCE-42
 func TestSettlementParamsShape(t *testing.T) {
 	inv := db.Investment{Subtype: "stock", NativeCurrency: "IDR"}
 	at := time.Date(2026, time.March, 15, 0, 0, 0, 0, time.UTC)
@@ -75,6 +75,27 @@ func TestSettlementParamsShape(t *testing.T) {
 		}
 		if p.PrincipalDisposition != nil || p.InterestDisposition != nil {
 			t.Error("a sell must carry no dispositions")
+		}
+	})
+
+	// Postgres rounds a NUMERIC(20,4) insert the same way, so a DB round-trip cannot
+	// tell a rounded amount from an unrounded one: assert on the params, before the DB.
+	t.Run("a sell's amount is rounded once to 4 places by the shared helper", func(t *testing.T) {
+		for _, c := range []struct{ name, qty, price, want string }{
+			{"eight-place quantity, four-place price", "1.12345678", "2.1234", "2.3855"},
+			{"fifth decimal 5 rounds up", "0.00005", "1", "0.0001"},
+			{"fifth decimal below 5 rounds down", "0.00004", "1", "0"},
+			{"just above the half rounds up", "1.00005001", "1", "1.0001"},
+		} {
+			p, err := settlementParams(inv, TxnTypeSell, InvestmentSettlement{
+				Quantity: d(c.qty), PricePerUnit: d(c.price),
+			}, at)
+			if err != nil {
+				t.Fatalf("%s: settlementParams: %v", c.name, err)
+			}
+			if p.Amount == nil || p.Amount.String() != c.want {
+				t.Errorf("%s: amount: got %v, want %s", c.name, p.Amount, c.want)
+			}
 		}
 	})
 

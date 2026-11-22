@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ApiError } from "@/api/client";
-import { postCreateImport, type CreateImportResult } from "@/hooks/snapshotImport";
+import {
+  postCreateImport,
+  postSnapshotImport,
+  type CreateImportResult,
+} from "@/hooks/snapshotImport";
 
 // postCreateImport is the transport behind the create-from-file dialog. These
 // cover its three branches — ok, the 422 "bad workbook" result, and a hard
@@ -77,6 +81,50 @@ describe("postCreateImport", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(500, { code: "INTERNAL" })));
     await expect(
       postCreateImport("/api/bank-accounts", new File(["x"], "a.xlsx"), "commit"),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+
+  // covers: INV-CONTRACT-06
+  it("throws a 422 ADR-0027 envelope (VALUE_OUT_OF_RANGE) instead of reading it as a result", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(422, { code: "VALUE_OUT_OF_RANGE" })),
+    );
+    const err = await postCreateImport(
+      "/api/bank-accounts",
+      new File(["x"], "a.xlsx"),
+      "preview",
+    ).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).body).toEqual({ code: "VALUE_OUT_OF_RANGE" });
+  });
+});
+
+describe("postSnapshotImport", () => {
+  it("treats a 422 body without a code as the file's result", async () => {
+    const body = {
+      mode: "preview",
+      committed: false,
+      to_insert: 0,
+      errors: [{ row: 2, message: "x" }],
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(422, body)));
+    const r = await postSnapshotImport(
+      "/api/assets/1/snapshots",
+      new File(["x"], "a.xlsx"),
+      "preview",
+    );
+    expect(r.errors).toHaveLength(1);
+  });
+
+  // covers: INV-CONTRACT-06
+  it("throws a 422 ADR-0027 envelope (VALUE_OUT_OF_RANGE) instead of reading it as a result", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse(422, { code: "VALUE_OUT_OF_RANGE" })),
+    );
+    await expect(
+      postSnapshotImport("/api/assets/1/snapshots", new File(["x"], "a.xlsx"), "preview"),
     ).rejects.toBeInstanceOf(ApiError);
   });
 });

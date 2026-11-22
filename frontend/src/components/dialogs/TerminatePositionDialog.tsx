@@ -23,6 +23,7 @@ import {
   currencyDecimals,
 } from "@/lib/format";
 import { computeCostBasis } from "@/lib/costBasis";
+import { fromScaled, multiplyDecimals, sumDecimals, toScaled } from "@/lib/decimal";
 import { useUpdateLifecycle, type LifecycleSettlement } from "@/hooks/useLifecycle";
 import { useInvestmentTransactions } from "@/hooks/useInvestmentTransactions";
 import { useInvestmentSnapshots } from "@/hooks/useInvestmentSnapshots";
@@ -62,9 +63,9 @@ const EMPTY_SETTLEMENT: SettlementForm = {
   interest_amount: "",
 };
 
-function num(value: string): number {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : 0;
+// A stored decimal as scaled units; a missing or malformed one counts as 0.
+function scaled(value: string): bigint {
+  return toScaled(value) ?? 0n;
 }
 
 type Props = {
@@ -199,13 +200,14 @@ export function TerminatePositionDialog({
         price_per_unit: latest?.price_per_unit ?? (heldQty === 0 ? "0" : ""),
       };
     }
-    const total = num(latest?.amount ?? "0");
-    const accrued = num(latest?.accrued_interest ?? "0");
-    const interest = Math.max(0, Math.min(accrued, total));
+    const total = scaled(latest?.amount ?? "0");
+    const accrued = scaled(latest?.accrued_interest ?? "0");
+    const capped = accrued < total ? accrued : total;
+    const interest = capped > 0n ? capped : 0n;
     return {
       ...EMPTY_SETTLEMENT,
-      principal_amount: String(total - interest),
-      interest_amount: String(interest),
+      principal_amount: fromScaled(total - interest),
+      interest_amount: fromScaled(interest),
     };
   }
 
@@ -269,8 +271,8 @@ export function TerminatePositionDialog({
 
   const proceeds =
     kind === "sell"
-      ? num(settlement.quantity) * num(settlement.price_per_unit)
-      : num(settlement.principal_amount) + num(settlement.interest_amount);
+      ? (multiplyDecimals(settlement.quantity, settlement.price_per_unit) ?? "0")
+      : sumDecimals([settlement.principal_amount, settlement.interest_amount]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -439,7 +441,7 @@ export function TerminatePositionDialog({
               <div className="rounded-md bg-muted px-3 py-2 text-sm">
                 <span className="text-muted-foreground">{t("terminate.settlementCashIn")}</span>{" "}
                 <span className="font-medium" data-testid="settlement-total">
-                  {currency ? formatCurrency(String(proceeds), currency) : proceeds}
+                  {currency ? formatCurrency(proceeds, currency) : proceeds}
                 </span>
               </div>
 

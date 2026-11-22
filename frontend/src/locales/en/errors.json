@@ -67,6 +67,7 @@
     "UNDO_SLOT_TAKEN": "Can't undo: something else now fills that spot (the same month or rate). Remove or edit it first.",
     "UNDO_REPLACEMENT_CHANGED": "Can't undo: this value was changed again after it was replaced.",
     "SNAPSHOT_CLOSE_NOT_MOVABLE": "This is the closing snapshot written when the item was closed, so it can't be moved. Reopen the item to remove it.",
-    "SNAPSHOT_MOVE_SAME_MONTH": "That snapshot is already in this month."
+    "SNAPSHOT_MOVE_SAME_MONTH": "That snapshot is already in this month.",
+    "VALUE_OUT_OF_RANGE": "One of the numbers is too big to save. Check the numbers you entered, then try again."
   }
 }

@@ -16,6 +16,7 @@ import { NumericInput } from "@/components/common/NumericInput";
 import { Label } from "@/components/ui/label";
 import { formatCurrency, currencyDecimals } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
+import { sumDecimals } from "@/lib/decimal";
 import type { InvestmentTransaction, Disposition } from "@/api/types";
 import type { UpdateTransactionMutationVariables } from "@/components/dialogs/EditTradeTransactionDialog";
 import { Select } from "@/components/ui/select";
@@ -43,12 +44,7 @@ export function EditMaturityTransactionDialog<TResult>({
     description: transaction.description ?? "",
   });
 
-  const totalReceived = (() => {
-    const p = Number(form.principal_amount);
-    const i = Number(form.interest_amount);
-    if (Number.isNaN(p) || Number.isNaN(i)) return null;
-    return (p + i).toString();
-  })();
+  const totalReceived = sumDecimals([form.principal_amount, form.interest_amount]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -129,7 +125,7 @@ export function EditMaturityTransactionDialog<TResult>({
               {t("investments:maturityTxn.totalAtMaturityLabel")}
             </span>{" "}
             <span className="font-medium">
-              {totalReceived !== null ? formatCurrency(totalReceived, transaction.currency) : "—"}
+              {formatCurrency(totalReceived, transaction.currency)}
             </span>
           </div>
 

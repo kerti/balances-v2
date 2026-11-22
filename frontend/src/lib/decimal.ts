@@ -46,7 +46,7 @@ const AMOUNT_SCALE = 4;
 
 // Digits and scale of a plain decimal, with no truncation: a product has to be
 // formed from every digit before it is rounded.
-function parseExact(value: string): { n: bigint; scale: number } | null {
+export function parseExact(value: string): { n: bigint; scale: number } | null {
   const m = /^([+-]?)(\d*)(?:\.(\d*))?$/.exec(value.trim());
   if (!m || (m[2] === "" && (m[3] ?? "") === "")) return null;
   const frac = m[3] ?? "";
@@ -75,4 +75,21 @@ export function multiplyDecimals(a: string, b: string): string | null {
     rounded = product < 0n ? -q : q;
   }
   return fromScaled(rounded * 10n ** BigInt(SCALE - AMOUNT_SCALE));
+}
+
+// Exact a ÷ b, rounded half away from zero to 8 places (a quantity or rate,
+// DECIMAL(20,8)) once, or null when either is not a plain decimal or b is zero.
+export function divideDecimals(a: string, b: string): string | null {
+  const x = parseExact(a);
+  const y = parseExact(b);
+  if (x === null || y === null || y.n === 0n) return null;
+  // a/b = (x.n / 10^x.scale) / (y.n / 10^y.scale); scaled to 1e-SCALE units.
+  const num = x.n * 10n ** BigInt(y.scale + SCALE);
+  const den = y.n * 10n ** BigInt(x.scale);
+  const negative = num < 0n !== den < 0n;
+  const absNum = num < 0n ? -num : num;
+  const absDen = den < 0n ? -den : den;
+  let q = absNum / absDen;
+  if ((absNum % absDen) * 2n >= absDen) q += 1n;
+  return fromScaled(negative ? -q : q);
 }

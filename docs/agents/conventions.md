@@ -217,7 +217,9 @@ Not ADRs because they're tactical, but load-bearing:
   registered by `httperr.NewValidator()`. Repo's `ErrUnauthenticated` stays deliberately unmapped
   (RequireAuth gates every route, so a repo seeing no user is a server bug, not a client error — falls
   through to 500 INTERNAL). Adding a code: declare it in `internal/httperr/codes.go` + emit it + add
-  the catalog entry in both locales.
+  the catalog entry in both locales. `WriteRepo` also maps a Postgres `22003` (a number wider than its NUMERIC column) to 422
+  `VALUE_OUT_OF_RANGE`; the clients that read a 422 as *data* (snapshot/create importers, bulk entry)
+  check `isEnvelope` first and throw it, so a new 422 envelope code needs no further client wiring.
 
 - **Files reach the user through `triggerDownload`, never an in-app link** (ADR-0055). Inside the
   installed iOS PWA a same-origin `<a href="/api/...">` replaces the app window (`download`/`target`

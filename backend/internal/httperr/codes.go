@@ -270,4 +270,10 @@ const (
 	// the next nightly reset. Every other mutation stays live; only this
 	// irreversible one is blocked.
 	CodeErasureDisabledDemo Code = "ERASURE_DISABLED_DEMO"
+
+	// CodeValueOutOfRange is a 422 for a write whose number is wider than the
+	// column that stores it (Postgres 22003, mapped in WriteRepo). It carries no
+	// args: the copy says a figure is too large without naming a field, because
+	// the server cannot tell which of several amounts overflowed.
+	CodeValueOutOfRange Code = "VALUE_OUT_OF_RANGE"
 )

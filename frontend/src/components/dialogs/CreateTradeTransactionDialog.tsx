@@ -23,6 +23,7 @@ import {
   QUANTITY_INTEGER_DIGITS,
 } from "@/lib/format";
 import { todayDate } from "@/lib/dateLimits";
+import { multiplyDecimals } from "@/lib/decimal";
 import type { CreateInvestmentTransactionPayload } from "@/hooks/useInvestmentTransactions";
 
 // Trade shape covers Buy + Sell. The type is fixed by the caller —
@@ -48,15 +49,6 @@ function emptyForm() {
   };
 }
 
-function deriveAmount(quantity: string, pricePerUnit: string): string | null {
-  const q = Number(quantity);
-  const p = Number(pricePerUnit);
-  if (!quantity || !pricePerUnit || Number.isNaN(q) || Number.isNaN(p)) {
-    return null;
-  }
-  return (q * p).toString();
-}
-
 export function CreateTradeTransactionDialog<TResult>({
   currency,
   txnType,
@@ -68,7 +60,7 @@ export function CreateTradeTransactionDialog<TResult>({
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
-  const derivedAmount = deriveAmount(form.quantity, form.price_per_unit);
+  const derivedAmount = multiplyDecimals(form.quantity, form.price_per_unit);
   const isBuy = txnType === "buy";
 
   function close() {
