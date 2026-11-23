@@ -17,7 +17,7 @@
   "createTitle": "New receivable",
   "createDescription": "Track money owed to your household — loans you've made, deposits you're due back, refunds in transit.",
   "editTitle": "Edit receivable",
-  "editDescription": "Currency can't be changed. To use a different one, create a new receivable. Ownership can be changed.",
+  "editDescription": "Update the receivable's details or ownership.",
   "detailSubtitleWithDue": "{{counterparty}} · due {{date}}",
   "rowDueSuffix": " · due {{date}}",
   "detailsCardTitle": "Receivable details",

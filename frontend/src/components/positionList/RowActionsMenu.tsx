@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Archive, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
   useMenuOpenOnClick,
 } from "@/components/ui/dropdown-menu";
@@ -16,6 +17,11 @@ type Props = {
   label: string;
   onEdit: () => void;
   onDelete: () => void;
+  /** A position row also offers the lifecycle change (#948): "Close…" while
+   *  `active`, "Change status" once closed — the same item the detail page's ⋯
+   *  menu carries. Omitted by the non-position lists (tags, rates). */
+  onClose?: () => void;
+  active?: boolean;
   /** An extra first item (e.g. a tag's "Add items…"); both must be given. */
   extraAction?: { label: string; icon: ReactNode; onSelect: () => void };
   /** Trigger button style. The desktop table row uses the bare "ghost" dots;
@@ -25,7 +31,7 @@ type Props = {
   triggerClassName?: string;
 };
 
-// The row's ⋮ → edit/delete menu, lifted out of the old per-type `*ListRow`
+// The row's ⋮ → edit/close/delete menu, lifted out of the old per-type `*ListRow`
 // files into one component both renderers share (ADR-0043). The edit/delete
 // verbs are shared `common` copy; the actual dialogs are owned by the core, so
 // this only signals intent upward. `stopPropagation` keeps a menu click from
@@ -34,6 +40,8 @@ export function RowActionsMenu({
   label,
   onEdit,
   onDelete,
+  onClose,
+  active = true,
   extraAction,
   variant = "ghost",
   triggerClassName,
@@ -65,6 +73,13 @@ export function RowActionsMenu({
           <Pencil />
           {t("actions.edit")}
         </DropdownMenuItem>
+        {onClose && (
+          <DropdownMenuItem onClick={onClose} data-testid="row-menu-close">
+            <Archive />
+            {active ? t("terminate.closeTrigger") : t("terminate.editTrigger")}
+          </DropdownMenuItem>
+        )}
+        {onClose && <DropdownMenuSeparator />}
         <DropdownMenuItem onClick={onDelete} variant="destructive">
           <Trash2 />
           {t("delete")}

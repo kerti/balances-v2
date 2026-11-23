@@ -17,7 +17,7 @@
   "createTitle": "Piutang baru",
   "createDescription": "Lacak uang yang terutang kepada rumah tangga Anda — pinjaman yang Anda berikan, simpanan yang harus dikembalikan, pengembalian dana dalam proses.",
   "editTitle": "Ubah piutang",
-  "editDescription": "Mata uang tidak bisa diubah. Untuk memakai mata uang lain, buat piutang baru. Kepemilikan bisa diubah.",
+  "editDescription": "Perbarui detail atau kepemilikan piutang.",
   "detailSubtitleWithDue": "{{counterparty}} · jatuh tempo {{date}}",
   "rowDueSuffix": " · jatuh tempo {{date}}",
   "detailsCardTitle": "Detail piutang",

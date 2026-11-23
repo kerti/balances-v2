@@ -96,6 +96,12 @@ describe("ImportSnapshotsDialog check on pick", () => {
     expect(screen.getByTestId("import-commit-btn")).toHaveTextContent(/^Import$/);
   });
 
+  it("labels the detail-page trigger Import snapshots (#948)", () => {
+    stub([preview({ to_insert: 1 })]);
+    renderWithProviders(<Harness />);
+    expect(screen.getByTestId("import-snapshots-trigger")).toHaveTextContent(/^Import snapshots$/);
+  });
+
   it("runs the preview on a dropped file too", async () => {
     const modes = stub([preview({ to_insert: 1 })]);
     await openDialog();

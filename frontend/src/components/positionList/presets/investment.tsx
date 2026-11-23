@@ -32,6 +32,7 @@ import { useInvestmentTimeSeries } from "@/hooks/useInvestmentTimeSeries";
 import { aggregateListPositions, type Position } from "@/lib/listAggregates";
 import { formatDate } from "@/lib/format";
 import type { RiskProfile } from "@/api/types";
+import type { InvestmentSubtype } from "@/lib/lifecycle";
 import type {
   PositionDeleteMutation,
   PositionExtraColumn,
@@ -49,6 +50,7 @@ type InvestmentCore = OwnershipCore & {
   status: string;
   native_currency: string;
   terminated_at: string | null;
+  termination_note: string | null;
   risk_profile: RiskProfile;
   description: string | null;
 };
@@ -59,6 +61,9 @@ export type InvestmentConfig<T> = {
   // The subtype key in the engine's investment breakdown (by_subtype), which the
   // headline's converted value is read from (#937).
   breakdownSubtype: string;
+  // The list cache key + subtype the lifecycle dialog needs (as on the detail descriptor).
+  listKey: string;
+  investmentSubtype: InvestmentSubtype;
   i18nNamespaces: string[];
   keys: PositionListDescriptor<T>["keys"];
   useList: () => PositionListQuery<T>;
@@ -201,6 +206,15 @@ export function investmentDescriptor<T>(
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: (item) => config.entity(item).description ?? "",
+    lifecycle: { listKey: config.listKey, investmentSubtype: config.investmentSubtype },
+    getLifecycle: (item) => {
+      const core = config.entity(item);
+      return {
+        terminatedAt: core.terminated_at,
+        note: core.termination_note,
+        currency: core.native_currency,
+      };
+    },
     extraColumns: [...(config.mainColumns ?? []), activityColumn, ownershipColumn(config.entity)],
     renderTitleAccessory: (item) => (
       <>

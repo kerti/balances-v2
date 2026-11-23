@@ -129,6 +129,7 @@ export const receivableDescriptor = {
     entityKey: "receivable",
     testIdPrefix: "receivable",
     group: "receivables",
+    listKey: "receivables",
     breakdown: { group: "receivable" },
     i18nNamespaces: ["receivables", "common", "errors"],
     keys: {

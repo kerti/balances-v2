@@ -489,6 +489,27 @@ describe("fixed fields say why they are disabled in Edit", () => {
       <BankAccountFormBody mode="edit" form={bank} setForm={noop} soleOwnerID={null} />,
     );
     expect(edit.getByTestId("locked-hint-native_currency")).toHaveTextContent(
+      "Can't be changed. For another currency, create a new one.",
+    );
+  });
+
+  it("places the currency hint below the input so it never pushes a sibling label down (#948)", () => {
+    const { getByLabelText, getByTestId } = renderWithProviders(
+      <BankAccountFormBody mode="edit" form={bank} setForm={noop} soleOwnerID={null} />,
+    );
+    expect(getByLabelText("Currency").nextElementSibling).toBe(
+      getByTestId("locked-hint-native_currency"),
+    );
+  });
+
+  it("names the way out under a locked currency, once (#948)", () => {
+    const { getByTestId } = renderWithProviders(
+      <LiabilityFormBody mode="edit" form={liability} setForm={noop} soleOwnerID={null} />,
+    );
+    expect(getByTestId("locked-hint-native_currency")).toHaveTextContent(
+      "Can't be changed. For another currency, create a new one.",
+    );
+    expect(getByTestId("locked-hint-subtype")).toHaveTextContent(
       "Can't be changed after creation.",
     );
   });

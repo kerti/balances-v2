@@ -112,7 +112,8 @@
     "notes": "Catatan",
     "ownership": "Kepemilikan",
     "status": "Status",
-    "entryType": "Asal-usul"
+    "entryType": "Asal-usul",
+    "lockedCurrencyHint": "Tidak bisa diubah. Untuk mata uang lain, buat yang baru."
   },
   "ownership": {
     "joint": "Bersama",
@@ -212,7 +213,7 @@
     "editTrigger": "Ubah status",
     "closeTitle": "Tutup {{noun}}",
     "editTitle": "Ubah status",
-    "description": "Pilih apa yang terjadi. Mulai bulan yang Anda pilih, ini tidak lagi dihitung ke kekayaan bersih. Anda bisa membukanya kembali nanti lewat Ubah status.",
+    "description": "Pilih apa yang terjadi. Mulai bulan yang Anda pilih, ini tidak lagi dihitung ke kekayaan bersih.",
     "statusLabel": "Status",
     "statusPlaceholder": "Apa yang terjadi?",
     "dateLabel": {
@@ -263,10 +264,11 @@
     "untracked": {
       "owned": "Pilih ini jika ini keluar dari catatan Anda tanpa dijual, dipakai, atau hilang — Anda hanya berhenti mencatatnya, misalnya karena pemiliknya keluar dari rumah tangga. Nilainya dicatat sebagai keluar dari pembukuan, bukan sebagai kerugian.",
       "owed": "Pilih ini jika utang keluar dari catatan Anda tanpa dilunasi atau dibebaskan — Anda hanya berhenti mencatatnya, misalnya karena penanggung utangnya keluar dari rumah tangga. Ini dicatat sebagai keluar dari pembukuan, bukan sebagai uang yang Anda bayarkan."
-    }
+    },
+    "reopenHint": "Anda bisa membukanya kembali nanti: buka menu ⋯ miliknya, pilih Ubah status, lalu pilih Aktif."
   },
   "import": {
-    "trigger": "Impor",
+    "trigger": "Impor snapshot",
     "title": "Impor snapshot",
     "description": "Tambahkan nilai beberapa bulan sekaligus dari spreadsheet — berguna untuk mengisi riwayat bertahun-tahun.",
     "step1Label": "1. Unduh template",
@@ -295,7 +297,7 @@
     "importBtn": "Impor"
   },
   "importCreate": {
-    "trigger": "Impor",
+    "trigger": "Impor {{noun}}",
     "title": "Impor {{noun}} baru",
     "description": "Buat {{noun}} baru dari sebuah spreadsheet — detail dan seluruh riwayat snapshot-nya, dalam satu langkah.",
     "uploadLabel": "Unggah spreadsheet (.xlsx)",

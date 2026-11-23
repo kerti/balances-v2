@@ -49,7 +49,7 @@ export function VehicleFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+      <div className="grid grid-cols-2 items-start gap-3">
         <div className="grid gap-2">
           <Label htmlFor="v_type">{t("assets:vehicle.fields.type")}</Label>
           <Select
@@ -66,7 +66,6 @@ export function VehicleFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="v_native_currency">{t("common:fields.currency")}</Label>
-          <LockedFieldHint mode={mode} id="v_native_currency" />
           <Input
             id="v_native_currency"
             required
@@ -76,6 +75,7 @@ export function VehicleFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             placeholder={t("assets:vehicle.placeholders.currency")}
             maxLength={3}
           />
+          <LockedFieldHint mode={mode} id="v_native_currency" kind="currency" />
         </div>
       </div>
 

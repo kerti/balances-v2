@@ -3,7 +3,7 @@
 // type — so it asserts the generic's contract, not one type's incidentals. One
 // suite here covers list behaviour for all ten real types.
 //
-// covers: INV-PRESENTATION-04, INV-PRESENTATION-05, INV-PRESENTATION-23
+// covers: INV-PRESENTATION-04, INV-PRESENTATION-05, INV-PRESENTATION-23, INV-PRESENTATION-37
 import { describe, it, expect, vi } from "vitest";
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -71,6 +71,8 @@ function makeDescriptor(
           }
         : null,
     getSecondary: (w) => w.sub,
+    lifecycle: { listKey: "widgets" },
+    getLifecycle: () => ({ terminatedAt: null, note: null, currency: "USD" }),
     extraColumns: [
       {
         id: "owner",
@@ -185,6 +187,41 @@ describe("PositionListScreen (synthetic descriptor)", () => {
     await user.click(await screen.findByRole("menuitem", { name: "Edit" }));
 
     expect(await screen.findByText("Editing Alpha")).toBeInTheDocument();
+  });
+
+  // The row ⋯ menu offers the same Edit / Close… / Delete as the detail page (#948).
+  it("offers Edit, Close… and Delete in that order on an active row", async () => {
+    const user = userEvent.setup();
+    renderList(loaded(widgets));
+
+    await user.click(screen.getAllByRole("button", { name: "Widget actions" })[0]);
+    const items = await screen.findAllByRole("menuitem");
+    expect(items.map((i) => i.textContent)).toEqual(["Edit", "Close…", "Delete"]);
+  });
+
+  it("opens the shared Close dialog from the row ⋯ menu", async () => {
+    const user = userEvent.setup();
+    renderList(loaded(widgets));
+
+    await user.click(screen.getAllByRole("button", { name: "Widget actions" })[0]);
+    await user.click(await screen.findByRole("menuitem", { name: "Close…" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: /^Close/ })).toBeInTheDocument();
+  });
+
+  it("offers Change status instead of Close… on a closed row", async () => {
+    const user = userEvent.setup();
+    renderList(loaded(widgets));
+    await user.click(screen.getByTestId("show-inactive"));
+
+    const charlie = screen
+      .getAllByTestId("widget-row")
+      .find((r) => r.textContent?.includes("Charlie"))!;
+    await user.click(within(charlie).getByRole("button", { name: "Widget actions" }));
+
+    expect(await screen.findByRole("menuitem", { name: "Change status" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Close…" })).not.toBeInTheDocument();
   });
 
   // covers: INV-PRESENTATION-16

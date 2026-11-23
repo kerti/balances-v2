@@ -55,10 +55,9 @@ export function ReceivableFormBody({ mode, form, setForm, soleOwnerID }: Props) 
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+      <div className="grid grid-cols-2 items-start gap-3">
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
-          <LockedFieldHint mode={mode} id="native_currency" />
           <Input
             id="native_currency"
             required
@@ -68,6 +67,7 @@ export function ReceivableFormBody({ mode, form, setForm, soleOwnerID }: Props) 
             placeholder={t("receivables:placeholders.currency")}
             maxLength={3}
           />
+          <LockedFieldHint mode={mode} id="native_currency" kind="currency" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="due_date">{t("receivables:fields.dueDate")}</Label>

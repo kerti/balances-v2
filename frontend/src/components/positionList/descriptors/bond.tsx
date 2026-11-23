@@ -20,6 +20,8 @@ const FREQUENCY_SHORT_KEY: Record<CouponFrequency, string> = {
 export const bondDescriptor = investmentDescriptor<BondListItem>({
   entityKey: "bond",
   testIdPrefix: "bond",
+  listKey: "bonds",
+  investmentSubtype: "bond",
   breakdownSubtype: "bond",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {

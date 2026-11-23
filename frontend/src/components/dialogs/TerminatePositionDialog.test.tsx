@@ -517,3 +517,17 @@ describe("TerminatePositionDialog close flow", () => {
     expect(screen.getByRole("button", { name: /save/i })).toBeEnabled();
   });
 });
+
+describe("TerminatePositionDialog reopen hint (#948)", () => {
+  it("tells you how to reopen only while closing an active item", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderDialog("stock");
+    const closing = await openDialog(user);
+    expect(closing).toHaveTextContent(/choose Change status, and pick Active/);
+    unmount();
+
+    renderDialog("stock", "sold");
+    const changing = await openDialog(user);
+    expect(changing).not.toHaveTextContent(/reopen it later/);
+  });
+});

@@ -16,6 +16,7 @@ import {
   importTemplateUrl,
   vehicleExportUrl,
 } from "@/hooks/useAssetSnapshots";
+import { formatSignedPercent } from "@/lib/format";
 import { suggestRevalued } from "@/lib/revaluation";
 import type { InfoField } from "@/components/detail/types";
 import type { Vehicle } from "@/api/types";
@@ -68,8 +69,10 @@ export const vehicleDescriptor: DetailDescriptor<Vehicle> = {
     if (entity.details.annual_depreciation_rate) {
       fields.push({
         label: t("assets:vehicle.depreciationRateLabel"),
+        // Stored as a positive loss rate; shown signed ("−8.00% /yr") so it reads
+        // against the property's "+4.00% /yr" (#948). Display only.
         value: t("assets:vehicle.depreciationRateValue", {
-          rate: Number(entity.details.annual_depreciation_rate).toFixed(2),
+          value: formatSignedPercent(-Number(entity.details.annual_depreciation_rate)),
         }),
       });
     }

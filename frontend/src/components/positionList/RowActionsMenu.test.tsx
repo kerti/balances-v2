@@ -7,7 +7,7 @@
 // precisely what the phone was doing, so this is a real regression test rather
 // than a class-contract stand-in: revert the hook and it fails.
 //
-// covers: INV-PRESENTATION-08
+// covers: INV-PRESENTATION-08, INV-PRESENTATION-37
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { RowActionsMenu } from "./RowActionsMenu";
@@ -37,6 +37,32 @@ describe("RowActionsMenu", () => {
     fireEvent.click(trigger);
     fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it("adds Close… between Edit and Delete only when the row offers it", () => {
+    render(
+      <RowActionsMenu label="Row actions" onEdit={vi.fn()} onClose={vi.fn()} onDelete={vi.fn()} />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Row actions" }));
+    expect(screen.getAllByRole("menuitem").map((i) => i.textContent)).toEqual([
+      "Edit",
+      "Close…",
+      "Delete",
+    ]);
+  });
+
+  it("shows Change status in place of Close… for a closed row", () => {
+    render(
+      <RowActionsMenu
+        label="Row actions"
+        active={false}
+        onEdit={vi.fn()}
+        onClose={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Row actions" }));
+    expect(screen.getByRole("menuitem", { name: "Change status" })).toBeInTheDocument();
   });
 
   // The fallback must not double-fire where pointerdown already works: Radix

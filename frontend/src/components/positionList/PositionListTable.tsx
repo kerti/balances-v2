@@ -43,6 +43,7 @@ export function PositionListTable<T>({
   onToggleSort,
   onSelect,
   onEdit,
+  onClose,
   onDelete,
   actionsLabel,
   testIdPrefix,
@@ -100,6 +101,8 @@ export function PositionListTable<T>({
                   <RowActionsMenu
                     label={actionsLabel}
                     onEdit={() => onEdit(row.item)}
+                    active={!row.terminated}
+                    onClose={() => onClose(row.item)}
                     onDelete={() => onDelete(row.item)}
                   />
                 </TableCell>

@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ShowInactiveToggle } from "@/components/common/ShowInactiveToggle";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import { ConfirmDialog } from "@/components/dialogs/ConfirmDialog";
+import { TerminatePositionDialog } from "@/components/dialogs/TerminatePositionDialog";
 import { ImportPositionDialog } from "@/components/dialogs/ImportPositionDialog";
 import { PositionListTable } from "@/components/positionList/PositionListTable";
 import { PositionListCards } from "@/components/positionList/PositionListCards";
@@ -42,6 +43,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
 
   const [showInactive, setShowInactive] = useState(false);
   const [editItem, setEditItem] = useState<T | null>(null);
+  const [closeItem, setCloseItem] = useState<T | null>(null);
   const [deleteItem, setDeleteItem] = useState<T | null>(null);
 
   const { keys } = descriptor;
@@ -264,6 +266,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
               onToggleSort={toggle}
               onSelect={onSelect}
               onEdit={setEditItem}
+              onClose={setCloseItem}
               onDelete={setDeleteItem}
               actionsLabel={t(keys.rowActions)}
               testIdPrefix={descriptor.testIdPrefix}
@@ -280,6 +283,14 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
           },
         })}
 
+      {closeItem !== null && (
+        <ListCloseDialog
+          descriptor={descriptor}
+          item={closeItem}
+          onDone={() => setCloseItem(null)}
+        />
+      )}
+
       <ConfirmDialog
         open={deleteItem !== null}
         onOpenChange={(open) => {
@@ -295,5 +306,36 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
         onConfirm={handleDeleteConfirm}
       />
     </div>
+  );
+}
+
+// The row ⋯ menu's Close… / Change status opens the very dialog the detail page
+// does (#948), mounted only while a row is picked so its form state starts fresh.
+function ListCloseDialog<T, Ctx>({
+  descriptor,
+  item,
+  onDone,
+}: {
+  descriptor: PositionListDescriptor<T, Ctx>;
+  item: T;
+  onDone: () => void;
+}) {
+  const life = descriptor.getLifecycle(item);
+  return (
+    <TerminatePositionDialog
+      group={descriptor.group}
+      id={descriptor.getId(item)}
+      listKey={descriptor.lifecycle.listKey}
+      currentStatus={descriptor.getStatus(item)}
+      currentTerminatedAt={life.terminatedAt}
+      currentNote={life.note}
+      investmentSubtype={descriptor.lifecycle.investmentSubtype}
+      assetSubtype={descriptor.lifecycle.assetSubtype}
+      currency={life.currency}
+      open
+      onOpenChange={(open) => {
+        if (!open) onDone();
+      }}
+    />
   );
 }

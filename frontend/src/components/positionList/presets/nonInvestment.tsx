@@ -28,7 +28,7 @@ import {
   type OwnershipCtx,
 } from "@/components/positionList/presets/ownership";
 import { activeCurrencyTotals } from "@/lib/totals";
-import type { LifecycleGroup } from "@/lib/lifecycle";
+import type { AssetSubtype, LifecycleGroup } from "@/lib/lifecycle";
 import type {
   PositionImportMutation,
   PositionListDescriptor,
@@ -43,6 +43,9 @@ type PositionCore = OwnershipCore & {
   id: string;
   display_name: string;
   status: string;
+  native_currency: string;
+  terminated_at: string | null;
+  termination_note: string | null;
 };
 
 export type { OwnershipCtx };
@@ -51,6 +54,10 @@ export type NonInvestmentConfig<T> = {
   entityKey: string;
   testIdPrefix: string;
   group: LifecycleGroup;
+  // The list cache key the lifecycle dialog invalidates, and (assets only) the
+  // subtype that narrows its statuses — same values as the detail descriptor.
+  listKey: string;
+  assetSubtype?: AssetSubtype;
   // The engine slice the headline shows (whole group or one subtype).
   breakdown: ListBreakdown;
   i18nNamespaces: string[];
@@ -165,6 +172,15 @@ export function nonInvestmentDescriptor<T>(
     getStatus: (item) => config.entity(item).status,
     getSnapshot: config.getSnapshot,
     getSecondary: config.getSecondary,
+    lifecycle: { listKey: config.listKey, assetSubtype: config.assetSubtype },
+    getLifecycle: (item) => {
+      const core = config.entity(item);
+      return {
+        terminatedAt: core.terminated_at,
+        note: core.termination_note,
+        currency: core.native_currency,
+      };
+    },
     extraColumns: [ownershipColumn(config.entity)],
     renderHeadline: (items) => <NonInvestmentHeadline items={items} config={config} />,
     renderCreateDialog: config.renderCreateDialog,

@@ -105,6 +105,7 @@ function stubEndpoints() {
 }
 
 describe("vehicleDescriptor detail (conformance)", () => {
+  // covers: INV-PRESENTATION-37
   it("renders every region through the generic shell", async () => {
     stubEndpoints();
     renderWithProviders(
@@ -123,6 +124,8 @@ describe("vehicleDescriptor detail (conformance)", () => {
     expect(within(detailsCard).getByText("Active")).toBeInTheDocument();
     expect(within(detailsCard).getByText("2019 Toyota Corolla")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Depreciation rate")).toBeInTheDocument();
+    // Signed like the property's appreciation rate (#948): a loss reads "−10.00% /yr".
+    expect(within(detailsCard).getByText("−10.00% /yr")).toBeInTheDocument();
     expect(within(detailsCard).getByText("Daily driver")).toBeInTheDocument();
 
     expect(screen.getByTestId("tour-chart")).toBeInTheDocument();

@@ -11,6 +11,8 @@ export const vehicleDescriptor = nonInvestmentDescriptor<VehicleListItem>({
   entityKey: "vehicle",
   testIdPrefix: "vehicle",
   group: "assets",
+  listKey: "vehicles",
+  assetSubtype: "vehicle",
   breakdown: { group: "asset", subtype: "vehicle" },
   i18nNamespaces: ["assets", "common", "errors"],
   keys: {

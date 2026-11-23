@@ -16,6 +16,8 @@ import type { TimeDepositListItem } from "@/api/types";
 export const timeDepositDescriptor = investmentDescriptor<TimeDepositListItem>({
   entityKey: "timeDeposit",
   testIdPrefix: "time-deposit",
+  listKey: "time-deposits",
+  investmentSubtype: "time_deposit",
   breakdownSubtype: "time_deposit",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {

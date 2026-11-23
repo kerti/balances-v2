@@ -112,7 +112,8 @@
     "notes": "Notes",
     "ownership": "Ownership",
     "status": "Status",
-    "entryType": "Where it came from"
+    "entryType": "Where it came from",
+    "lockedCurrencyHint": "Can't be changed. For another currency, create a new one."
   },
   "ownership": {
     "joint": "Joint",
@@ -212,7 +213,7 @@
     "editTrigger": "Change status",
     "closeTitle": "Close {{noun}}",
     "editTitle": "Change status",
-    "description": "Pick what happened. From the month you choose, it stops counting toward your net worth. You can reopen it later from Change status.",
+    "description": "Pick what happened. From the month you choose, it stops counting toward your net worth.",
     "statusLabel": "Status",
     "statusPlaceholder": "What happened?",
     "dateLabel": {
@@ -263,10 +264,11 @@
     "untracked": {
       "owned": "Pick this when it left your books without being sold, spent or lost — you simply stopped tracking it, for example because the person who owns it left the household. Its value is recorded as leaving your records, not as a loss.",
       "owed": "Pick this when the debt left your books without being paid off or forgiven — you simply stopped tracking it, for example because the person who owes it left the household. It is recorded as leaving your records, not as money you paid."
-    }
+    },
+    "reopenHint": "You can reopen it later: open its ⋯ menu, choose Change status, and pick Active."
   },
   "import": {
-    "trigger": "Import",
+    "trigger": "Import snapshots",
     "title": "Import snapshots",
     "description": "Add several months of values from a spreadsheet at once — handy for backfilling years of history.",
     "step1Label": "1. Download the template",
@@ -295,7 +297,7 @@
     "importBtn": "Import"
   },
   "importCreate": {
-    "trigger": "Import",
+    "trigger": "Import {{noun}}",
     "title": "Import new {{noun}}",
     "description": "Create a brand-new {{noun}} from a spreadsheet — its details and full snapshot history, in one step.",
     "uploadLabel": "Upload a spreadsheet (.xlsx)",

@@ -55,7 +55,6 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   const currencyField = (
     <div className="grid gap-2">
       <Label htmlFor="bond_currency">{t("common:fields.currency")}</Label>
-      <LockedFieldHint mode={mode} id="bond_currency" />
       <Input
         id="bond_currency"
         required
@@ -65,6 +64,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         placeholder={t("investments:bond.placeholders.currency")}
         maxLength={3}
       />
+      <LockedFieldHint mode={mode} id="bond_currency" kind="currency" />
     </div>
   );
 

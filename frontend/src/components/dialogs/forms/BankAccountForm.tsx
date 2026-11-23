@@ -28,7 +28,8 @@ type Props = {
 };
 
 // One field order for Create and Edit (#840). Currency is fixed once the
-// account exists, so Edit shows it disabled in the same slot.
+// account exists, so Edit shows it disabled in the same slot, its locked hint
+// below the input so the Currency and Account type labels share one baseline.
 export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   const { t } = useTranslation(["assets", "common"]);
   return (
@@ -68,7 +69,7 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+      <div className="grid grid-cols-2 items-start gap-3">
         <div className="grid gap-2">
           <Label htmlFor="account_type">{t("assets:bankAccount.fields.accountType")}</Label>
           <Select
@@ -85,7 +86,6 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
         </div>
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
-          <LockedFieldHint mode={mode} id="native_currency" />
           <Input
             id="native_currency"
             required
@@ -95,6 +95,7 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
             placeholder={t("assets:bankAccount.placeholders.currency")}
             maxLength={3}
           />
+          <LockedFieldHint mode={mode} id="native_currency" kind="currency" />
         </div>
       </div>
 
