@@ -130,7 +130,7 @@ export function PositionListScreen<T, Ctx>({ descriptor, onSelect }: Props<T, Ct
         .map<ColumnView<T>>((col) => ({
           id: col.id,
           label: t(col.labelKey),
-          role: slot === "ownership" ? "ownership" : "detail",
+          role: slot === "ownership" ? "ownership" : col.wide ? "wide" : "detail",
           align: col.align ?? "left",
           sortKey: col.sort?.key,
           mobileVisible: slot === "ownership" || col.mobile === "secondary",

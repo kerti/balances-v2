@@ -2,6 +2,8 @@
 // report and anywhere a position's tag is surfaced. Colour-only fill would
 // fail contrast across themes, so the dot carries the hue and the text stays
 // in the foreground colour.
+import { displayTagColor } from "@/lib/tagColors";
+
 type Props = {
   name: string;
   color: string;
@@ -16,7 +18,7 @@ export function TagBadge({ name, color, className }: Props) {
     >
       <span
         className="size-2 shrink-0 rounded-full"
-        style={{ backgroundColor: color }}
+        style={{ backgroundColor: displayTagColor(color) }}
         aria-hidden
       />
       {name}

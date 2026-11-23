@@ -19,13 +19,16 @@ import type { ColumnRole, PositionListRendererProps } from "@/components/positio
 const ROLE_WIDTH: Record<ColumnRole, string> = {
   name: "",
   detail: "w-36",
+  // Auto like Name: under table-fixed the two split the leftover width evenly,
+  // so neither collapses at the 48rem minimum (#950).
+  wide: "",
   ownership: "w-32",
   status: "w-28",
   value: "w-44",
 };
 // Name, subtype and ownership text may wrap inside their own cell; the
 // fixed-width roles stay on one line.
-const WRAPS: ColumnRole[] = ["name", "detail", "ownership"];
+const WRAPS: ColumnRole[] = ["name", "detail", "wide", "ownership"];
 
 // The web renderer: the dense, all-columns table. It iterates the core's
 // resolved `columns` — sortable ones become a `SortableHeader`, the rest a

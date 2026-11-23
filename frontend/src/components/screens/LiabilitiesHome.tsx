@@ -257,6 +257,7 @@ function ValueCard({
           }))}
           currency={currency}
           primaryLabel={t("common:tableHeaders.owed")}
+          primaryColor="var(--chart-liabilities)"
         />
       </CardContent>
     </Card>

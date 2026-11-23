@@ -230,7 +230,7 @@ func seedDemoTags(ctx context.Context, pool *pgxpool.Pool) (map[string]uuid.UUID
 		{"Retirement", "#10b981"},
 		{"Education", "#a855f7"},
 		{"Short-term Goals", "#f97316"},
-		{"Big Ticket", "#ef4444"},
+		{"Big Ticket", "#6366f1"},
 	}
 	tags := make(map[string]uuid.UUID, len(defs))
 	for _, d := range defs {

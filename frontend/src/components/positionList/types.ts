@@ -44,6 +44,8 @@ export type PositionExtraColumn<T, Ctx> = {
   // column, just before status (#838). Default "main".
   slot?: "main" | "ownership";
   mobile?: "secondary";
+  // Multi-line identity text gets the wider shared width, not the subtype one.
+  wide?: boolean;
   render: (item: T, ctx: Ctx) => ReactNode;
   sort?: {
     key: string;
@@ -144,7 +146,7 @@ export type RowView<T> = {
 // One column, resolved by the core to hard markup in `cell`. Both renderers
 // iterate the same list; the web renderer wraps each `cell` in a `<TableCell>`,
 // the mobile renderer drops the ones without `mobileVisible`.
-export type ColumnRole = "name" | "detail" | "ownership" | "status" | "value";
+export type ColumnRole = "name" | "detail" | "wide" | "ownership" | "status" | "value";
 
 export type ColumnView<T> = {
   id: string;
