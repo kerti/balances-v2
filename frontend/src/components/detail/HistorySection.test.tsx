@@ -89,6 +89,17 @@ describe("HistorySection renderer pick", () => {
     expect(screen.getAllByTestId(/^table-row-/)).toHaveLength(12);
   });
 
+  // covers: INV-PRESENTATION-36
+  it("pages compact snapshot rows twelve at a time on phones (#952)", () => {
+    const many: Row[] = Array.from({ length: 14 }, (_, i) => ({
+      id: `r${i + 1}`,
+      label: `Month ${i + 1}`,
+    }));
+    mockUseIsMobile.mockReturnValue(true);
+    render(<HistorySection {...baseSpec({ rows: many, renderCard, compactRows: true })} />);
+    expect(screen.getByTestId("tour-snapshots-cards").children).toHaveLength(12);
+  });
+
   it("shows the empty copy when there are no rows, at either width", () => {
     mockUseIsMobile.mockReturnValue(true);
     render(<HistorySection {...baseSpec({ rows: [], renderCard })} />);

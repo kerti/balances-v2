@@ -131,7 +131,6 @@ export const liabilityDescriptor: DetailDescriptor<Liability, void, LiabilitySna
           <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
-            amountLabel={t("common:tableHeaders.balance")}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
           />

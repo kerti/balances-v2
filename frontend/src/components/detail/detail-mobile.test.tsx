@@ -110,10 +110,14 @@ describe("detail mobile a11y floor (amount-only)", () => {
     // Primary value promoted to the card headline under the shared testid.
     expect(within(cards).getByTestId("snapshot-amount")).toHaveTextContent(/4,?321/);
 
-    // Labelled key/value rows, month before the amount (#849).
-    const month = within(cards).getByText("Month");
-    const balance = within(cards).getByText("Balance");
-    expect(month.compareDocumentPosition(balance) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Compact row, no repeated labels (#952): month before the amount, and a
+    // plain row never expands.
+    const month = within(cards).getByText(/Jun(e)? 2026/);
+    const amount = within(cards).getByTestId("snapshot-amount");
+    expect(month.compareDocumentPosition(amount) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(cards).queryByText("Balance")).not.toBeInTheDocument();
+    expect(within(cards).queryByText("Month")).not.toBeInTheDocument();
+    expect(within(cards).queryByRole("button", { name: /2026/ })).not.toBeInTheDocument();
 
     // Tap-target floor: the row ⋮ action carries the 44px size class.
     const action = within(cards).getByRole("button", { name: /snapshot actions/i });

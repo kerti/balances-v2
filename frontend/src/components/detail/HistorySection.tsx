@@ -30,10 +30,12 @@ export function HistorySection<TRow>({
   rows,
   renderRow,
   renderCard,
+  compactRows,
 }: HistorySectionSpec<TRow>) {
   const isMobile = useIsMobile();
   // Six cards a page on phones (shorter pages, #839), twelve from 768px up.
-  const pageSize = isMobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
+  // Compact snapshot rows are half a card's height, so they take twelve (#952).
+  const pageSize = isMobile && !compactRows ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
   const [page, setPage] = useState(1);
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   const effectivePage = Math.min(page, totalPages);
@@ -75,7 +77,7 @@ export function HistorySection<TRow>({
           <p className="p-6 text-sm text-muted-foreground">{emptyText}</p>
         ) : asCards ? (
           <>
-            <div className="space-y-3 p-4" data-testid={`${testId}-cards`}>
+            <div className={compactRows ? "px-4" : "space-y-3 p-4"} data-testid={`${testId}-cards`}>
               {pageRows.map((row, i) => renderCard!(row, i))}
             </div>
             {pagination}

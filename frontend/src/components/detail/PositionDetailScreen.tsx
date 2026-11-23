@@ -189,6 +189,7 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
     ...(snapshotRender.renderCard && {
       renderCard: (snapshot: TSnap) => snapshotRender.renderCard!(snapshot),
     }),
+    compactRows: true,
     // Record snapshot is the page header's primary (#935), so this card carries
     // only the workbook *I/O* row (Export + Import). The create controls still
     // mount here, inactive-gated, because they own the dialog the header button

@@ -115,7 +115,6 @@ export const propertyDescriptor: DetailDescriptor<Property> = {
           <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
-            amountLabel={t("common:tableHeaders.value")}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
           />

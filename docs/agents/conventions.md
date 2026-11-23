@@ -48,6 +48,12 @@ Not ADRs because they're tactical, but load-bearing:
   `accrued_interest = Value − principal` (INV-SNAPSHOTS-17) and the client sends none. Bonds pass no
   `principal` and keep the total + accrued pair. The bulk accrued screen does the same per row
   (`EntryGroupConfig.shapeFor` → `timeDepositShape(row.principal)`; the entry list carries `principal`).
+- **Phone snapshot history is an explicit exception to the labelled-card grammar (#952).** ADR-0050's
+  "wide table → stacked cards" / #849 puts a label on every value, but the three `*SnapshotCard`
+  renderers are compact divided rows instead (`CompactSnapshotRow`): `month · total value · ⋯`, a muted
+  truncated `statement date · note` line only when either exists, and quantity × price / principal + accrued behind a tap
+  (button with `aria-expanded`; plain rows don't expand). Don't "fix" them back to labelled cards;
+  desktop tables are unchanged. INV-PRESENTATION-36.
 - **Transaction UI is split by shape (four forks).** Trade (Buy/Sell) →
   `Create/EditTradeTransactionDialog`; CashIncome (Coupon/Dividend/Distribution) →
   `Create/EditCashIncomeTransactionDialog`; Fee → `Create/EditFeeTransactionDialog`; Maturity →

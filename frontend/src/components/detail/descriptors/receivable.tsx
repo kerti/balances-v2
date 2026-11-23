@@ -101,7 +101,6 @@ export const receivableDescriptor: DetailDescriptor<Receivable, void, Receivable
           <SnapshotCard
             key={snapshot.id}
             snapshot={snapshot}
-            amountLabel={t("common:tableHeaders.balance")}
             updateMutation={updateMutation}
             deleteMutation={deleteMutation}
           />

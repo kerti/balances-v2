@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionDetailScreen } from "@/components/detail/PositionDetailScreen";
@@ -130,8 +131,10 @@ describe("detail mobile a11y floor (accrued)", () => {
     // Total value promoted to the card headline under the shared testid.
     expect(within(cards).getByTestId("snapshot-amount")).toHaveTextContent(/10,?500/);
 
-    // Principal and accrued each read on their own labelled line; the principal
+    // Compact row (#952): principal and accrued appear on tap; the principal
     // value is the computed split (10500 − 500 = 10000), distinct from the total.
+    expect(within(cards).queryByText("Principal")).not.toBeInTheDocument();
+    await userEvent.click(within(cards).getByRole("button", { name: /2026/, expanded: false }));
     expect(within(cards).getByText("Principal")).toBeInTheDocument();
     expect(within(cards).getByText("Accrued")).toBeInTheDocument();
     expect(within(cards).getByText(/10,?000/)).toBeInTheDocument();
