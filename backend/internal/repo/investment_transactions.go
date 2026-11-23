@@ -84,15 +84,6 @@ func (r *InvestmentRepo) CreateInvestmentTransaction(ctx context.Context, p Crea
 	if err := checkTransactionCurrency(inv.NativeCurrency, p.Currency); err != nil {
 		return nil, err
 	}
-	// A time deposit's transactions — only the terminal Maturity event — must
-	// fall inside its term window (issue #62). No-op for unbounded subtypes.
-	bounds, err := timeDepositBounds(ctx, r.q, inv)
-	if err != nil {
-		return nil, err
-	}
-	if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
-		return nil, err
-	}
 	// ADR-0009: a terminated position is closed to new activity. Maturity is
 	// the canonical case — once it flips the position to 'matured' (below), no
 	// further transactions may land; a position terminated via the lifecycle
@@ -102,12 +93,38 @@ func (r *InvestmentRepo) CreateInvestmentTransaction(ctx context.Context, p Crea
 		return nil, ErrPositionNotActive
 	}
 
+	// A time deposit's transactions — only the terminal Maturity event — must
+	// fall inside its term window (issue #62), and a bond's inside
+	// [earliest Buy, maturity] (#574). No-op for unbounded subtypes. A bond's Buy
+	// is exempt from the lower bound: it may open or widen the window, so it is
+	// judged below by what the ledger would look like with it.
+	isBondBuy := inv.Subtype == "bond" && p.TransactionType == TxnTypeBuy
+	bounds, err := positionBounds(ctx, r.q, inv)
+	if err != nil {
+		return nil, err
+	}
+	if !isBondBuy {
+		if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
+			return nil, err
+		}
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
+
+	// A bond's new Buy may become its earliest one: the resulting term must be
+	// non-empty and still hold every snapshot and transaction (#574).
+	if isBondBuy {
+		if err := checkBondLedgerEdit(ctx, qtx, inv, func(l []db.InvestmentTransaction) []db.InvestmentTransaction {
+			return append(l, db.InvestmentTransaction{TransactionType: TxnTypeBuy, TransactionDate: p.TransactionDate})
+		}); err != nil {
+			return nil, err
+		}
+	}
 
 	txn, err := qtx.CreateInvestmentTransaction(ctx, db.CreateInvestmentTransactionParams{
 		ID:                   p.InvestmentID,
@@ -230,6 +247,33 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 		return nil, err
 	}
 
+	// The edited date must land inside the position's term (issue #62, #574): a
+	// time deposit's Maturity inside placement..maturity, a bond's non-Buy
+	// transaction inside [earliest Buy, maturity]. Moving a bond's Buy can move
+	// the window itself, so it is judged by the ledger as it would then stand —
+	// the term must stay non-empty and keep every other row and snapshot inside.
+	// No-op for unbounded subtypes.
+	if inv.Subtype == "bond" && existing.TransactionType == TxnTypeBuy {
+		if err := checkBondLedgerEdit(ctx, r.q, inv, func(l []db.InvestmentTransaction) []db.InvestmentTransaction {
+			for i := range l {
+				if l[i].ID == existing.ID {
+					l[i].TransactionDate = p.TransactionDate
+				}
+			}
+			return l
+		}); err != nil {
+			return nil, err
+		}
+	} else {
+		bounds, err := positionBounds(ctx, r.q, inv)
+		if err != nil {
+			return nil, err
+		}
+		if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
+			return nil, err
+		}
+	}
+
 	updateParams := db.UpdateInvestmentTransactionParams{
 		ID:                   p.TransactionID,
 		HouseholdID:          hid,
@@ -266,17 +310,10 @@ func (r *InvestmentRepo) UpdateInvestmentTransaction(ctx context.Context, p Upda
 	// terminated_at and the close snapshot drift to a stale month (issue #58).
 	// inv (loaded above) supplies the subtype + native currency the
 	// close-snapshot shape needs.
-	// The edited Maturity date must still land inside the term (issue #62). For a
-	// time deposit the maturity month is also where the 0-value close snapshot is
+	// The edited Maturity date was checked against the term above (issue #62,
+	// #574); the maturity month is also where the 0-value close snapshot is
 	// re-asserted below, so keeping the date in-window keeps that snapshot in-window
-	// too. No-op for a Bond (unbounded — no placement_date).
-	bounds, err := timeDepositBounds(ctx, r.q, inv)
-	if err != nil {
-		return nil, err
-	}
-	if err := bounds.checkTransactionDate(p.TransactionDate); err != nil {
-		return nil, err
-	}
+	// too.
 
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -332,6 +369,39 @@ func (r *InvestmentRepo) DeleteInvestmentTransaction(ctx context.Context, transa
 	user, hid, err := currentUser(ctx)
 	if err != nil {
 		return err
+	}
+	// Removing a bond's earliest Buy moves the start of its term to the next Buy
+	// (or removes it): refuse when that would leave history before the new start
+	// (#574). Both lookups are household-scoped, so a cross-tenant id stops here
+	// as ErrNotFound, like the delete below.
+	existing, err := r.q.GetInvestmentTransactionByID(ctx, db.GetInvestmentTransactionByIDParams{ID: transactionID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("get investment transaction: %w", err)
+	}
+	if existing.TransactionType == TxnTypeBuy {
+		inv, err := r.q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: existing.InvestmentID, HouseholdID: hid})
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrNotFound
+			}
+			return fmt.Errorf("get investment for transaction: %w", err)
+		}
+		if inv.Subtype == "bond" {
+			if err := checkBondLedgerEdit(ctx, r.q, inv, func(l []db.InvestmentTransaction) []db.InvestmentTransaction {
+				kept := l[:0]
+				for _, t := range l {
+					if t.ID != existing.ID {
+						kept = append(kept, t)
+					}
+				}
+				return kept
+			}); err != nil {
+				return err
+			}
+		}
 	}
 	rows, err := r.q.SoftDeleteInvestmentTransaction(ctx, db.SoftDeleteInvestmentTransactionParams{
 		ID:          transactionID,

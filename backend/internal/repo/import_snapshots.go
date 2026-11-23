@@ -412,7 +412,7 @@ func (r *InvestmentRepo) ImportInvestmentSnapshots(ctx context.Context, investme
 	// paths). Derive on a copy before the shape check and the classification, so
 	// the preview and the commit judge — and store — the same figures. Bonds and
 	// the quantity×price subtypes pass through.
-	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	bounds, err := positionBounds(ctx, r.q, inv)
 	if err != nil {
 		return nil, err
 	}

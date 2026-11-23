@@ -52,7 +52,7 @@ period (tracked as a Coupon Transaction; the bond's accrued component at any sna
 0); `accrues` — secondary-market and corporate bonds typically *accrue* between coupon dates (accrued
 > 0 between coupons, resets at each coupon). It drives the accrued-interest snapshot form's default
 (0 vs a forced entry) and copy. The Snapshot model accommodates both: accrued is a breakdown column,
-0 is valid. _Avoid_: Obligation, Obligasi.
+0 is valid. A bond's **term** is the window `[earliest live Buy, maturity_date]` — derived from the ledger, never stored, so a bond with no Buy yet (a secondary-market purchase not recorded) has only the maturity end; maturity must fall strictly after the earliest Buy, and every Snapshot (month) and Transaction (day) must stay inside it, so editing the maturity or moving/deleting the earliest Buy is refused when it would strand history (INV-BONDS-05, #574). _Avoid_: Obligation, Obligasi.
 
 **Gold**: A position in physical or paper gold, tracked by quantity (typically grams).
 

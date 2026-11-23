@@ -20,6 +20,7 @@ export const FIELD_FOR_CODE: Record<string, string> = {
   SNAPSHOT_DATE_OUTSIDE_MONTH: "as_of_date",
   TRANSACTION_FUTURE_DATE: "_date",
   INVALID_DEPOSIT_TERM: "maturity_date",
+  INVALID_BOND_TERM: "bond_maturity",
   FX_RATE_EXISTS: "month",
   INFLATION_RATE_EXISTS: "month",
   INVALID_RATE: "rate",

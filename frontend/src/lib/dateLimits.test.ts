@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { thisYearMonth, todayDate, monthStartDate, monthEndDateCapped } from "./dateLimits";
+import {
+  thisYearMonth,
+  todayDate,
+  monthStartDate,
+  monthEndDateCapped,
+  dayAfter,
+} from "./dateLimits";
 
 // covers: INV-PRESENTATION-02
 describe("dateLimits", () => {
@@ -43,5 +49,26 @@ describe("dateLimits", () => {
   it("monthEndDateCapped caps the current month at today", () => {
     // May has 31 days, but today is the 30th — the cap wins.
     expect(monthEndDateCapped("2026-05")).toBe("2026-05-30");
+  });
+});
+
+// covers: INV-BONDS-05
+describe("dayAfter", () => {
+  it("returns the next civil day", () => {
+    expect(dayAfter("2026-01-15")).toBe("2026-01-16");
+  });
+
+  it("rolls over month, year and leap-day boundaries", () => {
+    expect(dayAfter("2026-01-31")).toBe("2026-02-01");
+    expect(dayAfter("2026-12-31")).toBe("2027-01-01");
+    expect(dayAfter("2028-02-28")).toBe("2028-02-29");
+    expect(dayAfter("2028-02-29")).toBe("2028-03-01");
+    expect(dayAfter("2026-02-28")).toBe("2026-03-01");
+  });
+
+  it("is empty for an empty or malformed date, so no min is set", () => {
+    expect(dayAfter("")).toBe("");
+    expect(dayAfter("2026-01")).toBe("");
+    expect(dayAfter("tomorrow")).toBe("");
   });
 });

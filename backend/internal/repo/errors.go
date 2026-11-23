@@ -29,6 +29,8 @@ var (
 	ErrSnapshotDateOutsideMonth = errs.ErrSnapshotDateOutsideMonth
 	ErrInvalidDepositTerm       = errs.ErrInvalidDepositTerm
 	ErrOutsideDepositTerm       = errs.ErrOutsideDepositTerm
+	ErrInvalidBondTerm          = errs.ErrInvalidBondTerm
+	ErrOutsideBondTerm          = errs.ErrOutsideBondTerm
 	ErrSnapshotMonthExists      = errs.ErrSnapshotMonthExists
 	ErrUndoSlotTaken            = errs.ErrUndoSlotTaken
 	ErrUndoReplacementChanged   = errs.ErrUndoReplacementChanged

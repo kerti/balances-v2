@@ -117,6 +117,19 @@ var (
 	// CHECK. Mapped to 400.
 	ErrOutsideDepositTerm = errors.New("repo: entry falls outside the time deposit's term")
 
+	// ErrInvalidBondTerm is returned when a bond's maturity_date is not strictly
+	// after its earliest Buy — the term window [earliest Buy, maturity] would be
+	// empty or inverted (#574). A bond has no placement column; its term opens at
+	// the earliest live Buy, so the rule is enforced in the repo against the
+	// ledger, never by a CHECK. Mapped to 400.
+	ErrInvalidBondTerm = errors.New("repo: bond maturity_date must be after its earliest Buy")
+
+	// ErrOutsideBondTerm is returned when a bond snapshot or transaction falls
+	// outside [earliest Buy, maturity_date], or when editing/deleting the earliest
+	// Buy, or editing the maturity, would strand existing history outside the new
+	// window (#574). Mapped to 400.
+	ErrOutsideBondTerm = errors.New("repo: entry falls outside the bond's term")
+
 	// ErrSnapshotMonthExists is returned when creating a snapshot for a
 	// (position, year_month) that already has a live one — the partial unique
 	// index `<table>_year_month_idx` (migration 00001, WHERE deleted_at IS

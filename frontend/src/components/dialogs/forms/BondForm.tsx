@@ -7,6 +7,7 @@ import { RiskProfileSelect } from "@/components/common/RiskProfileSelect";
 import { OwnershipField } from "@/components/common/OwnershipField";
 import { EntryTypeField } from "@/components/common/EntryTypeField";
 import { RATE_DECIMALS, RATE_INTEGER_DIGITS, currencyDecimals } from "@/lib/format";
+import { dayAfter, todayDate } from "@/lib/dateLimits";
 import type {
   BondType,
   CouponDisposition,
@@ -43,11 +44,18 @@ type Props = {
   form: BondFormState;
   setForm: (next: BondFormState) => void;
   soleOwnerID: string | null;
+  // Edit only: the date of the bond's earliest Buy, where its term opens (#574).
+  // Undefined while the ledger loads or when there is no Buy yet.
+  firstBuyDate?: string;
 };
 
-export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
+export function BondFormBody({ mode, form, setForm, soleOwnerID, firstBuyDate }: Props) {
   const { t } = useTranslation(["investments", "common"]);
   const opensWithFace = mode === "create" && form.bond_type === "govt_primary";
+  // The maturity must fall strictly after the date the term opens: the placement
+  // being typed in Create, the earliest Buy in Edit. A secondary-market bond has
+  // no term start until its first Buy, so Create gives it no lower bound.
+  const maturityMin = dayAfter(opensWithFace ? form.placement_date : (firstBuyDate ?? ""));
 
   // Currency is required for either bond type, but only the government-primary
   // create branch has a monetary field to sit beside — so the field is defined
@@ -169,7 +177,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
                 id="bond_placement_date"
                 required
                 type="date"
-                max="9999-12-31"
+                max={todayDate()}
                 value={form.placement_date}
                 onChange={(e) => setForm({ ...form, placement_date: e.target.value })}
               />
@@ -254,6 +262,7 @@ export function BondFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             id="bond_maturity"
             required
             type="date"
+            min={maturityMin || undefined}
             max="9999-12-31"
             value={form.maturity_date}
             onChange={(e) => setForm({ ...form, maturity_date: e.target.value })}
