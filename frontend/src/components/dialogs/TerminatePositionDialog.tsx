@@ -311,7 +311,12 @@ export function TerminatePositionDialog({
           <DialogTitle>
             {wasActive ? t("terminate.closeTitle", { noun }) : t("terminate.editTitle")}
           </DialogTitle>
-          <DialogDescription>{t("terminate.description")}</DialogDescription>
+          <DialogDescription>
+            {t("terminate.description")}
+            {/* Reopening is only news while closing; on a closed item this
+                dialog *is* the way back (#948). */}
+            {wasActive && <> {t("terminate.reopenHint")}</>}
+          </DialogDescription>
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">

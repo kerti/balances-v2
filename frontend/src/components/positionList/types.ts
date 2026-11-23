@@ -2,7 +2,7 @@ import type { PositionDelete } from "@/hooks/useUndoableDelete";
 import type { ReactNode } from "react";
 import type { TFunction } from "i18next";
 import type { UseMutationResult } from "@tanstack/react-query";
-import type { LifecycleGroup } from "@/lib/lifecycle";
+import type { AssetSubtype, InvestmentSubtype, LifecycleGroup } from "@/lib/lifecycle";
 import type { SortDir } from "@/lib/sort";
 import type { CreateImportArgs, CreateImportResult } from "@/hooks/snapshotImport";
 
@@ -106,6 +106,16 @@ export type PositionListDescriptor<T, Ctx = void> = {
   getStatus: (item: T) => string;
   getSnapshot: (item: T) => PositionSnapshotView | null;
   getSecondary: (item: T, t: TFunction) => ReactNode;
+  // What the row's Close… / Change status item opens: the same lifecycle dialog
+  // the detail page uses (#948). `lifecycle` is wiring (cache key + subtype
+  // narrowing, mirroring the detail descriptor); `getLifecycle` projects the
+  // item's current lifecycle fields.
+  lifecycle: {
+    listKey: string;
+    investmentSubtype?: InvestmentSubtype;
+    assetSubtype?: AssetSubtype;
+  };
+  getLifecycle: (item: T) => { terminatedAt: string | null; note: string | null; currency: string };
 
   extraColumns: PositionExtraColumn<T, Ctx>[];
 
@@ -169,6 +179,7 @@ export type PositionListRendererProps<T> = {
   onToggleSort: (key: string) => void;
   onSelect: (id: string) => void;
   onEdit: (item: T) => void;
+  onClose: (item: T) => void;
   onDelete: (item: T) => void;
   actionsLabel: string;
   testIdPrefix: string;

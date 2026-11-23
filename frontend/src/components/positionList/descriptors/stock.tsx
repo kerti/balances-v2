@@ -9,6 +9,8 @@ import type { StockListItem } from "@/api/types";
 export const stockDescriptor = investmentDescriptor<StockListItem>({
   entityKey: "stock",
   testIdPrefix: "stock",
+  listKey: "stocks",
+  investmentSubtype: "stock",
   breakdownSubtype: "stock",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {

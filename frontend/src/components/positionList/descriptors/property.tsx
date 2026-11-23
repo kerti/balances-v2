@@ -11,6 +11,8 @@ export const propertyDescriptor = nonInvestmentDescriptor<PropertyListItem>({
   entityKey: "property",
   testIdPrefix: "property",
   group: "assets",
+  listKey: "properties",
+  assetSubtype: "property",
   breakdown: { group: "asset", subtype: "property" },
   i18nNamespaces: ["assets", "common", "errors"],
   keys: {

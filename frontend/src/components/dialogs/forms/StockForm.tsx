@@ -73,7 +73,6 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
 
       <div className="grid gap-2">
         <Label htmlFor="stock_currency">{t("common:fields.currency")}</Label>
-        <LockedFieldHint mode={mode} id="stock_currency" />
         <Input
           id="stock_currency"
           required
@@ -83,6 +82,7 @@ export function StockFormBody({ mode, form, setForm, soleOwnerID }: Props) {
           placeholder={t("investments:stock.placeholders.currency")}
           maxLength={3}
         />
+        <LockedFieldHint mode={mode} id="stock_currency" kind="currency" />
       </div>
 
       <OwnershipField

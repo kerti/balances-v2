@@ -78,7 +78,6 @@ export function MutualFundFormBody({ mode, form, setForm, soleOwnerID }: Props) 
 
       <div className="grid gap-2">
         <Label htmlFor="mf_currency">{t("common:fields.currency")}</Label>
-        <LockedFieldHint mode={mode} id="mf_currency" />
         <Input
           id="mf_currency"
           required
@@ -88,6 +87,7 @@ export function MutualFundFormBody({ mode, form, setForm, soleOwnerID }: Props) 
           placeholder={t("investments:mutualFund.placeholders.currency")}
           maxLength={3}
         />
+        <LockedFieldHint mode={mode} id="mf_currency" kind="currency" />
       </div>
 
       <OwnershipField

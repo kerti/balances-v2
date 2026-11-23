@@ -79,7 +79,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
       </div>
 
       <div className="space-y-3 border-t pt-4">
-        <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+        <div className="grid grid-cols-2 items-start gap-3">
           <div className="grid gap-2">
             <Label required htmlFor="td_bank_name">
               {t("investments:timeDeposit.fields.bankName")}
@@ -94,7 +94,6 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
           </div>
           <div className="grid gap-2">
             <Label htmlFor="td_currency">{t("common:fields.currency")}</Label>
-            <LockedFieldHint mode={mode} id="td_currency" />
             <Input
               id="td_currency"
               required
@@ -104,6 +103,7 @@ export function TimeDepositFormBody({ mode, form, setForm, soleOwnerID }: Props)
               placeholder={t("investments:timeDeposit.placeholders.currency")}
               maxLength={3}
             />
+            <LockedFieldHint mode={mode} id="td_currency" kind="currency" />
           </div>
         </div>
         <div className="grid gap-2">

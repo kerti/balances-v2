@@ -124,7 +124,7 @@ export function ImportPositionDialog({ noun, mutation }: Props) {
       <DialogTrigger asChild>
         <Button variant="outline" data-testid="import-position-trigger">
           <Upload className="mr-1 size-4" />
-          {t("importCreate.trigger")}
+          {t("importCreate.trigger", { noun })}
         </Button>
       </DialogTrigger>
       <DialogContent>

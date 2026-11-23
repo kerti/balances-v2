@@ -14,6 +14,8 @@ import type { MutualFundListItem } from "@/api/types";
 export const mutualFundDescriptor = investmentDescriptor<MutualFundListItem>({
   entityKey: "mutualFund",
   testIdPrefix: "mutual-fund",
+  listKey: "mutual-funds",
+  investmentSubtype: "mutual_fund",
   breakdownSubtype: "mutual_fund",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {

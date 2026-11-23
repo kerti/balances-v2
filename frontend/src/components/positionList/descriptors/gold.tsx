@@ -12,6 +12,8 @@ import type { GoldListItem } from "@/api/types";
 export const goldDescriptor = investmentDescriptor<GoldListItem>({
   entityKey: "gold",
   testIdPrefix: "gold",
+  listKey: "golds",
+  investmentSubtype: "gold",
   breakdownSubtype: "gold",
   i18nNamespaces: ["investments", "common", "errors"],
   keys: {

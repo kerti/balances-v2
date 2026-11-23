@@ -95,6 +95,14 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+describe("ImportPositionDialog trigger", () => {
+  it("is labelled Import <noun> on the list page (#948)", () => {
+    stubImport(cleanPreview);
+    renderDialog();
+    expect(screen.getByTestId("import-position-trigger")).toHaveTextContent(/^Import account$/);
+  });
+});
+
 // covers: INV-IMPORT-09
 describe("ImportPositionDialog duplicate notice", () => {
   it("names the position with a masked account number and the snapshot count", async () => {

@@ -57,7 +57,7 @@ test(
     // they size up to the 44px floor and split the row (Import + create → half
     // each here). Assert the floor height and that the pair fills the row.
     const createBtn = page.getByRole("button", { name: "New bank account" });
-    const importBtn = page.getByRole("button", { name: "Import", exact: true });
+    const importBtn = page.getByRole("button", { name: "Import account", exact: true });
     const createBox = await createBtn.boundingBox();
     const importBox = await importBtn.boundingBox();
     expect(createBox).not.toBeNull();

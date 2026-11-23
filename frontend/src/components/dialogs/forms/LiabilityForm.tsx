@@ -57,10 +57,9 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
+      <div className="grid grid-cols-2 items-start gap-3">
         <div className="grid gap-2">
           <Label htmlFor="subtype">{t("liabilities:fields.subtype")}</Label>
-          <LockedFieldHint mode={mode} id="subtype" />
           <Select
             id="subtype"
             disabled={mode === "edit"}
@@ -72,10 +71,10 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             <option value="personal">{t("liabilities:subtypes.personal")}</option>
             <option value="institutional">{t("liabilities:subtypes.institutional")}</option>
           </Select>
+          <LockedFieldHint mode={mode} id="subtype" />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="native_currency">{t("common:fields.currency")}</Label>
-          <LockedFieldHint mode={mode} id="native_currency" />
           <Input
             id="native_currency"
             required
@@ -85,6 +84,7 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
             placeholder={t("liabilities:placeholders.currency")}
             maxLength={3}
           />
+          <LockedFieldHint mode={mode} id="native_currency" kind="currency" />
         </div>
       </div>
 

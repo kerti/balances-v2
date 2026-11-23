@@ -16,6 +16,7 @@ export function PositionListCards<T>({
   columns,
   onSelect,
   onEdit,
+  onClose,
   onDelete,
   actionsLabel,
   testIdPrefix,
@@ -38,6 +39,8 @@ export function PositionListCards<T>({
                 <RowActionsMenu
                   label={actionsLabel}
                   onEdit={() => onEdit(row.item)}
+                  active={!row.terminated}
+                  onClose={() => onClose(row.item)}
                   onDelete={() => onDelete(row.item)}
                   variant="outline"
                   triggerClassName="size-11 shrink-0"

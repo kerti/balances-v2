@@ -40,7 +40,7 @@
   "createTitle": "Liabilitas baru",
   "createDescription": "Lacak utang rumah tangga Anda. Liabilitas pribadi bersifat informal (keluarga, teman); institusional bersifat formal (KPR, pinjaman bank, saldo kartu kredit).",
   "editTitle": "Ubah liabilitas",
-  "editDescription": "Subtipe dan mata uang tidak bisa diubah. Untuk memakai yang lain, buat liabilitas baru. Kepemilikan bisa diubah.",
+  "editDescription": "Perbarui detail atau kepemilikan liabilitas.",
   "detailSubtitle": "{{subtype}} · {{counterparty}}",
   "detailsCardTitle": "Detail liabilitas",
   "detailsCardLine": "Kepemilikan: {{ownership}} · Mata uang: {{currency}} · Status:",
