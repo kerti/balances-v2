@@ -143,31 +143,32 @@ export function IncomeScreen() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        variant="hub"
-        title={t("income:listTitle")}
-        subtitle={t("income:listSubtitle")}
-        actions={
-          <>
-            {data && data.length > 0 && effectiveMonth && (
-              <MonthPickerPopover
-                months={availableMonths}
-                selected={effectiveMonth}
-                onSelect={(ym) => {
-                  setSelectedMonth(ym);
-                  setPage(1);
-                }}
-              />
-            )}
-            {/* Desktop: the actions live top-right. On phones they get their own
-                50/50 row under the header (below), like every list page. */}
-            {!isMobile && data && effectiveMonth && (
-              <CopyRegularIncomeDialog income={data} month={effectiveMonth} />
-            )}
-            {!isMobile && <CreateIncomeDialog />}
-          </>
-        }
-      />
+      <PageHeader variant="hub" title={t("income:listTitle")} subtitle={t("income:listSubtitle")} />
+
+      {/* Actions sit under the title, not beside it, so the subtitle keeps the
+          full header width (#949). On phones this row holds only the month
+          picker; Copy and New get their own 50/50 row below. */}
+      {((data && data.length > 0 && effectiveMonth) || !isMobile) && (
+        <div
+          className="-mt-3 flex flex-wrap items-center gap-2 max-md:[&>*]:flex-1"
+          data-testid="income-actions"
+        >
+          {data && data.length > 0 && effectiveMonth && (
+            <MonthPickerPopover
+              months={availableMonths}
+              selected={effectiveMonth}
+              onSelect={(ym) => {
+                setSelectedMonth(ym);
+                setPage(1);
+              }}
+            />
+          )}
+          {!isMobile && data && effectiveMonth && (
+            <CopyRegularIncomeDialog income={data} month={effectiveMonth} />
+          )}
+          {!isMobile && <CreateIncomeDialog />}
+        </div>
+      )}
 
       {isMobile && data && data.length > 0 && (
         <div className="flex gap-2 [&>*]:flex-1" data-testid="income-mobile-actions">

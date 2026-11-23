@@ -1,12 +1,12 @@
 {
   "home": {
-    "valueChartTitle": "Total owed over time",
+    "valueChartTitle": "Owed to you over time",
     "valueChartDescription": "Sum across all active receivables ({{currency}}).",
-    "convertedChartDescription": "Total owed in {{currency}}, converted at each month's rate."
+    "convertedChartDescription": "Owed to you in {{currency}}, converted at each month's rate."
   },
   "listTitle": "Receivables",
   "listSubtitle": "Money owed to your household — loans, deposits in transit, outstanding refunds.",
-  "totalOutstanding": "Total owed",
+  "totalOutstanding": "Owed to you",
   "noun": "receivable",
   "nounPlural": "receivables",
   "emptyTitle": "No receivables yet",

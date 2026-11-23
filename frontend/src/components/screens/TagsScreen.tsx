@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { MissingFxWarning } from "@/components/common/MissingFxWarning";
 import { RatesLine } from "@/components/common/RatesLine";
 import { TagsCard } from "@/components/common/TagsCard";
+import { TagDialog } from "@/components/dialogs/TagDialog";
 import { TagBreakdownSection } from "@/components/tags/TagBreakdownSection";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useTags, useTagBreakdown } from "@/hooks/useTags";
@@ -61,7 +62,12 @@ export function TagsScreen() {
 
   return (
     <div className="space-y-6">
-      <PageHeader variant="hub" title={t("report.title")} subtitle={t("report.subtitle")} />
+      <PageHeader
+        variant="hub"
+        title={t("report.title")}
+        subtitle={t("report.subtitle")}
+        actions={<TagDialog mode="create" />}
+      />
 
       {!isLoading && !hasCells && (
         <p className="text-sm text-muted-foreground" data-testid="tags-empty">

@@ -13,7 +13,18 @@ import { server } from "@/test/server";
 import { raisedToasts } from "@/test/sonnerMock";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { InflationRatesCard } from "@/components/common/InflationRatesCard";
+import { InflationRateDialog } from "@/components/dialogs/InflationRateDialog";
 import type { InflationRate } from "@/api/types";
+
+// The create button lives in the page header now (#949); mount it beside the card.
+function CardWithCreate() {
+  return (
+    <>
+      <InflationRateDialog mode="create" />
+      <InflationRatesCard />
+    </>
+  );
+}
 
 const rates: InflationRate[] = [
   {
@@ -49,7 +60,7 @@ function pickRowAction(scope: ReturnType<typeof within>, item: "Edit" | "Delete"
 
 function renderCard() {
   server.use(http.get("/api/inflation-rates", () => HttpResponse.json(rates)));
-  return renderWithProviders(<InflationRatesCard />);
+  return renderWithProviders(<CardWithCreate />);
 }
 
 // covers: INV-PRESENTATION-08
@@ -168,7 +179,7 @@ it("desktop: paginates at 12 rows per page", async () => {
     year_month: `2025-${String((i % 12) + 1).padStart(2, "0")}`,
   }));
   server.use(http.get("/api/inflation-rates", () => HttpResponse.json(many)));
-  renderWithProviders(<InflationRatesCard />);
+  renderWithProviders(<CardWithCreate />);
 
   await screen.findByTestId("inflation-rate-table");
   expect(screen.getAllByTestId("inflation-rate-row")).toHaveLength(12);

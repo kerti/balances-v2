@@ -25,3 +25,8 @@ it("fills the width and floors each option at the 44px tap target on phones", ()
     expect(chip).toHaveClass("max-md:min-h-11", "max-md:flex-1");
   }
 });
+
+it("labels the chip bar with a visible Risk: prefix (#949)", () => {
+  renderWithProviders(<RiskProfileFilter value="all" onChange={vi.fn()} />);
+  expect(screen.getByTestId("risk-filter-label")).toHaveTextContent("Risk:");
+});

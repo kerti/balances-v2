@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { Link } from "react-router";
 import { useSession } from "@/hooks/useSession";
 import { routes } from "@/lib/routes";
+import { FxRateDialog } from "@/components/dialogs/FxRateDialog";
 import { FxRatesCard } from "@/components/common/FxRatesCard";
 
 // Settings ▸ Exchange Rates (routes.settingsFxRates). h1 + subtitle header,
@@ -24,6 +25,7 @@ export function SettingsFxRatesScreen() {
         back={{ label: t("backToSettings"), to: routes.settings }}
         title={t("fx.title")}
         subtitle={t("fx.description")}
+        actions={me.multi_currency_enabled ? <FxRateDialog mode="create" /> : undefined}
       />
 
       {me.multi_currency_enabled ? (

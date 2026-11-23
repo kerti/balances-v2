@@ -204,7 +204,7 @@ export function investmentDescriptor<T>(
     extraColumns: [...(config.mainColumns ?? []), activityColumn, ownershipColumn(config.entity)],
     renderTitleAccessory: (item) => (
       <>
-        <RiskProfileBadge profile={config.entity(item).risk_profile} compact />
+        <RiskProfileBadge profile={config.entity(item).risk_profile} />
         {config.titleAccessory?.(item)}
       </>
     ),

@@ -38,6 +38,7 @@
     "maturity": "Maturity"
   },
   "riskProfile": {
+    "filterLabel": "Risk:",
     "filterAriaLabel": "Filter by risk profile",
     "filterAll": "All",
     "filterLow": "Low",

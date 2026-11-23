@@ -9,7 +9,18 @@ import { server } from "@/test/server";
 import { raisedToasts } from "@/test/sonnerMock";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { TagsCard } from "@/components/common/TagsCard";
+import { TagDialog } from "@/components/dialogs/TagDialog";
 import type { Tag } from "@/api/types";
+
+// The create button lives in the Tags page header now (#949); mount it beside the card.
+function CardWithCreate() {
+  return (
+    <>
+      <TagDialog mode="create" />
+      <TagsCard />
+    </>
+  );
+}
 
 vi.mock("sonner", async () => (await import("@/test/sonnerMock")).sonnerMock());
 const mockedToast = toast as unknown as Parameters<typeof raisedToasts>[0];
@@ -38,7 +49,7 @@ it("asks first in red with the count-free copy, then toasts Deleted with no Undo
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  renderWithProviders(<TagsCard />);
+  renderWithProviders(<CardWithCreate />);
 
   fireEvent.click(await screen.findByRole("button", { name: "Tag actions" }));
   fireEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
@@ -72,7 +83,7 @@ it("New tag opens a dialog; Edit renames in a dialog with no inline form", async
       return HttpResponse.json(tags[0]);
     }),
   );
-  renderWithProviders(<TagsCard />);
+  renderWithProviders(<CardWithCreate />);
 
   // No inline name field or ✓/× controls: the name only exists inside a dialog.
   await screen.findByTestId("tag-list");
@@ -121,7 +132,7 @@ it("a tag's row menu offers Add items…, opening the picker preset to that tag"
       return new HttpResponse(null, { status: 204 });
     }),
   );
-  renderWithProviders(<TagsCard />);
+  renderWithProviders(<CardWithCreate />);
 
   const trigger = await screen.findByRole("button", { name: "Tag actions" });
   // Phone tap floor: the ⋯ trigger is 44px below the md breakpoint.

@@ -38,6 +38,7 @@
     "maturity": "Jatuh tempo"
   },
   "riskProfile": {
+    "filterLabel": "Risiko:",
     "filterAriaLabel": "Filter berdasarkan profil risiko",
     "filterAll": "Semua",
     "filterLow": "Rendah",
