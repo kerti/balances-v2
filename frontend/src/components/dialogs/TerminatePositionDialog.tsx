@@ -315,7 +315,9 @@ export function TerminatePositionDialog({
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="lifecycle_status">{t("terminate.statusLabel")}</Label>
+            <Label required={picked} htmlFor="lifecycle_status">
+              {t("terminate.statusLabel")}
+            </Label>
             <Select
               id="lifecycle_status"
               value={status}
@@ -343,7 +345,7 @@ export function TerminatePositionDialog({
 
           {!isActive && (
             <div className="grid gap-2">
-              <Label htmlFor="lifecycle_terminated_at">
+              <Label required={picked} htmlFor="lifecycle_terminated_at">
                 {t(`terminate.dateLabel.${picked ? status : "none"}`, {
                   defaultValue: t("terminate.dateLabel.none"),
                 })}
@@ -377,7 +379,7 @@ export function TerminatePositionDialog({
               {kind === "sell" ? (
                 <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
                   <div className="grid gap-2">
-                    <Label htmlFor="settlement_quantity">
+                    <Label required htmlFor="settlement_quantity">
                       {t("terminate.settlementQuantityLabel")}
                     </Label>
                     <NumericInput
@@ -391,7 +393,7 @@ export function TerminatePositionDialog({
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="settlement_price">
+                    <Label required htmlFor="settlement_price">
                       {t("terminate.settlementPriceLabel", { currency })}
                     </Label>
                     <NumericInput
@@ -408,7 +410,7 @@ export function TerminatePositionDialog({
               ) : (
                 <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
                   <div className="grid gap-2">
-                    <Label htmlFor="settlement_principal">
+                    <Label required htmlFor="settlement_principal">
                       {t("terminate.settlementPrincipalLabel", { currency })}
                     </Label>
                     <NumericInput
@@ -422,7 +424,7 @@ export function TerminatePositionDialog({
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label htmlFor="settlement_interest">
+                    <Label required htmlFor="settlement_interest">
                       {t("terminate.settlementInterestLabel", { currency })}
                     </Label>
                     <NumericInput

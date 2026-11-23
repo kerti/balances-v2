@@ -84,7 +84,9 @@ function FxRateFormBody({
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="fx-month">{t("fx.month")}</Label>
+        <Label required htmlFor="fx-month">
+          {t("fx.month")}
+        </Label>
         {mode === "create" ? (
           <MonthPickerPopover
             fullWidth
@@ -100,7 +102,9 @@ function FxRateFormBody({
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="fx-currency">{t("fx.currency")}</Label>
+        <Label required htmlFor="fx-currency">
+          {t("fx.currency")}
+        </Label>
         {mode === "create" ? (
           <FxCurrencySelect
             value={form.currency}
@@ -112,7 +116,9 @@ function FxRateFormBody({
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="fx-rate">{t("fx.rate")}</Label>
+        <Label required htmlFor="fx-rate">
+          {t("fx.rate")}
+        </Label>
         <NumericInput
           id="fx-rate"
           // Example numeric rate, in the locale's marks; not translatable copy.

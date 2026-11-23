@@ -150,6 +150,15 @@ describe("CreateSnapshotDialog (Record snapshot)", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
+  // #953 S3
+  it("opens on the first month with no value when the current month is recorded", async () => {
+    setup([snap("s3", "2026-11", "3000000"), snap("s1", "2026-08", "1000000")]);
+    await open();
+    // Nov is recorded; the latest empty month before it is Oct, not a replace.
+    expect(screen.getByTestId("year_month")).toHaveTextContent(/Oct/);
+    expect(screen.queryByTestId("snapshot-replace-notice")).not.toBeInTheDocument();
+  });
+
   it("switches to replace mode when an already-recorded month is picked, and back", async () => {
     const { create, update } = setup([
       snap("s2", "2026-10", "2000000"),

@@ -63,7 +63,9 @@ export function ResetRequestScreen() {
           ) : (
             <form onSubmit={onSubmit} className="space-y-3" data-testid="reset-request-form">
               <div className="space-y-1">
-                <Label htmlFor="reset-request-email">{t("resetRequest.emailLabel")}</Label>
+                <Label required htmlFor="reset-request-email">
+                  {t("resetRequest.emailLabel")}
+                </Label>
                 <Input
                   id="reset-request-email"
                   data-testid="reset-request-email"

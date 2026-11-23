@@ -443,7 +443,7 @@
   },
   "deleteConfirm": {
     "positionTitle": "Delete {{name}}?",
-    "positionDescription": "It disappears from lists and reports."
+    "positionDescription": "It disappears from lists and reports. If this is a real account you are done with, use Close instead: it keeps the history."
   },
   "chartRange": {
     "ariaLabel": "Chart range",

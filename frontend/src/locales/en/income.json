@@ -96,6 +96,7 @@
     "triggerShort": "Copy last month",
     "title": "Copy last month's regular income",
     "description": "Regular income from {{from}}, dated into {{to}}. Untick what you do not want and adjust any amount before saving.",
+    "nothingToCopy": "Nothing to copy: all the regular income from {{from}} is already recorded in {{to}}.",
     "alreadyThere": "Already has a regular entry like this in {{month}}. Unticked so it is not duplicated.",
     "noneTicked": "Tick at least one row to copy.",
     "save_zero": "Copy",

@@ -441,7 +441,7 @@
   },
   "deleteConfirm": {
     "positionTitle": "Hapus {{name}}?",
-    "positionDescription": "Item ini akan hilang dari daftar dan laporan."
+    "positionDescription": "Item ini akan hilang dari daftar dan laporan. Jika ini akun sungguhan yang sudah tidak dipakai, gunakan Tutup saja: riwayatnya tetap tersimpan."
   },
   "chartRange": {
     "ariaLabel": "Rentang grafik",

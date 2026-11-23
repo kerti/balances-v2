@@ -30,7 +30,9 @@ export function ReceivableFormBody({ mode, form, setForm, soleOwnerID }: Props) 
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="display_name"
           required
@@ -41,7 +43,9 @@ export function ReceivableFormBody({ mode, form, setForm, soleOwnerID }: Props) 
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="counterparty_name">{t("receivables:fields.counterparty")}</Label>
+        <Label required htmlFor="counterparty_name">
+          {t("receivables:fields.counterparty")}
+        </Label>
         <Input
           id="counterparty_name"
           required

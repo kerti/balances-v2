@@ -77,7 +77,9 @@ export function MoveSnapshotDialog({ open, onOpenChange, snapshot, onMoved }: Pr
           }}
         >
           <div className="grid gap-2">
-            <Label htmlFor={MONTH_FIELD}>{t("snapshot.moveTo")}</Label>
+            <Label required htmlFor={MONTH_FIELD}>
+              {t("snapshot.moveTo")}
+            </Label>
             <MonthPickerPopover
               fullWidth
               id={MONTH_FIELD}

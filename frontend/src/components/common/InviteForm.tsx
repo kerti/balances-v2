@@ -70,7 +70,9 @@ export function InviteForm() {
               </Button>
             }
           >
-            <Label htmlFor="email">{t("invite.emailLabel")}</Label>
+            <Label required htmlFor="email">
+              {t("invite.emailLabel")}
+            </Label>
             <Input
               id="email"
               type="email"

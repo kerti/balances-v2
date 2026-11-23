@@ -54,7 +54,9 @@ function TagFormBody({
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor={nameTestId}>{t("manage.nameLabel")}</Label>
+        <Label required htmlFor={nameTestId}>
+          {t("manage.nameLabel")}
+        </Label>
         <Input
           id={nameTestId}
           data-testid={nameTestId}

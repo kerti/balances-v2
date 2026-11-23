@@ -158,7 +158,9 @@ export function LocalAuthForm() {
       )}
 
       <div className="space-y-1">
-        <Label htmlFor="local-email">{t("signIn.local.email")}</Label>
+        <Label required htmlFor="local-email">
+          {t("signIn.local.email")}
+        </Label>
         <Input
           id="local-email"
           data-testid="local-email"
@@ -171,7 +173,9 @@ export function LocalAuthForm() {
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="local-password">{t("signIn.local.password")}</Label>
+        <Label required htmlFor="local-password">
+          {t("signIn.local.password")}
+        </Label>
         <Input
           id="local-password"
           data-testid="local-password"

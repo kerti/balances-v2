@@ -16,11 +16,16 @@ function nextMonth(ym: string): string {
   return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 }
 
-// The month Record snapshot opens on: the month after the latest snapshot,
-// never later than the current month (a snapshot is a past observation). With
-// no snapshots yet, the current month. When the latest snapshot is already in
-// the current month this is the current month, which then opens in replace mode.
-export function defaultRecordMonth(snapshots: Dated[] | undefined, now = thisYearMonth()): string {
+function prevMonth(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  return m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, "0")}`;
+}
+
+// The month after the latest snapshot, never later than the current month (a
+// snapshot is a past observation); the current month with no snapshots yet.
+// This is the month a trade's "Update {Mon} holding" shortcut targets (#830):
+// the trade is happening now, so it never scans back for an older gap.
+export function holdingMonth(snapshots: Dated[] | undefined, now = thisYearMonth()): string {
   let latest = "";
   for (const s of snapshots ?? []) {
     const ym = ymOf(s.year_month);
@@ -29,6 +34,26 @@ export function defaultRecordMonth(snapshots: Dated[] | undefined, now = thisYea
   if (!latest) return now;
   const next = nextMonth(latest);
   return next > now ? now : next;
+}
+
+// The month the header's Record snapshot opens on (#953 S3): the first month
+// with no value. That is the month after the latest snapshot while it is still
+// in the past; once the current month is recorded, the most recent earlier gap
+// back to the first snapshot, so the dialog does not open on a replace by
+// default. Only a history with no gap at all falls back to the current month,
+// which then opens in replace mode.
+export function defaultRecordMonth(snapshots: Dated[] | undefined, now = thisYearMonth()): string {
+  const next = holdingMonth(snapshots, now);
+  if (!snapshotForMonth(snapshots, next)) return next;
+  let earliest = next;
+  for (const s of snapshots ?? []) {
+    const ym = ymOf(s.year_month);
+    if (ym < earliest) earliest = ym;
+  }
+  for (let ym = prevMonth(next); ym > earliest; ym = prevMonth(ym)) {
+    if (!snapshotForMonth(snapshots, ym)) return ym;
+  }
+  return next;
 }
 
 // The live snapshot for a month, if any.
@@ -72,7 +97,7 @@ export function asOfInputValue(asOf: string | null): string {
 // the month Record snapshot will open on ("Nov"). Anchored at noon UTC like
 // `formatRecordMonth`.
 export function holdingMonthLabel(snapshots: Dated[] | undefined): string {
-  const ym = defaultRecordMonth(snapshots);
+  const ym = holdingMonth(snapshots);
   return formatShortMonth(new Date(`${ym}-01T12:00:00Z`));
 }
 

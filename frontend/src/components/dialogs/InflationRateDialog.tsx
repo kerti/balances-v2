@@ -40,7 +40,9 @@ function InflationRateFormBody({
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="inflation-month">{t("inflation.month")}</Label>
+        <Label required={mode === "create"} htmlFor="inflation-month">
+          {t("inflation.month")}
+        </Label>
         {mode === "create" ? (
           <MonthPickerPopover
             fullWidth
@@ -56,7 +58,9 @@ function InflationRateFormBody({
         )}
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="inflation-rate">{t("inflation.rate")}</Label>
+        <Label required htmlFor="inflation-rate">
+          {t("inflation.rate")}
+        </Label>
         <NumericInput
           id="inflation-rate"
           // Example numeric rate, in the locale's marks; not translatable copy.

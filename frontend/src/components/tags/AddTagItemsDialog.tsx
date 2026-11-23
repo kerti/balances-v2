@@ -115,7 +115,9 @@ function PickerForm({
     >
       {tagId === null && (
         <div className="grid gap-2">
-          <Label htmlFor="target_tag">{t("tags:items.picker.targetLabel")}</Label>
+          <Label required htmlFor="target_tag">
+            {t("tags:items.picker.targetLabel")}
+          </Label>
           <Select
             id="target_tag"
             required

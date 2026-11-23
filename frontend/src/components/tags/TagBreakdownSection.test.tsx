@@ -122,3 +122,29 @@ it("names the currency of a position left out for want of a rate", async () => {
   const warning = await screen.findByTestId("missing-fx-warning");
   expect(warning).toHaveTextContent(/EUR/);
 });
+
+// #953 S10
+it("skips the donut when only one tag has a slice, and draws it for two", async () => {
+  setViewport(1280);
+  const { unmount } = renderScreen();
+  await screen.findByTestId("tag-breakdown");
+  expect(screen.queryByTestId("tag-breakdown-pie")).not.toBeInTheDocument();
+  unmount();
+
+  const second: Tag = { ...tag, id: "tag-2", name: "Holiday" };
+  server.use(
+    http.get("/api/tags", () => HttpResponse.json([tag, second])),
+    http.get("/api/tags/breakdown", () =>
+      HttpResponse.json(
+        breakdown({
+          tags: [
+            { tag_id: "tag-1", holdings: "80000000", liabilities: "0" },
+            { tag_id: "tag-2", holdings: "20000000", liabilities: "0" },
+          ],
+        }),
+      ),
+    ),
+  );
+  renderWithProviders(<TagsScreen />);
+  expect(await screen.findByTestId("tag-breakdown-pie")).toBeInTheDocument();
+});

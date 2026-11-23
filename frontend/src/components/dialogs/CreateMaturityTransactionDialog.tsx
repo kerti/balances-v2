@@ -145,7 +145,9 @@ export function CreateMaturityTransactionDialog<TResult>({
         </DialogHeader>
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid gap-2">
-            <Label htmlFor="mat_date">{t("investments:maturityTxn.maturityDateLabel")}</Label>
+            <Label required htmlFor="mat_date">
+              {t("investments:maturityTxn.maturityDateLabel")}
+            </Label>
             <Input
               id="mat_date"
               type="date"
@@ -159,7 +161,7 @@ export function CreateMaturityTransactionDialog<TResult>({
 
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="mat_principal">
+              <Label required htmlFor="mat_principal">
                 {t("investments:maturityTxn.principalLabel", { currency })}
               </Label>
               <NumericInput
@@ -172,7 +174,7 @@ export function CreateMaturityTransactionDialog<TResult>({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="mat_interest">
+              <Label required htmlFor="mat_interest">
                 {t("investments:maturityTxn.interestLabel", { currency })}
               </Label>
               <NumericInput

@@ -113,7 +113,9 @@ export function InviteAcceptScreen() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label htmlFor="invite-password">{t("invite.passwordLabel")}</Label>
+                  <Label required htmlFor="invite-password">
+                    {t("invite.passwordLabel")}
+                  </Label>
                   <Input
                     id="invite-password"
                     data-testid="invite-password"

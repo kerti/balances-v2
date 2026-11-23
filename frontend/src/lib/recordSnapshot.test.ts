@@ -3,6 +3,7 @@ import {
   asOfInputValue,
   defaultRecordMonth,
   formatRecordMonth,
+  holdingMonth,
   holdingMonthLabel,
   lastRecordedBefore,
   latestHoldingPrice,
@@ -26,14 +27,34 @@ describe("defaultRecordMonth", () => {
   });
 
   it("is capped at the current month", () => {
+    // Every month back to the first snapshot is recorded: nothing is empty, so
+    // it opens on the current month in replace mode.
     expect(defaultRecordMonth([at("2026-11")], "2026-11")).toBe("2026-11");
     expect(defaultRecordMonth([at("2026-12")], "2026-11")).toBe("2026-11");
+    expect(defaultRecordMonth([at("2026-10"), at("2026-11")], "2026-11")).toBe("2026-11");
+  });
+
+  // #953 S3
+  it("skips a recorded current month to the latest earlier month with no value", () => {
+    expect(defaultRecordMonth([at("2026-08"), at("2026-10"), at("2026-11")], "2026-11")).toBe(
+      "2026-09",
+    );
+    expect(defaultRecordMonth([at("2025-11"), at("2026-01"), at("2026-11")], "2026-11")).toBe(
+      "2026-10",
+    );
   });
 
   it("does not assume the list is sorted", () => {
     expect(defaultRecordMonth([at("2026-03"), at("2026-09"), at("2026-05")], "2026-11")).toBe(
       "2026-10",
     );
+  });
+});
+
+describe("holdingMonth", () => {
+  it("never scans back: a recorded current month stays the current month", () => {
+    expect(holdingMonth([at("2026-08"), at("2026-10"), at("2026-11")], "2026-11")).toBe("2026-11");
+    expect(holdingMonth([at("2026-09")], "2026-11")).toBe("2026-10");
   });
 });
 

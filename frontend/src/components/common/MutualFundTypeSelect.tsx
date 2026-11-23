@@ -35,7 +35,9 @@ export function MutualFundTypeSelect({ idPrefix, value, onChange }: Props) {
   const id = `${idPrefix}_fund_type`;
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>{t("mutualFund.fundType.selectLabel")}</Label>
+      <Label required htmlFor={id}>
+        {t("mutualFund.fundType.selectLabel")}
+      </Label>
       <Select
         id={id}
         required

@@ -10,7 +10,7 @@ type Dated = { year_month: string };
 type Dateable = { year_month: string; as_of_date: string };
 
 // Form state for the Record snapshot dialogs (#788). The dialog opens on the
-// next missing month; picking a month that already has a snapshot switches it
+// first month with no value (#953; `month` overrides it for the holding shortcut); picking a month that already has a snapshot switches it
 // to replace mode, prefilled with that snapshot's values; picking an empty
 // month leaves the value fields empty. `existing` and `last` are derived from
 // the live snapshot list on every render, so a refetch while the dialog is open
@@ -41,8 +41,8 @@ export function useRecordSnapshotForm<S extends Dated, F extends Dateable>({
   // A fresh form on the default month, for each time the dialog opens. `prefill`
   // overrides individual fields (the "Update holding" shortcut, #830); it is a
   // starting point the user confirms or edits, never a write.
-  function reset(prefill?: Partial<F>) {
-    setForm({ ...startFor(defaultRecordMonth(snapshots)), ...prefill });
+  function reset(prefill?: Partial<F>, month = defaultRecordMonth(snapshots)) {
+    setForm({ ...startFor(month), ...prefill });
   }
 
   function pickMonth(yearMonth: string) {

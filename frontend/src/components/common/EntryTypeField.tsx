@@ -62,7 +62,7 @@ export function EntryTypeField({ idPrefix, group, value, onChange, error }: Prop
 
   return (
     <div className="grid gap-2">
-      <Label>{t(`entry.${copy}.question`)}</Label>
+      <Label required>{t(`entry.${copy}.question`)}</Label>
       <div data-testid="entry-type-options" className="grid gap-2 text-sm">
         {(["acquired", "newlyTracked"] as const).map((option, index) => {
           const optionValue: EntryType = option === "acquired" ? "acquired" : "newly_tracked";

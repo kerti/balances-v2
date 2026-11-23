@@ -38,6 +38,14 @@ const base = <T extends object>(id: string, ym: string, extra: T): Snap & T => (
 
 const open = () => userEvent.click(screen.getByRole("button", { name: "Record snapshot" }));
 
+// With Oct empty between Sep and Nov, the dialog opens on Oct (#953 S3); the replace
+// tests pick the recorded Nov explicitly.
+async function openOnNov() {
+  await open();
+  await userEvent.click(await screen.findByLabelText("Month"));
+  await userEvent.click(await screen.findByTestId("month-picker-cell-2026-11"));
+}
+
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date(2026, 10, 10, 9, 0, 0));
@@ -108,7 +116,7 @@ describe("Record snapshot, quantity × price", () => {
       }),
       ...history,
     ]);
-    await open();
+    await openOnNov();
 
     expect(screen.getByTestId("snapshot-replace-notice")).toHaveTextContent(
       /Nov 2026 already has .*7,000/,
@@ -315,7 +323,7 @@ describe("Record snapshot, time deposit (one Value, #844)", () => {
       base("s9", "2026-11", { amount: "102000000", accrued_interest: "2000000" }),
       ...history,
     ]);
-    await open();
+    await openOnNov();
 
     // The recorded month opens in replace mode with its Value prefilled.
     expect(screen.getByLabelText("Value (IDR)")).toHaveValue("102,000,000");
@@ -389,7 +397,7 @@ describe("Record snapshot, accrued interest", () => {
       base("s9", "2026-11", { amount: "51000000", accrued_interest: "300000" }),
       ...history,
     ]);
-    await open();
+    await openOnNov();
 
     expect(screen.getByTestId("snapshot-replace-notice")).toHaveTextContent(
       /Nov 2026 already has .*51,000,000/,

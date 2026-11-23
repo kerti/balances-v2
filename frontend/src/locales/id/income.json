@@ -96,6 +96,7 @@
     "triggerShort": "Salin bulan lalu",
     "title": "Salin pemasukan rutin bulan lalu",
     "description": "Pemasukan rutin dari {{from}}, bertanggal di {{to}}. Hilangkan centang yang tidak diinginkan dan ubah jumlah sebelum menyimpan.",
+    "nothingToCopy": "Tidak ada yang perlu disalin: semua pemasukan rutin dari {{from}} sudah tercatat di {{to}}.",
     "alreadyThere": "Sudah ada pemasukan rutin serupa di {{month}}. Tidak dicentang agar tidak ganda.",
     "noneTicked": "Centang setidaknya satu baris untuk disalin.",
     "save_zero": "Salin",

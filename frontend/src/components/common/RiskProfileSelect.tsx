@@ -22,7 +22,9 @@ export function RiskProfileSelect({ idPrefix, value, onChange }: Props) {
   const id = `${idPrefix}_risk_profile`;
   return (
     <div className="grid gap-2">
-      <Label htmlFor={id}>{t("riskProfile.selectLabel")}</Label>
+      <Label required htmlFor={id}>
+        {t("riskProfile.selectLabel")}
+      </Label>
       <Select
         id={id}
         required

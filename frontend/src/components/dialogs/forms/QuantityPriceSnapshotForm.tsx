@@ -65,7 +65,7 @@ export function QuantityPriceSnapshotFormBody({
 
       <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
         <div className="grid gap-2">
-          <Label htmlFor="inv_quantity">
+          <Label required htmlFor="inv_quantity">
             {t("investments:quantityPriceSnapshot.quantityLabel")}
           </Label>
           <NumericInput
@@ -80,7 +80,7 @@ export function QuantityPriceSnapshotFormBody({
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="inv_price_per_unit">
+          <Label required htmlFor="inv_price_per_unit">
             {t("investments:quantityPriceSnapshot.pricePerUnitLabel", { currency })}
           </Label>
           <NumericInput

@@ -81,7 +81,9 @@ export function EditCashIncomeTransactionDialog<TResult>({
         <ValidatedForm onSubmit={submit} error={mutation.error} className="space-y-3">
           <div className="grid grid-cols-2 gap-3 [&>*]:content-end">
             <div className="grid gap-2">
-              <Label htmlFor="edit_cash_date">{t("investments:cashIncome.paymentDateLabel")}</Label>
+              <Label required htmlFor="edit_cash_date">
+                {t("investments:cashIncome.paymentDateLabel")}
+              </Label>
               <Input
                 id="edit_cash_date"
                 type="date"
@@ -92,7 +94,7 @@ export function EditCashIncomeTransactionDialog<TResult>({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="edit_cash_amount">
+              <Label required htmlFor="edit_cash_amount">
                 {t("investments:cashIncome.amountLabel", {
                   currency: transaction.currency,
                 })}

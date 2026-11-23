@@ -19,8 +19,8 @@ import { swingAsk, type SwingAsk } from "@/lib/valueSwing";
 import { SwingConfirmDialog } from "@/components/dialogs/SwingConfirmDialog";
 import {
   asOfInputValue,
-  defaultRecordMonth,
   formatRecordMonth,
+  holdingMonth,
   latestHoldingPrice,
 } from "@/lib/recordSnapshot";
 import { ledgerQuantity } from "@/lib/reconciliation";
@@ -123,12 +123,15 @@ export function CreateQuantityPriceSnapshotDialog<TCreated, TUpdated>({
   // open on the default month with the ledger quantity and the latest price filled
   // in. The user confirms or edits and presses Save; nothing is written before.
   useOnRecordRequest(() => {
-    const month = defaultRecordMonth(snapshots);
+    const month = holdingMonth(snapshots);
     const price = latestHoldingPrice(snapshots, transactions, month);
-    reset({
-      ...(ledgerQty !== null && { quantity: ledgerQty }),
-      ...(price !== null && { price_per_unit: price }),
-    });
+    reset(
+      {
+        ...(ledgerQty !== null && { quantity: ledgerQty }),
+        ...(price !== null && { price_per_unit: price }),
+      },
+      month,
+    );
     setOpen(true);
   });
 

@@ -34,7 +34,9 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="display_name"
           required
@@ -45,7 +47,9 @@ export function BankAccountFormBody({ mode, form, setForm, soleOwnerID }: Props)
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="bank_name">{t("assets:bankAccount.fields.bankName")}</Label>
+        <Label required htmlFor="bank_name">
+          {t("assets:bankAccount.fields.bankName")}
+        </Label>
         <Input
           id="bank_name"
           required

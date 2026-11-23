@@ -198,7 +198,10 @@ describe("PositionListScreen (synthetic descriptor)", () => {
 
     const confirm = await screen.findByRole("alertdialog");
     expect(within(confirm).getByText("Delete Alpha?")).toBeInTheDocument();
-    expect(within(confirm).getByText("It disappears from lists and reports.")).toBeInTheDocument();
+    // #953 S11: the confirm also points to Close, which keeps the history.
+    expect(
+      within(confirm).getByText(/^It disappears from lists and reports\..*use Close instead/),
+    ).toBeInTheDocument();
     const deleteButton = within(confirm).getByRole("button", { name: "Delete" });
     expect(deleteButton).toHaveAttribute("data-variant", "destructive");
     await user.click(deleteButton);

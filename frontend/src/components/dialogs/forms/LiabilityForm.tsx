@@ -45,7 +45,9 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
   return (
     <>
       <div className="grid gap-2">
-        <Label htmlFor="display_name">{t("common:fields.displayName")}</Label>
+        <Label required htmlFor="display_name">
+          {t("common:fields.displayName")}
+        </Label>
         <Input
           id="display_name"
           required
@@ -87,7 +89,9 @@ export function LiabilityFormBody({ mode, form, setForm, soleOwnerID }: Props) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="counterparty_name">{t("liabilities:fields.counterparty")}</Label>
+        <Label required htmlFor="counterparty_name">
+          {t("liabilities:fields.counterparty")}
+        </Label>
         <Input
           id="counterparty_name"
           required
