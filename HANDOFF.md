@@ -52,15 +52,18 @@ epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction ra
 next item off the backlog — they pause between items to direct.
 
 **Both demo UI/UX audits are built.** The 2026-11-04 audit (#779–#853) shipped through alpha.10; the
-2026-11-16 audit's ready-for-agent issues merged in #956–#967. Its remaining findings are
-`needs-triage`: #968 (float math in the snapshot dialogs, a money bug, so first), #948–#955 polish,
-and #936 (one monthly check-in flow; needs a grill and an ADR).
+2026-11-16 audit's findings merged through #1003 and its #1002 follow-up. Still open: #994
+(ready-for-agent, UI-only detail-card order), #936 (one monthly check-in flow; needs a grill and an
+ADR, with #371/#373 folded in), and #608/#954 (backlogged for a finance grill).
 
 **Next tag (`v0.9.0-alpha.12`) carries release-note debt:**
 - Breaking config: `TRUST_PROXY_HEADERS` is removed and the app refuses to boot if it is set;
   `TRUSTED_PROXIES` replaces it (#962). Self-hosters must edit `.env`.
 - Re-importing an old time-deposit export with months outside the deposit's term now fails with
   `OUTSIDE_DEPOSIT_TERM` (#964).
+- Restoring a pre-#574 backup can bring back bond entries outside the term; they then block maturity
+  and Buy edits until fixed (restore stays faithful, ADR-0036). Undo and close now refuse
+  out-of-term rows (#1002).
 - Run `make e2e` before tagging (#963's spec edits and Playwright 1.65.1 are unrun locally).
 - After the preview deploy, check that Fly's edge peer falls in `172.16.0.0/12`; otherwise every
   visitor shares one rate-limit key.

@@ -74,8 +74,33 @@ func (r *InvestmentRepo) UndoDeleteInvestmentSnapshot(ctx context.Context, snaps
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.RestoreInvestmentSnapshot(ctx, db.RestoreInvestmentSnapshotParams{ID: snapshotID, HouseholdID: hid, UpdatedBy: &user})
-	return undoRows("restore investment snapshot", rows, err)
+	// The restore and the term-window re-check share one transaction, so a refused
+	// month leaves nothing restored (#1002).
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("undo delete investment snapshot: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	snap, err := qtx.GetInvestmentSnapshotAnyState(ctx, db.GetInvestmentSnapshotAnyStateParams{ID: snapshotID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("undo delete investment snapshot: load: %w", err)
+	}
+	rows, err := qtx.RestoreInvestmentSnapshot(ctx, db.RestoreInvestmentSnapshotParams{ID: snapshotID, HouseholdID: hid, UpdatedBy: &user})
+	if err := undoRows("restore investment snapshot", rows, err); err != nil {
+		return err
+	}
+	if err := checkRestoredSnapshotMonths(ctx, qtx, snap.InvestmentID, hid, snap.YearMonth); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("undo delete investment snapshot: commit: %w", err)
+	}
+	return nil
 }
 
 func (r *InvestmentRepo) UndoDeleteInvestmentTransaction(ctx context.Context, transactionID uuid.UUID) error {
@@ -83,8 +108,108 @@ func (r *InvestmentRepo) UndoDeleteInvestmentTransaction(ctx context.Context, tr
 	if err != nil {
 		return err
 	}
-	rows, err := r.q.RestoreInvestmentTransaction(ctx, db.RestoreInvestmentTransactionParams{ID: transactionID, HouseholdID: hid, UpdatedBy: &user})
-	return undoRows("restore investment transaction", rows, err)
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("undo delete investment transaction: begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	qtx := r.q.WithTx(tx)
+
+	rows, err := qtx.RestoreInvestmentTransaction(ctx, db.RestoreInvestmentTransactionParams{ID: transactionID, HouseholdID: hid, UpdatedBy: &user})
+	if err := undoRows("restore investment transaction", rows, err); err != nil {
+		return err
+	}
+	if err := checkRestoredTransaction(ctx, qtx, transactionID, hid); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("undo delete investment transaction: commit: %w", err)
+	}
+	return nil
+}
+
+// ----- term window on restore (#1002) ---------------------------------------
+//
+// A bond's or time deposit's term window is enforced on every forward write
+// (INV-BONDS-03, INV-BONDS-05), but a restore brings a row back as it was, so the
+// window can have moved since it was archived: a Buy edited later, a maturity
+// narrowed. Each investment restore therefore re-checks what it brought back,
+// after the restore and inside the same transaction, so a refusal rolls the whole
+// undo back (ErrOutsideBondTerm / ErrOutsideDepositTerm -> 400, nothing changed).
+// Both checks are no-ops for every subtype without a window, and look only at the
+// restored rows, so an unrelated legacy row outside the window never blocks an undo.
+
+// checkRestoredSnapshotMonths holds the months a restore brought back to the
+// position's window. The position is live: a restore under a deleted parent
+// already read as ErrNotFound.
+func checkRestoredSnapshotMonths(ctx context.Context, q *db.Queries, invID, hid uuid.UUID, months ...time.Time) error {
+	inv, err := q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: invID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("undo: get investment for term check: %w", err)
+	}
+	bounds, err := positionBounds(ctx, q, inv)
+	if err != nil {
+		return err
+	}
+	for _, m := range months {
+		if err := bounds.checkSnapshotMonth(m); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// checkRestoredTransaction holds a restored transaction to its position's window.
+// The window is read after the restore, so a restored Buy that opens the bond's
+// term is judged against the term it now defines: it must leave the term
+// non-empty, a restored Buy dated after maturity is refused, and one that becomes
+// the earliest Buy must not strand history (below).
+func checkRestoredTransaction(ctx context.Context, q *db.Queries, transactionID, hid uuid.UUID) error {
+	txn, err := q.GetInvestmentTransactionByID(ctx, db.GetInvestmentTransactionByIDParams{ID: transactionID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("undo: get restored transaction: %w", err)
+	}
+	inv, err := q.GetInvestmentByID(ctx, db.GetInvestmentByIDParams{ID: txn.InvestmentID, HouseholdID: hid})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("undo: get investment for term check: %w", err)
+	}
+	bounds, err := positionBounds(ctx, q, inv)
+	if err != nil {
+		return err
+	}
+	if err := bounds.checkBondOrder(); err != nil {
+		return err
+	}
+	if err := bounds.checkTransactionDate(txn.TransactionDate); err != nil {
+		return err
+	}
+	if inv.Subtype != "bond" || txn.TransactionType != TxnTypeBuy {
+		return nil
+	}
+	// A restored Buy that becomes the bond's earliest moves the start of its term
+	// to the Buy, so history dated before it would be stranded outside the new
+	// window: judge the whole live history, as the forward "add a first Buy later
+	// than existing entries" rule does (#574). A Buy that leaves the start where it
+	// was cannot strand anything, so a legacy row elsewhere never blocks it.
+	ledger, err := bondLedger(ctx, q, inv.ID, hid)
+	if err != nil {
+		return err
+	}
+	for _, o := range ledger {
+		if o.ID != txn.ID && o.TransactionType == TxnTypeBuy && !dayStart(o.TransactionDate).After(dayStart(txn.TransactionDate)) {
+			return nil
+		}
+	}
+	return checkBondHistory(ctx, q, inv.ID, hid, bounds.maturity, ledger)
 }
 
 func (r *IncomeRepo) UndoDeleteIncome(ctx context.Context, id uuid.UUID) error {
@@ -307,6 +432,9 @@ type snapshotUndoOps struct {
 	slot    func(ctx context.Context, q *db.Queries, id, hid uuid.UUID) (snapshotSlot, error)
 	archive func(ctx context.Context, q *db.Queries, id, hid, user uuid.UUID) (int64, error)
 	restore func(ctx context.Context, q *db.Queries, id, hid, user uuid.UUID) (int64, error)
+	// checkMonths re-checks the months an undo brought back against the position's
+	// term window (#1002). Nil for the groups that have none; only investments do.
+	checkMonths func(ctx context.Context, q *db.Queries, position, hid uuid.UUID, months ...time.Time) error
 }
 
 // undoReplaceSnapshot archives replacementID and restores restoreID in one
@@ -361,6 +489,11 @@ func undoReplaceSnapshot(ctx context.Context, pool *pgxpool.Pool, q *db.Queries,
 	rows, err = ops.restore(ctx, qtx, restoreID, hid, user)
 	if err := undoRows("undo replace: restore original", rows, err); err != nil {
 		return err
+	}
+	if ops.checkMonths != nil {
+		if err := ops.checkMonths(ctx, qtx, orig.position, hid, orig.month); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("undo replace: commit: %w", err)
@@ -425,6 +558,7 @@ func investmentSnapshotUndoOps() snapshotUndoOps {
 		restore: func(ctx context.Context, q *db.Queries, id, hid, user uuid.UUID) (int64, error) {
 			return q.RestoreInvestmentSnapshot(ctx, db.RestoreInvestmentSnapshotParams{ID: id, HouseholdID: hid, UpdatedBy: &user})
 		},
+		checkMonths: checkRestoredSnapshotMonths,
 	}
 }
 
@@ -520,6 +654,19 @@ func undoMoveSnapshot(ctx context.Context, pool *pgxpool.Pool, q *db.Queries, op
 	rows, err = ops.restore(ctx, qtx, restoreID, hid, user)
 	if err := undoRows("undo move: restore original", rows, err); err != nil {
 		return err
+	}
+	// The original's month is the one the move left; the displaced row (if any)
+	// sits in the moved row's month, which the moved row already held inside the
+	// window at the time of the move. Both are re-checked: the window may have
+	// narrowed since (#1002).
+	if ops.checkMonths != nil {
+		months := []time.Time{orig.month}
+		if displacedID != nil {
+			months = append(months, moved.month)
+		}
+		if err := ops.checkMonths(ctx, qtx, orig.position, hid, months...); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("undo move: commit: %w", err)
