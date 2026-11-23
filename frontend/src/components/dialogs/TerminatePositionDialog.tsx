@@ -27,6 +27,8 @@ import { fromScaled, multiplyDecimals, sumDecimals, toScaled } from "@/lib/decim
 import { useUpdateLifecycle, type LifecycleSettlement } from "@/hooks/useLifecycle";
 import { useInvestmentTransactions } from "@/hooks/useInvestmentTransactions";
 import { useInvestmentSnapshots } from "@/hooks/useInvestmentSnapshots";
+import { useBond, useTimeDeposit } from "@/hooks/useInvestments";
+import { earliestBuyDate } from "@/lib/bondTerm";
 import {
   settlementKind,
   statusOptions,
@@ -35,6 +37,12 @@ import {
   type InvestmentSubtype,
   type LifecycleGroup,
 } from "@/lib/lifecycle";
+
+// monthEnd returns the last day of the month of a "YYYY-MM-DD" date.
+function monthEnd(date: string): string {
+  const [y, m] = date.split("-").map(Number);
+  return `${date.slice(0, 7)}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
+}
 
 // todayISO returns YYYY-MM-DD in the local timezone. toISOString() would shift
 // users east of UTC into yesterday for the first hours of their day.
@@ -176,6 +184,20 @@ export function TerminatePositionDialog({
     );
   const capturing = kind !== null && !alreadySettled;
 
+  // A bond's or time deposit's close must land inside its term (#1002,
+  // INV-BONDS-03/05): to the day when a Sell/Maturity is booked, to the month
+  // otherwise (only the close snapshot lands then). Mirrors the server's refusal
+  // so the picker stops the date in the form. A bond with no Buy has no start.
+  const { data: bond } = useBond(investmentSubtype === "bond" ? id : null);
+  const { data: deposit } = useTimeDeposit(investmentSubtype === "time_deposit" ? id : null);
+  const termStart =
+    investmentSubtype === "bond"
+      ? earliestBuyDate(transactions)
+      : deposit?.details.placement_date.slice(0, 10);
+  const termEnd = (bond ?? deposit)?.details.maturity_date.slice(0, 10);
+  const dateMin = termStart && (capturing ? termStart : `${termStart.slice(0, 7)}-01`);
+  const dateMax = termEnd ? (capturing ? termEnd : monthEnd(termEnd)) : "9999-12-31";
+
   // Defaults, recomputed on open rather than held in state so they follow a
   // status change (a Bond can settle either way).
   function defaultsFor(next: "sell" | "maturity" | null): SettlementForm {
@@ -227,12 +249,15 @@ export function TerminatePositionDialog({
 
   function onStatusChange(next: string) {
     setStatus(next);
-    // Picking a terminal status auto-fills today (require + default today).
+    // Picking a terminal status auto-fills today (require + default today),
+    // or the maturity day when that has already passed.
     // Going back to active clears the date so the biconditional holds.
     if (next === "active") {
       setTerminatedAt("");
     } else if (!terminatedAt) {
-      setTerminatedAt(todayISO());
+      // A deposit or bond closed after it matured ended on its maturity day.
+      const today = todayISO();
+      setTerminatedAt(termEnd && today > termEnd ? termEnd : today);
     }
     setWriteOff(false);
     setSettlement(
@@ -360,7 +385,8 @@ export function TerminatePositionDialog({
                 type="date"
                 required={picked}
                 disabled={!picked}
-                max="9999-12-31"
+                min={dateMin}
+                max={dateMax}
                 value={terminatedAt}
                 onChange={(e) => setTerminatedAt(e.target.value)}
               />

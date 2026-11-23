@@ -531,3 +531,64 @@ describe("TerminatePositionDialog reopen hint (#948)", () => {
     expect(changing).not.toHaveTextContent(/reopen it later/);
   });
 });
+
+// covers: INV-BONDS-03, INV-BONDS-05
+describe("TerminatePositionDialog term window (#1002)", () => {
+  const oldBuy = [{ ...buyLedger[0], transaction_date: "2019-01-05" }];
+
+  it("holds a bond's sale date to [earliest Buy, maturity] and defaults a past maturity", async () => {
+    const user = userEvent.setup();
+    stubInvestment(qtyPriceSnapshots, oldBuy, { body: undefined });
+    server.use(
+      http.get(`/api/investments/bonds/${ID}`, () =>
+        HttpResponse.json({ investment: { id: ID }, details: { maturity_date: "2020-06-15" } }),
+      ),
+    );
+    renderDialog("bond");
+    await openDialog(user);
+
+    await user.selectOptions(screen.getByLabelText(/status/i), "sold");
+    const date = document.getElementById("lifecycle_terminated_at") as HTMLInputElement;
+    await waitFor(() => expect(date).toHaveAttribute("max", "2020-06-15"));
+    expect(date).toHaveAttribute("min", "2019-01-05");
+    expect(date).toHaveValue("2020-06-15");
+  });
+
+  it("widens a bond's bounds to whole months when nothing settles", async () => {
+    const user = userEvent.setup();
+    stubInvestment(qtyPriceSnapshots, oldBuy, { body: undefined });
+    server.use(
+      http.get(`/api/investments/bonds/${ID}`, () =>
+        HttpResponse.json({ investment: { id: ID }, details: { maturity_date: "2020-06-15" } }),
+      ),
+    );
+    renderDialog("bond");
+    await openDialog(user);
+
+    await user.selectOptions(screen.getByLabelText(/status/i), "untracked");
+    const date = document.getElementById("lifecycle_terminated_at") as HTMLInputElement;
+    await waitFor(() => expect(date).toHaveAttribute("max", "2020-06-30"));
+    expect(date).toHaveAttribute("min", "2019-01-01");
+  });
+
+  it("holds a deposit's maturity date to placement..maturity", async () => {
+    const user = userEvent.setup();
+    stubInvestment(accruedSnapshots, [], { body: undefined });
+    server.use(
+      http.get(`/api/investments/time-deposits/${ID}`, () =>
+        HttpResponse.json({
+          investment: { id: ID },
+          details: { placement_date: "2019-03-10", maturity_date: "2019-09-10" },
+        }),
+      ),
+    );
+    renderDialog("time_deposit");
+    await openDialog(user);
+
+    await user.selectOptions(screen.getByLabelText(/status/i), "matured");
+    const date = document.getElementById("lifecycle_terminated_at") as HTMLInputElement;
+    await waitFor(() => expect(date).toHaveAttribute("max", "2019-09-10"));
+    expect(date).toHaveAttribute("min", "2019-03-10");
+    expect(date).toHaveValue("2019-09-10");
+  });
+});

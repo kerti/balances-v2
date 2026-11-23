@@ -142,7 +142,7 @@ Not ADRs because they're tactical, but load-bearing:
   Edit dialogs of all three shapes mount one `MoveSnapshotDialog` without a fourth mutation prop. A new deletable entity needs a restore query that carries the same
   household filter and bumps `updated_at` (the report watermark's only trigger), a repo method that maps
   `unique_violation` to `ErrUndoSlotTaken`, and the route. A position undo un-cascades children by the
-  parent's own `deleted_at`, never "all archived children". Mount must stay safe on a nil `*Handlers`
+  parent's own `deleted_at`, never "all archived children". An investment snapshot or transaction restore re-checks the bond / time-deposit term window on the restored row inside the same transaction (`checkRestoredSnapshotMonths` / `checkRestoredTransaction`, #1002), so a new restore path on a window-bound position needs the same call. Mount must stay safe on a nil `*Handlers`
   (the httpserver test mounts without a repo), so pass `h.repository` plus a method expression, not
   `h.repo.Method`.
 - **The demo household's history is hand-written, not generated** (`backend/internal/backup/demo_seed_data.go`,

@@ -330,6 +330,30 @@ func (r *InvestmentRepo) UpdateInvestmentLifecycle(ctx context.Context, id uuid.
 	defer func() { _ = tx.Rollback(ctx) }()
 	qtx := r.q.WithTx(tx)
 
+	// A bond's or time deposit's termination month is where the close snapshot
+	// lands, so it must lie inside the term window like any other snapshot
+	// (INV-BONDS-03, INV-BONDS-05, #1002). Checked before anything is written; a
+	// bond with no live Buy has only the maturity bound. No-op for other subtypes
+	// and for reactivation.
+	if p.Status != StatusActive && p.TerminatedAt != nil {
+		bounds, err := positionBounds(ctx, qtx, inv)
+		if err != nil {
+			return nil, err
+		}
+		if err := bounds.checkSnapshotMonth(*p.TerminatedAt); err != nil {
+			return nil, err
+		}
+		// The settlement Sell/Maturity lands on the termination day through the raw
+		// insert, not the forward create path, so it is held to the window to the
+		// day here: the month check above lets a day before the earliest Buy in the
+		// same month through. Without a settlement no transaction is written.
+		if settle != nil {
+			if err := bounds.checkTransactionDate(*p.TerminatedAt); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	row, err := qtx.UpdateInvestmentLifecycle(ctx, db.UpdateInvestmentLifecycleParams{
 		ID:              id,
 		HouseholdID:     hid,
