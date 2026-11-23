@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { useCreateTag, useUpdateTag } from "@/hooks/useTags";
-import { TAG_SWATCHES, DEFAULT_TAG_COLOR } from "@/lib/tagColors";
+import { TAG_SWATCHES, DEFAULT_TAG_COLOR, displayTagColor } from "@/lib/tagColors";
 import type { Tag } from "@/api/types";
 import type { FormMode } from "@/components/dialogs/forms/mode";
 
@@ -81,7 +81,9 @@ export function TagDialog(props: Props) {
   const createTag = useCreateTag();
   const updateTag = useUpdateTag(props.mode === "edit" ? props.tag.id : "");
   const [form, setForm] = useState<TagFormState>(() =>
-    props.mode === "edit" ? { name: props.tag.name, color: props.tag.color } : empty,
+    props.mode === "edit"
+      ? { name: props.tag.name, color: displayTagColor(props.tag.color) }
+      : empty,
   );
 
   const valid = form.name.trim() !== "";

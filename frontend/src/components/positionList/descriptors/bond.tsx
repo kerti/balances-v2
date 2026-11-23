@@ -47,6 +47,7 @@ export const bondDescriptor = investmentDescriptor<BondListItem>({
       id: "identity",
       labelKey: "investments:bond.identityHeader",
       slot: "main",
+      wide: true,
       render: (item) => {
         const terminated = !isActiveStatus(item.investment.status);
         const mInfo = maturityInfo(item.details.maturity_date);

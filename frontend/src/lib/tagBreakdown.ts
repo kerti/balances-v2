@@ -5,7 +5,7 @@
 // can show liabilities as their own negative line rather than netting them into
 // the holdings pie.
 import type { Tag, TagBreakdown } from "@/api/types";
-import { UNTAGGED_COLOR } from "@/lib/tagColors";
+import { UNTAGGED_COLOR, displayTagColor } from "@/lib/tagColors";
 
 export type TagCell = {
   tagId: string | null;
@@ -49,7 +49,7 @@ export function projectTagBreakdown(
     cells.push({
       tagId: e.tag_id,
       name: tag?.name ?? untaggedLabel,
-      color: tag?.color ?? UNTAGGED_COLOR,
+      color: tag ? displayTagColor(tag.color) : UNTAGGED_COLOR,
       holdings,
       liabilities,
       net: holdings - liabilities,
