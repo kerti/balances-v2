@@ -3,7 +3,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { MoreHorizontal, Trash2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription } from "@/components/ui/card";
+import { InviteForm } from "@/components/common/InviteForm";
 import {
   Dialog,
   DialogContent,
@@ -172,12 +173,9 @@ export function MembersCard() {
   );
 
   return (
-    <Card data-testid="members-card">
-      <CardHeader>
-        <CardTitle>{t("members.title")}</CardTitle>
+    <Card data-testid="members-card" className="gap-0 divide-y divide-foreground/10 py-0">
+      <div className="space-y-6 p-4">
         <CardDescription>{t("members.description")}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
         {isPending && <p className="text-sm text-muted-foreground">{t("common:loading")}</p>}
         {isError && <p className="text-sm text-destructive">{t("members.loadFailed")}</p>}
 
@@ -261,7 +259,10 @@ export function MembersCard() {
             )}
           </section>
         )}
-      </CardContent>
+      </div>
+
+      {/* The invite control is the card's last row, in the settings-row pattern. */}
+      <InviteForm />
 
       {/* Destructive confirm, no Undo (ADR-0058 §3): re-inviting is the recovery. */}
       <ConfirmDialog

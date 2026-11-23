@@ -5,7 +5,8 @@
   "sections": {
     "profile": "Profil",
     "household": "Rumah tangga",
-    "membership": "Keanggotaan",
+    "members": "Anggota",
+    "reports": "Laporan",
     "data": "Data"
   },
   "nickname": {
@@ -31,7 +32,6 @@
   "currency": {
     "title": "Mata uang",
     "description": "Kekayaan bersih dilaporkan dalam mata uang ini.",
-    "reportingLabel": "Mata uang pelaporan",
     "multiTitle": "Multi-mata-uang",
     "multiDescription": "Simpan rekening bank, investasi, dan item lain dalam mata uang lain dan masukkan kurs bulanan untuk masing-masing.",
     "multiLabel": "Aktif",
@@ -59,8 +59,7 @@
   },
   "inflation": {
     "title": "Inflasi",
-    "description": "Digunakan untuk memperkirakan berapa lama investasi Anda bertahan jika pemasukan berhenti (ketahanan dana). Tetapkan asumsi laju tahunan, dan bila mau, masukkan angka tahunan (year-on-year) aktual tiap bulan di halaman Laju inflasi — perkiraan memakai rata-rata 12 bulan terakhir bila tersedia.",
-    "assumedLabel": "Asumsi % tahunan",
+    "description": "Laju inflasi tahunan, dalam %, yang diasumsikan laporan bulanan saat memperkirakan berapa lama investasi Anda bertahan jika pemasukan berhenti. Anda juga bisa memasukkan angka sebenarnya tiap bulan di halaman Laju inflasi; laporan lalu memakai rata-rata 12 bulan terakhir.",
     "month": "Bulan",
     "pickMonth": "Pilih bulan",
     "rate": "% Tahunan",
@@ -79,9 +78,8 @@
     "subtitle": "Masukkan angka inflasi tahunan (year-on-year) aktual untuk bulan mana pun yang Anda miliki. Bulan yang dikosongkan memakai asumsi laju di halaman Pengaturan."
   },
   "invite": {
-    "title": "Undang anggota rumah tangga",
+    "title": "Undang seseorang",
     "description": "Mereka akan menerima email berisi tautan masuk.",
-    "emailLabel": "Alamat email",
     "emailPlaceholder": "seseorang@contoh.com",
     "submit": "Kirim undangan",
     "sentTo": "Undangan terkirim ke {{email}}",
@@ -91,7 +89,6 @@
     "copied": "Tersalin!"
   },
   "members": {
-    "title": "Anggota",
     "description": "Semua orang di rumah tangga Anda, dan undangan yang masih menunggu diterima.",
     "loadFailed": "Tidak dapat memuat anggota rumah tangga Anda. Silakan muat ulang halaman.",
     "membersHeading": "Anggota",
@@ -122,6 +119,18 @@
     "copied": "Tersalin!"
   },
   "copyLinkFailed": "Tidak dapat menyalin tautan. Izinkan akses papan klip lalu coba lagi.",
+  "reports": {
+    "rebuild": {
+      "title": "Bangun ulang laporan",
+      "description": "Jika angka di laporan Anda tampak janggal, bangun ulang dari catatan Anda. Membangun ulang bulan terbaru cepat; membangun ulang semua bulan bisa memakan waktu sejenak.",
+      "rebuilding": "Membangun ulang…",
+      "rebuildMonth": "Bangun ulang {{when}}",
+      "rebuildAll": "Bangun ulang semua bulan",
+      "failed": "Gagal membangun ulang — coba lagi.",
+      "doneAll": "Semua bulan dibangun ulang",
+      "doneMonth": "Bulan dibangun ulang"
+    }
+  },
   "data": {
     "title": "Cadangan",
     "description": "Unduh seluruh data rumah tangga Anda sebagai satu berkas. Simpan di tempat aman, atau gunakan untuk memindahkan data ke perangkat lain.",

@@ -80,15 +80,6 @@
     "unexplainedIncreaseHint": "Kekayaan bersih Anda naik melebihi pemasukan dan hasil investasi yang tercatat — misalnya hadiah tak tercatat atau revaluasi.",
     "nwChange": "Perubahan kekayaan bersih"
   },
-  "rebuild": {
-    "prompt": "Angka terlihat janggal?",
-    "rebuilding": "Membangun ulang…",
-    "rebuildMonth": "Bangun ulang {{when}}",
-    "rebuildAll": "Bangun ulang semua bulan",
-    "failed": "Gagal membangun ulang — coba lagi.",
-    "doneAll": "Semua bulan dibangun ulang",
-    "doneMonth": "Bulan dibangun ulang"
-  },
   "monthPicker": {
     "prevYear": "Tahun sebelumnya",
     "nextYear": "Tahun berikutnya",

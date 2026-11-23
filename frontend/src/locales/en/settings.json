@@ -5,7 +5,8 @@
   "sections": {
     "profile": "Profile",
     "household": "Household",
-    "membership": "Membership",
+    "members": "Members",
+    "reports": "Reports",
     "data": "Data"
   },
   "nickname": {
@@ -31,7 +32,6 @@
   "currency": {
     "title": "Currency",
     "description": "Net worth is reported in this currency.",
-    "reportingLabel": "Reporting currency",
     "multiTitle": "Multi-currency",
     "multiDescription": "Hold bank accounts, investments and other items in other currencies and enter a monthly exchange rate for each.",
     "multiLabel": "Enabled",
@@ -59,8 +59,7 @@
   },
   "inflation": {
     "title": "Inflation",
-    "description": "Used to estimate how long your investments would last if income stopped (fund resilience). Set an assumed annual rate, and optionally enter the actual annualised (year-on-year) figure each month on the Inflation rates page — the estimate averages the last 12 months when available.",
-    "assumedLabel": "Assumed annual %",
+    "description": "The yearly inflation rate, in %, that the monthly report assumes when it estimates how long your investments would last if your income stopped. You can also enter the real figure for each month on the Inflation rates page; the report then uses the average of the last 12 months.",
     "month": "Month",
     "pickMonth": "Select month",
     "rate": "Annual %",
@@ -79,9 +78,8 @@
     "subtitle": "Enter the actual annualised (year-on-year) inflation figure for any month you have it. Months you leave blank fall back to the assumed rate on the Settings page."
   },
   "invite": {
-    "title": "Invite someone to your household",
+    "title": "Invite someone",
     "description": "They'll receive an email with a sign-in link.",
-    "emailLabel": "Email address",
     "emailPlaceholder": "someone@example.com",
     "submit": "Send invitation",
     "sentTo": "Invite sent to {{email}}",
@@ -91,7 +89,6 @@
     "copied": "Copied!"
   },
   "members": {
-    "title": "Members",
     "description": "Everyone in your household, and invitations still waiting to be accepted.",
     "loadFailed": "Couldn't load your household's members. Please refresh the page.",
     "membersHeading": "Members",
@@ -122,6 +119,18 @@
     "copied": "Copied!"
   },
   "copyLinkFailed": "Couldn't copy the link. Allow clipboard access and try again.",
+  "reports": {
+    "rebuild": {
+      "title": "Rebuild reports",
+      "description": "If a number in your reports looks wrong, rebuild it from your records. Rebuilding the latest month is quick; rebuilding all months can take a moment.",
+      "rebuilding": "Rebuilding…",
+      "rebuildMonth": "Rebuild {{when}}",
+      "rebuildAll": "Rebuild all months",
+      "failed": "Rebuild failed — try again.",
+      "doneAll": "All months rebuilt",
+      "doneMonth": "Month rebuilt"
+    }
+  },
   "data": {
     "title": "Backup",
     "description": "Download your entire household as a single file. Keep it somewhere safe, or use it to move your data to another device.",

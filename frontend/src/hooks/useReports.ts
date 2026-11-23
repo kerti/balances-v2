@@ -27,10 +27,10 @@ export function useRebuildReports() {
   const rebuildAll = useMutation({
     mutationFn: () =>
       withLoadingToast(
-        i18n.t("dashboard:rebuild.rebuilding"),
+        i18n.t("settings:reports.rebuild.rebuilding"),
         () => api("/api/reports/rebuild", { method: "POST" }),
-        () => i18n.t("dashboard:rebuild.doneAll"),
-        { fallbackError: i18n.t("dashboard:rebuild.failed") },
+        () => i18n.t("settings:reports.rebuild.doneAll"),
+        { fallbackError: i18n.t("settings:reports.rebuild.failed") },
       ),
   });
 
@@ -38,10 +38,10 @@ export function useRebuildReports() {
     // yearMonth is the report's full ISO date; the endpoint accepts YYYY-MM.
     mutationFn: (yearMonth: string) =>
       withLoadingToast(
-        i18n.t("dashboard:rebuild.rebuilding"),
+        i18n.t("settings:reports.rebuild.rebuilding"),
         () => api(`/api/reports/${yearMonth.slice(0, 7)}/rebuild`, { method: "POST" }),
-        () => i18n.t("dashboard:rebuild.doneMonth"),
-        { fallbackError: i18n.t("dashboard:rebuild.failed") },
+        () => i18n.t("settings:reports.rebuild.doneMonth"),
+        { fallbackError: i18n.t("settings:reports.rebuild.failed") },
       ),
   });
 
