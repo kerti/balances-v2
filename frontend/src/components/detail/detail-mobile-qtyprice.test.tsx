@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { server } from "@/test/server";
 import { renderWithProviders } from "@/test/renderWithProviders";
 import { PositionDetailScreen } from "@/components/detail/PositionDetailScreen";
@@ -123,9 +124,10 @@ describe("detail mobile a11y floor (qty×price)", () => {
     // Position value promoted to the card headline under the shared testid.
     expect(within(cards).getByTestId("snapshot-amount")).toHaveTextContent(/6,?600/);
 
-    // Labelled rows in the desktop column order: month first, then the legs and
-    // the total value (#849).
-    expect(within(cards).getByText("Month")).toBeInTheDocument();
+    // Compact row (#952): legs hidden until the row is tapped.
+    expect(within(cards).queryByText("Month")).not.toBeInTheDocument();
+    expect(within(cards).queryByText("Quantity")).not.toBeInTheDocument();
+    await userEvent.click(within(cards).getByRole("button", { name: /2026/, expanded: false }));
     expect(within(cards).getByText("Quantity")).toBeInTheDocument();
     expect(within(cards).getByText(/60 sh/)).toBeInTheDocument();
     expect(within(cards).getByText("Price")).toBeInTheDocument();

@@ -1,7 +1,6 @@
 import type { UseMutationResult } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { useTranslation } from "react-i18next";
-import { CardField, CardFields } from "@/components/common/CardFields";
+import { CompactSnapshotRow } from "@/components/common/CompactSnapshotRow";
 import { SnapshotRowMenu } from "@/components/common/SnapshotRowMenu";
 import {
   useQuantityPriceSnapshotRow,
@@ -18,11 +17,10 @@ type Props<TUpdate, TDelete> = {
   deleteMutation: UseMutationResult<TDelete, unknown, string>;
 };
 
-// Mobile leaf renderer for a qty×price snapshot (ADR-0051 Phase B, "wide table →
-// stacked cards"): labelled key/value rows in the desktop column order (month,
-// quantity, price, total value, note), the card grammar of #849. Shares state, dialogs and the ⋮ menu with
-// the desktop `QuantityPriceSnapshotRow` via `useQuantityPriceSnapshotRow`, and
-// the same `snapshot-*` testids, so the two renderers stay in lockstep. The ⋮
+// Mobile leaf renderer for a qty×price snapshot: a compact `month · total · ⋯`
+// row (#952, the explicit exception to #849's labelled cards) that expands on tap
+// to the quantity and price. Shares state, dialogs and the ⋮ menu with the
+// desktop `QuantityPriceSnapshotRow` via `useQuantityPriceSnapshotRow`. The ⋮
 // trigger sizes to the 44px tap floor (INV-PRESENTATION-08).
 export function QuantityPriceSnapshotCard<TUpdate, TDelete>({
   snapshot,
@@ -30,61 +28,41 @@ export function QuantityPriceSnapshotCard<TUpdate, TDelete>({
   updateMutation,
   deleteMutation,
 }: Props<TUpdate, TDelete>) {
-  const { t } = useTranslation(["investments", "common"]);
+  const { t } = useTranslation("investments");
   const {
     monthText,
     amountText,
+    statementText,
     quantityText,
     priceText,
-    statementText,
     description,
     onEdit,
     onDelete,
     dialogs,
   } = useQuantityPriceSnapshotRow(snapshot, quantityUnit, updateMutation, deleteMutation);
 
+  const breakdown = [
+    ...(quantityText ? [{ label: t("stock.quantityHeader"), value: quantityText }] : []),
+    ...(priceText ? [{ label: t("stock.priceHeader"), value: priceText }] : []),
+  ];
+
   return (
     <>
-      <Card data-testid="snapshot-row" className="py-0">
-        <CardContent className="space-y-2 p-4">
-          <div className="flex items-start gap-2">
-            <CardFields className="flex-1">
-              <CardField label={t("investments:snapshotsCard.monthHeader")}>
-                <div className="font-medium">{monthText}</div>
-                {statementText && (
-                  <div className="text-xs text-muted-foreground">{statementText}</div>
-                )}
-              </CardField>
-              {quantityText && (
-                <CardField label={t("investments:stock.quantityHeader")}>{quantityText}</CardField>
-              )}
-              {priceText && (
-                <CardField label={t("investments:stock.priceHeader")}>{priceText}</CardField>
-              )}
-              <CardField
-                label={t("investments:snapshotsCard.totalValueHeader")}
-                valueTestId="snapshot-amount"
-              >
-                <span className="font-semibold">{amountText}</span>
-              </CardField>
-            </CardFields>
-            <SnapshotRowMenu
-              onEdit={onEdit}
-              onDelete={onDelete}
-              variant="outline"
-              triggerClassName="size-11 shrink-0"
-            />
-          </div>
-          {description && (
-            <CardFields>
-              <CardField label={t("investments:snapshotsCard.notesHeader")}>
-                {description}
-              </CardField>
-            </CardFields>
-          )}
-        </CardContent>
-      </Card>
-
+      <CompactSnapshotRow
+        monthText={monthText}
+        amountText={amountText}
+        statement={statementText}
+        note={description}
+        breakdown={breakdown}
+        menu={
+          <SnapshotRowMenu
+            onEdit={onEdit}
+            onDelete={onDelete}
+            variant="ghost"
+            triggerClassName="size-11 shrink-0"
+          />
+        }
+      />
       {dialogs}
     </>
   );

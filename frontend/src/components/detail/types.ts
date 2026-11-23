@@ -122,6 +122,9 @@ export type HistorySectionSpec<TRow = unknown> = {
   // stacked card list below 768px instead of the wide table; when absent it
   // stays on the table at every width (a row shape not yet carded).
   renderCard?: (row: TRow, index: number) => ReactNode;
+  // `renderCard` returns compact divided rows rather than cards (snapshot
+  // history, #952): twelve a page on phones and no card gaps or inset padding.
+  compactRows?: boolean;
 };
 
 // Erase a concretely-typed section to the heterogeneous list the core renders.
