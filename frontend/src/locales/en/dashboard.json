@@ -80,15 +80,6 @@
     "unexplainedIncreaseHint": "Your net worth rose more than tracked income and investment return explain — for example an untracked gift or a revaluation.",
     "nwChange": "Net worth change"
   },
-  "rebuild": {
-    "prompt": "Numbers look off?",
-    "rebuilding": "Rebuilding…",
-    "rebuildMonth": "Rebuild {{when}}",
-    "rebuildAll": "Rebuild all months",
-    "failed": "Rebuild failed — try again.",
-    "doneAll": "All months rebuilt",
-    "doneMonth": "Month rebuilt"
-  },
   "monthPicker": {
     "prevYear": "Previous year",
     "nextYear": "Next year",

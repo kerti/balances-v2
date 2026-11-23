@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumericInput } from "@/components/common/NumericInput";
 import { INFLATION_DECIMALS, INFLATION_INTEGER_DIGITS } from "@/lib/format";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { errorMessage } from "@/lib/errorMessage";
 import { useSession } from "@/hooks/useSession";
@@ -20,9 +19,9 @@ import { useLocale } from "@/i18n/useLocale";
 import { SUPPORTED_THEMES, type Theme } from "@/theme";
 import { useTheme } from "@/theme/useTheme";
 import { routes } from "@/lib/routes";
-import { InviteForm } from "@/components/common/InviteForm";
 import { MembersCard } from "@/components/common/MembersCard";
 import { BackupPanel } from "@/components/common/BackupPanel";
+import { RebuildRow } from "@/components/common/RebuildRow";
 import { RestorePanel } from "@/components/common/RestorePanel";
 import { ErasePanel } from "@/components/common/ErasePanel";
 import {
@@ -89,9 +88,13 @@ export function SettingsScreen() {
         <AssumedInflationRow />
       </SettingsTable>
 
-      <SectionHeading>{t("sections.membership")}</SectionHeading>
-      <InviteForm />
+      <SectionHeading>{t("sections.members")}</SectionHeading>
       <MembersCard />
+
+      <SectionHeading>{t("sections.reports")}</SectionHeading>
+      <SettingsTable>
+        <RebuildRow />
+      </SettingsTable>
 
       <SectionHeading>{t("sections.data")}</SectionHeading>
       <SettingsPanelGroup>
@@ -314,9 +317,8 @@ function HouseholdNameRow() {
   );
 }
 
-// ReportingCurrencyRow keeps a visible field label: "Reporting currency" says
-// which of a household's currencies this one is, which the row name "Currency"
-// on its own does not.
+// ReportingCurrencyRow: the row name "Currency" is the input's own label; the
+// description says it is the reporting currency, so no inner label repeats it.
 function ReportingCurrencyRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
@@ -343,7 +345,11 @@ function ReportingCurrencyRow() {
   if (!me) return null;
 
   return (
-    <SettingsRow name={t("currency.title")} description={t("currency.description")}>
+    <SettingsRow
+      name={t("currency.title")}
+      description={t("currency.description")}
+      htmlFor="reporting-currency"
+    >
       <SettingsControlRow
         action={
           <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
@@ -351,7 +357,6 @@ function ReportingCurrencyRow() {
           </Button>
         }
       >
-        <Label htmlFor="reporting-currency">{t("currency.reportingLabel")}</Label>
         <Input
           id="reporting-currency"
           className={cn(CONTROL_WIDTH.narrow, "uppercase")}
@@ -420,9 +425,8 @@ function MultiCurrencyRow() {
 // AssumedInflationRow holds only the assumed-annual-inflation setting (the Fund
 // Resilience fallback, ADR-0048) — a single household preference, so it stays a
 // row on the Settings home page. The monthly lookup table lives on its own
-// subpage (routes.settingsInflationRates), linked from here. Like the currency
-// row it keeps a visible field label: "Assumed annual %" carries both a unit and
-// a qualifier that the row name "Inflation" does not.
+// subpage (routes.settingsInflationRates), linked from here. The description
+// carries the unit and says the figures feed the monthly report.
 function AssumedInflationRow() {
   const { t } = useTranslation(["settings", "common"]);
   const { data: me } = useSession();
@@ -448,7 +452,11 @@ function AssumedInflationRow() {
   if (!me) return null;
 
   return (
-    <SettingsRow name={t("inflation.title")} description={t("inflation.description")}>
+    <SettingsRow
+      name={t("inflation.title")}
+      description={t("inflation.description")}
+      htmlFor="assumed-inflation"
+    >
       <SettingsControlRow
         action={
           <Button variant="outline" onClick={field.save} disabled={!field.canSave}>
@@ -456,7 +464,6 @@ function AssumedInflationRow() {
           </Button>
         }
       >
-        <Label htmlFor="assumed-inflation">{t("inflation.assumedLabel")}</Label>
         <NumericInput
           id="assumed-inflation"
           className={CONTROL_WIDTH.narrow}

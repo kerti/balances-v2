@@ -24,7 +24,7 @@ test("invite flow surfaces a copyable accept link", { tag: "@smoke" }, async ({ 
   await page.goto("/settings");
 
   const inviteEmail = `e2e-invitee-${Date.now()}@example.com`;
-  await page.getByLabel("Email address").fill(inviteEmail);
+  await page.getByLabel("Invite someone").fill(inviteEmail);
   await page.getByRole("button", { name: "Send invitation" }).click();
 
   // Result block: who the invite went to, and a Copy button — no URL on screen.
@@ -57,7 +57,7 @@ test("a revoked invite leaves the table and its link stops working", async ({ pa
   await page.goto("/settings");
 
   const inviteEmail = `e2e-revoked-${Date.now()}@example.com`;
-  await page.getByLabel("Email address").fill(inviteEmail);
+  await page.getByLabel("Invite someone").fill(inviteEmail);
   await page.getByRole("button", { name: "Send invitation" }).click();
   await page.getByTestId("copy-invite-link").click();
   const link = await page.evaluate(() => navigator.clipboard.readText());

@@ -86,6 +86,23 @@ afterEach(() => {
   window.innerWidth = originalWidth;
 });
 
+it("merges the invite control into the Members card as its last row", async () => {
+  serve();
+  renderWithProviders(<MembersCard />);
+
+  const card = await screen.findByTestId("members-card");
+  const rows = card.querySelectorAll("[data-slot=settings-row]");
+  expect(rows, "one invite row, in the settings-row pattern").toHaveLength(1);
+  expect(rows[0]).toBe(card.lastElementChild);
+
+  const email = within(card).getByLabelText("Invite someone");
+  const controlRow = email.closest("[data-slot=settings-control-row]");
+  expect(controlRow, "the email field sits in a control row").not.toBeNull();
+  expect(
+    within(controlRow as HTMLElement).getByRole("button", { name: "Send invitation" }),
+  ).toBeInTheDocument();
+});
+
 // covers: INV-AUTH-31
 it("lists every member with a You tag, a joined date and a dormant status, plus each pending invite", async () => {
   serve();

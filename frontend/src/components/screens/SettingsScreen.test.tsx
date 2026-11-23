@@ -14,11 +14,12 @@
 //
 // The panel half is here too, since it is the same policy from the other side:
 // Data's three flows group into one card of `SettingsPanel`s, with Erase — the
-// one irreversible action — carrying the destructive tone.
+// one irreversible action — carrying the destructive tone. The report rebuild
+// (#951) is the one `SettingsRow` in that card.
 //
-// Only `MembersCard` is stubbed: it fetches the members table on
-// mount and MSW is set to fail unhandled requests loudly. Everything else
-// renders for real.
+// Only `MembersCard` is stubbed (its own test covers the merged Members card,
+// invite row included): it fetches the members table on mount and MSW is set to
+// fail unhandled requests loudly. Everything else renders for real.
 import { it, expect, vi, beforeEach, afterEach } from "vitest";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router";
@@ -40,6 +41,7 @@ const mockedToast = toast as unknown as Parameters<typeof raisedToasts>[0];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  reports = [{ year_month: "2026-09-01" }, { year_month: "2026-10-01" }];
 });
 afterEach(async () => {
   await i18n.changeLanguage("en-GB");
@@ -63,8 +65,13 @@ const me: Me = {
   is_founder: true,
 };
 
+let reports: { year_month: string }[] = [];
+
 async function renderScreen() {
-  server.use(http.get("/api/me", () => HttpResponse.json(me)));
+  server.use(
+    http.get("/api/me", () => HttpResponse.json(me)),
+    http.get("/api/reports", () => HttpResponse.json(reports)),
+  );
   const view = renderWithProviders(
     <ThemeProvider>
       <MemoryRouter>
@@ -89,14 +96,20 @@ function controlCell(row: HTMLElement) {
   return row.lastElementChild as HTMLElement;
 }
 
-it("groups the scalar preferences into one Profile card and one Household card", async () => {
+it("groups the settings rows into Profile, Household and Reports cards", async () => {
   const { container } = await renderScreen();
 
   const cards = Array.from(container.querySelectorAll<HTMLElement>("[data-slot=card]"));
-  const tableCards = cards.filter((c) => c.querySelector("[data-slot=settings-row]"));
-  expect(tableCards, "scalar preferences live in exactly two group cards").toHaveLength(2);
+  const tableCards = cards.filter(
+    (c) =>
+      c.querySelector("[data-slot=settings-row]") && !c.querySelector("[data-slot=settings-panel]"),
+  );
+  expect(tableCards, "settings rows live in exactly three group cards").toHaveLength(3);
 
-  const [profile, household] = tableCards;
+  const [profile, household, reports] = tableCards;
+  expect(rows(reports).map((r) => nameCell(r).firstElementChild?.textContent)).toEqual([
+    "Rebuild reports",
+  ]);
   expect(rows(profile).map((r) => nameCell(r).firstElementChild?.textContent)).toEqual([
     "Your name",
     "Language",
@@ -128,7 +141,9 @@ it("gives every control an accessible name with no row-name / field-label duplic
 
     // Every control in the row is named — via the row name acting as its
     // `<label for>`, or via a field label the control cell supplies itself.
-    const controls = controlCell(row).querySelectorAll<HTMLElement>("input, select, textarea");
+    const controls = controlCell(row).querySelectorAll<HTMLElement>(
+      "input, select, textarea, button",
+    );
     expect(controls.length, `${rowName} renders a control`).toBeGreaterThan(0);
     for (const control of controls) {
       expect(control, `${rowName} control is named`).toHaveAccessibleName();
@@ -148,10 +163,10 @@ it("gives every control an accessible name with no row-name / field-label duplic
   expect(screen.getByLabelText("Your name")).toHaveAttribute("id", "nickname");
   expect(screen.getByLabelText("Language")).toHaveAttribute("id", "language");
   expect(screen.getByLabelText("Appearance")).toHaveAttribute("id", "theme");
-  // The two rows that keep a visible field label keep it for the extra it
-  // carries — "Reporting" and the unit — so the row name is not the label.
-  expect(screen.getByLabelText("Reporting currency")).toHaveAttribute("id", "reporting-currency");
-  expect(screen.getByLabelText("Assumed annual %")).toHaveAttribute("id", "assumed-inflation");
+  // Currency and Inflation carry no inner label of their own (#951): the row
+  // name is the label, like every other row.
+  expect(screen.getByLabelText("Currency")).toHaveAttribute("id", "reporting-currency");
+  expect(screen.getByLabelText("Inflation")).toHaveAttribute("id", "assumed-inflation");
 });
 
 it("surfaces a failed household PATCH against one row only", async () => {
@@ -201,21 +216,63 @@ it("groups the Data flows into one card of panels, with Erase alone in the destr
 
   // Panels are the *flows*, so they are not table rows — the point of the
   // policy is that neither shape leaks into the other.
-  expect(groups[0].querySelector("[data-slot=settings-row]")).toBeNull();
+  expect(panels.every((p) => !p.matches("[data-slot=settings-row]"))).toBe(true);
 
   // Only the irreversible one is tinted.
   expect(panels.map((p) => p.dataset.tone)).toEqual(["default", "default", "destructive"]);
+
+  // The report rebuild is not a data flow: it has its own Reports card (#951).
+  expect(groups[0].querySelector("[data-slot=settings-row]")).toBeNull();
 });
 
-it("puts the invite Send beside the email field", async () => {
+it("rebuilds the latest month from Settings ▸ Reports", async () => {
+  const hits: string[] = [];
+  server.use(
+    http.post("/api/reports/:ym/rebuild", ({ params }) => {
+      hits.push(String(params.ym));
+      return HttpResponse.json({});
+    }),
+  );
+  await renderScreen();
+  const user = userEvent.setup();
+
+  await user.click(await screen.findByRole("button", { name: "Rebuild October 2026" }));
+
+  await waitFor(() => expect(hits).toEqual(["2026-10"]));
+});
+
+it("rebuilds every month from Settings ▸ Reports", async () => {
+  let called = 0;
+  server.use(
+    http.post("/api/reports/rebuild", () => {
+      called++;
+      return HttpResponse.json({});
+    }),
+  );
+  await renderScreen();
+  const user = userEvent.setup();
+
+  await user.click(screen.getByRole("button", { name: "Rebuild all months" }));
+
+  await waitFor(() => expect(called).toBe(1));
+});
+
+it("offers only the all-months rebuild while there are no reports", async () => {
+  reports = [];
   await renderScreen();
 
-  const email = screen.getByLabelText("Email address");
-  const controlRow = email.closest("[data-slot=settings-control-row]");
-  expect(controlRow, "the email field sits in a control row").not.toBeNull();
-  expect(
-    within(controlRow as HTMLElement).getByRole("button", { name: "Send invitation" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Rebuild all months" })).toBeInTheDocument();
+  expect(screen.queryByTestId("rebuild-month")).not.toBeInTheDocument();
+});
+
+it("says the inflation settings feed the monthly report and keeps the rates link", async () => {
+  await renderScreen();
+
+  const row = document.querySelector<HTMLElement>(
+    "[data-slot=settings-row]:has(#assumed-inflation)",
+  )!;
+  expect(within(row).getByText(/monthly report/)).toBeInTheDocument();
+  expect(within(row).getByRole("link", { name: "Manage monthly rates" })).toBeInTheDocument();
 });
 
 // Stubs both write endpoints and records every PATCH body, so a test can say
@@ -240,7 +297,7 @@ const NAME_FIELDS = [
     body: { display_name: "Renamed" },
   },
   {
-    label: "Reporting currency",
+    label: "Currency",
     id: "reporting-currency",
     typed: "usd",
     body: { reporting_currency: "USD" },
@@ -311,7 +368,7 @@ it("Enter on a clean or invalid field writes nothing", async () => {
   const user = userEvent.setup();
 
   await user.type(screen.getByLabelText("Household name"), "{Enter}");
-  const currency = screen.getByLabelText("Reporting currency");
+  const currency = screen.getByLabelText("Currency");
   await user.clear(currency);
   await user.type(currency, "US{Enter}");
 
@@ -325,7 +382,7 @@ it("assumed inflation: Enter saves with exactly one toast, Esc reverts", async (
   const { container } = await renderScreen();
   const user = userEvent.setup();
 
-  const input = screen.getByLabelText("Assumed annual %");
+  const input = screen.getByLabelText("Inflation");
   expect(saveButtonOf(container, "assumed-inflation")).toBeDisabled();
   await user.type(input, "1");
   await user.keyboard("{Escape}");

@@ -11,7 +11,7 @@ import { RatesLine } from "@/components/common/RatesLine";
 import { MonthPickerPopover } from "@/components/common/MonthPickerPopover";
 import { ReportPdfButton } from "@/components/common/ReportPdfButton";
 import { Select } from "@/components/ui/select";
-import { useReports, useRebuildReports } from "@/hooks/useReports";
+import { useReports } from "@/hooks/useReports";
 import { useHouseholdMembers } from "@/hooks/useHouseholdMembers";
 import { useFxRates } from "@/hooks/useFxRates";
 import { useSession } from "@/hooks/useSession";
@@ -168,52 +168,6 @@ export function DashboardScreen() {
       <ThisMonth selected={selected} currency={currency} />
 
       <ByPerson selected={selected} currency={currency} members={members} me={me} />
-
-      <RebuildFooter selected={selected} />
-    </div>
-  );
-}
-
-// RebuildFooter offers the manual rebuild actions (ADR-0006). Framed in
-// user terms ("numbers look off?") rather than the engine-cache reason, and
-// kept deliberately low-key at the page bottom — a maintenance affordance, not
-// a primary action. Rebuild-month is the surgical fix; rebuild-all re-derives
-// every month (needed after an exchange-rate correction ripples across history).
-function RebuildFooter({ selected }: { selected: MonthlyReport }) {
-  const { t } = useTranslation("dashboard");
-  const { rebuildAll, rebuildMonth } = useRebuildReports();
-  const busy = rebuildAll.isPending || rebuildMonth.isPending;
-  return (
-    <div className="flex flex-wrap items-center gap-x-3 border-t pt-2 text-xs text-muted-foreground md:pt-4">
-      <span>{t("rebuild.prompt")}</span>
-      {/* The two links keep the ≥44px tap floor on mobile and sit side by side
-          (separator hidden) so they read as one pair; on desktop the "·"
-          goes between them. */}
-      <div className="flex items-center gap-x-4 md:gap-x-2">
-        <button
-          type="button"
-          className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-foreground disabled:opacity-50 md:min-h-0"
-          disabled={busy}
-          onClick={() => rebuildMonth.mutate(selected.year_month)}
-        >
-          {rebuildMonth.isPending
-            ? t("rebuild.rebuilding")
-            : t("rebuild.rebuildMonth", {
-                when: formatYearMonth(selected.year_month),
-              })}
-        </button>
-        <span aria-hidden className="hidden md:inline">
-          {"·"}
-        </span>
-        <button
-          type="button"
-          className="inline-flex min-h-11 items-center underline underline-offset-2 hover:text-foreground disabled:opacity-50 md:min-h-0"
-          disabled={busy}
-          onClick={() => rebuildAll.mutate()}
-        >
-          {rebuildAll.isPending ? t("rebuild.rebuilding") : t("rebuild.rebuildAll")}
-        </button>
-      </div>
     </div>
   );
 }

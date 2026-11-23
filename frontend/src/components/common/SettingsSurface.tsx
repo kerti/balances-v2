@@ -11,11 +11,13 @@ import { cn } from "@/lib/utils";
 // rows of one `SettingsTable` each — thirteen separate cards made thirteen
 // scroll stops out of what is mostly a preferences list, and gave each scalar a
 // card title that its field `Label` then repeated verbatim ("Household name" /
-// "Household name"). Membership and Data are flows: Invite renders a copy-link
-// result state, Members a table of people and pending invites, Restore is file-pick → preview
-// → acknowledge → type ERASE → commit, and Erase has its own confirm gate.
-// None of those survives being squeezed into a row, so each is a
-// `SettingsPanel` — stacked prose and controls, with its own heading.
+// "Household name"). Members and Data hold the flows: Members is a table of
+// people and pending invites with Invite as its last row (#951), Restore is
+// file-pick → preview → acknowledge → type ERASE → commit, and Erase has its
+// own confirm gate. Backup, Restore and Erase don't survive being squeezed
+// into a row, so each is a `SettingsPanel` — stacked prose and controls, with
+// its own heading. Rebuild reports is not a data flow: it is a plain row in
+// its own Reports card.
 //
 // A new setting therefore lands as a `SettingsRow`; a new action or wizard
 // lands as a `SettingsPanel`. Both group into one card per section, so the
@@ -46,34 +48,46 @@ export function SettingsTable({ children }: { children: ReactNode }) {
 // `htmlFor` is how the row name earns its keep as the field's *actual* label
 // rather than a heading sitting next to a nameless textbox: pass it and the
 // name renders as `<label for>`, which is why the per-field `Label` could be
-// dropped instead of hidden. Rows whose control needs a visible label of its
-// own — currency ("Reporting currency"), inflation ("Assumed annual %"), the
-// multi-currency checkbox — omit it and supply that `Label` in the control cell.
+// dropped instead of hidden. Currency and inflation are labelled by their row
+// name too (#951); only the multi-currency checkbox omits `htmlFor` and
+// supplies its own `Label` in the control cell.
 export function SettingsRow({
   name,
   description,
   htmlFor,
+  required,
+  wide,
   children,
 }: {
   name: ReactNode;
   description?: ReactNode;
   htmlFor?: string;
+  // The row name is the field's label, so it carries the required marker (#953).
+  required?: boolean;
+  // A field plus an action (Invite: email + Send) needs more than the w-72
+  // column, or the address is cut off mid-placeholder.
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
     <div
       data-slot="settings-row"
+      data-wide={wide || undefined}
       className="flex flex-col gap-2 p-4 md:flex-row md:items-start md:gap-6"
     >
       <div className="space-y-1 md:flex-1">
         {htmlFor ? (
-          <Label htmlFor={htmlFor}>{name}</Label>
+          <Label required={required} htmlFor={htmlFor}>
+            {name}
+          </Label>
         ) : (
           <p className="text-sm leading-none font-medium">{name}</p>
         )}
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
-      <div className="w-full space-y-2 md:w-72 md:shrink-0">{children}</div>
+      <div className={cn("w-full space-y-2 md:shrink-0", wide ? "md:w-96" : "md:w-72")}>
+        {children}
+      </div>
     </div>
   );
 }

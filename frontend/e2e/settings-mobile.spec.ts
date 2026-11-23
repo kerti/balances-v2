@@ -216,10 +216,11 @@ test(
 
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
-    const rows = page.locator("[data-slot=settings-row]");
+    // The wide Invite row (email + Send) has its own column width by design.
+    const rows = page.locator("[data-slot=settings-row]:not([data-wide])");
     // Profile (name / language / theme) + Household (name / currency /
-    // multi-currency / inflation).
-    await expect(rows).toHaveCount(7);
+    // multi-currency / inflation) + Reports (rebuild, #951).
+    await expect(rows).toHaveCount(8);
 
     const geometry = await rows.evaluateAll((els) =>
       els.map((el) => {

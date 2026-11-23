@@ -42,7 +42,7 @@ function serveInvite(emailSent = true) {
 }
 
 async function send(email: string) {
-  fireEvent.change(screen.getByLabelText("Email address"), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText("Invite someone"), { target: { value: email } });
   fireEvent.click(screen.getByRole("button", { name: "Send invitation" }));
 }
 
