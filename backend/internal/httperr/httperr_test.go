@@ -74,6 +74,8 @@ func TestWriteRepo_sentinelMapping(t *testing.T) {
 		{"SnapshotDateOutsideMonth", errs.ErrSnapshotDateOutsideMonth, http.StatusBadRequest, CodeSnapshotDateOutsideMonth},
 		{"InvalidDepositTerm", errs.ErrInvalidDepositTerm, http.StatusBadRequest, CodeInvalidDepositTerm},
 		{"OutsideDepositTerm", errs.ErrOutsideDepositTerm, http.StatusBadRequest, CodeOutsideDepositTerm},
+		{"InvalidBondTerm", errs.ErrInvalidBondTerm, http.StatusBadRequest, CodeInvalidBondTerm},
+		{"OutsideBondTerm", errs.ErrOutsideBondTerm, http.StatusBadRequest, CodeOutsideBondTerm},
 		{"SnapshotMonthExists", errs.ErrSnapshotMonthExists, http.StatusConflict, CodeSnapshotMonthExists},
 		{"SnapshotCloseNotMovable", errs.ErrSnapshotCloseNotMovable, http.StatusConflict, CodeSnapshotCloseNotMovable},
 		{"SnapshotMoveSameMonth", errs.ErrSnapshotMoveSameMonth, http.StatusBadRequest, CodeSnapshotMoveSameMonth},

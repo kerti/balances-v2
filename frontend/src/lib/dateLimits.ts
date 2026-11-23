@@ -64,3 +64,15 @@ export function monthEndDateCapped(yearMonth: string): string {
   const today = todayDate();
   return endOfMonth < today ? endOfMonth : today;
 }
+
+// dayAfter returns the civil date after `date` ("YYYY-MM-DD"), or "" when `date`
+// is empty or malformed — for the `min` of an input whose value must fall
+// STRICTLY after another date (a bond's maturity after its placement, #574; a
+// native `min` is inclusive). Pure calendar arithmetic in UTC, so a DST change
+// never shifts the result.
+export function dayAfter(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "";
+  const [y, m, d] = date.split("-").map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + 1));
+  return next.toISOString().slice(0, 10);
+}

@@ -282,7 +282,7 @@ func (r *InvestmentRepo) MoveInvestmentSnapshot(ctx context.Context, snapshotID 
 			if err != nil {
 				return fmt.Errorf("move snapshot: get parent investment: %w", err)
 			}
-			bounds, err := timeDepositBounds(ctx, q, inv)
+			bounds, err := positionBounds(ctx, q, inv)
 			if err != nil {
 				return err
 			}

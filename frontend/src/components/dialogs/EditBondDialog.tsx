@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateBond } from "@/hooks/useInvestments";
+import { useInvestmentTransactions } from "@/hooks/useInvestmentTransactions";
+import { earliestBuyDate } from "@/lib/bondTerm";
 import { useSession } from "@/hooks/useSession";
 import { PositionFormDialog } from "@/components/dialogs/PositionFormDialog";
 import { BondFormBody, type BondFormState } from "@/components/dialogs/forms/BondForm";
@@ -41,6 +43,7 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
   const [tagId, setTagId] = useState<string | null>(() => bond.investment.tag_id);
   const { data: user } = useSession();
   const mutation = useUpdateBond(bond.investment.id);
+  const { data: transactions } = useInvestmentTransactions(bond.investment.id);
 
   const effectiveSoleOwnerID = form.sole_owner_user_id ?? user?.id ?? null;
 
@@ -82,7 +85,13 @@ export function EditBondDialog({ open, onOpenChange, bond }: Props) {
       error={mutation.error}
       onSubmit={submit}
     >
-      <BondFormBody mode="edit" form={form} setForm={setForm} soleOwnerID={effectiveSoleOwnerID} />
+      <BondFormBody
+        mode="edit"
+        form={form}
+        setForm={setForm}
+        soleOwnerID={effectiveSoleOwnerID}
+        firstBuyDate={earliestBuyDate(transactions)}
+      />
     </PositionFormDialog>
   );
 }

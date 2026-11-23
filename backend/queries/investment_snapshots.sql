@@ -197,7 +197,9 @@ ORDER BY investment_id, year_month DESC;
 -- timestamp, not economic existence). A time deposit's snapshots are further
 -- confined to its term window (placement month..maturity month, issue #62) — the
 -- same repo-layer bound the per-position form applies — so an out-of-term month
--- excludes it from the list and rejects a hand-crafted write row. The
+-- excludes it from the list and rejects a hand-crafted write row. A bond's are
+-- confined to its window too (#574): the earliest live Buy's month..maturity
+-- month, with no lower bound while it has no Buy. The
 -- coupon_disposition of a bond drives only the entry list's per-row accrued
 -- default (empty vs 0), so it is joined in for the list; time deposits have no
 -- bond_details row and default to 0.
@@ -206,6 +208,7 @@ ORDER BY investment_id, year_month DESC;
 SELECT i.id
 FROM investments i
 LEFT JOIN time_deposit_details td ON td.investment_id = i.id
+LEFT JOIN bond_details bd ON bd.investment_id = i.id
 WHERE i.household_id = sqlc.arg('household_id')::uuid
   AND i.deleted_at IS NULL
   AND i.subtype IN ('bond', 'time_deposit')
@@ -214,6 +217,17 @@ WHERE i.household_id = sqlc.arg('household_id')::uuid
     i.subtype <> 'time_deposit'
     OR (date_trunc('month', td.placement_date)::date <= sqlc.arg('year_month')::date
         AND date_trunc('month', td.maturity_date)::date >= sqlc.arg('year_month')::date)
+  )
+  AND (
+    i.subtype <> 'bond'
+    OR (date_trunc('month', bd.maturity_date)::date >= sqlc.arg('year_month')::date
+        AND COALESCE(
+          (SELECT date_trunc('month', min(t.transaction_date))::date
+             FROM investment_transactions t
+            WHERE t.investment_id = i.id
+              AND t.transaction_type = 'buy'
+              AND t.deleted_at IS NULL),
+          sqlc.arg('year_month')::date) <= sqlc.arg('year_month')::date)
   );
 
 -- ListEligibleAccruedInvestmentsForMonth is the ID query plus the display fields
@@ -223,8 +237,8 @@ WHERE i.household_id = sqlc.arg('household_id')::uuid
 -- A time deposit has no bond_details row, so coupon_disposition is NULL — the
 -- repo treats NULL as pays_out. A time deposit's principal rides along (NULL for
 -- a bond) so the entry row can show "of which interest" live (#844). Time
--- deposits are also confined to their term
--- window (same predicate as the ID query). Ordered by subtype then name so rows
+-- deposits and bonds are also confined to their term
+-- window (same predicates as the ID query). Ordered by subtype then name so rows
 -- arrive pre-grouped.
 -- name: ListEligibleAccruedInvestmentsForMonth :many
 SELECT i.id, i.display_name, i.native_currency, i.subtype, i.ownership_type,
@@ -240,6 +254,17 @@ WHERE i.household_id = sqlc.arg('household_id')::uuid
     i.subtype <> 'time_deposit'
     OR (date_trunc('month', td.placement_date)::date <= sqlc.arg('year_month')::date
         AND date_trunc('month', td.maturity_date)::date >= sqlc.arg('year_month')::date)
+  )
+  AND (
+    i.subtype <> 'bond'
+    OR (date_trunc('month', bd.maturity_date)::date >= sqlc.arg('year_month')::date
+        AND COALESCE(
+          (SELECT date_trunc('month', min(t.transaction_date))::date
+             FROM investment_transactions t
+            WHERE t.investment_id = i.id
+              AND t.transaction_type = 'buy'
+              AND t.deleted_at IS NULL),
+          sqlc.arg('year_month')::date) <= sqlc.arg('year_month')::date)
   )
 ORDER BY i.subtype, i.display_name;
 

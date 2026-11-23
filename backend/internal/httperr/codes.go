@@ -167,6 +167,15 @@ const (
 	// window (issue #62).
 	CodeOutsideDepositTerm Code = "OUTSIDE_DEPOSIT_TERM"
 
+	// CodeInvalidBondTerm maps repo.ErrInvalidBondTerm -> 400 — a bond whose
+	// maturity_date is not strictly after its earliest Buy (#574).
+	CodeInvalidBondTerm Code = "INVALID_BOND_TERM"
+
+	// CodeOutsideBondTerm maps repo.ErrOutsideBondTerm -> 400 — a bond snapshot or
+	// transaction, or an edit/delete of the earliest Buy or of the maturity, that
+	// falls outside the bond's [earliest Buy, maturity_date] window (#574).
+	CodeOutsideBondTerm Code = "OUTSIDE_BOND_TERM"
+
 	// CodeUnauthorized is the 401 emitted by the session middleware when the
 	// request has no valid session cookie. Distinct from the repo's
 	// unreachable ErrUnauthenticated — this one is the real, client-facing

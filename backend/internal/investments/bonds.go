@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 
+	"github.com/kerti/balances-v2/backend/internal/dateguard"
 	"github.com/kerti/balances-v2/backend/internal/httperr"
 	"github.com/kerti/balances-v2/backend/internal/repo"
 )
@@ -87,6 +88,12 @@ func (h *Handlers) handleCreateBond(w http.ResponseWriter, r *http.Request) {
 		p, err := time.Parse("2006-01-02", req.PlacementDate)
 		if err != nil {
 			writeInvalidDate(w, "placement_date")
+			return
+		}
+		// The placement seeds a real Buy, so it is held to the same not-future rule
+		// as any other transaction date (#574, INV-SNAPSHOTS-05).
+		if dateguard.IsFuture(p, h.now()) {
+			httperr.Write(w, http.StatusBadRequest, httperr.CodeTransactionFutureDate, nil)
 			return
 		}
 		placement = &p

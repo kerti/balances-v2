@@ -30,6 +30,8 @@
     "INVALID_ROLLOVER_LINK": "Deposito itu tidak bisa ditautkan sebagai rollover — deposito yang sama, sudah tertaut, atau akan membentuk lingkaran.",
     "INVALID_DEPOSIT_TERM": "Tanggal jatuh tempo harus setelah tanggal penempatan.",
     "OUTSIDE_DEPOSIT_TERM": "Snapshot dan jatuh tempo harus berada di antara tanggal penempatan dan jatuh tempo.",
+    "INVALID_BOND_TERM": "Tanggal jatuh tempo harus setelah tanggal penempatan (Beli pertama obligasi).",
+    "OUTSIDE_BOND_TERM": "Snapshot, transaksi, dan jatuh tempo harus berada di antara Beli pertama dan tanggal jatuh tempo obligasi.",
     "INVALID_RATE": "Kurs harus lebih besar dari nol.",
     "INVALID_IMPORT_MODE": "Mode impor harus preview atau commit.",
     "INVALID_FILE_UPLOAD": "Berkas unggahan tidak ada atau terlalu besar.",

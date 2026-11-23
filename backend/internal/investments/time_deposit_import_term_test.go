@@ -60,8 +60,8 @@ func TestImportTemplate_AccruedColumnMatchesBehaviour(t *testing.T) {
 // Workbook snapshot import into an existing time deposit is confined to the
 // deposit's term like every other snapshot write (#911, issue #62): a row
 // outside placement..maturity is a 400 OUTSIDE_DEPOSIT_TERM in the preview and
-// the commit alike, and the all-or-nothing batch writes nothing. Bonds have no
-// term and are unaffected.
+// the commit alike, and the all-or-nothing batch writes nothing. A bond is held
+// to its own window (earliest Buy..maturity, #574), under its own error code.
 //
 // covers: INV-BONDS-03
 func TestTimeDepositImport_ConfinedToTerm(t *testing.T) {
@@ -111,11 +111,24 @@ func TestTimeDepositImport_ConfinedToTerm(t *testing.T) {
 		}
 	})
 
-	t.Run("a bond has no term", func(t *testing.T) {
+	// createBond places 2025-01-15 and matures 2030-01-01. Until #574 a bond had no
+	// window and a 2019 row imported; now it is the bond's own window that refuses
+	// it (OUTSIDE_BOND_TERM, not the deposit's code) while an in-window row imports.
+	t.Run("a bond is held to its own window, not the deposit one", func(t *testing.T) {
 		h := newHarness(t)
 		bond := h.createBond(t, "Term import bond")
-		h.commitImport(t, bond.Investment.ID, [][]string{
+		rec := h.doUpload(t, tdImportURL(bond.Investment.ID, "commit"), buildImportXLSX(t, [][]string{
 			accruedHeader, {"2019-05", "", "10500000", "1", "IDR", ""},
+		}))
+		requireStatus(t, rec, http.StatusBadRequest)
+		if !strings.Contains(rec.Body.String(), "OUTSIDE_BOND_TERM") {
+			t.Errorf("want code OUTSIDE_BOND_TERM, got body %q", rec.Body.String())
+		}
+		if n := h.rawInvSnapshotCount(t, bond.Investment.ID); n != 0 {
+			t.Errorf("a refused import must leave nothing behind, got %d rows", n)
+		}
+		h.commitImport(t, bond.Investment.ID, [][]string{
+			accruedHeader, {"2025-06", "", "10500000", "1", "IDR", ""},
 		})
 	})
 

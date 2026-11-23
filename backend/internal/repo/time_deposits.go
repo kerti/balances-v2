@@ -97,14 +97,21 @@ type UpdateTimeDepositParams struct {
 	Tag TagChange
 }
 
-// termBounds is a time deposit's [placement_date, maturity_date] window — the
-// span its principal is locked for. Every snapshot and transaction of the
-// deposit must fall inside it (issue #62). The zero value is "unbounded" and
-// makes every check a no-op, so the shared snapshot/transaction paths can call
-// the checks unconditionally and have them apply only to time deposits.
+// termBounds is a position's term window. For a time deposit it is
+// [placement_date, maturity_date] — the span its principal is locked for; for a
+// bond it is [earliest live Buy, maturity_date] (#574), where a bond with no Buy
+// yet has a zero placement and so no lower bound. Every snapshot and
+// transaction of the position must fall inside it (issue #62). The zero value
+// is "unbounded" and makes every check a no-op, so the shared snapshot/
+// transaction paths can call the checks unconditionally and have them apply
+// only to time deposits and bonds.
 type termBounds struct {
 	placement time.Time
 	maturity  time.Time
+	// bond marks a bond's window: the checks answer ErrOutsideBondTerm instead of
+	// ErrOutsideDepositTerm, and none of the time-deposit value derivation (a
+	// deposit's accrued_interest = Value − principal) applies.
+	bond bool
 	// principal is the deposit's principal in force (#844). A time deposit has
 	// one principal for its whole term — a rollover creates a successor row whose
 	// principal is the rolled amount (ADR-0009) — so time_deposit_details.principal
@@ -114,10 +121,32 @@ type termBounds struct {
 
 func (b termBounds) unbounded() bool { return b.placement.IsZero() && b.maturity.IsZero() }
 
+// derivesAccrued reports whether the position is a time deposit, whose snapshots
+// store accrued_interest = Value − principal (#844); a bond's window is not that.
+func (b termBounds) derivesAccrued() bool { return !b.unbounded() && !b.bond }
+
+// outside builds the typed rejection for this window's position kind.
+func (b termBounds) outside(format string, args ...any) error {
+	sentinel := ErrOutsideDepositTerm
+	if b.bond {
+		sentinel = ErrOutsideBondTerm
+	}
+	return fmt.Errorf("%w: "+format, append([]any{sentinel}, args...)...)
+}
+
+// window renders the window's ends for an error message; a bond with no Buy has
+// no start.
+func (b termBounds) window(layout string) string {
+	start := "(no Buy)"
+	if !b.placement.IsZero() {
+		start = b.placement.Format(layout)
+	}
+	return start + ".." + b.maturity.Format(layout)
+}
+
 // timeDepositBounds loads the term window for a time deposit. Any other subtype
-// has no such window, so it returns unbounded bounds — the confinement is
-// TimeDeposit-only (Bonds carry a maturity but no placement and are out of
-// scope for #62).
+// returns unbounded bounds; bonds have their own window, derived from the ledger
+// (bondBounds, #574) — positionBounds picks between them.
 func timeDepositBounds(ctx context.Context, q *db.Queries, inv db.Investment) (termBounds, error) {
 	if inv.Subtype != "time_deposit" {
 		return termBounds{}, nil
@@ -135,7 +164,7 @@ func timeDepositBounds(ctx context.Context, q *db.Queries, inv db.Investment) (t
 // accrued_interest the client sent (#844); every other subtype stores what the
 // client supplied.
 func (b termBounds) accruedForSnapshot(amount decimal.Decimal, supplied *decimal.Decimal) *decimal.Decimal {
-	if b.unbounded() {
+	if !b.derivesAccrued() {
 		return supplied
 	}
 	derived := amount.Sub(b.principal)
@@ -149,7 +178,7 @@ func (b termBounds) accruedForSnapshot(amount decimal.Decimal, supplied *decimal
 // re-import must hand it back untouched). A zero Value at a terminated deposit's
 // termination month is recognised the way isCloseRow does everywhere else.
 func (b termBounds) accruedForImportedSnapshot(terminatedAt *time.Time, month time.Time, amount decimal.Decimal, supplied *decimal.Decimal) *decimal.Decimal {
-	if !b.unbounded() && isCloseRow(terminatedAt, month, amount) {
+	if b.derivesAccrued() && isCloseRow(terminatedAt, month, amount) {
 		zero := decimal.Zero
 		return &zero
 	}
@@ -164,10 +193,8 @@ func (b termBounds) checkSnapshotMonth(yearMonth time.Time) error {
 		return nil
 	}
 	ym := monthStart(yearMonth)
-	if ym.Before(monthStart(b.placement)) || ym.After(monthStart(b.maturity)) {
-		return fmt.Errorf("%w: snapshot month %s is outside %s..%s",
-			ErrOutsideDepositTerm, yearMonth.Format("2006-01"),
-			b.placement.Format("2006-01"), b.maturity.Format("2006-01"))
+	if (!b.placement.IsZero() && ym.Before(monthStart(b.placement))) || ym.After(monthStart(b.maturity)) {
+		return b.outside("snapshot month %s is outside %s", yearMonth.Format("2006-01"), b.window("2006-01"))
 	}
 	return nil
 }
@@ -180,10 +207,8 @@ func (b termBounds) checkTransactionDate(date time.Time) error {
 		return nil
 	}
 	d := dayStart(date)
-	if d.Before(dayStart(b.placement)) || d.After(dayStart(b.maturity)) {
-		return fmt.Errorf("%w: transaction date %s is outside %s..%s",
-			ErrOutsideDepositTerm, date.Format("2006-01-02"),
-			b.placement.Format("2006-01-02"), b.maturity.Format("2006-01-02"))
+	if (!b.placement.IsZero() && d.Before(dayStart(b.placement))) || d.After(dayStart(b.maturity)) {
+		return b.outside("transaction date %s is outside %s", date.Format("2006-01-02"), b.window("2006-01-02"))
 	}
 	return nil
 }

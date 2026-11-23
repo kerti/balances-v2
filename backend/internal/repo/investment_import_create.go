@@ -217,8 +217,20 @@ func (r *InvestmentRepo) CreateGoldWithSnapshotsAndLedger(ctx context.Context, p
 // re-seeding it here would double the cost basis.
 func (r *InvestmentRepo) CreateBondWithSnapshotsAndLedger(ctx context.Context, p CreateBondParams, tagID *uuid.UUID, snaps []ImportInvestmentSnapshotRow, ledger []ImportTransactionRow) (*Bond, error) {
 	p.CouponDisposition = defaultCouponDisposition(p.CouponDisposition)
+	// The same window as the manual paths (#574): [earliest seeded Buy, maturity],
+	// no lower bound when the file carries no Buy. Refused up front when the
+	// maturity is not after that Buy; seedSnapshots/seedLedger hold every row to it.
+	bounds := termBounds{maturity: p.MaturityDate, bond: true}
+	for _, row := range ledger {
+		if row.TransactionType == TxnTypeBuy && (bounds.placement.IsZero() || row.TransactionDate.Before(bounds.placement)) {
+			bounds.placement = row.TransactionDate
+		}
+	}
+	if err := bounds.checkBondOrder(); err != nil {
+		return nil, err
+	}
 	var out *Bond
-	err := r.createInvestmentWithHistory(ctx, "bond", tagID, snaps, ledger, termBounds{}, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
+	err := r.createInvestmentWithHistory(ctx, "bond", tagID, snaps, ledger, bounds, func(ctx context.Context, qtx *db.Queries, user, hid uuid.UUID) (db.Investment, error) {
 		inv, err := qtx.CreateInvestment(ctx, db.CreateInvestmentParams{
 			HouseholdID:     hid,
 			DisplayName:     p.DisplayName,

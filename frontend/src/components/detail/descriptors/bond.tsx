@@ -16,6 +16,7 @@ import { CreateCashIncomeTransactionDialog } from "@/components/dialogs/CreateCa
 import { CreateFeeTransactionDialog } from "@/components/dialogs/CreateFeeTransactionDialog";
 import { CreateMaturityTransactionDialog } from "@/components/dialogs/CreateMaturityTransactionDialog";
 import { EditBondDialog } from "@/components/dialogs/EditBondDialog";
+import { earliestBuyDate } from "@/lib/bondTerm";
 import { useBond, useDeleteBond } from "@/hooks/useInvestments";
 import {
   useInvestmentSnapshots,
@@ -340,6 +341,7 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
             />
             <CreateMaturityTransactionDialog
               currency={currency}
+              placementDate={earliestBuyDate(allTxns)}
               maturityDate={entity.details.maturity_date?.slice(0, 10)}
               mutation={ctx.createTransactionMutation}
             />

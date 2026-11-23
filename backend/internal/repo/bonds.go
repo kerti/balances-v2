@@ -116,6 +116,15 @@ func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*B
 	}
 	p.CouponDisposition = defaultCouponDisposition(p.CouponDisposition)
 
+	// The term opens at the placement Buy this create seeds, so maturity must fall
+	// strictly after it (#574). A secondary_market bond seeds no Buy and has no
+	// term start yet.
+	seedsPlacement := p.BondType == "govt_primary" && p.FaceValue != nil && p.PlacementDate != nil
+	if seedsPlacement && !dayStart(p.MaturityDate).After(dayStart(*p.PlacementDate)) {
+		return nil, fmt.Errorf("%w: maturity %s is not after placement %s",
+			ErrInvalidBondTerm, p.MaturityDate.Format("2006-01-02"), p.PlacementDate.Format("2006-01-02"))
+	}
+
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("begin tx: %w", err)
@@ -160,7 +169,7 @@ func (r *InvestmentRepo) CreateBond(ctx context.Context, p CreateBondParams) (*B
 	// qty = nominal / 1,000,000, price_per_unit = 1,000,000, amount = nominal.
 	// secondary_market bonds are not seeded — the user records the real Buy.
 	outstandingFace := decimal.Zero
-	if p.BondType == "govt_primary" && p.FaceValue != nil && p.PlacementDate != nil {
+	if seedsPlacement {
 		qty := p.FaceValue.Div(bondFaceUnit)
 		amount := *p.FaceValue
 		price := bondFaceUnit
@@ -328,6 +337,17 @@ func (r *InvestmentRepo) UpdateBond(ctx context.Context, id uuid.UUID, p UpdateB
 		return nil, ErrNotFound
 	}
 
+	// A maturity edit moves the window's far end: it must stay after the earliest
+	// Buy and leave every snapshot and transaction inside it (#574). Checked
+	// against the new maturity before the write so the whole update rolls back.
+	ledger, err := bondLedger(ctx, qtx, inv.ID, hid)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkBondHistory(ctx, qtx, inv.ID, hid, p.MaturityDate, ledger); err != nil {
+		return nil, err
+	}
+
 	details, err := qtx.UpdateBondDetails(ctx, db.UpdateBondDetailsParams{
 		InvestmentID:      inv.ID,
 		BondType:          p.BondType,
@@ -340,11 +360,6 @@ func (r *InvestmentRepo) UpdateBond(ctx context.Context, id uuid.UUID, p UpdateB
 	})
 	if err != nil {
 		return nil, fmt.Errorf("update bond_details: %w", err)
-	}
-
-	ledger, err := qtx.ListInvestmentTransactionsByInvestmentIDs(ctx, []uuid.UUID{inv.ID})
-	if err != nil {
-		return nil, fmt.Errorf("list bond transactions: %w", err)
 	}
 
 	tagID, err := applyTagChange(ctx, qtx, hid, user, TagGroupInvestment, inv.ID, p.Tag, inv.TagID)
@@ -365,4 +380,125 @@ func (r *InvestmentRepo) DeleteBond(ctx context.Context, id uuid.UUID) error {
 		return err
 	}
 	return r.softDeleteInvestment(ctx, id)
+}
+
+// ---- Term window (#574) ----------------------------------------------------
+//
+// A bond has no placement column: its term opens at the date of its EARLIEST
+// live Buy and closes at bond_details.maturity_date, both ends inclusive. A
+// bond with no Buy (a secondary_market bond before its first purchase, or one
+// whose only Buy was archived) has no lower bound, so only the maturity upper
+// bound applies to it. The window is derived from the ledger on every check —
+// never stored — so it cannot drift from the Buy it follows. Snapshots are held
+// to it at month granularity, transactions to the day, exactly like a time
+// deposit's term (INV-BONDS-03).
+
+// positionBounds returns the term window the position's snapshots and
+// transactions must lie in: a time deposit's stored placement..maturity, a
+// bond's ledger-derived earliest-Buy..maturity, or unbounded for every other
+// subtype.
+func positionBounds(ctx context.Context, q *db.Queries, inv db.Investment) (termBounds, error) {
+	if inv.Subtype == "bond" {
+		return bondBounds(ctx, q, inv)
+	}
+	return timeDepositBounds(ctx, q, inv)
+}
+
+// bondBounds loads a bond's current window: its maturity and live ledger.
+func bondBounds(ctx context.Context, q *db.Queries, inv db.Investment) (termBounds, error) {
+	d, err := q.GetBondDetailsByInvestmentID(ctx, inv.ID)
+	if err != nil {
+		return termBounds{}, fmt.Errorf("load bond bounds: %w", err)
+	}
+	ledger, err := q.ListInvestmentTransactionsForInvestment(ctx, db.ListInvestmentTransactionsForInvestmentParams{
+		InvestmentID: inv.ID,
+		HouseholdID:  inv.HouseholdID,
+	})
+	if err != nil {
+		return termBounds{}, fmt.Errorf("load bond ledger: %w", err)
+	}
+	return bondBoundsFromLedger(d.MaturityDate, ledger), nil
+}
+
+// bondBoundsFromLedger is the window for the given maturity and ledger: it opens
+// at the earliest Buy (zero when there is none).
+func bondBoundsFromLedger(maturity time.Time, ledger []db.InvestmentTransaction) termBounds {
+	b := termBounds{maturity: maturity, bond: true}
+	for _, t := range ledger {
+		if t.TransactionType != TxnTypeBuy {
+			continue
+		}
+		if b.placement.IsZero() || t.TransactionDate.Before(b.placement) {
+			b.placement = t.TransactionDate
+		}
+	}
+	return b
+}
+
+// checkBondOrder refuses an empty or inverted term: with a Buy on record, maturity
+// must fall strictly after the earliest one.
+func (b termBounds) checkBondOrder() error {
+	if b.bond && !b.placement.IsZero() && !dayStart(b.maturity).After(dayStart(b.placement)) {
+		return fmt.Errorf("%w: maturity %s is not after the earliest Buy %s",
+			ErrInvalidBondTerm, b.maturity.Format("2006-01-02"), b.placement.Format("2006-01-02"))
+	}
+	return nil
+}
+
+// checkBondHistory asserts that a bond, as it WOULD stand with the given
+// maturity and ledger (the caller's proposed state: a Buy added, moved or
+// removed, or a new maturity), is a valid term and still holds every live
+// snapshot and transaction: the window is non-empty, every ledger row lies
+// inside it, and so does every live snapshot month. Used by every edit that can
+// move either end of the window, so none can strand history outside it.
+func checkBondHistory(ctx context.Context, q *db.Queries, invID, hid uuid.UUID, maturity time.Time, ledger []db.InvestmentTransaction) error {
+	b := bondBoundsFromLedger(maturity, ledger)
+	if err := b.checkBondOrder(); err != nil {
+		return err
+	}
+	for _, t := range ledger {
+		if err := b.checkTransactionDate(t.TransactionDate); err != nil {
+			return err
+		}
+	}
+	snaps, err := q.ListInvestmentSnapshotsForInvestment(ctx, db.ListInvestmentSnapshotsForInvestmentParams{
+		InvestmentID: invID,
+		HouseholdID:  hid,
+	})
+	if err != nil {
+		return fmt.Errorf("list snapshots for bond term check: %w", err)
+	}
+	for _, s := range snaps {
+		if err := b.checkSnapshotMonth(s.YearMonth); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// bondLedger is the live ledger of a bond, household-scoped in SQL.
+func bondLedger(ctx context.Context, q *db.Queries, invID, hid uuid.UUID) ([]db.InvestmentTransaction, error) {
+	ledger, err := q.ListInvestmentTransactionsForInvestment(ctx, db.ListInvestmentTransactionsForInvestmentParams{
+		InvestmentID: invID,
+		HouseholdID:  hid,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list bond ledger: %w", err)
+	}
+	return ledger, nil
+}
+
+// checkBondLedgerEdit validates a proposed Buy/ledger change on a bond against
+// its current maturity: mutate receives a copy of the live ledger and returns
+// the ledger as it would stand afterwards.
+func checkBondLedgerEdit(ctx context.Context, q *db.Queries, inv db.Investment, mutate func([]db.InvestmentTransaction) []db.InvestmentTransaction) error {
+	d, err := q.GetBondDetailsByInvestmentID(ctx, inv.ID)
+	if err != nil {
+		return fmt.Errorf("load bond maturity: %w", err)
+	}
+	ledger, err := bondLedger(ctx, q, inv.ID, inv.HouseholdID)
+	if err != nil {
+		return err
+	}
+	return checkBondHistory(ctx, q, inv.ID, inv.HouseholdID, d.MaturityDate, mutate(ledger))
 }

@@ -72,7 +72,7 @@ func (r *InvestmentRepo) CreateInvestmentSnapshot(ctx context.Context, p CreateI
 	}
 	// A time deposit's snapshots are confined to its term window (issue #62);
 	// other subtypes are unbounded, so this is a no-op for them.
-	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	bounds, err := positionBounds(ctx, r.q, inv)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (r *InvestmentRepo) UpdateInvestmentSnapshot(ctx context.Context, p UpdateI
 	// year_month is immutable on update, so this can only fire on a row that
 	// already sits outside the term (e.g. legacy data) — we decline to bless it
 	// rather than silently re-save it (issue #62). No-op for non-time-deposits.
-	bounds, err := timeDepositBounds(ctx, r.q, inv)
+	bounds, err := positionBounds(ctx, r.q, inv)
 	if err != nil {
 		return nil, err
 	}
