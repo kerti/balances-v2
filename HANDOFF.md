@@ -31,9 +31,9 @@ Read these first, in order:
 
 **M1–M7 closed; M8 (next domain features) is the active milestone**, opened 2026-07-06. CI is green.
 
-- **Latest release:** `v0.9.0-alpha.12` — on `preview`; promote to `demo` by hand when wanted
+- **Latest release:** `v0.9.0-alpha.13` — on `preview`; promote to `demo` by hand when wanted
   (ADR-0049; promotion is a deliberate act, not a follow-on).
-- **Unreleased on `main`:** `git log v0.9.0-alpha.12..main` — the merged PRs and their closed issues
+- **Unreleased on `main`:** `git log v0.9.0-alpha.13..main` — the merged PRs and their closed issues
   are the record. Highlights carry into the next tag's release notes, not into this file.
 - **Deployment shape:** single-origin — one Fly app per environment (region `sin`) serves the SPA +
   `/api`; Neon Postgres (per-env branch), Resend mail, Google + optional local OAuth. Custom domain
@@ -54,9 +54,6 @@ next item off the backlog — they pause between items to direct.
 **Both demo UI/UX audits are built.** The 2026-11-04 audit (#779–#853) shipped through alpha.10; the
 2026-11-16 audit shipped in alpha.12 (through #994). Still open: #936 (one monthly check-in flow;
 needs a grill and an ADR, with #371/#373 folded in), and #608/#954 (backlogged for a finance grill).
-
-`social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload under repo
-**Settings → Social preview**.
 
 Standing carry-forwards:
 
