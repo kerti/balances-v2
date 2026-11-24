@@ -171,6 +171,25 @@ kept strictly inside slots the core never inspects:**
 The slot inventory below gains `renderBeforeDetails?` / `renderAfterDetails?`; the boundary is
 unchanged, only widened — both remain nodes the core renders but never reads.
 
+### Amendment (2026-11-24): one field order on every investment card, and an income row (#994)
+
+The details card's one grid now reads the same on every investment type: **Total value, Total cost,
+Gain / loss, the income received (where the type earns one), the type's own facts, Ownership.** The
+order is set in one place: `PositionDetailScreen` puts `headlineFields` (built by the shared
+`investmentHeadlineFields`) ahead of `infoFields`, then the ownership row. The builder's `extraFields`
+input is gone; a bond's coupon and disposition and a time deposit's period and at-maturity policy are
+ordinary `infoFields` of their descriptor, so they follow the money summary without a second ordering
+rule. Amount-only types have no `headlineFields` and are unchanged.
+
+The income row reuses `lib/ledgerTotals` (the ledger toolbar's totals), never a second computation:
+Coupons earned (bond; "earned", not "received", because an accruing bond keeps them), Dividends
+received (stock), Distributions received (mutual fund), Interest received (time deposit, the Maturity
+transactions' interest, shown only once the deposit has matured, since it would read 0 for the whole
+term). Gold has no row. An empty ledger reads 0 in the position's currency; several currencies render one figure each, as the toolbar does. Gain / loss
+keeps its price-only meaning and label (value minus cost), and its tooltip now says it leaves out the
+income shown beside it. The card still feeds no report, so nothing double-counts against
+`investment_return_*`. Guarded by INV-PRESENTATION-38.
+
 ### Scope fence
 
 - **In:** the `*Detail` family and the shell/primitives above.

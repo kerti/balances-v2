@@ -144,14 +144,15 @@ function PositionDetailBody<TEntity, TCtx, TSnap extends SnapshotShape>({
   const headerBadge = descriptor.renderHeaderBadge?.(entity, ctx, t);
   const identity = descriptor.identityCluster?.(entity, ctx, t);
   // The details card is one identity line plus one labelled grid (#839): the
-  // type's own fields, then the investment money summary, then the shared
-  // ownership row. Currency + status ride the card title instead, to save the
-  // vertical space extra rows would cost.
+  // investment money summary first (value, cost, gain / loss, income received;
+  // #994), then the type's own facts, then the shared ownership row. Currency +
+  // status ride the card title instead, to save the vertical space extra rows
+  // would cost.
   const headlineFields = descriptor.headlineFields?.(entity, ctx, snapshots, t);
   const metaFields: InfoField[] = [{ label: t("common:fields.ownership"), value: ownerLabel }];
   const gridFields = [
-    ...descriptor.infoFields(entity, ctx, t),
     ...(headlineFields ?? []),
+    ...descriptor.infoFields(entity, ctx, t),
     ...metaFields,
   ];
   const beforeDetails = descriptor.renderBeforeDetails?.(entity, ctx, t);

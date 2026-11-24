@@ -159,6 +159,14 @@ function stubEndpoints() {
   );
 }
 
+function expectOrder(card: HTMLElement, expected: string[]) {
+  const labels = within(card)
+    .getAllByRole("term")
+    .map((el) => el.textContent ?? "");
+  expect(labels).toHaveLength(expected.length);
+  expected.forEach((label, i) => expect(labels[i]).toContain(label));
+}
+
 // covers: INV-PRESENTATION-21
 describe("goldDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
@@ -219,5 +227,17 @@ describe("goldDescriptor detail (conformance)", () => {
       "href",
       expect.stringContaining("/i1/"),
     );
+  });
+
+  // covers: INV-PRESENTATION-38
+  it("gold card: one field order, no income row", async () => {
+    stubEndpoints();
+    renderWithProviders(
+      <PositionDetailScreen descriptor={goldDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
+    );
+    const card = await screen.findByTestId("tour-details");
+    expectOrder(card, ["Total value", "Total cost", "Gain / loss", "Ownership"]);
+    expect(within(card).queryByTestId("investment-headline-income")).not.toBeInTheDocument();
   });
 });

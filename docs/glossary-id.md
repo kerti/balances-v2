@@ -97,6 +97,7 @@ the choice is non-obvious.
 | Owed | Terutang | Liability and receivable totals and charts (#832). The Snapshots value column says Saldo for bank accounts, liabilities and receivables, Nilai for property and vehicles. |
 | Where coupons go | Tujuan kupon | Options "Dibayar ke rekening saya" / "Disimpan di dalam obligasi" (#832). _Avoid_: Disposisi. |
 | What happened to the principal / interest | Yang terjadi pada pokok / bunga | Maturity dialog (#832). _Avoid_: Disposisi. |
+| Coupons earned; Dividends / Distributions / Interest received (investment card income row) | Kupon diperoleh; Dividen / Distribusi / Bunga diterima | The income row under Gain / loss (#994). Gain / loss ("Untung / rugi") leaves these out. |
 | Bought from | Dibeli dari | Bond type (#832): "Pemerintah (penerbitan baru)" / "Investor lain (pasar)". _Avoid_: primer / sekunder. |
 | Item | Item | Fallback noun when a sentence cannot name the subtype (#832). _Avoid_: Posisi. |
 | Fee | Biaya | Transaction fee. Distinct from Modal (cost basis) by context. |

@@ -133,6 +133,14 @@ function renderTD(ui: ReactElement) {
   );
 }
 
+function expectOrder(card: HTMLElement, expected: string[]) {
+  const labels = within(card)
+    .getAllByRole("term")
+    .map((el) => el.textContent ?? "");
+  expect(labels).toHaveLength(expected.length);
+  expected.forEach((label, i) => expect(labels[i]).toContain(label));
+}
+
 // covers: INV-PRESENTATION-21
 describe("timeDepositDescriptor detail (conformance)", () => {
   it("renders every shared region through the generic shell (no rollover)", async () => {
@@ -321,5 +329,38 @@ describe("timeDepositDescriptor detail (conformance)", () => {
     await vi.waitFor(() => expect(posted).not.toBeNull());
     // The server derives accrued_interest; the client sends none.
     expect(posted).toMatchObject({ amount: "19900", currency: "USD", accrued_interest: null });
+  });
+
+  // covers: INV-PRESENTATION-38
+  it("time deposit card: one field order, no interest row until it matures", async () => {
+    server.use(
+      http.get("/api/investments/time-deposits/i1", () =>
+        HttpResponse.json({
+          investment: baseInvestment,
+          details,
+          rolled_from: null,
+          rolled_to: null,
+        }),
+      ),
+      http.get("/api/investments/i1/snapshots", () => HttpResponse.json(snapshots)),
+      http.get("/api/investments/i1/transactions", () => HttpResponse.json([])),
+      http.get("/api/household/members", () => HttpResponse.json([owner])),
+      http.get("/api/me", () => HttpResponse.json(me)),
+    );
+    renderTD(
+      <PositionDetailScreen descriptor={timeDepositDescriptor} assetId="i1" onBack={vi.fn()} />,
+    );
+    const card = await screen.findByTestId("tour-details");
+    expectOrder(card, [
+      "Total value",
+      "Total cost",
+      "Gain / loss",
+      "Interest rate",
+      "Term",
+      "Period",
+      "At maturity",
+      "Ownership",
+    ]);
+    expect(within(card).queryByTestId("investment-headline-income")).toBeNull();
   });
 });

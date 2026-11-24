@@ -154,8 +154,8 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
 
   // Series code + type + issuer as a tight, label-less cluster at the top of the
   // details card's left column (ADR-0051 Phase B) — the identity moved off the
-  // H1 subtitle. Face value + maturity stay as labelled left-column fields;
-  // coupon + disposition move to the middle column (see headlineFields).
+  // H1 subtitle. The labelled type facts (face value, maturity, coupon,
+  // disposition) follow the shared money summary (#994).
   identityCluster: (entity, _ctx, t) => {
     const bondTypeLabel = t(
       entity.details.bond_type === "govt_primary"
@@ -168,6 +168,8 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
   },
   infoFields: (entity, _ctx, t) => {
     const { investment, details } = entity;
+    const couponPct = Number(details.coupon_rate).toFixed(2);
+    const frequencyLabel = t(`investments:bond.couponFrequency.${details.coupon_frequency}`);
     const fields: InfoField[] = [
       {
         label: t("investments:bond.faceValueLabel"),
@@ -177,35 +179,32 @@ export const bondDescriptor: DetailDescriptor<Bond, BondCtx, InvestmentSnapshot>
         label: t("investments:bond.maturityLabel"),
         value: <span>{formatDate(details.maturity_date)}</span>,
       },
+      {
+        label: t("investments:bond.couponLabel"),
+        value: t("investments:bond.couponValue", {
+          rate: couponPct,
+          frequency: frequencyLabel,
+        }),
+      },
+      {
+        label: t("investments:bond.fields.couponDisposition"),
+        value: t(`investments:bond.couponDisposition.${details.coupon_disposition}`),
+      },
     ];
     return fields;
   },
 
   headlineFields: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
-    const { details } = entity;
-    const couponPct = Number(details.coupon_rate).toFixed(2);
-    const frequencyLabel = t(`investments:bond.couponFrequency.${details.coupon_frequency}`);
     return investmentHeadlineFields(
       {
         currency: entity.investment.native_currency,
-        extraFields: [
-          {
-            label: t("investments:bond.couponLabel"),
-            value: t("investments:bond.couponValue", {
-              rate: couponPct,
-              frequency: frequencyLabel,
-            }),
-          },
-          {
-            label: t("investments:bond.fields.couponDisposition"),
-            value: t(`investments:bond.couponDisposition.${details.coupon_disposition}`),
-          },
-        ],
         latestValue: latest ? Number(latest.amount) : null,
         totalCost: computeCostBasis(ctx.transactions ?? []).cost,
         status: entity.investment.status,
         terminatedAt: entity.investment.terminated_at,
+        subtype: "bond",
+        transactions: ctx.transactions ?? [],
       },
       t,
     );

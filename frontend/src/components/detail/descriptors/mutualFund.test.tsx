@@ -159,6 +159,14 @@ function stubEndpoints() {
   );
 }
 
+function expectOrder(card: HTMLElement, expected: string[]) {
+  const labels = within(card)
+    .getAllByRole("term")
+    .map((el) => el.textContent ?? "");
+  expect(labels).toHaveLength(expected.length);
+  expected.forEach((label, i) => expect(labels[i]).toContain(label));
+}
+
 // covers: INV-PRESENTATION-21
 describe("mutualFundDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
@@ -220,5 +228,23 @@ describe("mutualFundDescriptor detail (conformance)", () => {
       "href",
       expect.stringContaining("/i1/"),
     );
+  });
+
+  // covers: INV-PRESENTATION-38
+  it("mutual fund card: one field order, distributions received row", async () => {
+    stubEndpoints();
+    renderWithProviders(
+      <PositionDetailScreen descriptor={mutualFundDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
+    );
+    const card = await screen.findByTestId("tour-details");
+    expectOrder(card, [
+      "Total value",
+      "Total cost",
+      "Gain / loss",
+      "Distributions received",
+      "Ownership",
+    ]);
+    expect(within(card).getByTestId("investment-headline-income")).toHaveTextContent(/120\.00/);
   });
 });

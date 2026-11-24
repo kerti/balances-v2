@@ -170,6 +170,8 @@ export const mutualFundDescriptor: DetailDescriptor<MutualFund, MutualFundCtx, I
           totalCost: computeCostBasis(ctx.transactions ?? []).cost,
           status: entity.investment.status,
           terminatedAt: entity.investment.terminated_at,
+          subtype: "mutual_fund",
+          transactions: ctx.transactions ?? [],
         },
         t,
       );
