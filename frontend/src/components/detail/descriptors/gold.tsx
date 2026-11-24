@@ -166,6 +166,8 @@ export const goldDescriptor: DetailDescriptor<Gold, GoldCtx, InvestmentSnapshot>
         totalCost: computeCostBasis(ctx.transactions ?? []).cost,
         status: entity.investment.status,
         terminatedAt: entity.investment.terminated_at,
+        subtype: "gold",
+        transactions: ctx.transactions ?? [],
       },
       t,
     );

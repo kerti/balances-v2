@@ -166,6 +166,8 @@ export const stockDescriptor: DetailDescriptor<Stock, StockCtx, InvestmentSnapsh
         totalCost: computeCostBasis(ctx.transactions ?? []).cost,
         status: entity.investment.status,
         terminatedAt: entity.investment.terminated_at,
+        subtype: "stock",
+        transactions: ctx.transactions ?? [],
       },
       t,
     );

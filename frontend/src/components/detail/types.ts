@@ -227,8 +227,9 @@ export type DetailDescriptor<TEntity, TCtx = void, TSnap extends SnapshotShape =
   renderBeforeDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   renderAfterDetails?: (entity: TEntity, ctx: TCtx, t: TFunction) => ReactNode;
   // Optional investment money summary (has-transactions axis); absent for
-  // amount-only. Label/value fields appended to the details card's one InfoGrid,
-  // between the type's own `infoFields` and the shared ownership row (#839).
+  // amount-only. Label/value fields placed at the top of the details card's one
+  // InfoGrid, ahead of the type's own `infoFields` and the shared ownership row
+  // (#839, #994: value, cost, gain / loss, income received).
   // Receives the snapshot stream (for latest value) alongside the ctx (for the
   // cost-basis inputs) and `t` — all computed as descriptor wiring, never in the
   // core.

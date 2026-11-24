@@ -222,6 +222,18 @@
     "unrealizedPL": "Untung / rugi",
     "unrealizedPLHint": "Di atas kertas: untung atau rugi Anda jika menjualnya dengan harga bulan ini.",
     "unrealizedPLEmpty": "—",
+    "unrealizedPLExcludes": {
+      "coupon": "Tidak termasuk kupon yang diperoleh, yang ditampilkan terpisah.",
+      "dividend": "Tidak termasuk dividen yang diterima, yang ditampilkan terpisah.",
+      "distribution": "Tidak termasuk distribusi yang diterima, yang ditampilkan terpisah.",
+      "maturityInterest": "Tidak termasuk bunga yang diterima, yang ditampilkan terpisah."
+    },
+    "income": {
+      "coupon": "Kupon diperoleh",
+      "dividend": "Dividen diterima",
+      "distribution": "Distribusi diterima",
+      "maturityInterest": "Bunga diterima"
+    },
     "totalValue": "Total nilai",
     "totalValueEmpty": "—",
     "closed": {

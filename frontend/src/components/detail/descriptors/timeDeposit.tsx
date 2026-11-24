@@ -168,11 +168,10 @@ export const timeDepositDescriptor: DetailDescriptor<
   // Bank name as the identity cluster at the top of the left column (ADR-0051
   // Phase B) — moved off the H1 subtitle.
   identityCluster: (entity) => <IdentityCluster lines={[entity.details.bank_name]} />,
-  // Left column: interest rate + term — short values that read fine in the narrow
-  // column. The date-range Period + at-maturity policy live in the wider middle
-  // column (see headlineFields) so they don't wrap onto two lines here.
+  // The term facts, after the shared money summary: rate, term, period, at-maturity.
   infoFields: (entity, _ctx, t) => {
     const { details } = entity;
+    const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${details.rollover_policy}`);
     const fields: InfoField[] = [
       {
         label: t("investments:timeDeposit.interestRateLabel"),
@@ -190,42 +189,38 @@ export const timeDepositDescriptor: DetailDescriptor<
           <span>{t("investments:timeDeposit.termValue", { months: details.term_months })}</span>
         ),
       },
+      {
+        label: t("investments:timeDeposit.periodLabel"),
+        value: (
+          <span>
+            {t("investments:timeDeposit.periodValue", {
+              start: formatDate(details.placement_date),
+              end: formatDate(details.maturity_date),
+            })}
+          </span>
+        ),
+      },
+      {
+        label: t("investments:timeDeposit.atMaturityLabel"),
+        value: rolloverLabel,
+      },
     ];
     return fields;
   },
 
-  // Middle column: risk + the money summary (cost = principal), plus the
-  // date-range Period and at-maturity policy threaded in as extraFields — the
-  // wider column fits the "1 Jan → 1 Jul 2026" range on one line. Principal is
-  // not repeated; it is the headline's Total cost.
-  headlineFields: (entity, _ctx, snapshots, t) => {
+  // The money summary (cost = principal; principal is not repeated as its own
+  // field) leads the card; the term facts in `infoFields` follow it (#994).
+  headlineFields: (entity, ctx, snapshots, t) => {
     const latest = snapshots && snapshots.length > 0 ? snapshots[0] : null;
-    const { details } = entity;
-    const rolloverLabel = t(`investments:timeDeposit.rolloverPolicy.${details.rollover_policy}`);
     return investmentHeadlineFields(
       {
         currency: entity.investment.native_currency,
-        extraFields: [
-          {
-            label: t("investments:timeDeposit.periodLabel"),
-            value: (
-              <span>
-                {t("investments:timeDeposit.periodValue", {
-                  start: formatDate(details.placement_date),
-                  end: formatDate(details.maturity_date),
-                })}
-              </span>
-            ),
-          },
-          {
-            label: t("investments:timeDeposit.atMaturityLabel"),
-            value: rolloverLabel,
-          },
-        ],
         latestValue: latest ? Number(latest.amount) : null,
         totalCost: Number(entity.details.principal),
         status: entity.investment.status,
         terminatedAt: entity.investment.terminated_at,
+        subtype: "time_deposit",
+        transactions: ctx.transactions ?? [],
       },
       t,
     );

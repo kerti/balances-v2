@@ -222,6 +222,18 @@
     "unrealizedPL": "Gain / loss",
     "unrealizedPLHint": "On paper: what you'd gain or lose if you sold at this month's price.",
     "unrealizedPLEmpty": "—",
+    "unrealizedPLExcludes": {
+      "coupon": "It leaves out coupons earned, which are shown separately.",
+      "dividend": "It leaves out dividends received, which are shown separately.",
+      "distribution": "It leaves out distributions received, which are shown separately.",
+      "maturityInterest": "It leaves out interest received, which is shown separately."
+    },
+    "income": {
+      "coupon": "Coupons earned",
+      "dividend": "Dividends received",
+      "distribution": "Distributions received",
+      "maturityInterest": "Interest received"
+    },
     "totalValue": "Total value",
     "totalValueEmpty": "—",
     "closed": {

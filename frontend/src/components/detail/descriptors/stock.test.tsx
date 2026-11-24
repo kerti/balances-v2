@@ -162,6 +162,14 @@ function stubEndpoints() {
   );
 }
 
+function expectOrder(card: HTMLElement, expected: string[]) {
+  const labels = within(card)
+    .getAllByRole("term")
+    .map((el) => el.textContent ?? "");
+  expect(labels).toHaveLength(expected.length);
+  expected.forEach((label, i) => expect(labels[i]).toContain(label));
+}
+
 // covers: INV-PRESENTATION-21
 describe("stockDescriptor detail (conformance)", () => {
   it("renders every region through the generic shell", async () => {
@@ -232,5 +240,23 @@ describe("stockDescriptor detail (conformance)", () => {
       "href",
       expect.stringContaining("/i1/"),
     );
+  });
+
+  // covers: INV-PRESENTATION-38
+  it("stock card: one field order, dividends received row", async () => {
+    stubEndpoints();
+    renderWithProviders(
+      <PositionDetailScreen descriptor={stockDescriptor} assetId="i1" onBack={vi.fn()} />,
+      { route: "/" },
+    );
+    const card = await screen.findByTestId("tour-details");
+    expectOrder(card, [
+      "Total value",
+      "Total cost",
+      "Gain / loss",
+      "Dividends received",
+      "Ownership",
+    ]);
+    expect(within(card).getByTestId("investment-headline-income")).toHaveTextContent(/150\.00/);
   });
 });
