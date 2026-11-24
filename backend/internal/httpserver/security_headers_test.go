@@ -30,8 +30,8 @@ func TestSecurityHeaders_SetOnEveryResponse(t *testing.T) {
 		if strings.Contains(got, "script-src 'self' 'unsafe-inline'") {
 			t.Errorf("CSP script-src must not allow unsafe-inline: %q", got)
 		}
-		if !strings.Contains(got, "img-src 'self' data:") {
-			t.Errorf("CSP img-src must allow data: (select chevron): %q", got)
+		if !strings.Contains(got, "img-src 'self';") {
+			t.Errorf("CSP img-src must stay 'self' only (self-host images, #1008): %q", got)
 		}
 	}
 	if got := h.Get("X-Content-Type-Options"); got != "nosniff" {
