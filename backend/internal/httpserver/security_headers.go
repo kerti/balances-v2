@@ -15,6 +15,9 @@ import "net/http"
 // moved to an external stylesheet. Inline styles can't execute script, so
 // this doesn't reopen the XSS surface script-src closes.
 //
+// img-src allows data: for the select chevron (`--select-chevron` in
+// index.css). An SVG loaded as an image is sandboxed and can't run script.
+//
 // HSTS is gated on cookieSecure (COOKIE_SECURE=true): sending it over plain
 // HTTP is a no-op per spec, and asserting it in a local/self-host HTTP setup
 // would be actively wrong.
@@ -26,7 +29,7 @@ func securityHeaders(cookieSecure bool) func(http.Handler) http.Handler {
 				"default-src 'self'; "+
 					"script-src 'self'; "+
 					"style-src 'self' 'unsafe-inline'; "+
-					"img-src 'self'; "+
+					"img-src 'self' data:; "+
 					"connect-src 'self'; "+
 					"frame-ancestors 'none'; "+
 					"base-uri 'self'; "+

@@ -55,9 +55,6 @@ next item off the backlog — they pause between items to direct.
 2026-11-16 audit shipped in alpha.12 (through #994). Still open: #936 (one monthly check-in flow;
 needs a grill and an ADR, with #371/#373 folded in), and #608/#954 (backlogged for a finance grill).
 
-**After the alpha.12 preview deploy:** check that Fly's edge peer falls in `172.16.0.0/12`;
-otherwise every visitor shares one rate-limit key (#962).
-
 `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload under repo
 **Settings → Social preview**.
 
