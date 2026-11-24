@@ -31,9 +31,9 @@ Read these first, in order:
 
 **M1–M7 closed; M8 (next domain features) is the active milestone**, opened 2026-07-06. CI is green.
 
-- **Latest release:** `v0.9.0-alpha.11` — on `preview`; promote to `demo` by hand when wanted
+- **Latest release:** `v0.9.0-alpha.12` — on `preview`; promote to `demo` by hand when wanted
   (ADR-0049; promotion is a deliberate act, not a follow-on).
-- **Unreleased on `main`:** `git log v0.9.0-alpha.11..main` — the merged PRs and their closed issues
+- **Unreleased on `main`:** `git log v0.9.0-alpha.12..main` — the merged PRs and their closed issues
   are the record. Highlights carry into the next tag's release notes, not into this file.
 - **Deployment shape:** single-origin — one Fly app per environment (region `sin`) serves the SPA +
   `/api`; Neon Postgres (per-env branch), Resend mail, Google + optional local OAuth. Custom domain
@@ -52,21 +52,11 @@ epic (#591, ADR-0053) shipped in `v0.9.0-alpha.4`. Ask the user for direction ra
 next item off the backlog — they pause between items to direct.
 
 **Both demo UI/UX audits are built.** The 2026-11-04 audit (#779–#853) shipped through alpha.10; the
-2026-11-16 audit's findings merged through #1003 and its #1002 follow-up. Still open: #994
-(ready-for-agent, UI-only detail-card order), #936 (one monthly check-in flow; needs a grill and an
-ADR, with #371/#373 folded in), and #608/#954 (backlogged for a finance grill).
+2026-11-16 audit shipped in alpha.12 (through #994). Still open: #936 (one monthly check-in flow;
+needs a grill and an ADR, with #371/#373 folded in), and #608/#954 (backlogged for a finance grill).
 
-**Next tag (`v0.9.0-alpha.12`) carries release-note debt:**
-- Breaking config: `TRUST_PROXY_HEADERS` is removed and the app refuses to boot if it is set;
-  `TRUSTED_PROXIES` replaces it (#962). Self-hosters must edit `.env`.
-- Re-importing an old time-deposit export with months outside the deposit's term now fails with
-  `OUTSIDE_DEPOSIT_TERM` (#964).
-- Restoring a pre-#574 backup can bring back bond entries outside the term; they then block maturity
-  and Buy edits until fixed (restore stays faithful, ADR-0036). Undo and close now refuse
-  out-of-term rows (#1002).
-- Run `make e2e` before tagging (#963's spec edits and Playwright 1.65.1 are unrun locally).
-- After the preview deploy, check that Fly's edge peer falls in `172.16.0.0/12`; otherwise every
-  visitor shares one rate-limit key.
+**After the alpha.12 preview deploy:** check that Fly's edge peer falls in `172.16.0.0/12`;
+otherwise every visitor shares one rate-limit key (#962).
 
 `social-card.png` (ADR-0054, released in alpha.5) still needs a manual upload under repo
 **Settings → Social preview**.
@@ -75,8 +65,8 @@ Standing carry-forwards:
 
 - **Production Resend domain** — the one M7 bullet that didn't literally close. Moves with prod's
   eventual standup; tracked via #218 and #299's remaining GDPR scope, not its own milestone.
-- Smaller open items ride a convenient batch, not their own cut. Hardening follow-ups:
-  `actions/checkout` Node-20 bump, HSTS header, `cloudflared` dev-tunnel.
+- Smaller open items ride a convenient batch, not their own cut. Hardening follow-up:
+  the foreground `cloudflared` dev-tunnel target (#571).
 
 ## Standing decisions
 
